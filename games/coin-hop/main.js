@@ -1,15 +1,23 @@
 import * as THREE from 'three';
 import { createGnome } from './gnome.js';
+import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
+import { makeTree, makeRock, makeHedges, makeOuterWoods } from './scenery.js';
+import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
+import { makeRaspberry } from './raspberry.js';
 
 // Tweak these to change how the game feels.
-const COIN_COUNT = 10;
+const BERRY_COUNT = 10;
 const ARENA_SIZE = 40;
+const HEDGE_THICKNESS = 1.2; // The hedges around the edge take up this much of the field.
+const START_Z = 4; // The gnome starts a little south of the middle, on dry land.
 const MOVE_SPEED = 8;
+const CREEK_SLOWDOWN = 0.6; // In the creek, the gnome and the worms move at 60% speed.
 const JUMP_SPEED = 9;
 const GRAVITY = 25;
 const TURN_SPEED = 12; // How quickly the gnome turns to face the way it's running.
 const GNOME_RADIUS = 0.3; // How close the gnome can get to trees and rocks.
-const GNOME_MIDDLE = 0.45; // Height of the middle of the gnome, where coins and worms touch it.
+const GNOME_MIDDLE = 0.45; // Height of the middle of the gnome, where raspberries and worms touch it.
+const CAMERA_LOOK_ABOVE = 2; // Aim the camera this far above the gnome, so the painted sky shows.
 
 // Trees block you completely. Rocks are low enough to jump over, or to stand on.
 const TREE_COUNT = 14;
@@ -29,6 +37,8 @@ const WORM_SAFE_DISTANCE = 10; // Worms never start closer than this to the gnom
 const WORM_CATCH_DISTANCE = 0.75;
 const WORM_COLORS = [0xff3b30, 0xff9500, 0xffdd00, 0x34c759, 0x1e90ff, 0x5856d6, 0xaf52de]; // Red to violet.
 
+const PLAY_HALF = ARENA_SIZE / 2 - HEDGE_THICKNESS; // From the middle of the field to the inside of the hedges.
+
 const scoreEl = document.getElementById('score');
 const timerEl = document.getElementById('timer');
 const messageEl = document.getElementById('message');
@@ -42,12 +52,13 @@ renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87ceeb);
-scene.fog = new THREE.Fog(0x87ceeb, 30, 80);
+scene.background = new THREE.Color(SKY_COLOR);
+scene.fog = new THREE.Fog(HAZE_COLOR, 35, 110); // Faraway trees fade toward the color of the painted hills.
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
 const cameraOffset = new THREE.Vector3(0, 6, 10);
 const cameraGoal = new THREE.Vector3();
+const cameraTarget = new THREE.Vector3();
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -63,21 +74,16 @@ const sun = new THREE.DirectionalLight(0xffffff, 2);
 sun.position.set(10, 20, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left = -ARENA_SIZE / 2;
-sun.shadow.camera.right = ARENA_SIZE / 2;
-sun.shadow.camera.top = ARENA_SIZE / 2;
-sun.shadow.camera.bottom = -ARENA_SIZE / 2;
+sun.shadow.camera.left = -ARENA_SIZE / 2 - 4;
+sun.shadow.camera.right = ARENA_SIZE / 2 + 4;
+sun.shadow.camera.top = ARENA_SIZE / 2 + 4;
+sun.shadow.camera.bottom = -ARENA_SIZE / 2 - 4;
 scene.add(sun);
 
 // --- World ---
 
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(ARENA_SIZE, ARENA_SIZE),
-  new THREE.MeshStandardMaterial({ color: 0x55aa55 }),
-);
-ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = true;
-scene.add(ground);
+scene.add(makeGround(), makeWater(), makeHedges(ARENA_SIZE, HEDGE_THICKNESS), makeOuterWoods(ARENA_SIZE), createBackdrop());
+for (const bridge of bridges) scene.add(bridge.model);
 
 const gnome = createGnome();
 const player = gnome.model;
@@ -87,45 +93,17 @@ scene.add(player);
 
 // Everything the gnome and the worms have to get around. Each one has a spot on the ground,
 // a radius, and a height. Trees are taller than any jump, so their height is Infinity.
+// The bridge railings are obstacles too, and they stay put from round to round.
 const obstacles = [];
-
-// A tree is a trunk and three cones of leaves, each narrower than the one below,
-// so you can see past the tops.
-const trunkGeometry = new THREE.CylinderGeometry(0.12, 0.16, 0.8, 8).translate(0, 0.4, 0);
-const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5230, roughness: 0.9 });
-const leafGeometries = [
-  new THREE.ConeGeometry(0.75, 1.4, 8).translate(0, 1.3, 0),
-  new THREE.ConeGeometry(0.58, 1.2, 8).translate(0, 2.0, 0),
-  new THREE.ConeGeometry(0.4, 1.0, 8).translate(0, 2.7, 0),
-];
-const leafMaterial = new THREE.MeshStandardMaterial({ color: 0x2f7d3b, roughness: 0.8, flatShading: true });
-
-function makeTree() {
-  const tree = new THREE.Group();
-  tree.add(new THREE.Mesh(trunkGeometry, trunkMaterial));
-  for (const geometry of leafGeometries) tree.add(new THREE.Mesh(geometry, leafMaterial));
-  for (const part of tree.children) part.castShadow = true;
-  scene.add(tree);
-  return tree;
-}
-
-// A rock is a chunky, squashed ball, half sunk into the ground.
-const rockGeometry = new THREE.DodecahedronGeometry(1);
-const rockMaterial = new THREE.MeshStandardMaterial({ color: 0x9a968c, roughness: 0.95, flatShading: true });
-
-function makeRock() {
-  const rock = new THREE.Mesh(rockGeometry, rockMaterial);
-  rock.castShadow = true;
-  scene.add(rock);
-  return rock;
-}
-
+const railings = bridges.flatMap((bridge) => bridge.bumpers);
 const trees = Array.from({ length: TREE_COUNT }, makeTree);
 const rocks = Array.from({ length: ROCK_COUNT }, makeRock);
+scene.add(...trees, ...rocks);
 
 // Scatter the trees and rocks to new spots, with new sizes, for a new round.
 function placeObstacles() {
   obstacles.length = 0;
+  obstacles.push(...railings);
   for (const tree of trees) {
     const size = THREE.MathUtils.randFloat(1, 1.3);
     tree.scale.setScalar(size);
@@ -141,13 +119,16 @@ function placeObstacles() {
   }
 }
 
-// Move a tree or rock to an open spot and add it to the obstacles. Gives up if the field is too full.
+// Move a tree or rock to an open spot on dry land and add it to the obstacles.
+// Gives up if the field is too full.
 function findOpenSpot(object, radius, height) {
-  const half = ARENA_SIZE / 2 - 2;
+  const half = PLAY_HALF - 1.5;
   for (let attempt = 0; attempt < 100; attempt++) {
     const x = THREE.MathUtils.randFloat(-half, half);
     const z = THREE.MathUtils.randFloat(-half, half);
-    if (Math.hypot(x, z) < START_CLEARING + radius || isNearObstacle(x, z, radius + OBSTACLE_GAP)) continue;
+    if (Math.hypot(x, z - START_Z) < START_CLEARING + radius) continue;
+    if (creekDistance(x, z) < CREEK_HALF_WIDTH + radius + 0.5 || isNearBridge(x, z, radius + 1)) continue;
+    if (isNearObstacle(x, z, radius + OBSTACLE_GAP)) continue;
     object.position.set(x, 0, z);
     obstacles.push({ position: object.position, radius, height });
     return true;
@@ -155,12 +136,12 @@ function findOpenSpot(object, radius, height) {
   return false;
 }
 
-// Is the spot x, z closer than `gap` to the edge of any tree or rock?
+// Is the spot x, z closer than `gap` to the edge of any obstacle?
 function isNearObstacle(x, z, gap) {
   return obstacles.some((obstacle) => Math.hypot(obstacle.position.x - x, obstacle.position.z - z) < obstacle.radius + gap);
 }
 
-// Push the gnome back out of trees, and out of rocks unless it's up on top of them.
+// Push the gnome back out of trees, rocks and railings, unless it's up on top of them.
 function bumpIntoObstacles() {
   for (const obstacle of obstacles) {
     if (player.position.y >= obstacle.height - 0.05) continue;
@@ -175,9 +156,9 @@ function bumpIntoObstacles() {
   }
 }
 
-// How high the ground is under the gnome: the top of a rock it's standing on, or 0.
+// How high the ground is under the gnome: grass, creek bed, a bridge, or the top of a rock it's standing on.
 function floorUnderGnome() {
-  let floor = 0;
+  let floor = groundHeightAt(player.position.x, player.position.z);
   for (const obstacle of obstacles) {
     const distance = Math.hypot(player.position.x - obstacle.position.x, player.position.z - obstacle.position.z);
     const onTop = distance < obstacle.radius * 0.7 && player.position.y >= obstacle.height - 0.05;
@@ -186,29 +167,27 @@ function floorUnderGnome() {
   return floor;
 }
 
-// --- Coins ---
+// --- Raspberries ---
 
-const coinGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.15, 24);
-coinGeometry.rotateX(Math.PI / 2); // Stand the coin on its edge so spinning shows its face.
-const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0x442200, metalness: 0.3, roughness: 0.4 });
-const coins = [];
+const berries = [];
 
-function placeCoins() {
-  for (const coin of coins) scene.remove(coin);
-  coins.length = 0;
+function placeBerries() {
+  for (const berry of berries) scene.remove(berry);
+  berries.length = 0;
 
-  const half = ARENA_SIZE / 2 - 2;
-  for (let i = 0; i < COIN_COUNT; i++) {
-    const coin = new THREE.Mesh(coinGeometry, coinMaterial);
+  const half = PLAY_HALF - 1.5;
+  for (let i = 0; i < BERRY_COUNT; i++) {
+    const berry = makeRaspberry();
     let x, z;
     do {
       x = THREE.MathUtils.randFloat(-half, half);
       z = THREE.MathUtils.randFloat(-half, half);
-    } while (Math.hypot(x, z) < 3 || isNearObstacle(x, z, 1)); // Keep coins away from the start and clear of trees and rocks.
-    coin.position.set(x, 1, z);
-    coin.castShadow = true;
-    scene.add(coin);
-    coins.push(coin);
+    } while (Math.hypot(x, z - START_Z) < 3 || isNearObstacle(x, z, 1) || isNearBridge(x, z, 1)); // Keep them clear of the start, trees, rocks and bridges.
+    berry.userData.floatHeight = groundHeightAt(x, z) + 0.9; // Some float over the creek, so you'll have to wade.
+    berry.userData.bobOffset = Math.random() * Math.PI * 2;
+    berry.position.set(x, berry.userData.floatHeight, z);
+    scene.add(berry);
+    berries.push(berry);
   }
 }
 
@@ -254,17 +233,18 @@ function makeWorm() {
 
 const worms = Array.from({ length: WORM_COUNT }, makeWorm);
 
-// Give each worm its own quadrant of the field, at a random spot there, lying flat and facing the gnome.
+// Give each worm its own quadrant of the field, at a random spot there, lying flat and facing the middle.
 function placeWorms() {
   let quadrants = [];
   for (const worm of worms) {
     if (quadrants.length === 0) quadrants = [[1, 1], [1, -1], [-1, 1], [-1, -1]]; // Refill if there are more than four worms.
     const [signX, signZ] = quadrants.splice(Math.floor(Math.random() * quadrants.length), 1)[0];
-    const far = ARENA_SIZE / 2 - 4;
+    const far = PLAY_HALF - 4;
     for (let attempt = 0; attempt < 100; attempt++) {
       worm.head.set(signX * THREE.MathUtils.randFloat(1, far), 0, signZ * THREE.MathUtils.randFloat(1, far));
       worm.tail.copy(worm.head).setLength(worm.head.length() + WORM_LENGTH);
-      if (worm.head.length() >= WORM_SAFE_DISTANCE && isClearForWorm(worm.tail, worm.head)) break;
+      const safe = Math.hypot(worm.head.x, worm.head.z - START_Z) >= WORM_SAFE_DISTANCE;
+      if (safe && isClearForWorm(worm.tail, worm.head)) break;
     }
     worm.stretching = true; // So its first step pulls the tail up.
     startWormStep(worm);
@@ -286,8 +266,10 @@ function startWormStep(worm) {
   }
 
   // Each step speeds up then slows down, and its fastest moment is pi/2 times its average speed.
-  // Timing the step like this makes that fastest moment exactly WORM_MAX_SPEED.
-  worm.stepDuration = Math.max(((Math.PI / 2) * worm.from.distanceTo(worm.to)) / WORM_MAX_SPEED, 0.05);
+  // Timing the step like this makes that fastest moment exactly its top speed, which is lower in the creek.
+  const wading = isInWater(worm.from.x, worm.from.z) || isInWater(worm.to.x, worm.to.z);
+  const topSpeed = WORM_MAX_SPEED * (wading ? CREEK_SLOWDOWN : 1);
+  worm.stepDuration = Math.max(((Math.PI / 2) * worm.from.distanceTo(worm.to)) / topSpeed, 0.05);
   worm.stepTime = 0;
 }
 
@@ -313,7 +295,7 @@ function reachToward(worm, heading) {
   keepInArena(worm.to, WORM_RADIUS);
 }
 
-// Can a worm's body lie along the line from `from` to `to` without touching a tree or rock?
+// Can a worm's body lie along the line from `from` to `to` without touching an obstacle?
 const wormLine = new THREE.Line3();
 const closestPoint = new THREE.Vector3();
 
@@ -335,7 +317,8 @@ function updateWorm(worm, dt) {
   shapeWorm(worm);
 }
 
-// Bend a worm's body into an arch between its two ends. The closer the ends, the taller the arch.
+// Bend a worm's body into an arch between its two ends, following the ground (down into the
+// creek, or up over a bridge). The closer the ends, the taller the arch.
 const archPoints = Array.from({ length: 11 }, () => new THREE.Vector3());
 const archCurve = new THREE.CatmullRomCurve3(archPoints);
 
@@ -345,7 +328,7 @@ function shapeWorm(worm) {
   archPoints.forEach((point, i) => {
     const along = i / (archPoints.length - 1);
     point.lerpVectors(worm.tail, worm.head, along);
-    point.y = WORM_RADIUS + archHeight * Math.sin(Math.PI * along);
+    point.y = groundHeightAt(point.x, point.z) + WORM_RADIUS + archHeight * Math.sin(Math.PI * along);
   });
   archCurve.updateArcLengths(); // The points moved, so measure the curve again.
   const spots = archCurve.getSpacedPoints(WORM_SEGMENTS - 1); // Evenly spaced, so the stripes stay even.
@@ -357,9 +340,9 @@ function shapeWorm(worm) {
 
 // --- Helpers ---
 
-// Keep a spot inside the field, at least `radius` from the edge.
+// Keep a spot inside the hedges, at least `radius` away from them.
 function keepInArena(position, radius) {
-  const limit = ARENA_SIZE / 2 - radius;
+  const limit = PLAY_HALF - radius;
   position.x = THREE.MathUtils.clamp(position.x, -limit, limit);
   position.z = THREE.MathUtils.clamp(position.z, -limit, limit);
 }
@@ -388,35 +371,40 @@ function isDown(...codes) {
 // --- Game state ---
 
 let verticalSpeed = 0;
+let grounded = true;
+let wading = false; // Standing (or jumping from) in the creek.
 let collected = 0;
 let elapsed = 0;
+let worldTime = 0;
 let finished = false;
 let caughtByWorm = false;
 
 function restart() {
-  player.position.set(0, 0, 0);
+  player.position.set(0, 0, START_Z);
   player.rotation.set(0, 0, 0);
   camera.position.copy(player.position).add(cameraOffset);
   verticalSpeed = 0;
+  grounded = true;
+  wading = false;
   collected = 0;
   elapsed = 0;
   finished = false;
   caughtByWorm = false;
   messageEl.hidden = true;
   placeObstacles();
-  placeCoins();
+  placeBerries();
   placeWorms();
   updateHud();
 }
 
 function updateHud() {
-  scoreEl.textContent = `Coins: ${collected} / ${COIN_COUNT}`;
+  scoreEl.textContent = `Raspberries: ${collected} / ${BERRY_COUNT}`;
   timerEl.textContent = `Time: ${elapsed.toFixed(1)}s`;
 }
 
 function win() {
   finished = true;
-  messageEl.textContent = `You got them all in ${elapsed.toFixed(1)}s! Press R to play again.`;
+  messageEl.textContent = `You picked them all in ${elapsed.toFixed(1)}s! Press R to play again.`;
   messageEl.hidden = false;
 }
 
@@ -433,7 +421,10 @@ const move = new THREE.Vector3();
 const playerMiddle = new THREE.Vector3();
 
 function update(dt) {
-  // Run around on the ground.
+  worldTime += dt;
+  updateCreek(dt);
+
+  // Run around on the ground. Wading through the creek is slower.
   move.set(0, 0, 0);
   if (isDown('KeyW', 'ArrowUp')) move.z -= 1;
   if (isDown('KeyS', 'ArrowDown')) move.z += 1;
@@ -441,7 +432,7 @@ function update(dt) {
   if (isDown('KeyD', 'ArrowRight')) move.x += 1;
   const running = move.lengthSq() > 0 && !caughtByWorm;
   if (running) {
-    move.normalize().multiplyScalar(MOVE_SPEED * dt);
+    move.normalize().multiplyScalar(MOVE_SPEED * (wading ? CREEK_SLOWDOWN : 1) * dt);
     player.position.add(move);
     // Turn smoothly to face the way the gnome is running.
     const turn = shortestTurn(Math.atan2(move.x, move.z) - player.rotation.y);
@@ -450,8 +441,10 @@ function update(dt) {
   bumpIntoObstacles();
   keepInArena(player.position, GNOME_RADIUS);
 
-  // Jump and fall. On top of a rock, the rock is the ground.
+  // Jump and fall. The ground might be grass, the creek bed, a bridge or the top of a rock.
   const floor = floorUnderGnome();
+  // Walking down a slope, stay on the ground instead of floating off it for a moment.
+  if (grounded && verticalSpeed <= 0 && player.position.y - floor < 0.35) player.position.y = floor;
   if (player.position.y <= floor && isDown('Space') && !caughtByWorm) verticalSpeed = JUMP_SPEED;
   verticalSpeed -= GRAVITY * dt;
   player.position.y += verticalSpeed * dt;
@@ -460,19 +453,22 @@ function update(dt) {
     player.position.y = floor;
     verticalSpeed = 0;
   }
-  gnome.animate(dt, { running, inAir: player.position.y > floor, verticalSpeed, landed });
+  grounded = player.position.y <= floor;
+  if (grounded) wading = isInWater(player.position.x, player.position.z);
+  gnome.animate(dt, { running, inAir: !grounded, verticalSpeed, landed });
   playerMiddle.copy(player.position);
   playerMiddle.y += GNOME_MIDDLE;
 
-  // Spin coins and pick up any the gnome touches.
-  for (let i = coins.length - 1; i >= 0; i--) {
-    const coin = coins[i];
-    coin.rotation.y += 3 * dt;
-    if (!finished && coin.position.distanceTo(playerMiddle) < 1.1) {
-      scene.remove(coin);
-      coins.splice(i, 1);
+  // Bob and spin the raspberries, and pick any the gnome touches.
+  for (let i = berries.length - 1; i >= 0; i--) {
+    const berry = berries[i];
+    berry.rotation.y += 1.5 * dt;
+    berry.position.y = berry.userData.floatHeight + Math.sin(worldTime * 2.5 + berry.userData.bobOffset) * 0.08;
+    if (!finished && berry.position.distanceTo(playerMiddle) < 1) {
+      scene.remove(berry);
+      berries.splice(i, 1);
       collected++;
-      if (collected === COIN_COUNT) win();
+      if (collected === BERRY_COUNT) win();
     }
   }
 
@@ -487,10 +483,12 @@ function update(dt) {
   if (!finished) elapsed += dt;
   updateHud();
 
-  // Smoothly follow the gnome from behind and above.
+  // Smoothly follow the gnome from behind and above, looking a little over its head.
   cameraGoal.copy(playerMiddle).add(cameraOffset);
   camera.position.lerp(cameraGoal, 1 - Math.exp(-5 * dt));
-  camera.lookAt(playerMiddle);
+  cameraTarget.copy(playerMiddle);
+  cameraTarget.y += CAMERA_LOOK_ABOVE;
+  camera.lookAt(cameraTarget);
 }
 
 let lastTime = null;
