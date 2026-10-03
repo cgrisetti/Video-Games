@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Our Games</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, sans-serif;
+        background: #1d1f2b;
+        color: #f4f4f8;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 48px 16px;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        display: grid;
+        gap: 12px;
+      }
+      a {
+        display: block;
+        padding: 16px 20px;
+        border-radius: 10px;
+        background: #2c2f42;
+        color: inherit;
+        text-decoration: none;
+      }
+      a:hover {
+        background: #3a3e57;
+      }
+      .name {
+        font-size: 1.2rem;
+        font-weight: 600;
+      }
+      .blurb {
+        opacity: 0.75;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Our Games</h1>
+      <!-- One list item per game in games/. Add a new one whenever a game is created. -->
+      <ul>
+        <li>
+          <a href="/games/coin-hop/">
+            <div class="name">Coin Hop</div>
+            <div class="blurb">Run and jump around a field collecting all the gold coins.</div>
+          </a>
+        </li>
+      </ul>
+    </main>
+  </body>
+</html>
