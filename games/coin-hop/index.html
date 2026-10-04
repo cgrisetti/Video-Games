@@ -31,6 +31,36 @@
         margin-top: 6px;
         opacity: 0.85;
       }
+      /* The little music panel in the bottom corner: on/off, volume, and forest or 8-bit. */
+      #music {
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(30, 45, 30, 0.45);
+        color: white;
+        font-size: 0.85rem;
+      }
+      #music button {
+        padding: 2px 6px;
+        border: none;
+        border-radius: 8px;
+        background: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+      }
+      #music button:hover {
+        background: rgba(255, 255, 255, 0.18);
+      }
+      #music-volume {
+        width: 90px;
+        accent-color: #f4c44c;
+      }
       /* The Top 10 board: a page from a storybook, with a twig, leaves and a raspberry on top. */
       #scoreboard {
         --paper: #fbf4df;
@@ -199,6 +229,11 @@
       <div id="timer"></div>
       <div id="help">WASD or arrow keys to move · Space to jump · F to swing your stick · R to restart · Dodge (or bonk) the inch worms!</div>
       <div id="controller-help" hidden>Controller: left stick or D-pad to move · ✕ to jump · □ to swing · Options to restart</div>
+    </div>
+    <div id="music">
+      <button id="music-mute" type="button" title="Music on or off (M)">♪</button>
+      <input id="music-volume" type="range" min="0" max="100" aria-label="Music volume" />
+      <button id="music-style" type="button" title="Switch between the forest music and the 8-bit version">Forest</button>
     </div>
     <section id="scoreboard" hidden>
       <svg class="sprig" viewBox="0 0 120 36" aria-hidden="true">

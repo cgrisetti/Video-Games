@@ -4,12 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "music": "node tools/audio/make-music.mjs"
   },
   "dependencies": {
     "three": "^0.186.1"
   },
   "devDependencies": {
-    "vite": "^8.3.2"
+    "vite": "^8.3.2",
+    "wasm-media-encoders": "^0.7.0"
   }
 }

@@ -24,6 +24,7 @@ const LEG_SWING = 0.9; // How far the legs swing, in radians (1 radian is about 
 const ARM_SWING = 0.8;
 const RUN_BOUNCE = 0.08; // How high the gnome bobs with each step.
 const SWING_TIME = 0.5; // Seconds for one whole stick swing.
+const STICK_SIZE = 2; // How big the stick is (1 was the first, smaller stick).
 const STRIKE = [0.32, 0.75]; // The part of the swing (0 = start, 1 = end) when the stick can hit something.
 
 // The stick swing, as key poses the gnome passes through. Each one is
@@ -31,11 +32,11 @@ const STRIKE = [0.32, 0.75]; // The part of the swing (0 = start, 1 = end) when 
 // It winds up over the right shoulder, chops down to the front-right, sweeps low across the
 // front to the left (where worm heads are), then settles back.
 const SWING_POSES = [
-  [0, 0, -0.15, 1.25, 0, 0],
+  [0, 0, -0.15, 1.0, 0, 0],
   [0.22, -2.3, -0.55, 1.7, -0.7, 0.5],
   [0.4, -0.7, -0.1, 2.45, -0.45, 0.9],
   [0.6, -0.6, 0.3, 2.5, 0.8, 1],
-  [1, 0, -0.15, 1.25, 0, 0],
+  [1, 0, -0.15, 1.0, 0, 0],
 ];
 
 const materials = {};
@@ -101,6 +102,7 @@ export function createGnome() {
   // gnome's right hand is on our left: arms[0].) It's built pointing up from the hand; the grip
   // joint turns it to point forward. Three invisible marks along it are what hits the worms.
   const grip = joint(arms[0], 0, -0.24, 0);
+  grip.scale.setScalar(STICK_SIZE); // Everything on the grip grows together: the stick, its leaf and the marks that hit worms.
   grip.add(part(new THREE.CylinderGeometry(0.032, 0.042, 0.45, 8), 'stick', 0, 0.125, 0));
   const bend = part(new THREE.CylinderGeometry(0.025, 0.032, 0.27, 8), 'stick', -0.033, 0.48, 0);
   bend.rotation.z = 0.25;
@@ -156,7 +158,7 @@ export function createGnome() {
     body.rotation.y = 0;
     hat.rotation.x = (-0.3 + Math.sin(runPhase * 2) * 0.08) * runAmount + Math.sin(time * 2) * 0.03;
     hat.rotation.z = 0;
-    grip.rotation.x = 1.25 + 1.0 * airAmount; // Carried pointing forward; held up high when jumping.
+    grip.rotation.x = 1.0 + 1.0 * airAmount; // Carried pointing forward and a little up; held up high when jumping.
 
     // Bob up with each step, breathe while standing, stretch tall in the air, squash flat on landing.
     const stretch = Math.min(Math.abs(verticalSpeed) * 0.012, 0.1) * airAmount;

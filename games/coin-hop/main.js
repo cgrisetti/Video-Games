@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createGnome } from './gnome.js';
 import { createFox } from './fox.js';
 import { readInput, isControllerConnected } from './input.js';
+import { setDanger } from './music.js';
 import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
 import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TRUNK_DIAMETER } from './scenery.js';
 import { showScoreboard, hideScoreboard } from './scoreboard.js';
@@ -49,10 +50,12 @@ const WORM_MAX_TURN = Math.PI / 3; // It turns at most 60 degrees per inch, unle
 const WORM_SAFE_DISTANCE = 10; // Worms never start closer than this to the gnome.
 const WORM_CATCH_DISTANCE = 0.75;
 const WORM_COLORS = [0xff3b30, 0xff9500, 0xffdd00, 0x34c759, 0x1e90ff, 0x5856d6, 0xaf52de]; // Red to violet.
-const STUN_TIME = 3; // Seconds a worm lies dazed after a bonk on the head with the stick.
+const STUN_TIME = 5; // Seconds a worm lies dazed after a bonk on the head with the stick.
 const STUN_SPEEDUP = 1.05; // Each bonk makes that worm 5% faster...
 const WORM_TOP_SPEED = MOVE_SPEED * 0.99; // ...up to 99% of the gnome's top speed.
-const STICK_REACH = 0.22; // How close the stick has to come to a worm's head to bonk it.
+const STICK_REACH = 0.44; // How close the stick has to come to a worm's head to bonk it.
+const DANGER_FAR = 9; // The danger music starts creeping in when a worm is this close...
+const DANGER_NEAR = 3; // ...and is at full strength this close.
 
 // The fox, the gnome's friend.
 const FOX_FOLLOW_SPEED = MOVE_SPEED * 1.15; // A little faster than the gnome, so it can keep up.
@@ -742,6 +745,13 @@ function update(dt) {
     }
   }
   updateFox(dt);
+
+  // Music: the danger layer swells as the nearest wide-awake inch worm creeps closer.
+  let nearestWorm = Infinity;
+  for (const worm of worms) {
+    if (!isDazed(worm)) nearestWorm = Math.min(nearestWorm, worm.headBall.position.distanceTo(playerMiddle));
+  }
+  setDanger(finished ? 0 : 1 - THREE.MathUtils.smoothstep(nearestWorm, DANGER_NEAR, DANGER_FAR));
 
   if (!finished) elapsed += dt;
   updateHud();
