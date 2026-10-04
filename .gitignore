@@ -2,4 +2,4 @@ node_modules/
 dist/
 .DS_Store
 # Big music masters; "npm run music" makes them again. The game plays the small .ogg files.
-games/coin-hop/audio/*.wav
+games/lanternwood/audio/*.wav

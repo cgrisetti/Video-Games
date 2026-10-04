@@ -57,10 +57,12 @@ export function openMenu({ start = false, message = '' } = {}) {
   isOpen = true;
   menu.hidden = false;
   pauseButton.hidden = true;
-  title.textContent = start ? 'Coin Hop' : 'Paused';
+  title.textContent = start ? 'Lanternwood' : 'Paused';
+  title.classList.toggle('brand', start);
   resumeButton.textContent = start ? 'Play' : 'Resume';
-  for (const element of menu.querySelectorAll('[data-start-only]')) element.hidden = !start;
-  for (const element of menu.querySelectorAll('[data-pause-only]')) element.hidden = start;
+  // (toggleAttribute, not .hidden, so it works on the pictures too: they're SVG, not HTML.)
+  for (const element of menu.querySelectorAll('[data-start-only]')) element.toggleAttribute('hidden', !start);
+  for (const element of menu.querySelectorAll('[data-pause-only]')) element.toggleAttribute('hidden', start);
   showNotice(message);
   setMusicPaused(true);
   showPage('main');

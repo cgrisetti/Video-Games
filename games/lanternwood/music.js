@@ -3,13 +3,14 @@
 // of the theme too. The music files are made by tools/audio/make-music.mjs (npm run music).
 // The Settings menu (menu.js) changes the volume, turns it on or off, and picks the version.
 
+import { loadSaved, save } from './saved.js';
+
 const TARGET_LOUDNESS = -18; // How loud the music plays at full volume (LUFS), so it sits under the action.
 const DANGER_LOUDEST = 0.9; // The danger layer at its strongest, compared with the theme.
 const THEME_DIP = 0.3; // How much the theme steps back while the danger layer is in.
 const FADE_SECONDS = 0.6; // How quickly the danger layer swells and fades.
 const PAUSED_LEVEL = 0.6; // While the game is paused, the music is a little quieter...
 const PAUSED_MUFFLE = 700; // ...and muffled, as if through a door (the highest pitch let through, in Hz).
-const STORAGE_KEY = 'coin-hop-music';
 
 const format = new Audio().canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'wav';
 const context = new AudioContext();
@@ -139,18 +140,9 @@ function applyVolume() {
 }
 
 function loadSettings() {
-  const defaults = { volume: 0.7, muted: false, style: 'forest' };
-  try {
-    return { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY)) };
-  } catch {
-    return defaults;
-  }
+  return { volume: 0.7, muted: false, style: 'forest', ...loadSaved('music') };
 }
 
 function saveSettings() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(musicSettings));
-  } catch {
-    // Some private browsing modes block saving. The settings still work until the page closes.
-  }
+  save('music', musicSettings);
 }

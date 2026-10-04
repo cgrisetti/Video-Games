@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { creekDistance, CREEK_HALF_WIDTH } from './creek.js';
 import { PHI, GOLDEN_ANGLE, goldenFraction, fibonacciLong } from './golden.js';
+import { makeLantern } from './lantern.js';
 
 // Trees, rocks, logs, the hedges around the field, and the woods outside it.
 
@@ -326,6 +327,8 @@ const GROVE_SIZES = [1, 3, 3, 5, 5, 7, 7]; // Odd numbers of trees. Groves near 
 // Which kinds of tree the groves are, in Fibonacci numbers: mostly evergreen, with autumn color.
 const GROVE_KINDS = { pine: 13, round: 8, maple: 5, poplar: 5, oak: 3 };
 const DEPTH_OF_WOODS = 14; // Groves this far back from the hedge are at their tallest.
+const WOODS_LANTERNS = 5; // Lanterns glowing in glades near the hedge, as if each one marks somewhere to explore.
+const LANTERN_GAP = 8; // They stand at least this far apart.
 
 // Extra kinds that only grow out in the woods: a bare dead tree and a stump.
 TREES.snag = (() => {
@@ -398,11 +401,15 @@ export function makeOuterWoods(arenaSize) {
   }
 
   // 2. Fill each grove, nearest the hedge first, so the front of the woods gets the best spots.
+  const glades = [];
   groves.sort((a, b) => backFromHedge(a.x, a.z) - backFromHedge(b.x, b.z));
   const kinds = Object.entries(GROVE_KINDS).flatMap(([kind, count]) => Array(count).fill(kind));
   for (const grove of groves) {
     const depth = depthOf(grove.x, grove.z);
-    if (random() < THREE.MathUtils.lerp(...GLADE_CHANCE, depth)) continue; // Leave a glade.
+    if (random() < THREE.MathUtils.lerp(...GLADE_CHANCE, depth)) {
+      glades.push(grove); // Leave a glade.
+      continue;
+    }
     const kind = pick(kinds);
     // Live oaks sprawl, so they stand alone. Near the hedge, groves are smaller and the edge more ragged.
     const count = kind === 'oak' ? 1 : pick(depth < 0.25 ? GROVE_SIZES.slice(0, 5) : GROVE_SIZES);
@@ -454,6 +461,19 @@ export function makeOuterWoods(arenaSize) {
     for (const [geometry, material] of TREES[kind].parts) woods.add(instancedTrees(geometry, material, ofKind));
   }
   woods.add(instancedPlants(hedgeGeometry, shrubs));
+
+  // 4. Lanterns in the glades nearest the hedge, spread out round the woods, hanging out toward the field.
+  const lanterns = [];
+  for (const glade of glades) {
+    if (lanterns.length === WOODS_LANTERNS || depthOf(glade.x, glade.z) > 0.5) continue;
+    if (lanterns.some((other) => Math.hypot(other.x - glade.x, other.z - glade.z) < LANTERN_GAP) || !fits(glade.x, glade.z, 0.6, 1)) continue;
+    const lantern = makeLantern();
+    lantern.position.set(glade.x, 0, glade.z);
+    lantern.rotation.y = Math.atan2(glade.z, -glade.x); // Its arm points toward the middle of the field.
+    lantern.scale.setScalar(1.25);
+    woods.add(lantern);
+    lanterns.push(glade);
+  }
   return woods;
 }
 

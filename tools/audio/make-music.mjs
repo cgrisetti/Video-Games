@@ -1,8 +1,8 @@
-// Coin Hop's background music, made from scratch: no recordings, every sound is computed here.
+// Lanternwood's background music, made from scratch: no recordings, every sound is computed here.
 //
 // Run it with:  npm run music
 //
-// It writes three seamless loops into games/coin-hop/audio/, each as a WAV and an OGG:
+// It writes three seamless loops into games/lanternwood/audio/, each as a WAV and an OGG:
 //   forest-theme       The main track: ocarina melody, warm pad, harp arpeggios, triangle bass,
 //                      a quiet shaker and wind chimes, with light reverb and a ping-pong echo.
 //   forest-theme-8bit  The same tune for an old game console's sound chip: two pulse waves,
@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createOggEncoder } from 'wasm-media-encoders';
 
-const OUTPUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'games', 'coin-hop', 'audio');
+const OUTPUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'games', 'lanternwood', 'audio');
 
 // --- Settings ---
 

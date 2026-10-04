@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { makeLantern, LANTERN_HEIGHT } from './lantern.js';
 
 // The creek: a blue stream that winds diagonally across the field from the north-east to the
-// south-west, with sloped brownish-grey banks and two arched wooden bridges over it.
+// south-west, with sloped brownish-grey banks and two arched wooden bridges over it, each with
+// a lantern at two of its corners.
 // This file also builds the ground, since the creek is carved into it.
 
 // Tweak these to change the creek.
@@ -246,6 +248,19 @@ function makeBridge(spot) {
       const position = center.clone().addScaledVector(span, along).addScaledVector(flow, side * (BRIDGE_WIDTH / 2 - 0.06));
       bumpers.push({ position, radius: 0.1, height: deckHeight(along) + RAIL_HEIGHT });
     }
+  }
+
+  // A lantern at two opposite corners, hanging in over the end of the bridge, and a bumper for its post.
+  for (const corner of [-1, 1]) {
+    const x = corner * (BRIDGE_WIDTH / 2 + 0.22);
+    const along = corner * (BRIDGE_LENGTH / 2 - 0.1);
+    const lantern = makeLantern();
+    lantern.position.set(x, 0, along);
+    lantern.rotation.y = corner > 0 ? Math.PI : 0; // Hang it in toward the middle of the bridge.
+    model.add(lantern);
+    // The bridge's x runs the opposite way to `flow`, so step against it to find the post in the world.
+    const position = center.clone().addScaledVector(span, along).addScaledVector(flow, -x);
+    bumpers.push({ position, radius: 0.12, height: LANTERN_HEIGHT });
   }
 
   // Turn a spot in the world into distances along the bridge and sideways from its middle line.

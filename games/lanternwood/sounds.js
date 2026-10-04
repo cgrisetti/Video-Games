@@ -1,4 +1,5 @@
 import { audioContext as context } from './music.js';
+import { loadSaved, save } from './saved.js';
 
 // Sound effects, made on the spot from simple tones and bursts of noise (no sound files):
 //   - the stick: a woody whoosh as it swings, and a "tok" with a soft thud and a springy boing
@@ -11,14 +12,13 @@ import { audioContext as context } from './music.js';
 const LEVEL = 0.6; // How loud the effects are at full volume, to sit nicely with the music.
 const ROOM_SECONDS = 1.1; // How long the forest echo rings on.
 const ROOM_LEVEL = 0.16; // How much of the echo you hear.
-const STORAGE_KEY = 'coin-hop-sounds';
 
 // The chime for each berry: up the D major pentatonic scale (D E F# A B), one note per berry.
 const BERRY_NOTES = [587.33, 659.25, 739.99, 880, 987.77, 1174.66, 1318.51, 1479.98, 1760];
 // The golden raspberry's run: D, F#, G# (the music's magic Lydian note), A and high D.
 const GOLDEN_RUN = [1174.66, 1479.98, 1661.22, 1760, 2349.32];
 
-export const soundSettings = loadSettings(); // { volume: 0-1 }
+export const soundSettings = { volume: 0.8, ...loadSaved('sounds') }; // { volume: 0-1 }
 
 const output = context.createGain();
 const bus = context.createGain(); // Every sound goes in here...
@@ -81,11 +81,7 @@ export function playChomp(pan = 0) {
 export function setSoundVolume(volume) {
   soundSettings.volume = Math.min(Math.max(volume, 0), 1);
   output.gain.setTargetAtTime(soundSettings.volume * LEVEL, context.currentTime, 0.03);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(soundSettings));
-  } catch {
-    // Some private browsing modes block saving. The setting still works until the page closes.
-  }
+  save('sounds', soundSettings);
 }
 
 // --- Building blocks ---
@@ -169,13 +165,4 @@ function makeRoom() {
     for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / length) ** 3;
   }
   return buffer;
-}
-
-function loadSettings() {
-  const defaults = { volume: 0.8 };
-  try {
-    return { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY)) };
-  } catch {
-    return defaults;
-  }
 }

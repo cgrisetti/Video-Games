@@ -12,11 +12,11 @@ A playground for building small 3D browser games together by prompting Claude. T
 
 - `index.html` is the launcher page that links to every game.
 - `games/<game-name>/` holds one game: an `index.html` (page, HUD, styles) and a `main.js` (the game). Split `main.js` into more files only once it gets hard to follow.
-- `games/coin-hop/` is the starter game and a good reference for the patterns below.
+- `games/lanternwood/` is the first game, Lanternwood: a woodland arcade where a gnome explores lantern-lit woods. It's a good reference for the patterns below.
 
 ## Making a new game
 
-1. Create `games/<kebab-case-name>/index.html` and `main.js`, following `games/coin-hop/`.
+1. Create `games/<kebab-case-name>/index.html` and `main.js`, following `games/lanternwood/`.
 2. Add a card for it to the list in the root `index.html`.
 3. Get something playable on screen first, then add features one at a time.
 

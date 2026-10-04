@@ -1,7 +1,8 @@
 // The Top 10 board: the fastest times to pick every raspberry, shown at the end of each round.
 // It's saved in this browser, so it's still there the next time you play on this computer.
 
-const STORAGE_KEY = 'coin-hop-top-10';
+import { loadSaved, save } from './saved.js';
+
 const BOARD_SIZE = 10;
 const NAME_LENGTH = 10;
 
@@ -140,19 +141,11 @@ function format(time) {
 }
 
 function loadScores() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!Array.isArray(saved)) return [];
-    return saved.filter((entry) => typeof entry?.name === 'string' && Number.isFinite(entry?.time)).slice(0, BOARD_SIZE);
-  } catch {
-    return [];
-  }
+  const saved = loadSaved('top-10');
+  if (!Array.isArray(saved)) return [];
+  return saved.filter((entry) => typeof entry?.name === 'string' && Number.isFinite(entry?.time)).slice(0, BOARD_SIZE);
 }
 
 function saveScores() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
-  } catch {
-    // Some private browsing modes block saving. The board still works until the page is closed.
-  }
+  save('top-10', scores);
 }

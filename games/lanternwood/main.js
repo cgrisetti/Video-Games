@@ -6,6 +6,7 @@ import { setDanger } from './music.js';
 import { initMenu, isPaused, openMenu, menuInput } from './menu.js';
 import { createEffects } from './effects.js';
 import { playSwing, playBonk, playPop, playChomp } from './sounds.js';
+import { flickerLanterns } from './lantern.js';
 import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
 import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TRUNK_DIAMETER } from './scenery.js';
 import { showScoreboard, hideScoreboard } from './scoreboard.js';
@@ -694,6 +695,7 @@ const playerMiddle = new THREE.Vector3();
 function update(dt, controls) {
   worldTime += dt;
   updateCreek(dt);
+  flickerLanterns(worldTime);
 
   if (controls.restart || (finished && controls.pause)) restart();
   if (controls.swing && !caughtByWorm && gnome.swingStick()) playSwing();

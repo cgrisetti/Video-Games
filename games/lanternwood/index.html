@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Coin Hop</title>
+    <title>Lanternwood</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='17' r='15' fill='%23ffcf7a' opacity='.35'/%3E%3Cpath d='M12 4h8l1.5 3.5h-11z' fill='%233a2a1e'/%3E%3Cellipse cx='16' cy='17' rx='9.5' ry='10' fill='%23f6a03f'/%3E%3Cellipse cx='16' cy='17' rx='4.5' ry='10' fill='none' stroke='%23c4691f'/%3E%3Cellipse cx='13.5' cy='13.5' rx='3' ry='4' fill='%23ffe6a8' opacity='.85'/%3E%3Cpath d='M10.5 26.5h11l-1.5 3h-8z' fill='%233a2a1e'/%3E%3C/svg%3E"
+    />
     <style>
       /* The storybook look shared by the menu and the Top 10 board: cream paper, brown ink, a mossy frame. */
       :root {
@@ -67,6 +71,51 @@
         width: 116px;
         height: 34px;
         margin: 0 auto;
+      }
+      /* The title screen: a paper lantern hanging from a leafy branch, and the name, lit warm by it. */
+      .lantern-emblem {
+        display: block;
+        width: 132px;
+        height: 92px;
+        margin: -2px auto -6px;
+        overflow: visible;
+      }
+      .lantern-emblem .halo {
+        animation: flicker 3.2s ease-in-out infinite alternate;
+        transform-origin: 60px 50px;
+      }
+      @keyframes flicker {
+        30% {
+          opacity: 0.8;
+          transform: scale(0.96);
+        }
+        55% {
+          opacity: 1;
+          transform: scale(1.03);
+        }
+        to {
+          opacity: 0.88;
+          transform: scale(0.99);
+        }
+      }
+      .menu-card h2.brand {
+        font-size: 2.3rem;
+        letter-spacing: 0.02em;
+        text-shadow: 0 0 16px rgba(255, 186, 92, 0.7), 0 0 2px rgba(255, 230, 180, 0.9);
+      }
+      .brand-tagline {
+        margin: 0 0 4px;
+        font-size: 0.8rem;
+        font-variant: small-caps;
+        letter-spacing: 0.22em;
+        color: var(--frame);
+      }
+      .brand-tagline::before,
+      .brand-tagline::after {
+        content: '❦';
+        margin: 0 0.6em;
+        letter-spacing: 0;
+        color: var(--moss);
       }
 
       /* --- The HUD: raspberries picked and the clock, top left; the pause button, top right --- */
@@ -338,7 +387,8 @@
       @media (prefers-reduced-motion: reduce) {
         .menu-card,
         #berry-pill.bump,
-        #hud-hint {
+        #hud-hint,
+        .lantern-emblem .halo {
           animation: none;
         }
       }
@@ -520,8 +570,38 @@
 
     <div id="menu" hidden>
       <section class="menu-card storybook" role="dialog" aria-modal="true" aria-labelledby="menu-title">
-        <svg class="sprig" aria-hidden="true"><use href="#sprig" /></svg>
+        <svg class="lantern-emblem" viewBox="0 0 120 84" aria-hidden="true" data-start-only>
+          <defs>
+            <radialGradient id="lantern-halo">
+              <stop offset="0" stop-color="#ffd27a" stop-opacity="0.75" />
+              <stop offset="1" stop-color="#ffb347" stop-opacity="0" />
+            </radialGradient>
+            <radialGradient id="lantern-paper" cx="0.4" cy="0.38" r="0.7">
+              <stop offset="0" stop-color="#fff3c9" />
+              <stop offset="0.55" stop-color="#ffbf5e" />
+              <stop offset="1" stop-color="#e8812f" />
+            </radialGradient>
+          </defs>
+          <circle class="halo" cx="60" cy="50" r="36" fill="url(#lantern-halo)" />
+          <path d="M6 16 C 34 4, 86 4, 114 16" fill="none" stroke="#7a5230" stroke-width="2.2" stroke-linecap="round" />
+          <ellipse cx="22" cy="9" rx="10" ry="4.5" transform="rotate(-24 22 9)" fill="#5f8a46" />
+          <ellipse cx="36" cy="16" rx="8.5" ry="4" transform="rotate(20 36 16)" fill="#7ea55c" />
+          <ellipse cx="98" cy="9" rx="10" ry="4.5" transform="rotate(24 98 9)" fill="#5f8a46" />
+          <ellipse cx="85" cy="16" rx="8.5" ry="4" transform="rotate(-20 85 16)" fill="#7ea55c" />
+          <path d="M60 8 V24" stroke="#3a2a1e" stroke-width="1.4" />
+          <path d="M52 24 h16 l3 5 h-22 z" fill="#3a2a1e" />
+          <ellipse cx="60" cy="48" rx="20" ry="19.5" fill="url(#lantern-paper)" />
+          <g fill="none" stroke="rgba(170, 85, 25, 0.38)" stroke-width="1">
+            <ellipse cx="60" cy="48" rx="10.5" ry="19.5" />
+            <path d="M60 28.5 V67.5" />
+            <path d="M41 42 Q60 46 79 42 M41 54 Q60 58 79 54" />
+          </g>
+          <path d="M49 67 h22 l-3 5 h-16 z" fill="#3a2a1e" />
+          <path d="M60 72 V80" stroke="#c8325f" stroke-width="2.2" stroke-linecap="round" />
+        </svg>
+        <svg class="sprig" aria-hidden="true" data-pause-only><use href="#sprig" /></svg>
         <h2 id="menu-title">Paused</h2>
+        <p class="brand-tagline" data-start-only>A Woodland Arcade</p>
         <p id="menu-notice" hidden></p>
 
         <div class="menu-page" data-page="main">
