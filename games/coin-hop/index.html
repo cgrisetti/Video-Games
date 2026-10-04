@@ -26,7 +26,8 @@
         font-size: 1.4rem;
         font-weight: 700;
       }
-      #help {
+      #help,
+      #controller-help {
         margin-top: 6px;
         opacity: 0.85;
       }
@@ -197,6 +198,7 @@
       <div id="score"></div>
       <div id="timer"></div>
       <div id="help">WASD or arrow keys to move · Space to jump over rocks and logs · R to restart · Dodge the inch worms!</div>
+      <div id="controller-help" hidden>Controller: left stick or D-pad to move · ✕ to jump · Options to restart</div>
     </div>
     <section id="scoreboard" hidden>
       <svg class="sprig" viewBox="0 0 120 36" aria-hidden="true">
@@ -220,7 +222,7 @@
       <h2>Top 10 Raspberry Pickers</h2>
       <p id="result"></p>
       <ol id="scores"></ol>
-      <p class="again">Press <kbd>R</kbd> to play again</p>
+      <p class="again">Press <kbd>R</kbd> or <kbd>Options</kbd> to play again</p>
       <button id="reset-scores" type="button">Reset leaderboard</button>
     </section>
     <script type="module" src="./main.js"></script>

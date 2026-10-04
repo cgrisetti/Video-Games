@@ -87,14 +87,15 @@ export function createGnome() {
   let airAmount = 0; // Blends from 0 (on the ground) to 1 (in the air).
   let squash = 0; // A quick squash when landing, fading back to 0.
 
-  // Call once a frame. running: moving along the ground. inAir: jumping or falling.
-  // verticalSpeed: how fast it's going up or down. landed: it just hit the ground.
-  function animate(dt, { running, inAir, verticalSpeed, landed }) {
+  // Call once a frame. running: moving along the ground. pace: how fast, from 0 to 1 (full speed).
+  // inAir: jumping or falling. verticalSpeed: how fast it's going up or down. landed: it just hit the ground.
+  function animate(dt, { running, pace = 1, inAir, verticalSpeed, landed }) {
     time += dt;
     const blend = 1 - Math.exp(-15 * dt); // How quickly it eases from one pose to the next.
-    runAmount += ((running && !inAir ? 1 : 0) - runAmount) * blend;
+    const stride = 0.4 + 0.6 * pace; // Walking slowly takes shorter, slower steps.
+    runAmount += ((running && !inAir ? stride : 0) - runAmount) * blend;
     airAmount += ((inAir ? 1 : 0) - airAmount) * blend;
-    if (running) runPhase += RUN_CYCLE_SPEED * dt;
+    if (running) runPhase += RUN_CYCLE_SPEED * stride * dt;
     if (landed) squash = 1;
     squash *= Math.exp(-10 * dt);
 

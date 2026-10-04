@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createGnome } from './gnome.js';
+import { readInput, isControllerConnected } from './input.js';
 import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
 import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TRUNK_DIAMETER } from './scenery.js';
 import { showScoreboard, hideScoreboard } from './scoreboard.js';
@@ -52,6 +53,7 @@ const PLAY_HALF = ARENA_SIZE / 2 - HEDGE_THICKNESS; // From the middle of the fi
 
 const scoreEl = document.getElementById('score');
 const timerEl = document.getElementById('timer');
+const controllerHelpEl = document.getElementById('controller-help');
 
 // --- Renderer, scene and camera ---
 
@@ -424,23 +426,6 @@ function shortestTurn(angle) {
   return Math.atan2(Math.sin(angle), Math.cos(angle));
 }
 
-// --- Input ---
-
-const keys = new Set();
-
-window.addEventListener('keydown', (event) => {
-  if (event.target instanceof HTMLInputElement) return; // Typing a name for the Top 10 shouldn't move the gnome.
-  if (event.code === 'Space' || event.code.startsWith('Arrow')) event.preventDefault();
-  keys.add(event.code);
-  if (event.code === 'KeyR') restart();
-});
-window.addEventListener('keyup', (event) => keys.delete(event.code));
-window.addEventListener('blur', () => keys.clear());
-
-function isDown(...codes) {
-  return codes.some((code) => keys.has(code));
-}
-
 // --- Game state ---
 
 let verticalSpeed = 0;
@@ -473,6 +458,7 @@ function restart() {
 function updateHud() {
   scoreEl.textContent = `Raspberries: ${collected} / ${BERRY_COUNT}`;
   timerEl.textContent = `Time: ${elapsed.toFixed(1)}s`;
+  controllerHelpEl.hidden = !isControllerConnected();
 }
 
 // Either way a round ends, the Top 10 board comes up.
@@ -497,15 +483,16 @@ function update(dt) {
   worldTime += dt;
   updateCreek(dt);
 
-  // Run around on the ground. Wading through the creek is slower.
-  move.set(0, 0, 0);
-  if (isDown('KeyW', 'ArrowUp')) move.z -= 1;
-  if (isDown('KeyS', 'ArrowDown')) move.z += 1;
-  if (isDown('KeyA', 'ArrowLeft')) move.x -= 1;
-  if (isDown('KeyD', 'ArrowRight')) move.x += 1;
-  const running = move.lengthSq() > 0 && !caughtByWorm;
+  // Keyboard or controller: which way to go, how hard, and whether to jump or play again.
+  const controls = readInput();
+  if (controls.restart) restart();
+
+  // Run around on the ground. Pushing the stick part way walks slower; wading through the creek is slower too.
+  move.set(controls.moveX, 0, controls.moveZ);
+  const pace = move.length(); // 0 standing still, 1 full speed.
+  const running = pace > 0 && !caughtByWorm;
   if (running) {
-    move.normalize().multiplyScalar(MOVE_SPEED * (wading ? CREEK_SLOWDOWN : 1) * dt);
+    move.multiplyScalar(MOVE_SPEED * (wading ? CREEK_SLOWDOWN : 1) * dt);
     player.position.add(move);
     // Turn smoothly to face the way the gnome is running.
     const turn = shortestTurn(Math.atan2(move.x, move.z) - player.rotation.y);
@@ -518,7 +505,7 @@ function update(dt) {
   const floor = floorUnderGnome();
   // Walking down a slope, stay on the ground instead of floating off it for a moment.
   if (grounded && verticalSpeed <= 0 && player.position.y - floor < 0.35) player.position.y = floor;
-  if (player.position.y <= floor && isDown('Space') && !caughtByWorm) verticalSpeed = JUMP_SPEED;
+  if (player.position.y <= floor && controls.jump && !caughtByWorm) verticalSpeed = JUMP_SPEED;
   verticalSpeed -= GRAVITY * dt;
   player.position.y += verticalSpeed * dt;
   const landed = player.position.y < floor && verticalSpeed < -3;
@@ -528,7 +515,7 @@ function update(dt) {
   }
   grounded = player.position.y <= floor;
   if (grounded) wading = isInWater(player.position.x, player.position.z);
-  gnome.animate(dt, { running, inAir: !grounded, verticalSpeed, landed });
+  gnome.animate(dt, { running, pace, inAir: !grounded, verticalSpeed, landed });
   playerMiddle.copy(player.position);
   playerMiddle.y += GNOME_MIDDLE;
 
