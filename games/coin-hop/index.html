@@ -5,82 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Coin Hop</title>
     <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-        font-family: system-ui, sans-serif;
-      }
-      canvas {
-        display: block;
-      }
-      #hud {
-        position: absolute;
-        top: 16px;
-        left: 16px;
-        color: white;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75), 0 0 10px rgba(0, 0, 0, 0.4);
-        pointer-events: none;
-      }
-      #score,
-      #timer {
-        font-size: 1.4rem;
-        font-weight: 700;
-      }
-      #help,
-      #controller-help {
-        margin-top: 6px;
-        opacity: 0.85;
-      }
-      /* The little music panel in the bottom corner: on/off, volume, and forest or 8-bit. */
-      #music {
-        position: absolute;
-        left: 16px;
-        bottom: 16px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: rgba(30, 45, 30, 0.45);
-        color: white;
-        font-size: 0.85rem;
-      }
-      #music button {
-        padding: 2px 6px;
-        border: none;
-        border-radius: 8px;
-        background: none;
-        color: inherit;
-        font: inherit;
-        cursor: pointer;
-      }
-      #music button:hover {
-        background: rgba(255, 255, 255, 0.18);
-      }
-      #music-volume {
-        width: 90px;
-        accent-color: #f4c44c;
-      }
-      /* The Top 10 board: a page from a storybook, with a twig, leaves and a raspberry on top. */
-      #scoreboard {
+      /* The storybook look shared by the menu and the Top 10 board: cream paper, brown ink, a mossy frame. */
+      :root {
         --paper: #fbf4df;
         --paper-edge: #ecdcb2;
         --ink: #4a3826;
         --ink-soft: #7a6448;
         --frame: #8b6a43;
         --moss: #6e9150;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        box-sizing: border-box;
-        width: min(360px, calc(100vw - 32px));
-        max-height: calc(100vh - 32px);
-        overflow-y: auto;
-        padding: 14px 24px 30px;
+        --highlight: rgba(244, 196, 76, 0.38);
+        --hud-back: rgba(30, 45, 30, 0.5);
+        --book-font: Palatino, 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+        --title-font: Luminari, Palatino, 'Palatino Linotype', Georgia, serif;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: var(--book-font);
+      }
+      canvas {
+        display: block;
+      }
+      kbd {
+        display: inline-block;
+        min-width: 1em;
+        padding: 0 6px;
+        border: 1px solid var(--frame);
+        border-bottom-width: 2px;
+        border-radius: 5px;
+        background: #fffaf0;
         color: var(--ink);
-        font-family: Palatino, 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+        font-family: inherit;
+        font-size: 0.85em;
+        line-height: 1.5;
         text-align: center;
+      }
+      .storybook {
+        box-sizing: border-box;
+        color: var(--ink);
+        font-family: var(--book-font);
         background:
           radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.6), transparent 40%),
           radial-gradient(circle at 88% 92%, rgba(205, 172, 110, 0.3), transparent 45%),
@@ -89,18 +55,305 @@
         border-radius: 16px;
         box-shadow: 0 0 0 5px #f6ecd2, 0 0 0 7px var(--moss), 0 16px 40px rgba(45, 32, 12, 0.45);
       }
+      .storybook h2 {
+        margin: 0;
+        font-family: var(--title-font);
+        font-size: 1.5rem;
+        font-weight: normal;
+        color: #5a3b1f;
+      }
       .sprig {
         display: block;
         width: 116px;
         height: 34px;
         margin: 0 auto;
       }
-      #scoreboard h2 {
-        margin: 0;
-        font-family: Luminari, Palatino, 'Palatino Linotype', Georgia, serif;
-        font-size: 1.5rem;
+
+      /* --- The HUD: raspberries picked and the clock, top left; the pause button, top right --- */
+      #hud {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        max-width: calc(100vw - 150px);
+        pointer-events: none;
+      }
+      .hud-pill {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 14px 5px 10px;
+        border-radius: 999px;
+        background: var(--hud-back);
+        color: #fffaf0;
+        font-size: 1.2rem;
+        font-weight: bold;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+      }
+      .hud-pill svg {
+        width: 22px;
+        height: 24px;
+        flex: none;
+      }
+      #berry-pill {
+        color: #e0386a; /* The raspberry icon's color. */
+      }
+      #berry-pill.golden {
+        color: #ffc93c;
+        box-shadow: 0 0 0 2px rgba(255, 201, 60, 0.75), 0 0 14px rgba(255, 201, 60, 0.6);
+      }
+      #berry-pill span {
+        color: #fffaf0;
+      }
+      #berry-pill.bump {
+        animation: bump 0.35s ease-out;
+      }
+      @keyframes bump {
+        40% {
+          transform: scale(1.18);
+        }
+      }
+      #hud-hint {
+        font-size: 1rem;
         font-weight: normal;
-        color: #5a3b1f;
+        font-style: italic;
+        animation: glow 1.6s ease-in-out infinite alternate;
+      }
+      @keyframes glow {
+        to {
+          background: rgba(110, 82, 18, 0.6);
+        }
+      }
+      #pause-button {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px 6px 12px;
+        border: none;
+        border-radius: 999px;
+        background: var(--hud-back);
+        color: #fffaf0;
+        font: inherit;
+        cursor: pointer;
+      }
+      #pause-button:hover,
+      #pause-button:focus-visible {
+        background: rgba(30, 45, 30, 0.75);
+        outline: none;
+      }
+      #pause-button svg {
+        width: 14px;
+        height: 16px;
+      }
+
+      /* A little message that pops up at the bottom for a moment ("Music off", "Controller connected"). */
+      #toast {
+        position: absolute;
+        left: 50%;
+        bottom: 28px;
+        padding: 6px 16px;
+        border-radius: 999px;
+        background: var(--hud-back);
+        color: #fffaf0;
+        transform: translate(-50%, 12px);
+        opacity: 0;
+        transition: opacity 0.25s, transform 0.25s;
+        pointer-events: none;
+      }
+      #toast.showing {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
+
+      /* --- The menu: the start screen and the pause menu, with Settings and How to play --- */
+      #menu {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: rgba(24, 36, 22, 0.35);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+      }
+      .menu-card {
+        position: relative;
+        width: min(440px, 100%);
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+        padding: 14px 22px 12px;
+        text-align: center;
+        animation: open-book 0.16s ease-out;
+      }
+      @keyframes open-book {
+        from {
+          transform: scale(0.96);
+          opacity: 0;
+        }
+      }
+      .menu-card h3 {
+        margin: 4px 0 8px;
+        font-size: 1.1rem;
+        font-weight: normal;
+        font-style: italic;
+        color: var(--ink-soft);
+      }
+      #menu-notice {
+        margin: 8px 0 0;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: rgba(200, 50, 95, 0.12);
+        color: #8e2445;
+      }
+      .tagline,
+      .goal {
+        margin: 4px 0 10px;
+        font-style: italic;
+        color: var(--ink-soft);
+        line-height: 1.4;
+      }
+      .goal {
+        text-align: left;
+        font-style: normal;
+        color: var(--ink);
+      }
+      .menu-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 10px 0 4px;
+      }
+      /* Every row you can pick. The chosen one gets a golden glow and a raspberry beside it. */
+      .menu-list > button,
+      .setting {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 40px;
+        padding: 4px 14px 4px 34px;
+        border: none;
+        border-radius: 10px;
+        background: none;
+        color: var(--ink);
+        font: inherit;
+        font-size: 1.1rem;
+        text-align: left;
+        cursor: pointer;
+      }
+      .menu-list > .chosen {
+        background: var(--highlight);
+        outline: none;
+      }
+      .menu-list > .chosen::before {
+        content: '';
+        position: absolute;
+        left: 9px;
+        top: 50%;
+        width: 17px;
+        height: 20px;
+        transform: translateY(-50%);
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'%3E%3Cg fill='%23c8325f' stroke='%239e2049' stroke-width='0.6'%3E%3Ccircle cx='9' cy='13' r='3.2'/%3E%3Ccircle cx='15' cy='13' r='3.2'/%3E%3Ccircle cx='6' cy='18' r='3.2'/%3E%3Ccircle cx='12' cy='18' r='3.2'/%3E%3Ccircle cx='18' cy='18' r='3.2'/%3E%3Ccircle cx='9' cy='23' r='3.2'/%3E%3Ccircle cx='15' cy='23' r='3.2'/%3E%3Ccircle cx='12' cy='27' r='3'/%3E%3C/g%3E%3Cpath d='M12 10 L6 7 L10 6 L12 2 L14 6 L18 7 Z' fill='%234e9a3a'/%3E%3C/svg%3E")
+          no-repeat center / contain;
+      }
+      .menu-list > button.primary {
+        font-weight: bold;
+      }
+      .menu-list > button.back {
+        margin-top: 6px;
+        color: var(--ink-soft);
+      }
+      /* A setting you change with left and right: ‹ Forest › */
+      .choice {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 120px;
+        justify-content: space-between;
+        padding: 2px 4px;
+        border: none;
+        background: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        outline: none;
+      }
+      .choice .arrow {
+        color: var(--frame);
+        font-weight: bold;
+      }
+      .slider {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .volume {
+        width: 110px;
+        accent-color: #c8325f;
+        outline: none;
+      }
+      .slider output {
+        width: 3em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .controls {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+        text-align: left;
+      }
+      .controls th {
+        padding: 2px 6px 6px;
+        font-weight: normal;
+        font-style: italic;
+        color: var(--ink-soft);
+      }
+      .controls td {
+        padding: 5px 6px;
+        border-top: 1px dashed rgba(139, 106, 67, 0.3);
+      }
+      .controls td:first-child {
+        color: var(--ink-soft);
+      }
+      #menu-prompts {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px dashed rgba(139, 106, 67, 0.35);
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+      }
+      #menu-prompts span + span {
+        margin-left: 12px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .menu-card,
+        #berry-pill.bump,
+        #hud-hint {
+          animation: none;
+        }
+      }
+
+      /* --- The Top 10 board: a page from the storybook, with a twig, leaves and a raspberry on top --- */
+      #scoreboard {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(360px, calc(100vw - 32px));
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+        padding: 14px 24px 30px;
+        text-align: center;
       }
       #result {
         margin: 4px 0 10px;
@@ -163,7 +416,7 @@
         color: rgba(122, 100, 72, 0.45);
       }
       #scores .yours {
-        background: rgba(244, 196, 76, 0.38);
+        background: var(--highlight);
       }
       #scores input {
         flex: 1;
@@ -197,13 +450,6 @@
         font-size: 0.92rem;
         color: var(--ink-soft);
       }
-      .again kbd {
-        padding: 0 6px;
-        border: 1px solid var(--frame);
-        border-radius: 4px;
-        background: #fffaf0;
-        font-family: inherit;
-      }
       #reset-scores {
         position: absolute;
         right: 10px;
@@ -224,36 +470,138 @@
     </style>
   </head>
   <body>
-    <div id="hud">
-      <div id="score"></div>
-      <div id="timer"></div>
-      <div id="help">WASD or arrow keys to move · Space to jump · F to swing your stick · R to restart · Dodge (or bonk) the inch worms!</div>
-      <div id="controller-help" hidden>Controller: left stick or D-pad to move · ✕ to jump · □ to swing · Options to restart</div>
-    </div>
-    <div id="music">
-      <button id="music-mute" type="button" title="Music on or off (M)">♪</button>
-      <input id="music-volume" type="range" min="0" max="100" aria-label="Music volume" />
-      <button id="music-style" type="button" title="Switch between the forest music and the 8-bit version">Forest</button>
-    </div>
-    <section id="scoreboard" hidden>
-      <svg class="sprig" viewBox="0 0 120 36" aria-hidden="true">
+    <!-- Little pictures used in several places: the twig and raspberry, and a raspberry on its own. -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="sprig" viewBox="0 0 120 36">
         <path d="M8 27 C 35 15, 85 15, 112 27" fill="none" stroke="#7a5230" stroke-width="2" stroke-linecap="round" />
         <ellipse cx="27" cy="17" rx="10" ry="4.5" transform="rotate(-28 27 17)" fill="#5f8a46" />
         <ellipse cx="41" cy="26" rx="8.5" ry="4" transform="rotate(22 41 26)" fill="#7ea55c" />
         <ellipse cx="93" cy="17" rx="10" ry="4.5" transform="rotate(28 93 17)" fill="#5f8a46" />
         <ellipse cx="79" cy="26" rx="8.5" ry="4" transform="rotate(-22 79 26)" fill="#7ea55c" />
-        <g fill="#c8325f" stroke="#9e2049" stroke-width="0.6">
-          <circle cx="57" cy="17" r="3.2" />
-          <circle cx="63" cy="17" r="3.2" />
-          <circle cx="54" cy="22" r="3.2" />
-          <circle cx="60" cy="22" r="3.2" />
-          <circle cx="66" cy="22" r="3.2" />
-          <circle cx="57" cy="27" r="3.2" />
-          <circle cx="63" cy="27" r="3.2" />
-          <circle cx="60" cy="31.5" r="3" />
+        <use href="#berry" x="48" y="4" width="24" height="28" style="color: #c8325f" />
+      </symbol>
+      <!-- Takes its color from the surrounding text color, so it can turn gold. -->
+      <symbol id="berry" viewBox="0 0 24 28">
+        <g fill="currentColor" stroke="rgba(60, 0, 20, 0.35)" stroke-width="0.6">
+          <circle cx="9" cy="13" r="3.2" />
+          <circle cx="15" cy="13" r="3.2" />
+          <circle cx="6" cy="18" r="3.2" />
+          <circle cx="12" cy="18" r="3.2" />
+          <circle cx="18" cy="18" r="3.2" />
+          <circle cx="9" cy="23" r="3.2" />
+          <circle cx="15" cy="23" r="3.2" />
+          <circle cx="12" cy="27" r="3" />
         </g>
-        <path d="M60 14 L54 11 L58 10 L60 6 L62 10 L66 11 Z" fill="#4e9a3a" />
-      </svg>
+        <path d="M12 10 L6 7 L10 6 L12 2 L14 6 L18 7 Z" fill="#4e9a3a" />
+      </symbol>
+    </svg>
+
+    <div id="hud">
+      <div class="hud-pill" id="berry-pill" aria-label="Raspberries picked">
+        <svg aria-hidden="true"><use href="#berry" /></svg>
+        <span id="score"></span>
+      </div>
+      <div class="hud-pill" aria-label="Time">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <circle cx="12" cy="13" r="8.5" />
+          <path d="M12 8.5 V13 L15 15 M9.5 2.5 H14.5" />
+        </svg>
+        <span id="timer"></span>
+      </div>
+      <div class="hud-pill" id="hud-hint" hidden>Follow the fox to the golden raspberry!</div>
+    </div>
+
+    <button id="pause-button" type="button" aria-label="Pause">
+      <svg viewBox="0 0 14 16" aria-hidden="true" fill="currentColor"><rect x="1" y="1" width="4" height="14" rx="1.2" /><rect x="9" y="1" width="4" height="14" rx="1.2" /></svg>
+      <kbd id="pause-key">Esc</kbd>
+    </button>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <div id="menu" hidden>
+      <section class="menu-card storybook" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+        <svg class="sprig" aria-hidden="true"><use href="#sprig" /></svg>
+        <h2 id="menu-title">Paused</h2>
+        <p id="menu-notice" hidden></p>
+
+        <div class="menu-page" data-page="main">
+          <p class="tagline" data-start-only>Pick the raspberries, find the golden one, and keep away from the inch worms!</p>
+          <div class="menu-list">
+            <button type="button" class="primary" data-action="resume">Resume</button>
+            <button type="button" data-action="restart" data-pause-only>Restart round</button>
+            <button type="button" data-open="settings">Settings</button>
+            <button type="button" data-open="how-to-play">How to play</button>
+            <button type="button" data-action="quit">Quit to game list</button>
+          </div>
+        </div>
+
+        <div class="menu-page" data-page="settings" hidden>
+          <h3>Settings</h3>
+          <div class="menu-list">
+            <div class="setting">
+              <span id="music-label">Music</span>
+              <button type="button" id="music-toggle" class="choice" role="switch" aria-labelledby="music-label">
+                <span class="arrow" aria-hidden="true">‹</span><span class="value"></span><span class="arrow" aria-hidden="true">›</span>
+              </button>
+            </div>
+            <label class="setting">
+              <span>Music volume</span>
+              <span class="slider">
+                <input id="music-volume" class="volume" type="range" min="0" max="100" step="5" />
+                <output id="music-volume-value" for="music-volume"></output>
+              </span>
+            </label>
+            <label class="setting">
+              <span>Sound effects</span>
+              <span class="slider">
+                <input id="sound-volume" class="volume" type="range" min="0" max="100" step="5" />
+                <output id="sound-volume-value" for="sound-volume"></output>
+              </span>
+            </label>
+            <div class="setting">
+              <span id="style-label">Music style</span>
+              <button type="button" id="music-style" class="choice" aria-labelledby="style-label">
+                <span class="arrow" aria-hidden="true">‹</span><span class="value"></span><span class="arrow" aria-hidden="true">›</span>
+              </button>
+            </div>
+            <button type="button" class="back" data-action="back">Back</button>
+          </div>
+        </div>
+
+        <div class="menu-page" data-page="how-to-play" hidden>
+          <h3>How to play</h3>
+          <p class="goal">
+            Pick all 9 raspberries. Then your fox friend sniffs out the golden raspberry: follow it! The clock stops when you pick
+            the golden one.
+          </p>
+          <p class="goal">
+            If an inch worm touches you, the round is over. Bonk one on the head with your stick and it's knocked out for a few
+            seconds, but each bonk makes it a little faster.
+          </p>
+          <table class="controls">
+            <thead>
+              <tr><th></th><th>Keyboard</th><th>Controller</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Move</td><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows</td><td>Left stick or D-pad</td></tr>
+              <tr><td>Jump</td><td><kbd>Space</kbd></td><td><kbd>✕</kbd></td></tr>
+              <tr><td>Swing stick</td><td><kbd>F</kbd></td><td><kbd>□</kbd></td></tr>
+              <tr><td>Pause</td><td><kbd>Esc</kbd> or <kbd>P</kbd></td><td><kbd>Options</kbd></td></tr>
+              <tr><td>Restart</td><td><kbd>R</kbd></td><td>From this menu</td></tr>
+              <tr><td>Music on/off</td><td><kbd>M</kbd></td><td>In Settings</td></tr>
+            </tbody>
+          </table>
+          <div class="menu-list">
+            <button type="button" class="back" data-action="back">Back</button>
+          </div>
+        </div>
+
+        <footer id="menu-prompts" aria-hidden="true"></footer>
+      </section>
+    </div>
+
+    <section id="scoreboard" class="storybook" hidden>
+      <svg class="sprig" aria-hidden="true"><use href="#sprig" /></svg>
       <h2>Top 10 Raspberry Pickers</h2>
       <p id="result"></p>
       <ol id="scores"></ol>

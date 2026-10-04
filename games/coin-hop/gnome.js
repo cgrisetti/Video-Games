@@ -228,9 +228,11 @@ export function createGnome() {
     }
   }
 
-  // Start a stick swing, unless one is already going.
+  // Start a stick swing, unless one is already going. Says whether a new swing started.
   function swingStick() {
-    if (swingTime < 0) swingTime = 0;
+    if (swingTime >= 0) return false;
+    swingTime = 0;
+    return true;
   }
 
   // Is the stick in the part of the swing that can hit something?

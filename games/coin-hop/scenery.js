@@ -305,67 +305,194 @@ function instancedPlants(geometry, plants) {
 
 // --- The woods outside the field ---
 
-// The woods are laid out like the seeds of a sunflower: tree number n sits a golden angle round
-// from the one before, a little further out each time. That spreads them evenly with no clumps
-// or gaps. Out where the woods are, your eye picks out 34 gentle spiral arms; each arm gets one
-// kind of tree, in Fibonacci numbers: 13 arms of pines, 8 of round trees, 5 of maples, 5 of
-// poplars and 3 of live oaks. Neighboring arms take turns down this list, so the colors mix.
-const SUNFLOWER_SEEDS = 800;
-const ARMS = 34;
-const ARM_KINDS = [
-  'pine', 'round', 'maple', 'pine', 'poplar', 'round', 'pine', 'oak', 'pine', 'round', 'maple', 'pine',
-  'poplar', 'round', 'pine', 'maple', 'round', 'pine', 'oak', 'poplar', 'pine', 'round', 'maple', 'pine',
-  'round', 'poplar', 'pine', 'oak', 'pine', 'pine', 'maple', 'poplar', 'round', 'pine',
-];
+// Real woods (and the painted forests in Ghibli films) aren't spread out evenly, and they don't
+// stand in rows. Trees grow in groves: a big old tree with a few younger ones of the same kind
+// around it, shrubs and saplings at their feet, and open glades between the groves where you can
+// see deeper in. So the woods are built from groves, following a few rules that environment
+// artists and garden designers use:
+//   - Groves are scattered at random, but never crowded: each keeps clear space around it.
+//   - Each grove has an odd number of trees (1, 3, 5 or 7), which looks natural; even numbers look planted.
+//   - A grove is mostly one kind of tree, so the autumn colors come in drifts instead of confetti.
+//   - Within a grove the trees step down in size from the biggest (big, medium, small), and each
+//     sits a golden angle round from the last, like seeds in a sunflower, so no three line up.
+//   - The edge of the woods is ragged: some groves come right up to the hedge, others leave a meadow.
+//   - Groves further back are taller, but each varies, so the treetops make a rolling skyline.
+//   - Further back, trees are a little paler and bluer (as faraway things look), which adds depth.
+//   - Shrubs, saplings, stumps and the odd bare dead tree fill in underneath, as in a real wood.
+const WOODS_SEED = 7; // Change it for a different (but just as carefully arranged) woods.
+const GROVE_GAP = [5, 2.9]; // Space kept around each grove: at the hedge, and at the back (where the woods are thicker).
+const GLADE_CHANCE = [0.35, 0.06]; // How often a grove spot is left open as a glade: at the hedge, and at the back.
+const GROVE_SIZES = [1, 3, 3, 5, 5, 7, 7]; // Odd numbers of trees. Groves near the hedge use only the smaller ones.
+// Which kinds of tree the groves are, in Fibonacci numbers: mostly evergreen, with autumn color.
+const GROVE_KINDS = { pine: 13, round: 8, maple: 5, poplar: 5, oak: 3 };
+const DEPTH_OF_WOODS = 14; // Groves this far back from the hedge are at their tallest.
 
-// Which arm a seed is on. Next-door arms are 13 apart, so walk the list in steps of 13.
-function kindOfSeed(n) {
-  const arm = n % ARMS;
-  return ARM_KINDS[(arm * 13) % ARMS];
+// Extra kinds that only grow out in the woods: a bare dead tree and a stump.
+TREES.snag = (() => {
+  const grey = new THREE.MeshStandardMaterial({ color: 0x8a8178, roughness: 1 });
+  const arms = [
+    branch(new THREE.Vector3(0, 1.4, 0), new THREE.Vector3(0.55, 2.1, 0.1), 0.06, 0.03),
+    branch(new THREE.Vector3(0, 1.9, 0), new THREE.Vector3(-0.45, 2.55, -0.15), 0.05, 0.025),
+    branch(new THREE.Vector3(0, 2.3, 0), new THREE.Vector3(0.2, 2.75, 0.35), 0.04, 0.02),
+  ];
+  return {
+    parts: [[mergeGeometries([new THREE.CylinderGeometry(0.06, 0.15, 2.9, 7).translate(0, 1.45, 0), ...arms]), grey]],
+    blockRadius: 0.2,
+    canopyRadius: 0.5,
+    height: 2.9,
+  };
+})();
+TREES.stump = {
+  parts: [
+    [new THREE.CylinderGeometry(0.2, 0.26, 0.35, 9).translate(0, 0.17, 0), trunkMaterial],
+    [new THREE.CylinderGeometry(0.17, 0.17, 0.02, 9).translate(0, 0.36, 0), new THREE.MeshStandardMaterial({ color: 0xc9a26b, roughness: 0.9 })],
+  ],
+  blockRadius: 0.26,
+  canopyRadius: 0.3,
+  height: 0.37,
+};
+
+// The same random numbers every time the page loads, so the woods always look the same
+// (and can be tuned). Change WOODS_SEED for a different layout. The painted backdrop uses it too.
+export function seededRandom(seed) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
-// Trees beyond the hedges on the west, north and east sides: mostly green, with streaks of
-// autumn maples and poplars and a few big live oaks. Small trees stand nearest the hedge and they
-// grow taller further back, like seats in a theater. They're "instanced": each tree part is drawn
-// for every tree of that kind in one go, which keeps hundreds of trees fast.
+// Trees beyond the hedges on the west, north and east sides. They're "instanced": each tree part
+// is drawn for every tree of that kind in one go, which keeps hundreds of trees fast.
 export function makeOuterWoods(arenaSize) {
+  const random = seededRandom(WOODS_SEED);
+  const between = (low, high) => low + (high - low) * random();
+  const pick = (list) => list[Math.floor(random() * list.length)];
   const edge = arenaSize / 2 + 0.8;
   const reach = 39; // The painted hills start at 40.
+  const backFromHedge = (x, z) => Math.max(Math.abs(x), -z) - edge;
+  const depthOf = (x, z) => THREE.MathUtils.clamp(backFromHedge(x, z) / DEPTH_OF_WOODS, 0, 1); // 0 at the hedge, 1 deep in.
   const trees = [];
-  for (let n = 1; n <= SUNFLOWER_SEEDS; n++) {
-    const distance = reach * Math.sqrt(n / SUNFLOWER_SEEDS);
-    const x = distance * Math.cos(n * GOLDEN_ANGLE);
-    const z = distance * Math.sin(n * GOLDEN_ANGLE);
-    const kind = kindOfSeed(n);
-    const backFromHedge = Math.max(Math.abs(x), -z) - edge;
-    const size = 0.85 + 0.75 * THREE.MathUtils.clamp(backFromHedge / 12, 0, 1) ** (1 / PHI) + 0.16 * (goldenFraction(n % 13) - 0.5);
-    const spread = TREES[kind].canopyRadius * size;
+  const shrubs = [];
+  const fits = (x, z, spread, closeness) => {
     const outsideField = Math.abs(x) > edge + spread * 0.4 || z < -(edge + spread * 0.4); // Leaves may hang a little over the hedge.
-    if (!outsideField || z > edge || distance + spread > reach || creekDistance(x, z) < CREEK_HALF_WIDTH + 0.8) continue;
-    if (trees.some((tree) => Math.hypot(tree.x - x, tree.z - z) < (tree.spread + spread) * 0.45)) continue;
-    trees.push({ x, z, kind, size, spread, turn: n * GOLDEN_ANGLE, shade: 0.82 + 0.26 * goldenFraction(n % 21) });
+    if (!outsideField || z > edge - 1 || Math.hypot(x, z) + spread > reach || creekDistance(x, z) < CREEK_HALF_WIDTH + 0.8) return false;
+    return !trees.some((tree) => Math.hypot(tree.x - x, tree.z - z) < (tree.spread + spread) * closeness);
+  };
+  const plant = (kind, x, z, size) => {
+    const spread = TREES[kind].canopyRadius * size;
+    const depth = depthOf(x, z);
+    trees.push({ x, z, kind, size, spread, turn: random() * Math.PI * 2, tint: hazeTint(depth, between(0.88, 1.06)) });
+  };
+
+  // 1. Where the groves go: random spots, each keeping its distance from the others.
+  const groves = [];
+  for (let attempt = 0; attempt < 6000; attempt++) {
+    const x = between(-reach, reach);
+    const z = between(-reach, edge);
+    if (backFromHedge(x, z) < 0 || Math.hypot(x, z) > reach - 1) continue;
+    const gap = THREE.MathUtils.lerp(...GROVE_GAP, depthOf(x, z));
+    if (groves.some((grove) => Math.hypot(grove.x - x, grove.z - z) < gap)) continue;
+    groves.push({ x, z });
+  }
+
+  // 2. Fill each grove, nearest the hedge first, so the front of the woods gets the best spots.
+  groves.sort((a, b) => backFromHedge(a.x, a.z) - backFromHedge(b.x, b.z));
+  const kinds = Object.entries(GROVE_KINDS).flatMap(([kind, count]) => Array(count).fill(kind));
+  for (const grove of groves) {
+    const depth = depthOf(grove.x, grove.z);
+    if (random() < THREE.MathUtils.lerp(...GLADE_CHANCE, depth)) continue; // Leave a glade.
+    const kind = pick(kinds);
+    // Live oaks sprawl, so they stand alone. Near the hedge, groves are smaller and the edge more ragged.
+    const count = kind === 'oak' ? 1 : pick(depth < 0.25 ? GROVE_SIZES.slice(0, 5) : GROVE_SIZES);
+    const biggest = (1 + 0.6 * depth) * between(0.9, 1.15);
+    const spacing = TREES[kind].canopyRadius * biggest * between(0.7, 0.9);
+    const startAngle = random() * Math.PI * 2;
+    for (let k = 0; k < count; k++) {
+      // Biggest in the middle, then each one further out and smaller, a golden angle round.
+      const angle = startAngle + k * GOLDEN_ANGLE;
+      const out = spacing * Math.sqrt(k) * between(0.85, 1.25);
+      const x = grove.x + Math.cos(angle) * out;
+      const z = grove.z + Math.sin(angle) * out;
+      // One tree in five is a neighbor of a different kind, mixed in at the edge of the grove.
+      const treeKind = k > 0 && random() < 0.2 ? pick(['pine', 'round']) : kind;
+      const size = biggest * (1 - 0.32 * Math.sqrt(k / count)) * between(0.92, 1.08);
+      if (fits(x, z, TREES[treeKind].canopyRadius * size, k === 0 ? 0.5 : 0.38)) plant(treeKind, x, z, size);
+    }
+
+    // 3. Underneath: shrubs on the side facing the field, a sapling or two, now and then a stump
+    // or a bare dead tree. Only near the front, where you can see them.
+    if (depth > 0.55) continue;
+    const toField = Math.atan2(-grove.z, -grove.x);
+    for (let i = 0, shrubCount = 2 + Math.floor(random() * 3); i < shrubCount; i++) {
+      const angle = toField + between(-1.3, 1.3);
+      const out = spacing * between(1.1, 2);
+      addShrub(shrubs, grove.x + Math.cos(angle) * out, grove.z + Math.sin(angle) * out, between(1.3, 2.4), random, depth);
+    }
+    if (random() < 0.5) {
+      const angle = toField + between(-1.6, 1.6);
+      const x = grove.x + Math.cos(angle) * spacing * between(1.4, 2.2);
+      const z = grove.z + Math.sin(angle) * spacing * between(1.4, 2.2);
+      const sapling = pick(['pine', 'round', kind === 'oak' ? 'round' : kind]);
+      const size = between(0.45, 0.62);
+      if (fits(x, z, TREES[sapling].canopyRadius * size, 0.5)) plant(sapling, x, z, size);
+    }
+    if (random() < 0.18) {
+      const odd = random() < 0.5 ? 'stump' : 'snag';
+      const angle = random() * Math.PI * 2;
+      const x = grove.x + Math.cos(angle) * spacing * 1.6;
+      const z = grove.z + Math.sin(angle) * spacing * 1.6;
+      if (fits(x, z, TREES[odd].canopyRadius, 0.6)) plant(odd, x, z, between(0.9, 1.15));
+    }
   }
 
   const woods = new THREE.Group();
   for (const kind of Object.keys(TREES)) {
     const ofKind = trees.filter((tree) => tree.kind === kind);
+    if (ofKind.length === 0) continue;
     for (const [geometry, material] of TREES[kind].parts) woods.add(instancedTrees(geometry, material, ofKind));
   }
+  woods.add(instancedPlants(hedgeGeometry, shrubs));
   return woods;
 }
 
-// One tree part, drawn once for every tree in the list, each with its own spot, size, turn and shade.
+// A shrub under the trees: a big rounded bush with one or two smaller ones tucked against it,
+// each a little smaller than the last (the same "big, medium, small" as the groves).
+const SHRUB_GREENS = [0x3f7f3a, 0x4c8c42, 0x5d984b, 0x35703a];
+
+function addShrub(shrubs, x, z, size, random, depth) {
+  const color = new THREE.Color(SHRUB_GREENS[Math.floor(random() * SHRUB_GREENS.length)]).multiply(hazeTint(depth, 0.85 + 0.25 * random()));
+  let angle = random() * Math.PI * 2;
+  for (let i = 0, count = 1 + Math.floor(random() * 3); i < count; i++) {
+    const s = size * PHI ** (-i * 0.6);
+    const out = i === 0 ? 0 : 0.3 * size;
+    const px = x + Math.cos(angle) * out;
+    const pz = z + Math.sin(angle) * out;
+    const height = new THREE.Vector3(s, s * (0.7 + 0.2 * random()), s);
+    shrubs.push({ position: new THREE.Vector3(px, 0.42 * height.y * 0.55, pz), turn: random() * Math.PI * 2, size: height, color });
+    angle += GOLDEN_ANGLE;
+  }
+}
+
+// A tint for something in the woods: darker and richer at the front, paler and a little bluer
+// deep in, the way faraway hills and trees look through the air.
+function hazeTint(depth, brightness) {
+  const haze = depth * 0.55;
+  return new THREE.Color(1 - 0.08 * haze, 1 - 0.01 * haze, 1 + 0.12 * haze).multiplyScalar(brightness * (0.92 + 0.14 * haze));
+}
+
+// One tree part, drawn once for every tree in the list, each with its own spot, size, turn and tint.
 function instancedTrees(geometry, material, trees) {
   const mesh = new THREE.InstancedMesh(geometry, material, trees.length);
   const matrix = new THREE.Matrix4();
   const position = new THREE.Vector3();
   const turn = new THREE.Quaternion();
   const size = new THREE.Vector3();
-  const shade = new THREE.Color();
   trees.forEach((tree, i) => {
     turn.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, tree.turn);
     mesh.setMatrixAt(i, matrix.compose(position.set(tree.x, 0, tree.z), turn, size.setScalar(tree.size)));
-    mesh.setColorAt(i, shade.setScalar(tree.shade));
+    mesh.setColorAt(i, tree.tint);
   });
   mesh.castShadow = true;
   return mesh;

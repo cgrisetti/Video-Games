@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 import { createGnome } from './gnome.js';
 import { createFox } from './fox.js';
-import { readInput, isControllerConnected } from './input.js';
+import { readInput } from './input.js';
 import { setDanger } from './music.js';
+import { initMenu, isPaused, openMenu, menuInput } from './menu.js';
+import { createEffects } from './effects.js';
+import { playSwing, playBonk, playPop, playChomp } from './sounds.js';
 import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
 import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TRUNK_DIAMETER } from './scenery.js';
 import { showScoreboard, hideScoreboard } from './scoreboard.js';
@@ -22,6 +25,7 @@ const TURN_SPEED = 12; // How quickly the gnome turns to face the way it's runni
 const GNOME_RADIUS = 0.3; // How close the gnome can get to trees and rocks.
 const GNOME_MIDDLE = 0.45; // Height of the middle of the gnome, where raspberries and worms touch it.
 const CAMERA_LOOK_ABOVE = 2; // Aim the camera this far above the gnome, so the painted sky shows.
+const RESULTS_DELAY = 1.3; // Seconds to enjoy the golden raspberry popping before the Top 10 board comes up.
 
 // Trees block you completely. Rocks and logs are low enough to jump over, or to stand on.
 const TREE_COUNT = 14;
@@ -68,7 +72,8 @@ const PLAY_HALF = ARENA_SIZE / 2 - HEDGE_THICKNESS; // From the middle of the fi
 
 const scoreEl = document.getElementById('score');
 const timerEl = document.getElementById('timer');
-const controllerHelpEl = document.getElementById('controller-help');
+const berryPill = document.getElementById('berry-pill');
+const hintEl = document.getElementById('hud-hint');
 
 // --- Renderer, scene and camera ---
 
@@ -115,6 +120,8 @@ for (const bridge of bridges) scene.add(bridge.model);
 const gnome = createGnome();
 const player = gnome.model;
 scene.add(player);
+
+const effects = createEffects(scene, camera); // Berries popping, and their numbers floating up.
 
 // --- Trees, rocks and logs ---
 
@@ -614,8 +621,10 @@ let elapsed = 0;
 let worldTime = 0;
 let finished = false;
 let caughtByWorm = false;
+let resultsIn = 0; // Seconds until the Top 10 board comes up, after picking the golden raspberry.
 
 function restart() {
+  effects.clear();
   player.position.set(0, 0, START_Z);
   player.rotation.set(0, 0, 0);
   camera.position.copy(player.position).add(cameraOffset);
@@ -626,6 +635,7 @@ function restart() {
   elapsed = 0;
   finished = false;
   caughtByWorm = false;
+  resultsIn = 0;
   goldenOut = false;
   goldenBerry.visible = false;
   hideScoreboard();
@@ -636,23 +646,43 @@ function restart() {
   updateHud();
 }
 
+// The raspberries picked (the golden one is number 10) and the clock.
 function updateHud() {
-  scoreEl.textContent = goldenOut ? 'Find the golden raspberry! Follow the fox.' : `Raspberries: ${collected} / ${BERRY_COUNT}`;
-  timerEl.textContent = `Time: ${elapsed.toFixed(1)}s`;
-  controllerHelpEl.hidden = !isControllerConnected();
+  scoreEl.textContent = `${collected} / ${BERRY_COUNT + 1}`;
+  berryPill.classList.toggle('golden', collected >= BERRY_COUNT);
+  hintEl.hidden = !goldenOut;
+  timerEl.textContent = `${elapsed.toFixed(1)}s`;
 }
 
-// Either way a round ends, the Top 10 board comes up.
+// Pick a raspberry: count it, pop it, and give the counter a little bump.
+function pickBerry(berry, golden, onGone) {
+  collected++;
+  playPop(collected, golden);
+  effects.popBerry(berry, { number: collected, golden, floor: groundHeightAt(berry.position.x, berry.position.z), onGone });
+  berryPill.classList.remove('bump');
+  void berryPill.offsetWidth; // Start the bump animation over, even if the last one is still going.
+  berryPill.classList.add('bump');
+}
+
+// Either way a round ends, the Top 10 board comes up: straight away if a worm caught you,
+// or after a moment to enjoy the golden raspberry popping if you picked it.
 function win() {
   finished = true;
-  showScoreboard(elapsed);
+  resultsIn = RESULTS_DELAY;
 }
 
-function caught() {
+function caught(worm) {
   if (caughtByWorm) return; // Two worms can reach the gnome in the same moment.
   finished = true;
   caughtByWorm = true;
+  playChomp(screenSide(worm.headBall.position));
   showScoreboard(null);
+}
+
+// How far left (-1) or right (1) of the middle of the screen something is, so its sound comes from that side.
+const onScreen = new THREE.Vector3();
+function screenSide(position) {
+  return onScreen.copy(position).project(camera).x;
 }
 
 // --- Game loop ---
@@ -660,14 +690,13 @@ function caught() {
 const move = new THREE.Vector3();
 const playerMiddle = new THREE.Vector3();
 
-function update(dt) {
+// `controls` is the keyboard or controller: which way to go, how hard, and whether to jump, swing or play again.
+function update(dt, controls) {
   worldTime += dt;
   updateCreek(dt);
 
-  // Keyboard or controller: which way to go, how hard, and whether to jump, swing or play again.
-  const controls = readInput();
-  if (controls.restart) restart();
-  if (controls.swing && !caughtByWorm) gnome.swingStick();
+  if (controls.restart || (finished && controls.pause)) restart();
+  if (controls.swing && !caughtByWorm && gnome.swingStick()) playSwing();
 
   // Run around on the ground. Pushing the stick part way walks slower; wading through the creek is slower too.
   move.set(controls.moveX, 0, controls.moveZ);
@@ -707,9 +736,8 @@ function update(dt) {
     berry.rotation.y += 1.5 * dt;
     berry.position.y = berry.userData.floatHeight + Math.sin(worldTime * 2.5 + berry.userData.bobOffset) * 0.08;
     if (!finished && berry.position.distanceTo(playerMiddle) < 1) {
-      scene.remove(berry);
       berries.splice(i, 1);
-      collected++;
+      pickBerry(berry, false, () => scene.remove(berry));
       if (collected === BERRY_COUNT) spawnGoldenBerry();
     }
   }
@@ -722,9 +750,14 @@ function update(dt) {
     goldenBerry.userData.rays.scale.setScalar(3.4 + Math.sin(worldTime * 3) * 0.25);
     if (!finished && goldenBerry.position.distanceTo(playerMiddle) < 1.3) {
       goldenOut = false;
-      goldenBerry.visible = false;
+      pickBerry(goldenBerry, true, () => (goldenBerry.visible = false));
       win();
     }
+  }
+  effects.update(dt);
+  if (resultsIn > 0) {
+    resultsIn -= dt;
+    if (resultsIn <= 0) showScoreboard(elapsed);
   }
 
   // A swing of the stick that catches an inch worm on the head stuns it.
@@ -733,7 +766,10 @@ function update(dt) {
     for (const worm of worms) {
       if (isDazed(worm)) continue;
       const headRadius = WORM_RADIUS * 1.25;
-      if (stick.some((point) => point.distanceTo(worm.headBall.position) < headRadius + STICK_REACH)) stunWorm(worm);
+      if (stick.some((point) => point.distanceTo(worm.headBall.position) < headRadius + STICK_REACH)) {
+        stunWorm(worm);
+        playBonk(screenSide(worm.headBall.position));
+      }
     }
   }
 
@@ -741,7 +777,7 @@ function update(dt) {
   if (!finished) {
     for (const worm of worms) {
       updateWorm(worm, dt);
-      if (!isDazed(worm) && worm.headBall.position.distanceTo(playerMiddle) < WORM_CATCH_DISTANCE) caught();
+      if (!isDazed(worm) && worm.headBall.position.distanceTo(playerMiddle) < WORM_CATCH_DISTANCE) caught(worm);
     }
   }
   updateFox(dt);
@@ -768,11 +804,17 @@ function update(dt) {
 let lastTime = null;
 
 renderer.setAnimationLoop((time) => {
-  // Cap the step so a paused tab doesn't make everything jump forward.
+  // Cap the step so a hidden tab doesn't make everything jump forward.
   const dt = lastTime === null ? 0 : Math.min((time - lastTime) / 1000, 0.05);
   lastTime = time;
-  update(dt);
+  const controls = readInput();
+  // While the menu is open, the world stands still and the controller works the menu instead.
+  if (isPaused()) menuInput(controls);
+  else if (controls.pause && !finished) openMenu();
+  else update(dt, controls);
   renderer.render(scene, camera);
 });
 
 restart();
+// Open on the start screen. Pausing by itself (when you switch windows) only makes sense mid-round.
+initMenu({ restart, canPause: () => !finished });

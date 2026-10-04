@@ -1,28 +1,33 @@
 // Background music. The forest theme loops quietly under everything, and a darker "danger" layer,
 // made to line up with it exactly, fades in as an inch worm gets close. There's an 8-bit version
 // of the theme too. The music files are made by tools/audio/make-music.mjs (npm run music).
+// The Settings menu (menu.js) changes the volume, turns it on or off, and picks the version.
 
 const TARGET_LOUDNESS = -18; // How loud the music plays at full volume (LUFS), so it sits under the action.
 const DANGER_LOUDEST = 0.9; // The danger layer at its strongest, compared with the theme.
 const THEME_DIP = 0.3; // How much the theme steps back while the danger layer is in.
 const FADE_SECONDS = 0.6; // How quickly the danger layer swells and fades.
+const PAUSED_LEVEL = 0.6; // While the game is paused, the music is a little quieter...
+const PAUSED_MUFFLE = 700; // ...and muffled, as if through a door (the highest pitch let through, in Hz).
 const STORAGE_KEY = 'coin-hop-music';
-
-const volumeSlider = document.getElementById('music-volume');
-const muteButton = document.getElementById('music-mute');
-const styleButton = document.getElementById('music-style');
 
 const format = new Audio().canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'wav';
 const context = new AudioContext();
+export { context as audioContext }; // The sound effects (sounds.js) play through it too.
 const master = context.createGain(); // The volume setting.
+const muffle = context.createBiquadFilter();
 const themeGain = context.createGain();
 const dangerGain = context.createGain();
-master.connect(context.destination);
+muffle.type = 'lowpass';
+muffle.frequency.value = 20000;
 themeGain.connect(master);
 dangerGain.connect(master);
+master.connect(muffle);
+muffle.connect(context.destination);
 dangerGain.gain.value = 0;
 
-const settings = loadSettings(); // { volume: 0-1, muted, style: 'forest' or '8bit' }
+// What the player picked: { volume: 0-1, muted, style: 'forest' or '8bit' }. Change it through the functions below.
+export const musicSettings = loadSettings();
 let tracks = {}; // Decoded music, and how much to turn each one down to reach TARGET_LOUDNESS.
 let loopSeconds = 0;
 let startedAt = null; // When the loops started playing, on the audio clock.
@@ -30,8 +35,8 @@ let themeSource = null;
 let themeLevel = 1;
 let dangerLevel = 1;
 let lastDanger = 0;
+let paused = false;
 
-showSettings();
 applyVolume();
 loadMusic();
 
@@ -65,8 +70,8 @@ async function loadMusic() {
 function startIfReady() {
   if (startedAt !== null || context.state !== 'running' || !tracks.forest) return;
   startedAt = context.currentTime + 0.05;
-  themeSource = playLoop(tracks[settings.style], themeGain, startedAt, 0);
-  themeLevel = tracks[settings.style].level;
+  themeSource = playLoop(tracks[musicSettings.style], themeGain, startedAt, 0);
+  themeLevel = tracks[musicSettings.style].level;
   themeGain.gain.value = themeLevel;
   if (tracks.danger) {
     playLoop(tracks.danger, dangerGain, startedAt, 0);
@@ -95,11 +100,10 @@ export function setDanger(amount) {
   themeGain.gain.setTargetAtTime((1 - THEME_DIP * amount) * themeLevel, now, FADE_SECONDS / 3);
 }
 
-// Switch between the forest theme and the 8-bit version, picking up at the same spot in the tune.
-function setStyle(style) {
-  settings.style = style;
+// Switch between the forest theme ('forest') and the 8-bit version ('8bit'), picking up at the same spot in the tune.
+export function setMusicStyle(style) {
+  musicSettings.style = style;
   saveSettings();
-  showSettings();
   if (startedAt === null || !tracks[style]) return;
   const offset = (((context.currentTime - startedAt) % loopSeconds) + loopSeconds) % loopSeconds;
   themeSource.stop();
@@ -108,47 +112,30 @@ function setStyle(style) {
   themeGain.gain.setTargetAtTime((1 - THEME_DIP * lastDanger) * themeLevel, context.currentTime, 0.05);
 }
 
+// 0 (silent) to 1 (full). Moving the volume also turns the music back on.
+export function setMusicVolume(volume) {
+  musicSettings.volume = Math.min(Math.max(volume, 0), 1);
+  musicSettings.muted = false;
+  applyVolume();
+  saveSettings();
+}
+
+export function setMusicMuted(muted) {
+  musicSettings.muted = muted;
+  applyVolume();
+  saveSettings();
+}
+
+// Muffle the music while the game is paused, and open it back up when play starts again.
+export function setMusicPaused(isPaused) {
+  paused = isPaused;
+  muffle.frequency.setTargetAtTime(paused ? PAUSED_MUFFLE : 20000, context.currentTime, 0.12);
+  applyVolume();
+}
+
 function applyVolume() {
-  master.gain.setTargetAtTime(settings.muted ? 0 : settings.volume, context.currentTime, 0.05);
-}
-
-// --- The little music panel: on/off, volume and style ---
-
-function showSettings() {
-  volumeSlider.value = Math.round(settings.volume * 100);
-  muteButton.textContent = settings.muted ? '🔇' : '♪';
-  muteButton.setAttribute('aria-pressed', String(!settings.muted));
-  styleButton.textContent = settings.style === '8bit' ? '8-bit' : 'Forest';
-}
-
-volumeSlider.addEventListener('input', () => {
-  settings.volume = volumeSlider.value / 100;
-  settings.muted = false;
-  applyVolume();
-  showSettings();
-  saveSettings();
-});
-// Hand the keyboard straight back to the game, so the arrow keys move the gnome, not the slider.
-volumeSlider.addEventListener('change', () => volumeSlider.blur());
-volumeSlider.addEventListener('pointerup', () => volumeSlider.blur());
-
-muteButton.addEventListener('click', () => {
-  toggleMute();
-  muteButton.blur();
-});
-styleButton.addEventListener('click', () => {
-  setStyle(settings.style === '8bit' ? 'forest' : '8bit');
-  styleButton.blur();
-});
-window.addEventListener('keydown', (event) => {
-  if (event.code === 'KeyM' && !event.repeat && !(event.target instanceof HTMLInputElement && event.target.type === 'text')) toggleMute();
-});
-
-function toggleMute() {
-  settings.muted = !settings.muted;
-  applyVolume();
-  showSettings();
-  saveSettings();
+  const volume = musicSettings.muted ? 0 : musicSettings.volume * (paused ? PAUSED_LEVEL : 1);
+  master.gain.setTargetAtTime(volume, context.currentTime, 0.05);
 }
 
 function loadSettings() {
@@ -162,7 +149,7 @@ function loadSettings() {
 
 function saveSettings() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(musicSettings));
   } catch {
     // Some private browsing modes block saving. The settings still work until the page closes.
   }

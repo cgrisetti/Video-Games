@@ -1,32 +1,63 @@
 import * as THREE from 'three';
-import { PHI, goldenFraction, fibonacciLong } from './golden.js';
+import { PHI, GOLDEN_ANGLE } from './golden.js';
+import { seededRandom } from './scenery.js';
 
 // The painted backdrop: a soft blue sky with big puffy clouds over layers of rolling wooded
-// hills, in a hand-painted storybook style. It's painted once onto a canvas with ordinary 2D
-// drawing, then wrapped around the inside of a big open cylinder that surrounds the world.
+// hills and faraway blue mountains, in a hand-painted storybook style. It's painted once onto a
+// canvas with ordinary 2D drawing, then wrapped around the inside of a big open cylinder that
+// surrounds the world.
+//
+// It follows the same rules as the 3D woods, the way a background painter would:
+//   - Trees grow in groves of odd numbers (1, 3, 5, 7), big, medium and small, with bare grassy
+//     stretches between them, instead of an even fringe of trees along every hilltop.
+//   - Each grove is mostly one kind, so autumn colors come in drifts.
+//   - Each layer of hills is a row of rounded humps of different sizes, a few big ones among
+//     smaller ones, so the skyline rolls instead of repeating.
+//   - Faraway things are paler, bluer and softer (the air between gets in the way), and a little
+//     mist lies in the valleys between layers, so each layer stands clear of the one behind.
+//   - Clouds gather in groups, a big one with a smaller one or two nearby, with open sky between.
 
 export const SKY_COLOR = '#74b6e8'; // The top of the sky. The scene background uses it too, so they meet without a seam.
 export const HAZE_COLOR = '#c2dbe0'; // The pale blue-green of faraway hills. The fog uses it too.
 
 const RADIUS = 40;
 const BOTTOM = -1; // The backdrop covers world heights from BOTTOM to TOP.
-const TOP = 13;
-const WIDTH = 4096; // Canvas size in pixels. The painting repeats three times around the circle.
-const HEIGHT = 680;
-const REPEATS = 3;
+const TOP = 15;
+const WIDTH = 6144; // Canvas size in pixels. The painting goes round the circle twice.
+const HEIGHT = 777; // Tall enough for the clouds to billow without their tops being cut off.
+const REPEATS = 2;
+const SEED = 11; // Change it for a different (but just as carefully arranged) painting.
+
+// The layers, from farthest to nearest. Each one is lower, greener and less hazy than the one
+// behind, and its trees are φ (the golden ratio) times bigger. Hill counts are Fibonacci numbers.
+const LAYERS = [
+  { mountains: true, height: 7.4, rise: 3.6, hills: 8, light: '#bccde0', dark: '#aec2d6' },
+  { height: 6.1, rise: 2.6, hills: 8, light: '#b3d1c4', dark: '#a0c3b4', treeSize: 12, haze: 0.6 },
+  { height: 4.6, rise: 2.3, hills: 13, light: '#98c387', dark: '#7aa96f', treeSize: 12 * PHI, haze: 0.32 },
+  { height: 3.1, rise: 1.7, hills: 21, light: '#6ea85f', dark: '#4f8a4a', treeSize: 12 * PHI * PHI, haze: 0.08 },
+];
+// The kinds of tree in the groves, in the same Fibonacci mix as the woods around the field.
+const KINDS = { pine: 13, round: 8, maple: 5, poplar: 5, oak: 3 };
+const TREE_COLORS = { pine: '#2f6f3c', round: '#4f8f40', maple: '#a8503a', poplar: '#c99a3e', oak: '#476b37' };
+// Small groves come in odd numbers; faraway woods read as one mass, in Fibonacci numbers of trees.
+const GROVE_SIZES = [3, 5, 7, 13, 21, 34];
+const GLADE_CHANCE = 0.3; // How often a spot for a grove is left as open grass.
 
 export function createBackdrop() {
   const canvas = document.createElement('canvas');
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
   const ctx = canvas.getContext('2d');
+  const random = seededRandom(SEED);
 
-  paintSky(ctx);
-  // Hills from farthest to nearest: each layer is greener and darker, and its trees are
-  // φ (the golden ratio) times bigger than the layer behind.
-  paintHills(ctx, { height: 7.4, roll: 1.1, light: '#b4d2c6', dark: '#9fc2b6', trees: '#93b8ab', treeSize: 9 });
-  paintHills(ctx, { height: 5.7, roll: 0.9, light: '#8fbd83', dark: '#73a56c', trees: '#5f955a', treeSize: 9 * PHI });
-  paintHills(ctx, { height: 3.9, roll: 0.7, light: '#64a05b', dark: '#4a8547', trees: '#3e7a3f', treeSize: 9 * PHI * PHI });
+  paintSky(ctx, random);
+  LAYERS.forEach((layer, i) => {
+    const crest = makeCrest(layer, random);
+    paintHills(ctx, layer, crest, random);
+    if (!layer.mountains) paintGroves(ctx, layer, crest, random);
+    const next = LAYERS[i + 1];
+    if (next) paintMist(ctx, next);
+  });
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -55,6 +86,17 @@ function wrapped(x, reach, paint) {
   if (x + reach > WIDTH) paint(x - WIDTH);
 }
 
+// The distance from a to b across the canvas, the short way round (it wraps).
+function across(a, b) {
+  const d = Math.abs(a - b) % WIDTH;
+  return Math.min(d, WIDTH - d);
+}
+
+// Mix two colors: amount 0 is all `from`, 1 is all `to`.
+function mix(from, to, amount) {
+  return `#${new THREE.Color(from).lerp(new THREE.Color(to), amount).getHexString()}`;
+}
+
 // A soft round dab of paint: one color in the middle, shading to another at the edge.
 function blob(ctx, x, y, radius, middle, edge) {
   const paint = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
@@ -66,33 +108,73 @@ function blob(ctx, x, y, radius, middle, edge) {
   ctx.fill();
 }
 
-// Blue sky, deep at the top and pale near the hills, with big puffy clouds.
-function paintSky(ctx) {
-  const sky = ctx.createLinearGradient(0, 0, 0, row(2));
+// --- Sky and clouds ---
+
+function paintSky(ctx, random) {
+  const sky = ctx.createLinearGradient(0, 0, 0, row(3));
   sky.addColorStop(0, SKY_COLOR);
-  sky.addColorStop(0.55, '#a9d3f1');
-  sky.addColorStop(1, '#dcedf2');
+  sky.addColorStop(0.5, '#a9d3f1');
+  sky.addColorStop(0.85, '#d8ecf3');
+  sky.addColorStop(1, '#eef3ea'); // A warm glow low in the sky.
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  for (let i = 0; i < 9; i++) {
-    const x = (i + Math.random() * 0.6) * (WIDTH / 9);
-    const base = row(THREE.MathUtils.randFloat(8.6, 10.2));
-    const width = THREE.MathUtils.randFloat(160, 380);
-    const puffs = cloudPuffs(width);
-    wrapped(x, width, (cx) => paintCloud(ctx, cx, base, puffs));
+  // Long thin wisps low down, behind the mountains.
+  for (let i = 0; i < 7; i++) {
+    const x = random() * WIDTH;
+    const y = row(8.2 + random() * 1.6);
+    const length = 300 + random() * 500;
+    wrapped(x, length, (cx) => {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(cx, y, length / 2, 5 + random() * 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Groups of clouds: a big billowing one, sometimes with a smaller one drifting nearby.
+  const groups = spread(random, 5, WIDTH / 6.5);
+  for (const x of groups) {
+    const members = 1 + Math.floor(random() * 2);
+    let width = 320 + random() * 200;
+    let offset = 0;
+    let base = row(9.6 + random() * 1.4);
+    for (let k = 0; k < members; k++) {
+      const puffs = cloudPuffs(width, k === 0 ? 1.25 : 0.9, random);
+      const cx = x + offset;
+      wrapped(cx, width, (wx) => paintCloud(ctx, wx, base, puffs));
+      // The next one is smaller (by the golden ratio), off to one side and a little higher or lower.
+      offset += (random() < 0.5 ? -1 : 1) * width * (0.85 + random() * 0.5);
+      width /= PHI;
+      base += (random() - 0.5) * 70;
+    }
   }
 }
 
-// A cloud is a row of round puffs, biggest in the middle.
-function cloudPuffs(width) {
-  const count = Math.round(width / 28);
+// Random spots along the canvas, each at least `gap` from the others: spread out, never in a row.
+function spread(random, count, gap) {
+  const spots = [];
+  for (let attempt = 0; attempt < 500 && spots.length < count; attempt++) {
+    const x = random() * WIDTH;
+    if (spots.every((other) => across(other, x) > gap)) spots.push(x);
+  }
+  return spots;
+}
+
+// A cloud is a mound of round puffs, biggest in the middle, on a flat bottom. `billow` makes it taller.
+function cloudPuffs(width, billow, random) {
+  const count = Math.max(4, Math.round(width / 26));
   const puffs = [];
   for (let i = 0; i < count; i++) {
     const t = i / (count - 1); // 0 at the left end, 1 at the right.
-    const bulge = Math.sin(Math.PI * t);
-    const radius = width * (0.09 + 0.13 * bulge) * THREE.MathUtils.randFloat(0.8, 1.15);
-    puffs.push({ dx: (t - 0.5) * width, dy: -radius * (0.4 + 0.5 * bulge) - Math.random() * 10, radius });
+    const bulge = Math.sin(Math.PI * t) ** 0.8;
+    const radius = width * (0.08 + 0.13 * bulge) * (0.8 + random() * 0.35);
+    puffs.push({ dx: (t - 0.5) * width, dy: -radius * (0.35 + 0.6 * bulge * billow) - random() * 10, radius });
+  }
+  // A few more on top, for the tallest middle part.
+  for (let i = 0; i < 3 * billow; i++) {
+    const radius = width * (0.1 + random() * 0.06);
+    puffs.push({ dx: (random() - 0.5) * width * 0.4, dy: -width * 0.22 * billow - random() * 20, radius });
   }
   return puffs;
 }
@@ -107,86 +189,177 @@ function paintCloud(ctx, x, base, puffs) {
   }
 }
 
-// One layer of rolling hills, with a fringe of trees along the top and more scattered down the slopes.
-function paintHills(ctx, layer) {
-  // A few gentle waves, each fitting a whole number of times across the canvas so the ends join up.
-  const waves = [3, 7, 13].map((count, i) => ({ count, size: layer.roll / (i + 1), shift: Math.random() * Math.PI * 2 }));
-  const crest = (x) =>
-    row(layer.height + waves.reduce((sum, w) => sum + w.size * Math.sin((x / WIDTH) * w.count * Math.PI * 2 + w.shift), 0));
+// --- Hills and mountains ---
 
-  // The hill itself, shaded from light along the top to darker below.
+// The top edge of a layer: a row of rounded humps (or pointed peaks, for mountains) of different
+// widths and heights. Where two overlap, the taller one shows, like hills one behind another.
+function makeCrest(layer, random) {
+  const humps = [];
+  const spacing = WIDTH / layer.hills;
+  for (let i = 0; i < layer.hills; i++) {
+    const big = random() < 0.3; // A few big hills among the smaller ones.
+    humps.push({
+      x: (i + random() * 0.8) * spacing,
+      width: spacing * (big ? 0.75 : 0.4 + random() * 0.25), // Half its width, really.
+      rise: layer.rise * (big ? 0.85 + random() * 0.3 : 0.35 + random() * 0.4),
+    });
+  }
+  const ripple = random() * Math.PI * 2;
+  const swell = random() * Math.PI * 2;
+  const heights = new Float32Array(WIDTH + 1);
+  for (let x = 0; x <= WIDTH; x++) {
+    let height = 0;
+    for (const hump of humps) {
+      const u = across(x, hump.x) / hump.width;
+      if (u >= 1) continue;
+      const shape = layer.mountains ? (1 - u) ** 1.25 * (1 + 0.3 * u) : Math.sqrt(1 - u * u); // Peaks, or domes.
+      height = Math.max(height, hump.rise * shape);
+    }
+    // A long slow swell underneath, so there are no flat stretches between hills,
+    // and a gentle wobble along the top, so no edge is perfectly smooth.
+    const under = layer.rise * 0.18 * (1 + Math.sin((x / WIDTH) * Math.PI * 2 * 3 + swell));
+    heights[x] = layer.height + Math.max(height, under) + 0.06 * Math.sin((x / WIDTH) * Math.PI * 2 * 89 + ripple);
+  }
+  return (x) => heights[Math.round(((x % WIDTH) + WIDTH) % WIDTH)];
+}
+
+function paintHills(ctx, layer, crest, random) {
   const hill = new Path2D();
   hill.moveTo(0, HEIGHT);
-  for (let x = 0; x <= WIDTH; x += 8) hill.lineTo(x, crest(x));
+  for (let x = 0; x <= WIDTH; x += 4) hill.lineTo(x, row(crest(x)));
   hill.lineTo(WIDTH, HEIGHT);
   hill.closePath();
-  const shading = ctx.createLinearGradient(0, row(layer.height + layer.roll * 1.8), 0, HEIGHT);
+  const shading = ctx.createLinearGradient(0, row(layer.height + layer.rise), 0, row(layer.height - 3));
   shading.addColorStop(0, layer.light);
   shading.addColorStop(1, layer.dark);
   ctx.fillStyle = shading;
   ctx.fill(hill);
 
-  // Soft dabs of lighter and darker paint inside the hill, like brush strokes.
   ctx.save();
   ctx.clip(hill);
-  for (let i = 0; i < 260; i++) {
-    const x = Math.random() * WIDTH;
-    const y = crest(x) + Math.random() * (HEIGHT - crest(x));
-    const across = 20 + Math.random() * 50;
-    const tall = 6 + Math.random() * 12;
-    ctx.fillStyle = Math.random() < 0.5 ? 'rgba(255, 255, 230, 0.07)' : 'rgba(20, 60, 30, 0.07)';
-    wrapped(x, across, (dx) => {
+  // Sunlight along the tops, like a painter's rim light.
+  const top = new Path2D();
+  for (let x = -8; x <= WIDTH + 8; x += 4) top.lineTo(x, row(crest(x)) + 4);
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = 'rgba(255, 252, 225, 0.16)';
+  ctx.stroke(top);
+  // Long soft strokes following the slope, like the brush marks of meadows and fields.
+  for (let i = 0; i < WIDTH / 60; i++) {
+    const x = random() * WIDTH;
+    const y = row(crest(x)) + 12 + random() * 70;
+    const length = 60 + random() * 160;
+    ctx.fillStyle = random() < 0.5 ? 'rgba(255, 255, 230, 0.06)' : 'rgba(20, 60, 30, 0.06)';
+    wrapped(x, length, (dx) => {
       ctx.beginPath();
-      ctx.ellipse(dx, y, across, tall, 0, 0, Math.PI * 2);
+      ctx.ellipse(dx, y, length, 4 + random() * 5, (row(crest(x + 40)) - row(crest(x - 40))) / 80, 0, Math.PI * 2);
       ctx.fill();
     });
   }
   ctx.restore();
+}
 
-  // Trees: a dense fringe along the top of the hill, spaced in the Fibonacci rhythm of long and
-  // short gaps (in the golden ratio), with sizes from the golden sequence so neighbors differ.
-  for (let k = 0, x = 0; x < WIDTH; k++) {
-    const size = layer.treeSize * (0.75 + 0.5 * goldenFraction(k));
-    const round = fibonacciLong(k + 3);
-    wrapped(x, size, (tx) => paintTree(ctx, tx, crest(x) + size * 0.35, size, layer.trees, round));
-    x += layer.treeSize * (fibonacciLong(k) ? 0.95 : 0.95 / PHI);
+// A soft band of mist in the valleys, just where the next layer of hills will stand in front.
+function paintMist(ctx, next) {
+  const top = row(next.height + next.rise * 0.9);
+  const bottom = row(next.height - 0.4);
+  const mist = ctx.createLinearGradient(0, top, 0, bottom);
+  mist.addColorStop(0, 'rgba(226, 238, 240, 0)');
+  mist.addColorStop(1, 'rgba(226, 238, 240, 0.55)');
+  ctx.fillStyle = mist;
+  ctx.fillRect(0, top, WIDTH, bottom - top);
+}
+
+// --- Trees ---
+
+// Groves along the hills: some on the hilltops, breaking the skyline, some down the slopes.
+function paintGroves(ctx, layer, crest, random) {
+  const kinds = Object.entries(KINDS).flatMap(([kind, count]) => Array(count).fill(kind));
+  const groveGap = layer.treeSize * 5;
+  const trees = [];
+  for (const x of spread(random, Math.round(WIDTH / groveGap), groveGap)) {
+    if (random() < GLADE_CHANCE) continue; // Leave it as open grass.
+    const kind = kinds[Math.floor(random() * kinds.length)];
+    const count = kind === 'oak' ? 1 : GROVE_SIZES[Math.floor(random() * GROVE_SIZES.length)];
+    const down = random() < 0.45 ? 0 : random() * layer.rise * 1.3; // On the top, or this far down the slope (in world units).
+    const biggest = layer.treeSize * (0.95 + random() * 0.35);
+    const startAngle = random() * Math.PI * 2;
+    for (let k = 0; k < count; k++) {
+      // Biggest first, then each one a golden angle round and a little further out, and smaller.
+      const angle = startAngle + k * GOLDEN_ANGLE;
+      const out = biggest * 0.5 * Math.sqrt(k) * (0.8 + random() * 0.4);
+      const tx = x + Math.cos(angle) * out;
+      const ty = row(crest(tx) - down) + Math.sin(angle) * out * 0.3 + biggest * 0.3;
+      const neighbor = k > 0 && random() < 0.2; // One in five is a different kind, at the edge.
+      trees.push({
+        x: tx,
+        y: ty,
+        size: biggest * (1 - 0.3 * Math.sqrt(k / count)) * (0.92 + random() * 0.16),
+        kind: neighbor ? (random() < 0.5 ? 'pine' : 'round') : kind,
+        shade: 0.9 + random() * 0.2,
+      });
+    }
   }
-  // A few more down the slope, spread evenly along the hill by the golden sequence.
-  for (let i = 0; i < WIDTH / (layer.treeSize * 3); i++) {
-    const x = goldenFraction(i) * WIDTH;
-    const size = layer.treeSize * (0.6 + 0.5 * goldenFraction(i + 7));
-    const y = crest(x) + size * (1 + 3 * (((i * 3) % 8) / 8));
-    const round = fibonacciLong(i);
-    wrapped(x, size, (tx) => paintTree(ctx, tx, y, size, layer.trees, round));
+  // Paint from the back (higher up the canvas) to the front, so nearer trees overlap farther ones.
+  trees.sort((a, b) => a.y - b.y);
+  for (const tree of trees) wrapped(tree.x, tree.size * 2, (tx) => paintTree(ctx, tx, tree.y, tree, layer));
+}
+
+// A little painted tree in three tones: shadow on the left, its own color, and sunlight on the right.
+// It's mixed with the haze color by how far away its layer is.
+function paintTree(ctx, x, y, tree, layer) {
+  const { size, kind } = tree;
+  const base = mix(new THREE.Color(TREE_COLORS[kind]).multiplyScalar(tree.shade).getStyle(), HAZE_COLOR, layer.haze);
+  const shadow = mix(base, '#1d3b2a', 0.35 * (1 - layer.haze));
+  const light = mix(base, '#fff6d0', 0.28);
+  const trunk = mix('#5b4030', HAZE_COLOR, layer.haze);
+
+  if (size > 14 && kind !== 'pine') {
+    ctx.fillStyle = trunk;
+    ctx.fillRect(x - size * 0.05, y - size * 0.6, size * 0.1, size * 0.6);
+  }
+  if (kind === 'pine') {
+    ctx.fillStyle = shadow;
+    triangle(ctx, x, y - size * 1.55, size * 0.44, y);
+    ctx.fillStyle = base;
+    triangle(ctx, x + size * 0.05, y - size * 1.5, size * 0.36, y - size * 0.05);
+    ctx.fillStyle = light;
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.05, y - size * 1.5);
+    ctx.lineTo(x + size * 0.41, y - size * 0.05);
+    ctx.lineTo(x + size * 0.15, y - size * 0.05);
+    ctx.closePath();
+    ctx.fill();
+  } else if (kind === 'poplar') {
+    puffs(ctx, x, y, size, [[0, -0.95, 0.32, 0.7], [0, -1.5, 0.24, 0.5]], shadow, base, light);
+  } else if (kind === 'oak') {
+    puffs(ctx, x, y, size, [[-0.5, -0.75, 0.42, 0.26], [0.5, -0.75, 0.42, 0.26], [0, -0.9, 0.55, 0.3]], shadow, base, light);
+  } else {
+    puffs(ctx, x, y, size, [[0, -0.75, 0.48, 0.48], [-0.32, -0.5, 0.36, 0.36], [0.32, -0.52, 0.36, 0.36]], shadow, base, light);
   }
 }
 
-// A little painted tree, either round and puffy or a pointy pine, with sunlight on its right side.
-function paintTree(ctx, x, y, size, color, round) {
-  ctx.fillStyle = color;
-  if (round) {
-    for (const [dx, dy, r] of [[0, -0.55, 0.5], [-0.32, -0.3, 0.38], [0.32, -0.3, 0.38]]) {
+function triangle(ctx, x, topY, halfWidth, bottomY) {
+  ctx.beginPath();
+  ctx.moveTo(x, topY);
+  ctx.lineTo(x + halfWidth, bottomY);
+  ctx.lineTo(x - halfWidth, bottomY);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// A leafy crown made of soft ovals [dx, dy, width, height] (in tree sizes): shadow, then color, then light.
+function puffs(ctx, x, y, size, ovals, shadow, base, light) {
+  const paint = (color, shiftX, shiftY, shrink) => {
+    ctx.fillStyle = color;
+    for (const [dx, dy, rx, ry] of ovals) {
       ctx.beginPath();
-      ctx.arc(x + dx * size, y + dy * size, r * size, 0, Math.PI * 2);
+      ctx.ellipse(x + (dx + shiftX) * size, y + (dy + shiftY) * size, rx * size * shrink, ry * size * shrink, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.fillStyle = 'rgba(255, 255, 220, 0.18)';
-    ctx.beginPath();
-    ctx.arc(x + 0.15 * size, y - 0.68 * size, 0.28 * size, 0, Math.PI * 2);
-    ctx.fill();
-  } else {
-    ctx.beginPath();
-    ctx.moveTo(x, y - size * 1.5);
-    ctx.lineTo(x + size * 0.42, y);
-    ctx.lineTo(x - size * 0.42, y);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255, 255, 220, 0.14)';
-    ctx.beginPath();
-    ctx.moveTo(x, y - size * 1.5);
-    ctx.lineTo(x + size * 0.42, y);
-    ctx.lineTo(x + size * 0.08, y);
-    ctx.closePath();
-    ctx.fill();
-  }
+  };
+  paint(shadow, 0, 0, 1);
+  paint(base, 0.06, -0.05, 0.86);
+  ctx.globalAlpha = 0.55;
+  paint(light, 0.16, -0.14, 0.42);
+  ctx.globalAlpha = 1;
 }
