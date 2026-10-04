@@ -1,14 +1,15 @@
 import * as THREE from 'three';
 import { createGnome } from './gnome.js';
+import { createFox } from './fox.js';
 import { readInput, isControllerConnected } from './input.js';
 import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
 import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TRUNK_DIAMETER } from './scenery.js';
 import { showScoreboard, hideScoreboard } from './scoreboard.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
-import { makeRaspberry } from './raspberry.js';
+import { makeRaspberry, makeGoldenRaspberry } from './raspberry.js';
 
 // Tweak these to change how the game feels.
-const BERRY_COUNT = 10;
+const BERRY_COUNT = 9; // Pick these, then find the golden raspberry to finish.
 const ARENA_SIZE = 40;
 const HEDGE_THICKNESS = 1.2; // The hedges around the edge take up this much of the field.
 const START_Z = 4; // The gnome starts a little south of the middle, on dry land.
@@ -48,6 +49,17 @@ const WORM_MAX_TURN = Math.PI / 3; // It turns at most 60 degrees per inch, unle
 const WORM_SAFE_DISTANCE = 10; // Worms never start closer than this to the gnome.
 const WORM_CATCH_DISTANCE = 0.75;
 const WORM_COLORS = [0xff3b30, 0xff9500, 0xffdd00, 0x34c759, 0x1e90ff, 0x5856d6, 0xaf52de]; // Red to violet.
+const STUN_TIME = 3; // Seconds a worm lies dazed after a bonk on the head with the stick.
+const STUN_SPEEDUP = 1.05; // Each bonk makes that worm 5% faster...
+const WORM_TOP_SPEED = MOVE_SPEED * 0.99; // ...up to 99% of the gnome's top speed.
+const STICK_REACH = 0.22; // How close the stick has to come to a worm's head to bonk it.
+
+// The fox, the gnome's friend.
+const FOX_FOLLOW_SPEED = MOVE_SPEED * 1.15; // A little faster than the gnome, so it can keep up.
+const FOX_LEAD_SPEED = MOVE_SPEED * 0.05; // How slowly it walks the gnome to the golden raspberry.
+const FOX_SIDE_GAP = 1.9; // It walks beside the gnome, never between it and the camera.
+const FOX_RADIUS = 0.55;
+const FOX_POINT_TIME = 1.5; // Seconds it stands pointing before it starts walking.
 
 const PLAY_HALF = ARENA_SIZE / 2 - HEDGE_THICKNESS; // From the middle of the field to the inside of the hedges.
 
@@ -191,23 +203,26 @@ function placeLog(log) {
 
 // Trees standing between the camera and the gnome fade out, so you never lose sight of it.
 function fadeTreesInTheWay(dt) {
-  const lineX = playerMiddle.x - camera.position.x;
-  const lineZ = playerMiddle.z - camera.position.z;
-  const lineLengthSquared = lineX * lineX + lineZ * lineZ;
   for (const tree of trees) {
-    // How far along the line from the camera to the gnome the tree is (0 at the camera, 1 at
-    // the gnome), how far off to the side, and how high the line passes there.
-    const along = ((tree.position.x - camera.position.x) * lineX + (tree.position.z - camera.position.z) * lineZ) / lineLengthSquared;
-    const sideways = Math.hypot(camera.position.x + lineX * along - tree.position.x, camera.position.z + lineZ * along - tree.position.z);
-    const lineHeight = camera.position.y + (playerMiddle.y - camera.position.y) * along;
     const size = tree.scale.x;
     const { canopyRadius, height, materials } = tree.userData;
-    const betweenUs = along > 0 && along < 1 && sideways < canopyRadius * size + 0.5 && lineHeight < height * size;
     const overhead = Math.hypot(playerMiddle.x - tree.position.x, playerMiddle.z - tree.position.z) < canopyRadius * size; // The gnome is under its leaves.
-    const inTheWay = betweenUs || overhead;
+    const inTheWay = overhead || blocksView(tree.position.x, tree.position.z, canopyRadius * size, height * size);
     const opacity = THREE.MathUtils.damp(materials[0].opacity, inTheWay ? TREE_FADE : 1, 8, dt);
     for (const material of materials) material.opacity = opacity;
   }
+}
+
+// Is something standing at x, z (this wide and this tall) between the camera and the gnome?
+function blocksView(x, z, radius, height) {
+  const lineX = playerMiddle.x - camera.position.x;
+  const lineZ = playerMiddle.z - camera.position.z;
+  // How far along the line from the camera to the gnome it is (0 at the camera, 1 at the gnome),
+  // how far off to the side, and how high the line passes there.
+  const along = ((x - camera.position.x) * lineX + (z - camera.position.z) * lineZ) / (lineX * lineX + lineZ * lineZ);
+  const sideways = Math.hypot(camera.position.x + lineX * along - x, camera.position.z + lineZ * along - z);
+  const lineHeight = camera.position.y + (playerMiddle.y - camera.position.y) * along;
+  return along > 0 && along < 1 && sideways < radius + 0.5 && lineHeight < height;
 }
 
 // Is the spot x, z closer than `gap` to the edge of any obstacle (or the edge of a tree's leaves)?
@@ -265,12 +280,116 @@ function placeBerries() {
   }
 }
 
+// The golden raspberry appears once all the others are picked, in one of the three quadrants of
+// the field the gnome isn't in. Picking it finishes the round.
+const goldenBerry = makeGoldenRaspberry();
+goldenBerry.visible = false;
+scene.add(goldenBerry);
+let goldenOut = false;
+
+function spawnGoldenBerry() {
+  const gnomeQuadrant = [Math.sign(player.position.x) || 1, Math.sign(player.position.z) || 1];
+  const others = [[1, 1], [1, -1], [-1, 1], [-1, -1]].filter(([sx, sz]) => sx !== gnomeQuadrant[0] || sz !== gnomeQuadrant[1]);
+  const [signX, signZ] = others[Math.floor(Math.random() * others.length)];
+  const half = PLAY_HALF - 1.5;
+  let x, z;
+  for (let attempt = 0; attempt < 200; attempt++) {
+    x = signX * THREE.MathUtils.randFloat(1.5, half);
+    z = signZ * THREE.MathUtils.randFloat(1.5, half);
+    const onDryOpenGround = creekDistance(x, z) > CREEK_HALF_WIDTH + 0.5 && !isNearBridge(x, z, 1) && !isNearObstacle(x, z, 1.2);
+    if (onDryOpenGround) break;
+  }
+  goldenBerry.userData.floatHeight = groundHeightAt(x, z) + 1;
+  goldenBerry.position.set(x, goldenBerry.userData.floatHeight, z);
+  goldenBerry.visible = true;
+  goldenOut = true;
+  // The fox catches the scent.
+  foxPlan.mode = 'point';
+  foxPlan.timer = 0;
+}
+
+// --- The fox ---
+
+// The fox trots along beside the gnome. When the golden raspberry appears, it drops into a
+// sniffing stance and points its nose straight at it, then walks slowly toward it to show the way.
+const fox = createFox();
+scene.add(fox.model);
+const foxPlan = { mode: 'follow', side: -1, timer: 0 }; // mode: 'follow', 'point' or 'lead'.
+let foxOpacity = 1;
+
+function resetFox() {
+  foxPlan.mode = 'follow';
+  foxPlan.side = -1;
+  fox.model.position.set(player.position.x - FOX_SIDE_GAP, 0, player.position.z + 0.6);
+  fox.model.rotation.set(0, 0, 0);
+}
+
+function updateFox(dt) {
+  const spot = fox.model.position;
+  let goalX, goalZ, speed = 0, pitch = 0;
+  let facing = fox.model.rotation.y;
+
+  if (foxPlan.mode === 'follow') {
+    // Stay beside the gnome, on whichever side the fox is already on, so it never blocks the view.
+    const besideX = spot.x - player.position.x;
+    if (Math.abs(besideX) > 0.8) foxPlan.side = Math.sign(besideX);
+    goalX = player.position.x + foxPlan.side * FOX_SIDE_GAP;
+    goalZ = player.position.z + 0.6;
+    const distance = Math.hypot(goalX - spot.x, goalZ - spot.z);
+    if (distance > 0.3) {
+      speed = Math.min(FOX_FOLLOW_SPEED, distance * 2.5); // Trot faster the further behind it is.
+      facing = Math.atan2(goalX - spot.x, goalZ - spot.z);
+    } else {
+      facing = Math.atan2(player.position.x - spot.x, player.position.z - spot.z); // Look at its friend.
+    }
+  } else {
+    // Point the nose straight at the golden raspberry, then lead the way to it, slowly.
+    goalX = goldenBerry.position.x;
+    goalZ = goldenBerry.position.z;
+    const distance = Math.hypot(goalX - spot.x, goalZ - spot.z);
+    facing = Math.atan2(goalX - spot.x, goalZ - spot.z);
+    pitch = Math.atan2(spot.y + 1.0 - goldenBerry.position.y, distance); // Tip the nose down (or up) to it.
+    foxPlan.timer += dt;
+    if (foxPlan.mode === 'point' && foxPlan.timer > FOX_POINT_TIME) foxPlan.mode = 'lead';
+    if (foxPlan.mode === 'lead' && distance > 1.8) speed = FOX_LEAD_SPEED;
+  }
+
+  if (speed > 0) {
+    const distance = Math.hypot(goalX - spot.x, goalZ - spot.z);
+    const stepLength = Math.min(speed * dt, distance);
+    spot.x += ((goalX - spot.x) / distance) * stepLength;
+    spot.z += ((goalZ - spot.z) / distance) * stepLength;
+  }
+  // Trees are in its way too; rocks, logs and the creek it just steps over or wades through.
+  for (const obstacle of obstacles) {
+    if (obstacle.height !== Infinity) continue;
+    const dx = spot.x - obstacle.position.x;
+    const dz = spot.z - obstacle.position.z;
+    const distance = Math.hypot(dx, dz);
+    const closest = obstacle.radius + FOX_RADIUS;
+    if (distance > 0 && distance < closest) {
+      spot.x = obstacle.position.x + (dx / distance) * closest;
+      spot.z = obstacle.position.z + (dz / distance) * closest;
+    }
+  }
+  keepInArena(spot, FOX_RADIUS);
+  spot.y = groundHeightAt(spot.x, spot.z);
+  fox.model.rotation.y += shortestTurn(facing - fox.model.rotation.y) * (1 - Math.exp(-8 * dt));
+  fox.animate(dt, { speed, sniffing: foxPlan.mode !== 'follow', pitch });
+
+  // If it wanders between the camera and the gnome (catching up from behind), it fades like a tree.
+  foxOpacity = THREE.MathUtils.damp(foxOpacity, blocksView(spot.x, spot.z, 0.6, spot.y + 1.8) ? TREE_FADE : 1, 8, dt);
+  fox.setOpacity(foxOpacity);
+}
+
 // --- Inch worms ---
 
 const wormGeometry = new THREE.SphereGeometry(WORM_RADIUS, 16, 12);
 const wormMaterials = WORM_COLORS.map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
 const eyeGeometry = new THREE.SphereGeometry(0.07, 12, 8);
 const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.2 });
+const crossGeometry = new THREE.BoxGeometry(0.15, 0.035, 0.03); // One stroke of an X for a dazed eye.
+const ROLL_SPEED = (Math.PI / 2) / 0.25; // A bonked worm takes a quarter of a second to roll onto its side.
 
 // A worm is a chain of rainbow balls. The last ball is the head, which carries the eyes.
 // It moves one end at a time: the tail scoots up to the head, arching the body,
@@ -286,14 +405,30 @@ function makeWorm() {
   }
   const headBall = segments[WORM_SEGMENTS - 1];
   headBall.scale.setScalar(1.25);
+  const eyes = [];
+  const dazedEyes = [];
   for (const side of [-1, 1]) {
     const eye = new THREE.Mesh(eyeGeometry, eyeMaterial);
     eye.position.set(side * 0.1, 0.1, 0.2); // The front of the head is +z.
     headBall.add(eye);
+    eyes.push(eye);
+    // When it's bonked, each eye turns into a little X.
+    const cross = new THREE.Group();
+    for (const tilt of [Math.PI / 4, -Math.PI / 4]) {
+      const stroke = new THREE.Mesh(crossGeometry, eyeMaterial);
+      stroke.rotation.z = tilt;
+      cross.add(stroke);
+    }
+    cross.position.set(side * 0.1, 0.1, 0.235);
+    cross.visible = false;
+    headBall.add(cross);
+    dazedEyes.push(cross);
   }
   return {
     segments,
     headBall,
+    eyes,
+    dazedEyes,
     tail: new THREE.Vector3(), // Where each end touches the ground.
     head: new THREE.Vector3(),
     stretching: false, // true while the head reaches forward, false while the tail catches up.
@@ -302,7 +437,27 @@ function makeWorm() {
     stepTime: 0,
     stepDuration: 1,
     dodgeSide: 1, // Which way it last turned to get around a tree or rock.
+    topSpeed: WORM_MAX_SPEED, // Goes up a little every time it's bonked.
+    stunTime: 0, // Seconds left lying dazed.
+    roll: 0, // How far it has rolled onto its side: 0 upright, up to 90 degrees (in radians).
+    rollSide: 1, // Which way it rolls: away from the gnome.
   };
+}
+
+// A worm is dazed while it's stunned, and while it rolls back up afterwards.
+function isDazed(worm) {
+  return worm.stunTime > 0 || worm.roll > 0;
+}
+
+// Bonk! The worm rolls over away from the gnome, its eyes turn to X's, and when it gets
+// back up it's a little faster than before.
+function stunWorm(worm) {
+  worm.stunTime = STUN_TIME;
+  const acrossX = worm.head.z - worm.tail.z;
+  const acrossZ = -(worm.head.x - worm.tail.x);
+  const gnomeSide = (player.position.x - worm.head.x) * acrossX + (player.position.z - worm.head.z) * acrossZ;
+  worm.rollSide = gnomeSide > 0 ? -1 : 1;
+  worm.topSpeed = Math.min(worm.topSpeed * STUN_SPEEDUP, WORM_TOP_SPEED);
 }
 
 const worms = Array.from({ length: WORM_COUNT }, makeWorm);
@@ -320,6 +475,9 @@ function placeWorms() {
       const safe = Math.hypot(worm.head.x, worm.head.z - START_Z) >= WORM_SAFE_DISTANCE;
       if (safe && isClearForWorm(worm.tail, worm.head)) break;
     }
+    worm.topSpeed = WORM_MAX_SPEED;
+    worm.stunTime = 0;
+    worm.roll = 0;
     worm.stretching = true; // So its first step pulls the tail up.
     startWormStep(worm);
     shapeWorm(worm);
@@ -342,7 +500,7 @@ function startWormStep(worm) {
   // Each step speeds up then slows down, and its fastest moment is pi/2 times its average speed.
   // Timing the step like this makes that fastest moment exactly its top speed, which is lower in the creek.
   const wading = isInWater(worm.from.x, worm.from.z) || isInWater(worm.to.x, worm.to.z);
-  const topSpeed = WORM_MAX_SPEED * (wading ? CREEK_SLOWDOWN : 1);
+  const topSpeed = worm.topSpeed * (wading ? CREEK_SLOWDOWN : 1);
   worm.stepDuration = Math.max(((Math.PI / 2) * worm.from.distanceTo(worm.to)) / topSpeed, 0.05);
   worm.stepTime = 0;
 }
@@ -382,34 +540,51 @@ function isClearForWorm(from, to) {
 }
 
 function updateWorm(worm, dt) {
-  worm.stepTime += dt;
-  const progress = Math.min(worm.stepTime / worm.stepDuration, 1);
-  const eased = (1 - Math.cos(Math.PI * progress)) / 2; // Starts slow, speeds up, slows down.
-  const movingEnd = worm.stretching ? worm.head : worm.tail;
-  movingEnd.lerpVectors(worm.from, worm.to, eased);
-  if (progress === 1) startWormStep(worm);
+  // A bonked worm rolls onto its side and lies there with X eyes, then rolls back up.
+  worm.stunTime = Math.max(worm.stunTime - dt, 0);
+  const rollTo = worm.stunTime > 0 ? Math.PI / 2 : 0;
+  worm.roll = rollTo > worm.roll ? Math.min(worm.roll + ROLL_SPEED * dt, rollTo) : Math.max(worm.roll - ROLL_SPEED * dt, rollTo);
+  const dazed = isDazed(worm);
+  for (const eye of worm.eyes) eye.visible = !dazed;
+  for (const cross of worm.dazedEyes) cross.visible = dazed;
+
+  if (!dazed) {
+    worm.stepTime += dt;
+    const progress = Math.min(worm.stepTime / worm.stepDuration, 1);
+    const eased = (1 - Math.cos(Math.PI * progress)) / 2; // Starts slow, speeds up, slows down.
+    const movingEnd = worm.stretching ? worm.head : worm.tail;
+    movingEnd.lerpVectors(worm.from, worm.to, eased);
+    if (progress === 1) startWormStep(worm);
+  }
   shapeWorm(worm);
 }
 
 // Bend a worm's body into an arch between its two ends, following the ground (down into the
-// creek, or up over a bridge). The closer the ends, the taller the arch.
+// creek, or up over a bridge). The closer the ends, the taller the arch. When it's rolled onto
+// its side, the arch tips over sideways to lie flat on the ground.
 const archPoints = Array.from({ length: 11 }, () => new THREE.Vector3());
 const archCurve = new THREE.CatmullRomCurve3(archPoints);
 
 function shapeWorm(worm) {
   const gap = worm.tail.distanceTo(worm.head);
   const archHeight = Math.sqrt(Math.max(WORM_LENGTH ** 2 - gap ** 2, 0)) / 2;
+  const facing = Math.atan2(worm.head.x - worm.tail.x, worm.head.z - worm.tail.z);
+  const sidewaysX = Math.cos(facing) * worm.rollSide; // Flat on the ground, square to the body.
+  const sidewaysZ = -Math.sin(facing) * worm.rollSide;
   archPoints.forEach((point, i) => {
     const along = i / (archPoints.length - 1);
+    const bump = archHeight * Math.sin(Math.PI * along);
     point.lerpVectors(worm.tail, worm.head, along);
-    point.y = groundHeightAt(point.x, point.z) + WORM_RADIUS + archHeight * Math.sin(Math.PI * along);
+    point.x += sidewaysX * bump * Math.sin(worm.roll);
+    point.z += sidewaysZ * bump * Math.sin(worm.roll);
+    point.y = groundHeightAt(point.x, point.z) + WORM_RADIUS + bump * Math.cos(worm.roll);
   });
   archCurve.updateArcLengths(); // The points moved, so measure the curve again.
   const spots = archCurve.getSpacedPoints(WORM_SEGMENTS - 1); // Evenly spaced, so the stripes stay even.
   worm.segments.forEach((segment, i) => segment.position.copy(spots[i]));
 
   worm.headBall.position.y += WORM_RADIUS * 0.25; // The head is bigger, so lift it to sit on the ground.
-  worm.headBall.rotation.y = Math.atan2(worm.head.x - worm.tail.x, worm.head.z - worm.tail.z);
+  worm.headBall.rotation.set(0, facing, -worm.rollSide * worm.roll); // Roll the head over too, eyes and all.
 }
 
 // --- Helpers ---
@@ -448,15 +623,18 @@ function restart() {
   elapsed = 0;
   finished = false;
   caughtByWorm = false;
+  goldenOut = false;
+  goldenBerry.visible = false;
   hideScoreboard();
   placeObstacles();
   placeBerries();
   placeWorms();
+  resetFox();
   updateHud();
 }
 
 function updateHud() {
-  scoreEl.textContent = `Raspberries: ${collected} / ${BERRY_COUNT}`;
+  scoreEl.textContent = goldenOut ? 'Find the golden raspberry! Follow the fox.' : `Raspberries: ${collected} / ${BERRY_COUNT}`;
   timerEl.textContent = `Time: ${elapsed.toFixed(1)}s`;
   controllerHelpEl.hidden = !isControllerConnected();
 }
@@ -483,9 +661,10 @@ function update(dt) {
   worldTime += dt;
   updateCreek(dt);
 
-  // Keyboard or controller: which way to go, how hard, and whether to jump or play again.
+  // Keyboard or controller: which way to go, how hard, and whether to jump, swing or play again.
   const controls = readInput();
   if (controls.restart) restart();
+  if (controls.swing && !caughtByWorm) gnome.swingStick();
 
   // Run around on the ground. Pushing the stick part way walks slower; wading through the creek is slower too.
   move.set(controls.moveX, 0, controls.moveZ);
@@ -528,17 +707,41 @@ function update(dt) {
       scene.remove(berry);
       berries.splice(i, 1);
       collected++;
-      if (collected === BERRY_COUNT) win();
+      if (collected === BERRY_COUNT) spawnGoldenBerry();
     }
   }
 
-  // The inch worms crawl after the gnome until the round is over.
+  // The golden raspberry bobs, spins and shines. Picking it finishes the round.
+  if (goldenOut) {
+    goldenBerry.rotation.y += 1.2 * dt;
+    goldenBerry.position.y = goldenBerry.userData.floatHeight + Math.sin(worldTime * 2) * 0.12;
+    goldenBerry.userData.rays.material.rotation += 0.4 * dt;
+    goldenBerry.userData.rays.scale.setScalar(3.4 + Math.sin(worldTime * 3) * 0.25);
+    if (!finished && goldenBerry.position.distanceTo(playerMiddle) < 1.3) {
+      goldenOut = false;
+      goldenBerry.visible = false;
+      win();
+    }
+  }
+
+  // A swing of the stick that catches an inch worm on the head stuns it.
+  if (!finished && gnome.isStriking()) {
+    const stick = gnome.whereIsStick();
+    for (const worm of worms) {
+      if (isDazed(worm)) continue;
+      const headRadius = WORM_RADIUS * 1.25;
+      if (stick.some((point) => point.distanceTo(worm.headBall.position) < headRadius + STICK_REACH)) stunWorm(worm);
+    }
+  }
+
+  // The inch worms crawl after the gnome until the round is over. Dazed worms can't catch anyone.
   if (!finished) {
     for (const worm of worms) {
       updateWorm(worm, dt);
-      if (worm.headBall.position.distanceTo(playerMiddle) < WORM_CATCH_DISTANCE) caught();
+      if (!isDazed(worm) && worm.headBall.position.distanceTo(playerMiddle) < WORM_CATCH_DISTANCE) caught();
     }
   }
+  updateFox(dt);
 
   if (!finished) elapsed += dt;
   updateHud();

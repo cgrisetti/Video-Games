@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { PHI, goldenFraction, fibonacciLong } from './golden.js';
 
 // The painted backdrop: a soft blue sky with big puffy clouds over layers of rolling wooded
 // hills, in a hand-painted storybook style. It's painted once onto a canvas with ordinary 2D
@@ -21,10 +22,11 @@ export function createBackdrop() {
   const ctx = canvas.getContext('2d');
 
   paintSky(ctx);
-  // Hills from farthest to nearest: each layer is greener and darker, with bigger trees.
+  // Hills from farthest to nearest: each layer is greener and darker, and its trees are
+  // φ (the golden ratio) times bigger than the layer behind.
   paintHills(ctx, { height: 7.4, roll: 1.1, light: '#b4d2c6', dark: '#9fc2b6', trees: '#93b8ab', treeSize: 9 });
-  paintHills(ctx, { height: 5.7, roll: 0.9, light: '#8fbd83', dark: '#73a56c', trees: '#5f955a', treeSize: 15 });
-  paintHills(ctx, { height: 3.9, roll: 0.7, light: '#64a05b', dark: '#4a8547', trees: '#3e7a3f', treeSize: 24 });
+  paintHills(ctx, { height: 5.7, roll: 0.9, light: '#8fbd83', dark: '#73a56c', trees: '#5f955a', treeSize: 9 * PHI });
+  paintHills(ctx, { height: 3.9, roll: 0.7, light: '#64a05b', dark: '#4a8547', trees: '#3e7a3f', treeSize: 9 * PHI * PHI });
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -141,17 +143,20 @@ function paintHills(ctx, layer) {
   }
   ctx.restore();
 
-  // Trees: a dense fringe along the top of the hill, and a few more down the slope.
-  for (let x = 0; x < WIDTH; x += layer.treeSize * THREE.MathUtils.randFloat(0.6, 1.1)) {
-    const size = layer.treeSize * THREE.MathUtils.randFloat(0.7, 1.3);
-    const round = Math.random() < 0.55;
+  // Trees: a dense fringe along the top of the hill, spaced in the Fibonacci rhythm of long and
+  // short gaps (in the golden ratio), with sizes from the golden sequence so neighbors differ.
+  for (let k = 0, x = 0; x < WIDTH; k++) {
+    const size = layer.treeSize * (0.75 + 0.5 * goldenFraction(k));
+    const round = fibonacciLong(k + 3);
     wrapped(x, size, (tx) => paintTree(ctx, tx, crest(x) + size * 0.35, size, layer.trees, round));
+    x += layer.treeSize * (fibonacciLong(k) ? 0.95 : 0.95 / PHI);
   }
+  // A few more down the slope, spread evenly along the hill by the golden sequence.
   for (let i = 0; i < WIDTH / (layer.treeSize * 3); i++) {
-    const x = Math.random() * WIDTH;
-    const size = layer.treeSize * THREE.MathUtils.randFloat(0.6, 1.1);
-    const y = crest(x) + size + Math.random() * size * 3;
-    const round = Math.random() < 0.55;
+    const x = goldenFraction(i) * WIDTH;
+    const size = layer.treeSize * (0.6 + 0.5 * goldenFraction(i + 7));
+    const y = crest(x) + size * (1 + 3 * (((i * 3) % 8) / 8));
+    const round = fibonacciLong(i);
     wrapped(x, size, (tx) => paintTree(ctx, tx, y, size, layer.trees, round));
   }
 }

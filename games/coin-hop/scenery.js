@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { creekDistance, CREEK_HALF_WIDTH } from './creek.js';
+import { PHI, GOLDEN_ANGLE, goldenFraction, fibonacciLong } from './golden.js';
 
 // Trees, rocks, logs, the hedges around the field, and the woods outside it.
 
@@ -174,16 +175,23 @@ const spikeGeometry = new THREE.ConeGeometry(0.05, 0.36, 5).translate(0, 0.18, 0
 const plantMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, flatShading: true });
 
 // Every so often the plain hedge gives way to a flowering shrub. Each kind has its own leaf color
-// and flowers, and each bush picks one flower color.
+// and flowers, and each bush has one flower color.
 const SHRUBS = [
   // Hydrangea: big round mophead flowers in blue, lavender or pink.
-  { chance: 0.06, leaves: 0x4f9a45, colors: [0x86aee8, 0xb39ae3, 0xf2a9cc], flowers: 5, flowerSize: 0.16 },
+  { leaves: 0x4f9a45, colors: [0x86aee8, 0xb39ae3, 0xf2a9cc], flowers: 5, flowerSize: 0.16 },
   // Rhododendron: dark glossy leaves with clusters of pink, magenta or purple flowers.
-  { chance: 0.06, leaves: 0x2f6a36, colors: [0xd8489c, 0xe86fae, 0xa25ac4], flowers: 6, flowerSize: 0.12 },
+  { leaves: 0x2f6a36, colors: [0xd8489c, 0xe86fae, 0xa25ac4], flowers: 8, flowerSize: 0.12 },
   // Vitex (a butterfly bush): grey-green leaves and upright purple flower spikes.
-  { chance: 0.05, leaves: 0x6f9a62, colors: [0x9a7fd8, 0x8a6cc9], flowers: 7, spikes: true },
+  { leaves: 0x6f9a62, colors: [0x9a7fd8, 0x8a6cc9], flowers: 8, spikes: true },
 ];
 const HEDGE_LEAVES = 0x3f8c3c;
+
+// Flowering shrubs come along the hedge in a golden rhythm: after 8 plain bushes, then 5, then
+// 8, 8, 5, 8, 5, 8... following the Fibonacci word. Which kind comes next follows the golden
+// sequence, so each kind turns up evenly and none of them bunch together.
+function makeRhythm() {
+  return { bushes: 0, untilFlowers: 3, gaps: 0, shrubs: 0, colorTurns: SHRUBS.map(() => 0) };
+}
 
 // Two staggered rows of little round bushes along all four edges, with flowering shrubs mixed in.
 // Where the creek flows out of the field, the hedge stops and a fallen log lies across the water.
@@ -200,6 +208,7 @@ export function makeHedges(arenaSize, thickness) {
   const bushes = [];
   const blooms = [];
   const spikes = [];
+  const rhythm = makeRhythm();
 
   for (const edge of edges) {
     const steps = Math.round(arenaSize / 0.55);
@@ -215,7 +224,7 @@ export function makeHedges(arenaSize, thickness) {
       }
       for (const row of [-thickness / 4, thickness / 4]) {
         const [bx, bz] = edge.spot(t + (row > 0 ? 0.27 : 0), row);
-        bushes.push(makeBush(bx, bz, blooms, spikes));
+        bushes.push(makeBush(bx, bz, rhythm, blooms, spikes));
       }
     }
 
@@ -233,36 +242,46 @@ export function makeHedges(arenaSize, thickness) {
   return group;
 }
 
-// One bush in the hedge: usually plain, sometimes a flowering shrub. Flowers are added to the
-// blooms or spikes lists. Every plant is { position, turn, size, color }.
-function makeBush(x, z, blooms, spikes) {
-  let roll = Math.random();
-  const shrub = SHRUBS.find((kind) => (roll -= kind.chance) < 0);
+// One bush in the hedge: usually plain, sometimes (when the rhythm says so) a flowering shrub.
+// Flowers are added to the blooms or spikes lists. Every plant is { position, turn, size, color }.
+// Sizes, turns and shades come from the golden sequence, so neighbors always differ a little.
+function makeBush(x, z, rhythm, blooms, spikes) {
+  const n = ++rhythm.bushes;
+  let shrub = null;
+  let flowerColor = null;
+  if (rhythm.untilFlowers-- === 0) {
+    const kind = Math.floor(goldenFraction(rhythm.shrubs++) * SHRUBS.length);
+    shrub = SHRUBS[kind];
+    flowerColor = shrub.colors[rhythm.colorTurns[kind]++ % shrub.colors.length];
+    rhythm.untilFlowers = fibonacciLong(rhythm.gaps++) ? 8 : 5;
+  }
   const grow = shrub ? 1.15 : 1; // Flowering shrubs grow a little bigger than the hedge.
   const size = new THREE.Vector3(
-    THREE.MathUtils.randFloat(0.95, 1.25) * grow,
-    THREE.MathUtils.randFloat(0.75, 1) * grow,
-    THREE.MathUtils.randFloat(0.95, 1.25) * grow,
+    (0.95 + 0.3 * goldenFraction(n)) * grow,
+    (0.75 + 0.25 * goldenFraction(n + 7)) * grow,
+    (0.95 + 0.3 * goldenFraction(n + 3)) * grow,
   );
   const center = new THREE.Vector3(x, 0.28, z);
-  const shade = THREE.MathUtils.randFloat(0.82, 1.08);
-  const bush = { position: center, turn: Math.random() * Math.PI * 2, size, color: new THREE.Color(shrub ? shrub.leaves : HEDGE_LEAVES).multiplyScalar(shade) };
+  const turn = n * GOLDEN_ANGLE;
+  const shade = 0.82 + 0.26 * goldenFraction(n + 11);
+  const bush = { position: center, turn, size, color: new THREE.Color(shrub ? shrub.leaves : HEDGE_LEAVES).multiplyScalar(shade) };
   if (!shrub) return bush;
 
-  // Flowers sit around the top half of the bush, poking out of the leaves.
-  const flowerColor = shrub.colors[Math.floor(Math.random() * shrub.colors.length)];
+  // Flowers spiral around the bush like seeds in a sunflower: each one a golden angle round from
+  // the last, starting at the top and working down the sides.
   for (let i = 0; i < shrub.flowers; i++) {
-    const around = Math.random() * Math.PI * 2;
-    const up = THREE.MathUtils.randFloat(0.35, 1.3); // From low on the side to nearly the top.
+    const around = turn + i * GOLDEN_ANGLE;
+    const up = 1.3 - 0.95 * ((i + 0.5) / shrub.flowers); // From nearly the top down to low on the side.
     const out = new THREE.Vector3(Math.cos(up) * Math.cos(around), Math.sin(up), Math.cos(up) * Math.sin(around));
     const position = out.clone().multiply(size).multiplyScalar(0.42 * 0.92).add(center);
-    const color = new THREE.Color(flowerColor).multiplyScalar(THREE.MathUtils.randFloat(0.9, 1.1));
+    const color = new THREE.Color(flowerColor).multiplyScalar(0.9 + 0.2 * goldenFraction(i));
+    const bloomSize = 0.85 + 0.3 * goldenFraction(i + 5);
     if (shrub.spikes) {
       // Spikes point mostly up, leaning outward a little.
       const lean = new THREE.Vector3(out.x * 0.5, 1, out.z * 0.5).normalize();
-      spikes.push({ position, lean, size: new THREE.Vector3().setScalar(THREE.MathUtils.randFloat(0.8, 1.2)), color });
+      spikes.push({ position, lean, size: new THREE.Vector3().setScalar(bloomSize), color });
     } else {
-      blooms.push({ position, turn: Math.random() * Math.PI, size: new THREE.Vector3().setScalar(shrub.flowerSize * THREE.MathUtils.randFloat(0.8, 1.2)), color });
+      blooms.push({ position, turn: around, size: new THREE.Vector3().setScalar(shrub.flowerSize * bloomSize), color });
     }
   }
   return bush;
@@ -286,37 +305,45 @@ function instancedPlants(geometry, plants) {
 
 // --- The woods outside the field ---
 
-// How often each kind of tree turns up in the woods.
-const WOODS_MIX = [
-  ['pine', 0.45],
-  ['round', 0.25],
-  ['maple', 0.12],
-  ['poplar', 0.12],
-  ['oak', 0.06],
+// The woods are laid out like the seeds of a sunflower: tree number n sits a golden angle round
+// from the one before, a little further out each time. That spreads them evenly with no clumps
+// or gaps. Out where the woods are, your eye picks out 34 gentle spiral arms; each arm gets one
+// kind of tree, in Fibonacci numbers: 13 arms of pines, 8 of round trees, 5 of maples, 5 of
+// poplars and 3 of live oaks. Neighboring arms take turns down this list, so the colors mix.
+const SUNFLOWER_SEEDS = 800;
+const ARMS = 34;
+const ARM_KINDS = [
+  'pine', 'round', 'maple', 'pine', 'poplar', 'round', 'pine', 'oak', 'pine', 'round', 'maple', 'pine',
+  'poplar', 'round', 'pine', 'maple', 'round', 'pine', 'oak', 'poplar', 'pine', 'round', 'maple', 'pine',
+  'round', 'poplar', 'pine', 'oak', 'pine', 'pine', 'maple', 'poplar', 'round', 'pine',
 ];
 
-function pickKind() {
-  let roll = Math.random();
-  return WOODS_MIX.find(([, chance]) => (roll -= chance) < 0)?.[0] ?? 'pine';
+// Which arm a seed is on. Next-door arms are 13 apart, so walk the list in steps of 13.
+function kindOfSeed(n) {
+  const arm = n % ARMS;
+  return ARM_KINDS[(arm * 13) % ARMS];
 }
 
-// Lots of trees beyond the hedges on the west, north and east sides: mostly green, with some
-// autumn maples and poplars and a few big live oaks. They're "instanced": each tree part is drawn
+// Trees beyond the hedges on the west, north and east sides: mostly green, with streaks of
+// autumn maples and poplars and a few big live oaks. Small trees stand nearest the hedge and they
+// grow taller further back, like seats in a theater. They're "instanced": each tree part is drawn
 // for every tree of that kind in one go, which keeps hundreds of trees fast.
 export function makeOuterWoods(arenaSize) {
   const edge = arenaSize / 2 + 0.8;
   const reach = 39; // The painted hills start at 40.
   const trees = [];
-  for (let attempt = 0; attempt < 8000 && trees.length < 320; attempt++) {
-    const x = THREE.MathUtils.randFloat(-reach, reach);
-    const z = THREE.MathUtils.randFloat(-reach, edge);
-    const kind = pickKind();
-    const size = THREE.MathUtils.randFloat(0.9, 1.6);
+  for (let n = 1; n <= SUNFLOWER_SEEDS; n++) {
+    const distance = reach * Math.sqrt(n / SUNFLOWER_SEEDS);
+    const x = distance * Math.cos(n * GOLDEN_ANGLE);
+    const z = distance * Math.sin(n * GOLDEN_ANGLE);
+    const kind = kindOfSeed(n);
+    const backFromHedge = Math.max(Math.abs(x), -z) - edge;
+    const size = 0.85 + 0.75 * THREE.MathUtils.clamp(backFromHedge / 12, 0, 1) ** (1 / PHI) + 0.16 * (goldenFraction(n % 13) - 0.5);
     const spread = TREES[kind].canopyRadius * size;
     const outsideField = Math.abs(x) > edge + spread * 0.4 || z < -(edge + spread * 0.4); // Leaves may hang a little over the hedge.
-    if (!outsideField || Math.hypot(x, z) + spread > reach || creekDistance(x, z) < CREEK_HALF_WIDTH + 0.8) continue;
-    if (trees.some((tree) => Math.hypot(tree.x - x, tree.z - z) < Math.max(1.6, (tree.spread + spread) * 0.6))) continue;
-    trees.push({ x, z, kind, size, spread, turn: Math.random() * Math.PI * 2, shade: THREE.MathUtils.randFloat(0.8, 1.1) });
+    if (!outsideField || z > edge || distance + spread > reach || creekDistance(x, z) < CREEK_HALF_WIDTH + 0.8) continue;
+    if (trees.some((tree) => Math.hypot(tree.x - x, tree.z - z) < (tree.spread + spread) * 0.45)) continue;
+    trees.push({ x, z, kind, size, spread, turn: n * GOLDEN_ANGLE, shade: 0.82 + 0.26 * goldenFraction(n % 21) });
   }
 
   const woods = new THREE.Group();

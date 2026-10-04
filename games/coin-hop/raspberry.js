@@ -18,6 +18,66 @@ export function makeRaspberry() {
   return berry;
 }
 
+// The golden raspberry: the same berry in shining gold, a little bigger, with rays of sunshine
+// fanning out behind it and a warm glow lighting up the ground around it.
+// Its rays are kept in golden.userData.rays so the game can turn them slowly.
+const goldMaterial = new THREE.MeshStandardMaterial({ color: 0xffc93c, emissive: 0x7a5200, metalness: 0.55, roughness: 0.3 });
+const goldCapMaterial = new THREE.MeshStandardMaterial({ color: 0xb8c94a, emissive: 0x2a3300, roughness: 0.5, flatShading: true });
+
+export function makeGoldenRaspberry() {
+  const golden = new THREE.Group();
+  const berry = new THREE.Group();
+  berry.add(new THREE.Mesh(berryGeometry, goldMaterial), new THREE.Mesh(capGeometry, goldCapMaterial));
+  berry.scale.setScalar(1.35);
+  for (const part of berry.children) part.castShadow = true;
+
+  // The rays are a picture that always faces the camera, so they look the same from every side.
+  const rays = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: makeSunburst(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),
+  );
+  rays.scale.set(3.4, 3.4, 1);
+  const glow = new THREE.PointLight(0xffd36b, 3, 5, 2);
+  golden.add(rays, berry, glow);
+  golden.userData.rays = rays;
+  return golden;
+}
+
+// Rays of sunshine painted on a small canvas: a soft glow with long and short rays around it.
+function makeSunburst() {
+  const size = 256;
+  const middle = size / 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  const glow = ctx.createRadialGradient(middle, middle, 0, middle, middle, middle);
+  glow.addColorStop(0, 'rgba(255, 250, 215, 0.95)');
+  glow.addColorStop(0.25, 'rgba(255, 222, 120, 0.5)');
+  glow.addColorStop(1, 'rgba(255, 200, 80, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, size, size);
+
+  for (let i = 0; i < 24; i++) {
+    const long = i % 2 === 0;
+    const length = long ? middle * 0.97 : middle * 0.55;
+    const width = long ? 0.07 : 0.05; // Half the ray's width, as an angle.
+    const angle = (i / 24) * Math.PI * 2;
+    const fade = ctx.createRadialGradient(middle, middle, 0, middle, middle, length);
+    fade.addColorStop(0, 'rgba(255, 244, 180, 0.9)');
+    fade.addColorStop(1, 'rgba(255, 205, 90, 0)');
+    ctx.fillStyle = fade;
+    ctx.beginPath();
+    ctx.moveTo(middle, middle);
+    ctx.lineTo(middle + Math.cos(angle - width) * length, middle + Math.sin(angle - width) * length);
+    ctx.lineTo(middle + Math.cos(angle + width) * length, middle + Math.sin(angle + width) * length);
+    ctx.closePath();
+    ctx.fill();
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 // Rings of little balls, widest near the top and narrowing to a rounded tip, around a core
 // that fills the gaps. They're merged into one shape so each raspberry is quick to draw.
 function makeBerryGeometry() {

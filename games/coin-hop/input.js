@@ -1,6 +1,6 @@
 // Everything the player can press: the keyboard, and a game controller such as a PlayStation 5
 // controller. Once a frame, readInput() boils it all down to which way to move (and how hard),
-// whether jump is held, and whether "play again" was just pressed. The rest of the game only
+// whether jump is held, and whether "swing the stick" or "play again" was just pressed. The rest of the game only
 // asks this file, so it doesn't care where the input came from.
 
 const STICK_DEAD_ZONE = 0.15; // Ignore small stick movements; sticks rarely rest exactly in the middle.
@@ -8,6 +8,7 @@ const STICK_DEAD_ZONE = 0.15; // Ignore small stick movements; sticks rarely res
 // Button numbers on a controller with the browser's "standard" layout (PlayStation and Xbox
 // controllers both use it). On a PlayStation controller, button 0 is ✕.
 const CROSS = 0;
+const SQUARE = 2;
 const OPTIONS = 9;
 const DPAD_UP = 12;
 const DPAD_DOWN = 13;
@@ -16,13 +17,16 @@ const DPAD_RIGHT = 15;
 
 const keys = new Set();
 let restartKeyPressed = false;
+let swingKeyPressed = false;
 let optionsWasDown = false;
+let squareWasDown = false;
 
 window.addEventListener('keydown', (event) => {
   if (event.target instanceof HTMLInputElement) return; // Typing a name for the Top 10 shouldn't move the gnome.
   if (event.code === 'Space' || event.code.startsWith('Arrow')) event.preventDefault();
   keys.add(event.code);
   if (event.code === 'KeyR' && !event.repeat) restartKeyPressed = true;
+  if (event.code === 'KeyF' && !event.repeat) swingKeyPressed = true;
 });
 window.addEventListener('keyup', (event) => keys.delete(event.code));
 window.addEventListener('blur', () => keys.clear());
@@ -31,6 +35,7 @@ const input = {
   moveX: 0, // -1 (left) to 1 (right)
   moveZ: 0, // -1 (forward, up the screen) to 1 (back, toward the camera)
   jump: false, // Held down this frame.
+  swing: false, // Swing the stick: pressed this frame (not just held).
   restart: false, // Pressed this frame (not just held).
 };
 
@@ -63,12 +68,16 @@ export function readInput() {
   }
 
   const optionsDown = button(OPTIONS);
+  const squareDown = button(SQUARE);
   input.moveX = x;
   input.moveZ = z;
   input.jump = key('Space') || button(CROSS);
+  input.swing = swingKeyPressed || (squareDown && !squareWasDown);
   input.restart = restartKeyPressed || (optionsDown && !optionsWasDown);
   restartKeyPressed = false;
+  swingKeyPressed = false;
   optionsWasDown = optionsDown;
+  squareWasDown = squareDown;
   return input;
 }
 
