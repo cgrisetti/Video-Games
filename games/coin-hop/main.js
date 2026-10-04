@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { createGnome } from './gnome.js';
 import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
-import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TREE_RADIUS, TRUNK_DIAMETER } from './scenery.js';
+import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TRUNK_DIAMETER } from './scenery.js';
+import { showScoreboard, hideScoreboard } from './scoreboard.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
 import { makeRaspberry } from './raspberry.js';
 
@@ -21,6 +22,8 @@ const CAMERA_LOOK_ABOVE = 2; // Aim the camera this far above the gnome, so the 
 
 // Trees block you completely. Rocks and logs are low enough to jump over, or to stand on.
 const TREE_COUNT = 14;
+// A few trees in the field are other kinds; the rest are pines. Biggest first, since they're hardest to fit.
+const TREE_MIX = ['oak', 'oak', 'maple', 'maple', 'poplar', 'poplar'];
 const TREE_SIZES = [1, 1.3]; // Smallest and biggest tree, compared with the basic tree.
 const TREE_FADE = 0.3; // How solid a tree stays when it's between the camera and the gnome (0 is invisible).
 const ROCK_COUNT = 12;
@@ -49,7 +52,6 @@ const PLAY_HALF = ARENA_SIZE / 2 - HEDGE_THICKNESS; // From the middle of the fi
 
 const scoreEl = document.getElementById('score');
 const timerEl = document.getElementById('timer');
-const messageEl = document.getElementById('message');
 
 // --- Renderer, scene and camera ---
 
@@ -100,11 +102,12 @@ scene.add(player);
 // --- Trees, rocks and logs ---
 
 // Everything the gnome and the worms have to get around. Each one has a spot on the ground,
-// a radius, and a height. Trees are taller than any jump, so their height is Infinity.
+// a radius you bump into, and a height. Trees are taller than any jump, so their height is
+// Infinity, and they also have a `room`: how far their leaves spread, which other things keep clear of.
 // The bridge railings are obstacles too, and they stay put from round to round.
 const obstacles = [];
 const railings = bridges.flatMap((bridge) => bridge.bumpers);
-const trees = Array.from({ length: TREE_COUNT }, makeTree);
+const trees = Array.from({ length: TREE_COUNT }, (_, i) => makeTree(TREE_MIX[i] ?? 'pine'));
 const rocks = Array.from({ length: ROCK_COUNT }, makeRock);
 const logs = Array.from({ length: LOG_COUNT }, makeLog);
 scene.add(...trees, ...rocks, ...logs);
@@ -117,9 +120,10 @@ function placeObstacles() {
   for (const log of logs) log.visible = placeLog(log);
   for (const tree of trees) {
     const size = THREE.MathUtils.randFloat(...TREE_SIZES);
+    const { blockRadius, canopyRadius } = tree.userData;
     tree.scale.setScalar(size);
     tree.rotation.y = Math.random() * Math.PI * 2;
-    tree.visible = findOpenSpot(tree, 0.6 * size, Infinity);
+    tree.visible = findOpenSpot(tree, blockRadius * size, Infinity, canopyRadius * size);
   }
   for (const rock of rocks) {
     const width = THREE.MathUtils.randFloat(...ROCK_WIDTHS);
@@ -141,14 +145,15 @@ function isOpenSpot(x, z, radius) {
 }
 
 // Move a tree or rock to an open spot and add it to the obstacles. Gives up if the field is too full.
-function findOpenSpot(object, radius, height) {
+// `room` is how much space it needs around it, if that's more than the radius you bump into.
+function findOpenSpot(object, radius, height, room = radius) {
   const half = PLAY_HALF - 1.5;
   for (let attempt = 0; attempt < 100; attempt++) {
     const x = THREE.MathUtils.randFloat(-half, half);
     const z = THREE.MathUtils.randFloat(-half, half);
-    if (!isOpenSpot(x, z, radius)) continue;
+    if (!isOpenSpot(x, z, room)) continue;
     object.position.set(x, 0, z);
-    obstacles.push({ position: object.position, radius, height });
+    obstacles.push({ position: object.position, radius, height, room });
     return true;
   }
   return false;
@@ -194,15 +199,18 @@ function fadeTreesInTheWay(dt) {
     const sideways = Math.hypot(camera.position.x + lineX * along - tree.position.x, camera.position.z + lineZ * along - tree.position.z);
     const lineHeight = camera.position.y + (playerMiddle.y - camera.position.y) * along;
     const size = tree.scale.x;
-    const inTheWay = along > 0 && along < 1 && sideways < TREE_RADIUS * size + 0.5 && lineHeight < TREE_HEIGHT * size;
-    const [trunk, leaves] = tree.userData.materials;
-    trunk.opacity = leaves.opacity = THREE.MathUtils.damp(leaves.opacity, inTheWay ? TREE_FADE : 1, 8, dt);
+    const { canopyRadius, height, materials } = tree.userData;
+    const betweenUs = along > 0 && along < 1 && sideways < canopyRadius * size + 0.5 && lineHeight < height * size;
+    const overhead = Math.hypot(playerMiddle.x - tree.position.x, playerMiddle.z - tree.position.z) < canopyRadius * size; // The gnome is under its leaves.
+    const inTheWay = betweenUs || overhead;
+    const opacity = THREE.MathUtils.damp(materials[0].opacity, inTheWay ? TREE_FADE : 1, 8, dt);
+    for (const material of materials) material.opacity = opacity;
   }
 }
 
-// Is the spot x, z closer than `gap` to the edge of any obstacle?
+// Is the spot x, z closer than `gap` to the edge of any obstacle (or the edge of a tree's leaves)?
 function isNearObstacle(x, z, gap) {
-  return obstacles.some((obstacle) => Math.hypot(obstacle.position.x - x, obstacle.position.z - z) < obstacle.radius + gap);
+  return obstacles.some((obstacle) => Math.hypot(obstacle.position.x - x, obstacle.position.z - z) < (obstacle.room ?? obstacle.radius) + gap);
 }
 
 // Push the gnome back out of trees, rocks and railings, unless it's up on top of them.
@@ -421,6 +429,7 @@ function shortestTurn(angle) {
 const keys = new Set();
 
 window.addEventListener('keydown', (event) => {
+  if (event.target instanceof HTMLInputElement) return; // Typing a name for the Top 10 shouldn't move the gnome.
   if (event.code === 'Space' || event.code.startsWith('Arrow')) event.preventDefault();
   keys.add(event.code);
   if (event.code === 'KeyR') restart();
@@ -454,7 +463,7 @@ function restart() {
   elapsed = 0;
   finished = false;
   caughtByWorm = false;
-  messageEl.hidden = true;
+  hideScoreboard();
   placeObstacles();
   placeBerries();
   placeWorms();
@@ -466,17 +475,17 @@ function updateHud() {
   timerEl.textContent = `Time: ${elapsed.toFixed(1)}s`;
 }
 
+// Either way a round ends, the Top 10 board comes up.
 function win() {
   finished = true;
-  messageEl.textContent = `You picked them all in ${elapsed.toFixed(1)}s! Press R to play again.`;
-  messageEl.hidden = false;
+  showScoreboard(elapsed);
 }
 
 function caught() {
+  if (caughtByWorm) return; // Two worms can reach the gnome in the same moment.
   finished = true;
   caughtByWorm = true;
-  messageEl.textContent = 'The inch worm got you! Press R to try again.';
-  messageEl.hidden = false;
+  showScoreboard(null);
 }
 
 // --- Game loop ---
