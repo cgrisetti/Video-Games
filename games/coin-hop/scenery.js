@@ -3,24 +3,36 @@ import { creekDistance, CREEK_HALF_WIDTH } from './creek.js';
 
 // Trees, rocks, the hedges around the field, and the woods outside it.
 
-// --- Trees and rocks inside the field ---
+// --- Trees, rocks and logs inside the field ---
+
+// The size of a basic tree, before it's scaled up. The game fits logs and fading around these.
+export const TREE_HEIGHT = 3.2;
+export const TREE_RADIUS = 0.75; // Its widest point: the bottom cone of leaves.
+export const TRUNK_DIAMETER = 0.32;
 
 // A pine tree: a trunk and three cones of leaves, each narrower than the one below,
 // so you can see past the tops.
-const trunkGeometry = new THREE.CylinderGeometry(0.12, 0.16, 0.8, 8).translate(0, 0.4, 0);
+const trunkGeometry = new THREE.CylinderGeometry(0.12, TRUNK_DIAMETER / 2, 0.8, 8).translate(0, 0.4, 0);
 const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5230, roughness: 0.9 });
 const leafGeometries = [
-  new THREE.ConeGeometry(0.75, 1.4, 8).translate(0, 1.3, 0),
+  new THREE.ConeGeometry(TREE_RADIUS, 1.4, 8).translate(0, 1.3, 0),
   new THREE.ConeGeometry(0.58, 1.2, 8).translate(0, 2.0, 0),
-  new THREE.ConeGeometry(0.4, 1.0, 8).translate(0, 2.7, 0),
+  new THREE.ConeGeometry(0.4, 1.0, 8).translate(0, TREE_HEIGHT - 0.5, 0),
 ];
 const leafMaterial = new THREE.MeshStandardMaterial({ color: 0x2f7d3b, roughness: 0.8, flatShading: true });
 
+// Each tree gets its own copy of the materials, so it can fade on its own when it's in the way.
+// Its materials are kept in tree.userData.materials.
 export function makeTree() {
   const tree = new THREE.Group();
-  tree.add(new THREE.Mesh(trunkGeometry, trunkMaterial));
-  for (const geometry of leafGeometries) tree.add(new THREE.Mesh(geometry, leafMaterial));
+  const trunk = trunkMaterial.clone();
+  const leaves = leafMaterial.clone();
+  trunk.transparent = true;
+  leaves.transparent = true;
+  tree.add(new THREE.Mesh(trunkGeometry, trunk));
+  for (const geometry of leafGeometries) tree.add(new THREE.Mesh(geometry, leaves));
   for (const part of tree.children) part.castShadow = true;
+  tree.userData.materials = [trunk, leaves];
   return tree;
 }
 
@@ -34,12 +46,23 @@ export function makeRock() {
   return rock;
 }
 
+// A fallen log lying on its side: bark all round, pale wood at the cut ends. It's 1 long (along x)
+// and 1 thick, resting on the ground, so stretch it with scale.set(length, thickness, thickness).
+const logGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 12).rotateZ(Math.PI / 2).translate(0, 0.5, 0);
+const barkMaterial = new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 0.95 });
+const cutWoodMaterial = new THREE.MeshStandardMaterial({ color: 0xc9a26b, roughness: 0.9 });
+
+export function makeLog() {
+  const log = new THREE.Mesh(logGeometry, [barkMaterial, cutWoodMaterial, cutWoodMaterial]);
+  log.castShadow = true;
+  log.receiveShadow = true;
+  return log;
+}
+
 // --- Hedges around the field ---
 
 const hedgeGeometry = new THREE.IcosahedronGeometry(0.42, 1);
 const hedgeMaterial = new THREE.MeshStandardMaterial({ color: 0x3f8c3c, roughness: 0.85, flatShading: true });
-const barkMaterial = new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 0.95 });
-const cutWoodMaterial = new THREE.MeshStandardMaterial({ color: 0xc9a26b, roughness: 0.9 });
 
 // Two staggered rows of little round bushes along all four edges. Where the creek flows out of
 // the field, the hedge stops and a fallen log lies across the water instead.
@@ -74,13 +97,11 @@ export function makeHedges(arenaSize, thickness) {
     }
 
     if (gapStart !== null) {
-      const length = gapEnd - gapStart + 1.4;
-      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.29, length, 12), [barkMaterial, cutWoodMaterial, cutWoodMaterial]);
+      const log = makeLog();
       const [x, z] = edge.spot((gapStart + gapEnd) / 2, 0);
-      log.position.set(x, 0.12, z);
-      if (edge.alongX) log.rotation.z = Math.PI / 2;
-      else log.rotation.x = Math.PI / 2;
-      log.castShadow = true;
+      log.scale.set(gapEnd - gapStart + 1.4, 0.55, 0.55);
+      log.position.set(x, -0.15, z); // Sagging a little into the dip where the creek runs.
+      if (!edge.alongX) log.rotation.y = Math.PI / 2;
       group.add(log);
     }
   }

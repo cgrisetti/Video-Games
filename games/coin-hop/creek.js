@@ -153,6 +153,7 @@ export function makeWater() {
   water.rotation.x = -Math.PI / 2;
   water.position.y = WATER_LEVEL;
   water.receiveShadow = true;
+  water.renderOrder = -1; // Draw it before see-through things like faded trees, so they show the water behind them.
   return water;
 }
 

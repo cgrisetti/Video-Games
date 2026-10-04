@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createGnome } from './gnome.js';
 import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
-import { makeTree, makeRock, makeHedges, makeOuterWoods } from './scenery.js';
+import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TREE_RADIUS, TRUNK_DIAMETER } from './scenery.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
 import { makeRaspberry } from './raspberry.js';
 
@@ -19,11 +19,19 @@ const GNOME_RADIUS = 0.3; // How close the gnome can get to trees and rocks.
 const GNOME_MIDDLE = 0.45; // Height of the middle of the gnome, where raspberries and worms touch it.
 const CAMERA_LOOK_ABOVE = 2; // Aim the camera this far above the gnome, so the painted sky shows.
 
-// Trees block you completely. Rocks are low enough to jump over, or to stand on.
+// Trees block you completely. Rocks and logs are low enough to jump over, or to stand on.
 const TREE_COUNT = 14;
+const TREE_SIZES = [1, 1.3]; // Smallest and biggest tree, compared with the basic tree.
+const TREE_FADE = 0.3; // How solid a tree stays when it's between the camera and the gnome (0 is invisible).
 const ROCK_COUNT = 12;
+const ROCK_WIDTHS = [0.55, 0.75];
+const ROCK_HEIGHTS = [0.55, 0.7];
+const LOG_COUNT = 4;
+// Logs are as thick as the tree trunks, longer than the widest rock and shorter than the tallest tree.
+const LOG_THICKNESSES = [TRUNK_DIAMETER * TREE_SIZES[0], TRUNK_DIAMETER * TREE_SIZES[1]];
+const LOG_LENGTHS = [2 * ROCK_WIDTHS[1] + 0.3, TREE_HEIGHT * TREE_SIZES[1] - 0.3];
 const OBSTACLE_GAP = 1.2; // Space always left between them, so the gnome can squeeze through.
-const START_CLEARING = 4; // No trees or rocks this close to where the gnome starts.
+const START_CLEARING = 4; // No trees, rocks or logs this close to where the gnome starts.
 
 // The inch worms that chase you.
 const WORM_COUNT = 3; // Each one starts in a different quadrant of the field.
@@ -89,7 +97,7 @@ const gnome = createGnome();
 const player = gnome.model;
 scene.add(player);
 
-// --- Trees and rocks ---
+// --- Trees, rocks and logs ---
 
 // Everything the gnome and the worms have to get around. Each one has a spot on the ground,
 // a radius, and a height. Trees are taller than any jump, so their height is Infinity.
@@ -98,42 +106,98 @@ const obstacles = [];
 const railings = bridges.flatMap((bridge) => bridge.bumpers);
 const trees = Array.from({ length: TREE_COUNT }, makeTree);
 const rocks = Array.from({ length: ROCK_COUNT }, makeRock);
-scene.add(...trees, ...rocks);
+const logs = Array.from({ length: LOG_COUNT }, makeLog);
+scene.add(...trees, ...rocks, ...logs);
 
-// Scatter the trees and rocks to new spots, with new sizes, for a new round.
+// Scatter the trees, rocks and logs to new spots, with new sizes, for a new round.
+// Logs go first, since long things are the hardest to fit.
 function placeObstacles() {
   obstacles.length = 0;
   obstacles.push(...railings);
+  for (const log of logs) log.visible = placeLog(log);
   for (const tree of trees) {
-    const size = THREE.MathUtils.randFloat(1, 1.3);
+    const size = THREE.MathUtils.randFloat(...TREE_SIZES);
     tree.scale.setScalar(size);
     tree.rotation.y = Math.random() * Math.PI * 2;
     tree.visible = findOpenSpot(tree, 0.6 * size, Infinity);
   }
   for (const rock of rocks) {
-    const width = THREE.MathUtils.randFloat(0.55, 0.75);
-    const height = THREE.MathUtils.randFloat(0.55, 0.7);
+    const width = THREE.MathUtils.randFloat(...ROCK_WIDTHS);
+    const height = THREE.MathUtils.randFloat(...ROCK_HEIGHTS);
     rock.scale.set(width, height, width);
     rock.rotation.y = Math.random() * Math.PI * 2;
     rock.visible = findOpenSpot(rock, 0.9 * width, 0.93 * height);
   }
 }
 
-// Move a tree or rock to an open spot on dry land and add it to the obstacles.
-// Gives up if the field is too full.
+// Is x, z a good place for something `radius` wide? On dry land inside the hedges,
+// clear of the start, the bridges and every other obstacle.
+function isOpenSpot(x, z, radius) {
+  const half = PLAY_HALF - 1.5;
+  if (Math.abs(x) > half || Math.abs(z) > half) return false;
+  if (Math.hypot(x, z - START_Z) < START_CLEARING + radius) return false;
+  if (creekDistance(x, z) < CREEK_HALF_WIDTH + radius + 0.5 || isNearBridge(x, z, radius + 1)) return false;
+  return !isNearObstacle(x, z, radius + OBSTACLE_GAP);
+}
+
+// Move a tree or rock to an open spot and add it to the obstacles. Gives up if the field is too full.
 function findOpenSpot(object, radius, height) {
   const half = PLAY_HALF - 1.5;
   for (let attempt = 0; attempt < 100; attempt++) {
     const x = THREE.MathUtils.randFloat(-half, half);
     const z = THREE.MathUtils.randFloat(-half, half);
-    if (Math.hypot(x, z - START_Z) < START_CLEARING + radius) continue;
-    if (creekDistance(x, z) < CREEK_HALF_WIDTH + radius + 0.5 || isNearBridge(x, z, radius + 1)) continue;
-    if (isNearObstacle(x, z, radius + OBSTACLE_GAP)) continue;
+    if (!isOpenSpot(x, z, radius)) continue;
     object.position.set(x, 0, z);
     obstacles.push({ position: object.position, radius, height });
     return true;
   }
   return false;
+}
+
+// Lay a log down somewhere open, at a random angle. It's added to the obstacles as a row of
+// small circles along its length, so it blocks you all the way along (unless you jump).
+function placeLog(log) {
+  const length = THREE.MathUtils.randFloat(...LOG_LENGTHS);
+  const thickness = THREE.MathUtils.randFloat(...LOG_THICKNESSES);
+  const radius = thickness / 2;
+  const reach = length / 2 - radius; // From the middle of the log to the middle of its last circle.
+  const count = Math.ceil((2 * reach) / 0.15);
+  const half = PLAY_HALF - 1.5;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const x = THREE.MathUtils.randFloat(-half, half);
+    const z = THREE.MathUtils.randFloat(-half, half);
+    const angle = Math.random() * Math.PI;
+    const circles = [];
+    for (let i = 0; i <= count; i++) {
+      const along = -reach + (i / count) * 2 * reach;
+      circles.push(new THREE.Vector3(x + Math.cos(angle) * along, 0, z - Math.sin(angle) * along));
+    }
+    if (!circles.every((spot) => isOpenSpot(spot.x, spot.z, radius))) continue;
+    log.scale.set(length, thickness, thickness);
+    log.position.set(x, 0, z);
+    log.rotation.y = angle;
+    for (const position of circles) obstacles.push({ position, radius, height: thickness });
+    return true;
+  }
+  return false;
+}
+
+// Trees standing between the camera and the gnome fade out, so you never lose sight of it.
+function fadeTreesInTheWay(dt) {
+  const lineX = playerMiddle.x - camera.position.x;
+  const lineZ = playerMiddle.z - camera.position.z;
+  const lineLengthSquared = lineX * lineX + lineZ * lineZ;
+  for (const tree of trees) {
+    // How far along the line from the camera to the gnome the tree is (0 at the camera, 1 at
+    // the gnome), how far off to the side, and how high the line passes there.
+    const along = ((tree.position.x - camera.position.x) * lineX + (tree.position.z - camera.position.z) * lineZ) / lineLengthSquared;
+    const sideways = Math.hypot(camera.position.x + lineX * along - tree.position.x, camera.position.z + lineZ * along - tree.position.z);
+    const lineHeight = camera.position.y + (playerMiddle.y - camera.position.y) * along;
+    const size = tree.scale.x;
+    const inTheWay = along > 0 && along < 1 && sideways < TREE_RADIUS * size + 0.5 && lineHeight < TREE_HEIGHT * size;
+    const [trunk, leaves] = tree.userData.materials;
+    trunk.opacity = leaves.opacity = THREE.MathUtils.damp(leaves.opacity, inTheWay ? TREE_FADE : 1, 8, dt);
+  }
 }
 
 // Is the spot x, z closer than `gap` to the edge of any obstacle?
@@ -489,6 +553,7 @@ function update(dt) {
   cameraTarget.copy(playerMiddle);
   cameraTarget.y += CAMERA_LOOK_ABOVE;
   camera.lookAt(cameraTarget);
+  fadeTreesInTheWay(dt);
 }
 
 let lastTime = null;
