@@ -20,7 +20,7 @@ import { seededRandom } from './scenery.js';
 export const SKY_COLOR = '#74b6e8'; // The top of the sky. The scene background uses it too, so they meet without a seam.
 export const HAZE_COLOR = '#c2dbe0'; // The pale blue-green of faraway hills. The fog uses it too.
 
-const RADIUS = 40;
+const RADIUS = 40; // Berry Rush's size. Bigger areas ask for a bigger one.
 const BOTTOM = -1; // The backdrop covers world heights from BOTTOM to TOP.
 const TOP = 15;
 const WIDTH = 6144; // Canvas size in pixels. The painting goes round the circle twice.
@@ -43,7 +43,21 @@ const TREE_COLORS = { pine: '#2f6f3c', round: '#4f8f40', maple: '#a8503a', popla
 const GROVE_SIZES = [3, 5, 7, 13, 21, 34];
 const GLADE_CHANCE = 0.3; // How often a spot for a grove is left as open grass.
 
-export function createBackdrop() {
+// The painted backdrop, as a cylinder `radius` across around the world. It's painted only once,
+// and every area that asks for one shares the same painting.
+let painting = null;
+
+export function createBackdrop({ radius = RADIUS } = {}) {
+  painting ??= paint();
+  const backdrop = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius, radius, TOP - BOTTOM, 128, 1, true),
+    new THREE.MeshBasicMaterial({ map: painting, side: THREE.BackSide, fog: false }),
+  );
+  backdrop.position.y = (TOP + BOTTOM) / 2;
+  return backdrop;
+}
+
+function paint() {
   const canvas = document.createElement('canvas');
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
@@ -64,13 +78,7 @@ export function createBackdrop() {
   texture.wrapS = THREE.RepeatWrapping;
   texture.repeat.x = REPEATS;
   texture.anisotropy = 8;
-
-  const backdrop = new THREE.Mesh(
-    new THREE.CylinderGeometry(RADIUS, RADIUS, TOP - BOTTOM, 128, 1, true),
-    new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, fog: false }),
-  );
-  backdrop.position.y = (TOP + BOTTOM) / 2;
-  return backdrop;
+  return texture;
 }
 
 // The canvas row (pixels down from the top) for a height in the world.

@@ -384,12 +384,134 @@
       #menu-prompts span + span {
         margin-left: 12px;
       }
+      /* Some things only belong in one area: the berry counter and clock in Berry Rush, say. */
+      body:not([data-area='berry-rush']) [data-area='berry-rush'],
+      body:not([data-area='woods']) [data-area='woods'] {
+        display: none !important;
+      }
+
+      /* Walking between areas: the screen fades to dark and back. */
+      #fade {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: #10160f;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.45s ease;
+      }
+      #fade.dark {
+        opacity: 1;
+      }
+
+      /* The name of the area you've just arrived in, high in the middle of the screen. */
+      #area-card {
+        position: absolute;
+        top: 16%;
+        left: 50%;
+        transform: translate(-50%, -8px);
+        text-align: center;
+        color: #fffaf0;
+        text-shadow: 0 2px 6px rgba(30, 20, 5, 0.6), 0 0 18px rgba(255, 186, 92, 0.55);
+        opacity: 0;
+        transition: opacity 0.5s, transform 0.5s;
+        pointer-events: none;
+      }
+      #area-card.showing {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
+      #area-title {
+        font-family: var(--title-font);
+        font-size: 2.6rem;
+        white-space: nowrap;
+      }
+      #area-subtitle {
+        font-size: 1.1rem;
+        font-variant: small-caps;
+        letter-spacing: 0.2em;
+      }
+      #area-subtitle.pop {
+        animation: subtitle-pop 0.3s ease-out;
+      }
+      @keyframes subtitle-pop {
+        from {
+          transform: scale(1.4);
+          opacity: 0;
+        }
+      }
+
+      /* At an opening in the woods: which button to press, and what's there. */
+      #prompt {
+        position: absolute;
+        left: 50%;
+        bottom: 30px;
+        transform: translateX(-50%);
+        font-size: 1.05rem;
+        font-weight: normal;
+        animation: prompt-in 0.25s ease-out;
+      }
+      @keyframes prompt-in {
+        from {
+          transform: translate(-50%, 10px);
+          opacity: 0;
+        }
+      }
+      /* A game's card: press the button again to go in. */
+      #portal-card {
+        position: absolute;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        width: min(360px, calc(100vw - 32px));
+        padding: 10px 22px 14px;
+        text-align: center;
+        animation: prompt-in 0.25s ease-out;
+      }
+      #portal-blurb {
+        margin: 6px 0;
+        line-height: 1.35;
+      }
+      #portal-best {
+        margin: 0 0 10px;
+        font-style: italic;
+        color: var(--ink-soft);
+      }
+      .portal-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+      .portal-actions button {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border: 1px solid var(--frame);
+        border-radius: 999px;
+        background: #f6ecd2;
+        color: var(--ink);
+        font: inherit;
+        cursor: pointer;
+      }
+      .portal-actions button.go {
+        background: var(--highlight);
+        font-weight: bold;
+      }
+
       @media (prefers-reduced-motion: reduce) {
         .menu-card,
         #berry-pill.bump,
         #hud-hint,
-        .lantern-emblem .halo {
+        .lantern-emblem .halo,
+        #area-subtitle.pop,
+        #prompt,
+        #portal-card {
           animation: none;
+        }
+        #fade,
+        #area-card {
+          transition: none;
         }
       }
 
@@ -546,7 +668,7 @@
       </symbol>
     </svg>
 
-    <div id="hud">
+    <div id="hud" data-area="berry-rush">
       <div class="hud-pill" id="berry-pill" aria-label="Raspberries picked">
         <svg aria-hidden="true"><use href="#berry" /></svg>
         <span id="score"></span>
@@ -567,6 +689,26 @@
     </button>
 
     <div id="toast" role="status" aria-live="polite"></div>
+
+    <div id="area-card" aria-live="polite">
+      <div id="area-title"></div>
+      <div id="area-subtitle"></div>
+    </div>
+
+    <div id="prompt" class="hud-pill" hidden><kbd id="prompt-key">F</kbd><span id="prompt-text"></span></div>
+
+    <section id="portal-card" class="storybook" aria-labelledby="portal-title" hidden>
+      <svg class="sprig" aria-hidden="true"><use href="#sprig" /></svg>
+      <h2 id="portal-title"></h2>
+      <p id="portal-blurb"></p>
+      <p id="portal-best"></p>
+      <div class="portal-actions">
+        <button type="button" class="go" data-portal="play"><kbd id="portal-play-key">F</kbd> Play</button>
+        <button type="button" data-portal="close"><kbd id="portal-close-key">Esc</kbd> Not now</button>
+      </div>
+    </section>
+
+    <div id="fade"></div>
 
     <div id="menu" hidden>
       <section class="menu-card storybook" role="dialog" aria-modal="true" aria-labelledby="menu-title">
@@ -605,13 +747,23 @@
         <p id="menu-notice" hidden></p>
 
         <div class="menu-page" data-page="main">
-          <p class="tagline" data-start-only>Pick the raspberries, find the golden one, and keep away from the inch worms!</p>
+          <p class="tagline" data-start-only>Wander the lantern-lit woods and find the games hidden behind its gates.</p>
           <div class="menu-list">
             <button type="button" class="primary" data-action="resume">Resume</button>
-            <button type="button" data-action="restart" data-pause-only>Restart round</button>
+            <button type="button" data-action="restart" data-area="berry-rush">Restart round</button>
             <button type="button" data-open="settings">Settings</button>
             <button type="button" data-open="how-to-play">How to play</button>
-            <button type="button" data-action="quit">Quit to game list</button>
+            <button type="button" data-action="return" data-area="berry-rush">Return to Woods</button>
+            <button type="button" data-action="quit" data-area="woods">Quit to game list</button>
+          </div>
+        </div>
+
+        <div class="menu-page" data-page="leave" hidden>
+          <h3>Return to the woods?</h3>
+          <p class="goal">This round will end here, and its time won't go in the Top 10.</p>
+          <div class="menu-list">
+            <button type="button" class="primary" data-action="leave">Return to Woods</button>
+            <button type="button" data-action="back">Keep playing</button>
           </div>
         </div>
 
@@ -650,11 +802,16 @@
 
         <div class="menu-page" data-page="how-to-play" hidden>
           <h3>How to play</h3>
-          <p class="goal">
+          <p class="goal" data-area="woods">
+            Follow the forest path. Behind the gates, archways and openings along it are games to play. Walk up to one and press
+            <kbd>F</kbd> (<kbd>□</kbd> on a controller) to see what's there, then press it again to go in.
+          </p>
+          <p class="goal" data-area="woods">Berry Rush is open now. The others are coming soon!</p>
+          <p class="goal" data-area="berry-rush">
             Pick all 9 raspberries. Then your fox friend sniffs out the golden raspberry: follow it! The clock stops when you pick
             the golden one.
           </p>
-          <p class="goal">
+          <p class="goal" data-area="berry-rush">
             If an inch worm touches you, the round is over. Bonk one on the head with your stick and it's knocked out for a few
             seconds, but each bonk makes it a little faster.
           </p>
@@ -666,8 +823,9 @@
               <tr><td>Move</td><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows</td><td>Left stick or D-pad</td></tr>
               <tr><td>Jump</td><td><kbd>Space</kbd></td><td><kbd>✕</kbd></td></tr>
               <tr><td>Swing stick</td><td><kbd>F</kbd></td><td><kbd>□</kbd></td></tr>
+              <tr data-area="woods"><td>Go through a gate</td><td><kbd>F</kbd>, then <kbd>F</kbd></td><td><kbd>□</kbd>, then <kbd>□</kbd></td></tr>
               <tr><td>Pause</td><td><kbd>Esc</kbd> or <kbd>P</kbd></td><td><kbd>Options</kbd></td></tr>
-              <tr><td>Restart</td><td><kbd>R</kbd></td><td>From this menu</td></tr>
+              <tr data-area="berry-rush"><td>Restart</td><td><kbd>R</kbd></td><td>From this menu</td></tr>
               <tr><td>Music on/off</td><td><kbd>M</kbd></td><td>In Settings</td></tr>
             </tbody>
           </table>
@@ -685,7 +843,7 @@
       <h2>Top 10 Raspberry Pickers</h2>
       <p id="result"></p>
       <ol id="scores"></ol>
-      <p class="again">Press <kbd>R</kbd> or <kbd>Options</kbd> to play again</p>
+      <p class="again">Press <kbd>R</kbd> or <kbd>Options</kbd> to play again, or <kbd>Esc</kbd> for the menu</p>
       <button id="reset-scores" type="button">Reset leaderboard</button>
     </section>
     <script type="module" src="./main.js"></script>

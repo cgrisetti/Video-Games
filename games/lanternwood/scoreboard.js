@@ -36,6 +36,11 @@ export function showScoreboard(time) {
   listEl.querySelector('input')?.focus();
 }
 
+// The fastest time on the board ({ name, time }), or null if there isn't one yet.
+export function bestTime() {
+  return scores[0] ?? null;
+}
+
 // Hide the board when a new round starts. A time still waiting for its name is saved
 // with whatever has been typed so far.
 export function hideScoreboard() {

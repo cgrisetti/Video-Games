@@ -196,14 +196,15 @@ function makeRhythm() {
 
 // Two staggered rows of little round bushes along all four edges, with flowering shrubs mixed in.
 // Where the creek flows out of the field, the hedge stops and a fallen log lies across the water.
-export function makeHedges(arenaSize, thickness) {
+// `openings` leave gaps for gates: [{ edge: 'south', from, to }], from and to along the edge.
+export function makeHedges(arenaSize, thickness, openings = []) {
   const half = arenaSize / 2;
   const line = half - thickness / 2; // From the middle of the field to the middle of the hedge.
   const edges = [
-    { spot: (t, row) => [t, -line + row], alongX: true }, // north
-    { spot: (t, row) => [t, line + row], alongX: true }, // south
-    { spot: (t, row) => [-line + row, t], alongX: false }, // west
-    { spot: (t, row) => [line + row, t], alongX: false }, // east
+    { name: 'north', spot: (t, row) => [t, -line + row], alongX: true },
+    { name: 'south', spot: (t, row) => [t, line + row], alongX: true },
+    { name: 'west', spot: (t, row) => [-line + row, t], alongX: false },
+    { name: 'east', spot: (t, row) => [line + row, t], alongX: false },
   ];
   const group = new THREE.Group();
   const bushes = [];
@@ -218,6 +219,7 @@ export function makeHedges(arenaSize, thickness) {
     for (let i = 0; i <= steps; i++) {
       const t = -half + (i / steps) * arenaSize;
       const [x, z] = edge.spot(t, 0);
+      if (openings.some((opening) => opening.edge === edge.name && t > opening.from && t < opening.to)) continue;
       if (creekDistance(x, z) < CREEK_HALF_WIDTH + 0.3) {
         if (gapStart === null) gapStart = t;
         gapEnd = t;
@@ -239,6 +241,34 @@ export function makeHedges(arenaSize, thickness) {
     }
   }
 
+  group.add(instancedPlants(hedgeGeometry, bushes), instancedPlants(bloomGeometry, blooms), instancedPlants(spikeGeometry, spikes));
+  return group;
+}
+
+// Hedges along straight lines, for areas that aren't a square field: each wall runs `from` one
+// [x, z] point `to` another, with `gaps` left open: [[start, end], ...] in distances along the wall.
+export function makeHedgeWalls(walls, thickness) {
+  const bushes = [];
+  const blooms = [];
+  const spikes = [];
+  const rhythm = makeRhythm();
+  for (const { from, to, gaps = [] } of walls) {
+    const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
+    const alongX = (to[0] - from[0]) / length;
+    const alongZ = (to[1] - from[1]) / length;
+    const steps = Math.round(length / 0.55);
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * length;
+      if (gaps.some(([start, end]) => t > start && t < end)) continue;
+      for (const row of [-thickness / 4, thickness / 4]) {
+        const shift = row > 0 ? 0.27 : 0; // The two rows are staggered.
+        const x = from[0] + alongX * (t + shift) - alongZ * row;
+        const z = from[1] + alongZ * (t + shift) + alongX * row;
+        bushes.push(makeBush(x, z, rhythm, blooms, spikes));
+      }
+    }
+  }
+  const group = new THREE.Group();
   group.add(instancedPlants(hedgeGeometry, bushes), instancedPlants(bloomGeometry, blooms), instancedPlants(spikeGeometry, spikes));
   return group;
 }
@@ -366,21 +396,32 @@ export function seededRandom(seed) {
   };
 }
 
-// Trees beyond the hedges on the west, north and east sides. They're "instanced": each tree part
-// is drawn for every tree of that kind in one go, which keeps hundreds of trees fast.
+// The woods around Berry Rush's square field: west, north and east. (The camera looks north,
+// so the south is left open behind it.)
 export function makeOuterWoods(arenaSize) {
-  const random = seededRandom(WOODS_SEED);
+  const edge = arenaSize / 2 + 0.8;
+  return growWoods({
+    backFromHedge: (x, z) => Math.max(Math.abs(x), -z) - edge,
+    reach: 39, // The painted hills start at 40.
+    zMax: edge,
+    keepClear: (x, z) => z > edge - 1 || creekDistance(x, z) < CREEK_HALF_WIDTH + 0.8,
+  });
+}
+
+// Woods around any area. `backFromHedge(x, z)` is how far a spot is outside the area's hedge
+// (below 0 inside it). Trees grow out to `reach` from the middle, never where `keepClear(x, z)`
+// says, and grove spots are picked with z up to `zMax`. The trees are "instanced": each tree part
+// is drawn for every tree of that kind in one go, which keeps hundreds of trees fast.
+export function growWoods({ backFromHedge, reach, zMax = reach, keepClear = () => false, seed = WOODS_SEED }) {
+  const random = seededRandom(seed);
   const between = (low, high) => low + (high - low) * random();
   const pick = (list) => list[Math.floor(random() * list.length)];
-  const edge = arenaSize / 2 + 0.8;
-  const reach = 39; // The painted hills start at 40.
-  const backFromHedge = (x, z) => Math.max(Math.abs(x), -z) - edge;
   const depthOf = (x, z) => THREE.MathUtils.clamp(backFromHedge(x, z) / DEPTH_OF_WOODS, 0, 1); // 0 at the hedge, 1 deep in.
   const trees = [];
   const shrubs = [];
   const fits = (x, z, spread, closeness) => {
-    const outsideField = Math.abs(x) > edge + spread * 0.4 || z < -(edge + spread * 0.4); // Leaves may hang a little over the hedge.
-    if (!outsideField || z > edge - 1 || Math.hypot(x, z) + spread > reach || creekDistance(x, z) < CREEK_HALF_WIDTH + 0.8) return false;
+    const outsideArea = backFromHedge(x, z) > spread * 0.4; // Leaves may hang a little over the hedge.
+    if (!outsideArea || Math.hypot(x, z) + spread > reach || keepClear(x, z)) return false;
     return !trees.some((tree) => Math.hypot(tree.x - x, tree.z - z) < (tree.spread + spread) * closeness);
   };
   const plant = (kind, x, z, size) => {
@@ -393,7 +434,7 @@ export function makeOuterWoods(arenaSize) {
   const groves = [];
   for (let attempt = 0; attempt < 6000; attempt++) {
     const x = between(-reach, reach);
-    const z = between(-reach, edge);
+    const z = between(-reach, zMax);
     if (backFromHedge(x, z) < 0 || Math.hypot(x, z) > reach - 1) continue;
     const gap = THREE.MathUtils.lerp(...GROVE_GAP, depthOf(x, z));
     if (groves.some((grove) => Math.hypot(grove.x - x, grove.z - z) < gap)) continue;

@@ -1,6 +1,6 @@
 # Video Games
 
-3D browser games we build by describing them to Claude. Each game lives in `games/`, runs in a web browser, and uses [Three.js](https://threejs.org/) for the 3D graphics. The first game is **Lanternwood**, a woodland arcade: play as a little gnome in lantern-lit woods, pick raspberries with your fox friend and dodge (or bonk) the inch worms. Play it, then change it.
+3D browser games we build by describing them to Claude. Each game lives in `games/`, runs in a web browser, and uses [Three.js](https://threejs.org/) for the 3D graphics. The first game is **Lanternwood**, a woodland arcade: walk a little gnome down a lantern-lit forest path, and go through the gates along it to play games. The first one, **Berry Rush**, has you picking raspberries with your fox friend while dodging (or bonking) rainbow inch worms. Play it, then change it.
 
 ## 1. What you need
 
@@ -90,7 +90,7 @@ To play outside the app, run `npm run dev` in the project folder and open <http:
 
 Changing Lanternwood:
 
-- "Add a glowing path through the woods that leads to a lantern-lit clearing with a new mini-game."
+- "Make the next game, behind the hedge archway across from Berry Rush: a mushroom-hopping race."
 - "Make it slowly turn to dusk, with fireflies, and the lanterns glowing brighter as it gets dark."
 - "Hide a few acorns around the woods to collect, with a counter in the pause menu."
 - "Add a mushroom that makes the gnome jump twice as high for ten seconds."
@@ -121,8 +121,10 @@ Each new game gets its own folder in `games/` and a link on the launcher page.
 ```
 index.html          Launcher page that links to every game
 games/lanternwood/  The first game: Lanternwood
-  index.html        Page, on-screen HUD and styles
-  main.js           The game itself
+  index.html        Page, on-screen HUD, menus and styles
+  main.js           Runs the game and moves you between areas
+  woods.js          The Forest Hallway: the path with the gates to the games
+  berry-rush.js     Berry Rush, the first game behind a gate
 CLAUDE.md           Instructions Claude reads about this project
 .claude/launch.json Tells the Claude app how to start the preview
 ```

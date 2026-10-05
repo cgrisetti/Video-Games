@@ -27,8 +27,11 @@ const wasDown = []; // Which controller buttons were down last frame, to spot ne
 let lastPad = null; // Which controller that was.
 let jumpHeldOver = false; // After leaving the menu with ✕, ignore that press until it's let go.
 let menuStep = { x: 0, y: 0, next: 0 }; // The direction held in a menu, and when it repeats.
+let controllerLast = false; // Was the controller (not the keyboard or mouse) used last? For showing the right button names.
 
+window.addEventListener('pointerdown', () => (controllerLast = false));
 window.addEventListener('keydown', (event) => {
+  controllerLast = false;
   // Typing a name for the Top 10, or using a menu button or slider, shouldn't move the gnome.
   if (event.target instanceof Element && event.target.closest('input, button, select, textarea')) return;
   if (event.code === 'Space' || event.code.startsWith('Arrow')) event.preventDefault();
@@ -63,6 +66,8 @@ export function readInput() {
     for (let i = 0; i < (pad?.buttons.length ?? 0); i++) wasDown[i] = button(i);
   }
   const pressed = (index) => button(index) && !wasDown[index];
+  if (!pad) controllerLast = false;
+  else if (pad.buttons.some((b) => b.pressed) || Math.hypot(pad.axes[0] ?? 0, pad.axes[1] ?? 0) > 0.5) controllerLast = true;
 
   // WASD, arrow keys and the D-pad: eight directions, always at full speed.
   let x = 0;
@@ -147,4 +152,9 @@ function controller() {
 
 export function isControllerConnected() {
   return controller() !== null;
+}
+
+// Was the controller used more recently than the keyboard or mouse? Prompts show its buttons if so.
+export function isUsingController() {
+  return controllerLast;
 }

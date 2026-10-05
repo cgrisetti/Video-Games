@@ -21,18 +21,28 @@ const glows = []; // Every lantern's glow, so they can all flicker.
 // A lantern on its post, standing at 0, 0, 0 with the lantern hanging out along +x.
 export function makeLantern() {
   const lantern = new THREE.Group();
-  const lampY = LANTERN_HEIGHT - 0.42;
   const post = new THREE.Mesh(postGeometry, postMaterial);
   const arm = new THREE.Mesh(armGeometry, postMaterial);
   const cord = new THREE.Mesh(cordGeometry, capMaterial);
+  const lamp = makeHangingLantern();
+  lamp.position.set(ARM, LANTERN_HEIGHT - 0.2, 0);
+  post.castShadow = true;
+  arm.castShadow = true;
+  lantern.add(post, arm, cord, lamp);
+  return lantern;
+}
+
+// Just the paper lantern, to hang from something (an arch, a branch). It hangs down from 0, 0, 0.
+export function makeHangingLantern() {
+  const lamp = new THREE.Group();
   const paper = new THREE.Mesh(paperGeometry, paperMaterial);
   const top = new THREE.Mesh(capGeometry, capMaterial);
   const bottom = new THREE.Mesh(capGeometry, capMaterial);
-  paper.position.set(ARM, lampY, 0);
-  top.position.set(ARM, lampY + 0.21, 0);
-  bottom.position.set(ARM, lampY - 0.21, 0);
+  paper.position.y = -0.22;
+  top.position.y = -0.01;
+  bottom.position.y = -0.43;
   bottom.rotation.x = Math.PI; // Wider at the paper, both ends.
-  for (const part of [post, arm, paper]) part.castShadow = true;
+  paper.castShadow = true;
 
   // A soft halo of light around the paper, always facing the camera.
   const glow = new THREE.Sprite(
@@ -43,8 +53,8 @@ export function makeLantern() {
   glow.userData.phase = Math.random() * 100;
   glows.push(glow);
 
-  lantern.add(post, arm, cord, paper, top, bottom, glow);
-  return lantern;
+  lamp.add(paper, top, bottom, glow);
+  return lamp;
 }
 
 // Make every lantern's glow flicker a little, like a candle. `time` is in seconds.

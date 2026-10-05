@@ -1,9 +1,11 @@
-import { isControllerConnected, ignoreHeldJump } from './input.js';
+import { ignoreHeldJump, isUsingController } from './input.js';
 import { musicSettings, setMusicVolume, setMusicMuted, setMusicStyle, setMusicPaused } from './music.js';
 import { soundSettings, setSoundVolume, playPop } from './sounds.js';
 
 // The menu: a start screen when the page opens, and the pause menu during play, with pages for
-// Settings and How to play. It works the way console game menus do:
+// Settings and How to play. What's in it depends on where you are: in a game like Berry Rush you
+// can restart the round or return to the woods; in the woods you can quit to the game list.
+// It works the way console game menus do:
 //   - Esc or P (keyboard), Options (controller) or the pause button opens and closes it.
 //   - Up and down choose a row, left and right change a setting, Enter or ✕ picks, Esc or ○ goes back.
 //   - The mouse works too: point at a row to choose it, click to pick it.
@@ -36,12 +38,15 @@ const toast = document.getElementById('toast');
 let isOpen = false;
 let starting = true; // The start screen, before the first round: "Play" instead of "Resume".
 let page = 'main';
-let actions = { restart() {}, canPause: () => true };
+let actions = {};
 let toastTimer = null;
-let usingController = false;
+let shownController = false; // Whether the button hints show the controller's buttons.
 let chosen = null; // The button or slider on the chosen row.
 
-// The game tells the menu how to restart a round, and when pausing makes sense (not after the round is over).
+// The game tells the menu what its buttons do:
+//   restart(), returnToWoods(), roundInProgress() (leaving would lose a round), canPause() (pausing
+//   by itself makes sense now), busy() (between areas: no menu), dismiss() (put away whatever the
+//   area has open, like a game card; true if there was something), started() (the first Play).
 export function initMenu(gameActions) {
   actions = gameActions;
   showSettings();
@@ -69,6 +74,7 @@ export function openMenu({ start = false, message = '' } = {}) {
 }
 
 export function closeMenu() {
+  const wasStarting = starting;
   isOpen = false;
   starting = false;
   menu.hidden = true;
@@ -76,6 +82,7 @@ export function closeMenu() {
   document.activeElement?.blur(); // Hand the keyboard back to the game.
   ignoreHeldJump();
   setMusicPaused(false);
+  if (wasStarting) actions.started?.();
 }
 
 function showPage(name) {
@@ -155,15 +162,17 @@ function showSettings() {
 // The button hints along the bottom of the menu, and on the pause button, for whichever you're using.
 function showPrompts() {
   const close = starting ? 'Play' : 'Resume';
-  prompts.innerHTML = usingController
+  prompts.innerHTML = shownController
     ? `<span><kbd>✕</kbd> Select</span><span><kbd>○</kbd> Back</span><span><kbd>Options</kbd> ${close}</span>`
     : `<span><kbd>↑</kbd><kbd>↓</kbd> Choose</span><span><kbd>Enter</kbd> Select</span><span><kbd>Esc</kbd> Back</span>`;
-  pauseKey.textContent = usingController ? 'Options' : 'Esc';
+  pauseKey.textContent = shownController ? 'Options' : 'Esc';
 }
 
-function noticeController(connected) {
-  if (connected === usingController) return;
-  usingController = connected;
+// Switch the button hints between the keyboard's and the controller's, whichever was used last.
+// The game calls this every frame; it only redraws when something changed.
+export function updateButtonHints() {
+  if (isUsingController() === shownController) return;
+  shownController = isUsingController();
   showPrompts();
 }
 
@@ -184,7 +193,6 @@ export function menuInput(controls) {
   }
   if (controls.back) goBack();
   if (controls.pause) closeMenu();
-  if (controls.menuX || controls.menuY || controls.confirm || controls.back) noticeController(true);
 }
 
 // --- Clicks, keys and pointing ---
@@ -205,6 +213,12 @@ menu.addEventListener('click', (event) => {
     actions.restart();
     closeMenu();
   }
+  // Leaving a game mid-round asks first, since the round would be lost.
+  if (action === 'return' && actions.roundInProgress()) showPage('leave');
+  else if (action === 'return' || action === 'leave') {
+    closeMenu();
+    actions.returnToWoods();
+  }
   if (action === 'quit') location.href = '../../';
   if (button === musicToggle || button === styleChoice) adjust(1);
 });
@@ -224,7 +238,6 @@ menu.addEventListener('pointermove', (event) => {
   const row = event.target.closest('.menu-list > button, .setting');
   const target = row?.matches('.setting') ? row.querySelector('button, input') : row;
   if (target && chosen !== target && !(event.buttons && chosen?.type === 'range')) choose(target);
-  noticeController(false);
 });
 
 pauseButton.addEventListener('click', () => openMenu());
@@ -236,7 +249,6 @@ menu.addEventListener('focusin', (event) => {
 window.addEventListener('keydown', (event) => {
   const typing = event.target instanceof HTMLInputElement && event.target.type === 'text';
   if (typing || event.repeat) return;
-  noticeController(false);
   if (event.code === 'KeyM') {
     setMusicMuted(!musicSettings.muted);
     showSettings();
@@ -246,7 +258,7 @@ window.addEventListener('keydown', (event) => {
   if (event.code === 'Escape' || event.code === 'KeyP') {
     event.preventDefault();
     if (isOpen) goBack();
-    else openMenu();
+    else if (!actions.busy() && !actions.dismiss()) openMenu();
     return;
   }
   if (!isOpen) return;
@@ -261,17 +273,15 @@ window.addEventListener('keydown', (event) => {
 
 // Pause by yourself when the player looks away: another window, another tab, or an unplugged controller.
 function autoPause(message = '') {
-  if (!isOpen && actions.canPause()) openMenu({ message });
+  if (!isOpen && !actions.busy() && actions.canPause()) openMenu({ message });
   else if (isOpen && message) showNotice(message);
 }
 window.addEventListener('blur', () => autoPause());
 document.addEventListener('visibilitychange', () => document.hidden && autoPause());
 window.addEventListener('gamepaddisconnected', () => {
-  noticeController(isControllerConnected());
   autoPause('Your controller came unplugged. Plug it back in, or carry on with the keyboard.');
 });
 window.addEventListener('gamepadconnected', () => {
-  noticeController(true);
   showToast('Controller connected');
   if (isOpen) showNotice('');
 });
