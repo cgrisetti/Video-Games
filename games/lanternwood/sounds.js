@@ -8,6 +8,13 @@ import { loadSaved, save } from './saved.js';
 //     on the notes of the music's key (D major), with a sparkling run for the golden one;
 //   - an inch worm catching the gnome: chomp, chomp, gulp;
 //   - in the maze: a soft bell as each lantern lights, and a sparkling run when you find the way out.
+// And for Gnome Crossing:
+//   - a hop: a soft little "hup" and a brush of grass;
+//   - falling in the creek: a plop, a gush of water and a few drips;
+//   - being bowled over by a deer, boar or hedgehog: a thump, a tumble and a dizzy "whee";
+//   - the owl: two soft hoots and a few beats of its wings;
+//   - the golden glow saving you: the golden raspberry's run, quickly, with a shimmer;
+//   - a little bell on a post, ringing before a herd of deer comes running down a trail.
 // They all pass through a little "forest" echo so they sit in the same place as the music.
 
 const LEVEL = 0.6; // How loud the effects are at full volume, to sit nicely with the music.
@@ -90,6 +97,63 @@ export function playEscape() {
   GOLDEN_RUN.forEach((note, i) => chime(note, i * 0.11, 0.24));
   chime(GOLDEN_RUN[0] / 2, 0, 0.2);
   hiss({ type: 'highpass', q: 0.7, sweep: [5000], attack: 0.1, decay: 0.9, gain: 0.07, at: 0.1 });
+}
+
+// A hop: soft enough to hear over and over without minding.
+export function playHop() {
+  if (!ready()) return;
+  tone({ from: 240, to: 420, glide: 0.05, attack: 0.004, decay: 0.07, gain: 0.12 });
+  hiss({ type: 'bandpass', q: 1.2, sweep: [2600, 1800], decay: 0.04, gain: 0.05 });
+}
+
+// Falling in the creek: a deep plop, a gush of water settling, and a few drips.
+export function playSplash(pan = 0) {
+  if (!ready()) return;
+  tone({ from: 520, to: 110, glide: 0.16, attack: 0.004, decay: 0.2, gain: 0.45, pan });
+  hiss({ type: 'lowpass', q: 0.8, sweep: [2600, 1400, 350], attack: 0.01, decay: 0.55, gain: 0.55, pan });
+  hiss({ type: 'highpass', q: 0.7, sweep: [4000], attack: 0.005, decay: 0.12, gain: 0.12, at: 0.02, pan });
+  for (const [at, note] of [[0.28, 1480], [0.4, 1975], [0.55, 1318]]) {
+    tone({ from: note, to: note * 1.4, glide: 0.03, attack: 0.002, decay: 0.05, gain: 0.09, at, pan });
+  }
+}
+
+// Bowled over: a soft thump, a tumble through the grass, and a dizzy little "whee" that slides down.
+export function playTumble(pan = 0) {
+  if (!ready()) return;
+  tone({ from: 170, to: 60, glide: 0.12, decay: 0.16, gain: 0.6, pan });
+  hiss({ type: 'bandpass', q: 1.5, sweep: [900, 500], attack: 0.004, decay: 0.12, gain: 0.35, pan });
+  hiss({ type: 'bandpass', q: 1, sweep: [1800, 700], attack: 0.02, decay: 0.3, gain: 0.18, at: 0.1, pan });
+  tone({ from: 1100, to: 380, glide: 0.45, attack: 0.02, decay: 0.45, gain: 0.14, at: 0.16, wobble: [9, 40], pan });
+}
+
+// The owl: a few beats of its big soft wings, then "hoo... hoooo". Without `wings`, just the
+// hoots, as a warning from somewhere out in the dark.
+export function playHoot(pan = 0, { wings = true } = {}) {
+  if (!ready()) return;
+  const start = wings ? 0.6 : 0;
+  if (wings) {
+    for (const at of [0, 0.22, 0.44]) hiss({ type: 'bandpass', q: 0.9, sweep: [380, 900, 420], attack: 0.06, decay: 0.12, gain: 0.3, at, pan });
+  }
+  const gain = wings ? 1 : 0.6; // Further off when it's only a warning.
+  tone({ from: 410, to: 380, glide: 0.25, attack: 0.05, decay: 0.3, gain: 0.32 * gain, at: start, wobble: [5, 6], pan });
+  tone({ from: 400, to: 330, glide: 0.6, attack: 0.07, decay: 0.65, gain: 0.34 * gain, at: start + 0.4, wobble: [5, 6], pan });
+}
+
+// The golden glow saving the gnome: the golden raspberry's run, quick, twice, with a shimmer.
+export function playGoldenSave() {
+  if (!ready()) return;
+  GOLDEN_RUN.forEach((note, i) => chime(note, i * 0.045, 0.18));
+  GOLDEN_RUN.forEach((note, i) => chime(note * 2, 0.25 + i * 0.045, 0.1));
+  hiss({ type: 'highpass', q: 0.7, sweep: [6000], attack: 0.08, decay: 0.7, gain: 0.1 });
+}
+
+// A little brass bell on a post: ding, ding. Bells ring with an odd, clangy overtone (2.76 times the note).
+export function playBell(pan = 0) {
+  if (!ready()) return;
+  for (const at of [0, 0.28]) {
+    tone({ from: 1568, decay: 0.5, gain: 0.16, at, attack: 0.002, pan });
+    tone({ from: 1568 * 2.76, decay: 0.25, gain: 0.05, at, attack: 0.002, pan });
+  }
 }
 
 // 0 (silent) to 1 (full).

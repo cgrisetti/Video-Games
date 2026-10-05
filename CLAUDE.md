@@ -12,8 +12,8 @@ A playground for building small 3D browser games together by prompting Claude. T
 
 - `index.html` is the launcher page that links to every game.
 - `games/<game-name>/` holds one game: an `index.html` (page, HUD, styles) and a `main.js` (the game). Split `main.js` into more files only once it gets hard to follow.
-- `games/lanternwood/` is the first game, Lanternwood: a woodland arcade. The gnome walks a lantern-lit path (the Glenn, `woods.js`) and goes through gates into mini-games: Berry Rush (`berry-rush.js`) and the Bramble Maze (`maze.js`). `main.js` runs whichever area you're in. It's a good reference for the patterns below.
-- To add a mini-game to Lanternwood, make it an area like `berry-rush.js` and give it an opening in `woods.js` (the `GAMES` and `OPENINGS` lists).
+- `games/lanternwood/` is the first game, Lanternwood: a woodland arcade. The gnome walks a lantern-lit path (the Glenn, `woods.js`) and goes through gates into mini-games: Berry Rush (`berry-rush.js`), the Bramble Maze (`maze.js`) and Gnome Crossing (`gnome-crossing.js`, with its endless trail in `trail.js` and its animals in `critters.js`). `main.js` runs whichever area you're in. It's a good reference for the patterns below.
+- To add a mini-game to Lanternwood, make it an area like `berry-rush.js`, add it to `areas` in `main.js`, give it an opening in `woods.js` (the `GAMES` and `OPENINGS` lists) and a Top 10 board in `scoreboard.js`. Things only one area shows get `data-area="<area>"` in `index.html`.
 
 ## Making a new game
 

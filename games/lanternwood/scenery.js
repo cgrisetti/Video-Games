@@ -558,3 +558,157 @@ function instancedTrees(geometry, material, trees) {
   mesh.castShadow = true;
   return mesh;
 }
+
+// --- Trees that come and go ---
+
+// A pool of trees for an area that keeps changing, like Gnome Crossing's endless trail. Like the
+// woods, each tree part is drawn for every tree at once, which keeps hundreds of trees fast.
+// plant(kind, x, z, size, turn, tint) puts a tree out and returns a ticket; uproot(ticket) takes
+// it away again, freeing its place for another. `kinds` are the kinds it can grow, `perKind` how many of each.
+export function createTreePool(kinds, perKind) {
+  const group = new THREE.Group();
+  const pools = {};
+  const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+  const white = new THREE.Color(0xffffff);
+  for (const kind of kinds) {
+    const meshes = TREES[kind].parts.map(([geometry, material]) => {
+      const mesh = new THREE.InstancedMesh(geometry, material, perKind);
+      for (let i = 0; i < perKind; i++) {
+        mesh.setMatrixAt(i, hidden);
+        mesh.setColorAt(i, white);
+      }
+      mesh.castShadow = true;
+      mesh.frustumCulled = false; // Its trees move about, so always draw it rather than guess where they are.
+      group.add(mesh);
+      return mesh;
+    });
+    pools[kind] = { meshes, free: Array.from({ length: perKind }, (_, i) => perKind - 1 - i) };
+  }
+  const matrix = new THREE.Matrix4();
+  const position = new THREE.Vector3();
+  const turnBy = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+
+  function set(kind, slot, transform, tint) {
+    for (const mesh of pools[kind].meshes) {
+      mesh.setMatrixAt(slot, transform);
+      mesh.instanceMatrix.needsUpdate = true;
+      if (tint) {
+        mesh.setColorAt(slot, tint);
+        mesh.instanceColor.needsUpdate = true;
+      }
+    }
+  }
+
+  function plant(kind, x, z, size = 1, turn = 0, tint = white) {
+    const slot = pools[kind].free.pop();
+    if (slot === undefined) return null; // All in use: no tree this time.
+    turnBy.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, turn);
+    set(kind, slot, matrix.compose(position.set(x, 0, z), turnBy, scale.setScalar(size)), tint);
+    return { kind, slot };
+  }
+
+  function uproot(ticket) {
+    if (!ticket) return;
+    set(ticket.kind, ticket.slot, hidden);
+    pools[ticket.kind].free.push(ticket.slot);
+  }
+
+  return { group, plant, uproot, blockRadius: (kind) => TREES[kind].blockRadius };
+}
+
+// --- Toadstools and bushes, for Gnome Crossing's meadows ---
+
+// Build something from parts once, then merge its parts into one shape per color, so each copy
+// is quick to draw: makes a function that hands out new copies sharing those shapes.
+function mergedCopies(build) {
+  let parts = null;
+  return () => {
+    if (!parts) {
+      const original = build();
+      original.updateMatrixWorld(true);
+      const byMaterial = new Map();
+      original.traverse((part) => {
+        if (!part.isMesh) return;
+        if (!byMaterial.has(part.material)) byMaterial.set(part.material, []);
+        byMaterial.get(part.material).push(part.geometry.clone().applyMatrix4(part.matrixWorld));
+      });
+      parts = [...byMaterial].map(([material, geometries]) => [mergeGeometries(geometries), material]);
+    }
+    const copy = new THREE.Group();
+    for (const [geometry, material] of parts) {
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      copy.add(mesh);
+    }
+    return copy;
+  };
+}
+
+// A toadstool, red with white spots like the gnome's hat, often with a little one beside it.
+const stemMaterial = new THREE.MeshStandardMaterial({ color: 0xf1e8d2, roughness: 0.8 });
+const toadstoolCapMaterial = new THREE.MeshStandardMaterial({ color: 0xd7261e, roughness: 0.55 });
+const gillMaterial = new THREE.MeshStandardMaterial({ color: 0xe8d9b8, roughness: 0.9 });
+const spotMaterial = new THREE.MeshStandardMaterial({ color: 0xfffaf0, roughness: 0.6 });
+const CAP_RADIUS = 0.42;
+const CAP_SQUASH = 0.72;
+
+function buildToadstool(withLittleOne) {
+  const stem = new THREE.CylinderGeometry(0.11, 0.15, 0.5, 10).translate(0, 0.25, 0);
+  const cap = new THREE.SphereGeometry(CAP_RADIUS, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, CAP_SQUASH, 1).translate(0, 0.46, 0);
+  const gills = new THREE.CircleGeometry(CAP_RADIUS * 0.96, 18).rotateX(Math.PI / 2).translate(0, 0.46, 0);
+  const spot = new THREE.SphereGeometry(0.065, 8, 6).scale(1, 0.35, 1);
+  const group = new THREE.Group();
+  const grow = (size, x, z, lean) => {
+    const toadstool = new THREE.Group();
+    toadstool.add(new THREE.Mesh(stem, stemMaterial), new THREE.Mesh(cap, toadstoolCapMaterial), new THREE.Mesh(gills, gillMaterial));
+    // White spots, spread over the cap a golden angle apart, each lying flat on it.
+    for (let i = 0; i < 8; i++) {
+      const down = 0.25 + 0.9 * ((i * 0.618) % 1); // How far down from the top of the cap.
+      const round = i * GOLDEN_ANGLE;
+      const normal = new THREE.Vector3(Math.sin(down) * Math.cos(round), Math.cos(down), Math.sin(down) * Math.sin(round));
+      const dot = new THREE.Mesh(spot, spotMaterial);
+      dot.position.set(normal.x * CAP_RADIUS, 0.46 + normal.y * CAP_RADIUS * CAP_SQUASH, normal.z * CAP_RADIUS);
+      dot.quaternion.setFromUnitVectors(THREE.Object3D.DEFAULT_UP, normal);
+      toadstool.add(dot);
+    }
+    toadstool.scale.setScalar(size);
+    toadstool.position.set(x, 0, z);
+    toadstool.rotation.z = lean;
+    group.add(toadstool);
+  };
+  grow(1, 0, 0, 0);
+  if (withLittleOne) grow(0.5, 0.42, 0.22, -0.18);
+  return group;
+}
+
+const toadstoolPair = mergedCopies(() => buildToadstool(true));
+const toadstoolAlone = mergedCopies(() => buildToadstool(false));
+
+export function makeToadstool(withLittleOne = true) {
+  return withLittleOne ? toadstoolPair() : toadstoolAlone();
+}
+
+// A round leafy bush, three lumps of leaves big, medium and small, dotted with blueberries.
+const bushMaterial = new THREE.MeshStandardMaterial({ color: 0x3f8040, roughness: 0.8, flatShading: true });
+const blueberryMaterial = new THREE.MeshStandardMaterial({ color: 0x3d4f9e, roughness: 0.35 });
+
+export const makeBlueberryBush = mergedCopies(() => {
+  const bush = new THREE.Group();
+  const lumpGeometry = new THREE.IcosahedronGeometry(1, 1);
+  const berryGeometry = new THREE.SphereGeometry(0.055, 8, 6);
+  for (const [r, x, y, z] of [[0.48, 0, 0.4, 0], [0.34, 0.36, 0.3, 0.12], [0.26, -0.3, 0.25, 0.2]]) {
+    const lump = new THREE.Mesh(lumpGeometry, bushMaterial);
+    lump.scale.set(r, r * 0.85, r);
+    lump.position.set(x, y, z);
+    bush.add(lump);
+  }
+  for (let i = 0; i < 9; i++) {
+    const round = i * GOLDEN_ANGLE;
+    const up = 0.15 + 0.6 * ((i * 0.618) % 1);
+    const berry = new THREE.Mesh(berryGeometry, blueberryMaterial);
+    berry.position.set(Math.cos(round) * 0.47 * Math.cos(up), 0.4 + Math.sin(up) * 0.4, Math.sin(round) * 0.47 * Math.cos(up));
+    bush.add(berry);
+  }
+  return bush;
+});

@@ -5,17 +5,18 @@ import { showBanner } from './banner.js';
 import { woods } from './woods.js';
 import { berryRush } from './berry-rush.js';
 import { brambleMaze } from './maze.js';
+import { gnomeCrossing } from './gnome-crossing.js';
 
 // Lanternwood: lantern-lit woods (the Glenn) with games behind the gates along its path.
 // This file runs the show. It draws whichever area you're in and hands it the controls each
 // frame, and it walks you between areas with a fade to dark and back, the way hub-world games
-// do. Each area (woods.js, berry-rush.js, maze.js) has its own scene, camera and gnome, and these parts:
-//   update(dt, controls), enter(options), leave(), canPause(), and optionally restart(),
-//   roundInProgress() and dismiss().
+// do. Each area (woods.js, berry-rush.js, maze.js, gnome-crossing.js) has its own scene, camera
+// and gnome, and these parts: update(dt, controls), enter(options), leave(), canPause(), and
+// optionally restart(), roundInProgress() and dismiss().
 
 const FADE_SECONDS = 0.45; // Matches the fade in index.html.
 
-const areas = { woods, 'berry-rush': berryRush, 'bramble-maze': brambleMaze };
+const areas = { woods, 'berry-rush': berryRush, 'bramble-maze': brambleMaze, 'gnome-crossing': gnomeCrossing };
 let area = woods;
 let areaName = 'woods';
 let switching = false; // Fading between areas: nothing moves, and the menu stays shut.
@@ -52,18 +53,20 @@ function goTo(name, options = {}) {
 }
 
 // Some parts of the page only belong in some areas: the berry counter in Berry Rush, the clock
-// in both games, "Quit to game list" in the woods. They're marked with data-area="..." in
-// index.html, listing the areas they belong in.
+// in Berry Rush and the maze, "Quit to game list" in the woods. They're marked in index.html with
+// data-area="...", listing the areas they belong in ("game" means any game, not the woods), or
+// data-not-area="...", listing the areas they're hidden in.
 function showAreaParts(name) {
   document.body.dataset.area = name;
-  for (const part of document.querySelectorAll('[data-area]')) {
-    part.classList.toggle('off-area', !part.dataset.area.split(' ').includes(name));
+  const isIn = (list) => list.split(' ').some((area) => area === name || (area === 'game' && name !== 'woods'));
+  for (const part of document.querySelectorAll('[data-area], [data-not-area]')) {
+    const off = (part.dataset.area !== undefined && !isIn(part.dataset.area)) || (part.dataset.notArea !== undefined && isIn(part.dataset.notArea));
+    part.classList.toggle('off-area', off);
   }
 }
 
-// Going through a gate in the woods, and each game's best time for its card there.
+// Going through a gate in the woods.
 woods.onPlay = (game) => goTo(game);
-woods.bestTimeOf = (game) => areas[game].best();
 
 let lastTime = null;
 renderer.setAnimationLoop((time) => {
@@ -86,7 +89,7 @@ showAreaParts('woods');
 woods.enter({ quiet: true });
 initMenu({
   restart: () => area.restart?.(),
-  returnToWoods: () => goTo('woods', { from: areaName }),
+  returnToWoods: () => goTo('woods', { from: areaName }), // Back out through the gate you went in by.
   roundInProgress: () => area.roundInProgress?.() ?? false,
   canPause: () => area.canPause(),
   busy: () => switching,

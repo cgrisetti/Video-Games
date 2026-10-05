@@ -3,6 +3,8 @@ import * as THREE from 'three';
 // Little bursts of fun when a raspberry is picked. The berry squashes, then pops into a spray of
 // juicy bits and leaves with a soft ring, and its number floats up, wafting side to side like a
 // falling leaf in reverse, and fades away: 1, 2, 3... up to 10 for the golden raspberry.
+// Gnome Crossing adds a few more: a splash in the creek, a puff of dust when the gnome is bowled
+// over, and a burst of golden sparkles when the golden glow saves it.
 
 const SQUASH_TIME = 0.16; // How long a berry squashes and swells before it pops.
 const BIT_COUNT = 14; // Juicy bits in a pop (the golden raspberry throws twice as many, and sparkles).
@@ -21,6 +23,9 @@ const goldBits = [0xffc93c, 0xffe07a, 0xf2a922].map(
   (color) => new THREE.MeshStandardMaterial({ color, emissive: 0x7a5200, metalness: 0.5, roughness: 0.3 }),
 );
 const leafMaterial = new THREE.MeshStandardMaterial({ color: 0x4e9a3a, roughness: 0.7, flatShading: true });
+const dropMaterials = [0xd6f0ff, 0x8fcdf5, 0xffffff].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.2 }));
+const ripple = new THREE.RingGeometry(0.82, 1, 40).rotateX(-Math.PI / 2);
+const puffGeometry = new THREE.IcosahedronGeometry(0.3, 1);
 const ringTextures = { berry: makeRing('255, 214, 228'), golden: makeRing('255, 236, 160') };
 const sparkleTexture = makeSparkle();
 const numberTextures = new Map();
@@ -178,6 +183,82 @@ export function createEffects(scene, camera) {
     });
   }
 
+  // A splash where the gnome falls in the creek: drops of water thrown up and falling back,
+  // and two rings spreading across the water.
+  function splash(center, waterLevel) {
+    for (let i = 0; i < 26; i++) {
+      const drop = new THREE.Mesh(bitGeometry, dropMaterials[i % dropMaterials.length]);
+      const angle = Math.random() * Math.PI * 2;
+      const outward = THREE.MathUtils.randFloat(0.6, 2.4);
+      const velocity = new THREE.Vector3(Math.cos(angle) * outward, THREE.MathUtils.randFloat(3, 6.5), Math.sin(angle) * outward);
+      const size = THREE.MathUtils.randFloat(0.6, 1.4);
+      drop.position.set(center.x, waterLevel + 0.05, center.z);
+      drop.scale.setScalar(size);
+      scene.add(drop);
+      effects.push({
+        update(dt) {
+          velocity.y -= BIT_GRAVITY * dt;
+          drop.position.addScaledVector(velocity, dt);
+          return drop.position.y > waterLevel;
+        },
+        finish: () => scene.remove(drop),
+      });
+    }
+    for (const [delay, reach] of [[0, 2.2], [0.18, 1.5]]) {
+      const ring = new THREE.Mesh(ripple, new THREE.MeshBasicMaterial({ color: 0xeaf7ff, transparent: true, depthWrite: false }));
+      ring.position.set(center.x, waterLevel + 0.02, center.z);
+      ring.visible = false;
+      scene.add(ring);
+      let time = -delay;
+      effects.push({
+        update(dt) {
+          time += dt;
+          const t = Math.min(Math.max(time / 0.7, 0), 1);
+          ring.visible = time > 0;
+          ring.scale.setScalar(0.2 + reach * (1 - (1 - t) ** 2));
+          ring.material.opacity = 0.85 * (1 - t);
+          return t < 1;
+        },
+        finish: () => {
+          scene.remove(ring);
+          ring.material.dispose();
+        },
+      });
+    }
+  }
+
+  // A puff of dust where the gnome tumbles over: soft little clouds that swell and fade.
+  function dust(center) {
+    for (let i = 0; i < 7; i++) {
+      const puff = new THREE.Mesh(puffGeometry, new THREE.MeshStandardMaterial({ color: 0xd9c9a3, roughness: 1, transparent: true, depthWrite: false }));
+      const angle = (i / 7) * Math.PI * 2 + Math.random() * 0.5;
+      const drift = new THREE.Vector3(Math.cos(angle) * 1.1, THREE.MathUtils.randFloat(0.3, 0.9), Math.sin(angle) * 1.1);
+      const life = THREE.MathUtils.randFloat(0.5, 0.8);
+      let time = 0;
+      puff.position.copy(center);
+      scene.add(puff);
+      effects.push({
+        update(dt) {
+          time += dt;
+          const t = Math.min(time / life, 1);
+          puff.position.addScaledVector(drift, dt * (1 - t));
+          puff.scale.setScalar(0.6 + 1.4 * Math.sqrt(t));
+          puff.material.opacity = 0.75 * (1 - t);
+          return t < 1;
+        },
+        finish: () => {
+          scene.remove(puff);
+          puff.material.dispose();
+        },
+      });
+    }
+  }
+
+  // A burst of golden bits, a ring and sparkles, the same as the golden raspberry's pop.
+  function goldenBurst(center, floor = 0) {
+    spray(center.clone(), true, floor);
+  }
+
   function update(dt) {
     for (let i = effects.length - 1; i >= 0; i--) {
       if (!effects[i].update(dt)) {
@@ -193,7 +274,7 @@ export function createEffects(scene, camera) {
     effects.length = 0;
   }
 
-  return { popBerry, update, clear };
+  return { popBerry, splash, dust, goldenBurst, update, clear };
 }
 
 function easeOutBack(x) {

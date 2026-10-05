@@ -8,7 +8,7 @@ import { makeLantern, setLanternLit, flickerLanterns } from './lantern.js';
 import { makeGardenDoor, DOORWAY, DOOR_WALL } from './gates.js';
 import { LANDMARKS, animateLandmark } from './landmarks.js';
 import { showBanner, setBannerSubtitle, hideBanner } from './banner.js';
-import { createBoard, formatTime } from './scoreboard.js';
+import { boards, showScoreboard, hideScoreboard, formatTime } from './scoreboard.js';
 import { playSwing, playLanternLit, playEscape } from './sounds.js';
 
 // The Bramble Maze: Lanternwood's second game. You start by the old tree in the middle of a tall
@@ -66,15 +66,6 @@ const opposite = (bit) => (bit << 2) % 15; // North (1) and south (4), east (2) 
 const timerEl = document.getElementById('timer');
 const districtEl = document.getElementById('district');
 const districtPill = document.getElementById('district-pill');
-
-// The Top 10 for the maze: the fastest ways out.
-const board = createBoard({
-  saveAs: 'maze-top-10',
-  title: 'Top 10 Maze Escapers',
-  emblem: 'key-sprig',
-  done: 'You found the way out in',
-  thanks: 'Well found',
-});
 
 // --- Scene, camera and light ---
 
@@ -677,7 +668,7 @@ let district = null;
 const standStill = { moveX: 0, moveZ: 0, jump: false, swing: false, restart: false, pause: false, lookX: 0, lookY: 0 };
 
 function restart() {
-  board.hide();
+  hideScoreboard();
   hideBanner();
   newMaze();
   // Start in the clearing by the old tree in the middle, looking south down a path into the maze.
@@ -745,7 +736,7 @@ function update(dt, controls) {
   }
   if (resultsIn > 0) {
     resultsIn -= dt;
-    if (resultsIn <= 0) board.show(elapsed);
+    if (resultsIn <= 0) showScoreboard(boards['bramble-maze'], elapsed);
   }
   if (!finished && ready) elapsed += dt;
   updateHud();
@@ -767,10 +758,9 @@ export const brambleMaze = {
     showBanner('Bramble Maze', 'Ready…', 0);
   },
   leave() {
-    board.hide();
+    hideScoreboard();
     hideBanner();
   },
   canPause: () => !finished,
   roundInProgress: () => !finished && elapsed > 0,
-  best: () => board.best(),
 };

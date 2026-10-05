@@ -7,7 +7,10 @@ import { makeHangingLantern } from './lantern.js';
 // running along x (OPENING wide) and its front, with the sign, facing +z.
 //   - A garden gate: stone pillars, a rose-covered wooden arch with a lantern, and two picket gates.
 //     It's the way into Berry Rush (and stands in Berry Rush's hedge too, as the way out).
-//   - A hedge archway, a rose arbor and a forest trailhead: the ways to games still to come.
+//   - A hedge archway: the way into Gnome Crossing (and its way out, at the start of the trail).
+//   - A rose arbor and a forest trailhead: the ways to games still to come.
+// An opening with a game behind it has the game's name over it and a lantern lit; the others have
+// a "Coming soon" sign on a post beside them.
 
 export const OPENING = 2.4; // How wide the gap in the hedge is.
 
@@ -55,22 +58,27 @@ function vine(curve, count, size, flowers) {
   return group;
 }
 
-// A pair of little picket gates, shut, across the opening. Each has a row of pickets with pointed
-// tops, dipping toward the middle, and two rails.
-function picketGates(width, height) {
+// A pair of little picket gates across the opening. Each has a row of pickets with pointed tops,
+// dipping toward the middle, and two rails. They're shut, or (`open`) swung back on their hinges
+// to let you through.
+function picketGates(width, height, open = false) {
   const pieces = [];
   const half = width / 2;
   for (const side of [-1, 1]) {
+    const gate = [];
     const count = 6;
     for (let i = 0; i < count; i++) {
       const x = side * (0.06 + ((i + 0.5) / count) * (half - 0.08));
       const tall = height * (0.8 + 0.2 * (Math.abs(x) / half)); // Lower toward the middle.
-      pieces.push(new THREE.BoxGeometry(0.09, tall, 0.04).translate(x, tall / 2, 0));
-      pieces.push(new THREE.ConeGeometry(0.065, 0.12, 4).rotateY(Math.PI / 4).translate(x, tall + 0.06, 0));
+      gate.push(new THREE.BoxGeometry(0.09, tall, 0.04).translate(x, tall / 2, 0));
+      gate.push(new THREE.ConeGeometry(0.065, 0.12, 4).rotateY(Math.PI / 4).translate(x, tall + 0.06, 0));
     }
     for (const y of [height * 0.25, height * 0.62]) {
-      pieces.push(new THREE.BoxGeometry(half - 0.06, 0.07, 0.05).translate(side * (half / 2 + 0.02), y, -0.04));
+      gate.push(new THREE.BoxGeometry(half - 0.06, 0.07, 0.05).translate(side * (half / 2 + 0.02), y, -0.04));
     }
+    // Swing open: turn each gate on its hinge at the side of the opening, away from the front.
+    if (open) for (const piece of gate) piece.translate(-side * half, 0, 0).rotateY(-side * 1.3).translate(side * half, 0, 0);
+    pieces.push(...gate);
   }
   return mesh(mergeGeometries(pieces), picket);
 }
@@ -96,8 +104,16 @@ export function makeSignBoard(text, { width = 1.7, height = 0.46, berry = false 
   ctx.lineWidth = 6;
   ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
   // The name, in cream paint with a brown shadow, and a raspberry beside it for Berry Rush.
+  // Long names are painted smaller, so they fit inside the border.
   const textX = berry ? canvas.width / 2 + 24 : canvas.width / 2;
-  ctx.font = `bold ${Math.round(canvas.height * 0.5)}px Luminari, Palatino, 'Palatino Linotype', Georgia, serif`;
+  const room = canvas.width - (berry ? 120 : 64);
+  let size = Math.round(canvas.height * 0.5);
+  const font = () => `bold ${size}px Luminari, Palatino, 'Palatino Linotype', Georgia, serif`;
+  ctx.font = font();
+  while (ctx.measureText(text).width > room && size > 12) {
+    size -= 2;
+    ctx.font = font();
+  }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#4a2e18';
@@ -136,6 +152,24 @@ function paintBerry(ctx, x, y, r) {
   ctx.fill();
 }
 
+// A finger-post, like the ones where footpaths meet: a board with a name on it, its end cut to a
+// point, on a tall post. The name faces +z, and it points along x, toward `point` (1 or -1).
+export function makeFingerpost(text, point = 1) {
+  const post = new THREE.Group();
+  post.add(mesh(new THREE.CylinderGeometry(0.06, 0.075, 1.75, 7).translate(0, 0.875, 0), darkWood));
+  const width = 1.5;
+  const height = 0.42;
+  const board = makeSignBoard(text, { width, height });
+  board.position.set(point * (width / 2 + 0.04), 1.42, 0.07);
+  post.add(board);
+  // The point: a wedge of wood on the end of the board.
+  const reach = height / Math.sqrt(3); // So the wedge is exactly as tall as the board.
+  const tip = mesh(new THREE.CylinderGeometry(reach, reach, 0.07, 3).rotateX(Math.PI / 2).rotateZ((point * Math.PI) / 2), wood);
+  tip.position.set(point * (width + 0.04 + reach / 2), 1.42, 0.07);
+  post.add(tip);
+  return post;
+}
+
 // A sign on its own little post, beside an opening.
 function signpost(text) {
   const post = new THREE.Group();
@@ -147,10 +181,78 @@ function signpost(text) {
   return post;
 }
 
+// A painted "Gnome Crossing" sign, like the deer crossing signs beside country roads: a mustard
+// diamond with a little gnome striding across it, on a post, with the name on a board beneath.
+export function makeCrossingSign() {
+  const sign = new THREE.Group();
+  sign.add(mesh(new THREE.CylinderGeometry(0.06, 0.07, 2.1, 7).translate(0, 1.05, 0), darkWood));
+
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#4a2e18';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#e8b33a';
+  ctx.fillRect(14, 14, size - 28, size - 28);
+  // The board is turned 45° to stand on a corner, so paint the gnome turned back the other way.
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate(-Math.PI / 4);
+  ctx.fillStyle = '#4a2e18';
+  ctx.strokeStyle = '#4a2e18';
+  ctx.lineCap = 'round';
+  const path = (points) => {
+    ctx.beginPath();
+    points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.fill();
+  };
+  path([[-18, -38], [-2, -92], [16, -36]]); // The pointy hat, flopping back.
+  ctx.beginPath();
+  ctx.arc(0, -30, 15, 0, Math.PI * 2); // Head.
+  ctx.fill();
+  path([[-12, -24], [14, -24], [2, 4]]); // Beard.
+  path([[-16, -14], [16, -14], [24, 26], [-24, 26]]); // Tunic.
+  ctx.lineWidth = 11;
+  for (const [hipX, footX, footY] of [[-9, -30, 62], [9, 30, 60]]) {
+    // Legs mid-stride, with boots.
+    ctx.beginPath();
+    ctx.moveTo(hipX, 22);
+    ctx.lineTo(footX, footY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(footX + 6, footY + 2, 10, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.lineWidth = 8;
+  ctx.beginPath(); // An arm swinging forward, and the walking stick.
+  ctx.moveTo(10, -8);
+  ctx.lineTo(30, 10);
+  ctx.stroke();
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(38, -26);
+  ctx.lineTo(26, 62);
+  ctx.stroke();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  const front = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8 });
+  const diamond = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.06), [wood, wood, wood, wood, front, wood]);
+  diamond.castShadow = true;
+  diamond.rotation.z = Math.PI / 4;
+  diamond.position.set(0, 1.78, 0.08);
+  sign.add(diamond);
+  const board = makeSignBoard('Gnome Crossing', { width: 1.3, height: 0.32 });
+  board.position.set(0, 1.0, 0.08);
+  sign.add(board);
+  return sign;
+}
+
 // --- The openings ---
 
-// The garden gate into Berry Rush, with its name over the arch.
-export function makeGardenGate(name = 'Berry Rush') {
+// The garden gate into Berry Rush, with its name over the arch. In the woods its gates stand `open`.
+export function makeGardenGate(name = 'Berry Rush', { open = false } = {}) {
   const gate = new THREE.Group();
   const pillarX = OPENING / 2 + 0.28;
   for (const side of [-1, 1]) {
@@ -170,12 +272,14 @@ export function makeGardenGate(name = 'Berry Rush') {
   const lamp = makeHangingLantern();
   lamp.position.set(0, 2.05, 0);
   gate.add(lamp);
-  gate.add(picketGates(OPENING, 1.05));
+  gate.add(picketGates(OPENING, 1.05, open));
   return gate;
 }
 
-// An archway grown from the hedge itself, with a little gate shut across it.
-export function makeHedgeArch(sign = 'Coming soon') {
+// An archway grown from the hedge itself, with a little gate shut across it. With a game behind
+// it (`open`), its name hangs across the front of the arch with a lantern glowing underneath, and
+// its gates stand open (unless `gatesOpen` says otherwise).
+export function makeHedgeArch(sign = 'Coming soon', { open = false, gatesOpen = open } = {}) {
   const arch = new THREE.Group();
   const blobs = [];
   const curve = archCurve(OPENING / 2 + 0.35, 0, 2.6);
@@ -184,10 +288,19 @@ export function makeHedgeArch(sign = 'Coming soon') {
     blobs.push(new THREE.IcosahedronGeometry(0.42 + 0.06 * Math.sin(i * 1.7), 1).translate(spot.x, spot.y + 0.2, 0));
   }
   arch.add(mesh(mergeGeometries(blobs), hedgeLeaves));
-  arch.add(picketGates(OPENING * 0.9, 0.9));
-  const post = signpost(sign);
-  post.position.set(OPENING / 2 + 0.9, 0, 0.9);
-  arch.add(post);
+  arch.add(picketGates(OPENING * 0.9, 0.9, gatesOpen));
+  if (open) {
+    const board = makeSignBoard(sign);
+    board.position.set(0, 2.62, 0.46);
+    arch.add(board);
+    const lamp = makeHangingLantern();
+    lamp.position.set(0, 2.35, 0);
+    arch.add(lamp);
+  } else {
+    const post = signpost(sign);
+    post.position.set(OPENING / 2 + 0.9, 0, 0.9);
+    arch.add(post);
+  }
   return arch;
 }
 

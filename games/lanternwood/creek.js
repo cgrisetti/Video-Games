@@ -111,7 +111,9 @@ export function makeGround() {
 }
 
 // Ripples: pale streaks on blue, painted once on a small tile that repeats across the water.
-function makeRipples() {
+// `repeat` is how many times the tile repeats across the sheet of water, and `rotation` lines the
+// streaks up with the way the water flows. (Gnome Crossing paints its own for its creeks.)
+export function makeRipples({ repeat = [TERRAIN_SIZE / 5, TERRAIN_SIZE / 5], rotation = Math.PI / 4 } = {}) {
   const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
@@ -139,8 +141,8 @@ function makeRipples() {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(TERRAIN_SIZE / 5, TERRAIN_SIZE / 5);
-  texture.rotation = Math.PI / 4; // Line the streaks up with the creek.
+  texture.repeat.set(...repeat);
+  texture.rotation = rotation; // Line the streaks up with the creek.
   return texture;
 }
 

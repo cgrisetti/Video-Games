@@ -5,19 +5,20 @@ import { createWalker, shortestTurn, MOVE_SPEED } from './walker.js';
 import { makeRock, makeHedgeWalls, growWoods } from './scenery.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
 import { makeLantern, flickerLanterns } from './lantern.js';
-import { makeGardenGate, makeHedgeArch, makeArbor, makeTrailhead, makeGardenDoor, OPENING } from './gates.js';
+import { makeGardenGate, makeHedgeArch, makeArbor, makeTrailhead, makeGardenDoor, makeFingerpost, OPENING } from './gates.js';
 import { showBanner, hideBanner } from './banner.js';
 import { showToast } from './menu.js';
 import { isUsingController } from './input.js';
-import { formatTime } from './scoreboard.js';
+import { boards, bestLine } from './scoreboard.js';
 import { playSwing } from './sounds.js';
 
 // The woods of Lanternwood: the Glenn, a long lantern-lit path between hedges, with games behind
 // the gates, archways and openings along its sides, and the old garden door to the Bramble Maze at
 // the far end. It works like the hub world of a
 // console adventure: walk up to an opening and a prompt appears; press F (□ on a controller) to
-// see what's there, and press it again to go in. Openings whose games aren't built yet are shut,
-// with a "Coming soon" sign, to show there's more to find.
+// see what's there, and press it again to go in. A finger-post where each side path leaves the
+// forest path points the way to its game, and those gates stand open. Openings whose games aren't
+// built yet are shut, with a "Coming soon" sign, to show there's more to find.
 
 // Tweak these to change the Glenn.
 const HALL_WIDTH = 18;
@@ -30,6 +31,7 @@ const PATH_HALF_WIDTH = 1.25;
 const LANTERN_SPACING = 9; // A lantern beside the path this often, on alternate sides.
 const ROCK_COUNT = 7;
 const INTERACT_RANGE = 2.3; // How close to an opening the gnome has to be to go in.
+const FINGERPOST_BEFORE = 2.6; // How far before each game's side path its finger-post stands.
 const BACKDROP_RADIUS = 48; // The painted hills sit further out than in Berry Rush, round this longer area.
 
 // The games, as the openings describe them.
@@ -42,13 +44,17 @@ const GAMES = {
     title: 'Bramble Maze',
     blurb: "Find your way out of a tall hedge maze, a new one every time. Lanterns light up where you've been.",
   },
+  'gnome-crossing': {
+    title: 'Gnome Crossing',
+    blurb: 'Hop over creeks and deer trails as far as you can go. Night is falling behind you, so keep hopping!',
+  },
 };
 
 // The openings along the Glenn: which kind, which side (-1 west, 1 east, 0 the far north end, where
 // the path leads), how far along, and which game is behind it (none yet, for some).
 const OPENINGS = [
   { kind: 'gate', side: -1, z: 22, game: 'berry-rush' },
-  { kind: 'arch', side: 1, z: 11 },
+  { kind: 'arch', side: 1, z: 11, game: 'gnome-crossing' },
   { kind: 'arbor', side: -1, z: -1 },
   { kind: 'trail', side: 1, z: -13 },
   { kind: 'arch', side: -1, z: -24 },
@@ -178,7 +184,7 @@ scene.add(
 );
 
 for (const opening of openings) {
-  const model = BUILDERS[opening.kind](opening.game ? GAMES[opening.game].title : 'Coming soon');
+  const model = BUILDERS[opening.kind](opening.game ? GAMES[opening.game].title : 'Coming soon', { open: Boolean(opening.game) });
   model.position.set(opening.x, 0, opening.z);
   model.rotation.y = opening.facing;
   model.scale.setScalar(opening.size ?? 1);
@@ -206,6 +212,16 @@ for (let z = HALF_Z - 6, side = 1; z > -HALF_Z + 4; z -= LANTERN_SPACING, side =
   lantern.rotation.y = side > 0 ? Math.PI : 0; // Hanging out over the path.
   scene.add(lantern);
   obstacles.push({ position: lantern.position, radius: 0.12, height: Infinity });
+}
+// A finger-post where each game's side path leaves the forest path, turned to face back down the
+// path so you can read it on the way up, pointing the way.
+for (const opening of openings) {
+  if (!opening.game || opening.side === 0) continue;
+  const z = opening.z + FINGERPOST_BEFORE;
+  const post = makeFingerpost(GAMES[opening.game].title, opening.side);
+  post.position.set(pathX(z) + opening.side * (PATH_HALF_WIDTH + 0.45), 0, z);
+  scene.add(post);
+  obstacles.push({ position: post.position, radius: 0.12, height: Infinity });
 }
 for (let i = 0; i < ROCK_COUNT; i++) {
   // Along the hedges, spread down the Glenn, never in front of an opening.
@@ -316,14 +332,13 @@ function showPrompt() {
   promptText.textContent = near.game ? GAMES[near.game].title : 'Coming soon';
 }
 
-// The game's card: its name, what to do, the best time so far, and "press again to play".
+// The game's card: its name, what to do, the best score so far, and "press again to play".
 function openCard(opening) {
   offering = opening;
   const game = GAMES[opening.game];
-  const best = woods.bestTimeOf?.(opening.game);
   cardTitle.textContent = game.title;
   cardBlurb.textContent = game.blurb;
-  cardBest.textContent = best ? `Best time: ${formatTime(best.time)}, by ${best.name}` : 'No best time yet. Be the first!';
+  cardBest.textContent = bestLine(boards[opening.game]);
   cardPlayKey.textContent = isUsingController() ? '□' : 'F';
   cardCloseKey.textContent = isUsingController() ? '○' : 'Esc';
   card.hidden = false;
@@ -384,8 +399,7 @@ export const woods = {
   scene,
   camera,
   update,
-  onPlay: null, // Set by main.js: what to do when the player goes into a game...
-  bestTimeOf: null, // ...and how to find a game's best time ({ name, time }), for its card.
+  onPlay: null, // Set by main.js: what to do when the player goes into a game.
   // Arrive at the south end, or (coming back from a game) in front of that game's opening.
   enter({ from = null, quiet = false } = {}) {
     const back = openings.find((opening) => opening.game === from);
