@@ -4,6 +4,8 @@
 // the buttons for getting around the menu. The rest of the game only asks this file, so it doesn't
 // care where the input came from. (The menu also listens to the keyboard itself, for Esc, Enter and the arrows.)
 
+import { loadSaved, save } from './saved.js';
+
 const STICK_DEAD_ZONE = 0.15; // Ignore small stick movements; sticks rarely rest exactly in the middle.
 const MENU_STICK_PUSH = 0.5; // How far to push the stick to move through a menu.
 const MENU_REPEAT_DELAY = 0.4; // Hold a direction in a menu: it moves once, then again after this many seconds...
@@ -28,6 +30,16 @@ let lastPad = null; // Which controller that was.
 let jumpHeldOver = false; // After leaving the menu with ✕, ignore that press until it's let go.
 let menuStep = { x: 0, y: 0, next: 0 }; // The direction held in a menu, and when it repeats.
 let controllerLast = false; // Was the controller (not the keyboard or mouse) used last? For showing the right button names.
+
+// Camera settings, chosen in the pause menu and saved: turn either way of looking round the other
+// way, for the controller and the keyboard alike. (Some people expect pushing up to look down, the
+// way an airplane's stick works.) { invertX, invertY }
+export const controlSettings = { invertX: false, invertY: false, ...loadSaved('controls') };
+
+export function setControlSetting(name, value) {
+  controlSettings[name] = value;
+  save('controls', controlSettings);
+}
 
 window.addEventListener('pointerdown', () => (controllerLast = false));
 window.addEventListener('keydown', (event) => {
@@ -54,6 +66,7 @@ const input = {
   menuX: 0, // A step left (-1) or right (1) in a menu this frame, from the D-pad or left stick.
   menuY: 0, // A step up (-1) or down (1).
   lookX: 0, // Turn the camera: -1 (left) to 1 (right), from Q and E or the right stick.
+  lookY: 0, // Tilt the camera: -1 (look down) to 1 (look up), from G and T or the right stick.
 };
 
 export function readInput() {
@@ -68,7 +81,7 @@ export function readInput() {
   }
   const pressed = (index) => button(index) && !wasDown[index];
   if (!pad) controllerLast = false;
-  else if (pad.buttons.some((b) => b.pressed) || Math.hypot(pad.axes[0] ?? 0, pad.axes[1] ?? 0) > 0.5) controllerLast = true;
+  else if (pad.buttons.some((b) => b.pressed) || pad.axes.slice(0, 4).some((axis) => Math.abs(axis) > 0.5)) controllerLast = true; // Either stick.
 
   // WASD, arrow keys and the D-pad: eight directions, always at full speed.
   let x = 0;
@@ -97,8 +110,14 @@ export function readInput() {
   if (!jumpDown) jumpHeldOver = false;
   input.moveX = x;
   input.moveZ = z;
-  const stickLook = pad?.axes[2] ?? 0;
-  input.lookX = (key('KeyE') ? 1 : 0) - (key('KeyQ') ? 1 : 0) || (Math.abs(stickLook) > STICK_DEAD_ZONE ? stickLook : 0);
+  // Looking round: the keyboard if a look key is down, otherwise the right stick (pushed up gives a
+  // negative number, so it's flipped to make up mean "look up"). Then the camera settings, if set.
+  const stickX = pad?.axes[2] ?? 0;
+  const stickY = pad?.axes[3] ?? 0;
+  const lookX = (key('KeyE') ? 1 : 0) - (key('KeyQ') ? 1 : 0) || (Math.abs(stickX) > STICK_DEAD_ZONE ? stickX : 0);
+  const lookY = (key('KeyT') ? 1 : 0) - (key('KeyG') ? 1 : 0) || (Math.abs(stickY) > STICK_DEAD_ZONE ? -stickY : 0);
+  input.lookX = controlSettings.invertX ? -lookX : lookX;
+  input.lookY = controlSettings.invertY ? -lookY : lookY;
   input.jump = jumpDown && !jumpHeldOver;
   input.swing = swingKeyPressed || pressed(SQUARE);
   input.restart = restartKeyPressed;

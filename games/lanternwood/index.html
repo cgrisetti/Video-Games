@@ -323,6 +323,16 @@
         color: var(--ink-soft);
       }
       /* A setting you change with left and right: ‹ Forest › */
+      .setting-group {
+        margin: 10px 0 2px;
+        padding-top: 8px;
+        border-top: 1px dashed rgba(139, 106, 67, 0.35);
+        font-size: 0.85rem;
+        font-weight: normal;
+        font-style: italic;
+        text-align: left;
+        color: var(--ink-soft);
+      }
       .choice {
         display: flex;
         align-items: center;
@@ -817,6 +827,20 @@
                 <span class="arrow" aria-hidden="true">‹</span><span class="value"></span><span class="arrow" aria-hidden="true">›</span>
               </button>
             </div>
+            <!-- For the Bramble Maze's camera, on the controller and the keyboard alike. -->
+            <h4 class="setting-group">Maze camera</h4>
+            <div class="setting">
+              <span id="invert-x-label">Invert left and right</span>
+              <button type="button" id="invert-x" class="choice" role="switch" aria-labelledby="invert-x-label">
+                <span class="arrow" aria-hidden="true">‹</span><span class="value"></span><span class="arrow" aria-hidden="true">›</span>
+              </button>
+            </div>
+            <div class="setting">
+              <span id="invert-y-label">Invert up and down</span>
+              <button type="button" id="invert-y" class="choice" role="switch" aria-labelledby="invert-y-label">
+                <span class="arrow" aria-hidden="true">‹</span><span class="value"></span><span class="arrow" aria-hidden="true">›</span>
+              </button>
+            </div>
             <button type="button" class="back" data-action="back">Back</button>
           </div>
         </div>
@@ -858,6 +882,7 @@
               <tr data-area="woods"><td>Go through a gate</td><td><kbd>F</kbd>, then <kbd>F</kbd></td><td><kbd>□</kbd>, then <kbd>□</kbd></td></tr>
               <tr><td>Pause</td><td><kbd>Esc</kbd> or <kbd>P</kbd></td><td><kbd>Options</kbd></td></tr>
               <tr data-area="bramble-maze"><td>Turn the camera</td><td><kbd>Q</kbd> <kbd>E</kbd></td><td>Right stick</td></tr>
+              <tr data-area="bramble-maze"><td>Look up or down</td><td><kbd>T</kbd> <kbd>G</kbd></td><td>Right stick</td></tr>
               <tr data-area="berry-rush bramble-maze"><td>Restart</td><td><kbd>R</kbd></td><td>From this menu</td></tr>
               <tr><td>Music on/off</td><td><kbd>M</kbd></td><td>In Settings</td></tr>
             </tbody>

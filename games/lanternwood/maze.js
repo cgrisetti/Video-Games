@@ -39,6 +39,8 @@ const RESULTS_DELAY = 1.8; // Seconds to enjoy getting out before the Top 10 boa
 const CAMERA_DISTANCE = 4.6;
 const CAMERA_HEIGHT = 2.5; // Below the tops of the hedges.
 const CAMERA_TURN_SPEED = 2.4; // Turning the camera with Q and E (or the right stick), in radians a second.
+const CAMERA_TILT_SPEED = 1.6; // Tilting it to look up (T) or down (G), all the way in a bit over half a second.
+// (Both can be flipped in the pause menu's Settings: see controlSettings in input.js.)
 const CAMERA_FOLLOW = 1.8; // How quickly the camera swings round behind the gnome as it walks.
 const ESCAPE_DISTANCE = 1.3; // How far out through the door counts as escaped.
 
@@ -601,6 +603,7 @@ function inHedge(point, margin) {
 // --- The camera: low behind the gnome, turning with it ---
 
 let cameraYaw = 0; // The way the camera looks: 0 is south, Math.PI is north.
+let cameraTilt = 0; // -1 looking down at the path, 0 level, 1 looking up at the sky.
 const head = new THREE.Vector3();
 const probe = new THREE.Vector3();
 const cameraGoal = new THREE.Vector3();
@@ -621,11 +624,14 @@ function steer(controls) {
 
 function updateCamera(dt, controls, moving) {
   cameraYaw += controls.lookX * CAMERA_TURN_SPEED * dt;
-  // As the gnome walks, the camera swings round behind it (unless it's walking toward the camera).
+  cameraTilt = THREE.MathUtils.clamp(cameraTilt + controls.lookY * CAMERA_TILT_SPEED * dt, -1, 1);
+  // As the gnome walks, the camera swings round behind it (unless it's walking toward the camera),
+  // and slowly levels out again.
   if (moving && !controls.lookX) {
     const turn = shortestTurn(player.rotation.y - cameraYaw);
     if (Math.abs(turn) < 2.4) cameraYaw += turn * (1 - Math.exp(-CAMERA_FOLLOW * dt));
   }
+  if (moving && !controls.lookY) cameraTilt = THREE.MathUtils.damp(cameraTilt, 0, 1.2, dt);
   // Back out from the gnome's head until just before a hedge gets in the way.
   head.set(player.position.x, player.position.y + 1.1, player.position.z);
   const backX = -Math.sin(cameraYaw);
@@ -640,19 +646,24 @@ function updateCamera(dt, controls, moving) {
   }
   // Pull in quickly (so a hedge never blocks the view), ease back out slowly.
   cameraReach = THREE.MathUtils.damp(cameraReach, reach, reach < cameraReach ? 25 : 3, dt);
-  // Squeezed in close, it rises to look down over the gnome's hat (but never above the hedges).
+  // Squeezed in close, it rises to look down over the gnome's hat. Looking up, it dips lower;
+  // looking down, it rises. (But never above the hedges.)
   const squeeze = 1 - cameraReach / CAMERA_DISTANCE;
-  cameraGoal.set(head.x + backX * cameraReach, player.position.y + CAMERA_HEIGHT + squeeze * 0.5, head.z + backZ * cameraReach);
+  const height = THREE.MathUtils.clamp(CAMERA_HEIGHT + squeeze * 0.5 - cameraTilt * 0.6, 1.2, HEDGE_HEIGHT - 0.2);
+  cameraGoal.set(head.x + backX * cameraReach, player.position.y + height, head.z + backZ * cameraReach);
   camera.position.lerp(cameraGoal, 1 - Math.exp(-12 * dt));
-  // Look a little ahead of the gnome and up, so the sky (and the tree and the tower) show above the hedges.
-  lookTarget.set(head.x - backX * 2, head.y + 0.5, head.z - backZ * 2);
+  // Look a little ahead of the gnome and up, so the sky (and the tree and the tower) show above the
+  // hedges: higher still when tilted up, down at the path when tilted down.
+  const lookUp = cameraTilt > 0 ? cameraTilt * 3 : cameraTilt * 1.6;
+  lookTarget.set(head.x - backX * 2, head.y + 0.5 + lookUp, head.z - backZ * 2);
   camera.lookAt(lookTarget);
 }
 
 function snapCamera() {
   cameraReach = CAMERA_DISTANCE;
   camera.position.set(player.position.x + Math.sin(cameraYaw) * -CAMERA_DISTANCE, CAMERA_HEIGHT, player.position.z - Math.cos(cameraYaw) * CAMERA_DISTANCE);
-  updateCamera(1, { lookX: 0 }, false);
+  cameraTilt = 0;
+  updateCamera(1, { lookX: 0, lookY: 0 }, false);
 }
 
 // --- The round ---
@@ -663,7 +674,7 @@ let finished = false;
 let readyIn = 0;
 let resultsIn = 0;
 let district = null;
-const standStill = { moveX: 0, moveZ: 0, jump: false, swing: false, restart: false, pause: false, lookX: 0 };
+const standStill = { moveX: 0, moveZ: 0, jump: false, swing: false, restart: false, pause: false, lookX: 0, lookY: 0 };
 
 function restart() {
   board.hide();

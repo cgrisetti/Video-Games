@@ -1,4 +1,4 @@
-import { ignoreHeldJump, isUsingController } from './input.js';
+import { ignoreHeldJump, isUsingController, controlSettings, setControlSetting } from './input.js';
 import { musicSettings, setMusicVolume, setMusicMuted, setMusicStyle, setMusicPaused } from './music.js';
 import { soundSettings, setSoundVolume, playPop } from './sounds.js';
 
@@ -29,6 +29,8 @@ const musicToggle = document.getElementById('music-toggle');
 const volumeSlider = document.getElementById('music-volume');
 const volumeValue = document.getElementById('music-volume-value');
 const styleChoice = document.getElementById('music-style');
+const invertX = document.getElementById('invert-x');
+const invertY = document.getElementById('invert-y');
 const soundSlider = document.getElementById('sound-volume');
 const soundValue = document.getElementById('sound-volume-value');
 const pauseButton = document.getElementById('pause-button');
@@ -139,6 +141,9 @@ function adjust(step) {
     playPop(1); // A sample, so you can hear how loud the effects are now.
   } else if (row === musicToggle) {
     setMusicMuted(!musicSettings.muted);
+  } else if (row === invertX || row === invertY) {
+    const name = row === invertX ? 'invertX' : 'invertY';
+    setControlSetting(name, !controlSettings[name]);
   } else if (row === styleChoice) {
     const at = STYLES.findIndex(([style]) => style === musicSettings.style);
     setMusicStyle(STYLES[(at + step + STYLES.length) % STYLES.length][0]);
@@ -157,6 +162,10 @@ function showSettings() {
   soundSlider.value = Math.round(soundSettings.volume * 100);
   soundValue.textContent = `${soundSlider.value}%`;
   styleChoice.querySelector('.value').textContent = STYLES.find(([style]) => style === musicSettings.style)?.[1] ?? 'Forest';
+  for (const [button, on] of [[invertX, controlSettings.invertX], [invertY, controlSettings.invertY]]) {
+    button.querySelector('.value').textContent = on ? 'On' : 'Off';
+    button.setAttribute('aria-checked', String(on));
+  }
 }
 
 // The button hints along the bottom of the menu, and on the pause button, for whichever you're using.
@@ -220,7 +229,10 @@ menu.addEventListener('click', (event) => {
     actions.returnToWoods();
   }
   if (action === 'quit') location.href = '../../';
-  if (button === musicToggle || button === styleChoice) adjust(1);
+  if ([musicToggle, styleChoice, invertX, invertY].includes(button)) {
+    choose(button); // (A tap doesn't point at the row first, the way a mouse does.)
+    adjust(1);
+  }
 });
 
 volumeSlider.addEventListener('input', () => {
