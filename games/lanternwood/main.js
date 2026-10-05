@@ -4,18 +4,20 @@ import { initMenu, isPaused, openMenu, menuInput, updateButtonHints } from './me
 import { showBanner } from './banner.js';
 import { woods } from './woods.js';
 import { berryRush } from './berry-rush.js';
+import { brambleMaze } from './maze.js';
 
-// Lanternwood: lantern-lit woods (the Forest Hallway) with games behind the gates along its path.
+// Lanternwood: lantern-lit woods (the Glenn) with games behind the gates along its path.
 // This file runs the show. It draws whichever area you're in and hands it the controls each
 // frame, and it walks you between areas with a fade to dark and back, the way hub-world games
-// do. Each area (woods.js, berry-rush.js) has its own scene, camera and gnome, and these parts:
+// do. Each area (woods.js, berry-rush.js, maze.js) has its own scene, camera and gnome, and these parts:
 //   update(dt, controls), enter(options), leave(), canPause(), and optionally restart(),
 //   roundInProgress() and dismiss().
 
 const FADE_SECONDS = 0.45; // Matches the fade in index.html.
 
-const areas = { woods, 'berry-rush': berryRush };
+const areas = { woods, 'berry-rush': berryRush, 'bramble-maze': brambleMaze };
 let area = woods;
+let areaName = 'woods';
 let switching = false; // Fading between areas: nothing moves, and the menu stays shut.
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -41,15 +43,27 @@ function goTo(name, options = {}) {
   setTimeout(() => {
     area.leave();
     area = areas[name];
-    document.body.dataset.area = name;
+    areaName = name;
+    showAreaParts(name);
     area.enter(options);
     fade.classList.remove('dark');
     setTimeout(() => (switching = false), FADE_SECONDS * 1000);
   }, FADE_SECONDS * 1000);
 }
 
-// Going through a gate in the woods.
+// Some parts of the page only belong in some areas: the berry counter in Berry Rush, the clock
+// in both games, "Quit to game list" in the woods. They're marked with data-area="..." in
+// index.html, listing the areas they belong in.
+function showAreaParts(name) {
+  document.body.dataset.area = name;
+  for (const part of document.querySelectorAll('[data-area]')) {
+    part.classList.toggle('off-area', !part.dataset.area.split(' ').includes(name));
+  }
+}
+
+// Going through a gate in the woods, and each game's best time for its card there.
 woods.onPlay = (game) => goTo(game);
+woods.bestTimeOf = (game) => areas[game].best();
 
 let lastTime = null;
 renderer.setAnimationLoop((time) => {
@@ -68,14 +82,14 @@ renderer.setAnimationLoop((time) => {
 });
 
 // Start in the woods, behind the title screen. Pressing Play walks you in.
-document.body.dataset.area = 'woods';
+showAreaParts('woods');
 woods.enter({ quiet: true });
 initMenu({
   restart: () => area.restart?.(),
-  returnToWoods: () => goTo('woods', { from: 'berry-rush' }),
+  returnToWoods: () => goTo('woods', { from: areaName }),
   roundInProgress: () => area.roundInProgress?.() ?? false,
   canPause: () => area.canPause(),
   busy: () => switching,
   dismiss: () => area.dismiss?.() ?? false,
-  started: () => showBanner('The Forest Hallway', 'Lanternwood'),
+  started: () => showBanner('The Glenn', 'Lanternwood'),
 });

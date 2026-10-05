@@ -215,6 +215,89 @@ export function makeArbor(sign = 'Coming soon') {
   return arbor;
 }
 
+// An old garden door, like the hidden one in The Secret Garden: a round-topped wooden door in an
+// ivy-covered stone wall, with a lantern beside it and the name above. `open` swings the door open.
+export const DOORWAY = 1.5; // How wide the doorway is.
+export const DOOR_WALL = OPENING + 1.2; // How wide the whole wall is.
+const doorWood = new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 0.85 });
+const iron = new THREE.MeshStandardMaterial({ color: 0x3b3631, roughness: 0.5, metalness: 0.4 });
+const ivy = new THREE.MeshStandardMaterial({ color: 0x35693a, roughness: 0.8, flatShading: true });
+
+export function makeGardenDoor(name, { open = false } = {}) {
+  const door = new THREE.Group();
+  const half = DOOR_WALL / 2;
+  const top = 3.5;
+  const archY = 2.0; // Where the doorway's round top begins.
+  const radius = DOORWAY / 2;
+
+  // The wall: one stone slab with the round-topped doorway cut out of the bottom.
+  const outline = new THREE.Shape();
+  outline.moveTo(-half, 0);
+  outline.lineTo(-radius, 0);
+  outline.lineTo(-radius, archY);
+  outline.absarc(0, archY, radius, Math.PI, 0, true);
+  outline.lineTo(radius, 0);
+  outline.lineTo(half, 0);
+  outline.lineTo(half, top);
+  outline.lineTo(-half, top);
+  outline.closePath();
+  const wall = new THREE.ExtrudeGeometry(outline, { depth: 0.6, bevelEnabled: false, curveSegments: 16 }).translate(0, 0, -0.3);
+  door.add(mesh(wall, stone));
+  // A few stones standing out from the wall, and coping stones along the top.
+  for (const [x, y, w, h] of [[-1.3, 0.5, 0.5, 0.3], [1.25, 1.2, 0.45, 0.28], [-1.15, 2.4, 0.55, 0.3], [1.35, 2.9, 0.4, 0.26], [-1.45, 1.6, 0.35, 0.25]]) {
+    door.add(mesh(new THREE.BoxGeometry(w, h, 0.1), stone, x, y, 0.32));
+  }
+  door.add(mesh(new THREE.BoxGeometry(DOOR_WALL + 0.2, 0.16, 0.8), stone, 0, top + 0.08, 0));
+
+  // The door: planks with a round top, iron hinges and a ring to pull, hung from its left side.
+  const leaf = new THREE.Group();
+  const planks = [];
+  for (let i = 0; i < 5; i++) {
+    const x = -radius + (i + 0.5) * (DOORWAY / 5);
+    const tall = archY + Math.sqrt(Math.max(radius * radius - x * x, 0)) - 0.02;
+    planks.push(new THREE.BoxGeometry(DOORWAY / 5 - 0.02, tall, 0.1).translate(x + radius, tall / 2, 0));
+  }
+  leaf.add(mesh(mergeGeometries(planks), doorWood));
+  for (const y of [0.5, 1.7]) leaf.add(mesh(new THREE.BoxGeometry(0.8, 0.08, 0.04), iron, 0.4, y, 0.07));
+  const ring = mesh(new THREE.TorusGeometry(0.09, 0.018, 6, 12), iron, DOORWAY - 0.3, 1.1, 0.09);
+  leaf.add(ring);
+  leaf.position.set(-radius, 0, 0.05);
+  leaf.rotation.y = open ? -1.9 : 0; // Swung wide open, toward whoever is coming.
+  door.add(leaf);
+
+  // Ivy climbing up both sides and spilling over the top.
+  for (const side of [-1, 1]) {
+    const climb = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side * (half - 0.25), 0.2, 0.35),
+      new THREE.Vector3(side * (half - 0.45), 1.6, 0.36),
+      new THREE.Vector3(side * (half - 0.2), top, 0.3),
+      new THREE.Vector3(side * 0.6, top + 0.15, 0.2),
+    ]);
+    door.add(vineOf(climb, 16, 0.2, ivy));
+  }
+
+  // A lantern beside the door, and the name above it.
+  const lamp = makeHangingLantern();
+  lamp.position.set(radius + 0.45, archY + 0.75, 0.45);
+  door.add(mesh(new THREE.BoxGeometry(0.06, 0.06, 0.5), iron, radius + 0.45, archY + 0.78, 0.25));
+  door.add(lamp);
+  const board = makeSignBoard(name, { width: 1.9 });
+  board.position.set(0, archY + radius + 0.42, 0.36);
+  door.add(board);
+  return door;
+}
+
+// Leaves along a curve in a chosen material (like vine(), without flowers).
+function vineOf(curve, count, size, material) {
+  const blobs = [];
+  for (let i = 0; i < count; i++) {
+    const spot = curve.getPoint((i + 0.5) / count);
+    const wobble = Math.sin(i * 2.4);
+    blobs.push(new THREE.IcosahedronGeometry(size * (0.8 + 0.3 * wobble), 0).translate(spot.x + 0.08 * wobble, spot.y, spot.z));
+  }
+  return mesh(mergeGeometries(blobs), material);
+}
+
 // Where a forest path leads off into the trees: two posts with a rope sagging between them.
 export function makeTrailhead(sign = 'Coming soon') {
   const trail = new THREE.Group();

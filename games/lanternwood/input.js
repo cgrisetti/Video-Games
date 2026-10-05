@@ -53,6 +53,7 @@ const input = {
   back: false, // ○ pressed this frame, to go back in a menu.
   menuX: 0, // A step left (-1) or right (1) in a menu this frame, from the D-pad or left stick.
   menuY: 0, // A step up (-1) or down (1).
+  lookX: 0, // Turn the camera: -1 (left) to 1 (right), from Q and E or the right stick.
 };
 
 export function readInput() {
@@ -96,6 +97,8 @@ export function readInput() {
   if (!jumpDown) jumpHeldOver = false;
   input.moveX = x;
   input.moveZ = z;
+  const stickLook = pad?.axes[2] ?? 0;
+  input.lookX = (key('KeyE') ? 1 : 0) - (key('KeyQ') ? 1 : 0) || (Math.abs(stickLook) > STICK_DEAD_ZONE ? stickLook : 0);
   input.jump = jumpDown && !jumpHeldOver;
   input.swing = swingKeyPressed || pressed(SQUARE);
   input.restart = restartKeyPressed;

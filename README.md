@@ -1,6 +1,6 @@
 # Video Games
 
-3D browser games we build by describing them to Claude. Each game lives in `games/`, runs in a web browser, and uses [Three.js](https://threejs.org/) for the 3D graphics. The first game is **Lanternwood**, a woodland arcade: walk a little gnome down a lantern-lit forest path, and go through the gates along it to play games. The first one, **Berry Rush**, has you picking raspberries with your fox friend while dodging (or bonking) rainbow inch worms. Play it, then change it.
+3D browser games we build by describing them to Claude. Each game lives in `games/`, runs in a web browser, and uses [Three.js](https://threejs.org/) for the 3D graphics. The first game is **Lanternwood**, a woodland arcade: walk a little gnome down a lantern-lit forest path, and go through the gates along it to play games. In **Berry Rush** you pick raspberries with your fox friend while dodging (or bonking) rainbow inch worms; in the **Bramble Maze** you find your way out of a tall garden hedge maze, a new one every time. Play them, then change them.
 
 ## 1. What you need
 
@@ -123,8 +123,9 @@ index.html          Launcher page that links to every game
 games/lanternwood/  The first game: Lanternwood
   index.html        Page, on-screen HUD, menus and styles
   main.js           Runs the game and moves you between areas
-  woods.js          The Forest Hallway: the path with the gates to the games
-  berry-rush.js     Berry Rush, the first game behind a gate
+  woods.js          The Glenn: the path with the gates to the games
+  berry-rush.js     Berry Rush: pick the raspberries, dodge the inch worms
+  maze.js           The Bramble Maze: find the way out of a hedge maze
 CLAUDE.md           Instructions Claude reads about this project
 .claude/launch.json Tells the Claude app how to start the preview
 ```

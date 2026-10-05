@@ -5,20 +5,21 @@ import { createWalker, shortestTurn, MOVE_SPEED } from './walker.js';
 import { makeRock, makeHedgeWalls, growWoods } from './scenery.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
 import { makeLantern, flickerLanterns } from './lantern.js';
-import { makeGardenGate, makeHedgeArch, makeArbor, makeTrailhead, OPENING } from './gates.js';
+import { makeGardenGate, makeHedgeArch, makeArbor, makeTrailhead, makeGardenDoor, OPENING } from './gates.js';
 import { showBanner, hideBanner } from './banner.js';
 import { showToast } from './menu.js';
 import { isUsingController } from './input.js';
-import { bestTime } from './scoreboard.js';
+import { formatTime } from './scoreboard.js';
 import { playSwing } from './sounds.js';
 
-// The woods of Lanternwood: the Forest Hallway, a long lantern-lit path between hedges, with games
-// behind the gates, archways and openings along its sides. It works like the hub world of a
+// The woods of Lanternwood: the Glenn, a long lantern-lit path between hedges, with games behind
+// the gates, archways and openings along its sides, and the old garden door to the Bramble Maze at
+// the far end. It works like the hub world of a
 // console adventure: walk up to an opening and a prompt appears; press F (□ on a controller) to
 // see what's there, and press it again to go in. Openings whose games aren't built yet are shut,
 // with a "Coming soon" sign, to show there's more to find.
 
-// Tweak these to change the hallway.
+// Tweak these to change the Glenn.
 const HALL_WIDTH = 18;
 const HALL_LENGTH = 72; // It runs north and south, so the camera looks down its length.
 const HEDGE_THICKNESS = 1.2;
@@ -37,19 +38,23 @@ const GAMES = {
     title: 'Berry Rush',
     blurb: 'Pick all 9 raspberries, then follow the fox to the golden one. Watch out for the inch worms!',
   },
+  'bramble-maze': {
+    title: 'Bramble Maze',
+    blurb: "Find your way out of a tall hedge maze, a new one every time. Lanterns light up where you've been.",
+  },
 };
 
-// The openings along the hallway: which kind, which side (-1 west, 1 east, 0 the far north end),
-// how far along, and which game is behind it (none yet, for most).
+// The openings along the Glenn: which kind, which side (-1 west, 1 east, 0 the far north end, where
+// the path leads), how far along, and which game is behind it (none yet, for some).
 const OPENINGS = [
   { kind: 'gate', side: -1, z: 22, game: 'berry-rush' },
   { kind: 'arch', side: 1, z: 11 },
   { kind: 'arbor', side: -1, z: -1 },
   { kind: 'trail', side: 1, z: -13 },
   { kind: 'arch', side: -1, z: -24 },
-  { kind: 'arch', side: 0, z: -HALL_LENGTH / 2, size: 1.3 },
+  { kind: 'door', side: 0, z: -HALL_LENGTH / 2, game: 'bramble-maze' },
 ];
-const BUILDERS = { gate: makeGardenGate, arch: makeHedgeArch, arbor: makeArbor, trail: makeTrailhead };
+const BUILDERS = { gate: makeGardenGate, arch: makeHedgeArch, arbor: makeArbor, trail: makeTrailhead, door: makeGardenDoor };
 
 const FOX_FOLLOW_SPEED = MOVE_SPEED * 1.15;
 const FOX_SIDE_GAP = 1.9;
@@ -92,7 +97,7 @@ scene.add(backdrop);
 
 // --- The forest path ---
 
-// The middle of the winding path at a point along the hallway.
+// The middle of the winding path at a point along the Glenn.
 function pathX(z) {
   return PATH_SWAY * Math.sin((z / PATH_BEND) * Math.PI * 2);
 }
@@ -203,7 +208,7 @@ for (let z = HALF_Z - 6, side = 1; z > -HALF_Z + 4; z -= LANTERN_SPACING, side =
   obstacles.push({ position: lantern.position, radius: 0.12, height: Infinity });
 }
 for (let i = 0; i < ROCK_COUNT; i++) {
-  // Along the hedges, spread down the hallway in a golden rhythm, never in front of an opening.
+  // Along the hedges, spread down the Glenn, never in front of an opening.
   const z = HALF_Z - 4 - ((i + 0.5) / ROCK_COUNT) * (HALL_LENGTH - 10);
   const side = i % 2 === 0 ? 1 : -1;
   if (openings.some((o) => o.side === side && Math.abs(o.z - z) < 3)) continue;
@@ -222,7 +227,7 @@ for (let i = 0; i < ROCK_COUNT; i++) {
 const gnome = createGnome();
 const player = gnome.model;
 scene.add(player);
-const walker = createWalker({ gnome, camera, floorAt: floorUnderGnome, pushOut: bumpIntoObstacles, keepIn: keepInHallway });
+const walker = createWalker({ gnome, camera, floorAt: floorUnderGnome, pushOut: bumpIntoObstacles, keepIn: keepInGlenn });
 
 const fox = createFox();
 scene.add(fox.model);
@@ -253,7 +258,7 @@ function pushOutOf(position, obstacle, radius, y) {
   }
 }
 
-function keepInHallway(position, radius) {
+function keepInGlenn(position, radius) {
   position.x = THREE.MathUtils.clamp(position.x, -INNER_X + radius, INNER_X - radius);
   position.z = THREE.MathUtils.clamp(position.z, -INNER_Z + radius, INNER_Z - radius);
 }
@@ -276,7 +281,7 @@ function updateFox(dt) {
     spot.z += ((goalZ - spot.z) / distance) * step;
   }
   for (const obstacle of obstacles) pushOutOf(spot, obstacle, FOX_RADIUS, 0);
-  keepInHallway(spot, FOX_RADIUS);
+  keepInGlenn(spot, FOX_RADIUS);
   fox.model.rotation.y += shortestTurn(facing - fox.model.rotation.y) * (1 - Math.exp(-8 * dt));
   fox.animate(dt, { speed, sniffing: false });
 }
@@ -315,10 +320,10 @@ function showPrompt() {
 function openCard(opening) {
   offering = opening;
   const game = GAMES[opening.game];
-  const best = bestTime();
+  const best = woods.bestTimeOf?.(opening.game);
   cardTitle.textContent = game.title;
   cardBlurb.textContent = game.blurb;
-  cardBest.textContent = best ? `Best time: ${best.time.toFixed(1)}s, by ${best.name}` : 'No best time yet. Be the first!';
+  cardBest.textContent = best ? `Best time: ${formatTime(best.time)}, by ${best.name}` : 'No best time yet. Be the first!';
   cardPlayKey.textContent = isUsingController() ? '□' : 'F';
   cardCloseKey.textContent = isUsingController() ? '○' : 'Esc';
   card.hidden = false;
@@ -375,21 +380,22 @@ function update(dt, controls) {
 
 // The woods as an area of Lanternwood (see main.js).
 export const woods = {
-  name: 'The Forest Hallway',
+  name: 'The Glenn',
   scene,
   camera,
   update,
-  onPlay: null, // Set by main.js: what to do when the player goes into a game.
+  onPlay: null, // Set by main.js: what to do when the player goes into a game...
+  bestTimeOf: null, // ...and how to find a game's best time ({ name, time }), for its card.
   // Arrive at the south end, or (coming back from a game) in front of that game's opening.
   enter({ from = null, quiet = false } = {}) {
     const back = openings.find((opening) => opening.game === from);
     if (back) walker.place(back.spot.x, back.spot.z, back.facing);
     else walker.place(pathX(START_Z), START_Z, Math.PI);
     fox.model.position.set(player.position.x - FOX_SIDE_GAP, 0, player.position.z + 0.6);
-    keepInHallway(fox.model.position, FOX_RADIUS);
+    keepInGlenn(fox.model.position, FOX_RADIUS);
     near = null;
     closeCard();
-    if (!quiet) showBanner('The Forest Hallway', 'Lanternwood');
+    if (!quiet) showBanner('The Glenn', 'Lanternwood');
   },
   leave() {
     closeCard();

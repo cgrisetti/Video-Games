@@ -10,7 +10,7 @@ import { playSwing, playBonk, playPop, playChomp } from './sounds.js';
 import { flickerLanterns } from './lantern.js';
 import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
 import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TRUNK_DIAMETER } from './scenery.js';
-import { showScoreboard, hideScoreboard } from './scoreboard.js';
+import { createBoard, formatTime } from './scoreboard.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
 import { makeRaspberry, makeGoldenRaspberry } from './raspberry.js';
 
@@ -69,6 +69,16 @@ const FOX_RADIUS = 0.55;
 const FOX_POINT_TIME = 1.5; // Seconds it stands pointing before it starts walking.
 
 const PLAY_HALF = ARENA_SIZE / 2 - HEDGE_THICKNESS; // From the middle of the field to the inside of the hedges.
+
+// The Top 10 for Berry Rush: the fastest times to pick every raspberry.
+const board = createBoard({
+  saveAs: 'top-10',
+  title: 'Top 10 Raspberry Pickers',
+  emblem: 'sprig',
+  done: 'You picked them all in',
+  failed: 'The inch worm got you! Pick every raspberry to earn a place in the book.',
+  thanks: 'Well picked',
+});
 
 const scoreEl = document.getElementById('score');
 const timerEl = document.getElementById('timer');
@@ -629,7 +639,7 @@ function restart() {
   resultsIn = 0;
   goldenOut = false;
   goldenBerry.visible = false;
-  hideScoreboard();
+  board.hide();
   placeObstacles();
   placeBerries();
   placeWorms();
@@ -642,7 +652,7 @@ function updateHud() {
   scoreEl.textContent = `${collected} / ${BERRY_COUNT + 1}`;
   berryPill.classList.toggle('golden', collected >= BERRY_COUNT);
   hintEl.hidden = !goldenOut;
-  timerEl.textContent = `${elapsed.toFixed(1)}s`;
+  timerEl.textContent = formatTime(elapsed);
 }
 
 // Pick a raspberry: count it, pop it, and give the counter a little bump.
@@ -667,7 +677,7 @@ function caught(worm) {
   finished = true;
   caughtByWorm = true;
   playChomp(screenSide(worm.headBall.position));
-  showScoreboard(null);
+  board.show(null);
 }
 
 // How far left (-1) or right (1) of the middle of the screen something is, so its sound comes from that side.
@@ -727,7 +737,7 @@ function update(dt, controls) {
   effects.update(dt);
   if (resultsIn > 0) {
     resultsIn -= dt;
-    if (resultsIn <= 0) showScoreboard(elapsed);
+    if (resultsIn <= 0) board.show(elapsed);
   }
 
   // A swing of the stick that catches an inch worm on the head stuns it.
@@ -783,7 +793,7 @@ export const berryRush = {
   },
   // Going back to the woods: put the Top 10 away and let the danger music fade.
   leave() {
-    hideScoreboard();
+    board.hide();
     hideBanner();
     setDanger(0);
   },
@@ -791,4 +801,5 @@ export const berryRush = {
   canPause: () => !finished,
   // A round has started and isn't over, so leaving would lose it.
   roundInProgress: () => !finished && elapsed > 0,
+  best: () => board.best(),
 };

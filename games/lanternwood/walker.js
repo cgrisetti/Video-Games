@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 // How the gnome gets around, the same everywhere in Lanternwood: running and turning, jumping and
-// landing, bumping into things, and the camera following along behind. Each area (Berry Rush, the
-// woods) tells it about its own ground and obstacles.
+// landing, bumping into things, and the camera following along behind. Each area (the Glenn, Berry
+// Rush, the maze) tells it about its own ground and obstacles. (The maze has its own low camera.)
 
 // Tweak these to change how the gnome moves, everywhere.
 export const MOVE_SPEED = 8;

@@ -155,7 +155,8 @@
         color: #ffc93c;
         box-shadow: 0 0 0 2px rgba(255, 201, 60, 0.75), 0 0 14px rgba(255, 201, 60, 0.6);
       }
-      #berry-pill span {
+      #berry-pill span,
+      #district-pill span {
         color: #fffaf0;
       }
       #berry-pill.bump {
@@ -384,9 +385,8 @@
       #menu-prompts span + span {
         margin-left: 12px;
       }
-      /* Some things only belong in one area: the berry counter and clock in Berry Rush, say. */
-      body:not([data-area='berry-rush']) [data-area='berry-rush'],
-      body:not([data-area='woods']) [data-area='woods'] {
+      /* Some things only belong in some areas (marked data-area="..."): main.js hides them elsewhere. */
+      .off-area {
         display: none !important;
       }
 
@@ -653,6 +653,19 @@
         <use href="#berry" x="48" y="4" width="24" height="28" style="color: #c8325f" />
       </symbol>
       <!-- Takes its color from the surrounding text color, so it can turn gold. -->
+      <!-- The maze's: the same twig, with an old brass garden key hanging from it. -->
+      <symbol id="key-sprig" viewBox="0 0 120 36">
+        <path d="M8 27 C 35 15, 85 15, 112 27" fill="none" stroke="#7a5230" stroke-width="2" stroke-linecap="round" />
+        <ellipse cx="27" cy="17" rx="10" ry="4.5" transform="rotate(-28 27 17)" fill="#5f8a46" />
+        <ellipse cx="41" cy="26" rx="8.5" ry="4" transform="rotate(22 41 26)" fill="#7ea55c" />
+        <ellipse cx="93" cy="17" rx="10" ry="4.5" transform="rotate(28 93 17)" fill="#5f8a46" />
+        <ellipse cx="79" cy="26" rx="8.5" ry="4" transform="rotate(-22 79 26)" fill="#7ea55c" />
+        <path d="M60 19 V22" stroke="#7a5230" stroke-width="1.2" />
+        <g fill="none" stroke="#b8902f" stroke-width="2.6" stroke-linecap="round">
+          <circle cx="60" cy="26.5" r="4.2" />
+          <path d="M60 30.7 V35 M60 33 H64 M60 35 H63" />
+        </g>
+      </symbol>
       <symbol id="berry" viewBox="0 0 24 28">
         <g fill="currentColor" stroke="rgba(60, 0, 20, 0.35)" stroke-width="0.6">
           <circle cx="9" cy="13" r="3.2" />
@@ -668,8 +681,8 @@
       </symbol>
     </svg>
 
-    <div id="hud" data-area="berry-rush">
-      <div class="hud-pill" id="berry-pill" aria-label="Raspberries picked">
+    <div id="hud" data-area="berry-rush bramble-maze">
+      <div class="hud-pill" id="berry-pill" aria-label="Raspberries picked" data-area="berry-rush">
         <svg aria-hidden="true"><use href="#berry" /></svg>
         <span id="score"></span>
       </div>
@@ -680,7 +693,15 @@
         </svg>
         <span id="timer"></span>
       </div>
-      <div class="hud-pill" id="hud-hint" hidden>Follow the fox to the golden raspberry!</div>
+      <div class="hud-pill" id="hud-hint" data-area="berry-rush" hidden>Follow the fox to the golden raspberry!</div>
+      <!-- Which of the maze's four gardens you're in, to help you find your way. -->
+      <div class="hud-pill" id="district-pill" aria-label="Where you are" data-area="bramble-maze">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+          <circle cx="12" cy="6.5" r="4" /><circle cx="6.5" cy="11" r="4" /><circle cx="17.5" cy="11" r="4" /><circle cx="8.5" cy="17" r="4" /><circle cx="15.5" cy="17" r="4" />
+          <circle cx="12" cy="12" r="3" fill="#f6dd6a" />
+        </svg>
+        <span id="district"></span>
+      </div>
     </div>
 
     <button id="pause-button" type="button" aria-label="Pause">
@@ -750,10 +771,10 @@
           <p class="tagline" data-start-only>Wander the lantern-lit woods and find the games hidden behind its gates.</p>
           <div class="menu-list">
             <button type="button" class="primary" data-action="resume">Resume</button>
-            <button type="button" data-action="restart" data-area="berry-rush">Restart round</button>
+            <button type="button" data-action="restart" data-area="berry-rush bramble-maze">Restart round</button>
             <button type="button" data-open="settings">Settings</button>
             <button type="button" data-open="how-to-play">How to play</button>
-            <button type="button" data-action="return" data-area="berry-rush">Return to Woods</button>
+            <button type="button" data-action="return" data-area="berry-rush bramble-maze">Return to Woods</button>
             <button type="button" data-action="quit" data-area="woods">Quit to game list</button>
           </div>
         </div>
@@ -806,7 +827,10 @@
             Follow the forest path. Behind the gates, archways and openings along it are games to play. Walk up to one and press
             <kbd>F</kbd> (<kbd>□</kbd> on a controller) to see what's there, then press it again to go in.
           </p>
-          <p class="goal" data-area="woods">Berry Rush is open now. The others are coming soon!</p>
+          <p class="goal" data-area="woods">
+            Berry Rush is open now, and so is the Bramble Maze, through the old garden door at the end of the path. The others
+            are coming soon!
+          </p>
           <p class="goal" data-area="berry-rush">
             Pick all 9 raspberries. Then your fox friend sniffs out the golden raspberry: follow it! The clock stops when you pick
             the golden one.
@@ -814,6 +838,14 @@
           <p class="goal" data-area="berry-rush">
             If an inch worm touches you, the round is over. Bonk one on the head with your stick and it's knocked out for a few
             seconds, but each bonk makes it a little faster.
+          </p>
+          <p class="goal" data-area="bramble-maze">
+            You start by the old tree in the middle of the maze. Find the open garden door that leads out! There's a new maze
+            every time, and the clock stops when you step out through the door.
+          </p>
+          <p class="goal" data-area="bramble-maze">
+            Each corner of the maze is its own garden, with its own flowers. Lanterns light up at every crossing you've passed,
+            and every dead end has something to remember it by. The old tree is in the middle, and the bell tower is to the north.
           </p>
           <table class="controls">
             <thead>
@@ -825,7 +857,8 @@
               <tr><td>Swing stick</td><td><kbd>F</kbd></td><td><kbd>□</kbd></td></tr>
               <tr data-area="woods"><td>Go through a gate</td><td><kbd>F</kbd>, then <kbd>F</kbd></td><td><kbd>□</kbd>, then <kbd>□</kbd></td></tr>
               <tr><td>Pause</td><td><kbd>Esc</kbd> or <kbd>P</kbd></td><td><kbd>Options</kbd></td></tr>
-              <tr data-area="berry-rush"><td>Restart</td><td><kbd>R</kbd></td><td>From this menu</td></tr>
+              <tr data-area="bramble-maze"><td>Turn the camera</td><td><kbd>Q</kbd> <kbd>E</kbd></td><td>Right stick</td></tr>
+              <tr data-area="berry-rush bramble-maze"><td>Restart</td><td><kbd>R</kbd></td><td>From this menu</td></tr>
               <tr><td>Music on/off</td><td><kbd>M</kbd></td><td>In Settings</td></tr>
             </tbody>
           </table>
@@ -839,8 +872,8 @@
     </div>
 
     <section id="scoreboard" class="storybook" hidden>
-      <svg class="sprig" aria-hidden="true"><use href="#sprig" /></svg>
-      <h2>Top 10 Raspberry Pickers</h2>
+      <svg class="sprig" aria-hidden="true"><use id="scoreboard-emblem" href="#sprig" /></svg>
+      <h2 id="scoreboard-title">Top 10 Raspberry Pickers</h2>
       <p id="result"></p>
       <ol id="scores"></ol>
       <p class="again">Press <kbd>R</kbd> or <kbd>Options</kbd> to play again, or <kbd>Esc</kbd> for the menu</p>

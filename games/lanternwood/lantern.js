@@ -10,6 +10,7 @@ const ARM = 0.4; // How far the lantern hangs out from the post.
 const postMaterial = new THREE.MeshStandardMaterial({ color: 0x5b4030, roughness: 0.9 });
 const capMaterial = new THREE.MeshStandardMaterial({ color: 0x3a2a1e, roughness: 0.7 });
 const paperMaterial = new THREE.MeshStandardMaterial({ color: 0xffc46b, emissive: 0xff9437, emissiveIntensity: 1.15, roughness: 0.6 });
+const unlitPaperMaterial = new THREE.MeshStandardMaterial({ color: 0xd8c4a2, roughness: 0.8 }); // Before it's lit.
 const postGeometry = new THREE.CylinderGeometry(0.045, 0.065, LANTERN_HEIGHT, 7).translate(0, LANTERN_HEIGHT / 2, 0);
 const armGeometry = new THREE.CylinderGeometry(0.03, 0.03, ARM + 0.05, 6).rotateZ(Math.PI / 2).translate(ARM / 2, LANTERN_HEIGHT - 0.06, 0);
 const cordGeometry = new THREE.CylinderGeometry(0.008, 0.008, 0.12, 4).translate(ARM, LANTERN_HEIGHT - 0.14, 0);
@@ -19,21 +20,29 @@ const glowTexture = makeGlow();
 const glows = []; // Every lantern's glow, so they can all flicker.
 
 // A lantern on its post, standing at 0, 0, 0 with the lantern hanging out along +x.
-export function makeLantern() {
+// Its paper lantern is kept in lantern.userData.lamp, to light or put out with setLanternLit().
+export function makeLantern({ lit = true } = {}) {
   const lantern = new THREE.Group();
   const post = new THREE.Mesh(postGeometry, postMaterial);
   const arm = new THREE.Mesh(armGeometry, postMaterial);
   const cord = new THREE.Mesh(cordGeometry, capMaterial);
-  const lamp = makeHangingLantern();
+  const lamp = makeHangingLantern({ lit });
   lamp.position.set(ARM, LANTERN_HEIGHT - 0.2, 0);
   post.castShadow = true;
   arm.castShadow = true;
   lantern.add(post, arm, cord, lamp);
+  lantern.userData.lamp = lamp;
   return lantern;
 }
 
+// Light a paper lantern (true) or leave it dark (false).
+export function setLanternLit(lamp, lit) {
+  lamp.userData.paper.material = lit ? paperMaterial : unlitPaperMaterial;
+  lamp.userData.glow.visible = lit;
+}
+
 // Just the paper lantern, to hang from something (an arch, a branch). It hangs down from 0, 0, 0.
-export function makeHangingLantern() {
+export function makeHangingLantern({ lit = true } = {}) {
   const lamp = new THREE.Group();
   const paper = new THREE.Mesh(paperGeometry, paperMaterial);
   const top = new THREE.Mesh(capGeometry, capMaterial);
@@ -54,6 +63,8 @@ export function makeHangingLantern() {
   glows.push(glow);
 
   lamp.add(paper, top, bottom, glow);
+  lamp.userData = { paper, glow };
+  setLanternLit(lamp, lit);
   return lamp;
 }
 

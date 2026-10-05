@@ -6,7 +6,8 @@ import { loadSaved, save } from './saved.js';
 //     when it bonks an inch worm on the head;
 //   - a raspberry: a juicy pop and a little chime that climbs higher with every berry you pick,
 //     on the notes of the music's key (D major), with a sparkling run for the golden one;
-//   - an inch worm catching the gnome: chomp, chomp, gulp.
+//   - an inch worm catching the gnome: chomp, chomp, gulp;
+//   - in the maze: a soft bell as each lantern lights, and a sparkling run when you find the way out.
 // They all pass through a little "forest" echo so they sit in the same place as the music.
 
 const LEVEL = 0.6; // How loud the effects are at full volume, to sit nicely with the music.
@@ -75,6 +76,20 @@ export function playChomp(pan = 0) {
   }
   tone({ from: 520, to: 150, glide: 0.2, attack: 0.02, decay: 0.24, gain: 0.4, at: 0.55, pan }); // Gulp.
   tone({ from: 260, to: 75, glide: 0.2, attack: 0.02, decay: 0.24, gain: 0.3, at: 0.55, pan });
+}
+
+// A lantern lighting up: one soft, high bell, on a note from the music's key.
+export function playLanternLit() {
+  if (!ready()) return;
+  chime(BERRY_NOTES[5 + Math.floor(Math.random() * 4)], 0, 0.12);
+}
+
+// Finding the way out of the maze: the golden raspberry's sparkling run, a little slower.
+export function playEscape() {
+  if (!ready()) return;
+  GOLDEN_RUN.forEach((note, i) => chime(note, i * 0.11, 0.24));
+  chime(GOLDEN_RUN[0] / 2, 0, 0.2);
+  hiss({ type: 'highpass', q: 0.7, sweep: [5000], attack: 0.1, decay: 0.9, gain: 0.07, at: 0.1 });
 }
 
 // 0 (silent) to 1 (full).
