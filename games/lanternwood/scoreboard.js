@@ -1,75 +1,131 @@
-// The Top 10 board: the fastest times to pick every raspberry, shown at the end of each round.
-// It's saved in this browser, so it's still there the next time you play on this computer.
+// The Top 10 boards, one for each game, shown at the end of each round: the fastest times to
+// pick every raspberry in Berry Rush, and the farthest anyone has hopped in Gnome Crossing.
+// They're saved in this browser, so they're still there the next time you play on this computer.
+// Only one is ever on screen, so they share the storybook page in index.html.
 
 import { loadSaved, save } from './saved.js';
 
 const BOARD_SIZE = 10;
 const NAME_LENGTH = 10;
 
-const board = document.getElementById('scoreboard');
+const page = document.getElementById('scoreboard');
+const titleEl = document.getElementById('scoreboard-title');
 const resultEl = document.getElementById('result');
 const listEl = document.getElementById('scores');
 const resetButton = document.getElementById('reset-scores');
 
-let scores = loadScores(); // Fastest first: [{ name, time }, ...]
-let pending = null; // A new Top 10 time waiting for its name: { name, time }.
-let justSaved = null; // The entry saved this round, so it can be highlighted.
+let showing = null; // The board on the page right now, if any.
 
-// Show the board at the end of a round. `time` is how long the gnome took to pick every
-// raspberry, or null if an inch worm caught it first.
-export function showScoreboard(time) {
-  pending = null;
-  justSaved = null;
-  if (time === null) {
-    resultEl.textContent = 'The inch worm got you! Pick every raspberry to earn a place in the book.';
-  } else if (scores.length < BOARD_SIZE || time < scores[scores.length - 1].time) {
-    pending = { name: '', time };
-    resultEl.textContent =
-      scores.length === 0 || time < scores[0].time
-        ? `A new fastest time: ${format(time)}! Write your name in the book.`
-        : `${format(time)} is a Top 10 time! Write your name in the book.`;
+// One game's board. `saveAs` and `field` are where and how it's saved; `lowerIsBetter` is true
+// for times (fastest first) and false for distances (farthest first); `words` is what it says.
+function createBoard({ saveAs, field, title, lowerIsBetter, format, words }) {
+  return { saveAs, field, title, lowerIsBetter, format, words, scores: load(saveAs, field), pending: null, justSaved: null };
+}
+
+export const boards = {
+  'berry-rush': createBoard({
+    saveAs: 'top-10',
+    field: 'time',
+    title: 'Top 10 Raspberry Pickers',
+    lowerIsBetter: true,
+    format: (time) => `${time.toFixed(1)}s`,
+    words: {
+      noScore: 'The inch worm got you! Pick every raspberry to earn a place in the book.',
+      newBest: (score) => `A new fastest time: ${score}! Write your name in the book.`,
+      topTen: (score) => `${score} is a Top 10 time! Write your name in the book.`,
+      notTopTen: (score) => `You picked them all in ${score}. Not quite a Top 10 time!`,
+      saved: (name) => `Well picked, ${name}!`,
+      best: (score, name) => `Best time: ${score}, by ${name}`,
+      noBest: 'No best time yet. Be the first!',
+    },
+  }),
+  'gnome-crossing': createBoard({
+    saveAs: 'gnome-crossing-top-10',
+    field: 'hops',
+    title: 'Top 10 Trailblazers',
+    lowerIsBetter: false,
+    format: (hops) => `${hops} hop${hops === 1 ? '' : 's'}`,
+    words: {
+      noScore: 'Hop forward to earn a place in the book.',
+      newBest: (score) => `${score}: the farthest yet! Write your name in the book.`,
+      topTen: (score) => `${score} is a Top 10 trip! Write your name in the book.`,
+      notTopTen: (score) => `You made it ${score}. Not quite a Top 10 trip!`,
+      saved: (name) => `Well hopped, ${name}!`,
+      best: (score, name) => `Farthest: ${score}, by ${name}`,
+      noBest: 'Nobody has crossed yet. Be the first!',
+    },
+  }),
+};
+
+// Show a board at the end of a round. `score` is the time or distance, or null if the round
+// ended without one (an inch worm got you first). `story` is said first: how the round ended.
+export function showScoreboard(board, score, story = '') {
+  hideScoreboard();
+  showing = board;
+  board.pending = null;
+  board.justSaved = null;
+  const { scores, words, format } = board;
+  let message;
+  if (score === null || score <= 0) {
+    message = words.noScore;
+  } else if (scores.length < BOARD_SIZE || isBetter(board, score, scores[scores.length - 1].score)) {
+    board.pending = { name: '', score };
+    message = scores.length === 0 || isBetter(board, score, scores[0].score) ? words.newBest(format(score)) : words.topTen(format(score));
   } else {
-    resultEl.textContent = `You picked them all in ${format(time)}. Not quite a Top 10 time!`;
+    message = words.notTopTen(format(score));
   }
-  render();
-  board.hidden = false;
+  titleEl.textContent = board.title;
+  resultEl.textContent = story ? `${story} ${message}` : message;
+  render(board);
+  page.hidden = false;
   listEl.querySelector('input')?.focus();
 }
 
-// The fastest time on the board ({ name, time }), or null if there isn't one yet.
-export function bestTime() {
-  return scores[0] ?? null;
-}
-
-// Hide the board when a new round starts. A time still waiting for its name is saved
+// Hide the board when a new round starts. A score still waiting for its name is saved
 // with whatever has been typed so far.
 export function hideScoreboard() {
-  savePending();
-  board.hidden = true;
+  if (showing) savePending(showing);
+  showing = null;
+  page.hidden = true;
 }
 
-function savePending() {
-  if (!pending) return;
-  const entry = { name: pending.name.trim().slice(0, NAME_LENGTH) || 'Gnome', time: pending.time };
-  scores.splice(rankFor(entry.time), 0, entry);
-  scores = scores.slice(0, BOARD_SIZE);
-  saveScores();
-  pending = null;
-  justSaved = entry;
-  resultEl.textContent = `Well picked, ${entry.name}!`;
-  render();
+// The best score on a board ({ name, score }), or null if there isn't one yet.
+export function bestScore(board) {
+  return board.scores[0] ?? null;
 }
 
-// Where a time would go on the board: after every time that's as fast or faster.
-function rankFor(time) {
-  const slower = scores.findIndex((entry) => entry.time > time);
-  return slower === -1 ? scores.length : slower;
+// A line about the best score, for the game's card in the woods.
+export function bestLine(board) {
+  const best = bestScore(board);
+  return best ? board.words.best(board.format(best.score), best.name) : board.words.noBest;
 }
 
-// Draw all ten rows: saved times, the new time waiting for a name, and empty spots.
-function render() {
-  const rows = [...scores];
-  if (pending) rows.splice(rankFor(pending.time), 0, pending);
+function isBetter(board, a, b) {
+  return board.lowerIsBetter ? a < b : a > b;
+}
+
+function savePending(board) {
+  if (!board.pending) return;
+  const entry = { name: board.pending.name.trim().slice(0, NAME_LENGTH) || 'Gnome', score: board.pending.score };
+  board.scores.splice(rankFor(board, entry.score), 0, entry);
+  board.scores = board.scores.slice(0, BOARD_SIZE);
+  saveScores(board);
+  board.pending = null;
+  board.justSaved = entry;
+  resultEl.textContent = board.words.saved(entry.name);
+  render(board);
+}
+
+// Where a score would go on the board: after every score that's as good or better.
+function rankFor(board, score) {
+  const worse = board.scores.findIndex((entry) => isBetter(board, score, entry.score));
+  return worse === -1 ? board.scores.length : worse;
+}
+
+// Draw all ten rows: saved scores, the new one waiting for a name, and empty spots.
+function render(board) {
+  const rows = [...board.scores];
+  if (board.pending) rows.splice(rankFor(board, board.pending.score), 0, board.pending);
   listEl.replaceChildren();
   for (let i = 0; i < BOARD_SIZE; i++) {
     const entry = rows[i];
@@ -78,12 +134,12 @@ function render() {
     if (!entry) {
       row.classList.add('empty');
       row.append(cell('name', '· · ·'), cell('time', '–'));
-    } else if (entry === pending) {
+    } else if (entry === board.pending) {
       row.classList.add('yours');
-      row.append(nameField(), saveButton(), cell('time', format(entry.time)));
+      row.append(nameField(board), saveButton(board), cell('time', board.format(entry.score)));
     } else {
-      if (entry === justSaved) row.classList.add('yours');
-      row.append(cell('name', entry.name), cell('time', format(entry.time)));
+      if (entry === board.justSaved) row.classList.add('yours');
+      row.append(cell('name', entry.name), cell('time', board.format(entry.score)));
     }
     listEl.append(row);
   }
@@ -96,30 +152,30 @@ function cell(className, text) {
   return span;
 }
 
-function nameField() {
+function nameField(board) {
   const input = document.createElement('input');
   input.type = 'text';
   input.maxLength = NAME_LENGTH;
   input.placeholder = 'Your name';
   input.setAttribute('aria-label', 'Your name, up to 10 letters');
-  input.value = pending.name;
-  input.addEventListener('input', () => (pending.name = input.value));
+  input.value = board.pending.name;
+  input.addEventListener('input', () => (board.pending.name = input.value));
   input.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') savePending();
+    if (event.key === 'Enter') savePending(board);
   });
   return input;
 }
 
-function saveButton() {
+function saveButton(board) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'save';
   button.textContent = 'Save';
-  button.addEventListener('click', savePending);
+  button.addEventListener('click', () => savePending(board));
   return button;
 }
 
-// The reset link asks once more before it wipes the board, in case of a stray click.
+// The reset link asks once more before it wipes the board on the page, in case of a stray click.
 let resetTimer = null;
 resetButton.addEventListener('click', () => {
   if (resetTimer === null) {
@@ -128,10 +184,11 @@ resetButton.addEventListener('click', () => {
     return;
   }
   endResetQuestion();
-  scores = [];
-  justSaved = null;
-  saveScores();
-  render();
+  if (!showing) return;
+  showing.scores = [];
+  showing.justSaved = null;
+  saveScores(showing);
+  render(showing);
 });
 
 function endResetQuestion() {
@@ -141,16 +198,19 @@ function endResetQuestion() {
   resetButton.blur();
 }
 
-function format(time) {
-  return `${time.toFixed(1)}s`;
-}
-
-function loadScores() {
-  const saved = loadSaved('top-10');
+// Saved as [{ name, time }] for Berry Rush (as it always has been) and [{ name, hops }] for Gnome Crossing.
+function load(saveAs, field) {
+  const saved = loadSaved(saveAs);
   if (!Array.isArray(saved)) return [];
-  return saved.filter((entry) => typeof entry?.name === 'string' && Number.isFinite(entry?.time)).slice(0, BOARD_SIZE);
+  return saved
+    .filter((entry) => typeof entry?.name === 'string' && Number.isFinite(entry?.[field]))
+    .map((entry) => ({ name: entry.name, score: entry[field] }))
+    .slice(0, BOARD_SIZE);
 }
 
-function saveScores() {
-  save('top-10', scores);
+function saveScores(board) {
+  save(
+    board.saveAs,
+    board.scores.map((entry) => ({ name: entry.name, [board.field]: entry.score })),
+  );
 }

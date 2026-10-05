@@ -4,18 +4,20 @@ import { initMenu, isPaused, openMenu, menuInput, updateButtonHints } from './me
 import { showBanner } from './banner.js';
 import { woods } from './woods.js';
 import { berryRush } from './berry-rush.js';
+import { gnomeCrossing } from './gnome-crossing.js';
 
 // Lanternwood: lantern-lit woods (the Forest Hallway) with games behind the gates along its path.
 // This file runs the show. It draws whichever area you're in and hands it the controls each
 // frame, and it walks you between areas with a fade to dark and back, the way hub-world games
-// do. Each area (woods.js, berry-rush.js) has its own scene, camera and gnome, and these parts:
-//   update(dt, controls), enter(options), leave(), canPause(), and optionally restart(),
-//   roundInProgress() and dismiss().
+// do. Each area (woods.js, berry-rush.js, gnome-crossing.js) has its own scene, camera and
+// gnome, and these parts: update(dt, controls), enter(options), leave(), canPause(), and
+// optionally restart(), roundInProgress() and dismiss().
 
 const FADE_SECONDS = 0.45; // Matches the fade in index.html.
 
-const areas = { woods, 'berry-rush': berryRush };
+const areas = { woods, 'berry-rush': berryRush, 'gnome-crossing': gnomeCrossing };
 let area = woods;
+let areaName = 'woods';
 let switching = false; // Fading between areas: nothing moves, and the menu stays shut.
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -41,6 +43,7 @@ function goTo(name, options = {}) {
   setTimeout(() => {
     area.leave();
     area = areas[name];
+    areaName = name;
     document.body.dataset.area = name;
     area.enter(options);
     fade.classList.remove('dark');
@@ -72,7 +75,7 @@ document.body.dataset.area = 'woods';
 woods.enter({ quiet: true });
 initMenu({
   restart: () => area.restart?.(),
-  returnToWoods: () => goTo('woods', { from: 'berry-rush' }),
+  returnToWoods: () => goTo('woods', { from: areaName }), // Back out through the gate you went in by.
   roundInProgress: () => area.roundInProgress?.() ?? false,
   canPause: () => area.canPause(),
   busy: () => switching,

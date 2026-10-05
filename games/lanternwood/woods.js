@@ -9,7 +9,7 @@ import { makeGardenGate, makeHedgeArch, makeArbor, makeTrailhead, OPENING } from
 import { showBanner, hideBanner } from './banner.js';
 import { showToast } from './menu.js';
 import { isUsingController } from './input.js';
-import { bestTime } from './scoreboard.js';
+import { boards, bestLine } from './scoreboard.js';
 import { playSwing } from './sounds.js';
 
 // The woods of Lanternwood: the Forest Hallway, a long lantern-lit path between hedges, with games
@@ -37,13 +37,17 @@ const GAMES = {
     title: 'Berry Rush',
     blurb: 'Pick all 9 raspberries, then follow the fox to the golden one. Watch out for the inch worms!',
   },
+  'gnome-crossing': {
+    title: 'Gnome Crossing',
+    blurb: 'Hop over creeks and deer trails as far as you can go. Night is falling behind you, so keep hopping!',
+  },
 };
 
 // The openings along the hallway: which kind, which side (-1 west, 1 east, 0 the far north end),
 // how far along, and which game is behind it (none yet, for most).
 const OPENINGS = [
   { kind: 'gate', side: -1, z: 22, game: 'berry-rush' },
-  { kind: 'arch', side: 1, z: 11 },
+  { kind: 'arch', side: 1, z: 11, game: 'gnome-crossing' },
   { kind: 'arbor', side: -1, z: -1 },
   { kind: 'trail', side: 1, z: -13 },
   { kind: 'arch', side: -1, z: -24 },
@@ -173,7 +177,7 @@ scene.add(
 );
 
 for (const opening of openings) {
-  const model = BUILDERS[opening.kind](opening.game ? GAMES[opening.game].title : 'Coming soon');
+  const model = BUILDERS[opening.kind](opening.game ? GAMES[opening.game].title : 'Coming soon', { open: Boolean(opening.game) });
   model.position.set(opening.x, 0, opening.z);
   model.rotation.y = opening.facing;
   model.scale.setScalar(opening.size ?? 1);
@@ -311,14 +315,13 @@ function showPrompt() {
   promptText.textContent = near.game ? GAMES[near.game].title : 'Coming soon';
 }
 
-// The game's card: its name, what to do, the best time so far, and "press again to play".
+// The game's card: its name, what to do, the best score so far, and "press again to play".
 function openCard(opening) {
   offering = opening;
   const game = GAMES[opening.game];
-  const best = bestTime();
   cardTitle.textContent = game.title;
   cardBlurb.textContent = game.blurb;
-  cardBest.textContent = best ? `Best time: ${best.time.toFixed(1)}s, by ${best.name}` : 'No best time yet. Be the first!';
+  cardBest.textContent = bestLine(boards[opening.game]);
   cardPlayKey.textContent = isUsingController() ? '□' : 'F';
   cardCloseKey.textContent = isUsingController() ? '○' : 'Esc';
   card.hidden = false;

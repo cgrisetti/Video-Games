@@ -1,10 +1,13 @@
 // Everything the player can press: the keyboard, and a game controller such as a PlayStation 5
 // controller. Once a frame, readInput() boils it all down to which way to move (and how hard),
-// whether jump is held, and which buttons were just pressed: swing the stick, restart, pause, and
-// the buttons for getting around the menu. The rest of the game only asks this file, so it doesn't
-// care where the input came from. (The menu also listens to the keyboard itself, for Esc, Enter and the arrows.)
+// whether jump is held, and which buttons were just pressed: swing the stick, restart, pause, a
+// single hop (for Gnome Crossing), and the buttons for getting around the menu. The rest of the
+// game only asks this file, so it doesn't care where the input came from. (The menu also listens
+// to the keyboard itself, for Esc, Enter and the arrows.)
 
 const STICK_DEAD_ZONE = 0.15; // Ignore small stick movements; sticks rarely rest exactly in the middle.
+const HOP_STICK_PUSH = 0.6; // How far to push the stick for one hop...
+const HOP_STICK_LET_GO = 0.35; // ...and how far back toward the middle before it can hop again.
 const MENU_STICK_PUSH = 0.5; // How far to push the stick to move through a menu.
 const MENU_REPEAT_DELAY = 0.4; // Hold a direction in a menu: it moves once, then again after this many seconds...
 const MENU_REPEAT_EVERY = 0.12; // ...and then this often.
@@ -20,9 +23,24 @@ const DPAD_DOWN = 13;
 const DPAD_LEFT = 14;
 const DPAD_RIGHT = 15;
 
+// Keys that hop one tile in Gnome Crossing, and which way: [x, z], with -z forward (up the screen).
+const HOP_KEYS = {
+  KeyW: [0, -1],
+  ArrowUp: [0, -1],
+  Space: [0, -1],
+  KeyS: [0, 1],
+  ArrowDown: [0, 1],
+  KeyA: [-1, 0],
+  ArrowLeft: [-1, 0],
+  KeyD: [1, 0],
+  ArrowRight: [1, 0],
+};
+
 const keys = new Set();
 let restartKeyPressed = false;
 let swingKeyPressed = false;
+let hopKeyPressed = null; // The hop key pressed since last frame, if any.
+let stickHopReady = true; // The stick has come back toward the middle since its last hop.
 const wasDown = []; // Which controller buttons were down last frame, to spot new presses.
 let lastPad = null; // Which controller that was.
 let jumpHeldOver = false; // After leaving the menu with ✕, ignore that press until it's let go.
@@ -38,6 +56,7 @@ window.addEventListener('keydown', (event) => {
   keys.add(event.code);
   if (event.code === 'KeyR' && !event.repeat) restartKeyPressed = true;
   if (event.code === 'KeyF' && !event.repeat) swingKeyPressed = true;
+  if (HOP_KEYS[event.code] && !event.repeat) hopKeyPressed = HOP_KEYS[event.code];
 });
 window.addEventListener('keyup', (event) => keys.delete(event.code));
 window.addEventListener('blur', () => keys.clear());
@@ -48,6 +67,7 @@ const input = {
   jump: false, // Held down this frame.
   swing: false, // Swing the stick: pressed this frame (not just held).
   restart: false, // Pressed this frame (not just held).
+  hop: null, // One hop, pressed this frame: [x, z] like the move, or null. Holding a key doesn't repeat it.
   pause: false, // Options pressed this frame. (Esc and P are handled by the menu.)
   confirm: false, // ✕ pressed this frame, to pick something in a menu.
   back: false, // ○ pressed this frame, to go back in a menu.
@@ -99,14 +119,33 @@ export function readInput() {
   input.jump = jumpDown && !jumpHeldOver;
   input.swing = swingKeyPressed || pressed(SQUARE);
   input.restart = restartKeyPressed;
+  input.hop = hopKeyPressed ?? readHop(pad, pressed);
   input.pause = pressed(OPTIONS);
   input.confirm = pressed(CROSS);
   input.back = pressed(CIRCLE);
   readMenuSteps(pad, button);
   restartKeyPressed = false;
   swingKeyPressed = false;
+  hopKeyPressed = null;
   for (let i = 0; i < (pad?.buttons.length ?? 0); i++) wasDown[i] = button(i);
   return input;
+}
+
+// A hop from the controller: a press of the D-pad or ✕ (forward), or a push of the left stick,
+// which has to come back toward the middle before it hops again.
+function readHop(pad, pressed) {
+  if (!pad) return null;
+  if (pressed(DPAD_UP) || pressed(CROSS)) return [0, -1];
+  if (pressed(DPAD_DOWN)) return [0, 1];
+  if (pressed(DPAD_LEFT)) return [-1, 0];
+  if (pressed(DPAD_RIGHT)) return [1, 0];
+  const stickX = pad.axes[0] ?? 0;
+  const stickZ = pad.axes[1] ?? 0;
+  const push = Math.max(Math.abs(stickX), Math.abs(stickZ));
+  if (push < HOP_STICK_LET_GO) stickHopReady = true;
+  if (!stickHopReady || push < HOP_STICK_PUSH) return null;
+  stickHopReady = false;
+  return Math.abs(stickX) > Math.abs(stickZ) ? [Math.sign(stickX), 0] : [0, Math.sign(stickZ)];
 }
 
 // Menu steps from the controller: one step when a direction is first pushed, then repeating while it's held.

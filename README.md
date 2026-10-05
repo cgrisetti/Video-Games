@@ -1,6 +1,6 @@
 # Video Games
 
-3D browser games we build by describing them to Claude. Each game lives in `games/`, runs in a web browser, and uses [Three.js](https://threejs.org/) for the 3D graphics. The first game is **Lanternwood**, a woodland arcade: walk a little gnome down a lantern-lit forest path, and go through the gates along it to play games. The first one, **Berry Rush**, has you picking raspberries with your fox friend while dodging (or bonking) rainbow inch worms. Play it, then change it.
+3D browser games we build by describing them to Claude. Each game lives in `games/`, runs in a web browser, and uses [Three.js](https://threejs.org/) for the 3D graphics. The first game is **Lanternwood**, a woodland arcade: walk a little gnome down a lantern-lit forest path, and go through the gates along it to play games. **Berry Rush** has you picking raspberries with your fox friend while dodging (or bonking) rainbow inch worms. **Gnome Crossing** is Lanternwood's take on Frogger and Crossy Road: hop up an endless trail across creeks and deer trails, as far as you can, before night catches up. Play them, then change them.
 
 ## 1. What you need
 
@@ -80,7 +80,7 @@ Open a new Terminal window, then run `cd ~/Projects/Video-Games` and `claude`. T
 
    > Install the dependencies, start the dev server and open Lanternwood in the preview.
 
-   Claude runs `npm install`, starts the game server and opens the game in the app's Browser pane. Click **Play**, then: **WASD** or the arrow keys to move, **Space** to jump, **F** to swing your stick, **Esc** to pause. A PlayStation or Xbox controller works too. The pause menu has the full controls and settings.
+   Claude runs `npm install`, starts the game server and opens the game in the app's Browser pane. Click **Play**, then: **WASD** or the arrow keys to move, **Space** to jump, **F** to swing your stick, **Esc** to pause. Walk up to a gate and press **F**, then **F** again, to go in. In Gnome Crossing, each tap of **WASD** or the arrows is one hop. A PlayStation or Xbox controller works too. The pause menu has the full controls and settings.
 
 4. Then ask for changes and play-test after each one.
 
@@ -90,11 +90,13 @@ To play outside the app, run `npm run dev` in the project folder and open <http:
 
 Changing Lanternwood:
 
-- "Make the next game, behind the hedge archway across from Berry Rush: a mushroom-hopping race."
+- "Make the next game, behind the rose arbor: a mushroom-hopping race."
 - "Make it slowly turn to dusk, with fireflies, and the lanterns glowing brighter as it gets dark."
 - "Hide a few acorns around the woods to collect, with a counter in the pause menu."
 - "Add a mushroom that makes the gnome jump twice as high for ten seconds."
 - "Make the camera orbit with the mouse."
+- "In Gnome Crossing, add a lane of bumblebees that zigzag across a meadow of flowers."
+- "In Gnome Crossing, let me pick which hat the gnome wears, with a new hat unlocked every 50 hops."
 
 Starting new games:
 
@@ -125,6 +127,9 @@ games/lanternwood/  The first game: Lanternwood
   main.js           Runs the game and moves you between areas
   woods.js          The Forest Hallway: the path with the gates to the games
   berry-rush.js     Berry Rush, the first game behind a gate
+  gnome-crossing.js Gnome Crossing, the second: hopping, the night and the owl
+  trail.js          Gnome Crossing's endless trail of meadows, creeks and animal trails
+  critters.js       Gnome Crossing's deer, boars, hedgehogs and owl
 CLAUDE.md           Instructions Claude reads about this project
 .claude/launch.json Tells the Claude app how to start the preview
 ```

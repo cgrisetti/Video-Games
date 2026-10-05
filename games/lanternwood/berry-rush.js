@@ -10,7 +10,7 @@ import { playSwing, playBonk, playPop, playChomp } from './sounds.js';
 import { flickerLanterns } from './lantern.js';
 import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
 import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TRUNK_DIAMETER } from './scenery.js';
-import { showScoreboard, hideScoreboard } from './scoreboard.js';
+import { boards, showScoreboard, hideScoreboard } from './scoreboard.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
 import { makeRaspberry, makeGoldenRaspberry } from './raspberry.js';
 
@@ -667,7 +667,7 @@ function caught(worm) {
   finished = true;
   caughtByWorm = true;
   playChomp(screenSide(worm.headBall.position));
-  showScoreboard(null);
+  showScoreboard(boards['berry-rush'], null);
 }
 
 // How far left (-1) or right (1) of the middle of the screen something is, so its sound comes from that side.
@@ -727,7 +727,7 @@ function update(dt, controls) {
   effects.update(dt);
   if (resultsIn > 0) {
     resultsIn -= dt;
-    if (resultsIn <= 0) showScoreboard(elapsed);
+    if (resultsIn <= 0) showScoreboard(boards['berry-rush'], elapsed);
   }
 
   // A swing of the stick that catches an inch worm on the head stuns it.
