@@ -93,7 +93,7 @@ scene.add(backdrop);
 const hedgeZ = rowZ(BACK_ROW - 1);
 const hedgeReach = 30;
 scene.add(makeHedgeWalls([{ from: [-hedgeReach, hedgeZ], to: [hedgeReach, hedgeZ], gaps: [[hedgeReach - OPENING / 2 - 0.6, hedgeReach + OPENING / 2 + 0.6]] }], 1.2));
-const arch = makeHedgeArch('Gnome Crossing', { open: true });
+const arch = makeHedgeArch('Gnome Crossing', { open: true, gatesOpen: false });
 arch.position.z = hedgeZ;
 scene.add(arch);
 // And a sign by the trail, like the ones by country roads.

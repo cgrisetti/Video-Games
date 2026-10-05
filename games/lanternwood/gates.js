@@ -58,22 +58,27 @@ function vine(curve, count, size, flowers) {
   return group;
 }
 
-// A pair of little picket gates, shut, across the opening. Each has a row of pickets with pointed
-// tops, dipping toward the middle, and two rails.
-function picketGates(width, height) {
+// A pair of little picket gates across the opening. Each has a row of pickets with pointed tops,
+// dipping toward the middle, and two rails. They're shut, or (`open`) swung back on their hinges
+// to let you through.
+function picketGates(width, height, open = false) {
   const pieces = [];
   const half = width / 2;
   for (const side of [-1, 1]) {
+    const gate = [];
     const count = 6;
     for (let i = 0; i < count; i++) {
       const x = side * (0.06 + ((i + 0.5) / count) * (half - 0.08));
       const tall = height * (0.8 + 0.2 * (Math.abs(x) / half)); // Lower toward the middle.
-      pieces.push(new THREE.BoxGeometry(0.09, tall, 0.04).translate(x, tall / 2, 0));
-      pieces.push(new THREE.ConeGeometry(0.065, 0.12, 4).rotateY(Math.PI / 4).translate(x, tall + 0.06, 0));
+      gate.push(new THREE.BoxGeometry(0.09, tall, 0.04).translate(x, tall / 2, 0));
+      gate.push(new THREE.ConeGeometry(0.065, 0.12, 4).rotateY(Math.PI / 4).translate(x, tall + 0.06, 0));
     }
     for (const y of [height * 0.25, height * 0.62]) {
-      pieces.push(new THREE.BoxGeometry(half - 0.06, 0.07, 0.05).translate(side * (half / 2 + 0.02), y, -0.04));
+      gate.push(new THREE.BoxGeometry(half - 0.06, 0.07, 0.05).translate(side * (half / 2 + 0.02), y, -0.04));
     }
+    // Swing open: turn each gate on its hinge at the side of the opening, away from the front.
+    if (open) for (const piece of gate) piece.translate(-side * half, 0, 0).rotateY(-side * 1.3).translate(side * half, 0, 0);
+    pieces.push(...gate);
   }
   return mesh(mergeGeometries(pieces), picket);
 }
@@ -145,6 +150,24 @@ function paintBerry(ctx, x, y, r) {
   ctx.lineTo(x + r * 1.8, y - r * 2.6);
   ctx.closePath();
   ctx.fill();
+}
+
+// A finger-post, like the ones where footpaths meet: a board with a name on it, its end cut to a
+// point, on a tall post. The name faces +z, and it points along x, toward `point` (1 or -1).
+export function makeFingerpost(text, point = 1) {
+  const post = new THREE.Group();
+  post.add(mesh(new THREE.CylinderGeometry(0.06, 0.075, 1.75, 7).translate(0, 0.875, 0), darkWood));
+  const width = 1.5;
+  const height = 0.42;
+  const board = makeSignBoard(text, { width, height });
+  board.position.set(point * (width / 2 + 0.04), 1.42, 0.07);
+  post.add(board);
+  // The point: a wedge of wood on the end of the board.
+  const reach = height / Math.sqrt(3); // So the wedge is exactly as tall as the board.
+  const tip = mesh(new THREE.CylinderGeometry(reach, reach, 0.07, 3).rotateX(Math.PI / 2).rotateZ((point * Math.PI) / 2), wood);
+  tip.position.set(point * (width + 0.04 + reach / 2), 1.42, 0.07);
+  post.add(tip);
+  return post;
 }
 
 // A sign on its own little post, beside an opening.
@@ -228,8 +251,8 @@ export function makeCrossingSign() {
 
 // --- The openings ---
 
-// The garden gate into Berry Rush, with its name over the arch.
-export function makeGardenGate(name = 'Berry Rush') {
+// The garden gate into Berry Rush, with its name over the arch. In the woods its gates stand `open`.
+export function makeGardenGate(name = 'Berry Rush', { open = false } = {}) {
   const gate = new THREE.Group();
   const pillarX = OPENING / 2 + 0.28;
   for (const side of [-1, 1]) {
@@ -249,13 +272,14 @@ export function makeGardenGate(name = 'Berry Rush') {
   const lamp = makeHangingLantern();
   lamp.position.set(0, 2.05, 0);
   gate.add(lamp);
-  gate.add(picketGates(OPENING, 1.05));
+  gate.add(picketGates(OPENING, 1.05, open));
   return gate;
 }
 
 // An archway grown from the hedge itself, with a little gate shut across it. With a game behind
-// it (`open`), its name hangs across the front of the arch with a lantern glowing underneath.
-export function makeHedgeArch(sign = 'Coming soon', { open = false } = {}) {
+// it (`open`), its name hangs across the front of the arch with a lantern glowing underneath, and
+// its gates stand open (unless `gatesOpen` says otherwise).
+export function makeHedgeArch(sign = 'Coming soon', { open = false, gatesOpen = open } = {}) {
   const arch = new THREE.Group();
   const blobs = [];
   const curve = archCurve(OPENING / 2 + 0.35, 0, 2.6);
@@ -264,7 +288,7 @@ export function makeHedgeArch(sign = 'Coming soon', { open = false } = {}) {
     blobs.push(new THREE.IcosahedronGeometry(0.42 + 0.06 * Math.sin(i * 1.7), 1).translate(spot.x, spot.y + 0.2, 0));
   }
   arch.add(mesh(mergeGeometries(blobs), hedgeLeaves));
-  arch.add(picketGates(OPENING * 0.9, 0.9));
+  arch.add(picketGates(OPENING * 0.9, 0.9, gatesOpen));
   if (open) {
     const board = makeSignBoard(sign);
     board.position.set(0, 2.62, 0.46);

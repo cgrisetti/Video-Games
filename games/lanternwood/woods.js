@@ -5,7 +5,7 @@ import { createWalker, shortestTurn, MOVE_SPEED } from './walker.js';
 import { makeRock, makeHedgeWalls, growWoods } from './scenery.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
 import { makeLantern, flickerLanterns } from './lantern.js';
-import { makeGardenGate, makeHedgeArch, makeArbor, makeTrailhead, OPENING } from './gates.js';
+import { makeGardenGate, makeHedgeArch, makeArbor, makeTrailhead, makeFingerpost, OPENING } from './gates.js';
 import { showBanner, hideBanner } from './banner.js';
 import { showToast } from './menu.js';
 import { isUsingController } from './input.js';
@@ -15,8 +15,9 @@ import { playSwing } from './sounds.js';
 // The woods of Lanternwood: the Forest Hallway, a long lantern-lit path between hedges, with games
 // behind the gates, archways and openings along its sides. It works like the hub world of a
 // console adventure: walk up to an opening and a prompt appears; press F (□ on a controller) to
-// see what's there, and press it again to go in. Openings whose games aren't built yet are shut,
-// with a "Coming soon" sign, to show there's more to find.
+// see what's there, and press it again to go in. A finger-post where each side path leaves the
+// forest path points the way to its game, and those gates stand open. Openings whose games aren't
+// built yet are shut, with a "Coming soon" sign, to show there's more to find.
 
 // Tweak these to change the hallway.
 const HALL_WIDTH = 18;
@@ -29,6 +30,7 @@ const PATH_HALF_WIDTH = 1.25;
 const LANTERN_SPACING = 9; // A lantern beside the path this often, on alternate sides.
 const ROCK_COUNT = 7;
 const INTERACT_RANGE = 2.3; // How close to an opening the gnome has to be to go in.
+const FINGERPOST_BEFORE = 2.6; // How far before each game's side path its finger-post stands.
 const BACKDROP_RADIUS = 48; // The painted hills sit further out than in Berry Rush, round this longer area.
 
 // The games, as the openings describe them.
@@ -205,6 +207,16 @@ for (let z = HALF_Z - 6, side = 1; z > -HALF_Z + 4; z -= LANTERN_SPACING, side =
   lantern.rotation.y = side > 0 ? Math.PI : 0; // Hanging out over the path.
   scene.add(lantern);
   obstacles.push({ position: lantern.position, radius: 0.12, height: Infinity });
+}
+// A finger-post where each game's side path leaves the forest path, turned to face back down the
+// path so you can read it on the way up, pointing the way.
+for (const opening of openings) {
+  if (!opening.game || opening.side === 0) continue;
+  const z = opening.z + FINGERPOST_BEFORE;
+  const post = makeFingerpost(GAMES[opening.game].title, opening.side);
+  post.position.set(pathX(z) + opening.side * (PATH_HALF_WIDTH + 0.45), 0, z);
+  scene.add(post);
+  obstacles.push({ position: post.position, radius: 0.12, height: Infinity });
 }
 for (let i = 0; i < ROCK_COUNT; i++) {
   // Along the hedges, spread down the hallway in a golden rhythm, never in front of an opening.
