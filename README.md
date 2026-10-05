@@ -1,6 +1,6 @@
 # Video Games
 
-3D browser games we build by describing them to Claude. Each game lives in `games/`, runs in a web browser, and uses [Three.js](https://threejs.org/) for the 3D graphics. There's a starter game, **Coin Hop**, to play with and change.
+3D browser games we build by describing them to Claude. Each game lives in `games/`, runs in a web browser, and uses [Three.js](https://threejs.org/) for the 3D graphics. The first game is **Lanternwood**, a woodland arcade: walk a little gnome down a lantern-lit forest path, and go through the gates along it to play games. The first one, **Berry Rush**, has you picking raspberries with your fox friend while dodging (or bonking) rainbow inch worms. Play it, then change it.
 
 ## 1. What you need
 
@@ -78,9 +78,9 @@ Open a new Terminal window, then run `cd ~/Projects/Video-Games` and `claude`. T
    - **Permission mode**: Manual while you're learning (Claude asks before each change). Switch to **Accept edits** once you're comfortable.
 3. Send your first prompt:
 
-   > Install the dependencies, start the dev server and open Coin Hop in the preview.
+   > Install the dependencies, start the dev server and open Lanternwood in the preview.
 
-   Claude runs `npm install`, starts the game server and opens the game in the app's Browser pane. Click into the game and play: **WASD** or the arrow keys to move, **Space** to jump, **R** to restart.
+   Claude runs `npm install`, starts the game server and opens the game in the app's Browser pane. Click **Play**, then: **WASD** or the arrow keys to move, **Space** to jump, **F** to swing your stick, **Esc** to pause. A PlayStation or Xbox controller works too. The pause menu has the full controls and settings.
 
 4. Then ask for changes and play-test after each one.
 
@@ -88,13 +88,12 @@ To play outside the app, run `npm run dev` in the project folder and open <http:
 
 ## 4. Prompt ideas
 
-Changing Coin Hop:
+Changing Lanternwood:
 
-- "Make the player a little robot built from boxes instead of a plain cube."
-- "Add a 60-second countdown. If time runs out, show Game Over."
-- "Add platforms at different heights, with some coins on top of them."
-- "Add a red enemy that chases the player. Touching it sends you back to the start."
-- "Play a sound when you pick up a coin."
+- "Make the next game, behind the hedge archway across from Berry Rush: a mushroom-hopping race."
+- "Make it slowly turn to dusk, with fireflies, and the lanterns glowing brighter as it gets dark."
+- "Hide a few acorns around the woods to collect, with a counter in the pause menu."
+- "Add a mushroom that makes the gnome jump twice as high for ten seconds."
 - "Make the camera orbit with the mouse."
 
 Starting new games:
@@ -121,9 +120,11 @@ Each new game gets its own folder in `games/` and a link on the launcher page.
 
 ```
 index.html          Launcher page that links to every game
-games/coin-hop/     The starter game
-  index.html        Page, on-screen HUD and styles
-  main.js           The game itself
+games/lanternwood/  The first game: Lanternwood
+  index.html        Page, on-screen HUD, menus and styles
+  main.js           Runs the game and moves you between areas
+  woods.js          The Forest Hallway: the path with the gates to the games
+  berry-rush.js     Berry Rush, the first game behind a gate
 CLAUDE.md           Instructions Claude reads about this project
 .claude/launch.json Tells the Claude app how to start the preview
 ```

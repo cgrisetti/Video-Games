@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lanternwood</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='17' r='15' fill='%23ffcf7a' opacity='.35'/%3E%3Cpath d='M12 4h8l1.5 3.5h-11z' fill='%233a2a1e'/%3E%3Cellipse cx='16' cy='17' rx='9.5' ry='10' fill='%23f6a03f'/%3E%3Cellipse cx='16' cy='17' rx='4.5' ry='10' fill='none' stroke='%23c4691f'/%3E%3Cellipse cx='13.5' cy='13.5' rx='3' ry='4' fill='%23ffe6a8' opacity='.85'/%3E%3Cpath d='M10.5 26.5h11l-1.5 3h-8z' fill='%233a2a1e'/%3E%3C/svg%3E"
+    />
+    <style>
+      /* The storybook look shared by the menu and the Top 10 board: cream paper, brown ink, a mossy frame. */
+      :root {
+        --paper: #fbf4df;
+        --paper-edge: #ecdcb2;
+        --ink: #4a3826;
+        --ink-soft: #7a6448;
+        --frame: #8b6a43;
+        --moss: #6e9150;
+        --highlight: rgba(244, 196, 76, 0.38);
+        --hud-back: rgba(30, 45, 30, 0.5);
+        --book-font: Palatino, 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+        --title-font: Luminari, Palatino, 'Palatino Linotype', Georgia, serif;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: var(--book-font);
+      }
+      canvas {
+        display: block;
+      }
+      kbd {
+        display: inline-block;
+        min-width: 1em;
+        padding: 0 6px;
+        border: 1px solid var(--frame);
+        border-bottom-width: 2px;
+        border-radius: 5px;
+        background: #fffaf0;
+        color: var(--ink);
+        font-family: inherit;
+        font-size: 0.85em;
+        line-height: 1.5;
+        text-align: center;
+      }
+      .storybook {
+        box-sizing: border-box;
+        color: var(--ink);
+        font-family: var(--book-font);
+        background:
+          radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.6), transparent 40%),
+          radial-gradient(circle at 88% 92%, rgba(205, 172, 110, 0.3), transparent 45%),
+          radial-gradient(ellipse at center, var(--paper) 58%, var(--paper-edge) 100%);
+        border: 2px solid var(--frame);
+        border-radius: 16px;
+        box-shadow: 0 0 0 5px #f6ecd2, 0 0 0 7px var(--moss), 0 16px 40px rgba(45, 32, 12, 0.45);
+      }
+      .storybook h2 {
+        margin: 0;
+        font-family: var(--title-font);
+        font-size: 1.5rem;
+        font-weight: normal;
+        color: #5a3b1f;
+      }
+      .sprig {
+        display: block;
+        width: 116px;
+        height: 34px;
+        margin: 0 auto;
+      }
+      /* The title screen: a paper lantern hanging from a leafy branch, and the name, lit warm by it. */
+      .lantern-emblem {
+        display: block;
+        width: 132px;
+        height: 92px;
+        margin: -2px auto -6px;
+        overflow: visible;
+      }
+      .lantern-emblem .halo {
+        animation: flicker 3.2s ease-in-out infinite alternate;
+        transform-origin: 60px 50px;
+      }
+      @keyframes flicker {
+        30% {
+          opacity: 0.8;
+          transform: scale(0.96);
+        }
+        55% {
+          opacity: 1;
+          transform: scale(1.03);
+        }
+        to {
+          opacity: 0.88;
+          transform: scale(0.99);
+        }
+      }
+      .menu-card h2.brand {
+        font-size: 2.3rem;
+        letter-spacing: 0.02em;
+        text-shadow: 0 0 16px rgba(255, 186, 92, 0.7), 0 0 2px rgba(255, 230, 180, 0.9);
+      }
+      .brand-tagline {
+        margin: 0 0 4px;
+        font-size: 0.8rem;
+        font-variant: small-caps;
+        letter-spacing: 0.22em;
+        color: var(--frame);
+      }
+      .brand-tagline::before,
+      .brand-tagline::after {
+        content: '❦';
+        margin: 0 0.6em;
+        letter-spacing: 0;
+        color: var(--moss);
+      }
+
+      /* --- The HUD: raspberries picked and the clock, top left; the pause button, top right --- */
+      #hud {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        max-width: calc(100vw - 150px);
+        pointer-events: none;
+      }
+      .hud-pill {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 14px 5px 10px;
+        border-radius: 999px;
+        background: var(--hud-back);
+        color: #fffaf0;
+        font-size: 1.2rem;
+        font-weight: bold;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+      }
+      .hud-pill svg {
+        width: 22px;
+        height: 24px;
+        flex: none;
+      }
+      #berry-pill {
+        color: #e0386a; /* The raspberry icon's color. */
+      }
+      #berry-pill.golden {
+        color: #ffc93c;
+        box-shadow: 0 0 0 2px rgba(255, 201, 60, 0.75), 0 0 14px rgba(255, 201, 60, 0.6);
+      }
+      #berry-pill span {
+        color: #fffaf0;
+      }
+      #berry-pill.bump {
+        animation: bump 0.35s ease-out;
+      }
+      @keyframes bump {
+        40% {
+          transform: scale(1.18);
+        }
+      }
+      #hud-hint {
+        font-size: 1rem;
+        font-weight: normal;
+        font-style: italic;
+        animation: glow 1.6s ease-in-out infinite alternate;
+      }
+      @keyframes glow {
+        to {
+          background: rgba(110, 82, 18, 0.6);
+        }
+      }
+      #pause-button {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px 6px 12px;
+        border: none;
+        border-radius: 999px;
+        background: var(--hud-back);
+        color: #fffaf0;
+        font: inherit;
+        cursor: pointer;
+      }
+      #pause-button:hover,
+      #pause-button:focus-visible {
+        background: rgba(30, 45, 30, 0.75);
+        outline: none;
+      }
+      #pause-button svg {
+        width: 14px;
+        height: 16px;
+      }
+
+      /* A little message that pops up at the bottom for a moment ("Music off", "Controller connected"). */
+      #toast {
+        position: absolute;
+        left: 50%;
+        bottom: 28px;
+        padding: 6px 16px;
+        border-radius: 999px;
+        background: var(--hud-back);
+        color: #fffaf0;
+        transform: translate(-50%, 12px);
+        opacity: 0;
+        transition: opacity 0.25s, transform 0.25s;
+        pointer-events: none;
+      }
+      #toast.showing {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
+
+      /* --- The menu: the start screen and the pause menu, with Settings and How to play --- */
+      #menu {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: rgba(24, 36, 22, 0.35);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+      }
+      .menu-card {
+        position: relative;
+        width: min(440px, 100%);
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+        padding: 14px 22px 12px;
+        text-align: center;
+        animation: open-book 0.16s ease-out;
+      }
+      @keyframes open-book {
+        from {
+          transform: scale(0.96);
+          opacity: 0;
+        }
+      }
+      .menu-card h3 {
+        margin: 4px 0 8px;
+        font-size: 1.1rem;
+        font-weight: normal;
+        font-style: italic;
+        color: var(--ink-soft);
+      }
+      #menu-notice {
+        margin: 8px 0 0;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: rgba(200, 50, 95, 0.12);
+        color: #8e2445;
+      }
+      .tagline,
+      .goal {
+        margin: 4px 0 10px;
+        font-style: italic;
+        color: var(--ink-soft);
+        line-height: 1.4;
+      }
+      .goal {
+        text-align: left;
+        font-style: normal;
+        color: var(--ink);
+      }
+      .menu-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 10px 0 4px;
+      }
+      /* Every row you can pick. The chosen one gets a golden glow and a raspberry beside it. */
+      .menu-list > button,
+      .setting {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 40px;
+        padding: 4px 14px 4px 34px;
+        border: none;
+        border-radius: 10px;
+        background: none;
+        color: var(--ink);
+        font: inherit;
+        font-size: 1.1rem;
+        text-align: left;
+        cursor: pointer;
+      }
+      .menu-list > .chosen {
+        background: var(--highlight);
+        outline: none;
+      }
+      .menu-list > .chosen::before {
+        content: '';
+        position: absolute;
+        left: 9px;
+        top: 50%;
+        width: 17px;
+        height: 20px;
+        transform: translateY(-50%);
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'%3E%3Cg fill='%23c8325f' stroke='%239e2049' stroke-width='0.6'%3E%3Ccircle cx='9' cy='13' r='3.2'/%3E%3Ccircle cx='15' cy='13' r='3.2'/%3E%3Ccircle cx='6' cy='18' r='3.2'/%3E%3Ccircle cx='12' cy='18' r='3.2'/%3E%3Ccircle cx='18' cy='18' r='3.2'/%3E%3Ccircle cx='9' cy='23' r='3.2'/%3E%3Ccircle cx='15' cy='23' r='3.2'/%3E%3Ccircle cx='12' cy='27' r='3'/%3E%3C/g%3E%3Cpath d='M12 10 L6 7 L10 6 L12 2 L14 6 L18 7 Z' fill='%234e9a3a'/%3E%3C/svg%3E")
+          no-repeat center / contain;
+      }
+      .menu-list > button.primary {
+        font-weight: bold;
+      }
+      .menu-list > button.back {
+        margin-top: 6px;
+        color: var(--ink-soft);
+      }
+      /* A setting you change with left and right: ‹ Forest › */
+      .choice {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 120px;
+        justify-content: space-between;
+        padding: 2px 4px;
+        border: none;
+        background: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        outline: none;
+      }
+      .choice .arrow {
+        color: var(--frame);
+        font-weight: bold;
+      }
+      .slider {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .volume {
+        width: 110px;
+        accent-color: #c8325f;
+        outline: none;
+      }
+      .slider output {
+        width: 3em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .controls {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+        text-align: left;
+      }
+      .controls th {
+        padding: 2px 6px 6px;
+        font-weight: normal;
+        font-style: italic;
+        color: var(--ink-soft);
+      }
+      .controls td {
+        padding: 5px 6px;
+        border-top: 1px dashed rgba(139, 106, 67, 0.3);
+      }
+      .controls td:first-child {
+        color: var(--ink-soft);
+      }
+      #menu-prompts {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px dashed rgba(139, 106, 67, 0.35);
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+      }
+      #menu-prompts span + span {
+        margin-left: 12px;
+      }
+      /* Some things only belong in one area: the berry counter and clock in Berry Rush, say. */
+      body:not([data-area='berry-rush']) [data-area='berry-rush'],
+      body:not([data-area='woods']) [data-area='woods'] {
+        display: none !important;
+      }
+
+      /* Walking between areas: the screen fades to dark and back. */
+      #fade {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: #10160f;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.45s ease;
+      }
+      #fade.dark {
+        opacity: 1;
+      }
+
+      /* The name of the area you've just arrived in, high in the middle of the screen. */
+      #area-card {
+        position: absolute;
+        top: 16%;
+        left: 50%;
+        transform: translate(-50%, -8px);
+        text-align: center;
+        color: #fffaf0;
+        text-shadow: 0 2px 6px rgba(30, 20, 5, 0.6), 0 0 18px rgba(255, 186, 92, 0.55);
+        opacity: 0;
+        transition: opacity 0.5s, transform 0.5s;
+        pointer-events: none;
+      }
+      #area-card.showing {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
+      #area-title {
+        font-family: var(--title-font);
+        font-size: 2.6rem;
+        white-space: nowrap;
+      }
+      #area-subtitle {
+        font-size: 1.1rem;
+        font-variant: small-caps;
+        letter-spacing: 0.2em;
+      }
+      #area-subtitle.pop {
+        animation: subtitle-pop 0.3s ease-out;
+      }
+      @keyframes subtitle-pop {
+        from {
+          transform: scale(1.4);
+          opacity: 0;
+        }
+      }
+
+      /* At an opening in the woods: which button to press, and what's there. */
+      #prompt {
+        position: absolute;
+        left: 50%;
+        bottom: 30px;
+        transform: translateX(-50%);
+        font-size: 1.05rem;
+        font-weight: normal;
+        animation: prompt-in 0.25s ease-out;
+      }
+      @keyframes prompt-in {
+        from {
+          transform: translate(-50%, 10px);
+          opacity: 0;
+        }
+      }
+      /* A game's card: press the button again to go in. */
+      #portal-card {
+        position: absolute;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        width: min(360px, calc(100vw - 32px));
+        padding: 10px 22px 14px;
+        text-align: center;
+        animation: prompt-in 0.25s ease-out;
+      }
+      #portal-blurb {
+        margin: 6px 0;
+        line-height: 1.35;
+      }
+      #portal-best {
+        margin: 0 0 10px;
+        font-style: italic;
+        color: var(--ink-soft);
+      }
+      .portal-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+      .portal-actions button {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border: 1px solid var(--frame);
+        border-radius: 999px;
+        background: #f6ecd2;
+        color: var(--ink);
+        font: inherit;
+        cursor: pointer;
+      }
+      .portal-actions button.go {
+        background: var(--highlight);
+        font-weight: bold;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .menu-card,
+        #berry-pill.bump,
+        #hud-hint,
+        .lantern-emblem .halo,
+        #area-subtitle.pop,
+        #prompt,
+        #portal-card {
+          animation: none;
+        }
+        #fade,
+        #area-card {
+          transition: none;
+        }
+      }
+
+      /* --- The Top 10 board: a page from the storybook, with a twig, leaves and a raspberry on top --- */
+      #scoreboard {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(360px, calc(100vw - 32px));
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+        padding: 14px 24px 30px;
+        text-align: center;
+      }
+      #result {
+        margin: 4px 0 10px;
+        font-style: italic;
+        color: var(--ink-soft);
+      }
+      #scores {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        text-align: left;
+      }
+      #scores li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 28px;
+        padding: 1px 8px;
+        border-radius: 8px;
+      }
+      #scores li + li {
+        border-top: 1px dashed rgba(139, 106, 67, 0.25);
+      }
+      #scores .rank {
+        flex: none;
+        width: 22px;
+        height: 22px;
+        line-height: 22px;
+        border-radius: 50%;
+        font-size: 0.8rem;
+        text-align: center;
+        color: var(--ink-soft);
+      }
+      /* The top three wear the gnome's colors: hat red, tunic blue and leaf green. */
+      #scores li:nth-child(1) .rank {
+        background: #c8302a;
+        color: #fff6e8;
+      }
+      #scores li:nth-child(2) .rank {
+        background: #2d6cb5;
+        color: #f3f7ff;
+      }
+      #scores li:nth-child(3) .rank {
+        background: #5f8a46;
+        color: #f4fbe9;
+      }
+      #scores .name {
+        flex: 1;
+        overflow: hidden;
+        white-space: pre;
+        text-overflow: ellipsis;
+      }
+      #scores .time {
+        flex: none;
+        font-variant-numeric: tabular-nums;
+        color: #5a3b1f;
+      }
+      #scores .empty .name,
+      #scores .empty .time {
+        color: rgba(122, 100, 72, 0.45);
+      }
+      #scores .yours {
+        background: var(--highlight);
+      }
+      #scores input {
+        flex: 1;
+        min-width: 0;
+        padding: 2px 4px;
+        border: none;
+        border-bottom: 1.5px dashed var(--frame);
+        border-radius: 4px 4px 0 0;
+        background: rgba(255, 255, 255, 0.6);
+        color: inherit;
+        font: inherit;
+        outline: none;
+      }
+      #scores input:focus {
+        border-bottom-style: solid;
+        background: #fffdf6;
+      }
+      #scores .save {
+        flex: none;
+        padding: 1px 8px;
+        border: 1px solid var(--frame);
+        border-radius: 10px;
+        background: #f6ecd2;
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.8rem;
+        cursor: pointer;
+      }
+      .again {
+        margin: 12px 0 0;
+        font-size: 0.92rem;
+        color: var(--ink-soft);
+      }
+      #reset-scores {
+        position: absolute;
+        right: 10px;
+        bottom: 6px;
+        padding: 2px 4px;
+        border: none;
+        background: none;
+        color: rgba(122, 100, 72, 0.7);
+        font: inherit;
+        font-size: 0.68rem;
+        text-decoration: underline dotted;
+        cursor: pointer;
+      }
+      #reset-scores:hover,
+      #reset-scores:focus-visible {
+        color: #a5382b;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Little pictures used in several places: the twig and raspberry, and a raspberry on its own. -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="sprig" viewBox="0 0 120 36">
+        <path d="M8 27 C 35 15, 85 15, 112 27" fill="none" stroke="#7a5230" stroke-width="2" stroke-linecap="round" />
+        <ellipse cx="27" cy="17" rx="10" ry="4.5" transform="rotate(-28 27 17)" fill="#5f8a46" />
+        <ellipse cx="41" cy="26" rx="8.5" ry="4" transform="rotate(22 41 26)" fill="#7ea55c" />
+        <ellipse cx="93" cy="17" rx="10" ry="4.5" transform="rotate(28 93 17)" fill="#5f8a46" />
+        <ellipse cx="79" cy="26" rx="8.5" ry="4" transform="rotate(-22 79 26)" fill="#7ea55c" />
+        <use href="#berry" x="48" y="4" width="24" height="28" style="color: #c8325f" />
+      </symbol>
+      <!-- Takes its color from the surrounding text color, so it can turn gold. -->
+      <symbol id="berry" viewBox="0 0 24 28">
+        <g fill="currentColor" stroke="rgba(60, 0, 20, 0.35)" stroke-width="0.6">
+          <circle cx="9" cy="13" r="3.2" />
+          <circle cx="15" cy="13" r="3.2" />
+          <circle cx="6" cy="18" r="3.2" />
+          <circle cx="12" cy="18" r="3.2" />
+          <circle cx="18" cy="18" r="3.2" />
+          <circle cx="9" cy="23" r="3.2" />
+          <circle cx="15" cy="23" r="3.2" />
+          <circle cx="12" cy="27" r="3" />
+        </g>
+        <path d="M12 10 L6 7 L10 6 L12 2 L14 6 L18 7 Z" fill="#4e9a3a" />
+      </symbol>
+    </svg>
+
+    <div id="hud" data-area="berry-rush">
+      <div class="hud-pill" id="berry-pill" aria-label="Raspberries picked">
+        <svg aria-hidden="true"><use href="#berry" /></svg>
+        <span id="score"></span>
+      </div>
+      <div class="hud-pill" aria-label="Time">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <circle cx="12" cy="13" r="8.5" />
+          <path d="M12 8.5 V13 L15 15 M9.5 2.5 H14.5" />
+        </svg>
+        <span id="timer"></span>
+      </div>
+      <div class="hud-pill" id="hud-hint" hidden>Follow the fox to the golden raspberry!</div>
+    </div>
+
+    <button id="pause-button" type="button" aria-label="Pause">
+      <svg viewBox="0 0 14 16" aria-hidden="true" fill="currentColor"><rect x="1" y="1" width="4" height="14" rx="1.2" /><rect x="9" y="1" width="4" height="14" rx="1.2" /></svg>
+      <kbd id="pause-key">Esc</kbd>
+    </button>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <div id="area-card" aria-live="polite">
+      <div id="area-title"></div>
+      <div id="area-subtitle"></div>
+    </div>
+
+    <div id="prompt" class="hud-pill" hidden><kbd id="prompt-key">F</kbd><span id="prompt-text"></span></div>
+
+    <section id="portal-card" class="storybook" aria-labelledby="portal-title" hidden>
+      <svg class="sprig" aria-hidden="true"><use href="#sprig" /></svg>
+      <h2 id="portal-title"></h2>
+      <p id="portal-blurb"></p>
+      <p id="portal-best"></p>
+      <div class="portal-actions">
+        <button type="button" class="go" data-portal="play"><kbd id="portal-play-key">F</kbd> Play</button>
+        <button type="button" data-portal="close"><kbd id="portal-close-key">Esc</kbd> Not now</button>
+      </div>
+    </section>
+
+    <div id="fade"></div>
+
+    <div id="menu" hidden>
+      <section class="menu-card storybook" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+        <svg class="lantern-emblem" viewBox="0 0 120 84" aria-hidden="true" data-start-only>
+          <defs>
+            <radialGradient id="lantern-halo">
+              <stop offset="0" stop-color="#ffd27a" stop-opacity="0.75" />
+              <stop offset="1" stop-color="#ffb347" stop-opacity="0" />
+            </radialGradient>
+            <radialGradient id="lantern-paper" cx="0.4" cy="0.38" r="0.7">
+              <stop offset="0" stop-color="#fff3c9" />
+              <stop offset="0.55" stop-color="#ffbf5e" />
+              <stop offset="1" stop-color="#e8812f" />
+            </radialGradient>
+          </defs>
+          <circle class="halo" cx="60" cy="50" r="36" fill="url(#lantern-halo)" />
+          <path d="M6 16 C 34 4, 86 4, 114 16" fill="none" stroke="#7a5230" stroke-width="2.2" stroke-linecap="round" />
+          <ellipse cx="22" cy="9" rx="10" ry="4.5" transform="rotate(-24 22 9)" fill="#5f8a46" />
+          <ellipse cx="36" cy="16" rx="8.5" ry="4" transform="rotate(20 36 16)" fill="#7ea55c" />
+          <ellipse cx="98" cy="9" rx="10" ry="4.5" transform="rotate(24 98 9)" fill="#5f8a46" />
+          <ellipse cx="85" cy="16" rx="8.5" ry="4" transform="rotate(-20 85 16)" fill="#7ea55c" />
+          <path d="M60 8 V24" stroke="#3a2a1e" stroke-width="1.4" />
+          <path d="M52 24 h16 l3 5 h-22 z" fill="#3a2a1e" />
+          <ellipse cx="60" cy="48" rx="20" ry="19.5" fill="url(#lantern-paper)" />
+          <g fill="none" stroke="rgba(170, 85, 25, 0.38)" stroke-width="1">
+            <ellipse cx="60" cy="48" rx="10.5" ry="19.5" />
+            <path d="M60 28.5 V67.5" />
+            <path d="M41 42 Q60 46 79 42 M41 54 Q60 58 79 54" />
+          </g>
+          <path d="M49 67 h22 l-3 5 h-16 z" fill="#3a2a1e" />
+          <path d="M60 72 V80" stroke="#c8325f" stroke-width="2.2" stroke-linecap="round" />
+        </svg>
+        <svg class="sprig" aria-hidden="true" data-pause-only><use href="#sprig" /></svg>
+        <h2 id="menu-title">Paused</h2>
+        <p class="brand-tagline" data-start-only>A Woodland Arcade</p>
+        <p id="menu-notice" hidden></p>
+
+        <div class="menu-page" data-page="main">
+          <p class="tagline" data-start-only>Wander the lantern-lit woods and find the games hidden behind its gates.</p>
+          <div class="menu-list">
+            <button type="button" class="primary" data-action="resume">Resume</button>
+            <button type="button" data-action="restart" data-area="berry-rush">Restart round</button>
+            <button type="button" data-open="settings">Settings</button>
+            <button type="button" data-open="how-to-play">How to play</button>
+            <button type="button" data-action="return" data-area="berry-rush">Return to Woods</button>
+            <button type="button" data-action="quit" data-area="woods">Quit to game list</button>
+          </div>
+        </div>
+
+        <div class="menu-page" data-page="leave" hidden>
+          <h3>Return to the woods?</h3>
+          <p class="goal">This round will end here, and its time won't go in the Top 10.</p>
+          <div class="menu-list">
+            <button type="button" class="primary" data-action="leave">Return to Woods</button>
+            <button type="button" data-action="back">Keep playing</button>
+          </div>
+        </div>
+
+        <div class="menu-page" data-page="settings" hidden>
+          <h3>Settings</h3>
+          <div class="menu-list">
+            <div class="setting">
+              <span id="music-label">Music</span>
+              <button type="button" id="music-toggle" class="choice" role="switch" aria-labelledby="music-label">
+                <span class="arrow" aria-hidden="true">‹</span><span class="value"></span><span class="arrow" aria-hidden="true">›</span>
+              </button>
+            </div>
+            <label class="setting">
+              <span>Music volume</span>
+              <span class="slider">
+                <input id="music-volume" class="volume" type="range" min="0" max="100" step="5" />
+                <output id="music-volume-value" for="music-volume"></output>
+              </span>
+            </label>
+            <label class="setting">
+              <span>Sound effects</span>
+              <span class="slider">
+                <input id="sound-volume" class="volume" type="range" min="0" max="100" step="5" />
+                <output id="sound-volume-value" for="sound-volume"></output>
+              </span>
+            </label>
+            <div class="setting">
+              <span id="style-label">Music style</span>
+              <button type="button" id="music-style" class="choice" aria-labelledby="style-label">
+                <span class="arrow" aria-hidden="true">‹</span><span class="value"></span><span class="arrow" aria-hidden="true">›</span>
+              </button>
+            </div>
+            <button type="button" class="back" data-action="back">Back</button>
+          </div>
+        </div>
+
+        <div class="menu-page" data-page="how-to-play" hidden>
+          <h3>How to play</h3>
+          <p class="goal" data-area="woods">
+            Follow the forest path. Behind the gates, archways and openings along it are games to play. Walk up to one and press
+            <kbd>F</kbd> (<kbd>□</kbd> on a controller) to see what's there, then press it again to go in.
+          </p>
+          <p class="goal" data-area="woods">Berry Rush is open now. The others are coming soon!</p>
+          <p class="goal" data-area="berry-rush">
+            Pick all 9 raspberries. Then your fox friend sniffs out the golden raspberry: follow it! The clock stops when you pick
+            the golden one.
+          </p>
+          <p class="goal" data-area="berry-rush">
+            If an inch worm touches you, the round is over. Bonk one on the head with your stick and it's knocked out for a few
+            seconds, but each bonk makes it a little faster.
+          </p>
+          <table class="controls">
+            <thead>
+              <tr><th></th><th>Keyboard</th><th>Controller</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Move</td><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows</td><td>Left stick or D-pad</td></tr>
+              <tr><td>Jump</td><td><kbd>Space</kbd></td><td><kbd>✕</kbd></td></tr>
+              <tr><td>Swing stick</td><td><kbd>F</kbd></td><td><kbd>□</kbd></td></tr>
+              <tr data-area="woods"><td>Go through a gate</td><td><kbd>F</kbd>, then <kbd>F</kbd></td><td><kbd>□</kbd>, then <kbd>□</kbd></td></tr>
+              <tr><td>Pause</td><td><kbd>Esc</kbd> or <kbd>P</kbd></td><td><kbd>Options</kbd></td></tr>
+              <tr data-area="berry-rush"><td>Restart</td><td><kbd>R</kbd></td><td>From this menu</td></tr>
+              <tr><td>Music on/off</td><td><kbd>M</kbd></td><td>In Settings</td></tr>
+            </tbody>
+          </table>
+          <div class="menu-list">
+            <button type="button" class="back" data-action="back">Back</button>
+          </div>
+        </div>
+
+        <footer id="menu-prompts" aria-hidden="true"></footer>
+      </section>
+    </div>
+
+    <section id="scoreboard" class="storybook" hidden>
+      <svg class="sprig" aria-hidden="true"><use href="#sprig" /></svg>
+      <h2>Top 10 Raspberry Pickers</h2>
+      <p id="result"></p>
+      <ol id="scores"></ol>
+      <p class="again">Press <kbd>R</kbd> or <kbd>Options</kbd> to play again, or <kbd>Esc</kbd> for the menu</p>
+      <button id="reset-scores" type="button">Reset leaderboard</button>
+    </section>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

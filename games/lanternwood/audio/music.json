@@ -1,0 +1,12 @@
+{
+  "bpm": 88,
+  "beatsPerBar": 3,
+  "bars": 32,
+  "sampleRate": 44100,
+  "loopSeconds": 65.45453514739229,
+  "loudness": {
+    "forest-theme": -11.6,
+    "forest-theme-8bit": -12.8,
+    "forest-danger": -16.7
+  }
+}

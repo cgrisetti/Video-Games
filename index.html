@@ -44,6 +44,23 @@
       .blurb {
         opacity: 0.75;
       }
+      /* Lanternwood's card glows warm, like its lanterns. */
+      a.lanternwood {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: linear-gradient(120deg, #2c3a2e, #3b3324);
+        box-shadow: inset 0 0 0 1px rgba(255, 190, 100, 0.25);
+      }
+      a.lanternwood:hover {
+        background: linear-gradient(120deg, #354a37, #4a3f2b);
+      }
+      a.lanternwood svg {
+        flex: none;
+        width: 48px;
+        height: 48px;
+        filter: drop-shadow(0 0 8px rgba(255, 180, 90, 0.55));
+      }
     </style>
   </head>
   <body>
@@ -52,9 +69,22 @@
       <!-- One list item per game in games/. Add a new one whenever a game is created. -->
       <ul>
         <li>
-          <a href="/games/coin-hop/">
-            <div class="name">Coin Hop</div>
-            <div class="blurb">Run and jump around a field collecting all the gold coins.</div>
+          <a class="lanternwood" href="/games/lanternwood/">
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M16 0 V5" stroke="#d9c3a0" stroke-width="1" />
+              <path d="M12 4h8l1.5 3.5h-11z" fill="#6b4a32" />
+              <ellipse cx="16" cy="17" rx="9.5" ry="10" fill="#f6a03f" />
+              <ellipse cx="16" cy="17" rx="4.5" ry="10" fill="none" stroke="#c4691f" />
+              <ellipse cx="13.5" cy="13.5" rx="3" ry="4" fill="#ffe6a8" opacity="0.85" />
+              <path d="M10.5 26.5h11l-1.5 3h-8z" fill="#6b4a32" />
+            </svg>
+            <div>
+              <div class="name">Lanternwood</div>
+              <div class="blurb">
+                A woodland arcade. Walk a little gnome down a lantern-lit forest path and go through its gates to play. First
+                up, Berry Rush: pick raspberries (and one golden one) with your fox friend while rainbow inch worms chase you.
+              </div>
+            </div>
           </a>
         </li>
       </ul>
