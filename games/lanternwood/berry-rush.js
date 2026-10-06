@@ -9,6 +9,7 @@ import { createEffects } from './effects.js';
 import { playSwing, playBonk, playPop, playChomp } from './sounds.js';
 import { flickerLanterns } from './lantern.js';
 import { makeGround, makeWater, updateCreek, bridges, groundHeightAt, isInWater, isNearBridge, creekDistance, CREEK_HALF_WIDTH } from './creek.js';
+import { makeGrass } from './foliage.js';
 import { makeTree, makeRock, makeLog, makeHedges, makeOuterWoods, TREE_HEIGHT, TRUNK_DIAMETER } from './scenery.js';
 import { boards, showScoreboard, hideScoreboard, formatTime } from './scoreboard.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
@@ -109,6 +110,23 @@ gate.position.set(0, 0, ARENA_SIZE / 2 - HEDGE_THICKNESS / 2);
 scene.add(gate);
 
 scene.add(makeGround(), makeWater(), makeHedges(ARENA_SIZE, HEDGE_THICKNESS, [gateGap]), makeOuterWoods(ARENA_SIZE), createBackdrop());
+
+// Tufts of grass across the field and out into the woods, but not down in the creek.
+const tuftColor = new THREE.Color();
+scene.add(
+  makeGrass({
+    count: 16000,
+    seed: 2,
+    spot: (random) => {
+      const reach = random() < 0.7 ? ARENA_SIZE / 2 : ARENA_SIZE / 2 + 14;
+      const x = (random() * 2 - 1) * reach;
+      const z = (random() * 2 - 1) * reach;
+      return creekDistance(x, z) > CREEK_HALF_WIDTH - 0.2 ? [x, z] : null;
+    },
+    color: (x, z, random) => tuftColor.set(random() < 0.25 ? 0xb3a24c : 0x6fa04a).multiplyScalar(0.9 + random() * 0.22),
+    height: groundHeightAt,
+  }),
+);
 for (const bridge of bridges) scene.add(bridge.model);
 
 const gnome = createGnome();

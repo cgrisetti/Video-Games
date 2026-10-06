@@ -6,6 +6,8 @@ import { woods } from './woods.js';
 import { berryRush } from './berry-rush.js';
 import { brambleMaze } from './maze.js';
 import { gnomeCrossing } from './gnome-crossing.js';
+import { createPainter } from './painterly.js';
+import { createAtmosphere } from './atmosphere.js';
 
 // Lanternwood: lantern-lit woods (the Glenn) with games behind the gates along its path.
 // This file runs the show. It draws whichever area you're in and hands it the controls each
@@ -21,11 +23,16 @@ let area = woods;
 let areaName = 'woods';
 let switching = false; // Fading between areas: nothing moves, and the menu stays shut.
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+// The painter (painterly.js) draws the picture and lays the storybook finish over it.
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
+const painter = createPainter(renderer);
+painter.setSize(window.innerWidth, window.innerHeight);
+// Leaves drifting down and motes of light floating in the air, wherever you are.
+const atmosphere = createAtmosphere();
 const fade = document.getElementById('fade');
 
 window.addEventListener('resize', () => {
@@ -34,6 +41,7 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
   }
   renderer.setSize(window.innerWidth, window.innerHeight);
+  painter.setSize(window.innerWidth, window.innerHeight);
 });
 
 // Fade out, swap to the area called `name`, and fade back in.
@@ -67,6 +75,8 @@ function showAreaParts(name) {
 
 // Going through a gate in the woods.
 woods.onPlay = (game) => goTo(game);
+// While developing, jump straight to an area from the browser console: lanternwood.goTo('bramble-maze').
+if (import.meta.env.DEV) window.lanternwood = { goTo };
 
 let lastTime = null;
 renderer.setAnimationLoop((time) => {
@@ -81,7 +91,8 @@ renderer.setAnimationLoop((time) => {
     // Nothing moves while the screen fades.
   } else if (controls.pause && area.canPause()) openMenu();
   else area.update(dt, controls);
-  renderer.render(area.scene, area.camera);
+  atmosphere.update(area.scene, area.camera, isPaused() ? 0 : dt);
+  painter.render(area.scene, area.camera, isPaused() ? 0 : dt);
 });
 
 // Start in the woods, behind the title screen. Pressing Play walks you in.

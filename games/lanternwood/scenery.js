@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { creekDistance, CREEK_HALF_WIDTH } from './creek.js';
 import { PHI, GOLDEN_ANGLE, goldenFraction, fibonacciLong } from './golden.js';
 import { makeLantern } from './lantern.js';
+import { LeafCardMaterial, leafCards, broadLeafTexture, needleTexture, hedgeLeafTexture } from './foliage.js';
 
 // Trees, rocks, logs, the hedges around the field, and the woods outside it.
 
@@ -16,8 +17,11 @@ export const TRUNK_DIAMETER = 0.32;
 const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5230, roughness: 0.9 });
 const oakBarkMaterial = new THREE.MeshStandardMaterial({ color: 0x5e4c3c, roughness: 0.95 });
 
-function leaves(color) {
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true });
+// Leaves: `kind` is 'broad' or 'needle', for the leaf clumps scattered over them (see addLeafCards).
+function leaves(color, kind = 'broad') {
+  const material = new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true });
+  material.userData.foliage = kind;
+  return material;
 }
 
 // A lumpy ball of leaves of radius r at x, y, z. `stretch` makes it taller (above 1) or flatter (below 1).
@@ -43,9 +47,9 @@ const TREES = {
   pine: {
     parts: [
       [new THREE.CylinderGeometry(0.12, TRUNK_DIAMETER / 2, 0.8, 8).translate(0, 0.4, 0), trunkMaterial],
-      [new THREE.ConeGeometry(TREE_RADIUS, 1.4, 8).translate(0, 1.3, 0), leaves(0x2f7d3b)],
-      [new THREE.ConeGeometry(0.58, 1.2, 8).translate(0, 2.0, 0), leaves(0x2f7d3b)],
-      [new THREE.ConeGeometry(0.4, 1.0, 8).translate(0, TREE_HEIGHT - 0.5, 0), leaves(0x2f7d3b)],
+      [new THREE.ConeGeometry(TREE_RADIUS, 1.4, 8).translate(0, 1.3, 0), leaves(0x2f7d3b, 'needle')],
+      [new THREE.ConeGeometry(0.58, 1.2, 8).translate(0, 2.0, 0), leaves(0x2f7d3b, 'needle')],
+      [new THREE.ConeGeometry(0.4, 1.0, 8).translate(0, TREE_HEIGHT - 0.5, 0), leaves(0x2f7d3b, 'needle')],
     ],
     blockRadius: 0.6,
     canopyRadius: TREE_RADIUS,
@@ -114,7 +118,7 @@ const TREES = {
         [mergeGeometries(limbs), oakBarkMaterial],
         [mergeGeometries(canopy[0]), leaves(0x4a6b37)],
         [mergeGeometries(canopy[1]), leaves(0x5a7d41)],
-        [mergeGeometries(moss), leaves(0xa3b18f)],
+        [mergeGeometries(moss), new THREE.MeshStandardMaterial({ color: 0xa3b18f, roughness: 0.9 })],
       ],
       blockRadius: 0.4,
       canopyRadius: 2.5,
@@ -174,6 +178,10 @@ const bloomGeometry = new THREE.IcosahedronGeometry(1, 1);
 const spikeGeometry = new THREE.ConeGeometry(0.05, 0.36, 5).translate(0, 0.18, 0);
 // White, so each bush and flower can be tinted its own color.
 const plantMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, flatShading: true });
+// The bushes are leaf clumps over a darker lump, like the trees.
+const hedgeBushMaterial = new THREE.MeshStandardMaterial({ color: 0xb0b0b0, roughness: 0.8 });
+const bushCards = leafCards(hedgeGeometry, { size: 0.19, density: 15, seed: 101 });
+const bushCardMaterial = new LeafCardMaterial({ color: 0xffffff, map: hedgeLeafTexture });
 
 // Every so often the plain hedge gives way to a flowering shrub. Each kind has its own leaf color
 // and flowers, and each bush has one flower color.
@@ -241,7 +249,7 @@ export function makeHedges(arenaSize, thickness, openings = []) {
     }
   }
 
-  group.add(instancedPlants(hedgeGeometry, bushes), instancedPlants(bloomGeometry, blooms), instancedPlants(spikeGeometry, spikes));
+  group.add(...leafyBushes(bushes), instancedPlants(bloomGeometry, blooms), instancedPlants(spikeGeometry, spikes));
   return group;
 }
 
@@ -269,7 +277,7 @@ export function makeHedgeWalls(walls, thickness) {
     }
   }
   const group = new THREE.Group();
-  group.add(instancedPlants(hedgeGeometry, bushes), instancedPlants(bloomGeometry, blooms), instancedPlants(spikeGeometry, spikes));
+  group.add(...leafyBushes(bushes), instancedPlants(bloomGeometry, blooms), instancedPlants(spikeGeometry, spikes));
   return group;
 }
 
@@ -318,9 +326,16 @@ function makeBush(x, z, rhythm, blooms, spikes) {
   return bush;
 }
 
+// Bushes: the darker lump and the leaf clumps over it.
+function leafyBushes(bushes) {
+  const cards = instancedPlants(bushCards, bushes, bushCardMaterial);
+  cards.castShadow = false;
+  return [instancedPlants(hedgeGeometry, bushes, hedgeBushMaterial), cards];
+}
+
 // Draw one shape for every plant in the list, each with its own spot, turn or lean, size and color.
-function instancedPlants(geometry, plants) {
-  const mesh = new THREE.InstancedMesh(geometry, plantMaterial, plants.length);
+function instancedPlants(geometry, plants, material = plantMaterial) {
+  const mesh = new THREE.InstancedMesh(geometry, material, plants.length);
   const matrix = new THREE.Matrix4();
   const turn = new THREE.Quaternion();
   plants.forEach((plant, i) => {
@@ -384,6 +399,26 @@ TREES.stump = {
   canopyRadius: 0.3,
   height: 0.37,
 };
+
+// Leaf clumps over every treetop, so the trees look painted leaf by leaf instead of like smooth
+// balls and cones (see foliage.js). The lumps underneath turn darker, like the shade deep inside a tree.
+(function addLeafCards() {
+  let seed = 0;
+  for (const tree of Object.values(TREES)) {
+    const cards = [];
+    for (const [geometry, material] of tree.parts) {
+      const kind = material.userData.foliage;
+      if (!kind) continue;
+      const needles = kind === 'needle';
+      cards.push([
+        leafCards(geometry, { size: needles ? 0.27 : 0.3, density: needles ? 9 : 11, seed: ++seed }),
+        new LeafCardMaterial({ color: material.color.clone().multiplyScalar(1.12), map: needles ? needleTexture : broadLeafTexture }),
+      ]);
+      material.color.multiplyScalar(0.7);
+    }
+    tree.parts.push(...cards);
+  }
+})();
 
 // The same random numbers every time the page loads, so the woods always look the same
 // (and can be tuned). Change WOODS_SEED for a different layout. The painted backdrop uses it too.
@@ -501,7 +536,7 @@ export function growWoods({ backFromHedge, reach, zMax = reach, keepClear = () =
     if (ofKind.length === 0) continue;
     for (const [geometry, material] of TREES[kind].parts) woods.add(instancedTrees(geometry, material, ofKind));
   }
-  woods.add(instancedPlants(hedgeGeometry, shrubs));
+  woods.add(...leafyBushes(shrubs));
 
   // 4. Lanterns in the glades nearest the hedge, spread out round the woods, hanging out toward the field.
   const lanterns = [];
