@@ -1,0 +1,200 @@
+[gd_resource type="Theme" load_steps=14 format=3]
+
+[sub_resource type="SystemFont" id="book_font"]
+font_names = PackedStringArray("Palatino", "Palatino Linotype", "Book Antiqua", "Georgia", "serif")
+subpixel_positioning = 0
+
+[sub_resource type="SystemFont" id="title_font"]
+font_names = PackedStringArray("Luminari", "Palatino", "Palatino Linotype", "Georgia", "serif")
+font_weight = 600
+
+[sub_resource type="StyleBoxFlat" id="paper"]
+content_margin_left = 40.0
+content_margin_top = 30.0
+content_margin_right = 40.0
+content_margin_bottom = 28.0
+bg_color = Color(0.984, 0.957, 0.875, 0.97)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.545, 0.416, 0.263, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.176, 0.125, 0.047, 0.45)
+shadow_size = 24
+shadow_offset = Vector2(0, 10)
+
+[sub_resource type="StyleBoxFlat" id="hud_pill"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0.118, 0.176, 0.118, 0.55)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="key_cap"]
+content_margin_left = 8.0
+content_margin_top = 1.0
+content_margin_right = 8.0
+content_margin_bottom = 3.0
+bg_color = Color(1, 0.98, 0.94, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 3
+border_color = Color(0.545, 0.416, 0.263, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxEmpty" id="row_normal"]
+content_margin_left = 22.0
+content_margin_top = 4.0
+content_margin_right = 22.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="row_chosen"]
+content_margin_left = 22.0
+content_margin_top = 4.0
+content_margin_right = 22.0
+content_margin_bottom = 4.0
+bg_color = Color(0.957, 0.769, 0.298, 0.38)
+border_width_left = 4
+border_color = Color(0.82, 0.55, 0.16, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="row_pressed"]
+content_margin_left = 22.0
+content_margin_top = 4.0
+content_margin_right = 22.0
+content_margin_bottom = 4.0
+bg_color = Color(0.82, 0.55, 0.16, 0.45)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="slider_track"]
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.925, 0.863, 0.698, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.545, 0.416, 0.263, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="slider_fill"]
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.431, 0.569, 0.314, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="Gradient" id="grabber_gradient"]
+offsets = PackedFloat32Array(0, 0.62, 0.72, 0.8)
+colors = PackedColorArray(0.98, 0.84, 0.42, 1, 0.9, 0.66, 0.2, 1, 0.545, 0.416, 0.263, 1, 0.545, 0.416, 0.263, 0)
+
+[sub_resource type="GradientTexture2D" id="grabber"]
+gradient = SubResource("grabber_gradient")
+width = 26
+height = 26
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="StyleBoxLine" id="rule"]
+color = Color(0.545, 0.416, 0.263, 0.5)
+thickness = 2
+
+[sub_resource type="StyleBoxEmpty" id="empty"]
+
+[resource]
+default_font = SubResource("book_font")
+default_font_size = 24
+Button/colors/font_color = Color(0.29, 0.22, 0.149, 1)
+Button/colors/font_focus_color = Color(0.29, 0.22, 0.149, 1)
+Button/colors/font_hover_color = Color(0.29, 0.22, 0.149, 1)
+Button/colors/font_pressed_color = Color(0.29, 0.22, 0.149, 1)
+Button/colors/font_hover_pressed_color = Color(0.29, 0.22, 0.149, 1)
+Button/font_sizes/font_size = 26
+Button/styles/disabled = SubResource("row_normal")
+Button/styles/focus = SubResource("row_chosen")
+Button/styles/hover = SubResource("row_normal")
+Button/styles/hover_pressed = SubResource("row_pressed")
+Button/styles/normal = SubResource("row_normal")
+Button/styles/pressed = SubResource("row_pressed")
+ChosenRow/base_type = &"PanelContainer"
+ChosenRow/styles/panel = SubResource("row_chosen")
+HSeparator/styles/separator = SubResource("rule")
+HSlider/icons/grabber = SubResource("grabber")
+HSlider/icons/grabber_highlight = SubResource("grabber")
+HSlider/styles/grabber_area = SubResource("slider_fill")
+HSlider/styles/grabber_area_highlight = SubResource("slider_fill")
+HSlider/styles/slider = SubResource("slider_track")
+HudLabel/base_type = &"Label"
+HudLabel/colors/font_color = Color(1, 0.98, 0.92, 1)
+HudLabel/colors/font_shadow_color = Color(0.1, 0.07, 0.03, 0.6)
+HudLabel/constants/shadow_offset_x = 0
+HudLabel/constants/shadow_offset_y = 2
+HudLabel/font_sizes/font_size = 24
+HudPill/base_type = &"PanelContainer"
+HudPill/styles/panel = SubResource("hud_pill")
+KeyCap/base_type = &"Label"
+KeyCap/colors/font_color = Color(0.29, 0.22, 0.149, 1)
+KeyCap/font_sizes/font_size = 19
+KeyCap/styles/normal = SubResource("key_cap")
+Label/colors/font_color = Color(0.29, 0.22, 0.149, 1)
+Label/font_sizes/font_size = 24
+Notice/base_type = &"Label"
+Notice/colors/font_color = Color(0.62, 0.3, 0.12, 1)
+Notice/font_sizes/font_size = 21
+PanelContainer/styles/panel = SubResource("paper")
+RowPanel/base_type = &"PanelContainer"
+RowPanel/styles/panel = SubResource("row_normal")
+RowLabel/base_type = &"Label"
+RowLabel/font_sizes/font_size = 24
+SettingGroup/base_type = &"Label"
+SettingGroup/colors/font_color = Color(0.431, 0.569, 0.314, 1)
+SettingGroup/font_sizes/font_size = 18
+Soft/base_type = &"Label"
+Soft/colors/font_color = Color(0.478, 0.392, 0.282, 1)
+Soft/font_sizes/font_size = 21
+Subtitle/base_type = &"Label"
+Subtitle/colors/font_color = Color(0.478, 0.392, 0.282, 1)
+Subtitle/fonts/font = SubResource("title_font")
+Subtitle/font_sizes/font_size = 26
+Title/base_type = &"Label"
+Title/colors/font_color = Color(0.29, 0.22, 0.149, 1)
+Title/fonts/font = SubResource("title_font")
+Title/font_sizes/font_size = 54
+BannerTitle/base_type = &"Label"
+BannerTitle/colors/font_color = Color(1, 0.97, 0.88, 1)
+BannerTitle/colors/font_shadow_color = Color(0.12, 0.08, 0.03, 0.45)
+BannerTitle/constants/shadow_offset_x = 0
+BannerTitle/constants/shadow_offset_y = 3
+BannerTitle/fonts/font = SubResource("title_font")
+BannerTitle/font_sizes/font_size = 72
+BannerSubtitle/base_type = &"Label"
+BannerSubtitle/colors/font_color = Color(1, 0.93, 0.76, 1)
+BannerSubtitle/colors/font_shadow_color = Color(0.12, 0.08, 0.03, 0.65)
+BannerSubtitle/constants/shadow_offset_x = 0
+BannerSubtitle/constants/shadow_offset_y = 2
+BannerSubtitle/fonts/font = SubResource("title_font")
+BannerSubtitle/font_sizes/font_size = 30

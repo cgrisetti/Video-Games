@@ -118,6 +118,10 @@ Each new game gets its own folder in `games/` and a link on the launcher page.
 - **Ask why.** "Explain how the jumping works" is a good way to learn the code.
 - **Watch your usage.** The ring next to the model picker shows how much of your plan's usage you've used.
 
+## The next Lanternwood, in Godot
+
+`games/lanternwood-godot/` is Lanternwood being rebuilt in the [Godot](https://godotengine.org) game engine, with real sunlight, soft shadows, haze, swaying grass and leafy trees. It runs as a Mac app rather than in the browser. Install Godot once with `brew install --cask godot`, then follow [its README](games/lanternwood-godot/README.md). So far it has the Glenn and the menus; the mini-games are on their way.
+
 ## Project layout
 
 ```
@@ -131,6 +135,7 @@ games/lanternwood/  The first game: Lanternwood
   gnome-crossing.js Gnome Crossing: hopping, the night and the owl
   trail.js          Gnome Crossing's endless trail of meadows, creeks and animal trails
   critters.js       Gnome Crossing's deer, boars, hedgehogs and owl
+games/lanternwood-godot/  The next Lanternwood, in the Godot engine (see its README.md)
 CLAUDE.md           Instructions Claude reads about this project
 .claude/launch.json Tells the Claude app how to start the preview
 ```

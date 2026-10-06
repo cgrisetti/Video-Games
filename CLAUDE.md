@@ -15,6 +15,16 @@ A playground for building small 3D browser games together by prompting Claude. T
 - `games/lanternwood/` is the first game, Lanternwood: a woodland arcade. The gnome walks a lantern-lit path (the Glenn, `woods.js`) and goes through gates into mini-games: Berry Rush (`berry-rush.js`), the Bramble Maze (`maze.js`) and Gnome Crossing (`gnome-crossing.js`, with its endless trail in `trail.js` and its animals in `critters.js`). `main.js` runs whichever area you're in. It's a good reference for the patterns below.
 - To add a mini-game to Lanternwood, make it an area like `berry-rush.js`, add it to `areas` in `main.js`, give it an opening in `woods.js` (the `GAMES` and `OPENINGS` lists) and a Top 10 board in `scoreboard.js`. Things only one area shows get `data-area="<area>"` in `index.html`.
 
+## Lanternwood in Godot
+
+`games/lanternwood-godot/` is the next version of Lanternwood, being rebuilt in [Godot 4.5](https://docs.godotengine.org/en/stable/) (GDScript) with a richer, real-light look. It's a separate project: it doesn't use Vite, three.js or the launcher page, and the three.js version stays as it is until everything has moved over. So far it has the Glenn, the gnome and fox, and the menus; the mini-games are next.
+
+- Read its `README.md` (layout) and `STYLE_GUIDE.md` (the look) before changing it.
+- Scenes (`scenes/*.tscn`) hold what's worth placing by hand in the editor (openings, sun, sky, characters). Scenery that repeats (hedges, trees, grass, lanterns) is grown in code by the builders in `scripts/world/`, which are `@tool` scripts so the editor shows it too.
+- Tunable numbers are named constants at the top of each script. Movement uses the `delta` Godot passes in.
+- After a change, run the smoke test (`godot --headless --path . --script res://tools/smoke_test.gd` from the game's folder). To see it without a screen, render a picture: `xvfb-run -a godot --path . --rendering-driver vulkan -- --skip-menu --screenshot=/tmp/shot.png` (add `--at=x,z,camera_turn` to stand somewhere else).
+- Don't commit the `.godot/` folder (Godot rebuilds it). Do commit the `.import` files next to assets.
+
 ## Making a new game
 
 1. Create `games/<kebab-case-name>/index.html` and `main.js`, following `games/lanternwood/`.
