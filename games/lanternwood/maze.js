@@ -3,6 +3,7 @@ import { createGnome } from './gnome.js';
 import { createFox } from './fox.js';
 import { createWalker, shortestTurn } from './walker.js';
 import { growWoods } from './scenery.js';
+import { LeafCardMaterial, leafCards, hedgeLeafTexture } from './foliage.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
 import { makeLantern, setLanternLit, flickerLanterns } from './lantern.js';
 import { makeGardenDoor, DOORWAY, DOOR_WALL } from './gates.js';
@@ -369,6 +370,10 @@ const bloom = new THREE.IcosahedronGeometry(1, 0);
 const spike = new THREE.ConeGeometry(0.06, 0.4, 5);
 const bell = new THREE.ConeGeometry(0.1, 0.16, 6).rotateX(Math.PI);
 const hedgeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, flatShading: true });
+// The lumps of leaves are covered in painted leaf clumps (see foliage.js), and darker underneath.
+const lumpMaterial = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, roughness: 0.85 });
+const leafClumps = leafCards(leafBlob, { size: 0.32, density: 3.4, seed: 31 });
+const leafClumpMaterial = new LeafCardMaterial({ color: 0xffffff, map: hedgeLeafTexture });
 
 function buildHedges(walls) {
   const cores = [];
@@ -391,8 +396,11 @@ function buildHedges(walls) {
       const shade = () => color.set(district.leaves).multiplyScalar(0.85 + 0.3 * Math.random()).clone();
       blobs.push({ position: at(along, 0, HEDGE_HEIGHT - 0.1 - Math.random() * 0.15), size: 0.5 + Math.random() * 0.2, color: shade() });
       for (const face of [-1, 1]) {
-        const y = 0.5 + Math.random() * (HEDGE_HEIGHT - 1);
-        blobs.push({ position: at(along, face * (HEDGE_THICKNESS / 2 - 0.22), y), size: 0.3 + Math.random() * 0.12, color: shade() });
+        // Lumps of leaves stacked up the face of the hedge, staggered like bricks, so it looks leafy all over.
+        for (let y = 0.45 + (s % 2) * 0.35; y < HEDGE_HEIGHT - 0.4; y += 0.75) {
+          const jitter = (Math.random() - 0.5) * 0.25;
+          blobs.push({ position: at(along + jitter, face * (HEDGE_THICKNESS / 2 - 0.24), y + jitter), size: 0.36 + Math.random() * 0.12, color: shade() });
+        }
         if (Math.random() < 0.45) {
           const flowerY = 0.4 + Math.random() * (HEDGE_HEIGHT - 0.9);
           const flowerColor = color.set(district.flowers[Math.floor(Math.random() * district.flowers.length)]).clone();
@@ -404,7 +412,8 @@ function buildHedges(walls) {
   const group = new THREE.Group();
   group.add(
     instanced(unitBox, cores, (item) => item.size, false),
-    instanced(leafBlob, blobs, (item) => new THREE.Vector3().setScalar(item.size)),
+    instanced(leafBlob, blobs, (item) => new THREE.Vector3().setScalar(item.size), true, lumpMaterial),
+    instanced(leafClumps, blobs, (item) => new THREE.Vector3().setScalar(item.size), true, leafClumpMaterial),
     instanced(bloom, flowers.bloom, () => new THREE.Vector3().setScalar(0.11)),
     instanced(spike, flowers.spike, () => new THREE.Vector3(1, 1, 1)),
     instanced(bell, flowers.bell, () => new THREE.Vector3(1, 1, 1)),
@@ -414,8 +423,8 @@ function buildHedges(walls) {
 
 // One shape drawn for every item, each with its own spot, size and color. Unless `turned` is false
 // (for the straight hedge cores), each is also turned a golden angle from the last, so no two lumps match.
-function instanced(geometry, items, sizeOf, turned = true) {
-  const mesh = new THREE.InstancedMesh(geometry, hedgeMaterial, Math.max(items.length, 1));
+function instanced(geometry, items, sizeOf, turned = true, material = hedgeMaterial) {
+  const mesh = new THREE.InstancedMesh(geometry, material, Math.max(items.length, 1));
   mesh.count = items.length;
   const matrix = new THREE.Matrix4();
   const turn = new THREE.Quaternion();

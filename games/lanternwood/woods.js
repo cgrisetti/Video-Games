@@ -3,6 +3,7 @@ import { createGnome } from './gnome.js';
 import { createFox } from './fox.js';
 import { createWalker, shortestTurn, MOVE_SPEED } from './walker.js';
 import { makeRock, makeHedgeWalls, growWoods } from './scenery.js';
+import { makeGrass } from './foliage.js';
 import { createBackdrop, SKY_COLOR, HAZE_COLOR } from './backdrop.js';
 import { makeLantern, flickerLanterns } from './lantern.js';
 import { makeGardenGate, makeHedgeArch, makeArbor, makeTrailhead, makeGardenDoor, makeFingerpost, OPENING } from './gates.js';
@@ -140,20 +141,29 @@ function pathDistance(x, z) {
   return distance;
 }
 
+// The meadow's colors: soft green, with drifts of autumn gold where the grass is drying, like the
+// fields round Pottsfield.
+const MEADOW = new THREE.Color(0x6fa04a);
+const MEADOW_GOLD = new THREE.Color(0xb8a64a);
+const dirt = new THREE.Color(0xb39a6c);
+function meadowColor(x, z, color) {
+  const patch = Math.sin(x * 0.31) * Math.sin(z * 0.27) + 0.6 * Math.sin(x * 0.11 - z * 0.15);
+  const gold = THREE.MathUtils.smoothstep(Math.sin(x * 0.13 + 1.3) * Math.sin(z * 0.09 - 0.7) + 0.3 * Math.sin(x * 0.4 + z * 0.3), 0.25, 0.8);
+  return color.copy(MEADOW).lerp(MEADOW_GOLD, gold * 0.3).offsetHSL(0, 0, patch * 0.03);
+}
+
 // The ground: grass with soft light and dark patches, and the paths worn into it.
 function makeGround() {
   const size = BACKDROP_RADIUS * 2 + 6;
   const geometry = new THREE.PlaneGeometry(size, size, 220, 220).rotateX(-Math.PI / 2);
   const positions = geometry.attributes.position;
   const colors = new Float32Array(positions.count * 3);
-  const grass = new THREE.Color(0x55aa55);
-  const dirt = new THREE.Color(0xb39a6c);
   const color = new THREE.Color();
   for (let i = 0; i < positions.count; i++) {
     const x = positions.getX(i);
     const z = positions.getZ(i);
     const patch = Math.sin(x * 0.31) * Math.sin(z * 0.27) + 0.6 * Math.sin(x * 0.11 - z * 0.15);
-    color.copy(grass).offsetHSL(0, 0, patch * 0.03);
+    meadowColor(x, z, color);
     const worn = 1 - THREE.MathUtils.smoothstep(pathDistance(x, z), -0.25, 0.3);
     color.lerp(dirt.clone().offsetHSL(0, 0, patch * 0.02), worn * 0.9);
     color.toArray(colors, i * 3);
@@ -165,6 +175,25 @@ function makeGround() {
   return ground;
 }
 scene.add(makeGround());
+
+// Tufts of grass all over the Glenn, thick inside the hedges and thinning out into the woods,
+// never on the paths.
+const tuftColor = new THREE.Color();
+scene.add(
+  makeGrass({
+    count: 20000,
+    seed: 5,
+    spot: (random) => {
+      const inside = random() < 0.62;
+      const x = inside ? (random() * 2 - 1) * INNER_X : (random() * 2 - 1) * (HALF_X + 16);
+      const z = inside ? (random() * 2 - 1) * INNER_Z : (random() * 2 - 1) * (HALF_Z + 8);
+      if (pathDistance(x, z) < 0.1 + random() * 0.25) return null;
+      if (!inside && Math.abs(x) < HALF_X + 0.5 && Math.abs(z) < HALF_Z + 0.5) return null; // That's the hedge.
+      return [x, z];
+    },
+    color: (x, z, random) => meadowColor(x, z, tuftColor).multiplyScalar(0.92 + random() * 0.2),
+  }),
+);
 
 // --- Hedges, openings, woods and lanterns ---
 
