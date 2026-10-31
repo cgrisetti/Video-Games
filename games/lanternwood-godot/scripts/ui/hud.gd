@@ -26,6 +26,10 @@ var _pills: VBoxContainer
 var _berry_pill: PanelContainer
 var _berry_label: Label
 var _timer_label: Label
+var _medals: RichTextLabel
+var _medal_pill: PanelContainer
+var _split: Label
+const MEDAL_COLORS := {"gold": Color("#f2c14e"), "silver": Color("#d6dbe2"), "bronze": Color("#d9935a")}
 var _hint: PanelContainer
 var _hint_label: Label
 var _area := "glen"
@@ -116,11 +120,31 @@ func _ready() -> void:
 	root.add_child(_pills)
 	_berry_pill = _pill()
 	_berry_label = _icon_pill(_berry_pill, _berry_icon())
-	_pills.add_child(_berry_pill)
+	var berry_row := HBoxContainer.new()
+	berry_row.add_theme_constant_override("separation", 12)
+	berry_row.add_child(_berry_pill)
+	var split_pill := _pill() # "−1.4s" against gold pace, after each berry.
+	split_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_split = _label("", "HudLabel")
+	split_pill.add_child(_split)
+	split_pill.modulate.a = 0.0
+	berry_row.add_child(split_pill)
+	_pills.add_child(berry_row)
 	var timer_pill := _pill()
 	_timer_label = _icon_pill(timer_pill, _clock_icon())
 	_pills.add_child(timer_pill)
-	for pill: Control in [_berry_pill, timer_pill]:
+	_medal_pill = _pill()
+	_medals = RichTextLabel.new()
+	_medals.bbcode_enabled = true
+	_medals.fit_content = true
+	_medals.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_medals.scroll_active = false
+	_medals.add_theme_font_override("normal_font", Art.book_font())
+	_medals.add_theme_font_size_override("normal_font_size", 18)
+	_medals.add_theme_color_override("default_color", Color("#f3ead6"))
+	_medal_pill.add_child(_medals)
+	_pills.add_child(_medal_pill)
+	for pill: Control in [_berry_pill, timer_pill, _medal_pill]:
 		pill.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN # Each pill as wide as its words.
 	_hint = _pill()
 	_hint.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -226,8 +250,33 @@ func bump_berries() -> void:
 	create_tween().tween_property(_berry_pill, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-func set_time(seconds: float) -> void:
+# The clock, in the colour of the medal you're still on track for.
+func set_time(seconds: float, medal := "") -> void:
 	_timer_label.text = Scores.format_time(seconds)
+	if MEDAL_COLORS.has(medal):
+		_timer_label.add_theme_color_override("font_color", MEDAL_COLORS[medal])
+	else:
+		_timer_label.remove_theme_color_override("font_color")
+
+
+# This field's medal times, under the clock.
+func show_medals(gold: float, silver: float, bronze: float) -> void:
+	_medals.text = "[color=#%s]●[/color] %s    [color=#%s]●[/color] %s    [color=#%s]●[/color] %s" % [
+		MEDAL_COLORS.gold.to_html(false), Scores.format_time(gold), MEDAL_COLORS.silver.to_html(false), Scores.format_time(silver), MEDAL_COLORS.bronze.to_html(false), Scores.format_time(bronze)]
+
+
+# How far ahead of gold pace (negative) or behind (positive), beside the berry counter.
+func show_split(seconds: float) -> void:
+	var pill: Control = _split.get_parent()
+	if absf(seconds) < 0.05:
+		_split.text = "±0.0s"
+		_split.add_theme_color_override("font_color", Color("#f3ead6"))
+	else:
+		_split.text = ("−%.1fs" % -seconds) if seconds < 0.0 else ("+%.1fs" % seconds)
+		_split.add_theme_color_override("font_color", Color("#9be38a") if seconds < 0.0 else Color("#ff9a8a"))
+	var tween := _fade(pill, 1.0, 0.1)
+	tween.tween_interval(1.6)
+	tween.tween_property(pill, "modulate:a", 0.0, 0.5)
 
 
 func show_hint(text: String) -> void:

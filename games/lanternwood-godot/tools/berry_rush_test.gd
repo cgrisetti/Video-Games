@@ -129,6 +129,9 @@ func _run() -> void:
 		if attempt > 20 and berry in _game._berries:
 			print("  (can't reach the berry at %s: the gnome is at %s)" % [berry.global_position.snapped(Vector3.ONE * 0.01), gnome.global_position.snapped(Vector3.ONE * 0.01)])
 	_check("picking all 9 counts them (%d)" % _game.collected, _game.collected == 9 and hud._berry_label.text == "9 / 10")
+	var medals: Dictionary = _game.medal_times
+	_check("the field has medal times (gold %s, silver %s, bronze %s)" % [medals.gold, medals.silver, medals.bronze], medals.gold > 5.0 and medals.gold < medals.silver and medals.silver < medals.bronze and hud._medals.text.contains(root.get_node("Scores").format_time(medals.gold)))
+	_check("each berry shows how you're doing against gold pace (%s)" % hud._split.text, hud._split.text.begins_with("−") or hud._split.text.begins_with("+") or hud._split.text.begins_with("±"))
 	var golden: Node3D = _game._golden
 	var gnome_quarter := Vector2(signf(gnome.global_position.x), signf(gnome.global_position.z))
 	var golden_quarter := Vector2(signf(golden.position.x), signf(golden.position.z))
@@ -153,7 +156,7 @@ func _run() -> void:
 	await _seconds(1.5)
 	var board: Node = _main.scoreboard
 	_check("and the Top 10 comes up with your time", board.is_showing and board._pending > 0.0 and absf(board._pending - time_before) < 0.2)
-	_check("saying it's a new fastest time", board._result.text.begins_with("A new fastest time"))
+	_check("saying it's a new fastest time, with the medal you won (%s)" % board._result.text.left(40), board._result.text.begins_with("Gold medal! A new fastest time"))
 	board._name.text = "Tester"
 	board._save_pending()
 	var saved: Array = root.get_node("Scores").entries("berry-rush")

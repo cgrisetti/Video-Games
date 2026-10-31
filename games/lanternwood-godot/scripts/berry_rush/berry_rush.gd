@@ -19,6 +19,11 @@ const RESULTS_DELAY := 1.3 # Seconds to enjoy the golden raspberry popping befor
 const BERRY_FLOAT := 0.9 # How high the berries float (some over the creek, so you'll have to wade).
 const BERRY_SPACING := 5.0 # Berries are never closer together than this.
 const WORM_BERRY_GAP := 4.0 # Worms never start this close to a berry.
+# Medal times for each field, worked out from a sensible route through its berries ("par": that
+# route at full speed, as the crow flies) times these. A spread-out field gets easier medal times.
+const MEDALS := {"gold": 1.8, "silver": 2.4, "bronze": 3.2}
+const GOLDEN_LEG := 15.0 # The golden raspberry's not out yet when the route is planned: allow this far.
+const MEDAL_WORDS := {"gold": "Gold medal!", "silver": "Silver medal!", "bronze": "Bronze medal!"}
 const BERRY_TOUCH := 1.0 # How close the middle of the gnome has to come to pick one...
 const GOLDEN_TOUCH := 1.3 # ...or the golden one.
 const GNOME_MIDDLE := 0.6 # The height of the middle of the gnome, where things touch it.
@@ -54,6 +59,8 @@ var _world_time := 0.0
 var _results_in := 0.0
 var _ready_in := 0.0
 var _compass: BerryCompass
+var medal_times := {} # "gold", "silver", "bronze" -> seconds, for this field.
+var _gold_splits := PackedFloat32Array() # Gold pace: when each berry should be picked by.
 
 @onready var field: BerryField = $Field
 @onready var gnome: CharacterBody3D = $Gnome
@@ -167,6 +174,7 @@ func restart(layout := -1) -> void:
 	field.place_obstacles()
 	_place_berries()
 	_place_worms()
+	_plan_medals()
 	fox.place(gnome.global_position + Vector3(-1.9, 0, 0.6), PI)
 	fox.brain.reset()
 	_update_hud()
@@ -296,6 +304,48 @@ func _win() -> void:
 	_results_in = RESULTS_DELAY
 
 
+# The medal this time earns ("gold", "silver", "bronze"), or "" for none.
+func medal_for(time: float) -> String:
+	for medal in ["gold", "silver", "bronze"]:
+		if time <= medal_times.get(medal, 0.0):
+			return medal
+	return ""
+
+
+# Plan a sensible route: from the start to the nearest berry, then the nearest one from there, and
+# so on, then on to the golden raspberry. That route at the gnome's full speed is "par", and the
+# medal times are par times MEDALS. Gold pace is when each berry would be picked on a gold run.
+func _plan_medals() -> void:
+	var at := Vector2(0, BerryField.START_Z)
+	var left: Array[Vector2] = []
+	for berry in _berries:
+		left.append(Vector2(berry.position.x, berry.position.z))
+	var legs := PackedFloat32Array()
+	while not left.is_empty():
+		var nearest := 0
+		for i in left.size():
+			if left[i].distance_to(at) < left[nearest].distance_to(at):
+				nearest = i
+		var leg := left[nearest].distance_to(at)
+		if Creek.distance((left[nearest].x + at.x) / 2.0, (left[nearest].y + at.y) / 2.0) < Creek.HALF_WIDTH:
+			leg += Creek.HALF_WIDTH * 2.0 * (1.0 / Creek.SLOWDOWN - 1.0) # Wading is slow.
+		legs.append(leg)
+		at = left.pop_at(nearest)
+	legs.append(GOLDEN_LEG)
+	var total := 0.0
+	for leg in legs:
+		total += leg
+	var par: float = total / gnome.MOVE_SPEED
+	for medal in MEDALS:
+		medal_times[medal] = ceilf(par * MEDALS[medal])
+	_gold_splits.clear()
+	var so_far := 0.0
+	for leg in legs:
+		so_far += leg
+		_gold_splits.append(medal_times.gold * so_far / total)
+	hud.show_medals(medal_times.gold, medal_times.silver, medal_times.bronze)
+
+
 func _caught(worm: InchWorm) -> void:
 	if caught_by_worm:
 		return # Two worms can reach the gnome in the same moment.
@@ -310,11 +360,14 @@ func _pick(berry: Node3D, golden: bool, on_gone: Callable) -> void:
 	Sound.play_berry(collected, golden)
 	effects.pop(berry, collected, golden, field.floor_at(berry.global_position.x, berry.global_position.z), on_gone)
 	hud.bump_berries()
+	# How you're doing against gold pace.
+	if collected <= _gold_splits.size():
+		hud.show_split(elapsed - _gold_splits[collected - 1])
 
 
 func _update_hud() -> void:
 	hud.set_berries(collected, BERRY_COUNT + 1, collected >= BERRY_COUNT)
-	hud.set_time(elapsed)
+	hud.set_time(elapsed, medal_for(elapsed) if not caught_by_worm else "")
 
 
 # --- Controls ---
@@ -376,7 +429,7 @@ func _process(delta: float) -> void:
 	if _results_in > 0.0:
 		_results_in -= delta
 		if _results_in <= 0.0:
-			scoreboard.show_board("berry-rush", elapsed)
+			scoreboard.show_board("berry-rush", elapsed, MEDAL_WORDS.get(medal_for(elapsed), ""))
 
 	# A swing of the stick that catches an inch worm on the head stuns it.
 	if not finished and gnome.is_striking():
