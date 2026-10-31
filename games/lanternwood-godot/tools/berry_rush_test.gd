@@ -45,6 +45,11 @@ func _run() -> void:
 	await _seconds(0.8)
 	Input.action_release("move_forward")
 	_check("then it says Go! and the clock starts", hud._banner_subtitle.text == "Go!" and _game.elapsed > 0.0)
+	# The berry compass (upgrade 2): turned away from the field, the 3 nearest berries get badges.
+	_game.camera_rig.reset_view(PI)
+	await _frames(3)
+	_check("facing away, the berry compass points to the 3 nearest berries", _game._compass._badges.size() == 3)
+	_game.camera_rig.reset_view(0.0)
 
 	# The field.
 	var field: Node3D = _game.field
@@ -133,6 +138,14 @@ func _run() -> void:
 	_check("the fox points at it", fox.brain.activity == "point")
 	await _seconds(1.7)
 	_check("then leads the way", fox.brain.activity == "lead")
+	# A finale that flows (upgrade 3): the fox lopes ahead at your pace, and waits if you fall behind.
+	gnome.place(fox.global_position + Vector3(1.0, 0, 1.0), 0.0)
+	var fox_from: Vector3 = fox.global_position
+	await _seconds(1.0)
+	var moved: float = Vector2(fox.global_position.x - fox_from.x, fox.global_position.z - fox_from.z).length()
+	_check("the fox lopes ahead toward it (%.1f m in a second)" % moved, moved > 3.0 or Vector2(golden.position.x - fox.global_position.x, golden.position.z - fox.global_position.z).length() < 2.5)
+	var beam: Node = golden.get_node_or_null("Sunbeam")
+	_check("and a shaft of sunlight rises over it", beam != null and beam.mesh.height > 20.0)
 	var time_before: float = _game.elapsed
 	gnome.place(golden.global_position - Vector3(0, _game.GNOME_MIDDLE, 0), 0.0)
 	await _frames(3)

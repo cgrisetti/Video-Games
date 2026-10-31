@@ -120,7 +120,10 @@ func _ready() -> void:
 	var timer_pill := _pill()
 	_timer_label = _icon_pill(timer_pill, _clock_icon())
 	_pills.add_child(timer_pill)
+	for pill: Control in [_berry_pill, timer_pill]:
+		pill.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN # Each pill as wide as its words.
 	_hint = _pill()
+	_hint.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_hint_label = _label("", "HudLabel")
 	_hint.add_child(_hint_label)
 	_hint.visible = false

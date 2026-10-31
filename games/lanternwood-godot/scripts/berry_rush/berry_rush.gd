@@ -30,7 +30,7 @@ const WORM_CATCH_DISTANCE := 0.75
 const STICK_REACH := 0.44 # How close the stick has to come to a worm's head to bonk it.
 const DANGER_FAR := 9.0 # The danger music creeps in when a worm is this close...
 const DANGER_NEAR := 3.0 # ...and is at full strength this close.
-const FOX_LEAD_SPEED := 0.05 # How slowly the fox leads the way to the golden raspberry, as a share of the gnome's speed.
+const FOX_LEAD_SPEED := 0.85 # How fast the fox lopes ahead to the golden raspberry, as a share of the gnome's speed.
 const HINT := "Follow the fox to the golden raspberry!"
 const GOAL := "Pick all 9 raspberries, then follow the fox to the golden one, as fast as you can. Don't let an inch worm catch you! Swing your stick (F, or □) at a worm's head to stun it, though it gets back up a little faster. The creek slows everyone down. R starts the round over."
 
@@ -53,6 +53,7 @@ var _worms: Array[InchWorm] = []
 var _world_time := 0.0
 var _results_in := 0.0
 var _ready_in := 0.0
+var _compass: BerryCompass
 
 @onready var field: BerryField = $Field
 @onready var gnome: CharacterBody3D = $Gnome
@@ -86,6 +87,13 @@ func _ready() -> void:
 		worm.target = gnome
 		add_child(worm)
 		_worms.append(worm)
+	# The berry compass, over the game but under the menus.
+	var layer := CanvasLayer.new()
+	layer.layer = 2
+	add_child(layer)
+	_compass = BerryCompass.new()
+	_compass.camera = camera_rig.camera
+	layer.add_child(_compass)
 	var detail: Dictionary = Glen.DETAIL[Settings.get_value("graphics")]
 	_air.add_child(Atmosphere.fireflies(detail.fireflies))
 	_air.add_child(Atmosphere.falling_leaves(detail.leaves))
@@ -395,6 +403,10 @@ func _process(delta: float) -> void:
 	if not finished and ready:
 		elapsed += delta
 	_update_hud()
+	_compass.visible = not finished and not scoreboard.is_showing
+	_compass.berries = _berries
+	_compass.golden = _golden if _golden_out else null
+	_compass.from = gnome.global_position
 	field.fade_trees(camera_rig.camera, middle, delta)
 	field.push_grass(gnome.global_position)
 	_air.global_position = Vector3(gnome.global_position.x, 0, gnome.global_position.z)
