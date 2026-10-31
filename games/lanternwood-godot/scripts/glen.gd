@@ -63,6 +63,7 @@ var _openings: Array = []
 var _lanterns: Array[OmniLight3D] = []
 var _grass_material: ShaderMaterial
 var _grass_patches: Array[MultiMeshInstance3D] = []
+var _interests: Array[Vector3] = [] # Things the fox likes to sniff: lanterns, pumpkins, rocks, signs.
 var _near: Node = null # The opening the gnome is standing at, if any.
 var _offering: Node = null # The opening whose game card is showing, waiting for a second press.
 var _time := 0.0
@@ -87,6 +88,8 @@ func _ready() -> void:
 		return
 	fox.friend = gnome
 	fox.keep_in = Rect2(-INNER_X + 0.4, -INNER_Z + 0.4, INNER_X * 2.0 - 0.8, INNER_Z * 2.0 - 0.8)
+	fox.brain = FoxBrain.new(fox, gnome, camera_rig.camera)
+	fox.brain.interests = _interests
 	camera_rig.target = gnome
 	Settings.changed.connect(func(name: String) -> void: if name == "graphics": apply_graphics(true))
 	apply_graphics(false)
@@ -103,7 +106,10 @@ func enter(from := "") -> void:
 		gnome.place(at, back.rotation.y)
 	else:
 		gnome.place(Vector3(path_x(START_Z), 0.05, START_Z), PI)
-	fox.place(gnome.global_position + Vector3(-fox.SIDE_GAP, 0, 0.6))
+	var beside := gnome.global_position + Vector3(-2.2, 0, 0.8).rotated(Vector3.UP, gnome.facing() - PI)
+	fox.place(Vector3(clampf(beside.x, -INNER_X + 1.0, INNER_X - 1.0), beside.y, beside.z), gnome.facing())
+	if fox.brain:
+		fox.brain.reset()
 	camera_rig.reset_view(0.0)
 	_near = null
 	_close_card()
@@ -159,6 +165,7 @@ func build() -> void:
 	for child in _air.get_children():
 		child.queue_free()
 	_lanterns.clear()
+	_interests.clear()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	var detail: Dictionary = DETAIL[_graphics()]
@@ -297,6 +304,7 @@ func _add_path_things(rng: RandomNumberGenerator) -> void:
 			lantern.position = Vector3(path_x(z) + side * (PATH_HALF_WIDTH + 0.7), 0, z)
 			lantern.rotation.y = 0.0 if side < 0.0 else PI # Hanging out over the path.
 			_add(lantern)
+			_interests.append(lantern.position)
 			_lanterns.append(lantern.get_meta("light"))
 		z -= LANTERN_SPACING
 		side = -side
@@ -307,6 +315,7 @@ func _add_path_things(rng: RandomNumberGenerator) -> void:
 		var post := Props.fingerpost(opening.title(), opening.side)
 		post.position = Vector3(path_x(post_z) + opening.side * (PATH_HALF_WIDTH + 0.45), 0, post_z)
 		_add(post)
+		_interests.append(post.position)
 	for i in ROCK_COUNT:
 		# Along the hedges, spread down the Glenn, never in front of an opening.
 		var rock_z := HALF_Z - 4.0 - (i + 0.5) / ROCK_COUNT * (HALL_LENGTH - 10.0)
@@ -322,6 +331,7 @@ func _add_path_things(rng: RandomNumberGenerator) -> void:
 		var rock := Props.rock(rng, width, height)
 		rock.position = Vector3(rock_side * (INNER_X - 1.1 - fmod(i * 0.618, 1.0) * 1.2), 0, rock_z)
 		_add(rock)
+		_interests.append(rock.position)
 
 
 # Ferns, toadstools and pumpkins at the foot of the hedges, and bushes outside them.
@@ -343,6 +353,8 @@ func _add_undergrowth(rng: RandomNumberGenerator) -> void:
 		made.position = Vector3(x, 0, z)
 		made.rotation.y = rng.randf() * TAU
 		_add(made)
+		if roll >= 0.6:
+			_interests.append(made.position) # Toadstools and pumpkins, not ferns.
 	# A little pile of pumpkins by each open gate, like a harvest welcome.
 	for opening in _openings:
 		if not opening.is_open():

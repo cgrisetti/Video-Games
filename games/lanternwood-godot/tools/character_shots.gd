@@ -89,16 +89,36 @@ func _gnome_shots() -> Array:
 
 func _fox_shots() -> Array:
 	var fox: CharacterBody3D = _glen.fox
+	fox.brain = null # Pose it by hand for the photos.
+	var spot: Vector3 = fox.global_position
+	_glen.gnome.place(spot + Vector3(-1.6, 0.0, 2.2), PI * 0.8) # Off to one side, for scale.
+	var run := func(how_fast: float, seconds: float) -> void:
+		fox.place(spot, 0.0)
+		fox.set_pose("stand")
+		fox.walk_to(spot + Vector3(0, 0, -40), how_fast)
+		await _seconds(seconds)
+	var hold := func(pose: String, seconds: float) -> void:
+		fox.place(spot, PI * 0.5)
+		fox.hold()
+		fox.set_pose(pose)
+		fox.look_toward(_glen.gnome.global_position + Vector3(0, 1.0, 0))
+		await _seconds(seconds)
 	return [
-		["standing, from the front", [0.0, 3.0, 1.2, 0.7], func() -> void: await _seconds(0.5)],
-		["from the side", [PI * 0.5, 3.4, 1.0, 0.7], func() -> void: await _seconds(0.3)],
-		["from behind", [PI * 0.85, 3.4, 1.8, 0.7], func() -> void: await _seconds(0.3)],
-		["with the gnome", [PI * 0.6, 5.0, 2.0, 0.8], func() -> void: await _seconds(0.3)],
-		["trotting", [PI * 0.5, 3.6, 1.0, 0.7], func() -> void:
-			Input.action_press("move_forward")
-			await _seconds(0.9)
-			Input.action_release("move_forward")],
-		["after a while", [PI * 0.3, 3.4, 1.4, 0.6], func() -> void: await _seconds(6.0)],
+		["standing, from the front", [0.0, 3.4, 1.2, 0.8], func() -> void: await hold.call("stand", 1.0)],
+		["from the side, with the gnome", [PI * 0.5, 4.6, 1.3, 0.8], func() -> void: await _seconds(0.2)],
+		["from behind", [PI * 0.85, 3.6, 1.8, 0.7], func() -> void: await _seconds(0.2)],
+		["trotting", [PI * 0.5, 4.0, 1.0, 0.7], func() -> void: await run.call(fox.TROT_SPEED, 1.3)],
+		["galloping", [PI * 0.45, 5.0, 1.0, 0.7], func() -> void: await run.call(fox.GALLOP_SPEED, 1.6)],
+		["sitting", [PI * 0.25, 3.4, 1.2, 0.7], func() -> void: await hold.call("sit", 1.5)],
+		["lying down", [PI * 0.3, 3.4, 1.4, 0.4], func() -> void: await hold.call("lie", 1.8)],
+		["play bow", [PI * 0.25, 3.4, 1.0, 0.5], func() -> void:
+			fox.wag(1.0)
+			await hold.call("bow", 1.2)
+			fox.wag(0.0)],
+		["pouncing", [PI * 0.5, 4.4, 1.2, 0.8], func() -> void:
+			await hold.call("stand", 0.6)
+			fox.pounce(spot + Vector3(0, 0, -2.4))
+			await _seconds(fox.POUNCE.crouch + fox.POUNCE.leap * 0.55)],
 	]
 
 

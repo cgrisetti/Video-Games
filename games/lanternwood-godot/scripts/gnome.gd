@@ -171,6 +171,10 @@ func is_waving() -> bool:
 	return _wave >= 0.0
 
 
+func is_swinging() -> bool:
+	return _swing >= 0.0
+
+
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
