@@ -450,6 +450,8 @@ func _process(delta: float) -> void:
 			_caught(worm)
 		if not worm.is_dazed():
 			nearest = minf(nearest, worm.head_position.distance_to(middle))
+		if not finished and ready and not hold_worms and worm.notice(worm.head_position.distance_to(middle)):
+			Sound.play_alert(worm.head_position) # "!": it's seen you.
 	# Music: the danger layer swells as the nearest wide-awake worm creeps closer.
 	Sound.set_danger(0.0 if finished else 1.0 - smoothstep(DANGER_NEAR, DANGER_FAR, nearest))
 

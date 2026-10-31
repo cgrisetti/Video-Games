@@ -144,9 +144,9 @@ func _run() -> void:
 	# A finale that flows (upgrade 3): the fox lopes ahead at your pace, and waits if you fall behind.
 	gnome.place(fox.global_position + Vector3(1.0, 0, 1.0), 0.0)
 	var fox_from: Vector3 = fox.global_position
-	await _seconds(1.0)
+	await _seconds(2.0) # (It may have to turn round first.)
 	var moved: float = Vector2(fox.global_position.x - fox_from.x, fox.global_position.z - fox_from.z).length()
-	_check("the fox lopes ahead toward it (%.1f m in a second)" % moved, moved > 3.0 or Vector2(golden.position.x - fox.global_position.x, golden.position.z - fox.global_position.z).length() < 2.5)
+	_check("the fox lopes ahead toward it (%.1f m in 2 seconds)" % moved, moved > 5.0 or Vector2(golden.position.x - fox.global_position.x, golden.position.z - fox.global_position.z).length() < 2.5)
 	var beam: Node = golden.get_node_or_null("Sunbeam")
 	_check("and a shaft of sunlight rises over it", beam != null and beam.mesh.height > 20.0)
 	var time_before: float = _game.elapsed
@@ -184,6 +184,8 @@ func _run() -> void:
 			bonked = true
 			break
 	_check("a swing that catches a worm's head stuns it", bonked)
+	await _frames(2)
+	_check("stars circle its head while it's dazed, and it looks crosser", worm._stars.visible and worm.bonks == 1 and worm._brows[0].visible)
 	_check("and it'll get up 5%% faster (%.2f → %.2f m/s)" % [speed_before, worm.top_speed], absf(worm.top_speed - speed_before * 1.05) < 0.01)
 	gnome.place(Vector3(0, field.floor_at(0, 4) + 0.05, 4), PI)
 	_game.hold_worms = true # Hold the other worms still while we wait (the dazed one's clock still runs).
@@ -193,8 +195,10 @@ func _run() -> void:
 
 	# The danger music, then being caught.
 	var near: Vector3 = worm.head_position
+	worm._locked = false
 	gnome.place(Vector3(near.x + 2.0, field.floor_at(near.x + 2.0, near.z) + 0.05, near.z), 0.0)
 	await _frames(2)
+	_check("a worm that notices you pops a \"!\" over its head (upgrade 5)", worm.is_alerting() and worm._alert.visible)
 	_check("the danger music swells when a worm is close", root.get_node("Sound")._danger_goal > 0.5)
 	for i in 30:
 		gnome.place(Vector3(worm.head_position.x, field.floor_at(worm.head_position.x, worm.head_position.z) + 0.05, worm.head_position.z), 0.0)

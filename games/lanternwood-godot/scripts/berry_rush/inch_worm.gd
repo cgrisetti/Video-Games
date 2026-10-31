@@ -8,6 +8,9 @@ extends Node3D
 # with the stick rolls it onto its side with ✕ eyes for a while; it gets up a little faster.
 # Its body is one smooth, striped tube (red at the head to violet at the tail), rebuilt every
 # frame to follow its arch.
+# You can read what it's up to: when it first notices you, a "!" pops over its head and its eyes go
+# wide; bonked, stars circle its head; and each bonk makes it visibly crosser (angry brows, slanting
+# more each time), since each one makes it a little faster.
 
 const LENGTH := 3.0
 const BUNCHED := LENGTH * 0.35 # How close the tail gets to the head when the body arches.
@@ -18,6 +21,9 @@ const STUN_TIME := 5.0 # Seconds it lies dazed after a bonk.
 const STUN_SPEEDUP := 1.05 # Each bonk makes it 5% faster...
 const ROLL_SPEED := (PI / 2.0) / 0.25 # It takes a quarter of a second to roll onto its side.
 const COLORS := [Color("#ff3b30"), Color("#ff9500"), Color("#ffdd00"), Color("#34c759"), Color("#1e90ff"), Color("#5856d6"), Color("#af52de")]
+const NOTICE := 9.0 # It locks on to the gnome this close...
+const FORGET := 12.0 # ...and loses interest past this.
+const ALERT_TIME := 1.0
 const RINGS := 64 # Rings round the body, for a smooth tube.
 const SIDES := 12
 
@@ -29,6 +35,7 @@ var head := Vector3.ZERO # Where each end touches the ground.
 var tail := Vector3.ZERO
 var stun_time := 0.0
 var head_position := Vector3.ZERO # The middle of its head, where it catches and gets bonked.
+var bonks := 0 # How many times it's been bonked this round.
 
 var _stretching := false
 var _from := Vector3.ZERO
@@ -44,6 +51,12 @@ var _indices := PackedInt32Array()
 var _head_pivot: Node3D
 var _eyes: Array[Node3D] = []
 var _crosses: Array[Node3D] = []
+var _brows: Array[Node3D] = []
+var _alert: Label3D
+var _alert_time := -1.0
+var _locked := false
+var _stars: Node3D
+var _time := 0.0
 
 
 func _ready() -> void:
@@ -72,6 +85,9 @@ func place(at_head: Vector3, at_tail: Vector3, speed: float, fastest: float) -> 
 	max_speed = fastest
 	stun_time = 0.0
 	_roll = 0.0
+	bonks = 0
+	_locked = false
+	_alert_time = -1.0
 	_stretching = true # So its first step pulls the tail up.
 	_start_step()
 	_shape()
@@ -83,6 +99,26 @@ func stun() -> void:
 	var across := Vector3(head.z - tail.z, 0, -(head.x - tail.x))
 	_roll_side = -1.0 if (target.global_position - head).dot(across) > 0.0 else 1.0
 	top_speed = minf(top_speed * STUN_SPEEDUP, max_speed)
+	bonks += 1
+
+
+# Is the gnome near enough to notice? Returns true the moment it first locks on (for the "!").
+func notice(distance: float) -> bool:
+	if is_dazed():
+		return false
+	if not _locked and distance < NOTICE:
+		_locked = true
+		_alert_time = 0.0
+		_alert.visible = true
+		_alert.scale = Vector3.ONE * 0.01
+		return true
+	if _locked and distance > FORGET:
+		_locked = false
+	return false
+
+
+func is_alerting() -> bool:
+	return _alert_time >= 0.0
 
 
 func update(delta: float, moving: bool) -> void:
@@ -94,6 +130,29 @@ func update(delta: float, moving: bool) -> void:
 		eye.visible = not dazed
 	for cross in _crosses:
 		cross.visible = dazed
+	_time += delta
+	# The "!" pops up, bobs, and fades; the eyes go wide while it shows.
+	var wide := 1.0
+	if _alert_time >= 0.0:
+		_alert_time += delta
+		var t := _alert_time / ALERT_TIME
+		_alert.visible = true
+		_alert.scale = Vector3.ONE * (minf(t * 6.0, 1.0) * (1.0 + 0.25 * sin(minf(t * 6.0, 1.0) * PI)))
+		_alert.modulate.a = 1.0 - smoothstep(0.7, 1.0, t)
+		_alert.outline_modulate.a = _alert.modulate.a
+		wide = 1.0 + 0.4 * sin(clampf(t, 0.0, 1.0) * PI)
+		if t >= 1.0:
+			_alert_time = -1.0
+			_alert.visible = false
+	for eye in _eyes:
+		eye.scale = Vector3.ONE * wide
+	# Stars circle its head while it's dazed.
+	_stars.visible = stun_time > 0.0
+	_stars.rotation.y = _time * 4.0
+	# Crosser with every bonk.
+	for i in _brows.size():
+		_brows[i].visible = bonks > 0
+		_brows[i].rotation.z = (1.0 if i == 0 else -1.0) * minf(0.3 + 0.12 * bonks, 0.75)
 	if moving and not dazed:
 		_step_time += delta
 		var progress := minf(_step_time / _step_duration, 1.0)
@@ -191,6 +250,8 @@ func _shape() -> void:
 	head_position = centers[RINGS - 1] + Vector3(0, RADIUS * 0.25, 0)
 	_head_pivot.global_position = head_position
 	_head_pivot.global_rotation = Vector3(0, facing, -_roll_side * _roll)
+	_alert.global_position = head_position + Vector3(0, 0.75, 0)
+	_stars.global_position = head_position + Vector3(0, 0.45, 0)
 
 
 func _build_body(centers: PackedVector3Array) -> void:
@@ -248,3 +309,32 @@ func _build_face() -> void:
 		cross.visible = false
 		_head_pivot.add_child(cross)
 		_crosses.append(cross)
+		var brow := Node3D.new()
+		brow.position = Vector3(side * 0.12, 0.22, 0.24)
+		brow.add_child(Art.box(Vector3(0.15, 0.035, 0.035), black))
+		brow.visible = false
+		_head_pivot.add_child(brow)
+		_brows.append(brow)
+	# The "!" when it notices you.
+	_alert = Art.label("!", 200, Color("#ffd23f"))
+	_alert.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_alert.outline_size = 28
+	_alert.outline_modulate = Color("#7a2a10")
+	_alert.no_depth_test = true
+	_alert.alpha_cut = Label3D.ALPHA_CUT_DISABLED
+	_alert.pixel_size = 0.005
+	_alert.top_level = true
+	_alert.visible = false
+	add_child(_alert)
+	# Stars, circling when it's dazed.
+	_stars = Node3D.new()
+	_stars.top_level = true
+	add_child(_stars)
+	var star_mesh := SphereMesh.new()
+	star_mesh.radius = 0.06
+	star_mesh.height = 0.12
+	star_mesh.radial_segments = 5
+	star_mesh.rings = 2
+	for i in 3:
+		var star := Art.instance(star_mesh, Art.glow_material(Color("#ffe27a"), 2.5), Vector3(cos(TAU * i / 3.0) * 0.32, 0.0, sin(TAU * i / 3.0) * 0.32), false)
+		_stars.add_child(star)

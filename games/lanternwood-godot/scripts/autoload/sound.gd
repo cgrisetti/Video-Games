@@ -33,6 +33,7 @@ var _berry_pops: Array[AudioStreamWAV] = []
 var _golden_pop: AudioStreamWAV
 var _bonk: AudioStreamWAV
 var _chomp: AudioStreamWAV
+var _alert: AudioStreamWAV
 var _places: Array[AudioStreamPlayer3D] = []
 var _together: AudioStreamSynchronized
 var _danger := 0.0
@@ -79,6 +80,10 @@ func _ready() -> void:
 	chomp.append({"type": "tone", "from": 520.0, "to": 150.0, "glide": 0.2, "attack": 0.02, "decay": 0.24, "gain": 0.4, "at": 0.55}) # ...then a gulp.
 	chomp.append({"type": "tone", "from": 260.0, "to": 75.0, "glide": 0.2, "attack": 0.02, "decay": 0.24, "gain": 0.3, "at": 0.55})
 	_chomp = _render(1.0, chomp)
+	_alert = _render(0.35, [ # A worm noticing you: a quick, curious "boop-boop?" going up.
+		{"type": "tone", "from": 520.0, "to": 700.0, "glide": 0.03, "attack": 0.005, "decay": 0.09, "gain": 0.3},
+		{"type": "tone", "from": 700.0, "to": 1040.0, "glide": 0.05, "attack": 0.005, "decay": 0.12, "gain": 0.3, "at": 0.11},
+	])
 	Settings.changed.connect(_on_setting)
 	_play_music()
 	_apply_volumes()
@@ -111,6 +116,11 @@ func play_berry(number: int, golden: bool) -> void:
 # The stick bonking an inch worm on the head, from where it happened.
 func play_bonk(at: Vector3) -> void:
 	play_at(_bonk, at)
+
+
+# An inch worm noticing the gnome.
+func play_alert(at: Vector3) -> void:
+	play_at(_alert, at)
 
 
 # An inch worm catching the gnome: two hungry chomps, then a gulp.
