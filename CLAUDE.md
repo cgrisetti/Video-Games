@@ -17,7 +17,7 @@ A playground for building small 3D browser games together by prompting Claude. T
 
 ## Lanternwood in Godot
 
-`games/lanternwood-godot/` is the next version of Lanternwood, being rebuilt in [Godot 4.5](https://docs.godotengine.org/en/stable/) (GDScript) with a richer, real-light look. It's a separate project: it doesn't use Vite, three.js or the launcher page, and the three.js version stays as it is until everything has moved over. So far it has the Glenn, the gnome and fox, and the menus; the mini-games are next.
+`games/lanternwood-godot/` is the next version of Lanternwood, being rebuilt in [Godot 4.5](https://docs.godotengine.org/en/stable/) (GDScript) with a richer, real-light look. It's a separate project: it doesn't use Vite, three.js or the launcher page, and the three.js version stays as it is until everything has moved over. So far it has the Glenn, the gnome and fox, the menus, and Berry Rush (`scripts/berry_rush/`, checked by `tools/berry_rush_test.gd`); Gnome Crossing and the Bramble Maze are next.
 
 - Read its `README.md` (layout) and `STYLE_GUIDE.md` (the look) before changing it.
 - Scenes (`scenes/*.tscn`) hold what's worth placing by hand in the editor (openings, sun, sky, characters). Scenery that repeats (hedges, trees, grass, lanterns) is grown in code by the builders in `scripts/world/`, which are `@tool` scripts so the editor shows it too.
