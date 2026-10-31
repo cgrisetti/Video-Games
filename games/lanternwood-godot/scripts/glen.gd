@@ -29,12 +29,16 @@ const FINGERPOST_BEFORE := 2.6 # How far before each game's side path its finger
 const WOODS_REACH := 46.0 # How far out the woods go.
 const WORLD_SIZE := 130.0 # The ground's width.
 const SEED := 23 # Change for a different arrangement of trees, rocks and flowers.
-# How much grows, for each graphics setting.
+const LEAF_SHADOWS_WITHIN := 9.0 # Trees further back than this from the hedges don't cast leafy shadows (only on other trees, deep in the haze).
+# How much grows, for each graphics setting, and how many pixels the 3D is drawn with ("pixels",
+# in millions). A bigger window or full screen draws the 3D at about that many pixels and scales it
+# up smoothly (MetalFX on a Mac, FSR elsewhere); the menus and text are always drawn sharp.
 const DETAIL := {
-	"low": {"grass": 14000, "flowers": 120, "fireflies": 40, "leaves": 20, "woods": 0.6},
-	"medium": {"grass": 40000, "flowers": 260, "fireflies": 80, "leaves": 40, "woods": 0.85},
-	"high": {"grass": 80000, "flowers": 420, "fireflies": 140, "leaves": 70, "woods": 1.0},
+	"low": {"grass": 14000, "flowers": 120, "fireflies": 40, "leaves": 20, "woods": 0.6, "pixels": 1.2},
+	"medium": {"grass": 40000, "flowers": 260, "fireflies": 80, "leaves": 40, "woods": 0.85, "pixels": 1.6},
+	"high": {"grass": 80000, "flowers": 420, "fireflies": 140, "leaves": 70, "woods": 1.0, "pixels": 1.8},
 }
+const SMALLEST_SCALE := 0.5 # Never draw the 3D at less than half the window's size.
 
 # The games, as the openings describe them.
 const GAMES := {
@@ -92,6 +96,7 @@ func _ready() -> void:
 	fox.brain.interests = _interests
 	camera_rig.target = gnome
 	Settings.changed.connect(func(name: String) -> void: if name == "graphics": apply_graphics(true))
+	get_viewport().size_changed.connect(_fit_resolution)
 	apply_graphics(false)
 
 
@@ -212,7 +217,7 @@ func _grow_grass(detail: Dictionary) -> void:
 	# Most of the grass goes inside the Glenn, where you walk; the rest out round the edges.
 	var inside: int = int(detail.grass * 0.65)
 	var tufts := Meadow.grass(inside, Rect2(-HALF_X, -HALF_Z, HALL_WIDTH, HALL_LENGTH), rng, _grass_weight, ground_height)
-	tufts.append_array(Meadow.grass(detail.grass - inside, Rect2(-HALF_X - 14.0, -HALF_Z - 14.0, HALL_WIDTH + 28.0, HALL_LENGTH + 28.0), rng, _grass_weight, ground_height))
+	tufts.append_array(Meadow.grass(detail.grass - inside, Rect2(-HALF_X - 14.0, -HALF_Z - 14.0, HALL_WIDTH + 28.0, HALL_LENGTH + 28.0), rng, _grass_weight, ground_height, tufts[0].material_override))
 	for tuft in tufts:
 		_add(tuft)
 	_grass_patches.assign(tufts)
@@ -284,6 +289,10 @@ func _add_woods(rng: RandomNumberGenerator, amount: float) -> void:
 			var made := Foliage.tree(kind, rng, size, palette)
 			made.position = Vector3(x, ground_height(x, z) - 0.1, z)
 			made.rotation.y = rng.randf() * TAU
+			if back > LEAF_SHADOWS_WITHIN:
+				for part: GeometryInstance3D in made.find_children("*", "GeometryInstance3D", false, false):
+					if part.material_override is ShaderMaterial and part.material_override.shader == Art.LEAVES_SHADER:
+						part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			_add(made)
 
 
@@ -398,15 +407,37 @@ func apply_graphics(regrow: bool) -> void:
 	env.glow_enabled = true
 	env.sdfgi_enabled = false # Lovely, but too slow for the size of the woods.
 	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 80.0 if level == "high" else (55.0 if level == "medium" else 35.0)
-	RenderingServer.directional_shadow_atlas_set_size(4096 if level == "high" else 2048, true)
-	get_viewport().msaa_3d = Viewport.MSAA_4X if level == "high" else (Viewport.MSAA_2X if level == "medium" else Viewport.MSAA_DISABLED)
+	# The shadow map is shared out over the shadow distance, so a shorter distance keeps shadows sharp
+	# near the gnome without the cost of a bigger map.
+	sun.directional_shadow_max_distance = 65.0 if level == "high" else (50.0 if level == "medium" else 35.0)
+	RenderingServer.directional_shadow_atlas_set_size(2048, true)
+	# 2× smoothing on the edges (4× cost a quarter of the frame for little difference you can see),
+	# plus the screen-wide smoothing pass set in project.godot.
+	get_viewport().msaa_3d = Viewport.MSAA_DISABLED if level == "low" else Viewport.MSAA_2X
+	_fit_resolution()
 	if regrow:
 		_grow_grass(DETAIL[level])
 		for child in _air.get_children():
 			child.queue_free()
 		_air.add_child(Atmosphere.fireflies(DETAIL[level].fireflies))
 		_air.add_child(Atmosphere.falling_leaves(DETAIL[level].leaves))
+
+
+# Draw the 3D at about the graphics setting's pixel count, and scale it up to fill the window.
+func _fit_resolution() -> void:
+	if Engine.is_editor_hint():
+		return
+	var viewport := get_viewport()
+	var window := DisplayServer.window_get_size()
+	var pixels := float(window.x * window.y) / 1e6
+	var scale := clampf(sqrt(DETAIL[_graphics()].pixels / maxf(pixels, 0.01)), SMALLEST_SCALE, 1.0)
+	viewport.scaling_3d_scale = scale
+	if scale > 0.99:
+		viewport.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR # Full size: nothing to scale.
+	elif RenderingServer.get_current_rendering_driver_name() == "metal":
+		viewport.scaling_3d_mode = Viewport.SCALING_3D_MODE_METALFX_SPATIAL
+	else:
+		viewport.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR
 
 
 # --- Every frame ---

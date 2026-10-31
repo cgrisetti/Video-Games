@@ -46,6 +46,11 @@ static func lantern(cast_shadows := false) -> Node3D:
 	light.omni_attenuation = 1.4
 	light.light_volumetric_fog_energy = 2.0
 	light.shadow_enabled = cast_shadows
+	# Far-off lanterns stop lighting things (their glowing globes still show), shadows sooner.
+	light.distance_fade_enabled = true
+	light.distance_fade_begin = 32.0
+	light.distance_fade_shadow = 22.0
+	light.distance_fade_length = 8.0
 	light.position = hang
 	root.add_child(light)
 	root.set_meta("light", light)

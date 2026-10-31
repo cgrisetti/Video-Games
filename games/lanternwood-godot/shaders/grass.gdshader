@@ -26,8 +26,11 @@ void vertex() {
 	away.y = 0.0;
 	float near = 1.0 - smoothstep(0.0, part_radius, length(away));
 	push += normalize(away + vec3(0.001, 0.0, 0.0)) * near * 0.8;
-	// Push in world space, turned into the blade's own space.
-	vec3 local_push = (inverse(MODEL_MATRIX) * vec4(push, 0.0)).xyz;
+	// Push in world space, turned into the blade's own space. Each tuft is only turned and scaled, so
+	// that's its matrix flipped and divided by the scale squared (much cheaper than a full inverse).
+	mat3 turn = mat3(MODEL_MATRIX);
+	vec3 scale_squared = vec3(dot(turn[0], turn[0]), dot(turn[1], turn[1]), dot(turn[2], turn[2]));
+	vec3 local_push = (transpose(turn) * push) / scale_squared;
 	VERTEX += local_push * bend;
 	VERTEX.y -= length(push) * bend * 0.25;
 }

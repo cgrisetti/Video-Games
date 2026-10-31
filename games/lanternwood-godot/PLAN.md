@@ -151,9 +151,24 @@ look the same.
 ## Status
 
 - [x] Analysis and measurements
-- [ ] 1. ✕ button
-- [ ] 2. Gnome
-- [ ] 2. Fox look and animations
-- [ ] 3. Fox behaviour
-- [ ] 4. Speed
-- [ ] Final checks and docs
+- [x] 1. ✕ button: `ui_accept` and `ui_cancel` now include ✕ and ○; the smoke test drives the menus by controller.
+- [x] 2. Gnome: rebuilt, with idle, run, jump, swing, wave and fidgets; stick in his right hand.
+- [x] 2. Fox look and animations: oversized, two-bone legs, walk/trot/gallop, sit, lie, sniff, bow, pounce, pant.
+- [x] 3. Fox behaviour: `scripts/fox_brain.gd`; `tools/fox_walk.gd` checks its rules (8 of 8 runs passed).
+- [x] 4. Speed (fps, standing at the start; before → after):
+
+| | Window 1600×900 | Full screen 3420×2146 |
+|---|---|---|
+| High | 20 → 34 | 8 → 27 |
+| Medium | 25 → 45 | 13 → 35 |
+| Low | 53 → 60 | 19 → 50 |
+
+  High missed the 40 / 30 targets by a few frames. What's left costs the look itself (shadows,
+  grass, edge smoothing), so it stopped there.
+- [x] Final checks and docs
+
+Also fixed along the way: tube shapes (hat, tunic, tree trunks) were built inside out; changing
+Graphics left the old grass behind; Forward+ is now the project's renderer.
+
+Known: the first time something new comes into view (the far grass, a fox pose), Godot builds its
+shader and there can be one short hitch. Godot keeps them, so it's smoother the next time.

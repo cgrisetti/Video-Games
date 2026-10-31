@@ -97,6 +97,16 @@ Everything alive moves a little, all the time, and nothing moves fast unless it'
 - Chunky storybook proportions: big head and hat, short legs, readable from behind at camera distance.
 - Rounded, soft shapes with a gentle **rim light** so they stand out from the greenery.
 - One strong colour each (the gnome's red hat, the fox's orange) that nothing else in the scene competes with.
+- Built on a skeleton of pivots (hips, spine, neck, head; shoulders, elbows, knees), so they bend
+  like living things. Every move is made in code, in `scripts/gnome.gd` and `scripts/fox.gd`.
+- Clothes, hair and fur use `shaders/cloth.gdshader` (felt, knitted wool, hair strands or leather),
+  through `Art.cloth_material()`, so they have texture up close and a soft glow at the edges.
+- The fox is big: its head is above the gnome's. It has a kind face: soft round eyes with a
+  sparkle, cream cheeks, a rounded snout.
+- Soft bits follow through: the gnome's hat tip and beard, the fox's tail. They're springs that
+  lag behind each move and settle.
+- The fox has a mind of its own (`scripts/fox_brain.gd`). It follows loosely, wanders off to
+  sniff things, sits, lies down, pounces and plays. It never hides the gnome from the camera.
 
 ## Camera
 
@@ -131,9 +141,22 @@ Lanternwood should look like itself on every setting; Low is simpler, not differ
 | Trees | 60% | 85% | all |
 | Haze (volumetric fog) | off | on | on |
 | Ambient occlusion / bounce light | off / off | on / off | on / on |
-| Anti-aliasing | off | 2× | 4× |
+| Anti-aliasing | off | 2× | 2× |
+| Shadow distance | 35 m | 50 m | 65 m |
+| 3D drawn at about | 1.2 million pixels | 1.6 million | 1.8 million |
 
-Numbers are in `Glen.DETAIL` and `Glen.apply_graphics()`.
+Numbers are in `Glen.DETAIL` and `Glen.apply_graphics()`. Also, on every setting:
+
+- **The 3D is drawn at a capped size and scaled up** (MetalFX on a Mac, FSR elsewhere) when the
+  window is bigger than that; menus and text are always sharp. A 1600×900 window is drawn at full
+  size; full screen on a Retina display is drawn at about half and scaled up.
+- **Grass has two levels of detail:** full five-blade tufts within 22 m of the camera, and fewer,
+  simpler three-blade tufts out to 58 m, where the haze hides the rest (`Meadow.GRASS_NEAR` and `GRASS_FAR`).
+- **Trees deep in the woods** (more than 9 m back from the hedges) don't cast leafy shadows; theirs
+  only fell on other trees in the haze.
+- **Far lanterns** stop lighting things past about 32 m; their globes still glow.
+
+Check any change that might cost frames with `tools/benchmark.gd` (see the README).
 
 ## Adding something new: a checklist
 

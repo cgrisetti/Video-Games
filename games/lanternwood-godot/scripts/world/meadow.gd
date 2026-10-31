@@ -8,6 +8,10 @@ extends RefCounted
 const GROUND_SHADER := preload("res://shaders/ground.gdshader")
 const GRASS_SHADER := preload("res://shaders/grass.gdshader")
 const MASK_PIXELS := 512
+const GRASS_PATCH := 6.0 # Grass is grown in patches this many metres across, so far ones can be simpler.
+const GRASS_NEAR := 22.0 # Full tufts out to here from the camera; simpler, sparser ones beyond.
+const GRASS_FAR := 58.0 # Past here the haze hides it, so it isn't drawn.
+const FAR_KEEP := 0.7 # The share of tufts kept in the far patches (they're drawn a little wider).
 const BLOSSOM_COLORS := [Color("#f6f1e4"), Color("#f2d24b"), Color("#b79be0"), Color("#e98aa0"), Color("#f39a4a")]
 
 
@@ -65,14 +69,18 @@ static func ground(size: float, mask: ImageTexture, flat_within: Callable) -> Me
 
 # Grass tufts scattered over the meadow. `spot_weight(x, z)` says how thick the grass is at a spot
 # (0 none, 1 full height), so it thins out along the paths. `height_at(x, z)` is the ground height.
-static func grass(count: int, area: Rect2, rng: RandomNumberGenerator, spot_weight: Callable, height_at: Callable) -> Array[MultiMeshInstance3D]:
+# Each patch is grown twice: full five-blade tufts for close up, and a sparser set of simpler
+# three-blade tufts for further away. Godot swaps between them by distance from the camera, so the
+# GPU isn't drawing millions of tiny blades that are only a pixel wide.
+static func grass(count: int, area: Rect2, rng: RandomNumberGenerator, spot_weight: Callable, height_at: Callable, material: ShaderMaterial = null) -> Array[MultiMeshInstance3D]:
 	var tufts: Array[MultiMeshInstance3D] = []
-	var material := ShaderMaterial.new()
-	material.shader = GRASS_SHADER
-	# Split into patches, so the ones out of view aren't drawn.
-	var patches := 6
+	if material == null:
+		material = ShaderMaterial.new()
+		material.shader = GRASS_SHADER
+	var columns := maxi(1, ceili(area.size.x / GRASS_PATCH))
+	var rows := maxi(1, ceili(area.size.y / GRASS_PATCH))
 	var transforms := []
-	for i in patches * patches:
+	for i in columns * rows:
 		transforms.append([])
 	var attempts := count * 2
 	var placed := 0
@@ -86,31 +94,57 @@ static func grass(count: int, area: Rect2, rng: RandomNumberGenerator, spot_weig
 			continue
 		var height := rng.randf_range(0.6, 1.25) * lerpf(0.4, 1.0, weight)
 		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(1.0, height, 1.0) * rng.randf_range(0.85, 1.2))
-		var cell_x := clampi(int((x - area.position.x) / area.size.x * patches), 0, patches - 1)
-		var cell_z := clampi(int((z - area.position.y) / area.size.y * patches), 0, patches - 1)
-		transforms[cell_z * patches + cell_x].append(Transform3D(basis, Vector3(x, height_at.call(x, z), z)))
+		var cell_x := clampi(int((x - area.position.x) / GRASS_PATCH), 0, columns - 1)
+		var cell_z := clampi(int((z - area.position.y) / GRASS_PATCH), 0, rows - 1)
+		transforms[cell_z * columns + cell_x].append(Transform3D(basis, Vector3(x, height_at.call(x, z), z)))
 		placed += 1
-	var mesh := _tuft_mesh()
+	var near_mesh := _tuft_mesh(5, 4)
+	var far_mesh := _tuft_mesh(3, 2)
 	for list in transforms:
 		if list.is_empty():
 			continue
-		var multimesh := MultiMesh.new()
-		multimesh.transform_format = MultiMesh.TRANSFORM_3D
-		multimesh.use_custom_data = true
-		multimesh.mesh = mesh
-		multimesh.instance_count = list.size()
+		var dryness := []
 		for k in list.size():
-			multimesh.set_instance_transform(k, list[k])
-			var dry := clampf(rng.randf() * rng.randf() * 1.3, 0.0, 1.0)
-			multimesh.set_instance_custom_data(k, Color(dry, 0, 0, 0))
-		var made := MultiMeshInstance3D.new()
-		made.name = "Grass"
-		made.multimesh = multimesh
-		made.material_override = material
-		made.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		made.visibility_range_end = 70.0
-		tufts.append(made)
+			dryness.append(clampf(rng.randf() * rng.randf() * 1.3, 0.0, 1.0))
+		var near := _patch(near_mesh, list, dryness, 1.0)
+		near.material_override = material
+		near.visibility_range_end = GRASS_NEAR
+		near.visibility_range_end_margin = 2.0
+		tufts.append(near)
+		# The far set: every so often a tuft, a bit wider to fill the gaps.
+		var far_list := []
+		var far_dryness := []
+		for k in list.size():
+			if fmod(k * 0.618034, 1.0) < FAR_KEEP:
+				far_list.append(list[k])
+				far_dryness.append(dryness[k])
+		if far_list.is_empty():
+			continue
+		var far := _patch(far_mesh, far_list, far_dryness, 1.0 / sqrt(FAR_KEEP))
+		far.material_override = material
+		far.visibility_range_begin = GRASS_NEAR
+		far.visibility_range_begin_margin = 2.0
+		far.visibility_range_end = GRASS_FAR
+		tufts.append(far)
 	return tufts
+
+
+static func _patch(mesh: Mesh, transforms: Array, dryness: Array, widen: float) -> MultiMeshInstance3D:
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_custom_data = true
+	multimesh.mesh = mesh
+	multimesh.instance_count = transforms.size()
+	for k in transforms.size():
+		var placed: Transform3D = transforms[k]
+		placed.basis = placed.basis.scaled_local(Vector3(widen, 1.0, widen))
+		multimesh.set_instance_transform(k, placed)
+		multimesh.set_instance_custom_data(k, Color(dryness[k], 0, 0, 0))
+	var made := MultiMeshInstance3D.new()
+	made.name = "Grass"
+	made.multimesh = multimesh
+	made.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return made
 
 
 # Wildflowers dotted through the grass.
@@ -178,21 +212,20 @@ static func far_hills(inner: float, outer: float, seed: int) -> MeshInstance3D:
 	return made
 
 
-# One tuft: five blades, each a tapering strip that curves over a little toward its tip.
-static func _tuft_mesh() -> ArrayMesh:
+# One tuft: `blades` blades, each a tapering strip of `rows` pieces that curves over toward its tip.
+static func _tuft_mesh(blades: int, rows: int) -> ArrayMesh:
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	for blade in 5:
-		var angle := TAU * blade / 5.0 + rng.randf_range(-0.4, 0.4)
+	for blade in blades:
+		var angle := TAU * blade / blades + rng.randf_range(-0.4, 0.4)
 		var out := Vector3(cos(angle), 0, sin(angle))
 		var root := out * rng.randf_range(0.0, 0.07)
 		var side := out.cross(Vector3.UP).normalized()
 		var height := rng.randf_range(0.28, 0.42)
 		var lean := rng.randf_range(0.06, 0.16)
-		var width := rng.randf_range(0.025, 0.035)
-		var rows := 4
+		var width := rng.randf_range(0.025, 0.035) * (5.0 / blades) ** 0.5
 		var previous := []
 		for r in rows + 1:
 			var t := float(r) / rows

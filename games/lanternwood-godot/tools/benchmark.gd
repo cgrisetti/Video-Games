@@ -13,6 +13,7 @@ const WARM_UP := 3.0 # Seconds to let shaders compile before measuring.
 const SCENES := [["standing at the start", 4.0], ["walking up the Glenn", 7.0], ["turning to the woods", 4.0]]
 
 var _glen: Node3D
+var _menu: CanvasLayer
 var _viewport_rid: RID
 
 
@@ -39,6 +40,7 @@ func _run() -> void:
 	root.add_child(main)
 	await process_frame
 	main.menu.close()
+	_menu = main.menu
 	_glen = main.glen
 	if options.has("off"):
 		_switch_off(options.off.split(","))
@@ -50,6 +52,7 @@ func _run() -> void:
 	print("Lanternwood benchmark: graphics %s, %s, window %s (screen scale %.0f×), 3D drawn at %dx%d" % [graphics, RenderingServer.get_video_adapter_name(), DisplayServer.window_get_size(), DisplayServer.screen_get_scale(), roundi(DisplayServer.window_get_size().x * root.get_viewport().scaling_3d_scale), roundi(DisplayServer.window_get_size().y * root.get_viewport().scaling_3d_scale)])
 	await _seconds(WARM_UP)
 	if options.has("shot"): # --shot=path.png saves a picture of the start, to compare looks.
+		_menu.close()
 		await RenderingServer.frame_post_draw
 		root.get_viewport().get_texture().get_image().save_png(options.shot)
 
@@ -127,6 +130,7 @@ func _measure(seconds: float) -> Dictionary:
 	var last := start
 	while Time.get_ticks_usec() - start < seconds * 1e6:
 		await process_frame
+		_menu.close() # The game pauses itself if the window loses focus; keep it going.
 		var now := Time.get_ticks_usec()
 		frames.append((now - last) / 1000.0)
 		last = now
