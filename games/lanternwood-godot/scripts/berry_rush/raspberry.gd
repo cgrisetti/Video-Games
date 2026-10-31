@@ -3,7 +3,8 @@ extends RefCounted
 
 # Raspberries to pick: a plump cone of glossy little drupelets with a green leafy cap, and the
 # golden raspberry, the same berry in shining gold, bigger, with rays of sunshine fanning out
-# behind it and a warm glow lighting the ground round it. The meshes are built once and shared.
+# behind it, a warm glow lighting the ground round it, and a shaft of sunlight rising high above it
+# so you can see where it is from anywhere in the field. The meshes are built once and shared.
 
 const BERRY := Color("#c8255a")
 const GOLD := Color("#ffc23c")
@@ -44,6 +45,22 @@ static func make_golden() -> Node3D:
 	rays.material_override = shine
 	rays.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(rays)
+	var beam := MeshInstance3D.new()
+	beam.name = "Sunbeam"
+	var shaft := CylinderMesh.new()
+	shaft.top_radius = 1.3
+	shaft.bottom_radius = 0.55
+	shaft.height = 26.0
+	shaft.radial_segments = 20
+	shaft.cap_top = false
+	shaft.cap_bottom = false
+	beam.mesh = shaft
+	var sunlight := ShaderMaterial.new()
+	sunlight.shader = preload("res://shaders/sunbeam.gdshader")
+	beam.material_override = sunlight
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	beam.position.y = shaft.height / 2.0 - 0.4
+	root.add_child(beam)
 	var glow := OmniLight3D.new()
 	glow.light_color = Color("#ffd36b")
 	glow.light_energy = 2.5

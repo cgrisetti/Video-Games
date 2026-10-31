@@ -13,7 +13,7 @@ extends RefCounted
 #   greet   - bound over, sit and wag, when the gnome waves
 # and in Berry Rush, when the golden raspberry appears:
 #   point   - drop into a crouch and point its nose straight at it...
-#   lead    - ...then walk slowly toward it, to show the gnome the way
+#   lead    - ...then lope toward it, just ahead of the gnome, waiting if the gnome falls behind
 # A loose leash keeps it near: it's happy anywhere within LEASH metres of the gnome, heads back
 # beyond that, gallops back from further, and if it's ever left far behind (after a gate) it simply
 # reappears nearby. It keeps out of the camera's view of the gnome, and inside the Glenn.
@@ -26,12 +26,13 @@ const INTEREST_REACH := 11.0 # How far from the gnome something can be and still
 const PLAY_COOLDOWN := 9.0
 const POINT_TIME := 1.5 # Seconds it points at the golden raspberry before it leads the way.
 const LEAD_STOP := 1.8 # How close it walks up to the golden raspberry.
+const LEAD_WAIT := 7.0 # Leading the way, it waits for the gnome if it gets this far ahead.
 
 var fox: CharacterBody3D
 var gnome: CharacterBody3D
 var camera: Node3D
 var interests: Array[Vector3] = [] # Things worth sniffing.
-var lead_speed := 0.35 # How slowly it leads the way to the golden raspberry.
+var lead_speed := 6.0 # How fast it leads the way to the golden raspberry.
 
 var activity := "follow"
 var _time_left := 0.0 # How long the current activity goes on.
@@ -303,17 +304,24 @@ func _do_point(_delta: float, _away: float, _gnome_speed: float) -> void:
 	fox.wag(0.3)
 
 
-# Walk slowly toward it, nose first, and wait beside it.
-func _do_lead(_delta: float, _away: float, _gnome_speed: float) -> void:
-	fox.look_toward(_prize)
-	fox.wag(0.5)
-	if _flat(_prize - fox.global_position).length() > LEAD_STOP:
-		fox.set_pose("stalk")
-		fox.walk_to(_prize, lead_speed)
-	else:
+# Lope toward it, just ahead of the gnome. If the gnome falls behind, stop, look back and wag
+# until it catches up. At the golden raspberry, sit beside it.
+func _do_lead(_delta: float, away: float, _gnome_speed: float) -> void:
+	fox.wag(0.6)
+	if _flat(_prize - fox.global_position).length() <= LEAD_STOP:
 		fox.hold()
 		fox.face(_prize)
 		fox.set_pose("sit")
+		fox.look_toward(gnome.global_position + Vector3(0, 1.0, 0))
+	elif away > LEAD_WAIT:
+		fox.hold()
+		fox.face(gnome.global_position)
+		fox.set_pose("stand")
+		fox.look_toward(gnome.global_position + Vector3(0, 1.0, 0)) # "This way!"
+	else:
+		fox.set_pose("stand")
+		fox.walk_to(_prize, lead_speed)
+		fox.look_toward(_prize)
 
 
 func _on_waved() -> void:
