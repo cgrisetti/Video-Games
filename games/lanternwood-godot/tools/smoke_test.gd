@@ -81,6 +81,26 @@ func _run() -> void:
 	await _frames(2)
 	_check("Esc again closes it", not menu.is_open and not paused)
 
+	# The menus with a controller: D-pad to choose, ✕ to pick, ○ to go back.
+	var settings: Node = root.get_node("Settings")
+	_tap("pause")
+	await _frames(3)
+	await _press_button(JOY_BUTTON_DPAD_DOWN)
+	await _press_button(JOY_BUTTON_A)
+	_check("✕ opens Settings from the pause menu", menu._page == "settings")
+	var music_was: bool = settings.get_value("music_on")
+	await _press_button(JOY_BUTTON_A)
+	_check("✕ changes the chosen setting", settings.get_value("music_on") != music_was)
+	await _press_button(JOY_BUTTON_A)
+	await _press_button(JOY_BUTTON_B)
+	_check("○ goes back to the pause menu", menu._page == "main" and menu.is_open)
+	await _press_button(JOY_BUTTON_DPAD_UP)
+	var ground: float = gnome.global_position.y
+	await _press_button(JOY_BUTTON_A)
+	await _frames(6)
+	_check("✕ on Resume closes the menu", not menu.is_open and not paused)
+	_check("and the gnome doesn't jump as the game goes on", absf(gnome.global_position.y - ground) < 0.05)
+
 	root.get_node("Settings").set_value("graphics", "low")
 	await _frames(3)
 	_check("switching graphics to Low keeps the game running", is_instance_valid(glen) and glen._grass_material != null)
@@ -104,6 +124,15 @@ func _tap(action: String) -> void:
 	release.action = action
 	release.pressed = false
 	Input.parse_input_event(release)
+
+
+func _press_button(button: JoyButton) -> void:
+	for pressed in [true, false]:
+		var event := InputEventJoypadButton.new()
+		event.button_index = button
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		await _frames(2)
 
 
 func _frames(count: int) -> void:
