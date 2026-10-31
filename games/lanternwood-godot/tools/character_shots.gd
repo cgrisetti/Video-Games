@@ -9,6 +9,7 @@ const TILE := Vector2i(800, 500)
 const COLUMNS := 3
 
 var _glen: Node3D
+var _menu: CanvasLayer
 var _camera: Camera3D
 var _subject: Node3D
 var _view := [0.0, 2.6, 1.0, 0.8] # Around (radians from the front), distance, height, look-at height.
@@ -30,6 +31,7 @@ func _run() -> void:
 	root.add_child(main)
 	await process_frame
 	main.menu.close()
+	_menu = main.menu
 	main.hud.visible = false
 	_glen = main.glen
 	_glen.gnome.place(Vector3(_glen.path_x(26.0), 0.05, 26.0), PI * 0.85)
@@ -89,7 +91,9 @@ func _gnome_shots() -> Array:
 
 func _fox_shots() -> Array:
 	var fox: CharacterBody3D = _glen.fox
-	fox.brain = null # Pose it by hand for the photos.
+	fox.brain = null # Pose it by hand for the photos...
+	for i in 30:
+		fox.fade(false) # ...and solid, even if the brain had faded it.
 	var spot: Vector3 = fox.global_position
 	_glen.gnome.place(spot + Vector3(-1.6, 0.0, 2.2), PI * 0.8) # Off to one side, for scale.
 	var run := func(how_fast: float, seconds: float) -> void:
@@ -123,6 +127,8 @@ func _fox_shots() -> Array:
 
 
 func _process(_delta: float) -> bool:
+	if _menu and _menu.is_open:
+		_menu.close() # The game pauses itself if the window loses focus; keep it going.
 	if _camera and _subject:
 		var model: Node3D = _subject.get_node("Model")
 		var around: float = model.global_rotation.y + _view[0]

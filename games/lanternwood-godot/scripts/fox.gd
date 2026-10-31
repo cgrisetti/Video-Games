@@ -164,12 +164,15 @@ func wag(amount: float) -> void:
 
 # Let the camera see through it (it's in the way of the gnome).
 func fade(faded: bool) -> void:
-	var goal := 0.55 if faded else 0.0
+	var goal := 0.6 if faded else 0.0
 	if absf(goal - _see_through) < 0.01:
 		return
 	_see_through = move_toward(_see_through, goal, get_process_delta_time() * 3.0)
 	for mesh in _meshes:
-		mesh.transparency = _see_through
+		if mesh.material_override is ShaderMaterial and mesh.material_override.shader == FUR_SHADER:
+			mesh.set_instance_shader_parameter("fade", _see_through) # A stipple (see fur.gdshader).
+		else:
+			mesh.transparency = _see_through
 
 
 func pounce(at: Vector3) -> bool:
@@ -294,6 +297,7 @@ func _process(delta: float) -> void:
 	_update_legs(delta)
 	_update_head(delta)
 	_update_tail(delta)
+	_pose_skeleton()
 
 
 func _update_posture(delta: float) -> void:
@@ -487,92 +491,131 @@ static func _damp(from: float, to: float, sharpness: float, delta: float) -> flo
 
 
 # --- The model ---
+# One seamless skin (models/fox_body.res, baked from fox_shape.gd by tools/make_fox.gd) wrapped
+# over a Godot Skeleton3D. The animation above moves a tree of pivots; every frame the skeleton's
+# bones copy them, and the skin bends with the bones. Only the eyes, nose and tongue are separate.
+
+const BODY_MESH := "res://models/fox_body.res"
+const JAW_MESH := "res://models/fox_jaw.res"
+const FUR_SHADER := preload("res://shaders/fur.gdshader")
+
+var _bones: Array[Node3D] = [] # The pivots, in the skeleton's order (FoxShape.BONES).
+var _skeleton: Skeleton3D
+
 
 func _build_model() -> void:
-	# Strands where fur hangs or runs along a piece (legs, tail, chest); soft felt-like fur elsewhere.
-	var fur := Art.cloth_material(COLORS.fur, Art.HAIR, 0.8, 0.55, {"shade_color": COLORS.fur_shade, "translucency": 0.15})
-	var cream := Art.cloth_material(COLORS.cream, Art.HAIR, 0.9, 0.55, {"shade_color": COLORS.cream_shade, "translucency": 0.2})
-	var coat := Art.cloth_material(COLORS.fur, Art.FELT, 0.7, 0.6, {"shade_color": Color("#b65a22"), "translucency": 0.15})
-	var soft_cream := Art.cloth_material(COLORS.cream, Art.FELT, 0.8, 0.6, {"shade_color": Color("#e2d3bb"), "translucency": 0.2})
-	var dark := Art.cloth_material(COLORS.dark, Art.HAIR, 1.2, 0.35)
+	_build_skeleton()
+	var fur := ShaderMaterial.new()
+	fur.shader = FUR_SHADER
+	_skeleton = Skeleton3D.new()
+	_model.add_child(_skeleton)
+	for i in _bones.size():
+		var pivot := _bones[i]
+		_skeleton.add_bone(FoxShape.BONES[i])
+		var parent := _bones.find(pivot.get_parent())
+		_skeleton.set_bone_parent(i, parent)
+		_skeleton.set_bone_rest(i, pivot.transform)
+	_skeleton.reset_bone_poses()
+	if ResourceLoader.exists(BODY_MESH):
+		var skin := Skin.new()
+		for i in _bones.size():
+			skin.add_bind(i, _skeleton.get_bone_global_rest(i).affine_inverse())
+		var body := MeshInstance3D.new()
+		body.name = "Skin"
+		body.mesh = load(BODY_MESH)
+		body.material_override = fur
+		body.skin = skin
+		_skeleton.add_child(body)
+		body.skeleton = body.get_path_to(_skeleton)
+		_jaw.add_child(Art.instance(load(JAW_MESH), fur))
+	else:
+		push_warning("The fox's skin hasn't been baked yet: run tools/make_fox.gd.")
+
+	# The face: big kind eyes with a sparkle, set into the skin, a shiny black nose, and a tongue
+	# that shows when it pants.
 	var nose := Art.material(COLORS.nose, 0.25, {"metallic_specular": 0.9})
-
-	_model = _pivot(self, Vector3.ZERO, "Model")
-	_rig = _pivot(_model, Vector3.ZERO)
-	# The body hangs from its hips (at the back), so tipping it lifts or lowers the chest.
-	_body = _pivot(_rig, Vector3(0, 0.8, -0.42))
-	_body.add_child(Art.instance(Art.blob_mesh(0.36, 0.06, 9, Vector3(0.8, 0.72, 1.55)), coat, Vector3(0, 0.02, 0.42)))
-	_body.add_child(Art.instance(Art.blob_mesh(0.3, 0.08, 10, Vector3(0.66, 0.42, 1.3)), soft_cream, Vector3(0, -0.11, 0.48))) # Belly.
-	_body.add_child(Art.instance(Art.blob_mesh(0.24, 0.12, 11, Vector3(0.92, 1.1, 0.8)), cream, Vector3(0, -0.02, 0.86))) # Fluffy chest.
-	_body.add_child(Art.instance(Art.blob_mesh(0.2, 0.08, 12, Vector3(0.95, 0.95, 1.0)), coat, Vector3(0, 0.08, -0.02))) # Rump.
-
-	# Legs: orange tops, dark stockings, dark paws. Front legs at the shoulders, back legs at the hips.
-	for leg in 4:
-		var front := leg < 2
-		var side := 1.0 if leg % 2 == 0 else -1.0
-		var lengths: Vector2 = LEG_LENGTHS[leg]
-		var hip := _pivot(_body, Vector3(side * (0.15 if front else 0.16), -0.08 if front else -0.06, 0.85 if front else 0.0))
-		if front:
-			hip.add_child(Art.instance(Art.blob_mesh(0.11, 0.1, 20 + leg, Vector3(0.8, 1.3, 1.0)), coat, Vector3(0, -0.08, 0)))
-		else:
-			hip.add_child(Art.instance(Art.blob_mesh(0.15, 0.1, 20 + leg, Vector3(0.75, 1.25, 1.15)), coat, Vector3(0, -0.07, 0))) # Haunch.
-		hip.add_child(Art.cylinder(0.055, 0.07, lengths.x, fur, Vector3(0, -lengths.x / 2.0, 0), 10))
-		var knee := _pivot(hip, Vector3(0, -lengths.x, 0))
-		knee.add_child(Art.sphere(0.055, fur, Vector3.ZERO))
-		knee.add_child(Art.cylinder(0.045, 0.054, lengths.y * 0.45, fur, Vector3(0, -lengths.y * 0.225, 0), 10))
-		knee.add_child(Art.cylinder(0.04, 0.046, lengths.y * 0.58, dark, Vector3(0, -lengths.y * 0.7, 0), 10))
-		var paw := _pivot(knee, Vector3(0, -lengths.y, 0))
-		paw.add_child(Art.sphere(0.065, dark, Vector3(0, 0.02, 0.035), Vector3(0.85, 0.55, 1.3)))
-		_legs.append([hip, knee, paw])
-
-	# The head: a round crown, fluffy cheeks, a soft snout with a white jaw, a shiny black nose,
-	# big kind eyes with a sparkle, light marks over the eyes, and tall dark-tipped ears.
-	_neck = _pivot(_body, Vector3(0, 0.14, 0.92))
-	_neck.add_child(Art.instance(Art.blob_mesh(0.17, 0.08, 13, Vector3(0.88, 1.15, 1.0)), coat, Vector3(0, 0.1, 0.05)))
-	_head = _pivot(_neck, Vector3(0, 0.26, 0.12))
-	_head.scale = Vector3.ONE * 1.12 # A big head, for storybook proportions.
-	_head.add_child(Art.instance(Art.blob_mesh(0.2, 0.06, 14, Vector3(1.05, 0.9, 1.0)), coat, Vector3.ZERO))
 	for side in 2:
 		var s := 1.0 if side == 0 else -1.0
-		_head.add_child(Art.instance(Art.blob_mesh(0.11, 0.15, 15 + side, Vector3(1.0, 0.85, 1.0)), soft_cream, Vector3(s * 0.14, -0.08, 0.06)))
-		_head.add_child(Art.instance(Art.blob_mesh(0.06, 0.2, 17 + side, Vector3(1.5, 0.7, 0.8)), cream, Vector3(s * 0.23, -0.11, 0.0))) # Cheek tuft.
-		_head.add_child(Art.sphere(0.035, cream, Vector3(s * 0.085, 0.1, 0.16), Vector3(1.3, 0.6, 0.6))) # Light mark over the eye.
-		var eye := _pivot(_head, Vector3(s * 0.085, 0.035, 0.165))
-		var ball := Art.sphere(0.04, Art.material(COLORS.eyes, 0.12, {"metallic_specular": 1.0}), Vector3.ZERO, Vector3(1.05, 1.0, 0.55))
+		var eye := _pivot(_head, Vector3(s * 0.086, 0.04, 0.172))
+		var ball := Art.sphere(0.044, Art.material(COLORS.eyes, 0.12, {"metallic_specular": 1.0}), Vector3.ZERO, Vector3(1.05, 1.0, 0.55))
 		ball.rotation.z = s * 0.22 # A gentle almond tilt.
 		eye.add_child(ball)
 		eye.add_child(Art.sphere(0.011, Art.glow_material(Color.WHITE, 0.7), Vector3(-s * 0.01, 0.014, 0.02)))
 		eye.add_child(Art.sphere(0.005, Art.glow_material(Color.WHITE, 0.5), Vector3(s * 0.012, -0.01, 0.021)))
 		_eyes.append(eye)
-		var ear := _pivot(_head, Vector3(s * 0.12, 0.13, -0.03))
-		ear.add_child(_cone(0.09, 0.26, fur, Vector3(0, 0.13, 0), Vector3(1, 1, 0.45)))
-		ear.add_child(_cone(0.058, 0.18, cream, Vector3(0, 0.11, 0.022), Vector3(1, 1, 0.3)))
-		ear.add_child(_cone(0.04, 0.09, dark, Vector3(0, 0.215, 0.0), Vector3(1, 1, 0.48)))
-		_ears.append(ear)
-	# The snout: orange on top, a cream jaw that opens when it pants.
-	_head.add_child(Art.instance(Art.tube_mesh(PackedVector3Array([Vector3(0, -0.02, 0.1), Vector3(0, -0.04, 0.27), Vector3(0, -0.06, 0.4)]), PackedFloat32Array([0.11, 0.075, 0.045]), 14), coat))
-	_head.add_child(Art.sphere(0.045, nose, Vector3(0, -0.055, 0.42), Vector3(1.1, 0.85, 0.9)))
-	_jaw = _pivot(_head, Vector3(0, -0.08, 0.1))
-	_jaw.add_child(Art.instance(Art.tube_mesh(PackedVector3Array([Vector3(0, 0.0, 0.0), Vector3(0, -0.01, 0.15), Vector3(0, -0.015, 0.27)]), PackedFloat32Array([0.085, 0.06, 0.03]), 12), cream))
-	_jaw.add_child(Art.sphere(0.035, Art.material(COLORS.tongue, 0.5), Vector3(0, 0.0, 0.22), Vector3(0.9, 0.35, 1.4)))
+	_head.add_child(Art.sphere(0.045, nose, Vector3(0, -0.06, 0.405), Vector3(1.1, 0.85, 0.9)))
+	_jaw.add_child(Art.sphere(0.035, Art.material(COLORS.tongue, 0.5), Vector3(0, 0.0, 0.2), Vector3(0.9, 0.35, 1.4)))
+	for mesh in _model.find_children("*", "GeometryInstance3D", true, false):
+		_meshes.append(mesh)
 
-	# The big bushy tail, with its white tip: a springy chain of five pieces.
+
+# The tree of pivots the animation moves; the skeleton's bones follow it. The bake tool
+# (tools/make_fox.gd) builds this too, to know where each joint stands.
+func _build_skeleton() -> void:
+	var named := {}
+	_model = _pivot(self, Vector3.ZERO, "Model")
+	_rig = _pivot(_model, Vector3.ZERO)
+	named.rig = _rig
+	# The body hangs from its hips (at the back), so tipping it lifts or lowers the chest.
+	_body = _pivot(_rig, Vector3(0, 0.8, -0.42))
+	named.body = _body
+	for leg in 4:
+		var front := leg < 2
+		var side := 1.0 if leg % 2 == 0 else -1.0
+		var lengths: Vector2 = LEG_LENGTHS[leg]
+		var hip := _pivot(_body, Vector3(side * (0.15 if front else 0.16), -0.08 if front else -0.06, 0.85 if front else 0.0))
+		var knee := _pivot(hip, Vector3(0, -lengths.x, 0))
+		var paw := _pivot(knee, Vector3(0, -lengths.y, 0))
+		_legs.append([hip, knee, paw])
+		named["leg%d_upper" % leg] = hip
+		named["leg%d_lower" % leg] = knee
+		named["leg%d_paw" % leg] = paw
+	_neck = _pivot(_body, Vector3(0, 0.14, 0.92))
+	named.neck = _neck
+	_head = _pivot(_neck, Vector3(0, 0.26, 0.12))
+	_head.scale = Vector3.ONE * 1.12 # A big head, for storybook proportions.
+	named.head = _head
+	_jaw = _pivot(_head, Vector3(0, -0.08, 0.1))
+	named.jaw = _jaw
+	for side in 2:
+		var ear := _pivot(_head, Vector3((1.0 if side == 0 else -1.0) * 0.12, 0.13, -0.03))
+		_ears.append(ear)
+		named["ear%d" % side] = ear
 	_tail = _pivot(_body, Vector3(0, 0.1, -0.14))
+	_tail.rotation.x = -PI / 2.0 - 0.45
+	named.tail = _tail
 	var holder := _tail
-	var widths := [0.07, 0.12, 0.155, 0.15, 0.12, 0.03]
 	for i in 5:
-		var piece := _pivot(holder, Vector3.ZERO if i == 0 else Vector3(0, 0.2, 0))
-		var mat := cream if i == 4 else fur
-		piece.add_child(Art.sphere(widths[i], mat if i < 4 else fur, Vector3.ZERO))
-		piece.add_child(Art.instance(Art.tube_mesh(PackedVector3Array([Vector3.ZERO, Vector3(0, 0.1, 0), Vector3(0, 0.2, 0)]), PackedFloat32Array([widths[i], (widths[i] + widths[i + 1]) / 2.0, widths[i + 1]]), 14), mat))
+		var piece := _pivot(holder, Vector3.ZERO if i == 0 else Vector3(0, FoxShape.TAIL_PIECE, 0))
 		_tail_pieces.append(piece)
 		_tail_bend.append(Vector2.ZERO)
 		_tail_bend_speed.append(Vector2.ZERO)
+		named["tail%d" % i] = piece
 		holder = piece
-	holder.add_child(Art.sphere(0.03, cream, Vector3(0, 0.2, 0)))
-	_tail.rotation.x = -PI / 2.0 - 0.45
-	for mesh in _model.find_children("*", "GeometryInstance3D", true, false):
-		_meshes.append(mesh)
+	for bone: String in FoxShape.BONES:
+		_bones.append(named[bone])
+
+
+# Where a joint stands on the fox, standing still, in the fox's own space (for the bake tool).
+func rest_of(bone: String) -> Transform3D:
+	var pivot: Node3D = _bones[FoxShape.BONES.find(bone)]
+	var place := pivot.transform
+	var parent := pivot.get_parent() as Node3D
+	while parent and parent != _model:
+		place = parent.transform * place
+		parent = parent.get_parent() as Node3D
+	return place
+
+
+# Copy every pivot onto its bone, so the skin follows the animation.
+func _pose_skeleton() -> void:
+	if _skeleton == null:
+		return
+	for i in _bones.size():
+		var pivot := _bones[i]
+		_skeleton.set_bone_pose_position(i, pivot.position)
+		_skeleton.set_bone_pose_rotation(i, pivot.quaternion)
+		_skeleton.set_bone_pose_scale(i, pivot.scale)
 
 
 func _pivot(parent: Node3D, at: Vector3, name := "") -> Node3D:
@@ -581,15 +624,4 @@ func _pivot(parent: Node3D, at: Vector3, name := "") -> Node3D:
 		made.name = name
 	made.position = at
 	parent.add_child(made)
-	return made
-
-
-func _cone(radius: float, height: float, mat: Material, at: Vector3, squash: Vector3) -> MeshInstance3D:
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = 0.0
-	mesh.bottom_radius = radius
-	mesh.height = height
-	mesh.radial_segments = 12
-	var made := Art.instance(mesh, mat, at)
-	made.scale = squash
 	return made
