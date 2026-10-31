@@ -3,7 +3,7 @@ extends SceneTree
 # Plays Berry Rush without a window and checks it works the way the three.js game did: going in
 # through the gate, "Ready…" then "Go!", the field's rules, wading, picking every raspberry, the
 # golden raspberry and the fox pointing the way, the Top 10, the worms waking in turn, bonking and
-# being caught by a worm, the danger music, restarting, the menu, and going back to the Glenn. Run from this folder:
+# being caught by a worm (with the hit-stop, shake and slow motion), the danger music, restarting, the menu, and going back to the Glenn. Run from this folder:
 #   godot --headless --fixed-fps 60 --path . --script res://tools/berry_rush_test.gd
 # It prints PASS or FAIL for each check, and exits with 1 if anything failed. (Scores go in a test
 # file, not your real Top 10.)
@@ -46,11 +46,11 @@ func _run() -> void:
 	await _seconds(0.8)
 	Input.action_release("move_forward")
 	_check("then it says Go! and the clock starts", hud._banner_subtitle.text == "Go!" and _game.elapsed > 0.0)
-	# Tension that builds (upgrade 6): one worm wakes at Go!, the one furthest from you.
+	# Tension that builds (upgrade 6): one worm wakes at Go!, the one furthest from where you stood.
 	var furthest := true
 	for worm in _game._worms:
 		for other in _game._worms:
-			if not worm.asleep and other.asleep and other.head_position.distance_to(gnome.global_position) > worm.head_position.distance_to(gnome.global_position):
+			if not worm.asleep and other.asleep and other.head_position.distance_to(start) > worm.head_position.distance_to(start) + 0.01:
 				furthest = false
 	_check("one worm wakes at Go!, the one furthest from you (upgrade 6)", _awake() == 1 and furthest)
 	# The berry compass (upgrade 2): turned away from the field, the 3 nearest berries get badges.
@@ -206,16 +206,27 @@ func _run() -> void:
 	var speed_before: float = worm.top_speed
 	gnome.swing_stick()
 	var bonked := false
+	var froze := false
 	for i in 40:
 		await physics_frame
 		gnome.place(Vector3(front.x, field.floor_at(front.x, front.z) + 0.05, front.z), facing + PI)
 		if worm.is_dazed():
 			bonked = true
+			froze = Engine.time_scale < 0.1
 			break
 	_check("a swing that catches a worm's head stuns it", bonked)
+	_check("the bonk lands: the picture freezes for a blink and shakes (upgrade 7)", froze and _game.camera_rig._trauma > 0.2)
 	_check("and a bonk wakes a sleeping worm", not worm.asleep and _awake() == 3)
 	await _frames(2)
 	_check("stars circle its head while it's dazed, and it looks crosser", worm._stars.visible and worm.bonks == 1 and worm._brows[0].visible)
+	await _frames(4)
+	_check("then time runs on as normal", Engine.time_scale == 1.0)
+	var settings: Node = root.get_node("Settings")
+	settings.values.screen_shake = false # (Not set_value, so your saved settings aren't touched.)
+	_game.camera_rig._trauma = 0.0
+	_game._shake(0.5)
+	_check("with Screen shake off in Settings, the camera stays still", _game.camera_rig._trauma == 0.0)
+	settings.values.screen_shake = true
 	_check("and it'll get up 5%% faster (%.2f → %.2f m/s)" % [speed_before, worm.top_speed], absf(worm.top_speed - speed_before * 1.05) < 0.01)
 	gnome.place(Vector3(0, field.floor_at(0, 4) + 0.05, 4), PI)
 	_game.hold_worms = true # Hold the other worms still while we wait (the dazed one's clock still runs).
@@ -237,7 +248,9 @@ func _run() -> void:
 			break
 	_check("touching an awake worm ends the round", _game.caught_by_worm and _game.finished)
 	await _frames(2)
-	_check("and the Top 10 says the worm got you", board.is_showing and board._result.text.begins_with("The inch worm got you!"))
+	_check("in slow motion, zoomed in on the worm", Engine.time_scale < 0.5 and _game.camera_rig.focus != null and not board.is_showing)
+	await _seconds(1.4)
+	_check("and then the Top 10 says the worm got you", board.is_showing and board._result.text.begins_with("The inch worm got you!") and Engine.time_scale == 1.0)
 	_check("a finished round doesn't pause by itself", not _game.can_pause())
 
 	# The menu, mid-round.
@@ -331,4 +344,4 @@ func _frames(count: int) -> void:
 
 
 func _seconds(seconds: float) -> void:
-	await create_timer(seconds).timeout
+	await create_timer(seconds, true, false, true).timeout # Real seconds, even in slow motion.

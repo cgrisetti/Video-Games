@@ -15,6 +15,7 @@ const DEFAULTS := {
 	"invert_x": false, # Turn the camera the other way when looking left and right...
 	"invert_y": false, # ...or up and down (some people expect up to look down, like a plane's stick).
 	"camera_speed": 1.0, # How quickly the camera turns: 0.25 to 2.
+	"screen_shake": true, # A little shake when something hits hard (a bonk, a worm's chomp).
 	"graphics": "high", # "low", "medium" or "high": see glen.gd apply_graphics().
 	"fullscreen": false,
 }

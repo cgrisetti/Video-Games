@@ -19,6 +19,7 @@ const CHOICES := {
 	"music_style": [["forest", "Forest"], ["8bit", "8-bit"]],
 	"invert_x": [[false, "Off"], [true, "On"]],
 	"invert_y": [[false, "Off"], [true, "On"]],
+	"screen_shake": [[true, "On"], [false, "Off"]],
 	"graphics": [["low", "Low"], ["medium", "Medium"], ["high", "High"]],
 	"fullscreen": [[false, "Off"], [true, "On"]],
 }
@@ -202,6 +203,7 @@ func _build() -> void:
 	_slider_row(settings, "Camera speed", "camera_speed", 0.25, 2.0, 0.25)
 	_choice_row(settings, "Flip left and right", "invert_x")
 	_choice_row(settings, "Flip up and down", "invert_y")
+	_choice_row(settings, "Screen shake", "screen_shake")
 	settings.add_child(_label("Picture", "SettingGroup"))
 	_choice_row(settings, "Graphics", "graphics")
 	_choice_row(settings, "Full screen", "fullscreen")

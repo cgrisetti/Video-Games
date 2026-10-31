@@ -8,6 +8,8 @@ extends Node3D
 # stun it (it gets up a little faster). The fastest times go in the Top 10.
 # The worms start asleep and wake one at a time as you pick berries, so the pressure builds toward
 # the golden raspberry.
+# The big moments land: a bonk freezes the picture for a blink with a little shake, and a worm
+# catching you plays out in slow motion, zoomed in on the worm. (Shaking can be turned off in Settings.)
 #
 # Everything about how the game plays is the same as the three.js Berry Rush; the field is new.
 # The field and its obstacles are in field.gd, the creek in creek.gd, the worms in inch_worm.gd.
@@ -38,6 +40,11 @@ const WORM_CATCH_DISTANCE := 0.75
 const STICK_REACH := 0.44 # How close the stick has to come to a worm's head to bonk it.
 const DANGER_FAR := 9.0 # The danger music creeps in when a worm is this close...
 const DANGER_NEAR := 3.0 # ...and is at full strength this close.
+const HIT_STOP := 0.06 # Real seconds the picture all but freezes when the stick lands...
+const BONK_SHAKE := 0.55 # ...with this much shake (0 to 1).
+const CAUGHT_SLOW := 0.3 # Caught by a worm: time runs this slow...
+const CAUGHT_TIME := 1.2 # ...for this many real seconds, zoomed in on the worm, then the Top 10 comes up.
+const CAUGHT_SHAKE := 0.4
 const FOX_LEAD_SPEED := 0.85 # How fast the fox lopes ahead to the golden raspberry, as a share of the gnome's speed.
 const HINT := "Follow the fox to the golden raspberry!"
 const GOAL := "Pick all 9 raspberries, then follow the fox to the golden one, as fast as you can. The inch worms wake up one by one as you pick: don't let one catch you! Swing your stick (F, or □) at a worm's head to stun it, though it gets back up a little faster. The creek slows everyone down. R starts the round over."
@@ -61,6 +68,8 @@ var _worms: Array[InchWorm] = []
 var _world_time := 0.0
 var _results_in := 0.0
 var _ready_in := 0.0
+var _caught_in := 0.0 # Real seconds of slow motion left before the Top 10, after being caught.
+var _time_turn := 0 # Which slow-down is the latest, so an older one doesn't put time back early.
 var _compass: BerryCompass
 var medal_times := {} # "gold", "silver", "bronze" -> seconds, for this field.
 var _gold_splits := PackedFloat32Array() # Gold pace: when each berry should be picked by.
@@ -132,6 +141,7 @@ func enter(_from := "") -> void:
 
 # Going back to the Glenn: put the Top 10 away and let the danger music fade.
 func leave() -> void:
+	_set_time(1.0)
 	scoreboard.hide_board()
 	hud.hide_banner()
 	hud.hide_hint()
@@ -158,6 +168,8 @@ func apply_graphics() -> void:
 
 # A new round. With `layout` it uses that seed for the field; otherwise a new one.
 func restart(layout := -1) -> void:
+	_set_time(1.0)
+	_caught_in = 0.0
 	effects.clear()
 	hud.hide_banner()
 	_ready_in = 0.0
@@ -372,13 +384,37 @@ func _plan_medals() -> void:
 	hud.show_medals(medal_times.gold, medal_times.silver, medal_times.bronze)
 
 
+# Caught! Time slows and the camera turns and zooms in on the worm, then the Top 10 comes up.
 func _caught(worm: InchWorm) -> void:
 	if caught_by_worm:
 		return # Two worms can reach the gnome in the same moment.
 	finished = true
 	caught_by_worm = true
 	Sound.play_chomp(worm.head_position)
-	scoreboard.show_board("berry-rush", -1.0)
+	camera_rig.focus = worm.head_position
+	_shake(CAUGHT_SHAKE)
+	_set_time(CAUGHT_SLOW, CAUGHT_TIME)
+	_caught_in = CAUGHT_TIME
+
+
+# Slow time down (or all but stop it) for `real_seconds` of real time, or put it back with 1.0.
+func _set_time(scale: float, real_seconds := 0.0) -> void:
+	_time_turn += 1
+	Engine.time_scale = scale
+	if scale < 1.0 and real_seconds > 0.0:
+		var turn := _time_turn
+		get_tree().create_timer(real_seconds, true, false, true).timeout.connect(func() -> void:
+			if turn == _time_turn:
+				Engine.time_scale = 1.0)
+
+
+func _shake(amount: float) -> void:
+	if Settings.get_value("screen_shake"):
+		camera_rig.shake(amount)
+
+
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
 
 
 func _pick(berry: Node3D, golden: bool, on_gone: Callable) -> void:
@@ -456,6 +492,11 @@ func _process(delta: float) -> void:
 		_results_in -= delta
 		if _results_in <= 0.0:
 			scoreboard.show_board("berry-rush", elapsed, MEDAL_WORDS.get(medal_for(elapsed), ""))
+	if _caught_in > 0.0:
+		_caught_in -= delta / maxf(Engine.time_scale, 0.001) # Real time, through the slow motion.
+		if _caught_in <= 0.0:
+			_set_time(1.0)
+			scoreboard.show_board("berry-rush", -1.0)
 
 	# A swing of the stick that catches an inch worm on the head stuns it.
 	if not finished and gnome.is_striking():
@@ -466,6 +507,9 @@ func _process(delta: float) -> void:
 				if point.distance_to(worm.head_position) < InchWorm.RADIUS * 1.25 + STICK_REACH:
 					worm.stun()
 					Sound.play_bonk(worm.head_position)
+					_shake(BONK_SHAKE)
+					if not caught_by_worm:
+						_set_time(0.03, HIT_STOP) # A blink of a freeze, so the bonk lands.
 					break
 
 	# The inch worms wake in turn and crawl after the gnome until the round is over. Sleeping and
