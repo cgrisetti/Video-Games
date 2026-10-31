@@ -99,20 +99,28 @@ Everything alive moves a little, all the time, and nothing moves fast unless it'
 - One strong colour each (the gnome's red hat, the fox's orange) that nothing else in the scene competes with.
 - Built on a skeleton of pivots (hips, spine, neck, head; shoulders, elbows, knees), so they bend
   like living things. Every move is made in code, in `scripts/gnome.gd` and `scripts/fox.gd`.
-- Clothes, hair and fur use `shaders/cloth.gdshader` (felt, knitted wool, hair strands or leather),
+- Clothes and hair use `shaders/cloth.gdshader` (felt, knitted wool, hair strands or leather),
   through `Art.cloth_material()`, so they have texture up close and a soft glow at the edges.
+- The fox is **one seamless skin** over a `Skeleton3D`, with no seams or gaps at the joints. Its
+  shape is rounded pieces melted together (`scripts/fox_shape.gd`), baked once into a mesh by
+  `tools/make_fox.gd`. Its markings (cream chest and cheeks, dark socks and ear tips, white tail
+  tip) are painted into the mesh and blend softly; `shaders/fur.gdshader` adds the fur.
 - The fox is big: its head is above the gnome's. It has a kind face: soft round eyes with a
   sparkle, cream cheeks, a rounded snout.
 - Soft bits follow through: the gnome's hat tip and beard, the fox's tail. They're springs that
   lag behind each move and settle.
 - The fox has a mind of its own (`scripts/fox_brain.gd`). It follows loosely, wanders off to
   sniff things, sits, lies down, pounces and plays. It never hides the gnome from the camera.
+- Creatures show what they're up to before it matters: Berry Rush's inch worms sleep under a
+  "Zz", stretch and yawn when they wake, pop a "!" when they notice you, and see stars when bonked.
 
 ## Camera
 
 - Behind and above the gnome, about 9 m back, looking a little over its head so the treetops and sky show.
 - 55° field of view, with a faint blur far away.
 - The player can turn and tilt it (Q/E, T/G, right stick); movement is always relative to the camera.
+- Big moments can shake it a little (a bonk) or turn and zoom it in slow motion (being caught).
+  Keep it short and small, and always respect the Screen shake setting.
 
 ## Menus and on-screen text
 
@@ -130,6 +138,24 @@ The storybook look carries over from the three.js version, now in `ui/theme.tres
 
 - The forest theme loops under everything (or its 8-bit version); it drops and goes muffled while paused.
 - Effects are soft and natural: a whoosh for the stick, a gentle blip for menus.
+- They're made in code (`Sound._render`) from tones, chimes and filtered noise, and come from
+  where they happen (left or right): a worm's yawn, its curious "boop-boop?", a bonk, a chomp.
+- In a game, a danger layer of the theme swells in as a threat comes close.
+
+## Berry Rush's glade
+
+A sunken raspberry glade at golden hour, built in the same layers as the Glenn:
+
+- Flowering hedgerows lined with raspberry canes, woods and far hills in the haze, a lighter
+  haze inside so you can spot berries across the field.
+- A creek with moving ripples, see-through shallows and foam at the banks
+  (`shaders/water.gdshader`), crossed by two stone-and-timber bridges with lanterns.
+- Mossy logs and boulders, and trees from the same `Foliage` set as the Glenn (maples in rust,
+  poplars in gold). Trees between you and the camera fade out.
+- Raspberries are glossy drupelets, `#C8325F`; the golden one is `#E8B030` with turning sun
+  rays and a shaft of light (`shaders/sunbeam.gdshader`) you can see over the trees.
+- Inch worms are one smooth tube in rainbow stripes, red at the head.
+- Medal colours, everywhere they show: gold `#FFD55A`, silver, bronze (`hud.gd MEDAL_COLORS`).
 
 ## Graphics settings
 

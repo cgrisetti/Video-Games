@@ -153,5 +153,7 @@ upgrades come after it, as their own commits.
 - [x] Analysis, research and plan
 - [x] 1. Seamless fox
 - [x] 2. Berry Rush port: `tools/berry_rush_test.gd` plays a round headless (31 checks, 8 of 8 runs)
-- [ ] 3. Upgrades 1–8
-- [ ] Final checks, docs, push
+- [x] 3. Upgrades 1–8, each its own commit, each with checks in `tools/berry_rush_test.gd`
+  (now 59 checks)
+- [x] Final checks and docs (README, STYLE_GUIDE)
+- [ ] Push (asks first: it updates PR #3 and the Desktop launcher)
