@@ -1,0 +1,358 @@
+## The Network Manager (autoload): ENet hosting and joining on port 7777, and
+## the raid party roster.
+##
+## Each player is addressed as "{peer_id}_{device_id}": the network peer (which
+## machine) plus the local controller (which pad on that machine). A machine
+## can seat up to 4 split-screen players; the whole party is capped at 5.
+##
+## The host (peer 1) owns the roster. Other peers ask it to seat their
+## controllers and receive the full roster back whenever it changes. Offline
+## play runs the same code: Godot's offline peer is peer 1 and acts as host.
+class_name NetworkManager
+extends Node
+
+## The live autoload node. Scripts reach it as `NetworkManager.current` rather than by
+## its autoload name, so `godot --check-only -s` (which runs before autoloads
+## are registered) can still compile them.
+static var current: NetworkManager
+
+signal player_registered(member: PartyMember)
+signal player_updated(member: PartyMember)
+signal player_unregistered(player_id: StringName)
+signal registration_refused(device_id: int, reason: String)
+signal status_changed(status: String)
+
+const PORT: int = 7777
+const MAX_PARTY_SIZE: int = 5
+const MAX_LOCAL_PLAYERS: int = 4
+## Other machines that can join a host (the party cap still applies).
+const MAX_REMOTE_PEERS: int = 4
+const DEFAULT_ADDRESS: String = "127.0.0.1"
+
+var roster: Dictionary[StringName, PartyMember] = {}
+var status: String = "Offline"
+## Chooses a class for a seat that asked for ANY_CLASS: (roster) -> StringName.
+## The level sets it; the network layer itself knows nothing about classes.
+var class_picker: Callable
+
+## Ask for this class to let the host pick one (see class_picker).
+const ANY_CLASS: StringName = &""
+
+## Controllers this machine wants seated: device id -> {class_id, assist_mode}.
+## Kept so they can be re-seated after joining or leaving a host.
+var _local_wishes: Dictionary[int, Dictionary] = {}
+
+
+func _enter_tree() -> void:
+	current = self
+
+
+func _exit_tree() -> void:
+	if current == self:
+		current = null
+
+
+func _ready() -> void:
+	multiplayer.peer_connected.connect(_on_peer_connected)
+	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	multiplayer.connected_to_server.connect(_on_connected_to_server)
+	multiplayer.connection_failed.connect(_on_connection_failed)
+	multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+
+# --- State ----------------------------------------------------------------
+
+func is_online() -> bool:
+	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
+	return peer != null and not (peer is OfflineMultiplayerPeer) \
+		and peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
+
+
+## True offline too: the offline peer hosts its own party.
+func is_host() -> bool:
+	return multiplayer.is_server()
+
+
+func local_peer_id() -> int:
+	return multiplayer.get_unique_id()
+
+
+func has_peer(peer_id: int) -> bool:
+	return peer_id == 1 or multiplayer.get_peers().has(peer_id)
+
+
+func party_size() -> int:
+	return roster.size()
+
+
+func member(player_id: StringName) -> PartyMember:
+	return roster[player_id] if roster.has(player_id) else null
+
+
+func ordered_members() -> Array[PartyMember]:
+	var members: Array[PartyMember] = []
+	members.assign(roster.values())
+	members.sort_custom(func(a: PartyMember, b: PartyMember) -> bool: return a.slot < b.slot)
+	return members
+
+
+func local_player_count() -> int:
+	return _count_for_peer(local_peer_id())
+
+
+func is_device_seated(device_id: int) -> bool:
+	return _local_wishes.has(device_id)
+
+
+# --- Hosting and joining --------------------------------------------------
+
+func host_game(port: int = PORT) -> Error:
+	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
+	var error: Error = peer.create_server(port, MAX_REMOTE_PEERS)
+	if error != OK:
+		_set_status("Couldn't host on port %d (%s)" % [port, error_string(error)])
+		return error
+	multiplayer.multiplayer_peer = peer
+	# The host is peer 1, exactly like offline, so local player ids don't change.
+	_set_status("Hosting on port %d" % port)
+	return OK
+
+
+func join_game(address: String = DEFAULT_ADDRESS, port: int = PORT) -> Error:
+	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
+	var error: Error = peer.create_client(address, port)
+	if error != OK:
+		_set_status("Couldn't join %s:%d (%s)" % [address, port, error_string(error)])
+		return error
+	# Our controllers get new ids from the host once we're connected.
+	_clear_roster()
+	multiplayer.multiplayer_peer = peer
+	_set_status("Joining %s:%d…" % [address, port])
+	return OK
+
+
+func leave_game() -> void:
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	_set_status("Offline")
+	_clear_roster()
+	for device_id: int in _local_wishes.keys():
+		var wish: Dictionary = _local_wishes[device_id]
+		_server_register(local_peer_id(), device_id, wish["class_id"], wish["assist_mode"])
+
+
+# --- Seating local controllers --------------------------------------------
+
+## Asks for a party seat for one of this machine's controllers.
+func request_local_player(device_id: int, class_id: StringName, assist_mode: int) -> void:
+	if not _local_wishes.has(device_id) and local_player_count() >= MAX_LOCAL_PLAYERS:
+		registration_refused.emit(device_id, "This screen already has %d players." % MAX_LOCAL_PLAYERS)
+		return
+	_local_wishes[device_id] = {"class_id": class_id, "assist_mode": assist_mode}
+	if is_host():
+		_server_register(local_peer_id(), device_id, class_id, assist_mode)
+	elif is_online():
+		_request_register.rpc_id(1, device_id, class_id, assist_mode)
+
+
+## Changing class or assist mode re-seats the controller with the new choice.
+func update_local_player(device_id: int, class_id: StringName, assist_mode: int) -> void:
+	if _local_wishes.has(device_id):
+		request_local_player(device_id, class_id, assist_mode)
+
+
+func drop_local_player(device_id: int) -> void:
+	if not _local_wishes.has(device_id):
+		return
+	_local_wishes.erase(device_id)
+	if is_host():
+		_server_unregister(PartyMember.make_player_id(local_peer_id(), device_id))
+	elif is_online():
+		_request_unregister.rpc_id(1, device_id)
+
+
+## Whether the host would seat another controller from this peer.
+func can_register(peer_id: int, device_id: int) -> bool:
+	return roster.has(PartyMember.make_player_id(peer_id, device_id)) or _refusal_reason(peer_id) == ""
+
+
+# --- Host side ------------------------------------------------------------
+
+func _server_register(peer_id: int, device_id: int, class_id: StringName, assist_mode: int) -> bool:
+	var player_id: StringName = PartyMember.make_player_id(peer_id, device_id)
+	if roster.has(player_id):
+		var existing: PartyMember = roster[player_id]
+		if class_id == ANY_CLASS:
+			class_id = existing.class_id
+		existing.class_id = class_id
+		existing.assist_mode = assist_mode
+		player_updated.emit(existing)
+		_broadcast_roster()
+		return true
+	var reason: String = _refusal_reason(peer_id)
+	if reason != "":
+		if peer_id == local_peer_id():
+			registration_refused.emit(device_id, reason)
+		elif is_online() and has_peer(peer_id):
+			_registration_refused.rpc_id(peer_id, device_id, reason)
+		return false
+	if class_id == ANY_CLASS and class_picker.is_valid():
+		class_id = class_picker.call(roster)
+	var seat: PartyMember = PartyMember.new()
+	seat.player_id = player_id
+	seat.peer_id = peer_id
+	seat.device_id = device_id
+	seat.class_id = class_id
+	seat.assist_mode = assist_mode
+	seat.slot = _free_slot()
+	roster[player_id] = seat
+	player_registered.emit(seat)
+	_log_party()
+	_broadcast_roster()
+	return true
+
+
+func _server_unregister(player_id: StringName) -> void:
+	if not roster.has(player_id):
+		return
+	roster.erase(player_id)
+	player_unregistered.emit(player_id)
+	_log_party()
+	_broadcast_roster()
+
+
+func _refusal_reason(peer_id: int) -> String:
+	if roster.size() >= MAX_PARTY_SIZE:
+		return "The party is full (%d players)." % MAX_PARTY_SIZE
+	if _count_for_peer(peer_id) >= MAX_LOCAL_PLAYERS:
+		return "That screen already has %d players." % MAX_LOCAL_PLAYERS
+	return ""
+
+
+func _count_for_peer(peer_id: int) -> int:
+	var count: int = 0
+	for seat: PartyMember in roster.values():
+		if seat.peer_id == peer_id:
+			count += 1
+	return count
+
+
+func _free_slot() -> int:
+	var used: Dictionary[int, bool] = {}
+	for seat: PartyMember in roster.values():
+		used[seat.slot] = true
+	var slot: int = 0
+	while used.has(slot):
+		slot += 1
+	return slot
+
+
+func _broadcast_roster() -> void:
+	if is_online():
+		_receive_roster.rpc(_snapshot())
+
+
+func _snapshot() -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	for seat: PartyMember in ordered_members():
+		entries.append(seat.to_dict())
+	return entries
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_register(device_id: int, class_id: StringName, assist_mode: int) -> void:
+	if multiplayer.is_server():
+		_server_register(multiplayer.get_remote_sender_id(), device_id, class_id, assist_mode)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_unregister(device_id: int) -> void:
+	if multiplayer.is_server():
+		_server_unregister(PartyMember.make_player_id(multiplayer.get_remote_sender_id(), device_id))
+
+
+func _on_peer_connected(peer_id: int) -> void:
+	if multiplayer.is_server():
+		_receive_roster.rpc_id(peer_id, _snapshot())
+
+
+func _on_peer_disconnected(peer_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var leaving: Array[StringName] = []
+	for seat: PartyMember in roster.values():
+		if seat.peer_id == peer_id:
+			leaving.append(seat.player_id)
+	for player_id: StringName in leaving:
+		_server_unregister(player_id)
+
+
+# --- Client side ----------------------------------------------------------
+
+# Untyped on purpose: arrays arriving over the network may not keep their element type.
+@rpc("authority", "call_remote", "reliable")
+func _receive_roster(entries: Array) -> void:
+	var seen: Dictionary[StringName, bool] = {}
+	for data: Dictionary in entries:
+		var incoming: PartyMember = PartyMember.from_dict(data)
+		seen[incoming.player_id] = true
+		if roster.has(incoming.player_id):
+			var existing: PartyMember = roster[incoming.player_id]
+			if existing.class_id != incoming.class_id or existing.slot != incoming.slot or existing.assist_mode != incoming.assist_mode:
+				existing.class_id = incoming.class_id
+				existing.slot = incoming.slot
+				existing.assist_mode = incoming.assist_mode
+				player_updated.emit(existing)
+		else:
+			roster[incoming.player_id] = incoming
+			player_registered.emit(incoming)
+	var gone: Array[StringName] = []
+	for player_id: StringName in roster.keys():
+		if not seen.has(player_id):
+			gone.append(player_id)
+	for player_id: StringName in gone:
+		roster.erase(player_id)
+		player_unregistered.emit(player_id)
+	_log_party()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _registration_refused(device_id: int, reason: String) -> void:
+	registration_refused.emit(device_id, reason)
+
+
+func _on_connected_to_server() -> void:
+	_set_status("Joined as peer %d" % local_peer_id())
+	for device_id: int in _local_wishes.keys():
+		var wish: Dictionary = _local_wishes[device_id]
+		_request_register.rpc_id(1, device_id, wish["class_id"], wish["assist_mode"])
+
+
+func _on_connection_failed() -> void:
+	_set_status("Couldn't reach the host")
+	leave_game.call_deferred()
+
+
+func _on_server_disconnected() -> void:
+	_set_status("The host left")
+	leave_game.call_deferred()
+
+
+func _clear_roster() -> void:
+	var ids: Array[StringName] = []
+	ids.assign(roster.keys())
+	roster.clear()
+	for player_id: StringName in ids:
+		player_unregistered.emit(player_id)
+
+
+func _set_status(text: String) -> void:
+	status = text
+	print("[Net] %s" % text)
+	status_changed.emit(text)
+
+
+func _log_party() -> void:
+	var ids: PackedStringArray = PackedStringArray()
+	for seat: PartyMember in ordered_members():
+		ids.append("%s(%s)" % [seat.player_id, seat.class_id])
+	print("[Net] Party %d/%d: %s" % [roster.size(), MAX_PARTY_SIZE, ", ".join(ids)])

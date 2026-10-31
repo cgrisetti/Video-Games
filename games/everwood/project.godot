@@ -14,6 +14,13 @@ config/name="Everwood"
 config/description="A cooperative raid action-RPG for a family party: up to 4 on the couch, 5 across the network."
 config/features=PackedStringArray("4.7", "Forward Plus")
 
+[autoload]
+
+; Scripts reach these through NetworkManager.current and CombatDirector.current
+; (static), so the keys differ from the class names.
+Network="*res://src/autoloads/network_manager.gd"
+Combat="*res://src/autoloads/combat_director.gd"
+
 [debug]
 
 ; The engineering contract makes static typing mandatory, so an untyped
