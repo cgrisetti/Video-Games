@@ -34,6 +34,7 @@ var _golden_pop: AudioStreamWAV
 var _bonk: AudioStreamWAV
 var _chomp: AudioStreamWAV
 var _alert: AudioStreamWAV
+var _yawn: AudioStreamWAV
 var _places: Array[AudioStreamPlayer3D] = []
 var _together: AudioStreamSynchronized
 var _danger := 0.0
@@ -84,6 +85,11 @@ func _ready() -> void:
 		{"type": "tone", "from": 520.0, "to": 700.0, "glide": 0.03, "attack": 0.005, "decay": 0.09, "gain": 0.3},
 		{"type": "tone", "from": 700.0, "to": 1040.0, "glide": 0.05, "attack": 0.005, "decay": 0.12, "gain": 0.3, "at": 0.11},
 	])
+	_yawn = _render(1.3, [ # A worm waking up: a big, wobbly yawn, up and then sighing down.
+		{"type": "tone", "from": 210.0, "to": 340.0, "glide": 0.25, "attack": 0.18, "decay": 0.55, "gain": 0.26, "wobble": Vector2(6.0, 9.0)},
+		{"type": "tone", "from": 340.0, "to": 150.0, "glide": 0.3, "attack": 0.08, "decay": 0.5, "gain": 0.22, "at": 0.5, "wobble": Vector2(5.0, 6.0)},
+		{"type": "noise", "band": 700.0, "attack": 0.2, "decay": 0.6, "gain": 0.1}, # Breath.
+	])
 	Settings.changed.connect(_on_setting)
 	_play_music()
 	_apply_volumes()
@@ -121,6 +127,11 @@ func play_bonk(at: Vector3) -> void:
 # An inch worm noticing the gnome.
 func play_alert(at: Vector3) -> void:
 	play_at(_alert, at)
+
+
+# An inch worm waking up.
+func play_yawn(at: Vector3) -> void:
+	play_at(_yawn, at)
 
 
 # An inch worm catching the gnome: two hungry chomps, then a gulp.

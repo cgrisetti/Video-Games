@@ -2,8 +2,8 @@ extends SceneTree
 
 # Plays Berry Rush without a window and checks it works the way the three.js game did: going in
 # through the gate, "Ready…" then "Go!", the field's rules, wading, picking every raspberry, the
-# golden raspberry and the fox pointing the way, the Top 10, bonking and being caught by a worm,
-# the danger music, restarting, the menu, and going back to the Glenn. Run from this folder:
+# golden raspberry and the fox pointing the way, the Top 10, the worms waking in turn, bonking and
+# being caught by a worm, the danger music, restarting, the menu, and going back to the Glenn. Run from this folder:
 #   godot --headless --fixed-fps 60 --path . --script res://tools/berry_rush_test.gd
 # It prints PASS or FAIL for each check, and exits with 1 if anything failed. (Scores go in a test
 # file, not your real Top 10.)
@@ -42,9 +42,17 @@ func _run() -> void:
 	Input.action_press("move_forward")
 	await _seconds(1.0)
 	_check("you can't move before Go! (moved %.2f m)" % start.distance_to(gnome.global_position), start.distance_to(gnome.global_position) < 0.05 and _game.elapsed == 0.0)
+	_check("and the inch worms are all asleep", _awake() == 0)
 	await _seconds(0.8)
 	Input.action_release("move_forward")
 	_check("then it says Go! and the clock starts", hud._banner_subtitle.text == "Go!" and _game.elapsed > 0.0)
+	# Tension that builds (upgrade 6): one worm wakes at Go!, the one furthest from you.
+	var furthest := true
+	for worm in _game._worms:
+		for other in _game._worms:
+			if not worm.asleep and other.asleep and other.head_position.distance_to(gnome.global_position) > worm.head_position.distance_to(gnome.global_position):
+				furthest = false
+	_check("one worm wakes at Go!, the one furthest from you (upgrade 6)", _awake() == 1 and furthest)
 	# The berry compass (upgrade 2): turned away from the field, the 3 nearest berries get badges.
 	_game.camera_rig.reset_view(PI)
 	await _frames(3)
@@ -168,9 +176,30 @@ func _run() -> void:
 	await _frames(3)
 	_check("R starts a new round", not _game.finished and _game.collected == 0 and not board.is_showing and _game._berries.size() == 9)
 
-	# Bonk a worm.
+	# The worms wake in turn, as you pick.
 	await _seconds(0.3)
-	var worm = _game._worms[0]
+	var sleepers := []
+	for each in _game._worms:
+		if each.asleep:
+			sleepers.append(each)
+	_check("after R, one worm is up and two sleep under a drifting Zz", _awake() == 1 and sleepers.size() == 2 and sleepers[0]._zz.visible and sleepers[1]._zz.visible)
+	for i in 10:
+		gnome.place(sleepers[0].head_position - Vector3(0, _game.GNOME_MIDDLE, 0), 0.0)
+		await physics_frame
+	_check("a sleeping worm can't catch you", not _game.caught_by_worm)
+	for i in 3:
+		gnome.place(_game._berries[0].global_position - Vector3(0, _game.GNOME_MIDDLE, 0), 0.0)
+		await _frames(2)
+	var stretching := false
+	for each in _game._worms:
+		stretching = stretching or each._waking > 0.0
+	_check("your 3rd berry wakes the next worm, with a stretch (%d picked, %d awake)" % [_game.collected, _awake()], _game.collected == 3 and _awake() == 2 and stretching)
+
+	# Bonk a worm: the last one asleep.
+	var worm = null
+	for each in _game._worms:
+		if each.asleep:
+			worm = each
 	var facing: float = atan2(worm.head_position.x - worm.tail.x, worm.head_position.z - worm.tail.z)
 	var front: Vector3 = worm.head_position + Vector3(sin(facing), 0, cos(facing)) * 1.0
 	gnome.place(Vector3(front.x, field.floor_at(front.x, front.z) + 0.05, front.z), facing + PI)
@@ -184,6 +213,7 @@ func _run() -> void:
 			bonked = true
 			break
 	_check("a swing that catches a worm's head stuns it", bonked)
+	_check("and a bonk wakes a sleeping worm", not worm.asleep and _awake() == 3)
 	await _frames(2)
 	_check("stars circle its head while it's dazed, and it looks crosser", worm._stars.visible and worm.bonks == 1 and worm._brows[0].visible)
 	_check("and it'll get up 5%% faster (%.2f → %.2f m/s)" % [speed_before, worm.top_speed], absf(worm.top_speed - speed_before * 1.05) < 0.01)
@@ -235,6 +265,14 @@ func _run() -> void:
 	print("FAILED" if _failed else "ALL PASSED")
 	root.get_node("Scores").reset("berry-rush")
 	quit(1 if _failed else 0)
+
+
+func _awake() -> int:
+	var count := 0
+	for worm in _game._worms:
+		if not worm.asleep:
+			count += 1
+	return count
 
 
 # Where everything is, as text, for comparing two fields.

@@ -11,6 +11,9 @@ extends Node3D
 # You can read what it's up to: when it first notices you, a "!" pops over its head and its eyes go
 # wide; bonked, stars circle its head; and each bonk makes it visibly crosser (angry brows, slanting
 # more each time), since each one makes it a little faster.
+# Worms start the round asleep, breathing slowly under a drifting "Zz", and wake one at a time (see
+# berry_rush.gd): a big stretch, rearing its head up, a yawn, then off it goes. Asleep, it can't
+# move or catch anyone, but a bonk wakes it up.
 
 const LENGTH := 3.0
 const BUNCHED := LENGTH * 0.35 # How close the tail gets to the head when the body arches.
@@ -24,6 +27,8 @@ const COLORS := [Color("#ff3b30"), Color("#ff9500"), Color("#ffdd00"), Color("#3
 const NOTICE := 9.0 # It locks on to the gnome this close...
 const FORGET := 12.0 # ...and loses interest past this.
 const ALERT_TIME := 1.0
+const WAKE_TIME := 1.2 # Seconds of stretching and yawning before a worm that's woken up sets off.
+const REAR := 0.55 # How high it rears its head in the stretch.
 const RINGS := 64 # Rings round the body, for a smooth tube.
 const SIDES := 12
 
@@ -36,6 +41,7 @@ var tail := Vector3.ZERO
 var stun_time := 0.0
 var head_position := Vector3.ZERO # The middle of its head, where it catches and gets bonked.
 var bonks := 0 # How many times it's been bonked this round.
+var asleep := false
 
 var _stretching := false
 var _from := Vector3.ZERO
@@ -57,6 +63,11 @@ var _alert_time := -1.0
 var _locked := false
 var _stars: Node3D
 var _time := 0.0
+var _waking := 0.0 # Counts down while it stretches awake.
+var _lids: Array[Node3D] = [] # Its eyes, closed, while it sleeps.
+var _zz: Label3D
+var _rise := 0.0 # A little extra arch (breathing in its sleep)...
+var _rear := 0.0 # ...and how high its head is reared up (stretching awake).
 
 
 func _ready() -> void:
@@ -77,6 +88,25 @@ func is_dazed() -> bool:
 	return stun_time > 0.0 or _roll > 0.0
 
 
+# Asleep, or still stretching awake: either way it isn't going anywhere yet, and can't catch anyone.
+func is_sleeping() -> bool:
+	return asleep or _waking > 0.0
+
+
+func sleep() -> void:
+	asleep = true
+	_waking = 0.0
+
+
+# Time to get up: a stretch and a yawn, then it's off.
+func wake() -> void:
+	if not asleep:
+		return
+	asleep = false
+	_waking = WAKE_TIME
+	Sound.play_yawn(head_position)
+
+
 # Lie flat at `at_head`, its tail stretched out behind toward `at_tail`, ready to start.
 func place(at_head: Vector3, at_tail: Vector3, speed: float, fastest: float) -> void:
 	head = at_head
@@ -88,6 +118,9 @@ func place(at_head: Vector3, at_tail: Vector3, speed: float, fastest: float) -> 
 	bonks = 0
 	_locked = false
 	_alert_time = -1.0
+	_waking = 0.0
+	_rise = 0.0
+	_rear = 0.0
 	_stretching = true # So its first step pulls the tail up.
 	_start_step()
 	_shape()
@@ -95,6 +128,8 @@ func place(at_head: Vector3, at_tail: Vector3, speed: float, fastest: float) -> 
 
 # Bonk! It rolls over away from the gnome, its eyes turn to ✕s, and it'll get up a little faster.
 func stun() -> void:
+	asleep = false # A rude awakening.
+	_waking = 0.0
 	stun_time = STUN_TIME
 	var across := Vector3(head.z - tail.z, 0, -(head.x - tail.x))
 	_roll_side = -1.0 if (target.global_position - head).dot(across) > 0.0 else 1.0
@@ -104,7 +139,7 @@ func stun() -> void:
 
 # Is the gnome near enough to notice? Returns true the moment it first locks on (for the "!").
 func notice(distance: float) -> bool:
-	if is_dazed():
+	if is_dazed() or is_sleeping():
 		return false
 	if not _locked and distance < NOTICE:
 		_locked = true
@@ -127,10 +162,26 @@ func update(delta: float, moving: bool) -> void:
 	_roll = move_toward(_roll, roll_to, ROLL_SPEED * delta)
 	var dazed := is_dazed()
 	for eye in _eyes:
-		eye.visible = not dazed
+		eye.visible = not dazed and not asleep
 	for cross in _crosses:
 		cross.visible = dazed
+	for lid in _lids:
+		lid.visible = asleep and not dazed
 	_time += delta
+	# Asleep: slow breaths, and a "Zz" drifting up from its head, over and over.
+	_rise = (0.04 + 0.04 * sin(_time * 1.8)) if asleep else 0.0
+	_zz.visible = asleep
+	if asleep:
+		var drift := fmod(_time * 0.45, 1.0)
+		_zz.global_position = head_position + Vector3(0.15 + 0.2 * drift, 0.45 + 0.6 * drift, 0)
+		_zz.scale = Vector3.ONE * (0.6 + 0.6 * drift)
+		_zz.modulate.a = sin(drift * PI)
+	# Waking: it rears up in a long stretch, eyes wide, then settles back down to set off.
+	_rear = 0.0
+	if _waking > 0.0:
+		_waking = maxf(_waking - delta, 0.0)
+		var t := 1.0 - _waking / WAKE_TIME
+		_rear = REAR * sin(t * PI)
 	# The "!" pops up, bobs, and fades; the eyes go wide while it shows.
 	var wide := 1.0
 	if _alert_time >= 0.0:
@@ -144,6 +195,8 @@ func update(delta: float, moving: bool) -> void:
 		if t >= 1.0:
 			_alert_time = -1.0
 			_alert.visible = false
+	if _waking > 0.0:
+		wide = maxf(wide, 1.0 + 0.35 * sin((1.0 - _waking / WAKE_TIME) * PI))
 	for eye in _eyes:
 		eye.scale = Vector3.ONE * wide
 	# Stars circle its head while it's dazed.
@@ -153,7 +206,7 @@ func update(delta: float, moving: bool) -> void:
 	for i in _brows.size():
 		_brows[i].visible = bonks > 0
 		_brows[i].rotation.z = (1.0 if i == 0 else -1.0) * minf(0.3 + 0.12 * bonks, 0.75)
-	if moving and not dazed:
+	if moving and not dazed and not is_sleeping():
 		_step_time += delta
 		var progress := minf(_step_time / _step_duration, 1.0)
 		var eased := (1.0 - cos(PI * progress)) / 2.0 # Starts slow, speeds up, slows down.
@@ -231,7 +284,7 @@ func _shape() -> void:
 	var lengths := PackedFloat32Array([0.0])
 	for i in 41:
 		var t := i / 40.0
-		var bump := arch * sin(PI * t)
+		var bump := (arch + _rise) * sin(PI * t) + _rear * smoothstep(0.55, 1.0, t)
 		var p := tail.lerp(head, t) + sideways * bump * sin(_roll)
 		p.y = field.floor_at(p.x, p.z) + RADIUS + bump * cos(_roll)
 		if i > 0:
@@ -315,6 +368,16 @@ func _build_face() -> void:
 		brow.visible = false
 		_head_pivot.add_child(brow)
 		_brows.append(brow)
+		# Closed eyes, for sleeping: a sleepy curve each side.
+		var lid := Node3D.new()
+		lid.position = Vector3(side * 0.12, 0.11, 0.27)
+		for part: float in [-1.0, 1.0]:
+			var curve := Art.box(Vector3(0.075, 0.025, 0.03), black, Vector3(part * 0.032, 0, 0))
+			curve.rotation.z = part * 0.35
+			lid.add_child(curve)
+		lid.visible = false
+		_head_pivot.add_child(lid)
+		_lids.append(lid)
 	# The "!" when it notices you.
 	_alert = Art.label("!", 200, Color("#ffd23f"))
 	_alert.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -326,6 +389,16 @@ func _build_face() -> void:
 	_alert.top_level = true
 	_alert.visible = false
 	add_child(_alert)
+	# "Zz", drifting up while it sleeps.
+	_zz = Art.label("Zz", 120, Color("#e8f0ff"))
+	_zz.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_zz.outline_size = 18
+	_zz.outline_modulate = Color("#3c4a78")
+	_zz.alpha_cut = Label3D.ALPHA_CUT_DISABLED
+	_zz.pixel_size = 0.004
+	_zz.top_level = true
+	_zz.visible = false
+	add_child(_zz)
 	# Stars, circling when it's dazed.
 	_stars = Node3D.new()
 	_stars.top_level = true

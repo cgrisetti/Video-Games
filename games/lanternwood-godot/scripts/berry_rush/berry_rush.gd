@@ -6,6 +6,8 @@ extends Node3D
 # at the south end. "Ready…", then "Go!": pick all 9 raspberries, then follow the fox to the golden
 # one, as fast as you can, without an inch worm catching you. Swing your stick at a worm's head to
 # stun it (it gets up a little faster). The fastest times go in the Top 10.
+# The worms start asleep and wake one at a time as you pick berries, so the pressure builds toward
+# the golden raspberry.
 #
 # Everything about how the game plays is the same as the three.js Berry Rush; the field is new.
 # The field and its obstacles are in field.gd, the creek in creek.gd, the worms in inch_worm.gd.
@@ -28,6 +30,7 @@ const BERRY_TOUCH := 1.0 # How close the middle of the gnome has to come to pick
 const GOLDEN_TOUCH := 1.3 # ...or the golden one.
 const GNOME_MIDDLE := 0.6 # The height of the middle of the gnome, where things touch it.
 const WORM_COUNT := 3 # Each starts in a different quarter of the field.
+const WAKE_AFTER := [0, 3, 6] # A worm wakes at "Go!", the next after your 3rd berry, the last after your 6th.
 const WORM_MAX_SPEED := 0.9 # A worm's fastest moment, as a share of the gnome's top speed...
 const WORM_TOP_SPEED := 0.99 # ...rising with each bonk, up to this.
 const WORM_SAFE_DISTANCE := 10.0 # Worms never start closer than this to the gnome.
@@ -37,7 +40,7 @@ const DANGER_FAR := 9.0 # The danger music creeps in when a worm is this close..
 const DANGER_NEAR := 3.0 # ...and is at full strength this close.
 const FOX_LEAD_SPEED := 0.85 # How fast the fox lopes ahead to the golden raspberry, as a share of the gnome's speed.
 const HINT := "Follow the fox to the golden raspberry!"
-const GOAL := "Pick all 9 raspberries, then follow the fox to the golden one, as fast as you can. Don't let an inch worm catch you! Swing your stick (F, or □) at a worm's head to stun it, though it gets back up a little faster. The creek slows everyone down. R starts the round over."
+const GOAL := "Pick all 9 raspberries, then follow the fox to the golden one, as fast as you can. The inch worms wake up one by one as you pick: don't let one catch you! Swing your stick (F, or □) at a worm's head to stun it, though it gets back up a little faster. The creek slows everyone down. R starts the round over."
 
 var hud: Node # Set by main.gd.
 var scoreboard: Node
@@ -295,6 +298,29 @@ func _place_worms() -> void:
 			if safe and worm._is_clear(tail, head):
 				break
 		worm.place(head, tail, gnome.MOVE_SPEED * WORM_MAX_SPEED, gnome.MOVE_SPEED * WORM_TOP_SPEED)
+		worm.sleep()
+
+
+# Wake the worms in turn, as the berries are picked (WAKE_AFTER). The one furthest from the gnome
+# gets up, so a worm never wakes right on top of you. A worm you bonk awake early counts.
+func _wake_worms() -> void:
+	var due := 0
+	for after: int in WAKE_AFTER:
+		if collected >= after:
+			due += 1
+	var awake := 0
+	for worm in _worms:
+		if not worm.asleep:
+			awake += 1
+	while awake < due:
+		var furthest: InchWorm = null
+		for worm in _worms:
+			if worm.asleep and (furthest == null or worm.head_position.distance_to(gnome.global_position) > furthest.head_position.distance_to(gnome.global_position)):
+				furthest = worm
+		if furthest == null:
+			return
+		furthest.wake()
+		awake += 1
 
 
 # Either way a round ends, the Top 10 comes up: straight away if a worm caught you, or after a
@@ -442,13 +468,16 @@ func _process(delta: float) -> void:
 					Sound.play_bonk(worm.head_position)
 					break
 
-	# The inch worms crawl after the gnome until the round is over. Dazed worms can't catch anyone.
+	# The inch worms wake in turn and crawl after the gnome until the round is over. Sleeping and
+	# dazed worms can't catch anyone.
+	if not finished and ready and not hold_worms:
+		_wake_worms()
 	var nearest := INF
 	for worm in _worms:
 		worm.update(delta, not finished and ready and not hold_worms)
-		if not finished and ready and not hold_worms and not worm.is_dazed() and worm.head_position.distance_to(middle) < WORM_CATCH_DISTANCE:
+		if not finished and ready and not hold_worms and not worm.is_dazed() and not worm.is_sleeping() and worm.head_position.distance_to(middle) < WORM_CATCH_DISTANCE:
 			_caught(worm)
-		if not worm.is_dazed():
+		if not worm.is_dazed() and not worm.asleep:
 			nearest = minf(nearest, worm.head_position.distance_to(middle))
 		if not finished and ready and not hold_worms and worm.notice(worm.head_position.distance_to(middle)):
 			Sound.play_alert(worm.head_position) # "!": it's seen you.
