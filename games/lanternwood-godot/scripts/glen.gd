@@ -62,6 +62,7 @@ var hud: Node # Set by main.gd: shows prompts, cards and messages.
 var _openings: Array = []
 var _lanterns: Array[OmniLight3D] = []
 var _grass_material: ShaderMaterial
+var _grass_patches: Array[MultiMeshInstance3D] = []
 var _near: Node = null # The opening the gnome is standing at, if any.
 var _offering: Node = null # The opening whose game card is showing, waiting for a second press.
 var _time := 0.0
@@ -195,9 +196,10 @@ func _grass_weight(x: float, z: float) -> float:
 
 
 func _grow_grass(detail: Dictionary) -> void:
-	for child in _generated.get_children():
-		if child.name.begins_with("Grass"):
-			child.queue_free()
+	# Only the first patch keeps the name "Grass" (Godot renames the rest), so go by the list.
+	for patch in _grass_patches:
+		patch.queue_free()
+	_grass_patches.clear()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED + 1
 	# Most of the grass goes inside the Glenn, where you walk; the rest out round the edges.
@@ -206,6 +208,7 @@ func _grow_grass(detail: Dictionary) -> void:
 	tufts.append_array(Meadow.grass(detail.grass - inside, Rect2(-HALF_X - 14.0, -HALF_Z - 14.0, HALL_WIDTH + 28.0, HALL_LENGTH + 28.0), rng, _grass_weight, ground_height))
 	for tuft in tufts:
 		_add(tuft)
+	_grass_patches.assign(tufts)
 	_grass_material = tufts[0].material_override if not tufts.is_empty() else null
 
 
