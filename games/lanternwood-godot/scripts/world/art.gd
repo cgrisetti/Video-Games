@@ -10,6 +10,7 @@ extends RefCounted
 const LEAVES_SHADER := preload("res://shaders/leaves.gdshader")
 const BARK_SHADER := preload("res://shaders/bark.gdshader")
 const ROCK_SHADER := preload("res://shaders/rock.gdshader")
+const CLOTH_SHADER := preload("res://shaders/cloth.gdshader")
 
 static var _materials := {}
 static var _leaf_textures := {}
@@ -41,6 +42,24 @@ static func bark_material(color: Color, stripes := 1.0) -> ShaderMaterial:
 		made.shader = BARK_SHADER
 		made.set_shader_parameter("bark_color", color)
 		made.set_shader_parameter("stripe_scale", stripes)
+		_materials[key] = made
+	return _materials[key]
+
+
+# The characters' clothes, hair and fur (shaders/cloth.gdshader). `weave` is FELT, KNIT, HAIR or LEATHER.
+# `scale` is bigger for a finer texture; `fuzz` is how much the edges glow.
+enum { FELT, KNIT, HAIR, LEATHER }
+static func cloth_material(color: Color, weave := FELT, scale := 1.0, fuzz := 0.45, extra := {}) -> ShaderMaterial:
+	var key := "cloth %s %s %s %s %s" % [color.to_html(), weave, scale, fuzz, extra]
+	if not _materials.has(key):
+		var made := ShaderMaterial.new()
+		made.shader = CLOTH_SHADER
+		made.set_shader_parameter("cloth_color", color)
+		made.set_shader_parameter("weave", weave)
+		made.set_shader_parameter("scale", scale)
+		made.set_shader_parameter("fuzz", fuzz)
+		for parameter in extra:
+			made.set_shader_parameter(parameter, extra[parameter])
 		_materials[key] = made
 	return _materials[key]
 
@@ -182,14 +201,15 @@ static func tube_mesh(points: PackedVector3Array, radii: PackedFloat32Array, sid
 	var ring := sides + 1
 	for i in points.size() - 1:
 		for s in sides:
+			# Wound so the outside faces out (Godot draws the side whose corners go clockwise).
 			var a := i * ring + s
 			var b := a + ring
 			tool.add_index(a)
-			tool.add_index(b)
-			tool.add_index(a + 1)
 			tool.add_index(a + 1)
 			tool.add_index(b)
+			tool.add_index(a + 1)
 			tool.add_index(b + 1)
+			tool.add_index(b)
 	return tool.commit()
 
 

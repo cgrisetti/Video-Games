@@ -73,6 +73,12 @@ func _run() -> void:
 	_tap("interact")
 	await _frames(2)
 	_check("F swings the stick", gnome._swing >= 0.0)
+	await _seconds(0.7)
+	_tap("wave")
+	await _frames(2)
+	_check("R waves", gnome.is_waving())
+	await _seconds(2.0)
+	_check("and the wave finishes", not gnome.is_waving())
 
 	_tap("pause")
 	await _frames(2)

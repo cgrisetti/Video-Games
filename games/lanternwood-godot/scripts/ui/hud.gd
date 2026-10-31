@@ -157,9 +157,9 @@ func show_banner(title: String, subtitle: String) -> void:
 
 func _show_controls() -> void:
 	if InputHints.using_controller:
-		_controls.text = "Left stick  move     ✕  jump     □  swing     Right stick  camera     Options  pause"
+		_controls.text = "Left stick  move     ✕  jump     □  swing     △  wave     Right stick  camera     Options  pause"
 	else:
-		_controls.text = "WASD  move     Space  jump     F  swing     Q E  camera     Esc  pause"
+		_controls.text = "WASD  move     Space  jump     F  swing     R  wave     Q E  camera     Esc  pause"
 
 
 func _fade(node: CanvasItem, to: float, seconds: float) -> Tween:

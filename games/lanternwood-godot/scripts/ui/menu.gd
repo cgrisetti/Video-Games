@@ -179,6 +179,7 @@ func _build() -> void:
 		["Move", "W A S D or arrows", "Left stick or D-pad"],
 		["Jump", "Space", "✕"],
 		["Swing stick", "F", "□"],
+		["Wave to the fox", "R", "△"],
 		["Go through a gate", "F, then F", "□, then □"],
 		["Turn the camera", "Q  E", "Right stick"],
 		["Look up or down", "T  G", "Right stick"],

@@ -7,11 +7,11 @@ extends Node
 signal device_changed(using_controller: bool)
 
 const KEYBOARD := {
-	"interact": "F", "jump": "Space", "pause": "Esc", "back": "Esc", "confirm": "Enter",
+	"interact": "F", "jump": "Space", "wave": "R", "pause": "Esc", "back": "Esc", "confirm": "Enter",
 	"move": "W A S D", "look": "Q E  T G", "toggle_music": "M",
 }
 const CONTROLLER := {
-	"interact": "□", "jump": "✕", "pause": "Options", "back": "○", "confirm": "✕",
+	"interact": "□", "jump": "✕", "wave": "△", "pause": "Options", "back": "○", "confirm": "✕",
 	"move": "Left stick", "look": "Right stick", "toggle_music": "",
 }
 
