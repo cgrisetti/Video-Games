@@ -15,7 +15,7 @@ extends CharacterBody3D
 const WALK_SPEED := 1.4
 const TROT_SPEED := 4.0
 const GALLOP_SPEED := 9.5
-const ACCELERATION := 9.0
+const ACCELERATION := 13.0
 const BRAKING := 14.0
 const TURN_RATE := Vector2(4.5, 2.2) # Radians a second it can turn: slow, and at a gallop.
 const ARRIVE := 1.6 # Slows down this many metres a second for every metre short of where it's going.
@@ -164,7 +164,7 @@ func wag(amount: float) -> void:
 
 # Let the camera see through it (it's in the way of the gnome).
 func fade(faded: bool) -> void:
-	var goal := 0.6 if faded else 0.0
+	var goal := 0.55 if faded else 0.0
 	if absf(goal - _see_through) < 0.01:
 		return
 	_see_through = move_toward(_see_through, goal, get_process_delta_time() * 3.0)
@@ -228,6 +228,7 @@ func _physics_process(delta: float) -> void:
 	velocity.z = cos(_heading) * speed
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
+	speed = minf(speed, Vector2(get_real_velocity().x, get_real_velocity().z).length() + 0.5) # Not running on the spot.
 	global_position.x = clampf(global_position.x, keep_in.position.x, keep_in.end.x)
 	global_position.z = clampf(global_position.z, keep_in.position.y, keep_in.end.y)
 	_gallop_time = _gallop_time + delta if speed > 7.0 else maxf(_gallop_time - delta * 0.5, 0.0)
@@ -236,20 +237,31 @@ func _physics_process(delta: float) -> void:
 		_gallop_time = 0.0
 
 
-# Feel ahead with two whiskers and steer away from whatever's there (rocks, posts, gates).
+# Feel ahead with three whiskers (left, middle, right) and steer away from whatever's there (rocks,
+# lantern posts, gates). Something dead ahead turns it toward whichever side the goal is on. And if
+# it's already touching something, it slides along it rather than pushing into it.
 func _avoid(bearing: float) -> float:
+	if is_on_wall():
+		var wall := get_wall_normal()
+		var along := Vector3(-wall.z, 0, wall.x)
+		var want := Vector3(sin(bearing), 0, cos(bearing))
+		if along.dot(want) < 0.0:
+			along = -along
+		return atan2(along.x, along.z)
 	if speed < 0.5:
 		return bearing
 	var space := get_world_3d().direct_space_state
 	var from := global_position + Vector3(0, 0.5, 0)
 	var reach := 1.0 + speed * 0.25
 	var push := 0.0
-	for side: float in [-1.0, 1.0]:
+	for side: float in [-1.0, 0.0, 1.0]:
 		var angle := _heading + side * 0.45
 		var ray := PhysicsRayQueryParameters3D.create(from, from + Vector3(sin(angle), 0, cos(angle)) * reach, 1, [get_rid()])
 		var hit := space.intersect_ray(ray)
 		if hit:
-			push -= side * (1.0 - from.distance_to(hit.position) / reach)
+			var closeness := 1.0 - from.distance_to(hit.position) / reach
+			var away_from := side if side != 0.0 else signf(angle_difference(_heading, bearing) + 0.001)
+			push -= away_from * closeness * (1.5 if side == 0.0 else 1.0)
 	return bearing + push * 1.2
 
 

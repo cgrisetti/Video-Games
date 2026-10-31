@@ -60,7 +60,7 @@ func think(delta: float) -> void:
 	var gnome_speed := Vector2(gnome.velocity.x, gnome.velocity.z).length()
 	_gnome_still = _gnome_still + delta if gnome_speed < 0.4 else 0.0
 	var away := _flat(gnome.global_position - fox.global_position).length()
-	fox.fade(_in_view(fox.global_position) and _flat(fox.global_position - camera.global_position).length() < _flat(gnome.global_position - camera.global_position).length())
+	fox.fade(_hides_gnome())
 
 	# The leash, which wins over everything else.
 	if away > REAPPEAR:
@@ -69,8 +69,8 @@ func think(delta: float) -> void:
 		return
 	if away > COMFORT.y and activity not in ["follow", "greet", "play"] and not fox.is_pouncing():
 		_start("follow", 3.0)
-	# The gnome's off at a run: drop what it's doing and come along.
-	if gnome_speed > 4.0 and away > 4.0 and activity in ["sit", "lie", "sniff", "explore", "pounce"] and not fox.is_pouncing():
+	# The gnome's off: drop what it's doing and come along.
+	if gnome_speed > 2.5 and away > 3.0 and activity in ["sit", "lie", "sniff", "explore", "pounce"] and not fox.is_pouncing():
 		_start("follow", 3.0)
 
 	# Something exciting nearby? A jump or a stick swing is an invitation to play.
@@ -155,7 +155,7 @@ func _do_follow(_delta: float, away: float, gnome_speed: float) -> void:
 	if _clamp(goal).distance_to(goal) > 0.5:
 		_side = -_side
 	var pace: float = fox.TROT_SPEED
-	if away > GALLOP_BACK or gnome_speed > 5.0:
+	if away > GALLOP_BACK * 0.7 or gnome_speed > 5.0:
 		pace = fox.GALLOP_SPEED
 	elif gnome_speed < 1.0:
 		pace = fox.WALK_SPEED * 1.4
@@ -302,6 +302,19 @@ func _in_view(at: Vector3) -> bool:
 	var to_camera := _flat(camera.global_position - gnome.global_position).normalized()
 	var offset := _flat(at - gnome.global_position)
 	return offset.length() < 6.0 and offset.normalized().dot(to_camera) > 0.6
+
+
+# Is the fox actually covering the gnome on screen? (Then it fades, so you can still see the gnome.)
+func _hides_gnome() -> bool:
+	var view := camera as Camera3D
+	if view == null:
+		return false
+	var fox_middle := fox.global_position + Vector3(0, 0.7, 0)
+	var gnome_middle := gnome.global_position + Vector3(0, 0.7, 0)
+	if view.is_position_behind(fox_middle) or view.global_position.distance_to(fox_middle) > view.global_position.distance_to(gnome_middle):
+		return false
+	var apart := view.unproject_position(fox_middle).distance_to(view.unproject_position(gnome_middle))
+	return apart < view.get_viewport().get_visible_rect().size.y * 0.09
 
 
 # Keep out of the line between the camera and the gnome, so the fox never hides the player.
