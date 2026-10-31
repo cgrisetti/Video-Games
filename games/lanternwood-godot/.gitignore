@@ -1,0 +1,3 @@
+# Godot rebuilds this cache the first time you open the project.
+.godot/
+export_presets.cfg
