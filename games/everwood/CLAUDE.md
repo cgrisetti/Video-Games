@@ -20,3 +20,5 @@ After creating or modifying any `.gd` script, ALWAYS verify syntax and static ty
 - **Syntax & Type Check:** `godot --headless --check-only -s <path_to_script.gd>`
 - **Project Boot Smoke Test:** `godot --headless --quit`
 - **Workflow:** Explore -> Plan -> Implement -> Verify via CLI -> Commit atomic changes.
+- **Autoload access:** `--check-only -s` compiles a script before autoloads are registered, so reach them as `NetworkManager.current` / `CombatDirector.current` (static), never by their autoload names (`Network`, `Combat`).
+- **Functional Smoke Test:** `godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd` (see `README.md`).

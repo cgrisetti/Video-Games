@@ -2,6 +2,8 @@
 
 3D browser games we build by describing them to Claude. Each game lives in `games/`, runs in a web browser, and uses [Three.js](https://threejs.org/) for the 3D graphics. The first game is **Lanternwood**, a woodland arcade: walk a little gnome down a lantern-lit forest path, and go through the gates along it to play games. In **Berry Rush** you pick raspberries with your fox friend while dodging (or bonking) rainbow inch worms; in the **Bramble Maze** you find your way out of a tall garden hedge maze, a new one every time. **Gnome Crossing** is Lanternwood's take on Frogger and Crossy Road: hop up an endless trail across creeks and deer trails, as far as you can, before night catches up. Play them, then change them.
 
+**Everwood** (`games/everwood/`) is a different kind of project: a co-op raid game for the whole family, built in the Godot game engine instead of the browser. Its [README](games/everwood/README.md) explains how to run it.
+
 ## 1. What you need
 
 - A Mac running macOS 13 (Ventura) or newer, Apple Silicon or Intel.

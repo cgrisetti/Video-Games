@@ -15,6 +15,13 @@ A playground for building small 3D browser games together by prompting Claude. T
 - `games/lanternwood/` is the first game, Lanternwood: a woodland arcade. The gnome walks a lantern-lit path (the Glenn, `woods.js`) and goes through gates into mini-games: Berry Rush (`berry-rush.js`), the Bramble Maze (`maze.js`) and Gnome Crossing (`gnome-crossing.js`, with its endless trail in `trail.js` and its animals in `critters.js`). `main.js` runs whichever area you're in. It's a good reference for the patterns below.
 - To add a mini-game to Lanternwood, make it an area like `berry-rush.js`, add it to `areas` in `main.js`, give it an opening in `woods.js` (the `GAMES` and `OPENINGS` lists) and a Top 10 board in `scoreboard.js`. Things only one area shows get `data-area="<area>"` in `index.html`.
 
+## Everwood (Godot)
+
+`games/everwood/` is a separate game: Everwood, a cooperative raid action-RPG for a family party (4-player split-screen, 5 over the network) in [Godot 4.7](https://docs.godotengine.org/en/stable/) with strict static typing. It shares nothing with Lanternwood and doesn't use Vite, three.js or the launcher page.
+
+- Its own `CLAUDE.md` (the engineering contract) and `docs/` (vision, combat GDD, technical design) are the rules there. They win over this file inside that folder.
+- Its `README.md` says how to run it, the controls, the layout and the three checks to run after a change (check-only on every script, a headless boot, and `tools/smoke_test.gd`).
+
 ## Making a new game
 
 1. Create `games/<kebab-case-name>/index.html` and `main.js`, following `games/lanternwood/`.
