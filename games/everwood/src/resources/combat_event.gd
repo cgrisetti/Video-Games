@@ -1,10 +1,10 @@
-## One combat effect on its way to a target: a strike, a heal, threat or a pull.
+## One combat effect on its way to a target: a strike, a heal, threat, a pull or a reward.
 ## The Combat Director hands it to whichever peer owns the target, so it turns
 ## into a plain Dictionary to cross the network.
 class_name CombatEvent
 extends RefCounted
 
-enum Kind { STRIKE, HEAL, THREAT, PULL }
+enum Kind { STRIKE, HEAL, THREAT, PULL, REWARD }
 
 var kind: Kind = Kind.STRIKE
 var attacker_path: NodePath = NodePath()
@@ -16,6 +16,8 @@ var damage: float = 0.0
 var poise_damage: float = 0.0
 var threat: float = 0.0
 var heal: float = 0.0
+## Resonance pips granted (REWARD).
+var resonance: float = 0.0
 var primer: int = CombatActionResource.Synergy.NONE
 var detonates: bool = false
 var hit_stop_scale: float = 1.0
@@ -60,6 +62,7 @@ func to_dict() -> Dictionary:
 		"poise_damage": poise_damage,
 		"threat": threat,
 		"heal": heal,
+		"resonance": resonance,
 		"primer": primer,
 		"detonates": detonates,
 		"hit_stop_scale": hit_stop_scale,
@@ -82,6 +85,7 @@ static func from_dict(data: Dictionary) -> CombatEvent:
 	event.poise_damage = float(data.get("poise_damage", 0.0))
 	event.threat = float(data.get("threat", 0.0))
 	event.heal = float(data.get("heal", 0.0))
+	event.resonance = float(data.get("resonance", 0.0))
 	event.primer = int(data.get("primer", CombatActionResource.Synergy.NONE))
 	event.detonates = bool(data.get("detonates", false))
 	event.hit_stop_scale = float(data.get("hit_stop_scale", 1.0))

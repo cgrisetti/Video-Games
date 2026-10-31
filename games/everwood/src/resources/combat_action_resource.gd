@@ -60,7 +60,7 @@ enum Synergy { NONE, STAGGER, FROST, RADIANT }
 @export var poise_damage: float = 0.0
 @export var threat_multiplier: float = 1.0
 ## Fraction of a resonance pip earned per landed hit.
-@export var resonance_gain: float = 0.2
+@export var resonance_gain: float = 0.1
 ## How far in front of the actor the hitbox centre sits (0 = around the actor).
 @export var reach: float = 1.6
 @export var hit_radius: float = 1.2

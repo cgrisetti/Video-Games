@@ -15,6 +15,12 @@ The **Dungeon Dojo**: a greybox arena with pillars for cover and the first raid 
 
 Three assist modes, one per player: **Master** (manual, +15% flow speed), **Adventurer** (bigger input buffer, camera follows the boss, combos chain for you) and **Squire Gambit** (one button picks the move; you auto-roll out of red circles).
 
+## Hub Town and hot-join (Phase 5)
+
+The game starts in **Hub Town**. Walk into the Raid Portal together (everyone standing on it) for a 3-second countdown into the Dungeon Dojo; the gold exit portal there brings you back. The host moves the whole party and the ENet session stays up (`InstanceManager`).
+
+The keyboard and mouse is Player 1. Plugging in a pad joins the next player and splits the screen; unplugging drops them. Tap Enter / Start to join by hand, hold it 1.5 s to leave. Hold Tab / View for 0.6 s to change class, hold M / RS to change assist mode. Click to steer the camera with the mouse, Esc to let go. Balance numbers and reasoning: `docs/04_BALANCE.md` (not yet written; see the constants in `class_loadouts.gd` and `boss_dummy.gd`).
+
 ## Run it
 
 Open `project.godot` in Godot 4.7 and press F5, or from this folder:
@@ -61,7 +67,7 @@ src/ui/                       SplitScreenViewportGrid, PlayerCamera, PlayerHUD
 tools/                        build_dojo_scene.gd, smoke_test.gd
 ```
 
-- Actors build their own components in code. Don't hand-edit `dungeon_dojo.tscn`: change `tools/build_dojo_scene.gd` and run it again.
+- Actors build their own components in code. Don't hand-edit `dungeon_dojo.tscn`: change `tools/build_levels.gd` and run it again. Controls live in project.godot's Input Map, written by `tools/build_input_map.gd`.
 - Every tunable number is a named constant at the top of its script. Class skills and their numbers live in `src/actors/class_loadouts.gd`.
 - Networked combat follows one rule: the machine that owns the target applies the effect. `CombatDirector.deliver()` applies it locally or sends it to the owner, who checks it's plausible first.
 - Scripts reach the autoloads as `NetworkManager.current` and `CombatDirector.current`, never by their autoload names (`Network`, `Combat`), so `--check-only` can compile them.
@@ -82,6 +88,6 @@ godot --headless --path . --quit
 godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd
 ```
 
-The smoke test seats a Tank, Healer and DPS, drives them with scripted input and checks 50 things: party caps, the split-screen grid, flow-cancels, hit-stop, prime and detonate, taunt, Perfect Guard, heals, Lifeline, Shadow Sanctuary, both telegraphs, the Squire auto-evade and the boss reset. Untyped variables, parameters and return values are build errors (`project.godot` sets that), so the check-only loop enforces the static-typing rule.
+The smoke test seats a Tank, Healer and DPS, drives them with scripted input and checks 103 things (hub, Input Map, hot-join, portals, all three detonations and their rewards, flow windows, poise): party caps, the split-screen grid, flow-cancels, hit-stop, prime and detonate, taunt, Perfect Guard, heals, Lifeline, Shadow Sanctuary, both telegraphs, the Squire auto-evade and the boss reset. Untyped variables, parameters and return values are build errors (`project.godot` sets that), so the check-only loop enforces the static-typing rule.
 
 To see a frame without playing: `godot --path . -- --players=3 --demo --screenshot=/tmp/dojo.png --screenshot-delay=8`.

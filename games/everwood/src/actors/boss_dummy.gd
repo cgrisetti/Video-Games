@@ -15,6 +15,9 @@ extends ActorBase
 signal cast_started(cast_name: String, duration: float)
 
 const DISPLAY_NAME: String = "Dojo Warden"
+## Health scales with the party when a fight starts: base + per player.
+const HEALTH_BASE: float = 900.0
+const HEALTH_PER_PLAYER: float = 500.0
 const BOSS_RADIUS: float = 1.2
 const BOSS_HEIGHT: float = 3.6
 ## Players this close draw it into the fight.
@@ -23,20 +26,20 @@ const AGGRO_RADIUS: float = 16.0
 const LEASH_RADIUS: float = 30.0
 const BODY_PULL_THREAT: float = 1.0
 const MELEE_RANGE: float = 3.4
-const SWIPE_COOLDOWN: float = 2.4
+const SWIPE_COOLDOWN: float = 2.8
 ## The swipe starts only when the boss is roughly facing its target.
 const SWIPE_FACING_DOT: float = 0.8
-const FIRST_CAST_DELAY: float = 6.0
-const CAST_INTERVAL: float = 9.0
+const FIRST_CAST_DELAY: float = 8.0
+const CAST_INTERVAL: float = 10.0
 const CRIMSON_NAME: String = "Crimson Bloom"
 const CRIMSON_RADIUS: float = 3.5
-const CRIMSON_CAST_TIME: float = 2.6
-const CRIMSON_DAMAGE: float = 40.0
+const CRIMSON_CAST_TIME: float = 3.0
+const CRIMSON_DAMAGE: float = 35.0
 const SOAK_NAME: String = "Golden Communion"
 const SOAK_RADIUS: float = 3.2
 const SOAK_CAST_TIME: float = 4.0
-const SOAK_TOTAL_DAMAGE: float = 120.0
-const SOAK_FAIL_DAMAGE: float = 35.0
+const SOAK_TOTAL_DAMAGE: float = 90.0
+const SOAK_FAIL_DAMAGE: float = 30.0
 ## A soak needs this many players inside (or the whole party, if smaller).
 const SOAK_REQUIRED_PLAYERS: int = 2
 const DEFEAT_RESET_TIME: float = 6.0
@@ -148,6 +151,7 @@ func _gather_intent(delta: float) -> void:
 		threat.add_threat(nearest.player_id, BODY_PULL_THREAT)
 		engaged = true
 		_cast_timer = FIRST_CAST_DELAY
+		scale_health_to_party(CombatDirector.current.party_actors().size())
 	var target_id: StringName = threat.top_target(eligible)
 	if target_id == &"":
 		var nearest_any: ActorBase = _nearest_player(eligible, INF)
@@ -215,10 +219,10 @@ func _begin_cast() -> void:
 		var chosen: ActorBase = alive[randi() % alive.size()]
 		centers.append(chosen.global_position)
 		follow_id = String(chosen.player_id)
-	if NetworkManager.current.is_online():
-		_cast_telegraphs.rpc(kind, centers, follow_id)
-	else:
-		_cast_telegraphs(kind, centers, follow_id)
+	_cast_telegraphs(kind, centers, follow_id)
+	# Only peers that have this instance loaded have a boss to receive it.
+	for peer_id: int in InstanceManager.current.live_remote_peers():
+		_cast_telegraphs.rpc_id(peer_id, kind, centers, follow_id)
 
 
 ## Runs on every peer so everyone sees the same decals; only the owner resolves damage.
@@ -229,6 +233,7 @@ func _cast_telegraphs(kind: int, centers: PackedVector3Array, follow_id: String)
 	cast_duration = CRIMSON_CAST_TIME if crimson else SOAK_CAST_TIME
 	cast_started_at = CombatDirector.game_time()
 	cast_started.emit(cast_name, cast_duration)
+	AudioCues.play(&"telegraph", 1.0 if crimson else 0.8)
 	if telegraphs_root == null:
 		return
 	var follow: ActorBase = CombatDirector.current.get_actor(StringName(follow_id)) if follow_id != "" else null
@@ -252,11 +257,11 @@ func _on_telegraph_resolved(decal: RaidTelegraphDecal, inside: Array[ActorBase])
 		var share: float = SOAK_TOTAL_DAMAGE / inside.size()
 		for member: ActorBase in inside:
 			CombatDirector.current.deliver(_telegraph_strike(member, share))
-		CombatDirector.current.announce(decal.global_position + Vector3.UP * 2.0, "Soaked! %d each" % roundi(share), RaidTelegraphDecal.GOLD_COLOR)
+		CombatDirector.current.announce(decal.global_position + Vector3.UP * 2.0, "Soaked! %d each" % roundi(share), RaidTelegraphDecal.GOLD_COLOR, &"soak_ok")
 	else:
 		for member: ActorBase in alive:
 			CombatDirector.current.deliver(_telegraph_strike(member, SOAK_FAIL_DAMAGE))
-		CombatDirector.current.announce(decal.global_position + Vector3.UP * 2.0, "Soak failed! Stack in the gold", Color(1.0, 0.4, 0.3))
+		CombatDirector.current.announce(decal.global_position + Vector3.UP * 2.0, "Soak failed! Stack in the gold", Color(1.0, 0.4, 0.3), &"soak_fail")
 
 
 ## Telegraph damage depends only on where you stand: guards and rolls don't stop it.
@@ -275,7 +280,7 @@ func _telegraph_strike(target: ActorBase, damage: float) -> CombatEvent:
 
 
 func _on_boss_poise_broken() -> void:
-	CombatDirector.current.announce(global_position + Vector3.UP * (BOSS_HEIGHT + 1.0), "KNOCKDOWN!", Color(1.0, 0.85, 0.3))
+	CombatDirector.current.announce(global_position + Vector3.UP * (BOSS_HEIGHT + 1.0), "KNOCKDOWN!  x%.2f damage" % stats.stats.knockdown_damage_taken, Color(1.0, 0.85, 0.3), &"knockdown")
 
 
 func _on_boss_defeated() -> void:
@@ -290,6 +295,13 @@ func downed_duration() -> float:
 func recover_from_downed() -> void:
 	stats.revive(1.0)
 	_reset_fight()
+
+
+## Sets max health for a party of `players` (at full health, so only between fights).
+func scale_health_to_party(players: int) -> void:
+	stats.stats.max_health = HEALTH_BASE + HEALTH_PER_PLAYER * maxi(1, players)
+	stats.health = stats.stats.max_health
+	stats.health_changed.emit(stats.health, stats.stats.max_health)
 
 
 ## Back to the start: full health and poise, an empty aggro table, home spot.

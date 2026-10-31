@@ -30,6 +30,7 @@ var guard_started_at: float = 0.0
 var last_damage_taken: float = 0.0
 
 var _regen_delay_left: float = 0.0
+var _poise_regen_delay_left: float = 0.0
 var _invulnerable_left: float = 0.0
 
 
@@ -49,6 +50,10 @@ func tick(dt: float, can_regen_stamina: bool) -> void:
 	if can_regen_stamina and _regen_delay_left <= 0.0 and stamina < stats.max_stamina:
 		stamina = minf(stats.max_stamina, stamina + stats.stamina_regen_per_sec * dt)
 		stamina_changed.emit(stamina, stats.max_stamina)
+	_poise_regen_delay_left = maxf(0.0, _poise_regen_delay_left - dt)
+	if knockdown_time_left <= 0.0 and _poise_regen_delay_left <= 0.0 and poise < stats.max_poise and stats.poise_regen_per_sec > 0.0:
+		poise = minf(stats.max_poise, poise + stats.poise_regen_per_sec * dt)
+		poise_changed.emit(poise, stats.max_poise)
 	if knockdown_time_left > 0.0:
 		knockdown_time_left -= dt
 		if knockdown_time_left <= 0.0:
@@ -114,6 +119,8 @@ func mitigate_strike(raw_damage: float, poise_damage: float, from_front: bool, u
 		return StrikeOutcome.EVADED
 	if not unavoidable and is_invulnerable():
 		return StrikeOutcome.EVADED
+	if is_knocked_down():
+		raw_damage *= stats.knockdown_damage_taken
 	if not unavoidable and guarding and from_front:
 		var since_guard: float = CombatDirector.game_time() - guard_started_at
 		if stats.can_perfect_guard and since_guard <= PERFECT_GUARD_WINDOW:
@@ -177,6 +184,7 @@ func damage_poise(amount: float) -> bool:
 	if stats.max_poise <= 0.0 or amount <= 0.0 or knockdown_time_left > 0.0:
 		return false
 	poise = maxf(0.0, poise - amount)
+	_poise_regen_delay_left = stats.poise_regen_delay
 	poise_changed.emit(poise, stats.max_poise)
 	if poise <= 0.0:
 		knockdown_time_left = stats.poise_knockdown_time

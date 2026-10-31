@@ -23,6 +23,10 @@ signal primer_applied(target: ActorBase, primer: int)
 signal synergy_detonated(target: ActorBase, primer: int, cross_class: bool, label: String)
 signal perfect_guard_landed(defender: ActorBase)
 signal telegraph_cast(decal: RaidTelegraphDecal)
+## A burst of light and a sound at an actor (every peer emits it for every cue).
+signal cue_shown(at: Vector3, cue: StringName)
+## Both players behind a detonation were rewarded (on the detonating target's owner).
+signal synergy_rewarded(applier_id: StringName, detonator_id: StringName, resonance: float)
 
 ## Phase B impact freeze (02_COMBAT_GDD.md §2); each action scales it.
 const BASE_HIT_STOP: float = 0.06
@@ -34,7 +38,12 @@ const FROST_BONUS_DAMAGE: float = 45.0
 const RADIANT_PARTY_HEAL: float = 20.0
 const RADIANT_HEAL_RADIUS: float = 10.0
 ## Hits that land after a flow-cancel fill resonance faster.
-const FLOW_RESONANCE_MULTIPLIER: float = 2.0
+const FLOW_RESONANCE_MULTIPLIER: float = 1.5
+## Resonance pips each partner in a synergy earns (x CROSS_CLASS_MULTIPLIER across roles).
+const SYNERGY_RESONANCE_REWARD: float = 0.5
+## Healers fill resonance by healing: pips per point of health restored.
+const HEAL_RESONANCE_PER_HP: float = 0.008
+const PERFECT_GUARD_RESONANCE: float = 0.5
 const PERFECT_GUARD_POISE: float = 50.0
 const PERFECT_GUARD_THREAT: float = 250.0
 const PERFECT_GUARD_HIT_STOP_SCALE: float = 2.5
@@ -186,6 +195,8 @@ func request_hit_stop(actors: Array[ActorBase], scale: float) -> void:
 func report_hit(attacker: ActorBase, target: ActorBase, action: CombatActionResource, flowed: bool) -> void:
 	request_hit_stop([attacker, target], action.hit_stop_scale)
 	attacker.stats.add_resonance(action.resonance_gain * (FLOW_RESONANCE_MULTIPLIER if flowed else 1.0))
+	if attacker.is_local_player():
+		AudioCues.play(&"hit", 1.15 / maxf(0.7, action.hit_stop_scale), -4.0)
 	if action.damage > 0.0:
 		show_float_text(_above(target), str(roundi(action.damage)), Color(1.0, 0.94, 0.78))
 	deliver(CombatEvent.strike_from(attacker, target, action))
@@ -197,7 +208,8 @@ func deliver(event: CombatEvent) -> void:
 		return
 	if target.is_multiplayer_authority():
 		_apply(target, event, false)
-	else:
+	elif InstanceManager.current.is_peer_live(target.get_multiplayer_authority()):
+		# A peer still loading its instance can't be hit (or healed) until it arrives.
 		_receive_event.rpc_id(target.get_multiplayer_authority(), event.to_dict())
 
 
@@ -235,8 +247,14 @@ func _apply(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
 			var healed: float = target.receive_heal(event.heal)
 			if healed > 0.0:
 				show_float_text(_above(target), "+%d" % roundi(healed), Color(0.5, 1.0, 0.6))
+				AudioCues.play(&"heal", 1.0, -6.0)
 				for boss: ActorBase in _bosses:
 					deliver(_threat_event(event.attacker_path, event.attacker_player_id, boss, healed * HEAL_THREAT_RATIO, 0.0))
+				var healer: ActorBase = get_actor(event.attacker_player_id)
+				if healer != null:
+					deliver(_reward_event(healer, healed * HEAL_RESONANCE_PER_HP))
+		CombatEvent.Kind.REWARD:
+			target.stats.add_resonance(event.resonance)
 		CombatEvent.Kind.THREAT:
 			if target.threat != null:
 				if event.duration > 0.0:
@@ -258,7 +276,7 @@ func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> 
 		StatsComponent.StrikeOutcome.PERFECT_GUARD:
 			_on_perfect_guard(target, event)
 		StatsComponent.StrikeOutcome.GUARD_BROKEN:
-			announce(_above(target), "GUARD BROKEN", Color(1.0, 0.45, 0.3))
+			announce(_above(target), "GUARD BROKEN", Color(1.0, 0.45, 0.3), &"soak_fail")
 	if outcome != StatsComponent.StrikeOutcome.EVADED and outcome != StatsComponent.StrikeOutcome.PERFECT_GUARD:
 		if target.threat != null:
 			target.threat.add_threat(event.attacker_player_id, event.threat)
@@ -272,7 +290,9 @@ func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> 
 ## A Perfect Guard costs nothing, hits the attacker's poise and draws big threat.
 func _on_perfect_guard(defender: ActorBase, event: CombatEvent) -> void:
 	perfect_guard_landed.emit(defender)
-	announce(_above(defender), "PERFECT GUARD!", Color(1.0, 0.85, 0.3))
+	defender.stats.add_resonance(PERFECT_GUARD_RESONANCE)
+	announce(_above(defender), "PERFECT GUARD!  +½ pip", Color(1.0, 0.85, 0.3), &"perfect_guard")
+	show_cue(defender, Color(1.0, 0.85, 0.3), &"")
 	request_hit_stop([defender], PERFECT_GUARD_HIT_STOP_SCALE)
 	var attacker: ActorBase = _actor_at(event.attacker_path)
 	if attacker == null:
@@ -332,7 +352,41 @@ func _try_detonate(target: ActorBase, event: CombatEvent) -> void:
 	if cross_class:
 		label += "  x%.1f CROSS-CLASS" % multiplier
 	synergy_detonated.emit(target, record.primer, cross_class, label)
-	announce(_above(target) + Vector3.UP * 0.9, label, synergy_color(record.primer))
+	announce(_above(target) + Vector3.UP * 0.9, label, synergy_color(record.primer), synergy_sound(record.primer))
+	_reward_synergy(record, event, multiplier)
+
+
+## Both family members behind a detonation earn resonance and get their own
+## burst of light in the primer's colour, so everyone sees who teamed up.
+func _reward_synergy(record: PrimerRecord, event: CombatEvent, multiplier: float) -> void:
+	var amount: float = SYNERGY_RESONANCE_REWARD * multiplier
+	for partner_id: StringName in [record.applier_id, event.attacker_player_id]:
+		var partner: ActorBase = get_actor(partner_id)
+		if partner == null:
+			continue
+		deliver(_reward_event(partner, amount))
+		show_cue(partner, synergy_color(record.primer), &"reward")
+		announce(_above(partner), "+%s pip" % _pip_text(amount), synergy_color(record.primer))
+	synergy_rewarded.emit(record.applier_id, event.attacker_player_id, amount)
+
+
+func _pip_text(amount: float) -> String:
+	if is_equal_approx(amount, 0.5):
+		return "½"
+	if is_equal_approx(amount, 0.75):
+		return "¾"
+	return "%.2f" % amount
+
+
+func synergy_sound(primer: int) -> StringName:
+	match primer:
+		CombatActionResource.Synergy.STAGGER:
+			return &"synergy_stagger"
+		CombatActionResource.Synergy.FROST:
+			return &"synergy_frost"
+		CombatActionResource.Synergy.RADIANT:
+			return &"synergy_radiant"
+	return &""
 
 
 func primer_on(target: ActorBase) -> int:
@@ -442,17 +496,39 @@ func _spawn_homing_heal(healer_path: NodePath, target_path: NodePath, amount: fl
 
 # --- Floating text --------------------------------------------------------
 
-## Big callouts (synergies, perfect guards) that every peer should see.
-func announce(at: Vector3, text: String, color: Color) -> void:
+## Big callouts (synergies, perfect guards) that every peer should see and hear.
+func announce(at: Vector3, text: String, color: Color, sound: StringName = &"") -> void:
 	if NetworkManager.current.is_online():
-		_show_announcement.rpc(at, text, color)
+		_show_announcement.rpc(at, text, color, sound)
 	else:
-		_show_announcement(at, text, color)
+		_show_announcement(at, text, color, sound)
 
 
 @rpc("any_peer", "call_local", "reliable")
-func _show_announcement(at: Vector3, text: String, color: Color) -> void:
+func _show_announcement(at: Vector3, text: String, color: Color, sound: StringName) -> void:
 	show_float_text(at, text, color, 54)
+	if sound != &"":
+		AudioCues.play(sound)
+
+
+## A burst of light at an actor, on every peer, with an optional sound.
+func show_cue(actor: ActorBase, color: Color, sound: StringName) -> void:
+	if NetworkManager.current.is_online():
+		_show_cue.rpc(actor.global_position, color, sound)
+	else:
+		_show_cue(actor.global_position, color, sound)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _show_cue(at: Vector3, color: Color, sound: StringName) -> void:
+	if effects_root != null and effects_root.is_inside_tree():
+		var burst: CueBurst = CueBurst.new()
+		burst.configure(color)
+		effects_root.add_child(burst)
+		burst.global_position = at
+	if sound != &"":
+		AudioCues.play(sound)
+	cue_shown.emit(at, sound)
 
 
 func show_float_text(at: Vector3, text: String, color: Color, size: int = 40) -> void:
@@ -494,6 +570,16 @@ func _heal_event(healer_path: NodePath, healer_id: StringName, target: ActorBase
 	event.attacker_player_id = healer_id
 	event.target_path = target.get_path()
 	event.heal = amount
+	return event
+
+
+func _reward_event(target: ActorBase, pips: float) -> CombatEvent:
+	var event: CombatEvent = CombatEvent.new()
+	event.kind = CombatEvent.Kind.REWARD
+	event.target_path = target.get_path()
+	event.attacker_path = target.get_path()
+	event.attacker_player_id = target.player_id
+	event.resonance = pips
 	return event
 
 

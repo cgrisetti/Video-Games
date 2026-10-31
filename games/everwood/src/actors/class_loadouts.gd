@@ -56,25 +56,27 @@ static func shield_tank() -> ClassLoadoutResource:
 
 	var bash_1: CombatActionResource = _strike(&"tank_bash_1", "Shield Bash", Cmd.LIGHT, 0.18, 0.12, 0.42, 8.0, 8.0)
 	bash_1.poise_damage = 4.0
-	bash_1.resonance_gain = 0.25
+	bash_1.resonance_gain = 0.07
 	var bash_2: CombatActionResource = _strike(&"tank_bash_2", "Shield Bash II", Cmd.LIGHT, 0.16, 0.12, 0.42, 8.0, 9.0)
 	bash_2.poise_damage = 5.0
-	bash_2.resonance_gain = 0.25
+	bash_2.resonance_gain = 0.07
 	var bash_3: CombatActionResource = _strike(&"tank_bash_3", "Shield Bash III", Cmd.LIGHT, 0.22, 0.14, 0.55, 10.0, 12.0)
 	bash_3.poise_damage = 10.0
 	bash_3.hit_stop_scale = 1.5
-	bash_3.resonance_gain = 0.3
+	bash_3.resonance_gain = 0.08
 	var slam: CombatActionResource = _strike(&"tank_overhead_slam", "Overhead Slam", Cmd.HEAVY, 0.45, 0.15, 0.65, 22.0, 18.0)
 	slam.poise_damage = 30.0
 	slam.detonates = true
 	slam.hit_stop_scale = 2.0
 	slam.reach = 1.8
 	slam.hit_radius = 1.6
+	slam.resonance_gain = 0.12
 	var charge: CombatActionResource = _strike(&"tank_shield_charge", "Shield Charge", Cmd.FORWARD_HEAVY, 0.25, 0.25, 0.5, 20.0, 12.0)
 	charge.poise_damage = 20.0
 	charge.lunge_distance = 5.0
 	charge.detonates = true
 	charge.hit_stop_scale = 1.5
+	charge.resonance_gain = 0.12
 	var sanctuary: CombatActionResource = _support(&"tank_shadow_sanctuary", "Shadow Sanctuary", Cmd.BACK_HEAVY, Fx.SHADOW_SANCTUARY, 0.35, 0.1, 0.5)
 	sanctuary.stamina_cost = 25.0
 	sanctuary.effect_radius = 7.0
@@ -127,15 +129,15 @@ static func soul_tether_healer() -> ClassLoadoutResource:
 	stats.move_speed = 6.0
 
 	var jab_1: CombatActionResource = _strike(&"healer_jab_1", "Staff Jab", Cmd.LIGHT, 0.16, 0.1, 0.4, 7.0, 6.0)
-	jab_1.resonance_gain = 0.3
+	jab_1.resonance_gain = 0.06
 	var jab_2: CombatActionResource = _strike(&"healer_jab_2", "Staff Jab II", Cmd.LIGHT, 0.16, 0.1, 0.45, 7.0, 7.0)
-	jab_2.resonance_gain = 0.3
+	jab_2.resonance_gain = 0.06
 	var burst: CombatActionResource = _strike(&"healer_radiant_burst", "Radiant Burst", Cmd.HEAVY, 0.4, 0.15, 0.6, 20.0, 10.0)
 	burst.poise_damage = 8.0
 	burst.reach = 0.0
 	burst.hit_radius = 2.8
 	burst.detonates = true
-	burst.resonance_gain = 0.3
+	burst.resonance_gain = 0.1
 	var heal: CombatActionResource = _support(&"healer_homing_heal", "Homing Heal", Cmd.TRIGGER_R_SKILL, Fx.HOMING_HEAL, 0.12, 0.05, 0.3)
 	heal.stamina_cost = 12.0
 	heal.heal_amount = 22.0
@@ -179,12 +181,12 @@ static func directional_flow_dps() -> ClassLoadoutResource:
 	stats.move_speed = 6.6
 
 	var cut_1: CombatActionResource = _strike(&"dps_flow_cut_1", "Flow Cut", Cmd.LIGHT, 0.12, 0.1, 0.36, 6.0, 9.0)
-	cut_1.resonance_gain = 0.25
+	cut_1.resonance_gain = 0.06
 	var cut_2: CombatActionResource = _strike(&"dps_flow_cut_2", "Flow Cut II", Cmd.LIGHT, 0.12, 0.1, 0.36, 6.0, 10.0)
-	cut_2.resonance_gain = 0.25
+	cut_2.resonance_gain = 0.06
 	var cut_3: CombatActionResource = _strike(&"dps_flow_cut_3", "Flow Cut III", Cmd.LIGHT, 0.16, 0.12, 0.5, 8.0, 13.0)
 	cut_3.hit_stop_scale = 1.3
-	cut_3.resonance_gain = 0.3
+	cut_3.resonance_gain = 0.07
 	var drive: CombatActionResource = _strike(&"dps_rising_drive", "Rising Drive", Cmd.FORWARD_HEAVY, 0.24, 0.14, 0.5, 18.0, 16.0)
 	drive.poise_damage = 12.0
 	drive.lunge_distance = 3.5
@@ -241,14 +243,18 @@ static func directional_flow_dps() -> ClassLoadoutResource:
 
 static func raid_boss_dummy() -> ClassLoadoutResource:
 	var stats: CharacterStatsResource = CharacterStatsResource.new()
-	stats.max_health = 2400.0
-	stats.max_poise = 100.0
+	# BossDummy rescales health to the party when a fight starts; this is the 3-player value.
+	stats.max_health = BossDummy.HEALTH_BASE + BossDummy.HEALTH_PER_PLAYER * 3.0
+	stats.max_poise = 120.0
+	stats.poise_regen_per_sec = 15.0
+	stats.poise_regen_delay = 3.0
 	stats.poise_knockdown_time = 5.0
+	stats.knockdown_damage_taken = 1.25
 	stats.move_speed = 3.6
 	stats.turn_speed = 2.6
 
 	# A long, readable wind-up: the tank's cue to raise a Perfect Guard.
-	var swipe: CombatActionResource = _strike(&"boss_crushing_swipe", "Crushing Swipe", Cmd.LIGHT, 0.85, 0.15, 0.9, 0.0, 28.0)
+	var swipe: CombatActionResource = _strike(&"boss_crushing_swipe", "Crushing Swipe", Cmd.LIGHT, 0.85, 0.15, 0.9, 0.0, 24.0)
 	swipe.reach = 2.6
 	swipe.hit_radius = 2.2
 	swipe.hit_stop_scale = 1.5

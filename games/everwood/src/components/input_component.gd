@@ -3,7 +3,11 @@
 ##   Master         full manual chords, 400 ms buffer, +15% flow speed
 ##   Adventurer     550 ms buffer, soft-lock camera, basic auto-combo chaining
 ##   Squire Gambit  one-button smart combos and an auto-evade safety net
-## Device 0 is the keyboard; joypad n is device n + 1.
+##
+## Bindings live in project.godot's Input Map (written by
+## tools/build_input_map.gd). Every action listens on every device; this
+## component evaluates them for its own device only, so four players can share
+## one machine. Device 0 is the keyboard and mouse; joypad n is device n + 1.
 class_name InputComponent
 extends Node
 
@@ -13,15 +17,50 @@ signal class_cycle_requested
 signal mode_cycle_requested
 
 enum AssistMode { MASTER, ADVENTURER, SQUIRE_GAMBIT }
+enum PadFamily { KEYBOARD, XBOX, PLAYSTATION }
+
+# Input Map action names (see tools/build_input_map.gd for the bindings).
+const ACTION_MOVE_LEFT: StringName = &"player_move_left"
+const ACTION_MOVE_RIGHT: StringName = &"player_move_right"
+const ACTION_MOVE_FORWARD: StringName = &"player_move_forward"
+const ACTION_MOVE_BACK: StringName = &"player_move_back"
+const ACTION_CAMERA_LEFT: StringName = &"player_camera_left"
+const ACTION_CAMERA_RIGHT: StringName = &"player_camera_right"
+const ACTION_LIGHT: StringName = &"player_light"
+const ACTION_HEAVY: StringName = &"player_heavy"
+const ACTION_DODGE: StringName = &"player_dodge"
+const ACTION_TRIGGER_L: StringName = &"player_trigger_l"
+const ACTION_TRIGGER_R: StringName = &"player_trigger_r"
+const ACTION_ULT: StringName = &"player_ult"
+const ACTION_TETHER_UP: StringName = &"player_tether_up"
+const ACTION_TETHER_RIGHT: StringName = &"player_tether_right"
+const ACTION_TETHER_DOWN: StringName = &"player_tether_down"
+const ACTION_TETHER_LEFT: StringName = &"player_tether_left"
+const ACTION_CHANGE_CLASS: StringName = &"player_change_class"
+const ACTION_CHANGE_MODE: StringName = &"player_change_mode"
+const ACTION_JOIN: StringName = &"player_join"
+## D-Pad Up / Right / Down / Left: Soul Tether slots 0..3.
+const TETHER_ACTIONS: Array[StringName] = [ACTION_TETHER_UP, ACTION_TETHER_RIGHT, ACTION_TETHER_DOWN, ACTION_TETHER_LEFT]
+const BUTTON_ACTIONS: Array[StringName] = [
+	ACTION_LIGHT, ACTION_HEAVY, ACTION_DODGE, ACTION_TRIGGER_L, ACTION_TRIGGER_R, ACTION_ULT,
+	ACTION_TETHER_UP, ACTION_TETHER_RIGHT, ACTION_TETHER_DOWN, ACTION_TETHER_LEFT,
+	ACTION_CHANGE_CLASS, ACTION_CHANGE_MODE,
+]
 
 const MODE_NAMES: Array[String] = ["Master", "Adventurer", "Squire Gambit"]
 const KEYBOARD_DEVICE: int = 0
 const STICK_DEADZONE: float = 0.22
-const TRIGGER_THRESHOLD: float = 0.45
+## Analog triggers press past this and release below the lower value, so a
+## half-squeezed trigger doesn't flicker on and off.
+const PRESS_THRESHOLD: float = 0.5
+const RELEASE_THRESHOLD: float = 0.3
 ## L and R pressed this close together read as the ultimate (both triggers).
-const CHORD_WINDOW: float = 0.09
+const CHORD_WINDOW: float = 0.12
 ## Holding R this long fires the R-hold skill (the healer's Green Sanctuary).
 const R_HOLD_TIME: float = 0.45
+## Class and mode change only after a deliberate hold, so a bumped Select
+## doesn't swap a child's class mid-fight.
+const MENU_HOLD_TIME: float = 0.6
 const MASTER_BUFFER_WINDOW: float = 0.40
 const ASSISTED_BUFFER_WINDOW: float = 0.55
 const MASTER_FLOW_SPEED_BONUS: float = 0.15
@@ -32,8 +71,13 @@ const AUTO_EVADE_COOLDOWN: float = 0.8
 const GAP_CLOSE_DISTANCE: float = 4.5
 ## Squire healer heals anyone below this share of their health.
 const SQUIRE_HEAL_BELOW: float = 0.7
-## Stick past this toward/away from the target turns heavy into a directional heavy.
+## Stick up / down past this (screen-relative) turns heavy into a forward / back heavy.
 const DIRECTIONAL_THRESHOLD: float = 0.5
+## A flick of the stick this recently still counts for the chord, so
+## "flick, then press heavy" works as well as holding the stick.
+const CHORD_MEMORY: float = 0.15
+## Radians the camera turns per pixel of mouse movement (keyboard player).
+const MOUSE_SENSITIVITY: float = 0.004
 
 var device_id: int = KEYBOARD_DEVICE
 var assist_mode: AssistMode = AssistMode.ADVENTURER
@@ -44,6 +88,7 @@ var camera_orbit_input: float = 0.0
 
 var _held: Dictionary[StringName, bool] = {}
 var _was_held: Dictionary[StringName, bool] = {}
+var _hold_time: Dictionary[StringName, float] = {}
 var _pending_trigger: StringName = &""
 var _pending_time: float = 0.0
 var _chord_lock: bool = false
@@ -52,6 +97,9 @@ var _r_held_time: float = 0.0
 var _r_hold_fired: bool = false
 var _auto_evade_cooldown: float = 0.0
 var _squire_primer_turn: int = 0
+var _last_forward_at: float = -INF
+var _last_back_at: float = -INF
+var _mouse_yaw: float = 0.0
 # Tests and bots drive the component through these instead of a device.
 var _scripted: bool = false
 var _scripted_commands: Array[int] = []
@@ -64,6 +112,109 @@ func setup(owner_actor: ActorBase, for_device: int, mode: AssistMode) -> void:
 	device_id = for_device
 	assist_mode = mode
 	name = "InputComponent"
+
+
+# --- Reading the Input Map for one device ---------------------------------
+
+## How hard `action` is pressed (0..1) on one device: the keyboard and mouse
+## (device 0) or one pad. Used by players and by levels for join buttons.
+static func action_strength(action: StringName, for_device: int) -> float:
+	if not InputMap.has_action(action):
+		return 0.0
+	var strongest: float = 0.0
+	for event: InputEvent in InputMap.action_get_events(action):
+		strongest = maxf(strongest, _event_strength(event, for_device))
+	return strongest
+
+
+static func _event_strength(event: InputEvent, for_device: int) -> float:
+	if for_device == KEYBOARD_DEVICE:
+		var key: InputEventKey = event as InputEventKey
+		if key != null:
+			if key.physical_keycode != KEY_NONE:
+				return 1.0 if Input.is_physical_key_pressed(key.physical_keycode) else 0.0
+			return 1.0 if Input.is_key_pressed(key.keycode) else 0.0
+		var mouse: InputEventMouseButton = event as InputEventMouseButton
+		if mouse != null:
+			return 1.0 if Input.is_mouse_button_pressed(mouse.button_index) else 0.0
+		return 0.0
+	var pad: int = for_device - 1
+	var button: InputEventJoypadButton = event as InputEventJoypadButton
+	if button != null:
+		return 1.0 if Input.is_joy_button_pressed(pad, button.button_index) else 0.0
+	var motion: InputEventJoypadMotion = event as InputEventJoypadMotion
+	if motion != null:
+		return clampf(Input.get_joy_axis(pad, motion.axis) * signf(motion.axis_value), 0.0, 1.0)
+	return 0.0
+
+
+## Which button layout to name in the HUD: Xbox letters or PlayStation shapes.
+static func pad_family_of(for_device: int) -> PadFamily:
+	if for_device == KEYBOARD_DEVICE:
+		return PadFamily.KEYBOARD
+	var pad_name: String = Input.get_joy_name(for_device - 1).to_lower()
+	for hint: String in ["playstation", "dualsense", "dualshock", "ps3", "ps4", "ps5", "sony"]:
+		if pad_name.contains(hint):
+			return PadFamily.PLAYSTATION
+	return PadFamily.XBOX
+
+
+## The name of the first binding of `action` for a device's kind ("J", "□", "LT").
+## Read from the Input Map, so the HUD stays right if a binding changes.
+static func binding_label(action: StringName, for_device: int) -> String:
+	if not InputMap.has_action(action):
+		return "?"
+	var family: PadFamily = pad_family_of(for_device)
+	for event: InputEvent in InputMap.action_get_events(action):
+		if family == PadFamily.KEYBOARD:
+			var key: InputEventKey = event as InputEventKey
+			if key != null:
+				return OS.get_keycode_string(key.physical_keycode if key.physical_keycode != KEY_NONE else key.keycode)
+		else:
+			var button: InputEventJoypadButton = event as InputEventJoypadButton
+			if button != null:
+				return _pad_button_name(button.button_index, family)
+			var motion: InputEventJoypadMotion = event as InputEventJoypadMotion
+			if motion != null and (motion.axis == JOY_AXIS_TRIGGER_LEFT or motion.axis == JOY_AXIS_TRIGGER_RIGHT):
+				var left: bool = motion.axis == JOY_AXIS_TRIGGER_LEFT
+				if family == PadFamily.PLAYSTATION:
+					return "L2" if left else "R2"
+				return "LT" if left else "RT"
+	return "?"
+
+
+static func _pad_button_name(button: JoyButton, family: PadFamily) -> String:
+	var playstation: bool = family == PadFamily.PLAYSTATION
+	match button:
+		JOY_BUTTON_A:
+			return "✕" if playstation else "A"
+		JOY_BUTTON_B:
+			return "○" if playstation else "B"
+		JOY_BUTTON_X:
+			return "□" if playstation else "X"
+		JOY_BUTTON_Y:
+			return "△" if playstation else "Y"
+		JOY_BUTTON_LEFT_SHOULDER:
+			return "L1" if playstation else "LB"
+		JOY_BUTTON_RIGHT_SHOULDER:
+			return "R1" if playstation else "RB"
+		JOY_BUTTON_BACK:
+			return "Create" if playstation else "View"
+		JOY_BUTTON_START:
+			return "Options" if playstation else "Menu"
+		JOY_BUTTON_RIGHT_STICK:
+			return "R3" if playstation else "RS"
+		JOY_BUTTON_LEFT_STICK:
+			return "L3" if playstation else "LS"
+		JOY_BUTTON_DPAD_UP:
+			return "D-Pad ↑"
+		JOY_BUTTON_DPAD_RIGHT:
+			return "D-Pad →"
+		JOY_BUTTON_DPAD_DOWN:
+			return "D-Pad ↓"
+		JOY_BUTTON_DPAD_LEFT:
+			return "D-Pad ←"
+	return "Button %d" % button
 
 
 # --- Mode rules -----------------------------------------------------------
@@ -89,18 +240,33 @@ func mode_name() -> String:
 
 
 func device_label() -> String:
-	return "Keyboard" if device_id == KEYBOARD_DEVICE else "Pad %d" % device_id
+	return "Keyboard & mouse" if device_id == KEYBOARD_DEVICE else "Pad %d" % device_id
 
 
 func is_keyboard() -> bool:
 	return device_id == KEYBOARD_DEVICE
 
 
+func pad_family() -> PadFamily:
+	return pad_family_of(device_id)
+
+
+func label(action: StringName) -> String:
+	return binding_label(action, device_id)
+
+
 ## L held as a posture (Active Guard), once it's clear it isn't half of an ult chord.
 func is_guard_held() -> bool:
 	if _scripted:
 		return _scripted_guard
-	return _held.get(&"trigger_l", false) and not _chord_lock and _pending_trigger != &"trigger_l"
+	return _held.get(ACTION_TRIGGER_L, false) and not _chord_lock and _pending_trigger != ACTION_TRIGGER_L
+
+
+## Camera yaw from mouse movement since the last call (keyboard player only).
+func take_mouse_yaw() -> float:
+	var yaw: float = _mouse_yaw
+	_mouse_yaw = 0.0
+	return yaw
 
 
 # --- Scripted input -------------------------------------------------------
@@ -120,7 +286,23 @@ func inject_guard(held: bool) -> void:
 	_scripted_guard = held
 
 
+## Hands the player back to their real controller.
+func release_script() -> void:
+	_scripted = false
+	_scripted_commands.clear()
+	_scripted_move = Vector2.ZERO
+	_scripted_guard = false
+
+
 # --- Polling --------------------------------------------------------------
+
+func _input(event: InputEvent) -> void:
+	if device_id != KEYBOARD_DEVICE or _scripted:
+		return
+	var motion: InputEventMouseMotion = event as InputEventMouseMotion
+	if motion != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_mouse_yaw -= motion.relative.x * MOUSE_SENSITIVITY
+
 
 func poll(dt: float) -> void:
 	_was_held = _held
@@ -131,21 +313,22 @@ func poll(dt: float) -> void:
 	else:
 		move_input = _read_move()
 		camera_orbit_input = _read_orbit()
+	_remember_stick_direction()
 
-	if _pressed(&"class"):
+	if _held_for(ACTION_CHANGE_CLASS, dt):
 		class_cycle_requested.emit()
-	if _pressed(&"mode"):
+	if _held_for(ACTION_CHANGE_MODE, dt):
 		mode_cycle_requested.emit()
-	for slot: int in 4:
-		if _pressed(StringName("tether_%d" % slot)):
+	for slot: int in TETHER_ACTIONS.size():
+		if _pressed(TETHER_ACTIONS[slot]):
 			tether_slot_pressed.emit(slot)
-	if _pressed(&"light"):
+	if _pressed(ACTION_LIGHT):
 		_issue_attack(CombatActionResource.Command.LIGHT)
-	if _pressed(&"heavy"):
+	if _pressed(ACTION_HEAVY):
 		_issue_attack(CombatActionResource.Command.HEAVY)
-	if _pressed(&"dodge"):
+	if _pressed(ACTION_DODGE):
 		_issue(CombatActionResource.Command.DODGE)
-	if _pressed(&"ult"):
+	if _pressed(ACTION_ULT):
 		_issue(CombatActionResource.Command.TRIGGER_BOTH_ULT)
 	_update_triggers(dt)
 	_update_auto_evade(dt)
@@ -164,7 +347,7 @@ func _issue_attack(base: int) -> void:
 		return
 	var command: int = base
 	if base == CombatActionResource.Command.HEAVY:
-		var direction: int = actor.directional_intent(DIRECTIONAL_THRESHOLD)
+		var direction: int = stick_direction()
 		if direction > 0:
 			command = CombatActionResource.Command.FORWARD_HEAVY
 		elif direction < 0:
@@ -176,18 +359,43 @@ func _issue_attack(base: int) -> void:
 	_issue(command)
 
 
+## +1 when the stick is (or was just) pushed up the screen, -1 for down, 0 otherwise.
+## Screen-relative, like W and S: "forward" is always away from your camera.
+func stick_direction() -> int:
+	if move_input.y > DIRECTIONAL_THRESHOLD:
+		return 1
+	if move_input.y < -DIRECTIONAL_THRESHOLD:
+		return -1
+	var now: float = CombatDirector.game_time()
+	var forward_recent: bool = now - _last_forward_at <= CHORD_MEMORY
+	var back_recent: bool = now - _last_back_at <= CHORD_MEMORY
+	if forward_recent and (not back_recent or _last_forward_at >= _last_back_at):
+		return 1
+	if back_recent:
+		return -1
+	return 0
+
+
+func _remember_stick_direction() -> void:
+	var now: float = CombatDirector.game_time()
+	if move_input.y > DIRECTIONAL_THRESHOLD:
+		_last_forward_at = now
+	elif move_input.y < -DIRECTIONAL_THRESHOLD:
+		_last_back_at = now
+
+
 ## Triggers wait a moment for the other trigger so that L+R reads as the ult.
 func _update_triggers(dt: float) -> void:
-	var l_held: bool = _held.get(&"trigger_l", false)
-	var r_held: bool = _held.get(&"trigger_r", false)
+	var l_held: bool = _held.get(ACTION_TRIGGER_L, false)
+	var r_held: bool = _held.get(ACTION_TRIGGER_R, false)
 	if _chord_lock:
 		if not l_held and not r_held:
 			_chord_lock = false
 		return
-	var l_pressed: bool = _pressed(&"trigger_l")
-	var r_pressed: bool = _pressed(&"trigger_r")
-	var chord: bool = (l_pressed and (r_pressed or _pending_trigger == &"trigger_r")) \
-		or (r_pressed and _pending_trigger == &"trigger_l")
+	var l_pressed: bool = _pressed(ACTION_TRIGGER_L)
+	var r_pressed: bool = _pressed(ACTION_TRIGGER_R)
+	var chord: bool = (l_pressed and (r_pressed or _pending_trigger == ACTION_TRIGGER_R)) \
+		or (r_pressed and _pending_trigger == ACTION_TRIGGER_L)
 	if chord:
 		_pending_trigger = &""
 		_r_tracking = false
@@ -195,10 +403,10 @@ func _update_triggers(dt: float) -> void:
 		_issue(CombatActionResource.Command.TRIGGER_BOTH_ULT)
 		return
 	if l_pressed:
-		_pending_trigger = &"trigger_l"
+		_pending_trigger = ACTION_TRIGGER_L
 		_pending_time = CHORD_WINDOW
 	elif r_pressed:
-		_pending_trigger = &"trigger_r"
+		_pending_trigger = ACTION_TRIGGER_R
 		_pending_time = CHORD_WINDOW
 
 	if _pending_trigger != &"":
@@ -206,7 +414,7 @@ func _update_triggers(dt: float) -> void:
 		if _pending_time <= 0.0:
 			var which: StringName = _pending_trigger
 			_pending_trigger = &""
-			if which == &"trigger_l":
+			if which == ACTION_TRIGGER_L:
 				# A guard class holds L as a posture instead (see is_guard_held).
 				if not actor.loadout.guard_on_trigger_l:
 					_issue(CombatActionResource.Command.TRIGGER_L_SKILL)
@@ -276,62 +484,45 @@ func _squire_pick() -> int:
 
 # --- Devices --------------------------------------------------------------
 
-func _pressed(button: StringName) -> bool:
-	return _held.get(button, false) and not _was_held.get(button, false)
+func _pressed(action: StringName) -> bool:
+	return _held.get(action, false) and not _was_held.get(action, false)
+
+
+## True once, the moment `action` has been held for MENU_HOLD_TIME.
+func _held_for(action: StringName, dt: float) -> bool:
+	if not _held.get(action, false):
+		_hold_time[action] = 0.0
+		return false
+	var before: float = _hold_time.get(action, 0.0)
+	var after: float = before + dt
+	_hold_time[action] = after
+	return before < MENU_HOLD_TIME and after >= MENU_HOLD_TIME
 
 
 func _read_buttons() -> Dictionary[StringName, bool]:
 	var held: Dictionary[StringName, bool] = {}
 	if _scripted:
 		return held
-	if device_id == KEYBOARD_DEVICE:
-		held[&"light"] = Input.is_physical_key_pressed(KEY_J)
-		held[&"heavy"] = Input.is_physical_key_pressed(KEY_K)
-		held[&"dodge"] = Input.is_physical_key_pressed(KEY_SPACE)
-		held[&"trigger_l"] = Input.is_physical_key_pressed(KEY_Q)
-		held[&"trigger_r"] = Input.is_physical_key_pressed(KEY_E)
-		held[&"ult"] = Input.is_physical_key_pressed(KEY_R)
-		held[&"tether_0"] = Input.is_physical_key_pressed(KEY_1)
-		held[&"tether_1"] = Input.is_physical_key_pressed(KEY_2)
-		held[&"tether_2"] = Input.is_physical_key_pressed(KEY_3)
-		held[&"tether_3"] = Input.is_physical_key_pressed(KEY_4)
-		held[&"class"] = Input.is_physical_key_pressed(KEY_TAB)
-		held[&"mode"] = Input.is_physical_key_pressed(KEY_M)
-		return held
-	var pad: int = device_id - 1
-	held[&"light"] = Input.is_joy_button_pressed(pad, JOY_BUTTON_X)
-	held[&"heavy"] = Input.is_joy_button_pressed(pad, JOY_BUTTON_Y)
-	held[&"dodge"] = Input.is_joy_button_pressed(pad, JOY_BUTTON_A) or Input.is_joy_button_pressed(pad, JOY_BUTTON_B)
-	held[&"trigger_l"] = Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_LEFT) > TRIGGER_THRESHOLD \
-		or Input.is_joy_button_pressed(pad, JOY_BUTTON_LEFT_SHOULDER)
-	held[&"trigger_r"] = Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_RIGHT) > TRIGGER_THRESHOLD \
-		or Input.is_joy_button_pressed(pad, JOY_BUTTON_RIGHT_SHOULDER)
-	held[&"ult"] = false
-	held[&"tether_0"] = Input.is_joy_button_pressed(pad, JOY_BUTTON_DPAD_UP)
-	held[&"tether_1"] = Input.is_joy_button_pressed(pad, JOY_BUTTON_DPAD_RIGHT)
-	held[&"tether_2"] = Input.is_joy_button_pressed(pad, JOY_BUTTON_DPAD_DOWN)
-	held[&"tether_3"] = Input.is_joy_button_pressed(pad, JOY_BUTTON_DPAD_LEFT)
-	held[&"class"] = Input.is_joy_button_pressed(pad, JOY_BUTTON_BACK)
-	held[&"mode"] = Input.is_joy_button_pressed(pad, JOY_BUTTON_RIGHT_STICK)
+	for action: StringName in BUTTON_ACTIONS:
+		var threshold: float = RELEASE_THRESHOLD if _held.get(action, false) else PRESS_THRESHOLD
+		held[action] = action_strength(action, device_id) >= threshold
 	return held
 
 
 func _read_move() -> Vector2:
+	var stick: Vector2 = Vector2(
+		action_strength(ACTION_MOVE_RIGHT, device_id) - action_strength(ACTION_MOVE_LEFT, device_id),
+		action_strength(ACTION_MOVE_FORWARD, device_id) - action_strength(ACTION_MOVE_BACK, device_id))
 	if device_id == KEYBOARD_DEVICE:
-		var keys: Vector2 = Vector2(
-			float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A)),
-			float(Input.is_physical_key_pressed(KEY_W)) - float(Input.is_physical_key_pressed(KEY_S)))
-		return keys.limit_length(1.0)
-	var pad: int = device_id - 1
-	var stick: Vector2 = Vector2(Input.get_joy_axis(pad, JOY_AXIS_LEFT_X), -Input.get_joy_axis(pad, JOY_AXIS_LEFT_Y))
+		return stick.limit_length(1.0)
 	return _apply_deadzone(stick)
 
 
 func _read_orbit() -> float:
+	var orbit: float = action_strength(ACTION_CAMERA_RIGHT, device_id) - action_strength(ACTION_CAMERA_LEFT, device_id)
 	if device_id == KEYBOARD_DEVICE:
-		return float(Input.is_physical_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_LEFT))
-	var pad: int = device_id - 1
-	return _apply_deadzone(Vector2(Input.get_joy_axis(pad, JOY_AXIS_RIGHT_X), 0.0)).x
+		return orbit
+	return _apply_deadzone(Vector2(orbit, 0.0)).x
 
 
 func _apply_deadzone(stick: Vector2) -> Vector2:

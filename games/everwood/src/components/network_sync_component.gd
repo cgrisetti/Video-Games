@@ -24,15 +24,17 @@ func setup(owner_actor: ActorBase) -> void:
 
 
 func tick_owner(delta: float) -> void:
-	if not NetworkManager.current.is_online():
+	if not NetworkManager.current.is_online() or not InstanceManager.current.is_live():
 		return
 	_send_accum += delta
 	if _send_accum < 1.0 / SEND_RATE:
 		return
 	_send_accum = 0.0
 	var gauges: PackedFloat32Array = PackedFloat32Array([
-		actor.stats.health, actor.stats.stamina, actor.stats.poise, actor.stats.resonance_charge])
-	_receive_state.rpc(actor.global_position, actor.rotation.y, actor.state_machine.current_name(), gauges)
+		actor.stats.health, actor.stats.stamina, actor.stats.poise, actor.stats.resonance_charge, actor.stats.stats.max_health])
+	# Only peers with this instance loaded have a copy of the actor to update.
+	for peer_id: int in InstanceManager.current.live_remote_peers():
+		_receive_state.rpc_id(peer_id, actor.global_position, actor.rotation.y, actor.state_machine.current_name(), gauges)
 
 
 func tick_copy(delta: float) -> void:
@@ -59,3 +61,6 @@ func _receive_state(position: Vector3, yaw: float, state: StringName, gauges: Pa
 		actor.stats.poise = gauges[2]
 		actor.stats.resonance_charge = gauges[3]
 		actor.stats.is_downed = state == &"downed"
+	if gauges.size() >= 5:
+		# The boss's max health scales with the party on the host.
+		actor.stats.stats.max_health = gauges[4]

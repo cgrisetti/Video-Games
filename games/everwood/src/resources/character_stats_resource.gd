@@ -10,7 +10,7 @@ extends Resource
 ## Regenerates out of combat / while idle.
 @export var stamina_regen_per_sec: float = 22.0
 ## Seconds after spending stamina before it starts coming back.
-@export var stamina_regen_delay: float = 0.6
+@export var stamina_regen_delay: float = 0.8
 
 @export_group("Resonance")
 @export var max_resonance_pips: int = 3
@@ -19,6 +19,12 @@ extends Resource
 ## Hidden gauge; 0 means no poise (players). Bosses use 100.
 @export var max_poise: float = 0.0
 @export var poise_knockdown_time: float = 5.0
+## Poise comes back this fast once nothing has hit it for poise_regen_delay seconds,
+## so breaking it takes a focused burst rather than a slow trickle of hits.
+@export var poise_regen_per_sec: float = 0.0
+@export var poise_regen_delay: float = 3.0
+## Damage taken is multiplied by this while knocked down (the party's burn window).
+@export var knockdown_damage_taken: float = 1.0
 
 @export_group("Threat")
 ## Multiplies the threat this actor's hits generate (tanks are high).

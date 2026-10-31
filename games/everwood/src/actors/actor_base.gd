@@ -30,6 +30,9 @@ const FLASH_TIME: float = 0.08
 ## Extra invulnerability after a Lifeline Pull lands, so the yank really saves you.
 const PULL_SAFETY_TIME: float = 0.3
 const POSE_SHARPNESS: float = 18.0
+## A flow-cancel makes the body glow blue-white for a moment (and plays a tick).
+const FLOW_GLOW_TIME: float = 0.18
+const FLOW_GLOW_COLOR: Color = Color(0.55, 0.8, 1.0)
 
 @export var loadout: ClassLoadoutResource
 
@@ -68,6 +71,7 @@ var _prop: Node3D
 var _name_label: Label3D
 var _hit_stop_left: float = 0.0
 var _flash_left: float = 0.0
+var _flow_glow_left: float = 0.0
 var _pull_from: Vector3 = Vector3.ZERO
 var _pull_to: Vector3 = Vector3.ZERO
 var _pull_time: float = 0.0
@@ -306,11 +310,14 @@ func _physics_process(delta: float) -> void:
 		_update_pose(delta)
 		return
 	_flash_left = maxf(0.0, _flash_left - delta)
+	_flow_glow_left = maxf(0.0, _flow_glow_left - delta)
 	if _hit_stop_left > 0.0:
 		# Hit-stop: this actor alone freezes for a few frames.
 		_hit_stop_left -= delta
 		return
 	_gather_intent(delta)
+	if not is_inside_tree():
+		return # Something this tick's input did removed the actor (leaving the party).
 	stats.tick(delta, _can_regen_stamina())
 	if _pull_duration > 0.0:
 		_update_pull(delta)
@@ -430,21 +437,6 @@ func distance_to_soft_target() -> float:
 	return target.global_position.distance_to(global_position)
 
 
-## +1 when the stick points toward the target, -1 away from it, 0 otherwise (BDO chords).
-func directional_intent(threshold: float) -> int:
-	if move_intent.length() < threshold:
-		return 0
-	var reference: Vector3 = direction_to_soft_target()
-	if reference == Vector3.ZERO:
-		reference = facing_vector()
-	var alignment: float = move_intent.normalized().dot(reference)
-	if alignment > threshold:
-		return 1
-	if alignment < -threshold:
-		return -1
-	return 0
-
-
 ## The party member (yourself included) with the lowest health share below `below`.
 func most_hurt_ally(below: float) -> ActorBase:
 	var chosen: ActorBase = null
@@ -483,9 +475,12 @@ func try_begin_action(action: CombatActionResource) -> bool:
 	return stats.spend_for(action)
 
 
-func _on_action_started(action: CombatActionResource, _flowed: bool) -> void:
+func _on_action_started(action: CombatActionResource, flowed: bool) -> void:
 	if stats.guarding:
 		stats.end_guard()
+	if flowed and is_local_player():
+		_flow_glow_left = FLOW_GLOW_TIME
+		AudioCues.play(&"flow", 1.0 + (action_queue.speed_scale - 1.0) * 2.0)
 	if action.effect == CombatActionResource.Effect.DODGE:
 		state_machine.transition(&"dodge")
 	else:
@@ -651,4 +646,9 @@ func _update_pose(delta: float) -> void:
 	visual.rotation.x = lerpf(visual.rotation.x, -lean, blend)
 	visual.rotation.z = lerpf(visual.rotation.z, tilt, blend)
 	visual.scale.y = lerpf(visual.scale.y, height_scale, blend)
-	_body_material.emission = Color(1.0, 1.0, 1.0) * 0.9 if _flash_left > 0.0 else Color.BLACK
+	if _flash_left > 0.0:
+		_body_material.emission = Color(1.0, 1.0, 1.0) * 0.9
+	elif _flow_glow_left > 0.0:
+		_body_material.emission = FLOW_GLOW_COLOR * (_flow_glow_left / FLOW_GLOW_TIME) * 1.4
+	else:
+		_body_material.emission = Color.BLACK

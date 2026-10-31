@@ -1,6 +1,7 @@
 ## One split-screen player's third-person camera. In the assisted modes it
 ## soft-locks: it swings round behind the player to keep the boss in view.
-## In Master mode the right stick (or the arrow keys) orbits it freely.
+## The right stick, the arrow keys or the mouse turn it; in the assisted modes
+## the soft-lock takes over again a moment after you let go.
 class_name PlayerCamera
 extends Camera3D
 
@@ -14,6 +15,8 @@ const SOFT_LOCK_SHARPNESS: float = 3.0
 ## Closer than this to the boss, the soft-lock stops swinging (it would spin).
 const LOCK_MIN_DISTANCE: float = 2.5
 const FIELD_OF_VIEW: float = 62.0
+## After you turn the camera yourself, the soft-lock waits this long before swinging back.
+const LOCK_RESUME_DELAY: float = 1.2
 ## How far in front of a wall or pillar the camera stops when one is in the way.
 const WALL_CLEARANCE: float = 0.4
 
@@ -21,6 +24,7 @@ var actor: ActorBase
 var yaw: float = 0.0
 
 var _focus: Vector3 = Vector3.ZERO
+var _manual_hold: float = 0.0
 
 
 func follow(target_actor: ActorBase) -> void:
@@ -46,10 +50,14 @@ func _process(delta: float) -> void:
 	if not is_instance_valid(actor):
 		return
 	var orbit: float = actor.input.camera_orbit_input if actor.input != null else 0.0
+	var mouse_yaw: float = actor.input.take_mouse_yaw() if actor.input != null else 0.0
 	var soft_lock: bool = actor.input == null or actor.input.soft_lock_camera()
-	if absf(orbit) > 0.01:
+	_manual_hold = maxf(0.0, _manual_hold - delta)
+	if absf(orbit) > 0.01 or absf(mouse_yaw) > 0.0:
 		yaw -= orbit * ORBIT_SPEED * delta
-	elif soft_lock:
+		yaw += mouse_yaw
+		_manual_hold = LOCK_RESUME_DELAY
+	elif soft_lock and _manual_hold <= 0.0:
 		var boss: ActorBase = actor.soft_target()
 		if boss != null:
 			var to_boss: Vector3 = boss.global_position - actor.global_position
