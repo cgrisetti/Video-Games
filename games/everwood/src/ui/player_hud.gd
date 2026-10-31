@@ -1,0 +1,273 @@
+## One local player's HUD, drawn over their split-screen cell: the boss's
+## health, poise, cast and aggro along the top; your health, stamina,
+## resonance pips, queued input and Soul Tether bottom-left; your controls
+## along the bottom.
+class_name PlayerHUD
+extends Control
+
+const MARGIN: float = 14.0
+const BOSS_BAR_WIDTH: float = 0.56
+const PLAYER_BAR_WIDTH: float = 240.0
+const FONT_SIZE: int = 17
+const SMALL_FONT_SIZE: int = 13
+const HEALTH_COLOR: Color = Color(0.85, 0.22, 0.24)
+const STAMINA_COLOR: Color = Color(0.95, 0.8, 0.3)
+const POISE_COLOR: Color = Color(0.95, 0.65, 0.25)
+const CAST_COLOR: Color = Color(0.75, 0.55, 1.0)
+const BAR_BACK: Color = Color(0.06, 0.06, 0.08, 0.75)
+## Room left for the dojo's banner when this cell touches the top of the screen.
+const BANNER_CLEARANCE: float = 52.0
+
+var actor: ActorBase
+
+var _top_panel: VBoxContainer
+var _boss_label: Label
+var _boss_health: ProgressBar
+var _boss_poise: ProgressBar
+var _cast_bar: ProgressBar
+var _cast_label: Label
+var _aggro_label: Label
+var _class_label: Label
+var _health: ProgressBar
+var _stamina: ProgressBar
+var _pips_label: Label
+var _queue_label: Label
+var _tether_label: Label
+var _status_label: Label
+var _controls_label: Label
+
+
+func setup(target_actor: ActorBase) -> void:
+	actor = target_actor
+
+
+func _ready() -> void:
+	name = "PlayerHUD"
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var top: VBoxContainer = VBoxContainer.new()
+	top.anchor_left = 0.5 - BOSS_BAR_WIDTH * 0.5
+	top.anchor_right = 0.5 + BOSS_BAR_WIDTH * 0.5
+	top.offset_top = MARGIN
+	top.add_theme_constant_override(&"separation", 3)
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(top)
+	_top_panel = top
+	_boss_label = _label(FONT_SIZE)
+	_boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	top.add_child(_boss_label)
+	_boss_health = _bar(HEALTH_COLOR, 14.0)
+	top.add_child(_boss_health)
+	_boss_poise = _bar(POISE_COLOR, 5.0)
+	top.add_child(_boss_poise)
+	_cast_label = _label(SMALL_FONT_SIZE)
+	_cast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	top.add_child(_cast_label)
+	_cast_bar = _bar(CAST_COLOR, 8.0)
+	top.add_child(_cast_bar)
+	_aggro_label = _label(SMALL_FONT_SIZE)
+	_aggro_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	top.add_child(_aggro_label)
+
+	var bottom: VBoxContainer = VBoxContainer.new()
+	bottom.anchor_top = 1.0
+	bottom.anchor_bottom = 1.0
+	bottom.offset_left = MARGIN
+	bottom.offset_bottom = -MARGIN - 34.0
+	bottom.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	bottom.custom_minimum_size = Vector2(PLAYER_BAR_WIDTH, 0.0)
+	bottom.add_theme_constant_override(&"separation", 3)
+	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bottom)
+	_status_label = _label(FONT_SIZE)
+	bottom.add_child(_status_label)
+	_tether_label = _label(SMALL_FONT_SIZE)
+	bottom.add_child(_tether_label)
+	_queue_label = _label(SMALL_FONT_SIZE)
+	bottom.add_child(_queue_label)
+	_class_label = _label(FONT_SIZE)
+	bottom.add_child(_class_label)
+	_health = _bar(HEALTH_COLOR, 14.0)
+	bottom.add_child(_health)
+	_stamina = _bar(STAMINA_COLOR, 8.0)
+	bottom.add_child(_stamina)
+	_pips_label = _label(FONT_SIZE)
+	bottom.add_child(_pips_label)
+
+	_controls_label = _label(SMALL_FONT_SIZE)
+	_controls_label.anchor_top = 1.0
+	_controls_label.anchor_bottom = 1.0
+	_controls_label.anchor_right = 1.0
+	_controls_label.offset_left = MARGIN
+	_controls_label.offset_right = -MARGIN
+	_controls_label.offset_top = -MARGIN - 32.0
+	_controls_label.offset_bottom = -6.0
+	_controls_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_controls_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_controls_label.modulate = Color(1.0, 1.0, 1.0, 0.8)
+	add_child(_controls_label)
+
+
+func _process(_delta: float) -> void:
+	if not is_instance_valid(actor) or actor.stats == null:
+		return
+	_top_panel.offset_top = MARGIN + (BANNER_CLEARANCE if get_global_rect().position.y < 1.0 else 0.0)
+	_refresh_boss()
+	_refresh_player()
+
+
+func _refresh_boss() -> void:
+	var boss: BossDummy = CombatDirector.current.primary_boss() as BossDummy
+	if boss == null or boss.stats == null:
+		_boss_label.text = ""
+		return
+	var primer: int = CombatDirector.current.primer_on(boss)
+	var title: String = boss.display_name()
+	if boss.stats.is_downed:
+		title += " (defeated, rising again...)"
+	elif boss.stats.is_knocked_down():
+		title += " (KNOCKED DOWN)"
+	if primer != CombatActionResource.Synergy.NONE:
+		title += "  ·  %s primed" % CombatDirector.current.synergy_primer_name(primer)
+	_boss_label.text = title
+	_boss_health.max_value = boss.stats.stats.max_health
+	_boss_health.value = boss.stats.health
+	_boss_poise.max_value = boss.stats.stats.max_poise
+	_boss_poise.value = boss.stats.poise
+	var casting: bool = boss.is_casting()
+	_cast_bar.visible = casting
+	_cast_label.visible = casting
+	if casting:
+		_cast_label.text = "Casting %s" % boss.cast_name
+		_cast_bar.max_value = 1.0
+		_cast_bar.value = boss.cast_progress()
+	var target_id: StringName = boss.threat.current_target if boss.threat != null else &""
+	if target_id == &"":
+		_aggro_label.text = "Walk up to the Warden to start the fight"
+		_aggro_label.modulate = Color.WHITE
+	elif target_id == actor.player_id:
+		_aggro_label.text = "Aggro: on YOU" + ("" if actor.role() == ClassLoadoutResource.Role.TANK else "  (let the tank taunt it back)")
+		_aggro_label.modulate = Color(1.0, 0.55, 0.45)
+	else:
+		var holder: ActorBase = CombatDirector.current.get_actor(target_id)
+		_aggro_label.text = "Aggro: %s" % (holder.display_name() if holder != null else String(target_id))
+		_aggro_label.modulate = Color(0.85, 0.9, 1.0)
+
+
+func _refresh_player() -> void:
+	var stats: StatsComponent = actor.stats
+	var mode: String = actor.input.mode_name() if actor.input != null else ""
+	_class_label.text = "%s  ·  %s  ·  %s" % [actor.display_name(), mode, actor.input.device_label() if actor.input != null else ""]
+	_class_label.modulate = actor.loadout.body_color.lightened(0.3)
+	_health.max_value = stats.stats.max_health
+	_health.value = stats.health
+	_stamina.max_value = stats.stats.max_stamina
+	_stamina.value = stats.stamina
+	var pips: int = stats.resonance_pips()
+	var dots: String = ""
+	for index: int in stats.stats.max_resonance_pips:
+		if index < pips:
+			dots += "● "
+		elif index == pips and stats.resonance_charge - pips > 0.01:
+			dots += "◐ "
+		else:
+			dots += "○ "
+	_pips_label.text = "Resonance  " + dots
+
+	var queue: ActionQueueComponent = actor.action_queue
+	var queued: PackedStringArray = PackedStringArray()
+	for command: int in queue.buffer:
+		queued.append(command_name(command))
+	var line: String = ""
+	if queue.current_action != null:
+		line = queue.current_action.display_name
+		if queue.flowed_into_current:
+			line += "  (FLOW%s)" % (" +15%" if queue.speed_scale > 1.0 else "")
+	if not queued.is_empty():
+		line += "   Queued ▶ " + ", ".join(queued)
+	_queue_label.text = line
+
+	_tether_label.visible = actor.tether != null
+	if actor.tether != null:
+		var tethered: ActorBase = actor.tether.tethered_actor()
+		if tethered != null:
+			_tether_label.text = "Soul Tether %s %s (%d%%)" % [
+				actor.tether.slot_arrow_for(tethered.player_id), tethered.display_name(), roundi(tethered.stats.health_ratio() * 100.0)]
+
+	var status: String = ""
+	if stats.is_downed:
+		status = "Downed: back up in %ds (a heal brings you back sooner)" % ceili(actor.downed_time_left)
+	elif actor.state_machine.is_in(&"stagger"):
+		status = "Staggered!"
+	elif stats.guarding:
+		status = "Guarding"
+	_status_label.text = status
+	_controls_label.text = controls_text()
+
+
+func controls_text() -> String:
+	if actor.input == null:
+		return ""
+	var loadout: ClassLoadoutResource = actor.loadout
+	var squire: bool = actor.input.assist_mode == InputComponent.AssistMode.SQUIRE_GAMBIT
+	var tethers: String = ""
+	if actor.input.is_keyboard():
+		var attacks: String = "J or K: smart attack" if squire else "J light · K heavy (W/S + K: forward/back heavy)"
+		if loadout.has_soul_tethers:
+			tethers = " · 1-4 tether"
+		return "WASD move · %s · Space dodge · Q %s · E %s · R %s%s · ←/→ camera · Tab class · M mode" % [
+			attacks, loadout.trigger_l_label, loadout.trigger_r_label, loadout.ult_label, tethers]
+	var pad_attacks: String = "□ or △: smart attack" if squire else "□ light · △ heavy (stick + △: directional)"
+	if loadout.has_soul_tethers:
+		tethers = " · D-Pad tether"
+	return "Stick move · %s · ✕ dodge · L2 %s · R2 %s · L2+R2 %s%s · R-stick camera · Select class · R3 mode" % [
+		pad_attacks, loadout.trigger_l_label, loadout.trigger_r_label, loadout.ult_label, tethers]
+
+
+static func command_name(command: int) -> String:
+	match command:
+		CombatActionResource.Command.LIGHT:
+			return "Light"
+		CombatActionResource.Command.HEAVY:
+			return "Heavy"
+		CombatActionResource.Command.FORWARD_HEAVY:
+			return "Fwd+Heavy"
+		CombatActionResource.Command.BACK_HEAVY:
+			return "Back+Heavy"
+		CombatActionResource.Command.DODGE:
+			return "Dodge"
+		CombatActionResource.Command.TRIGGER_L_SKILL:
+			return "L"
+		CombatActionResource.Command.TRIGGER_R_SKILL:
+			return "R"
+		CombatActionResource.Command.TRIGGER_R_HOLD:
+			return "Hold R"
+		CombatActionResource.Command.TRIGGER_BOTH_ULT:
+			return "L+R"
+	return "?"
+
+
+func _label(size: int) -> Label:
+	var label: Label = Label.new()
+	label.add_theme_font_size_override(&"font_size", size)
+	label.add_theme_color_override(&"font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
+	label.add_theme_constant_override(&"outline_size", 5)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
+
+func _bar(color: Color, height: float) -> ProgressBar:
+	var bar: ProgressBar = ProgressBar.new()
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(0.0, height)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var back: StyleBoxFlat = StyleBoxFlat.new()
+	back.bg_color = BAR_BACK
+	back.set_corner_radius_all(3)
+	var fill: StyleBoxFlat = StyleBoxFlat.new()
+	fill.bg_color = color
+	fill.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override(&"background", back)
+	bar.add_theme_stylebox_override(&"fill", fill)
+	return bar

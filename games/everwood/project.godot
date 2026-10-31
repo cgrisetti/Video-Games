@@ -12,6 +12,7 @@ config_version=5
 
 config/name="Everwood"
 config/description="A cooperative raid action-RPG for a family party: up to 4 on the couch, 5 across the network."
+run/main_scene="res://src/levels/dungeon_dojo.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
