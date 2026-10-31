@@ -62,6 +62,38 @@ func _run() -> void:
 		if Vector2(berry.position.x, berry.position.z - 4.0).length() < 3.0:
 			berries_ok = false
 	_check("there are 9 raspberries, none right at the start", berries_ok)
+	# Fair layouts (upgrade 1): one berry in each square of a 3 × 3 grid, spread apart, one over the creek.
+	var squares := {}
+	var closest := INF
+	var over_water := 0
+	var half: float = field.PLAY_HALF - 1.5
+	for berry in _game._berries:
+		squares[Vector2i(clampi(int((berry.position.x + half) / (half * 2.0 / 3.0)), 0, 2), clampi(int((berry.position.z + half) / (half * 2.0 / 3.0)), 0, 2))] = true
+		if Creek.distance(berry.position.x, berry.position.z) < Creek.BED_HALF_WIDTH:
+			over_water += 1
+		for other in _game._berries:
+			if other != berry:
+				closest = minf(closest, Vector2(berry.position.x - other.position.x, berry.position.z - other.position.z).length())
+	_check("the berries are spread out, one in each ninth of the field (%d squares; closest pair %.1f m)" % [squares.size(), closest], squares.size() == 9 and closest >= 2.0)
+	_check("and at least one floats over the creek (%d)" % over_water, over_water >= 1)
+	var worm_gap := INF
+	for worm in _game._worms:
+		for berry in _game._berries:
+			worm_gap = minf(worm_gap, Vector2(worm.head.x - berry.position.x, worm.head.z - berry.position.z).length())
+	_check("no worm starts right by a berry (closest %.1f m)" % worm_gap, worm_gap >= 4.0)
+	var seed_now: int = _game.layout_seed
+	_game.restart(seed_now)
+	var first := _layout()
+	await _frames(2)
+	_game.restart(seed_now)
+	_check("the same seed makes the same field", _layout() == first)
+	_game.restart()
+	var counts := []
+	for i in 12:
+		_game.restart()
+		counts.append(_game._berries.size())
+	_check("every field gets all 9 berries (12 new fields: %s)" % str(counts), counts.count(9) == 12)
+	_game._ready_in = 0.0
 	var quarters := {}
 	var worms_far := true
 	for worm in _game._worms:
@@ -183,6 +215,18 @@ func _run() -> void:
 	print("FAILED" if _failed else "ALL PASSED")
 	root.get_node("Scores").reset("berry-rush")
 	quit(1 if _failed else 0)
+
+
+# Where everything is, as text, for comparing two fields.
+func _layout() -> String:
+	var parts := []
+	for berry in _game._berries:
+		parts.append(str(berry.position.snapped(Vector3.ONE * 0.01)))
+	for worm in _game._worms:
+		parts.append(str(worm.head.snapped(Vector3.ONE * 0.01)))
+	for obstacle in _game.field.obstacles:
+		parts.append(str(obstacle.position.snapped(Vector3.ONE * 0.01)))
+	return ",".join(parts)
 
 
 func _gate_card_best() -> String:

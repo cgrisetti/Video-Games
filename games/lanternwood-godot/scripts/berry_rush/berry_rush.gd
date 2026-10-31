@@ -17,6 +17,8 @@ const BERRY_COUNT := 9 # Pick these, then find the golden raspberry to finish.
 const READY_TIME := 1.6 # Seconds of "Ready…" before a round starts, when you come in through the gate.
 const RESULTS_DELAY := 1.3 # Seconds to enjoy the golden raspberry popping before the Top 10 comes up.
 const BERRY_FLOAT := 0.9 # How high the berries float (some over the creek, so you'll have to wade).
+const BERRY_SPACING := 5.0 # Berries are never closer together than this.
+const WORM_BERRY_GAP := 4.0 # Worms never start this close to a berry.
 const BERRY_TOUCH := 1.0 # How close the middle of the gnome has to come to pick one...
 const GOLDEN_TOUCH := 1.3 # ...or the golden one.
 const GNOME_MIDDLE := 0.6 # The height of the middle of the gnome, where things touch it.
@@ -36,6 +38,7 @@ var hud: Node # Set by main.gd.
 var scoreboard: Node
 
 var hold_worms := false # For tests: the worms stay put and can't catch anyone.
+var layout_seed := 0 # The round's layout comes from this: the same seed always makes the same field.
 var collected := 0
 var elapsed := 0.0
 var finished := false
@@ -135,7 +138,8 @@ func apply_graphics() -> void:
 
 # --- A round ---
 
-func restart() -> void:
+# A new round. With `layout` it uses that seed for the field; otherwise a new one.
+func restart(layout := -1) -> void:
 	effects.clear()
 	hud.hide_banner()
 	_ready_in = 0.0
@@ -150,7 +154,8 @@ func restart() -> void:
 	_golden.visible = false
 	scoreboard.hide_board()
 	hud.hide_hint()
-	field.rng.randomize()
+	layout_seed = layout if layout >= 0 else randi()
+	field.rng.seed = layout_seed
 	field.place_obstacles()
 	_place_berries()
 	_place_worms()
@@ -159,28 +164,74 @@ func restart() -> void:
 	_update_hud()
 
 
+# The raspberries, spread fairly: the field is split into a 3 × 3 grid with one berry in each
+# square, never two close together, and one of them always floats over the creek (a choice: wade
+# for it, or go round). Every berry is clear of the start, the trees, rocks and logs, and the bridges.
 func _place_berries() -> void:
 	for berry in _berries:
 		berry.queue_free()
 	_berries.clear()
 	_bobs.clear()
-	var half := BerryField.PLAY_HALF - 1.5
 	var rng := field.rng
-	for i in BERRY_COUNT:
-		var x := 0.0
-		var z := 0.0
-		for attempt in 200:
-			x = rng.randf_range(-half, half)
-			z = rng.randf_range(-half, half)
-			# Clear of the start, the trees, rocks and logs, and the bridges.
-			if Vector2(x, z - BerryField.START_Z).length() >= 3.0 and not field.is_near_obstacle(x, z, 1.0) and not Creek.is_near_bridge(x, z, 1.0, field.bridges):
+	var half := BerryField.PLAY_HALF - 1.5
+	var cell := half * 2.0 / 3.0
+	var cells := []
+	for row in 3:
+		for column in 3:
+			cells.append(Vector2(column, row))
+	# The square the creek crosses most gets the berry over the water.
+	var wet_cell := -1
+	var wettest := 0
+	for i in cells.size():
+		var wet := 0
+		for k in 25:
+			var p := _in_cell(cells[i], cell, half, Vector2((k % 5 + 0.5) / 5.0, (k / 5 + 0.5) / 5.0))
+			if Creek.distance(p.x, p.y) < Creek.BED_HALF_WIDTH:
+				wet += 1
+		if wet > wettest:
+			wettest = wet
+			wet_cell = i
+	var spots: Array[Vector2] = []
+	for i in cells.size():
+		var spot := Vector2.INF
+		for attempt in 120:
+			var p := _in_cell(cells[i], cell, half, Vector2(rng.randf_range(0.08, 0.92), rng.randf_range(0.08, 0.92)))
+			if i == wet_cell and attempt < 80 and Creek.distance(p.x, p.y) > Creek.BED_HALF_WIDTH * 0.8:
+				continue # Keep looking for a spot over the water first.
+			if _good_berry_spot(p, spots, BERRY_SPACING if attempt < 90 else 2.0):
+				spot = p
 				break
+		if spot == Vector2.INF:
+			# This square's too crowded (trees, the creek): anywhere fair in the field will do.
+			for attempt in 300:
+				var p := Vector2(rng.randf_range(-half, half), rng.randf_range(-half, half))
+				if _good_berry_spot(p, spots, 3.0 if attempt < 200 else 1.5):
+					spot = p
+					break
+		if spot == Vector2.INF:
+			continue
+		spots.append(spot)
 		var berry := Raspberry.make()
-		var height := Creek.terrain_height(x, z) + BERRY_FLOAT
-		berry.position = Vector3(x, height, z)
+		var height := Creek.terrain_height(spot.x, spot.y) + BERRY_FLOAT
+		berry.position = Vector3(spot.x, height, spot.y)
 		add_child(berry)
 		_berries.append(berry)
 		_bobs[berry] = [height, rng.randf() * TAU]
+
+
+func _in_cell(cell: Vector2, size: float, half: float, at: Vector2) -> Vector2:
+	return Vector2(-half + (cell.x + at.x) * size, -half + (cell.y + at.y) * size)
+
+
+func _good_berry_spot(p: Vector2, others: Array[Vector2], spacing: float) -> bool:
+	if Vector2(p.x, p.y - BerryField.START_Z).length() < 3.0:
+		return false
+	if field.is_near_obstacle(p.x, p.y, 1.0) or Creek.is_near_bridge(p.x, p.y, 1.0, field.bridges):
+		return false
+	for other in others:
+		if other.distance_to(p) < spacing:
+			return false
+	return true
 
 
 # The golden raspberry appears once all the others are picked, in one of the three quarters of the
@@ -222,6 +273,9 @@ func _place_worms() -> void:
 			head = Vector3(quarter.x * field.rng.randf_range(1.0, far), 0, quarter.y * field.rng.randf_range(1.0, far))
 			tail = head.normalized() * (head.length() + InchWorm.LENGTH)
 			var safe := Vector2(head.x, head.z - BerryField.START_Z).length() >= WORM_SAFE_DISTANCE
+			for berry in _berries:
+				if Vector2(berry.position.x - head.x, berry.position.z - head.z).length() < WORM_BERRY_GAP:
+					safe = false
 			if safe and worm._is_clear(tail, head):
 				break
 		worm.place(head, tail, gnome.MOVE_SPEED * WORM_MAX_SPEED, gnome.MOVE_SPEED * WORM_TOP_SPEED)
