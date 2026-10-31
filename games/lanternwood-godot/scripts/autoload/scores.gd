@@ -3,7 +3,7 @@ extends Node
 # The Top 10 boards, one for each game: the fastest times to pick every raspberry in Berry Rush
 # (and, as the other games come over, theirs). Saved between visits in user://scores.cfg (on a
 # Mac: ~/Library/Application Support/Godot/app_userdata/Lanternwood). The words are the same as
-# the three.js game's.
+# the three.js game's. A "daily" board (Today's Glade) starts fresh every day.
 
 signal changed(board: String)
 
@@ -22,12 +22,26 @@ const BOARDS := {
 		"best": "Best time: %s, by %s",
 		"no_best": "No best time yet. Be the first!",
 	},
+	"berry-rush-daily": {
+		"title": "Today's Glade: Top 10",
+		"daily": true,
+		"lower_is_better": true,
+		"no_score": "The inch worm got you! Pick every raspberry to get in today's book.",
+		"new_best": "The fastest in today's glade: %s! Write your name in the book.",
+		"top_ten": "%s is a Top 10 time for today! Write your name in the book.",
+		"not_top_ten": "You picked them all in %s. Not quite a Top 10 time today!",
+		"saved": "Well picked, %s! There's a new glade tomorrow.",
+		"best": "Today's best: %s, by %s",
+		"no_best": "No one's picked today's glade yet. Be the first!",
+	},
 }
 
 const TEST_PATH := "user://scores-test.cfg" # The tools (godot --script ...) keep their own, so tests never touch yours.
 
 var _boards := {} # Board -> [{"name", "score"}], best first.
+var _dates := {} # Daily board -> the day its scores are from.
 var _path := PATH
+var today_override := "" # For tests: pretend it's this day ("2026-10-31").
 
 
 func _ready() -> void:
@@ -43,9 +57,19 @@ func _ready() -> void:
 			if entry is Dictionary and entry.get("name") is String and (entry.get("score") is float or entry.get("score") is int):
 				list.append({"name": entry.name, "score": float(entry.score)})
 		_boards[board] = list.slice(0, SIZE)
+		_dates[board] = file.get_value("dates", board, "")
+
+
+# Today, as "2026-10-31" (your computer's own date).
+func today() -> String:
+	return today_override if today_override != "" else Time.get_date_string_from_system()
 
 
 func entries(board: String) -> Array:
+	# A daily board from another day starts over.
+	if BOARDS.get(board, {}).get("daily", false) and _dates.get(board, "") != today():
+		_boards[board] = []
+		_dates[board] = today()
 	return _boards.get(board, [])
 
 
@@ -124,4 +148,6 @@ func _save() -> void:
 	var file := ConfigFile.new()
 	for board in _boards:
 		file.set_value("boards", board, _boards[board])
+	for board in _dates:
+		file.set_value("dates", board, _dates[board])
 	file.save(_path)

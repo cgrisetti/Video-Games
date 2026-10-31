@@ -10,6 +10,8 @@ extends Node3D
 # the golden raspberry.
 # The big moments land: a bonk freezes the picture for a blink with a little shake, and a worm
 # catching you plays out in slow motion, zoomed in on the worm. (Shaking can be turned off in Settings.)
+# Today's Glade: the same field for everyone all day (its layout comes from the date), with its own
+# Top 10 that starts fresh each day. Switch to it from the menu or the Top 10.
 #
 # Everything about how the game plays is the same as the three.js Berry Rush; the field is new.
 # The field and its obstacles are in field.gd, the creek in creek.gd, the worms in inch_worm.gd.
@@ -47,13 +49,14 @@ const CAUGHT_TIME := 1.2 # ...for this many real seconds, zoomed in on the worm,
 const CAUGHT_SHAKE := 0.4
 const FOX_LEAD_SPEED := 0.85 # How fast the fox lopes ahead to the golden raspberry, as a share of the gnome's speed.
 const HINT := "Follow the fox to the golden raspberry!"
-const GOAL := "Pick all 9 raspberries, then follow the fox to the golden one, as fast as you can. The inch worms wake up one by one as you pick: don't let one catch you! Swing your stick (F, or □) at a worm's head to stun it, though it gets back up a little faster. The creek slows everyone down. R starts the round over."
+const GOAL := "Pick all 9 raspberries, then follow the fox to the golden one, as fast as you can. The inch worms wake up one by one as you pick: don't let one catch you! Swing your stick (F, or □) at a worm's head to stun it, though it gets back up a little faster. The creek slows everyone down. R starts the round over. Try Today's Glade too (from this menu or the Top 10): one field all day, the same for everyone, with its own Top 10."
 
 var hud: Node # Set by main.gd.
 var scoreboard: Node
 
 var hold_worms := false # For tests: the worms stay put and can't catch anyone.
 var layout_seed := 0 # The round's layout comes from this: the same seed always makes the same field.
+var daily := false # Playing Today's Glade.
 var collected := 0
 var elapsed := 0.0
 var finished := false
@@ -129,6 +132,7 @@ func setup(the_hud: Node, the_scoreboard: Node) -> void:
 	scoreboard = the_scoreboard
 	scoreboard.play_again.connect(func() -> void: if is_inside_tree(): restart())
 	scoreboard.return_to_glenn.connect(func() -> void: if is_inside_tree(): leave_requested.emit())
+	scoreboard.switch_pressed.connect(func() -> void: if is_inside_tree(): set_daily(not daily))
 
 
 # Coming in through the gate: a fresh round, with "Ready…" and "Go!".
@@ -136,7 +140,38 @@ func enter(_from := "") -> void:
 	apply_graphics()
 	restart()
 	_ready_in = READY_TIME
-	hud.show_banner("Berry Rush", "Ready…", true)
+	hud.show_banner(_title(), "Ready…", true)
+
+
+# Switch between Today's Glade and a new field every round, starting a fresh round with "Ready…".
+func set_daily(on: bool) -> void:
+	daily = on
+	restart()
+	_ready_in = READY_TIME
+	hud.show_banner(_title(), "Ready…", true)
+
+
+# The menu's own row for Berry Rush: switching fields.
+func menu_row() -> Dictionary:
+	return {"text": "Play a new field" if daily else "Play Today's Glade", "action": set_daily.bind(not daily)}
+
+
+# Which Top 10 this round goes in.
+func board() -> String:
+	return "berry-rush-daily" if daily else "berry-rush"
+
+
+# Today's Glade's layout, from the date: the same all day, for everyone.
+static func daily_seed(date: String) -> int:
+	return ("Berry Rush " + date).hash() & 0x7fffffff
+
+
+func _title() -> String:
+	return "Today's Glade" if daily else "Berry Rush"
+
+
+func _switch_text() -> String:
+	return "A new field" if daily else "Today's Glade"
 
 
 # Going back to the Glenn: put the Top 10 away and let the danger music fade.
@@ -184,7 +219,12 @@ func restart(layout := -1) -> void:
 	_golden.visible = false
 	scoreboard.hide_board()
 	hud.hide_hint()
-	layout_seed = layout if layout >= 0 else randi()
+	if layout >= 0:
+		layout_seed = layout
+	elif daily:
+		layout_seed = daily_seed(Scores.today())
+	else:
+		layout_seed = randi()
 	field.rng.seed = layout_seed
 	field.place_obstacles()
 	_place_berries()
@@ -381,7 +421,7 @@ func _plan_medals() -> void:
 	for leg in legs:
 		so_far += leg
 		_gold_splits.append(medal_times.gold * so_far / total)
-	hud.show_medals(medal_times.gold, medal_times.silver, medal_times.bronze)
+	hud.show_medals(medal_times.gold, medal_times.silver, medal_times.bronze, "Today's Glade" if daily else "")
 
 
 # Caught! Time slows and the camera turns and zooms in on the worm, then the Top 10 comes up.
@@ -491,12 +531,12 @@ func _process(delta: float) -> void:
 	if _results_in > 0.0:
 		_results_in -= delta
 		if _results_in <= 0.0:
-			scoreboard.show_board("berry-rush", elapsed, MEDAL_WORDS.get(medal_for(elapsed), ""))
+			scoreboard.show_board(board(), elapsed, MEDAL_WORDS.get(medal_for(elapsed), ""), _switch_text())
 	if _caught_in > 0.0:
 		_caught_in -= delta / maxf(Engine.time_scale, 0.001) # Real time, through the slow motion.
 		if _caught_in <= 0.0:
 			_set_time(1.0)
-			scoreboard.show_board("berry-rush", -1.0)
+			scoreboard.show_board(board(), -1.0, "", _switch_text())
 
 	# A swing of the stick that catches an inch worm on the head stuns it.
 	if not finished and gnome.is_striking():

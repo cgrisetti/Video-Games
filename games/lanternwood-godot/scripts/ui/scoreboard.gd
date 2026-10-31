@@ -3,10 +3,12 @@ extends CanvasLayer
 # The Top 10 board, shown at the end of each round: a page from the storybook with the ten best,
 # a line saying how the round went, and, for a score that makes the board, a place to write your
 # name (up to 10 letters; "Gnome" if you leave it blank). "Reset leaderboard" in the corner asks
-# once more before it wipes the board. Play again or go back to the Glenn from here.
+# once more before it wipes the board. Play again or go back to the Glenn from here, or switch
+# fields (Berry Rush: Today's Glade, or back to a new field every round).
 
 signal play_again
 signal return_to_glenn
+signal switch_pressed
 
 const RANK_COLORS := [Color("#c99a2e"), Color("#9a9a9a"), Color("#b0703a")] # Gold, silver, bronze.
 
@@ -20,6 +22,7 @@ var _result: Label
 var _rows: VBoxContainer
 var _name: LineEdit
 var _again: Button
+var _switch: Button
 var _reset: Button
 var _reset_armed := false
 
@@ -59,6 +62,11 @@ func _ready() -> void:
 		Sound.play_pop()
 		play_again.emit())
 	buttons.add_child(_again)
+	_switch = Button.new()
+	_switch.pressed.connect(func() -> void:
+		Sound.play_pop()
+		switch_pressed.emit())
+	buttons.add_child(_switch)
 	var back := Button.new()
 	back.text = "Return to the Glenn"
 	back.pressed.connect(func() -> void:
@@ -77,9 +85,11 @@ func _ready() -> void:
 
 
 # Show the board at the end of a round. `score` is the time, or -1 if the round ended without one.
-# `story` is said first: how the round went.
-func show_board(board: String, score: float, story := "") -> void:
+# `story` is said first: how the round went. `switch_text`, if any, labels the switch-fields button.
+func show_board(board: String, score: float, story := "", switch_text := "") -> void:
 	_board = board
+	_switch.text = switch_text
+	_switch.visible = switch_text != ""
 	_pending = -1.0
 	_just_saved = -1
 	var message := ""

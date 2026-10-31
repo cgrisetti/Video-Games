@@ -260,8 +260,9 @@ func set_time(seconds: float, medal := "") -> void:
 
 
 # This field's medal times, under the clock.
-func show_medals(gold: float, silver: float, bronze: float) -> void:
-	_medals.text = "[color=#%s]●[/color] %s    [color=#%s]●[/color] %s    [color=#%s]●[/color] %s" % [
+# The medal times for this field. `tag` goes first (Today's Glade).
+func show_medals(gold: float, silver: float, bronze: float, tag := "") -> void:
+	_medals.text = ("[color=#ffd55a]%s[/color]    " % tag if tag != "" else "") + "[color=#%s]●[/color] %s    [color=#%s]●[/color] %s    [color=#%s]●[/color] %s" % [
 		MEDAL_COLORS.gold.to_html(false), Scores.format_time(gold), MEDAL_COLORS.silver.to_html(false), Scores.format_time(silver), MEDAL_COLORS.bronze.to_html(false), Scores.format_time(bronze)]
 
 

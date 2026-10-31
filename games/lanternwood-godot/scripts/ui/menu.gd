@@ -39,6 +39,8 @@ var _round_in_progress := func() -> bool: return false
 var _game_rows: Array[Control] = [] # Only in a game: Restart round, Return to the Glenn.
 var _glenn_rows: Array[Control] = [] # Only in the Glenn: Quit.
 var _goal: Label
+var _extra := Callable() # In a game, its own row: returns {"text", "action"}, or {} for none.
+var _extra_row: Button
 const GLENN_GOAL := "Follow the forest path. Behind the gates, archways and openings along it are games to play. Walk up to one and press F (□ on a controller) to see what's there, then press it again to go in."
 
 
@@ -59,6 +61,9 @@ func open(start := false, message := "") -> void:
 	get_tree().paused = true
 	Sound.set_paused(true)
 	_resume.text = "Play" if start else "Resume"
+	var row: Dictionary = _extra.call() if _extra.is_valid() else {}
+	_extra_row.text = row.get("text", "")
+	_extra_row.visible = not row.is_empty()
 	show_notice(message)
 	_show_page("main")
 
@@ -76,9 +81,10 @@ func close() -> void:
 
 
 # In a game, or in the Glenn? `round_in_progress` says whether leaving now would lose a round;
-# `goal` is what to do there, for the How to play page.
-func set_game(in_game: bool, round_in_progress := Callable(), goal := GLENN_GOAL) -> void:
+# `goal` is what to do there, for the How to play page; `extra` gives the game's own row, if any.
+func set_game(in_game: bool, round_in_progress := Callable(), goal := GLENN_GOAL, extra := Callable()) -> void:
 	_in_game = in_game
+	_extra = extra
 	_round_in_progress = round_in_progress if round_in_progress.is_valid() else func() -> bool: return false
 	for row in _game_rows:
 		row.visible = in_game
@@ -168,6 +174,12 @@ func _build() -> void:
 	_game_rows.append(_button(main, "Restart round", func() -> void:
 		close()
 		restart_pressed.emit()))
+	_extra_row = _button(main, "", func() -> void:
+		var row: Dictionary = _extra.call() if _extra.is_valid() else {}
+		close()
+		if row.has("action"):
+			row.action.call())
+	_extra_row.visible = false
 	_came_from["settings"] = _button(main, "Settings", _show_page.bind("settings"))
 	_came_from["how-to-play"] = _button(main, "How to play", _show_page.bind("how-to-play"))
 	var leave := _button(main, "Return to the Glenn", func() -> void:

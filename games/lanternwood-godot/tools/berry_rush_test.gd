@@ -3,7 +3,7 @@ extends SceneTree
 # Plays Berry Rush without a window and checks it works the way the three.js game did: going in
 # through the gate, "Ready…" then "Go!", the field's rules, wading, picking every raspberry, the
 # golden raspberry and the fox pointing the way, the Top 10, the worms waking in turn, bonking and
-# being caught by a worm (with the hit-stop, shake and slow motion), the danger music, restarting, the menu, and going back to the Glenn. Run from this folder:
+# being caught by a worm (with the hit-stop, shake and slow motion), the danger music, Today's Glade, restarting, the menu, and going back to the Glenn. Run from this folder:
 #   godot --headless --fixed-fps 60 --path . --script res://tools/berry_rush_test.gd
 # It prints PASS or FAIL for each check, and exits with 1 if anything failed. (Scores go in a test
 # file, not your real Top 10.)
@@ -265,6 +265,36 @@ func _run() -> void:
 	_main.menu._show_page("main")
 	_main.menu.close()
 
+	# Today's Glade (upgrade 8): one field all day, with its own Top 10.
+	var scores: Node = root.get_node("Scores")
+	scores.today_override = "2026-10-31"
+	scores.reset("berry-rush-daily")
+	_main.menu.open()
+	await _frames(2)
+	var row: Button = _main.menu._extra_row
+	_check("the menu offers Today's Glade", row.visible and row.text == "Play Today's Glade")
+	row.pressed.emit()
+	await _frames(3)
+	var glade: int = _game.layout_seed
+	_check("Today's Glade's field comes from the date", _game.daily and glade == _game.daily_seed("2026-10-31") and not _main.menu.is_open)
+	_check("and the screen says so", hud._banner_title.text == "Today's Glade" and hud._medals.text.contains("Today's Glade"))
+	var glade_layout := _layout()
+	_tap("restart")
+	await _frames(3)
+	_check("playing it again gives the very same field", _game.layout_seed == glade and _layout() == glade_layout)
+	scores.add("berry-rush-daily", "Daily", 50.0)
+	_check("it has its own Top 10", scores.entries("berry-rush-daily").size() == 1 and scores.entries("berry-rush").size() == 1)
+	_game.finished = true
+	board.show_board(_game.board(), -1.0, "", _game._switch_text())
+	_check("its Top 10 offers a new field instead", board._title.text == "Today's Glade: Top 10" and board._switch.visible and board._switch.text == "A new field")
+	scores.today_override = "2026-11-01"
+	_check("tomorrow there's a new glade and a fresh Top 10", _game.daily_seed("2026-11-01") != glade and scores.entries("berry-rush-daily").is_empty())
+	board.switch_pressed.emit()
+	await _frames(3)
+	_check("A new field switches back to a new field every round", not _game.daily and not board.is_showing and _game.layout_seed != glade)
+	scores.today_override = ""
+	scores.reset("berry-rush-daily")
+
 	# Back to the Glenn from the Top 10.
 	_game.finished = true
 	board.show_board("berry-rush", -1.0)
@@ -291,8 +321,8 @@ func _awake() -> int:
 # Where everything is, as text, for comparing two fields.
 func _layout() -> String:
 	var parts := []
-	for berry in _game._berries:
-		parts.append(str(berry.position.snapped(Vector3.ONE * 0.01)))
+	for berry in _game._berries: # (Where it is on the ground: berries bob up and down.)
+		parts.append(str(Vector2(berry.position.x, berry.position.z).snapped(Vector2.ONE * 0.01)))
 	for worm in _game._worms:
 		parts.append(str(worm.head.snapped(Vector3.ONE * 0.01)))
 	for obstacle in _game.field.obstacles:

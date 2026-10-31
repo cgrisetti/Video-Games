@@ -124,7 +124,7 @@ func go_to(name: String) -> void:
 	move_child(area, 0)
 	hud.set_area(name)
 	var in_game := name != "glen"
-	menu.set_game(in_game, Callable(area, "round_in_progress") if in_game else Callable(), area.GOAL if in_game else menu.GLENN_GOAL)
+	menu.set_game(in_game, Callable(area, "round_in_progress") if in_game else Callable(), area.GOAL if in_game else menu.GLENN_GOAL, Callable(area, "menu_row") if area.has_method("menu_row") else Callable())
 	area.enter(from)
 	await _fade_to(0.0)
 	_switching = false
