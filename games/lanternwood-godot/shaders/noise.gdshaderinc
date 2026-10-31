@@ -31,3 +31,13 @@ float wind_at(vec3 world, float time) {
 	float gust = value_noise(world.xz * 0.05 + vec2(time * 0.12, time * 0.05));
 	return (sin(time * 1.6 + world.x * 0.35 + world.z * 0.22) * 0.6 + sin(time * 3.1 + world.x * 0.9 + world.z * 1.3) * 0.25) * (0.4 + gust);
 }
+
+// A fine 4×4 stipple pattern, 0 to 1, for fading solid things out without see-through sorting
+// problems: throw away the pixels where this is below how faded the thing should be.
+float stipple(vec2 pixel) {
+	int x = int(mod(pixel.x, 4.0));
+	int y = int(mod(pixel.y, 4.0));
+	int index = x + y * 4;
+	const float pattern[16] = float[](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+	return (pattern[index] + 0.5) / 16.0;
+}

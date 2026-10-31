@@ -2,7 +2,9 @@ extends SceneTree
 
 # Measures how smoothly the Glenn runs on this computer, with a real window and GPU (not headless).
 # Run from this folder:
-#   godot --path . --rendering-method forward_plus --script res://tools/benchmark.gd -- --graphics=high
+#   godot --path . --script res://tools/benchmark.gd -- --graphics=high
+# Add --area=berry-rush to measure Berry Rush instead (standing at the start, running across the
+# field, turning round).
 # It plays three short scenes the same way every time (standing at the start, walking up the
 # Glenn, turning the camera to the woods) and prints, for each: average frames a second, the
 # slowest 1% of frames, how long the GPU and CPU took per frame, and how much was drawn.
@@ -50,24 +52,35 @@ func _run() -> void:
 	_viewport_rid = root.get_viewport().get_viewport_rid()
 	RenderingServer.viewport_set_measure_render_time(_viewport_rid, true)
 	print("Lanternwood benchmark: graphics %s, %s, window %s (screen scale %.0f×), 3D drawn at %dx%d" % [graphics, RenderingServer.get_video_adapter_name(), DisplayServer.window_get_size(), DisplayServer.screen_get_scale(), roundi(DisplayServer.window_get_size().x * root.get_viewport().scaling_3d_scale), roundi(DisplayServer.window_get_size().y * root.get_viewport().scaling_3d_scale)])
+	var area_name: String = options.get("area", "glen")
+	if area_name != "glen":
+		main.go_to(area_name)
+		await _seconds(0.1)
+		while main._switching:
+			await process_frame
 	await _seconds(WARM_UP)
 	if options.has("shot"): # --shot=path.png saves a picture of the start, to compare looks.
 		_menu.close()
 		await RenderingServer.frame_post_draw
 		root.get_viewport().get_texture().get_image().save_png(options.shot)
 
-	var gnome: CharacterBody3D = _glen.gnome
-	var camera_rig: Node3D = _glen.camera_rig
+	var area: Node3D = main.area
+	var gnome: CharacterBody3D = area.gnome
+	var camera_rig: Node3D = area.camera_rig
 	for scene: Array in SCENES:
 		var name: String = scene[0]
 		if options.has("only") and not name.contains(options.only):
 			continue
-		_glen.enter()
+		if area_name == "glen":
+			_glen.enter()
+		else:
+			area.restart()
 		await _seconds(0.3)
 		if name.begins_with("walking"):
 			Input.action_press("move_forward")
 		if name.begins_with("turning"):
-			gnome.place(Vector3(0, 0.05, 0), PI)
+			if area_name == "glen":
+				gnome.place(Vector3(0, 0.05, 0), PI)
 			camera_rig.reset_view(0.0)
 			Input.action_press("look_right")
 		var report := await _measure(scene[1])

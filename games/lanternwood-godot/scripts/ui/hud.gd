@@ -1,7 +1,8 @@
 extends CanvasLayer
 
 # What's on screen during play: the prompt at an opening ("F  Berry Rush"), a game's card, short
-# messages, the area's name as you arrive, and the controls along the bottom.
+# messages, the area's name as you arrive, and the controls along the bottom. In a game, the pills
+# at the top left: raspberries picked and the clock in Berry Rush, and a hint when there is one.
 
 const TOAST_SECONDS := 1.8
 const BANNER_SECONDS := 2.6
@@ -20,6 +21,14 @@ var _banner: VBoxContainer
 var _banner_title: Label
 var _banner_subtitle: Label
 var _controls: Label
+var _card_best: Label
+var _pills: VBoxContainer
+var _berry_pill: PanelContainer
+var _berry_label: Label
+var _timer_label: Label
+var _hint: PanelContainer
+var _hint_label: Label
+var _area := "glen"
 var _tweens := {}
 
 
@@ -70,9 +79,10 @@ func _ready() -> void:
 	_card_blurb = _label("", "Label")
 	_card_blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_card_blurb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var best := _label("This game is on its way to the new Lanternwood.", "Soft")
+	var best := _label("", "Soft")
 	best.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	best.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_card_best = best
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 30)
@@ -99,6 +109,24 @@ func _ready() -> void:
 	_toast.modulate.a = 0.0
 	root.add_child(_toast)
 
+	# In a game: pills at the top left.
+	_pills = VBoxContainer.new()
+	_pills.position = Vector2(24, 22)
+	_pills.add_theme_constant_override("separation", 10)
+	root.add_child(_pills)
+	_berry_pill = _pill()
+	_berry_label = _icon_pill(_berry_pill, _berry_icon())
+	_pills.add_child(_berry_pill)
+	var timer_pill := _pill()
+	_timer_label = _icon_pill(timer_pill, _clock_icon())
+	_pills.add_child(timer_pill)
+	_hint = _pill()
+	_hint_label = _label("", "HudLabel")
+	_hint.add_child(_hint_label)
+	_hint.visible = false
+	_pills.add_child(_hint)
+	_pills.visible = false
+
 	# The controls, along the bottom.
 	_controls = _label("", "HudLabel")
 	_controls.add_theme_font_size_override("font_size", 18)
@@ -124,9 +152,10 @@ func hide_prompt() -> void:
 	_prompt.visible = false
 
 
-func show_card(game: Dictionary) -> void:
+func show_card(game: Dictionary, best := "This game is on its way to the new Lanternwood.") -> void:
 	_card_title.text = game.title
 	_card_blurb.text = game.blurb
+	_card_best.text = best
 	_card_play.text = InputHints.glyph("interact")
 	_card_close.text = InputHints.glyph("back")
 	_card.visible = true
@@ -147,19 +176,139 @@ func show_toast(text: String) -> void:
 	tween.tween_property(_toast, "modulate:a", 0.0, 0.4)
 
 
-func show_banner(title: String, subtitle: String) -> void:
+# The area's name, big, near the top. With `hold`, it stays up until set_banner_subtitle() or hide_banner().
+func show_banner(title: String, subtitle: String, hold := false) -> void:
 	_banner_title.text = title
 	_banner_subtitle.text = subtitle
-	var tween := _fade(_banner, 1.0, 0.8)
-	tween.tween_interval(BANNER_SECONDS)
-	tween.tween_property(_banner, "modulate:a", 0.0, 1.2)
+	var tween := _fade(_banner, 1.0, 0.8 if not hold else 0.25)
+	if not hold:
+		tween.tween_interval(BANNER_SECONDS)
+		tween.tween_property(_banner, "modulate:a", 0.0, 1.2)
+
+
+# Change the banner's second line ("Ready…" to "Go!"), then let it fade after `seconds`.
+func set_banner_subtitle(subtitle: String, seconds: float) -> void:
+	_banner_subtitle.text = subtitle
+	_banner_subtitle.pivot_offset = _banner_subtitle.size / 2.0
+	_banner_subtitle.scale = Vector2(1.3, 1.3)
+	create_tween().tween_property(_banner_subtitle, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK)
+	var tween := _fade(_banner, 1.0, 0.05)
+	tween.tween_interval(seconds)
+	tween.tween_property(_banner, "modulate:a", 0.0, 0.6)
+
+
+func hide_banner() -> void:
+	_fade(_banner, 0.0, 0.2)
+
+
+# Which area we're in, for the pills and the controls along the bottom.
+func set_area(area: String) -> void:
+	_area = area
+	_pills.visible = area == "berry-rush"
+	_hint.visible = false
+	hide_prompt()
+	hide_card()
+	_show_controls()
+
+
+func set_berries(picked: int, total: int, golden: bool) -> void:
+	_berry_label.text = "%d / %d" % [picked, total]
+	_berry_label.add_theme_color_override("font_color", Color("#ffd55a") if golden else Color("#ffc2d4"))
+
+
+# A little bump on the berry counter, when one is picked.
+func bump_berries() -> void:
+	_berry_pill.pivot_offset = _berry_pill.size / 2.0
+	_berry_pill.scale = Vector2(1.18, 1.18)
+	create_tween().tween_property(_berry_pill, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func set_time(seconds: float) -> void:
+	_timer_label.text = Scores.format_time(seconds)
+
+
+func show_hint(text: String) -> void:
+	_hint_label.text = text
+	if not _hint.visible:
+		_hint.visible = true
+		_hint.modulate.a = 0.0
+		_fade(_hint, 1.0, 0.3)
+
+
+func hide_hint() -> void:
+	_hint.visible = false
 
 
 func _show_controls() -> void:
+	var in_game := _area != "glen" # In a game, R restarts the round instead of waving.
 	if InputHints.using_controller:
-		_controls.text = "Left stick  move     ✕  jump     □  swing     △  wave     Right stick  camera     Options  pause"
+		_controls.text = "Left stick  move     ✕  jump     □  swing     %sRight stick  camera     Options  pause" % ("" if in_game else "△  wave     ")
 	else:
-		_controls.text = "WASD  move     Space  jump     F  swing     R  wave     Q E  camera     Esc  pause"
+		_controls.text = "WASD  move     Space  jump     F  swing     %s     Q E  camera     Esc  pause" % ("R  restart" if in_game else "R  wave")
+
+
+# A pill with a little picture before its words. Returns the words, to change later.
+func _icon_pill(pill: PanelContainer, icon: Texture2D) -> Label:
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 10)
+	var picture := TextureRect.new()
+	picture.texture = icon
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.custom_minimum_size = Vector2(26, 26)
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	line.add_child(picture)
+	var words := _label("", "HudLabel")
+	words.custom_minimum_size.x = 86
+	line.add_child(words)
+	pill.add_child(line)
+	return words
+
+
+# A little raspberry: a cluster of round drupelets under a green cap.
+static func _berry_icon() -> ImageTexture:
+	var size := 64
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var dots := [Vector2(32, 26), Vector2(22, 30), Vector2(42, 30), Vector2(27, 39), Vector2(37, 39), Vector2(32, 48), Vector2(32, 34)]
+	for y in size:
+		for x in size:
+			var p := Vector2(x + 0.5, y + 0.5)
+			var color := Color(0, 0, 0, 0)
+			for dot: Vector2 in dots:
+				var d := p.distance_to(dot)
+				if d < 9.0:
+					var light := 1.0 - p.distance_to(dot + Vector2(-3, -3)) / 12.0
+					color = Color("#c8325f").lerp(Color("#f07fa0"), clampf(light, 0.0, 1.0) * 0.6)
+			var leaf := absf(p.x - 32.0) < 13.0 - (p.y - 14.0) * 1.4 and p.y > 12.0 and p.y < 22.0
+			if leaf and absf(fmod(p.x - 32.0 + 40.0, 8.0) - 4.0) < 3.0:
+				color = Color("#4e8f36")
+			image.set_pixel(x, y, color)
+	return ImageTexture.create_from_image(image)
+
+
+# A little clock: a round face with two hands and a button on top.
+static func _clock_icon() -> ImageTexture:
+	var size := 64
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var ink := Color("#4a3826")
+	var middle := Vector2(32, 35)
+	for y in size:
+		for x in size:
+			var p := Vector2(x + 0.5, y + 0.5)
+			var d := p.distance_to(middle)
+			var color := Color(0, 0, 0, 0)
+			if absf(d - 21.0) < 3.0:
+				color = ink
+			elif d < 18.0:
+				color = Color("#fbf4df")
+			var to := p - middle
+			if absf(to.x) < 2.2 and to.y < 0.0 and to.y > -14.0:
+				color = ink # The minute hand, pointing up.
+			if absf(to.y) < 2.2 and to.x > 0.0 and to.x < 10.0:
+				color = ink # The hour hand, pointing right.
+			if absf(p.x - 32.0) < 6.0 and p.y > 6.0 and p.y < 11.0:
+				color = ink # The button on top.
+			image.set_pixel(x, y, color)
+	return ImageTexture.create_from_image(image)
 
 
 func _fade(node: CanvasItem, to: float, seconds: float) -> Tween:

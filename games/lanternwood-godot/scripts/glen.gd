@@ -96,12 +96,15 @@ func _ready() -> void:
 	fox.brain.interests = _interests
 	camera_rig.target = gnome
 	Settings.changed.connect(func(name: String) -> void: if name == "graphics": apply_graphics(true))
-	get_viewport().size_changed.connect(_fit_resolution)
 	apply_graphics(false)
 
 
 # Arrive at the south end, or (coming back from a game) in front of that game's opening.
 func enter(from := "") -> void:
+	if _grass_patches.size() > 0 and _grass_density != _graphics():
+		apply_graphics(true) # The graphics setting changed while the gnome was away.
+	elif is_inside_tree():
+		apply_graphics(false)
 	var back: Node = null
 	for opening in _openings:
 		if opening.game == from and from != "":
@@ -176,7 +179,7 @@ func build() -> void:
 	var detail: Dictionary = DETAIL[_graphics()]
 
 	var mask := Meadow.path_mask(WORLD_SIZE, path_distance, hedge_distance)
-	_add(Meadow.ground(WORLD_SIZE, mask, outside_distance))
+	_add(Meadow.ground(WORLD_SIZE, mask, Meadow.rolling(outside_distance)))
 	_add(Meadow.far_hills(68.0, 150.0, SEED))
 	_grow_grass(detail)
 	_add(Meadow.flowers(detail.flowers, Rect2(-WOODS_REACH, -WOODS_REACH, WOODS_REACH * 2.0, WOODS_REACH * 2.0), rng, _grass_weight, ground_height))
@@ -207,7 +210,11 @@ func _grass_weight(x: float, z: float) -> float:
 	return smoothstep(-0.1, 1.2, path_distance(x, z))
 
 
+var _grass_density := ""
+
+
 func _grow_grass(detail: Dictionary) -> void:
+	_grass_density = _graphics()
 	# Only the first patch keeps the name "Grass" (Godot renames the rest), so go by the list.
 	for patch in _grass_patches:
 		patch.queue_free()
@@ -399,8 +406,20 @@ func _near_opening(x: float, z: float, distance: float) -> bool:
 
 # Turn the expensive effects up or down. Low still looks like Lanternwood, just simpler.
 func apply_graphics(regrow: bool) -> void:
+	if Engine.is_editor_hint() or not is_inside_tree():
+		return # Away in a game: it'll catch up when the gnome comes back (enter()).
 	var level := _graphics()
-	var env := environment.environment
+	apply_quality(level, environment.environment, sun, get_viewport())
+	if regrow:
+		_grow_grass(DETAIL[level])
+		for child in _air.get_children():
+			child.queue_free()
+		_air.add_child(Atmosphere.fireflies(DETAIL[level].fireflies))
+		_air.add_child(Atmosphere.falling_leaves(DETAIL[level].leaves))
+
+
+# The expensive effects for a graphics setting, shared by every area (Berry Rush uses this too).
+static func apply_quality(level: String, env: Environment, sun: DirectionalLight3D, viewport: Viewport) -> void:
 	env.ssao_enabled = level != "low"
 	env.ssil_enabled = level == "high"
 	env.volumetric_fog_enabled = level != "low"
@@ -413,24 +432,16 @@ func apply_graphics(regrow: bool) -> void:
 	RenderingServer.directional_shadow_atlas_set_size(2048, true)
 	# 2× smoothing on the edges (4× cost a quarter of the frame for little difference you can see),
 	# plus the screen-wide smoothing pass set in project.godot.
-	get_viewport().msaa_3d = Viewport.MSAA_DISABLED if level == "low" else Viewport.MSAA_2X
-	_fit_resolution()
-	if regrow:
-		_grow_grass(DETAIL[level])
-		for child in _air.get_children():
-			child.queue_free()
-		_air.add_child(Atmosphere.fireflies(DETAIL[level].fireflies))
-		_air.add_child(Atmosphere.falling_leaves(DETAIL[level].leaves))
+	viewport.msaa_3d = Viewport.MSAA_DISABLED if level == "low" else Viewport.MSAA_2X
+	fit_resolution(level, viewport)
 
 
 # Draw the 3D at about the graphics setting's pixel count, and scale it up to fill the window.
-func _fit_resolution() -> void:
-	if Engine.is_editor_hint():
-		return
-	var viewport := get_viewport()
+# (main.gd calls this again whenever the window changes size.)
+static func fit_resolution(level: String, viewport: Viewport) -> void:
 	var window := DisplayServer.window_get_size()
 	var pixels := float(window.x * window.y) / 1e6
-	var scale := clampf(sqrt(DETAIL[_graphics()].pixels / maxf(pixels, 0.01)), SMALLEST_SCALE, 1.0)
+	var scale := clampf(sqrt(DETAIL[level].pixels / maxf(pixels, 0.01)), SMALLEST_SCALE, 1.0)
 	viewport.scaling_3d_scale = scale
 	if scale > 0.99:
 		viewport.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR # Full size: nothing to scale.
@@ -519,7 +530,7 @@ func _show_prompt() -> void:
 func _open_card(opening: Node) -> void:
 	_offering = opening
 	Sound.play_pop()
-	hud.show_card(GAMES[opening.game])
+	hud.show_card(GAMES[opening.game], Scores.best_line(opening.game) if Scores.BOARDS.has(opening.game) else "This game is on its way to the new Lanternwood.")
 	_show_prompt()
 
 

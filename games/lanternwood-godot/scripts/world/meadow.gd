@@ -30,21 +30,29 @@ static func path_mask(size: float, path_distance: Callable, hedge_distance: Call
 	return ImageTexture.create_from_image(image)
 
 
-# The ground: flat inside the Glen, rising gently into the woods beyond it.
-static func ground(size: float, mask: ImageTexture, flat_within: Callable) -> MeshInstance3D:
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(size, size)
-	plane.subdivide_width = 120
-	plane.subdivide_depth = 120
-	var arrays := plane.get_mesh_arrays()
-	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+# Ground that's flat where you play and rises gently, rolling, into the woods: `outside(x, z)` is
+# how far a spot is outside the play area (negative inside).
+static func rolling(outside: Callable) -> Callable:
 	var noise := FastNoiseLite.new()
 	noise.seed = 7
 	noise.frequency = 0.04
+	return func(x: float, z: float) -> float:
+		var rise := smoothstep(2.0, 14.0, outside.call(x, z))
+		return rise * (0.6 + noise.get_noise_2d(x, z) * 1.6 + 0.8)
+
+
+# The ground, `size` metres across, shaped by `height_at(x, z)`. `solid` gives it a flat floor to
+# stand on; an area with hills or a creek in it adds its own (see BerryField).
+static func ground(size: float, mask: ImageTexture, height_at: Callable, solid := true, detail := 120) -> MeshInstance3D:
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(size, size)
+	plane.subdivide_width = detail
+	plane.subdivide_depth = detail
+	var arrays := plane.get_mesh_arrays()
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	for i in vertices.size():
 		var v := vertices[i]
-		var rise := smoothstep(2.0, 14.0, flat_within.call(v.x, v.z))
-		vertices[i].y = rise * (0.6 + noise.get_noise_2d(v.x, v.z) * 1.6 + 0.8)
+		vertices[i].y = height_at.call(v.x, v.z)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	var tool := SurfaceTool.new()
 	tool.create_from_arrays(arrays)
@@ -58,12 +66,13 @@ static func ground(size: float, mask: ImageTexture, flat_within: Callable) -> Me
 	var made := Art.instance(tool.commit(), material)
 	made.name = "Ground"
 	made.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	# Something to stand on (the Glen itself is flat).
-	var body := StaticBody3D.new()
-	var shape := CollisionShape3D.new()
-	shape.shape = WorldBoundaryShape3D.new()
-	body.add_child(shape)
-	made.add_child(body)
+	if solid:
+		# Something to stand on (the Glen itself is flat).
+		var body := StaticBody3D.new()
+		var shape := CollisionShape3D.new()
+		shape.shape = WorldBoundaryShape3D.new()
+		body.add_child(shape)
+		made.add_child(body)
 	return made
 
 

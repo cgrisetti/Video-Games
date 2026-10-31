@@ -1,0 +1,57 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/berry_rush/berry_rush.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/berry_rush/field.gd" id="2_field"]
+[ext_resource type="Script" path="res://scripts/gnome.gd" id="3_gnome"]
+[ext_resource type="Script" path="res://scripts/fox.gd" id="4_fox"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="5_camera"]
+[ext_resource type="Script" path="res://scripts/berry_rush/effects.gd" id="6_effects"]
+[ext_resource type="Environment" path="res://scenes/golden_hour.tres" id="7_environment"]
+[ext_resource type="CameraAttributesPractical" path="res://scenes/golden_hour_camera.tres" id="8_camera"]
+
+[node name="BerryRush" type="Node3D"]
+script = ExtResource("1_game")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("7_environment")
+camera_attributes = ExtResource("8_camera")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.39, -2.69, 0)
+light_color = Color(1, 0.84, 0.64, 1)
+light_energy = 1.7
+light_angular_distance = 1.5
+light_volumetric_fog_energy = 1.4
+shadow_enabled = true
+shadow_bias = 0.04
+shadow_normal_bias = 1.2
+shadow_blur = 1.3
+directional_shadow_mode = 2
+directional_shadow_max_distance = 80.0
+
+[node name="Field" type="Node3D" parent="."]
+script = ExtResource("2_field")
+
+[node name="Gnome" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+script = ExtResource("3_gnome")
+
+[node name="Fox" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9, 0, 4.6)
+script = ExtResource("4_fox")
+
+[node name="CameraRig" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+script = ExtResource("5_camera")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+transform = Transform3D(1, 0, 0, 0, 0.87, 0.5, 0, -0.5, 0.87, 0, 6, 9)
+attributes = ExtResource("8_camera")
+current = true
+fov = 55.0
+far = 400.0
+
+[node name="Effects" type="Node3D" parent="."]
+script = ExtResource("6_effects")
+
+[node name="Air" type="Node3D" parent="."]

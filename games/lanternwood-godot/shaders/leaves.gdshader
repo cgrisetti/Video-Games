@@ -11,6 +11,7 @@ uniform vec3 base_color : source_color = vec3(0.12, 0.25, 0.1);
 uniform float sway = 1.0; // How much these leaves move in the wind.
 uniform float translucency : hint_range(0.0, 1.0) = 0.55;
 uniform float variety : hint_range(0.0, 0.5) = 0.18; // How much each card's colour differs.
+instance uniform float fade : hint_range(0.0, 1.0) = 0.0; // Stippled out when it's in front of the gnome.
 
 varying float outer; // 0 deep inside the crown, 1 at its edge.
 varying float random;
@@ -25,6 +26,9 @@ void vertex() {
 }
 
 void fragment() {
+	if (fade > 0.0 && stipple(FRAGCOORD.xy) < fade) {
+		discard;
+	}
 	vec4 leaf = texture(leaf_texture, UV);
 	ALPHA = leaf.a;
 	ALPHA_SCISSOR_THRESHOLD = 0.5;

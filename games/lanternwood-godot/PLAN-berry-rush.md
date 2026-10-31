@@ -151,7 +151,7 @@ upgrades come after it, as their own commits.
 ## Status
 
 - [x] Analysis, research and plan
-- [ ] 1. Seamless fox
-- [ ] 2. Berry Rush port
+- [x] 1. Seamless fox
+- [x] 2. Berry Rush port: `tools/berry_rush_test.gd` plays a round headless (31 checks, 8 of 8 runs)
 - [ ] 3. Upgrades 1–8
 - [ ] Final checks, docs, push

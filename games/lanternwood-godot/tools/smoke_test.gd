@@ -57,6 +57,14 @@ func _run() -> void:
 	_tap("interact")
 	await _frames(2)
 	_check("pressing F again goes in", played[0] == "berry-rush" and not hud._card.visible)
+	while main._switching:
+		await process_frame
+	_check("and the gnome is in Berry Rush", main.area_name == "berry-rush" and main.area.is_inside_tree() and not glen.is_inside_tree())
+	main.go_to("glen")
+	while main._switching:
+		await process_frame
+	var by_gate: float = gnome.global_position.distance_to(gate.spot())
+	_check("Return to the Glenn comes back out of the Berry Rush gate (%.1f m away)" % by_gate, main.area_name == "glen" and by_gate < 1.0)
 
 	# A shut opening.
 	gnome.place(glen.get_node("Openings/Arbor").spot(), 0.0)

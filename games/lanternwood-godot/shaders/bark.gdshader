@@ -7,6 +7,7 @@ uniform vec3 bark_color : source_color = vec3(0.35, 0.25, 0.18);
 uniform float stripe_scale = 1.0; // Bigger for finer grooves.
 uniform vec3 moss_color : source_color = vec3(0.3, 0.42, 0.15);
 uniform float moss = 0.35;
+instance uniform float fade : hint_range(0.0, 1.0) = 0.0; // Stippled out when it's in front of the gnome.
 
 varying vec3 world_normal;
 varying vec3 world_position;
@@ -17,6 +18,9 @@ void vertex() {
 }
 
 void fragment() {
+	if (fade > 0.0 && stipple(FRAGCOORD.xy) < fade) {
+		discard;
+	}
 	vec2 grain = vec2(UV.x * 10.0 * stripe_scale, UV.y * 1.2 * stripe_scale);
 	float grooves = fbm(grain * vec2(1.0, 0.25));
 	float knots = smoothstep(0.78, 0.9, value_noise(grain * vec2(0.6, 0.4) + 3.0));

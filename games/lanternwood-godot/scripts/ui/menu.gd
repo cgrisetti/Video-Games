@@ -10,6 +10,8 @@ extends CanvasLayer
 
 signal play_pressed
 signal quit_pressed
+signal restart_pressed # In a game: start the round over.
+signal leave_pressed # In a game: go back to the Glenn.
 
 const VOLUME_STEP := 0.05
 const CHOICES := {
@@ -31,12 +33,19 @@ var _hints: HBoxContainer
 var _resume: Button
 var _rows_for_setting := {} # Setting name -> the control that shows it.
 var _came_from := {} # Page -> the button that led to it, to land on when coming back.
+var _in_game := false
+var _round_in_progress := func() -> bool: return false
+var _game_rows: Array[Control] = [] # Only in a game: Restart round, Return to the Glenn.
+var _glenn_rows: Array[Control] = [] # Only in the Glenn: Quit.
+var _goal: Label
+const GLENN_GOAL := "Follow the forest path. Behind the gates, archways and openings along it are games to play. Walk up to one and press F (□ on a controller) to see what's there, then press it again to go in."
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 10
 	_build()
+	set_game(false)
 	InputHints.device_changed.connect(func(_c: bool) -> void: _show_hints())
 	Settings.changed.connect(func(_n: String) -> void: _show_settings())
 	visible = false
@@ -63,6 +72,18 @@ func close() -> void:
 	if _starting:
 		_starting = false
 		play_pressed.emit()
+
+
+# In a game, or in the Glenn? `round_in_progress` says whether leaving now would lose a round;
+# `goal` is what to do there, for the How to play page.
+func set_game(in_game: bool, round_in_progress := Callable(), goal := GLENN_GOAL) -> void:
+	_in_game = in_game
+	_round_in_progress = round_in_progress if round_in_progress.is_valid() else func() -> bool: return false
+	for row in _game_rows:
+		row.visible = in_game
+	for row in _glenn_rows:
+		row.visible = not in_game
+	_goal.text = goal
 
 
 func show_notice(message: String) -> void:
@@ -94,7 +115,7 @@ func _go_back() -> void:
 func _show_page(name: String) -> void:
 	var from := _page
 	_page = name
-	_title.text = {"settings": "Settings", "how-to-play": "How to play"}.get(name, "Lanternwood" if _starting else "Paused")
+	_title.text = {"settings": "Settings", "how-to-play": "How to play", "leave": "Return to the Glenn?"}.get(name, "Lanternwood" if _starting else "Paused")
 	for key in _pages:
 		_pages[key].visible = key == name
 	_show_hints()
@@ -140,12 +161,35 @@ func _build() -> void:
 	column.add_child(_notice)
 	column.add_child(HSeparator.new())
 
-	# Main: Play/Resume, Settings, How to play, Quit.
+	# Main: Play/Resume, (Restart round), Settings, How to play, then Quit, or Return to the Glenn in a game.
 	var main := _page_box(column, "main")
 	_resume = _button(main, "Play", close)
+	_game_rows.append(_button(main, "Restart round", func() -> void:
+		close()
+		restart_pressed.emit()))
 	_came_from["settings"] = _button(main, "Settings", _show_page.bind("settings"))
 	_came_from["how-to-play"] = _button(main, "How to play", _show_page.bind("how-to-play"))
-	_button(main, "Quit", func() -> void: quit_pressed.emit())
+	var leave := _button(main, "Return to the Glenn", func() -> void:
+		# Leaving mid-round loses the round, so ask first.
+		if _round_in_progress.call():
+			_show_page("leave")
+		else:
+			close()
+			leave_pressed.emit())
+	_game_rows.append(leave)
+	_came_from["leave"] = leave
+	_glenn_rows.append(_button(main, "Quit", func() -> void: quit_pressed.emit()))
+
+	# Leaving a game mid-round.
+	var leave_page := _page_box(column, "leave")
+	var warning := _label("This round will end here, and it won't go in the Top 10.", "Soft")
+	warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	warning.custom_minimum_size.x = 560
+	leave_page.add_child(warning)
+	_button(leave_page, "Return to the Glenn", func() -> void:
+		close()
+		leave_pressed.emit())
+	_button(leave_page, "Keep playing", _show_page.bind("main"))
 
 	# Settings.
 	var settings := _page_box(column, "settings")
@@ -165,10 +209,10 @@ func _build() -> void:
 
 	# How to play.
 	var help := _page_box(column, "how-to-play")
-	var goal := _label("Follow the forest path. Behind the gates, archways and openings along it are games to play. Walk up to one and press F (□ on a controller) to see what's there, then press it again to go in.", "Soft")
-	goal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	goal.custom_minimum_size.x = 560
-	help.add_child(goal)
+	_goal = _label(GLENN_GOAL, "Soft")
+	_goal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_goal.custom_minimum_size.x = 560
+	help.add_child(_goal)
 	var table := GridContainer.new()
 	table.columns = 3
 	table.add_theme_constant_override("h_separation", 26)

@@ -69,6 +69,8 @@ const RIGHT := 1
 
 var camera_yaw := 0.0 # Set by the camera rig: which way "forward" is.
 var can_move := true
+var can_wave := true # Off in the games, where R restarts the round.
+var speed_scale := 1.0 # Slower than 1 where the going's slow (wading through a creek).
 
 var _model: Node3D # Turns to face the way he's going.
 var _rig: Node3D # Bobs, hops and squashes.
@@ -175,12 +177,25 @@ func is_swinging() -> bool:
 	return _swing >= 0.0
 
 
+# In the part of a swing that can bonk something.
+func is_striking() -> bool:
+	return _swing >= STRIKE.x and _swing <= STRIKE.y
+
+
+# Points along the stick, in the world, for checking what it hits.
+func stick_points() -> Array[Vector3]:
+	var points: Array[Vector3] = []
+	for along: float in [0.15, 0.35, 0.55, 0.74]:
+		points.append(_stick.to_global(Vector3(0, along, 0)))
+	return points
+
+
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
 	var push := Input.get_vector("move_left", "move_right", "move_forward", "move_back") if can_move else Vector2.ZERO
 	var move := Vector3(push.x, 0, push.y).rotated(Vector3.UP, camera_yaw)
-	var target := move * MOVE_SPEED
+	var target := move * MOVE_SPEED * speed_scale
 	var flat := Vector3(velocity.x, 0, velocity.z).move_toward(target, ACCELERATION * delta)
 	velocity.x = flat.x
 	velocity.z = flat.z
@@ -201,7 +216,7 @@ func _physics_process(delta: float) -> void:
 		_squash = 1.18
 		_rest()
 		_puff_dust(global_position, 3, 0.6)
-	if can_move and Input.is_action_just_pressed("wave"):
+	if can_move and can_wave and Input.is_action_just_pressed("wave"):
 		wave()
 	velocity.y -= GRAVITY * delta
 	var falling := velocity.y

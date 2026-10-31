@@ -11,6 +11,9 @@ extends RefCounted
 #   lie     - lie down with its tail curled round, if the gnome has been still a long while
 #   play    - a play bow and a dash round the gnome, when the gnome jumps or swings its stick
 #   greet   - bound over, sit and wag, when the gnome waves
+# and in Berry Rush, when the golden raspberry appears:
+#   point   - drop into a crouch and point its nose straight at it...
+#   lead    - ...then walk slowly toward it, to show the gnome the way
 # A loose leash keeps it near: it's happy anywhere within LEASH metres of the gnome, heads back
 # beyond that, gallops back from further, and if it's ever left far behind (after a gate) it simply
 # reappears nearby. It keeps out of the camera's view of the gnome, and inside the Glenn.
@@ -21,11 +24,14 @@ const REAPPEAR := 30.0
 const PREDICT := 0.9 # Seconds ahead it guesses where the gnome is going.
 const INTEREST_REACH := 11.0 # How far from the gnome something can be and still be worth a sniff.
 const PLAY_COOLDOWN := 9.0
+const POINT_TIME := 1.5 # Seconds it points at the golden raspberry before it leads the way.
+const LEAD_STOP := 1.8 # How close it walks up to the golden raspberry.
 
 var fox: CharacterBody3D
 var gnome: CharacterBody3D
 var camera: Node3D
 var interests: Array[Vector3] = [] # Things worth sniffing.
+var lead_speed := 0.35 # How slowly it leads the way to the golden raspberry.
 
 var activity := "follow"
 var _time_left := 0.0 # How long the current activity goes on.
@@ -35,6 +41,7 @@ var _gnome_still := 0.0 # How long the gnome has been standing still.
 var _play_cooldown := 0.0
 var _greeted := false
 var _greet_soon := false # The gnome waved mid-pounce: say hello as soon as it lands.
+var _prize := Vector3.INF # The golden raspberry, while it's out.
 var _clock := 0.0
 var _drift := FastNoiseLite.new()
 var _rng := RandomNumberGenerator.new()
@@ -51,7 +58,19 @@ func _init(the_fox: CharacterBody3D, the_gnome: CharacterBody3D, the_camera: Nod
 
 
 func reset() -> void:
+	_prize = Vector3.INF
 	_start("follow", 2.0)
+
+
+# The golden raspberry has appeared: point at it, then lead the way.
+func point_to(spot: Vector3) -> void:
+	_prize = spot
+	_start("point", POINT_TIME)
+
+
+func stop_pointing() -> void:
+	_prize = Vector3.INF
+	_start("follow")
 
 
 func think(delta: float) -> void:
@@ -62,6 +81,13 @@ func think(delta: float) -> void:
 	var away := _flat(gnome.global_position - fox.global_position).length()
 	fox.fade(_hides_gnome())
 
+	# Showing the way to the golden raspberry comes first.
+	if _prize != Vector3.INF:
+		_time_left -= delta
+		if activity == "point" and _time_left <= 0.0:
+			_start("lead", 1e6)
+		call("_do_" + activity, delta, away, gnome_speed)
+		return
 	# The leash, which wins over everything else.
 	if away > REAPPEAR:
 		fox.place(_clamp(gnome.global_position - _forward() * 2.0 + _right() * _side * 2.0))
@@ -121,6 +147,8 @@ func _choose() -> void:
 
 
 func _start(what: String, how_long := -1.0) -> void:
+	if _prize != Vector3.INF and what not in ["point", "lead"]:
+		what = "lead" # Nothing else matters while it's showing the way.
 	activity = what
 	fox.set_pose("stand")
 	fox.wag(0.0)
@@ -263,6 +291,28 @@ func _do_greet(_delta: float, away: float, _gnome_speed: float) -> void:
 		_greeted = true
 		fox.hold()
 		fox.face(gnome.global_position)
+		fox.set_pose("sit")
+
+
+# Crouch low and point its nose straight at the golden raspberry.
+func _do_point(_delta: float, _away: float, _gnome_speed: float) -> void:
+	fox.hold()
+	fox.face(_prize)
+	fox.set_pose("stalk")
+	fox.look_toward(_prize)
+	fox.wag(0.3)
+
+
+# Walk slowly toward it, nose first, and wait beside it.
+func _do_lead(_delta: float, _away: float, _gnome_speed: float) -> void:
+	fox.look_toward(_prize)
+	fox.wag(0.5)
+	if _flat(_prize - fox.global_position).length() > LEAD_STOP:
+		fox.set_pose("stalk")
+		fox.walk_to(_prize, lead_speed)
+	else:
+		fox.hold()
+		fox.face(_prize)
 		fox.set_pose("sit")
 
 
