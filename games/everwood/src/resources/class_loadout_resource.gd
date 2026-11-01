@@ -1,5 +1,7 @@
-## A playable class (or a boss): its role, stats and posture-driven skill loadout.
-## The loadouts themselves are built in code by `ClassLoadouts`.
+## The compiled loadout an actor runs: its role and stats plus every action it
+## can start, already shaped by its equipment and Scribe Cards. LoadoutComposer
+## builds player loadouts from a PlayerClassResource and a kit; the boss's is
+## built directly in ClassLoadouts.
 class_name ClassLoadoutResource
 extends Resource
 
@@ -19,10 +21,18 @@ enum Role { TANK, HEALER, DPS, BOSS }
 @export var guard_on_trigger_l: bool = false
 ## D-Pad binds Soul Tethers to party members (healer).
 @export var has_soul_tethers: bool = false
-## Short names for the trigger skills, shown in the HUD controls line.
+## Short names for the posture skills, shown in the HUD controls line.
 @export var trigger_l_label: String = ""
 @export var trigger_r_label: String = ""
 @export var ult_label: String = ""
+@export var forward_label: String = ""
+@export var back_label: String = ""
+
+@export_group("Equipment (players)")
+## What this loadout was composed from.
+@export var kit: EquipmentLoadoutResource
+@export var weapon: EquipmentItemResource
+@export var armor: EquipmentItemResource
 
 
 func opener_for(input_command: CombatActionResource.Command) -> CombatActionResource:
@@ -52,6 +62,19 @@ func action_by_id(action_id: StringName) -> CombatActionResource:
 		if action.action_id == action_id:
 			return action
 	return null
+
+
+## The action a Grimoire slot invokes (ScribeCardResource.GrimoireSlot), or null.
+func card_action(slot: int) -> CombatActionResource:
+	for action: CombatActionResource in openers:
+		if action.grimoire_slot == slot:
+			return action
+	return null
+
+
+## Shots and Attack Cards fly from a distance.
+func is_ranged() -> bool:
+	return weapon != null and weapon.is_ranged()
 
 
 ## The skill `from_action` flows into when `input_command` is pressed, or null.

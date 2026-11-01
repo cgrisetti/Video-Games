@@ -1,6 +1,9 @@
 ## The party's progress (autoload "Progress"): the Dojo Shards earned from raid
-## chests and the Hub Town upgrades bought with them at the Shard Vendor, saved
-## between sessions in user://everwood_progress.cfg.
+## chests and the Hub Town upgrades bought with them at the Shard Vendor, the
+## Scribe Card binder (collected copies, by copy key), each class's last kit,
+## and the victories that set the Grimoire level, all saved between sessions
+## in user://everwood_progress.cfg. Everything is ids and numbers, so the file
+## (or a JSON or SQLite store later) never holds game data, only references.
 ##
 ## The whole party shares one pouch and one set of upgrades, like a family
 ## purse: every player's base stats grow together. The host owns it: other
@@ -10,6 +13,8 @@ class_name PartyProgress
 extends Node
 
 signal progress_changed
+## A card copy joined the binder (on the host, which awards cards).
+signal card_awarded(copy_key: StringName)
 
 const SAVE_PATH: String = "user://everwood_progress.cfg"
 const MAX_HEALTH: StringName = &"max_health"
@@ -28,6 +33,14 @@ static var current: PartyProgress
 var shards: int = 0
 ## Upgrade id -> levels bought.
 var levels: Dictionary[StringName, int] = {}
+## Card copy key ("rising_drive:shiny_foil") -> copies collected.
+var collection: Dictionary[StringName, int] = {}
+## Dojo Warden wins; each one raises the Grimoire a level (LoadoutComposer).
+var victories: int = 0
+## Class id -> the kit (EquipmentLoadoutResource.to_dict) its players last wore.
+var kits: Dictionary[StringName, Dictionary] = {}
+## The host rolls chest cards with this (the smoke test seeds it).
+var drop_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## Where progress is saved (the smoke test points this at its own file).
 var save_path: String = SAVE_PATH
 
@@ -120,6 +133,46 @@ func _request_purchase(id: StringName) -> void:
 		_server_purchase(id)
 
 
+# --- Scribe Cards and the Grimoire ----------------------------------------
+
+func grimoire_level() -> int:
+	return LoadoutComposer.grimoire_level(victories)
+
+
+func copies_of(copy_key: StringName) -> int:
+	return collection.get(copy_key, 0)
+
+
+## The kit a class's players last wore ({} if none was saved).
+func kit_for(class_id: StringName) -> Dictionary:
+	return kits.get(class_id, {})
+
+
+## Host only: remembers a class's kit for its next seat (and next session).
+func save_kit(class_id: StringName, kit: Dictionary) -> void:
+	if not NetworkManager.current.is_host() or kits.get(class_id, {}) == kit:
+		return
+	kits[class_id] = kit.duplicate(true)
+	_commit()
+
+
+## Host only: a Dojo Warden win.
+func record_victory() -> void:
+	if not NetworkManager.current.is_host():
+		return
+	victories += 1
+	_commit()
+
+
+## Host only: a card copy for the binder (a chest drop).
+func award_card(copy_key: StringName) -> void:
+	if not NetworkManager.current.is_host() or ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key)) == null:
+		return
+	collection[copy_key] = copies_of(copy_key) + 1
+	card_awarded.emit(copy_key)
+	_commit()
+
+
 # --- Earning --------------------------------------------------------------
 
 ## Adds shards to the party's pouch. Host only; other peers get the new total.
@@ -141,21 +194,52 @@ func use_save_file(path: String) -> void:
 func load_save() -> void:
 	_showing_host = false
 	shards = 0
+	victories = 0
 	levels.clear()
+	collection.clear()
+	kits.clear()
 	var file: ConfigFile = ConfigFile.new()
 	if file.load(save_path) == OK:
 		shards = maxi(0, int(file.get_value("party", "shards", 0)))
+		victories = maxi(0, int(file.get_value("party", "victories", 0)))
 		for id: StringName in UPGRADES:
 			levels[id] = clampi(int(file.get_value("upgrades", String(id), 0)), 0, MAX_UPGRADE_LEVEL)
+		_read_collection(file.get_value("cards", "collection", {}) as Dictionary)
+		var saved_kits: Dictionary = file.get_value("kits", "by_class", {}) as Dictionary
+		for class_id: Variant in saved_kits:
+			kits[StringName(str(class_id))] = saved_kits[class_id] as Dictionary
 	progress_changed.emit()
 
 
 func save() -> Error:
 	var file: ConfigFile = ConfigFile.new()
 	file.set_value("party", "shards", shards)
+	file.set_value("party", "victories", victories)
 	for id: StringName in UPGRADES:
 		file.set_value("upgrades", String(id), level_of(id))
+	file.set_value("cards", "collection", _plain_collection())
+	var plain_kits: Dictionary = {}
+	for class_id: StringName in kits:
+		plain_kits[String(class_id)] = kits[class_id]
+	file.set_value("kits", "by_class", plain_kits)
 	return file.save(save_path)
+
+
+## The binder with plain String keys (for save files and RPCs).
+func _plain_collection() -> Dictionary:
+	var plain: Dictionary = {}
+	for key: StringName in collection:
+		plain[String(key)] = collection[key]
+	return plain
+
+
+## Reads a binder back, dropping copies of cards this build doesn't have.
+func _read_collection(plain: Dictionary) -> void:
+	collection.clear()
+	for key: Variant in plain:
+		var copy_key: StringName = StringName(str(key))
+		if ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key)) != null:
+			collection[copy_key] = maxi(0, int(plain[key]))
 
 
 ## Saves (unless this is a copy of the host's), tells the game, and shares it.
@@ -173,7 +257,7 @@ func _snapshot() -> Dictionary:
 	var bought: Dictionary = {}
 	for id: StringName in UPGRADES:
 		bought[String(id)] = level_of(id)
-	return {"shards": shards, "levels": bought}
+	return {"shards": shards, "levels": bought, "victories": victories, "collection": _plain_collection()}
 
 
 # --- Network --------------------------------------------------------------
@@ -190,6 +274,8 @@ func _receive_progress(data: Dictionary) -> void:
 	var bought: Dictionary = data.get("levels", {})
 	for id: StringName in UPGRADES:
 		levels[id] = clampi(int(bought.get(String(id), 0)), 0, MAX_UPGRADE_LEVEL)
+	victories = maxi(0, int(data.get("victories", 0)))
+	_read_collection(data.get("collection", {}) as Dictionary)
 	progress_changed.emit()
 
 

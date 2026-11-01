@@ -2,6 +2,7 @@
 ##   RING  Green Sanctuary (healer): heals allies standing inside every second
 ##   CONE  Shadow Sanctuary (tank): a shield cone behind the tank; allies inside
 ##         take much less damage
+## A Hearth Echo under-card also makes either zone restore stamina every second.
 ## Every peer spawns the zone; each peer heals or protects only the actors it owns.
 class_name SanctuaryZone
 extends Node3D
@@ -22,6 +23,7 @@ var shape: Shape = Shape.RING
 var radius: float = 4.0
 var duration: float = 6.0
 var heal_per_second: float = 0.0
+var stamina_per_second: float = 0.0
 var damage_reduction: float = 0.0
 
 var _age: float = 0.0
@@ -29,12 +31,14 @@ var _tick_accum: float = 0.0
 var _material: StandardMaterial3D
 
 
-func configure(zone_owner: StringName, zone_shape: Shape, zone_radius: float, zone_duration: float, zone_heal_per_second: float) -> void:
+func configure(zone_owner: StringName, zone_shape: Shape, zone_radius: float, zone_duration: float, zone_heal_per_second: float,
+		zone_stamina_per_second: float) -> void:
 	owner_player_id = zone_owner
 	shape = zone_shape
 	radius = zone_radius
 	duration = zone_duration
 	heal_per_second = zone_heal_per_second
+	stamina_per_second = zone_stamina_per_second
 	damage_reduction = SHADOW_DAMAGE_REDUCTION if zone_shape == Shape.CONE else 0.0
 
 
@@ -88,7 +92,7 @@ func _physics_process(delta: float) -> void:
 	if remaining <= 0.0:
 		queue_free()
 		return
-	if heal_per_second <= 0.0:
+	if heal_per_second <= 0.0 and stamina_per_second <= 0.0:
 		return
 	_tick_accum += delta
 	if _tick_accum < HEAL_TICK:
@@ -96,8 +100,11 @@ func _physics_process(delta: float) -> void:
 	_tick_accum -= HEAL_TICK
 	var healer: ActorBase = CombatDirector.current.get_actor(owner_player_id)
 	for member: ActorBase in CombatDirector.current.party_actors():
-		if member.is_multiplayer_authority() and contains(member.global_position):
+		if not member.is_multiplayer_authority() or not contains(member.global_position):
+			continue
+		if heal_per_second > 0.0:
 			CombatDirector.current.apply_heal(healer if healer != null else member, member, heal_per_second * HEAL_TICK)
+		member.stats.restore_stamina(stamina_per_second * HEAL_TICK)
 
 
 func _build_ring_mesh() -> Mesh:

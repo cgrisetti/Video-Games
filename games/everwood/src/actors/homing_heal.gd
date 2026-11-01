@@ -13,15 +13,18 @@ const COLOR: Color = Color(0.45, 1.0, 0.6)
 var healer: ActorBase
 var target: ActorBase
 var amount: float = 0.0
+## Hearth Echo: this share of the heal bounces on to the next hurt ally.
+var echo: float = 0.0
 
 var _velocity: Vector3 = Vector3.ZERO
 var _age: float = 0.0
 
 
-func configure(from_healer: ActorBase, to_target: ActorBase, heal_amount: float) -> void:
+func configure(from_healer: ActorBase, to_target: ActorBase, heal_amount: float, heal_echo: float) -> void:
 	healer = from_healer
 	target = to_target
 	amount = heal_amount
+	echo = heal_echo
 	# Launch upward and forward so the arc reads as "flying to you".
 	_velocity = (from_healer.facing_vector() + Vector3.UP * 0.8).normalized() * SPEED
 
@@ -53,7 +56,7 @@ func _physics_process(delta: float) -> void:
 	var to_aim: Vector3 = aim - global_position
 	if to_aim.length() <= ARRIVE_DISTANCE:
 		if target.is_multiplayer_authority():
-			CombatDirector.current.apply_heal(healer, target, amount)
+			CombatDirector.current.apply_heal(healer, target, amount, echo)
 		queue_free()
 		return
 	var wanted: Vector3 = to_aim.normalized() * SPEED

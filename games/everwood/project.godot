@@ -19,7 +19,9 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 ; Scripts reach these through their class's static `current` (NetworkManager.current,
 ; CombatDirector.current, InstanceManager.current, AudioCues.current,
-; PartyProgress.current), so the keys differ from the class names.
+; PartyProgress.current, ArsenalCatalog.current), so the keys differ from the
+; class names. The Arsenal comes first: the others look card and item ids up in it.
+Arsenal="*res://src/actors/arsenal_catalog.gd"
 Network="*res://src/autoloads/network_manager.gd"
 Instance="*res://src/autoloads/instance_manager.gd"
 Combat="*res://src/autoloads/combat_director.gd"

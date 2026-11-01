@@ -13,6 +13,9 @@ var assist_mode: int = 0
 var slot: int = 0
 ## An AI companion filling a role, not a person.
 var companion: bool = false
+## The seat's equipment kit as EquipmentLoadoutResource.to_dict() ids (an opaque
+## Dictionary here, so the network layer doesn't need to know what's in it).
+var kit: Dictionary = {}
 
 
 static func make_player_id(for_peer: int, for_device: int) -> StringName:
@@ -28,6 +31,7 @@ func to_dict() -> Dictionary:
 		"assist_mode": assist_mode,
 		"slot": slot,
 		"companion": companion,
+		"kit": kit,
 	}
 
 
@@ -40,6 +44,7 @@ static func from_dict(data: Dictionary) -> PartyMember:
 	member.assist_mode = int(data.get("assist_mode", 0))
 	member.slot = int(data.get("slot", 0))
 	member.companion = bool(data.get("companion", false))
+	member.kit = data.get("kit", {}) as Dictionary
 	return member
 
 

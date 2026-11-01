@@ -3,9 +3,13 @@
 ## - Local hit-stop: a landed blow freezes just the attacker and target for
 ##   60 ms, scaled per action. No global pause, so other split-screen players
 ##   keep moving.
-## - Cross-Class Synergy: a DPS primes the boss (Stagger, Frost, Radiant) and a
-##   *teammate* detonates it for a bonus, bigger when the detonator plays a
-##   different role.
+## - Aspect Seals (05_ARSENAL_AND_CARDS_GDD.md §3.2): a primer card stamps its
+##   aspect's seal on the boss and a *teammate's* heavy detonates it. What a
+##   detonation does is data on the AspectSealResource, applied the same way
+##   for every aspect; a different role or a different aspect makes it a
+##   cross-harmony (x1.5).
+## - Projectiles: the attacker's peer flies the real shot (from the level's
+##   FxPool); other peers fly a look-alike named by action id.
 ## - One rule for networked combat: the peer that owns the target applies the
 ##   effect. Every strike, heal, threat and pull goes through deliver(), which
 ##   applies it here or sends it to the owner as a validation RPC.
@@ -27,42 +31,52 @@ signal telegraph_cast(decal: RaidTelegraphDecal)
 signal cue_shown(at: Vector3, cue: StringName)
 ## Both players behind a detonation were rewarded (on the detonating target's owner).
 signal synergy_rewarded(applier_id: StringName, detonator_id: StringName, resonance: float)
+## A projectile left an attacker (the real one, or another peer's look-alike).
+signal projectile_fired(attacker: ActorBase, action: CombatActionResource)
 
 ## Phase B impact freeze (02_COMBAT_GDD.md §2); each action scales it.
 const BASE_HIT_STOP: float = 0.06
 const PRIMER_DURATION: float = 8.0
-## Detonated by a different role than the one who primed it.
-const CROSS_CLASS_MULTIPLIER: float = 1.5
-const STAGGER_BONUS_POISE: float = 45.0
-const FROST_BONUS_DAMAGE: float = 45.0
-const RADIANT_PARTY_HEAL: float = 20.0
-const RADIANT_HEAL_RADIUS: float = 10.0
+## Detonated by a different role, or a different aspect, than the seal's.
+const CROSS_HARMONY_MULTIPLIER: float = 1.5
 ## Hits that land after a flow-cancel fill resonance faster.
 const FLOW_RESONANCE_MULTIPLIER: float = 1.5
-## Resonance pips each partner in a synergy earns (x CROSS_CLASS_MULTIPLIER across roles).
+## Resonance pips each partner in a detonation earns (x CROSS_HARMONY_MULTIPLIER on a cross-harmony).
 const SYNERGY_RESONANCE_REWARD: float = 0.5
 ## Healers fill resonance by healing: pips per point of health restored.
 const HEAL_RESONANCE_PER_HP: float = 0.008
 const PERFECT_GUARD_RESONANCE: float = 0.5
 const PERFECT_GUARD_POISE: float = 50.0
+## Threat a tank's Perfect Guard draws; other classes draw it scaled by their
+## threat modifier, so a DPS's Perfect Guard doesn't pull the boss off the tank.
 const PERFECT_GUARD_THREAT: float = 250.0
+const TANK_THREAT_MODIFIER: float = 3.0
 const PERFECT_GUARD_HIT_STOP_SCALE: float = 2.5
 const HEAL_THREAT_RATIO: float = 0.5
 const TAUNT_THREAT: float = 50.0
 ## Metres of lag forgiveness when checking a hit reported by another peer.
 const VALIDATION_SLACK: float = 3.0
 const LIFELINE_LANDING_DISTANCE: float = 1.3
+## Hearth Echo: a heal's bounce reaches allies this close to its target.
+const ECHO_RADIUS: float = 8.0
+## Shots lean toward a target this close to straight ahead (dot of directions).
+const AIM_ASSIST_DOT: float = 0.8
+## A plain shot sounds a little higher and quieter than a card shot.
+const SHOT_PITCH_PLAIN: float = 1.3
+const SHOT_VOLUME_DB: float = -6.0
 const FLOAT_TEXT_TIME: float = 0.9
 const FLOAT_TEXT_RISE: float = 1.4
 
 class PrimerRecord:
-	var primer: int = CombatActionResource.Synergy.NONE
+	var primer: int = AspectSealResource.CardAspect.NONE
 	var applier_id: StringName = &""
 	var applier_role: int = ClassLoadoutResource.Role.DPS
 	var expires_at: float = 0.0
 
 ## Where zones, heals and floating text are spawned (the level sets this).
 var effects_root: Node3D
+## The level's pool for projectiles and card effects (the level sets this).
+var fx_pool: FxPool
 
 var _actors: Dictionary[StringName, ActorBase] = {}
 var _bosses: Array[ActorBase] = []
@@ -88,6 +102,7 @@ static func game_time() -> float:
 
 
 func reset() -> void:
+	fx_pool = null
 	_actors.clear()
 	_bosses.clear()
 	_primers.clear()
@@ -200,9 +215,14 @@ func request_hit_stop(actors: Array[ActorBase], scale: float) -> void:
 ## An attacker's hitbox touched a target. Runs on the attacker's peer: freeze,
 ## resonance and the damage number happen at once, then the strike goes to
 ## whoever owns the target.
-func report_hit(attacker: ActorBase, target: ActorBase, action: CombatActionResource, flowed: bool) -> void:
-	request_hit_stop([attacker, target], action.hit_stop_scale)
+func report_hit(attacker: ActorBase, target: ActorBase, action: CombatActionResource, flowed: bool, from_projectile: bool = false) -> void:
+	# A shot freezes only its target: the archer isn't touching it.
+	var frozen: Array[ActorBase] = [target]
+	if not from_projectile:
+		frozen.append(attacker)
+	request_hit_stop(frozen, action.hit_stop_scale)
 	attacker.stats.add_resonance(action.resonance_gain * (FLOW_RESONANCE_MULTIPLIER if flowed else 1.0))
+	attacker.stats.restore_stamina(action.echo_stamina_on_hit)
 	if attacker.is_local_player():
 		AudioCues.play(&"hit", 1.15 / maxf(0.7, action.hit_stop_scale), -4.0)
 	if action.damage > 0.0:
@@ -226,6 +246,9 @@ func _receive_event(data: Dictionary) -> void:
 	var event: CombatEvent = CombatEvent.from_dict(data)
 	var target: ActorBase = _actor_at(event.target_path)
 	if target == null or not target.is_multiplayer_authority():
+		return
+	# A strike named by action id takes its numbers from our copy of the attacker.
+	if not event.resolve_action(_actor_at(event.attacker_path)):
 		return
 	if not _is_plausible(event, target, multiplayer.get_remote_sender_id()):
 		push_warning("CombatDirector: dropped an implausible %s from peer %d" % [CombatEvent.Kind.keys()[event.kind], multiplayer.get_remote_sender_id()])
@@ -253,6 +276,8 @@ func _apply(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
 			_apply_strike(target, event, from_remote)
 		CombatEvent.Kind.HEAL:
 			var healed: float = target.receive_heal(event.heal)
+			if event.echo > 0.0:
+				_echo_heal(target, event)
 			if healed > 0.0:
 				show_float_text(_above(target), "+%d" % roundi(healed), Color(0.5, 1.0, 0.6))
 				AudioCues.play(&"heal", 1.0, -6.0)
@@ -263,6 +288,7 @@ func _apply(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
 					deliver(_reward_event(healer, healed * HEAL_RESONANCE_PER_HP))
 		CombatEvent.Kind.REWARD:
 			target.stats.add_resonance(event.resonance)
+			target.stats.restore_stamina(event.stamina)
 		CombatEvent.Kind.THREAT:
 			if target.threat != null:
 				if event.duration > 0.0:
@@ -277,7 +303,7 @@ func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> 
 	if target.is_boss():
 		if event.detonates:
 			_try_detonate(target, event)
-		if event.primer != CombatActionResource.Synergy.NONE:
+		if event.primer != AspectSealResource.CardAspect.NONE:
 			_apply_primer(target, event)
 	var outcome: int = target.receive_strike(event)
 	match outcome:
@@ -312,14 +338,14 @@ func _on_perfect_guard(defender: ActorBase, event: CombatEvent) -> void:
 	counter.attacker_player_id = defender.player_id
 	counter.attacker_role = defender.role()
 	counter.poise_damage = PERFECT_GUARD_POISE
-	counter.threat = PERFECT_GUARD_THREAT
+	counter.threat = PERFECT_GUARD_THREAT * defender.loadout.stats.threat_modifier / TANK_THREAT_MODIFIER
 	counter.hit_stop_scale = PERFECT_GUARD_HIT_STOP_SCALE
 	counter.origin = defender.global_position
 	counter.reach = attacker.body_radius() + 4.0
 	deliver(counter)
 
 
-# --- Cross-Class Synergy --------------------------------------------------
+# --- Aspect Seals ---------------------------------------------------------
 
 func _apply_primer(target: ActorBase, event: CombatEvent) -> void:
 	var record: PrimerRecord = PrimerRecord.new()
@@ -329,10 +355,12 @@ func _apply_primer(target: ActorBase, event: CombatEvent) -> void:
 	record.expires_at = game_time() + PRIMER_DURATION
 	_primers[target.get_instance_id()] = record
 	primer_applied.emit(target, event.primer)
-	announce(_above(target) + Vector3.UP * 0.6, "%s primed" % synergy_primer_name(event.primer), synergy_color(event.primer))
+	var seal: AspectSealResource = ArsenalCatalog.current.aspect_seal(event.primer)
+	announce(_above(target) + Vector3.UP * 0.6, "%s seal" % seal.seal_name, seal.color)
 
 
-## Adds the primer's bonus to this hit if a teammate set it up. Primers last 8 s.
+## Adds the seal's detonation to this hit if a teammate stamped it. Seals last
+## 8 s. Every aspect goes through the same steps: whatever its seal's data says.
 func _try_detonate(target: ActorBase, event: CombatEvent) -> void:
 	var key: int = target.get_instance_id()
 	if not _primers.has(key):
@@ -345,36 +373,64 @@ func _try_detonate(target: ActorBase, event: CombatEvent) -> void:
 	if record.applier_id == event.attacker_player_id:
 		return
 	_primers.erase(key)
-	var cross_class: bool = record.applier_role != event.attacker_role
-	var multiplier: float = CROSS_CLASS_MULTIPLIER if cross_class else 1.0
-	match record.primer:
-		CombatActionResource.Synergy.STAGGER:
-			event.poise_damage += STAGGER_BONUS_POISE * multiplier
-		CombatActionResource.Synergy.FROST:
-			event.damage += FROST_BONUS_DAMAGE * multiplier
-		CombatActionResource.Synergy.RADIANT:
-			for member: ActorBase in party_actors():
-				if member.global_position.distance_to(target.global_position) <= RADIANT_HEAL_RADIUS:
-					deliver(_heal_event(event.attacker_path, event.attacker_player_id, member, RADIANT_PARTY_HEAL * multiplier))
-	var label: String = synergy_name(record.primer)
-	if cross_class:
-		label += "  x%.1f CROSS-CLASS" % multiplier
-	synergy_detonated.emit(target, record.primer, cross_class, label)
-	announce(_above(target) + Vector3.UP * 0.9, label, synergy_color(record.primer), synergy_sound(record.primer))
-	_reward_synergy(record, event, multiplier)
+	var cross: bool = record.applier_role != event.attacker_role \
+		or (event.aspect != AspectSealResource.CardAspect.NONE and event.aspect != record.primer)
+	var multiplier: float = CROSS_HARMONY_MULTIPLIER if cross else 1.0
+	var seal: AspectSealResource = ArsenalCatalog.current.aspect_seal(record.primer)
+	event.poise_damage += seal.bonus_poise * multiplier
+	event.damage += seal.bonus_damage * multiplier
+	event.hit_stop_scale += seal.bonus_hit_stop
+	if seal.bonus_damage > 0.0 and seal.burst_radius > 0.0:
+		_burst(target, event, seal.bonus_damage * multiplier, seal.burst_radius)
+	if seal.has_party_effect():
+		_bless_party(target, event, seal, multiplier)
+	var label: String = seal.detonation_name
+	if cross:
+		label += "  x%.1f CROSS-HARMONY" % multiplier
+	synergy_detonated.emit(target, record.primer, cross, label)
+	announce(_above(target) + Vector3.UP * 0.9, label, seal.color, seal.sound)
+	_reward_synergy(record, event, multiplier, seal)
+
+
+## Elemental Rupture's burst: the bonus also hits other enemies near the target.
+func _burst(target: ActorBase, event: CombatEvent, damage: float, radius: float) -> void:
+	for boss: ActorBase in _bosses:
+		if boss == target or not is_instance_valid(boss) or boss.global_position.distance_to(target.global_position) > radius:
+			continue
+		var splash: CombatEvent = CombatEvent.new()
+		splash.kind = CombatEvent.Kind.STRIKE
+		splash.attacker_path = event.attacker_path
+		splash.target_path = boss.get_path()
+		splash.attacker_player_id = event.attacker_player_id
+		splash.attacker_role = event.attacker_role
+		splash.damage = damage
+		splash.origin = target.global_position
+		splash.reach = event.reach + radius
+		deliver(splash)
+
+
+## Dawnburst and Astral Chorus: heals, stamina and pips for the party near the target.
+func _bless_party(target: ActorBase, event: CombatEvent, seal: AspectSealResource, multiplier: float) -> void:
+	for member: ActorBase in party_actors():
+		if member.global_position.distance_to(target.global_position) > seal.party_radius:
+			continue
+		if seal.party_heal > 0.0:
+			deliver(_heal_event(event.attacker_path, event.attacker_player_id, member, seal.party_heal * multiplier))
+		if seal.party_stamina > 0.0 or seal.party_pips > 0.0:
+			deliver(_reward_event(member, seal.party_pips * multiplier, seal.party_stamina * multiplier))
 
 
 ## Both family members behind a detonation earn resonance and get their own
-## burst of light in the primer's colour, so everyone sees who teamed up.
-func _reward_synergy(record: PrimerRecord, event: CombatEvent, multiplier: float) -> void:
+## burst of light in the seal's colour, so everyone sees who teamed up.
+func _reward_synergy(record: PrimerRecord, event: CombatEvent, multiplier: float, seal: AspectSealResource) -> void:
 	var amount: float = SYNERGY_RESONANCE_REWARD * multiplier
 	for partner_id: StringName in [record.applier_id, event.attacker_player_id]:
 		var partner: ActorBase = get_actor(partner_id)
 		if partner == null:
 			continue
 		deliver(_reward_event(partner, amount))
-		show_cue(partner, synergy_color(record.primer), &"reward")
-		announce(_above(partner), "+%s pip" % _pip_text(amount), synergy_color(record.primer))
+		show_cue(partner, seal.color, &"reward")
+		announce(_above(partner), "+%s pip" % _pip_text(amount), seal.color)
 	synergy_rewarded.emit(record.applier_id, event.attacker_player_id, amount)
 
 
@@ -386,58 +442,14 @@ func _pip_text(amount: float) -> String:
 	return "%.2f" % amount
 
 
-func synergy_sound(primer: int) -> StringName:
-	match primer:
-		CombatActionResource.Synergy.STAGGER:
-			return &"synergy_stagger"
-		CombatActionResource.Synergy.FROST:
-			return &"synergy_frost"
-		CombatActionResource.Synergy.RADIANT:
-			return &"synergy_radiant"
-	return &""
-
-
+## The aspect whose seal is on `target` right now (CardAspect.NONE if none).
 func primer_on(target: ActorBase) -> int:
 	if target == null:
-		return CombatActionResource.Synergy.NONE
+		return AspectSealResource.CardAspect.NONE
 	var key: int = target.get_instance_id()
 	if not _primers.has(key) or game_time() > _primers[key].expires_at:
-		return CombatActionResource.Synergy.NONE
+		return AspectSealResource.CardAspect.NONE
 	return _primers[key].primer
-
-
-func synergy_primer_name(primer: int) -> String:
-	match primer:
-		CombatActionResource.Synergy.STAGGER:
-			return "Stagger"
-		CombatActionResource.Synergy.FROST:
-			return "Frost"
-		CombatActionResource.Synergy.RADIANT:
-			return "Radiant"
-	return ""
-
-
-## What each primer becomes when a teammate detonates it.
-func synergy_name(primer: int) -> String:
-	match primer:
-		CombatActionResource.Synergy.STAGGER:
-			return "SHATTERPOINT"
-		CombatActionResource.Synergy.FROST:
-			return "GLACIAL RUPTURE"
-		CombatActionResource.Synergy.RADIANT:
-			return "DAWNBURST"
-	return ""
-
-
-func synergy_color(primer: int) -> Color:
-	match primer:
-		CombatActionResource.Synergy.STAGGER:
-			return Color(1.0, 0.62, 0.25)
-		CombatActionResource.Synergy.FROST:
-			return Color(0.55, 0.85, 1.0)
-		CombatActionResource.Synergy.RADIANT:
-			return Color(1.0, 0.95, 0.55)
-	return Color.WHITE
 
 
 # --- Support effects ------------------------------------------------------
@@ -448,10 +460,27 @@ func taunt_bosses(taunter: ActorBase, duration: float) -> void:
 	announce(_above(taunter), "TAUNT!", Color(0.6, 0.75, 1.0))
 
 
-func apply_heal(healer: ActorBase, target: ActorBase, amount: float) -> void:
+func apply_heal(healer: ActorBase, target: ActorBase, amount: float, echo: float = 0.0) -> void:
 	if healer == null or target == null:
 		return
-	deliver(_heal_event(healer.get_path(), healer.player_id, target, amount))
+	var event: CombatEvent = _heal_event(healer.get_path(), healer.player_id, target, amount)
+	event.echo = echo
+	deliver(event)
+
+
+## Hearth Echo: part of a landed heal bounces on to the next most hurt ally near
+## the target (once: the bounce itself doesn't echo).
+func _echo_heal(target: ActorBase, event: CombatEvent) -> void:
+	var next: ActorBase = null
+	var lowest: float = 1.0
+	for member: ActorBase in party_actors():
+		if member == target or member.global_position.distance_to(target.global_position) > ECHO_RADIUS:
+			continue
+		if member.stats.health_ratio() < lowest:
+			lowest = member.stats.health_ratio()
+			next = member
+	if next != null:
+		deliver(_heal_event(event.attacker_path, event.attacker_player_id, next, event.heal * event.echo))
 
 
 func lifeline_pull(healer: ActorBase, target: ActorBase, duration: float) -> void:
@@ -468,38 +497,92 @@ func lifeline_pull(healer: ActorBase, target: ActorBase, duration: float) -> voi
 
 func spawn_zone(owner: ActorBase, shape: SanctuaryZone.Shape, action: CombatActionResource) -> void:
 	if NetworkManager.current.is_online():
-		_spawn_zone.rpc(owner.player_id, shape, owner.global_transform, action.effect_radius, action.effect_duration, action.heal_amount)
+		_spawn_zone.rpc(owner.player_id, shape, owner.global_transform, action.effect_radius, action.effect_duration, action.heal_amount,
+			action.zone_stamina_per_second)
 	else:
-		_spawn_zone(owner.player_id, shape, owner.global_transform, action.effect_radius, action.effect_duration, action.heal_amount)
+		_spawn_zone(owner.player_id, shape, owner.global_transform, action.effect_radius, action.effect_duration, action.heal_amount,
+			action.zone_stamina_per_second)
 
 
 @rpc("any_peer", "call_local", "reliable")
-func _spawn_zone(owner_id: StringName, shape: int, where: Transform3D, radius: float, duration: float, heal_per_second: float) -> void:
+func _spawn_zone(owner_id: StringName, shape: int, where: Transform3D, radius: float, duration: float, heal_per_second: float,
+		stamina_per_second: float) -> void:
 	if effects_root == null:
 		return
 	var zone: SanctuaryZone = SanctuaryZone.new()
-	zone.configure(owner_id, shape as SanctuaryZone.Shape, radius, duration, heal_per_second)
+	zone.configure(owner_id, shape as SanctuaryZone.Shape, radius, duration, heal_per_second, stamina_per_second)
 	effects_root.add_child(zone)
 	zone.global_transform = where
 
 
-func launch_homing_heal(healer: ActorBase, target: ActorBase, amount: float) -> void:
+func launch_homing_heal(healer: ActorBase, target: ActorBase, amount: float, echo: float = 0.0) -> void:
 	if NetworkManager.current.is_online():
-		_spawn_homing_heal.rpc(healer.get_path(), target.get_path(), amount)
+		_spawn_homing_heal.rpc(healer.get_path(), target.get_path(), amount, echo)
 	else:
-		_spawn_homing_heal(healer.get_path(), target.get_path(), amount)
+		_spawn_homing_heal(healer.get_path(), target.get_path(), amount, echo)
 
 
 @rpc("any_peer", "call_local", "reliable")
-func _spawn_homing_heal(healer_path: NodePath, target_path: NodePath, amount: float) -> void:
+func _spawn_homing_heal(healer_path: NodePath, target_path: NodePath, amount: float, echo: float) -> void:
 	var healer: ActorBase = _actor_at(healer_path)
 	var target: ActorBase = _actor_at(target_path)
 	if healer == null or target == null or effects_root == null:
 		return
 	var orb: HomingHeal = HomingHeal.new()
-	orb.configure(healer, target, amount)
+	orb.configure(healer, target, amount, echo)
 	effects_root.add_child(orb)
 	orb.global_position = healer.global_position + Vector3.UP * 1.5
+
+
+# --- Projectiles ----------------------------------------------------------
+
+## A ranged strike: the attacker's peer flies the real projectile; every other
+## peer with this instance loaded flies a look-alike, named by action id.
+func launch_projectile(attacker: ActorBase, action: CombatActionResource, flowed: bool) -> void:
+	var origin: Vector3 = RuneProjectile.muzzle_of(attacker)
+	var direction: Vector3 = _aim(attacker, origin, action.projectile_range)
+	_fire(attacker, action, origin, direction, true, flowed)
+	for peer_id: int in InstanceManager.current.live_remote_peers():
+		_fire_copy.rpc_id(peer_id, attacker.get_path(), action.action_id, origin, direction)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _fire_copy(attacker_path: NodePath, action_id: StringName, origin: Vector3, direction: Vector3) -> void:
+	var attacker: ActorBase = _actor_at(attacker_path)
+	if attacker == null or attacker.get_multiplayer_authority() != multiplayer.get_remote_sender_id():
+		return
+	var action: CombatActionResource = attacker.loadout.action_by_id(action_id)
+	if action != null and action.is_projectile():
+		_fire(attacker, action, origin, direction, false, false)
+
+
+func _fire(attacker: ActorBase, action: CombatActionResource, origin: Vector3, direction: Vector3, real: bool, flowed: bool) -> void:
+	if fx_pool == null:
+		return
+	var shot: RuneProjectile = fx_pool.take(StringName("shot:%s" % action.projectile_look), _make_projectile.bind(action.projectile_look)) as RuneProjectile
+	shot.launch(attacker, action, origin, direction, real, flowed)
+	AudioCues.play(&"shot", 1.0 if action.is_card() else SHOT_PITCH_PLAIN, SHOT_VOLUME_DB)
+	projectile_fired.emit(attacker, action)
+
+
+func _make_projectile(look_id: StringName) -> RuneProjectile:
+	var shot: RuneProjectile = RuneProjectile.new()
+	shot.build_look(ArsenalCatalog.current.item(look_id))
+	return shot
+
+
+## Toward the target when it's in range and roughly ahead (children aim
+## loosely); otherwise straight where the archer faces.
+func _aim(attacker: ActorBase, origin: Vector3, flight_range: float) -> Vector3:
+	var forward: Vector3 = attacker.facing_vector()
+	var target: ActorBase = attacker.soft_target()
+	if target == null:
+		return forward
+	var to_target: Vector3 = target.global_position + Vector3.UP * target.body_height() * 0.5 - origin
+	var flat: Vector3 = Vector3(to_target.x, 0.0, to_target.z)
+	if flat.length() < 0.01 or to_target.length() > flight_range + target.body_radius() or forward.dot(flat.normalized()) < AIM_ASSIST_DOT:
+		return forward
+	return to_target.normalized()
 
 
 # --- Floating text --------------------------------------------------------
@@ -581,13 +664,14 @@ func _heal_event(healer_path: NodePath, healer_id: StringName, target: ActorBase
 	return event
 
 
-func _reward_event(target: ActorBase, pips: float) -> CombatEvent:
+func _reward_event(target: ActorBase, pips: float, stamina: float = 0.0) -> CombatEvent:
 	var event: CombatEvent = CombatEvent.new()
 	event.kind = CombatEvent.Kind.REWARD
 	event.target_path = target.get_path()
 	event.attacker_path = target.get_path()
 	event.attacker_player_id = target.player_id
 	event.resonance = pips
+	event.stamina = stamina
 	return event
 
 

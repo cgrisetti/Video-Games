@@ -11,8 +11,9 @@
 ##   DPS     evade red · roll from the swipe · soak gold · ultimate · prime
 ##           · attack · follow
 ## Gambits pick where to stand (tanks in front of the boss, DPS at its back,
-## healers at range, everyone near the leader outside a fight) and which
-## command to press; the companion walks there and presses it like a player.
+## healers at range, archers at bow range, everyone near the leader outside a
+## fight) and which command to press; the companion walks there and presses it
+## like a player. Reach comes from the loadout, so a bot plays any kit.
 ## Companions belong to the host, so this runs only there.
 class_name CompanionAIComponent
 extends Node
@@ -54,8 +55,12 @@ const DPS_DISTANCE: float = 2.3
 const DPS_FLANK_ANGLE: float = 2.3
 const HEALER_DISTANCE: float = 7.0
 const DETONATE_DISTANCE: float = 2.0
-## Swings start within this distance of the boss.
-const MELEE_RANGE: float = 3.2
+## Stepping back from a swipe: this far from the boss is outside its reach.
+const SWIPE_SAFE_DISTANCE: float = 6.5
+## A ranged companion stands at this share of its shot's reach from the boss.
+const RANGED_POST_SHARE: float = 0.6
+## Presses start a little inside an action's full reach.
+const REACH_MARGIN: float = 0.3
 const FOLLOW_DISTANCE: float = 3.0
 const ARRIVE_RADIUS: float = 0.5
 ## Trying to walk but barely moving for this long (a pillar): sidestep for a moment.
@@ -126,7 +131,7 @@ func think(delta: float) -> void:
 	# Standing in reach of the boss: face it, so swings land.
 	var boss: BossDummy = _boss_in_fight()
 	if boss != null and actor.move_intent == Vector3.ZERO and not actor.action_queue.is_busy() \
-			and _distance_to(boss) <= MELEE_RANGE + 1.0:
+			and _in_reach(boss, CombatActionResource.Command.LIGHT):
 		actor.turn_toward(boss.global_position - actor.global_position, actor.loadout.stats.turn_speed * delta)
 
 
@@ -206,7 +211,7 @@ func _dodge_swipe() -> bool:
 		actor.evade_direction = away
 		_press(CombatActionResource.Command.DODGE, true)
 	else:
-		_set_post(boss.global_position + away * (MELEE_RANGE + 2.5))
+		_set_post(boss.global_position + away * SWIPE_SAFE_DISTANCE)
 	return true
 
 
@@ -274,7 +279,7 @@ func _taunt() -> bool:
 ## Three pips and the boss in reach: ultimate.
 func _ultimate() -> bool:
 	var boss: BossDummy = _boss_in_fight()
-	if boss == null or actor.stats.resonance_pips() < 3 or _distance_to(boss) > MELEE_RANGE:
+	if boss == null or actor.stats.resonance_pips() < 3 or not _in_reach(boss, CombatActionResource.Command.TRIGGER_BOTH_ULT):
 		return false
 	return _press(CombatActionResource.Command.TRIGGER_BOTH_ULT, false)
 
@@ -282,27 +287,33 @@ func _ultimate() -> bool:
 ## A teammate primed the boss: close in and cash it in with a heavy.
 func _detonate() -> bool:
 	var boss: BossDummy = _boss_in_fight()
-	if boss == null or CombatDirector.current.primer_on(boss) == CombatActionResource.Synergy.NONE:
+	if boss == null or CombatDirector.current.primer_on(boss) == AspectSealResource.CardAspect.NONE:
 		return false
-	_set_post(boss.global_position + _flat(actor.global_position - boss.global_position).normalized() * DETONATE_DISTANCE)
-	if _distance_to(boss) <= MELEE_RANGE:
+	var heavy: CombatActionResource = actor.loadout.opener_for(CombatActionResource.Command.HEAVY)
+	var stand_off: float = DETONATE_DISTANCE if heavy == null or not heavy.is_projectile() else heavy.reach_distance() * RANGED_POST_SHARE
+	_set_post(boss.global_position + _flat(actor.global_position - boss.global_position).normalized() * stand_off)
+	if _in_reach(boss, CombatActionResource.Command.HEAVY):
 		_press(CombatActionResource.Command.HEAVY, false)
 	return true
 
 
-## No primer on the boss and it's in reach: set one up for a teammate,
-## cycling Stagger, Frost and Radiant.
+## No seal on the boss: stamp one for a teammate, cycling through whichever
+## Grimoire cards prime (Kinetic, Elemental, Celestial for the starter DPS).
 func _prime() -> bool:
 	var boss: BossDummy = _boss_in_fight()
-	if boss == null or CombatDirector.current.primer_on(boss) != CombatActionResource.Synergy.NONE:
+	if boss == null or CombatDirector.current.primer_on(boss) != AspectSealResource.CardAspect.NONE or actor.stats.stamina < STAMINA_RESERVE:
 		return false
-	if _distance_to(boss) > MELEE_RANGE or actor.stats.stamina < STAMINA_RESERVE:
+	var primers: Array[int] = []
+	for slot: int in InputComponent.PRIMER_SLOTS:
+		var card: CombatActionResource = actor.loadout.card_action(slot)
+		if card != null and card.primer != AspectSealResource.CardAspect.NONE and actor.stats.can_afford(card) and _in_reach(boss, card.command):
+			primers.append(card.command)
+	if primers.is_empty():
 		return false
-	var primers: Array[int] = [CombatActionResource.Command.FORWARD_HEAVY, CombatActionResource.Command.BACK_HEAVY,
-		CombatActionResource.Command.TRIGGER_L_SKILL]
+	_primer_turn = _primer_turn % primers.size()
 	if _press(primers[_primer_turn], false):
 		_primer_turn = (_primer_turn + 1) % primers.size()
-	_set_post(_melee_post(boss))
+	_set_post(_role_post(boss))
 	return true
 
 
@@ -311,8 +322,8 @@ func _attack() -> bool:
 	var boss: BossDummy = _boss_in_fight()
 	if boss == null:
 		return false
-	_set_post(_melee_post(boss))
-	if _distance_to(boss) <= MELEE_RANGE and (actor.stats.stamina >= STAMINA_RESERVE or actor.role() == ClassLoadoutResource.Role.TANK):
+	_set_post(_role_post(boss))
+	if _in_reach(boss, CombatActionResource.Command.LIGHT) and (actor.stats.stamina >= STAMINA_RESERVE or actor.role() == ClassLoadoutResource.Role.TANK):
 		_press(CombatActionResource.Command.LIGHT, false)
 	return true
 
@@ -350,8 +361,13 @@ func _leader() -> ActorBase:
 	return null
 
 
-## Tanks stand in front of the boss; DPS round its back, on the side they're on.
-func _melee_post(boss: BossDummy) -> Vector3:
+## Archers and casters keep their shot's distance; tanks stand in front of the
+## boss; melee DPS round its back, on the side they're on.
+func _role_post(boss: BossDummy) -> Vector3:
+	var bearing_now: Vector3 = _flat(actor.global_position - boss.global_position)
+	var light: CombatActionResource = actor.loadout.opener_for(CombatActionResource.Command.LIGHT)
+	if light != null and light.is_projectile():
+		return boss.global_position + (bearing_now.normalized() if bearing_now.length() > 0.1 else boss.facing_vector()) * light.reach_distance() * RANGED_POST_SHARE
 	if actor.role() != ClassLoadoutResource.Role.DPS:
 		var bearing: Vector3 = _flat(actor.global_position - boss.global_position)
 		return boss.global_position + (bearing.normalized() if bearing.length() > 0.1 else boss.facing_vector()) * TANK_DISTANCE
@@ -401,6 +417,12 @@ func _steer(delta: float) -> Vector3:
 
 func _distance_to(other: ActorBase) -> float:
 	return _flat(other.global_position - actor.global_position).length()
+
+
+## Whether the action `command` starts would reach `target` from here.
+func _in_reach(target: ActorBase, command: int) -> bool:
+	var action: CombatActionResource = actor.loadout.opener_for(command as CombatActionResource.Command)
+	return action != null and _distance_to(target) <= action.reach_distance() + target.body_radius() - REACH_MARGIN
 
 
 func _flat(vector: Vector3) -> Vector3:

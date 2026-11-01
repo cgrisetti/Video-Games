@@ -1,6 +1,12 @@
 ## One combat effect on its way to a target: a strike, a heal, threat, a pull or a reward.
 ## The Combat Director hands it to whichever peer owns the target, so it turns
 ## into a plain Dictionary to cross the network.
+##
+## A strike from an action travels as the action's id only: the target's owner
+## looks the numbers up in its own copy of the attacker's compiled loadout
+## (every peer composes the same kit into the same actions), so packets stay
+## small and a peer can't claim more than its action does. Strikes with no
+## action (telegraphs, Perfect Guard counters) carry their numbers.
 class_name CombatEvent
 extends RefCounted
 
@@ -18,7 +24,13 @@ var threat: float = 0.0
 var heal: float = 0.0
 ## Resonance pips granted (REWARD).
 var resonance: float = 0.0
-var primer: int = CombatActionResource.Synergy.NONE
+## Stamina restored (REWARD: Astral Chorus).
+var stamina: float = 0.0
+## A heal's Hearth Echo: this share bounces on to the next most hurt ally.
+var echo: float = 0.0
+var primer: int = AspectSealResource.CardAspect.NONE
+## The striking action's own aspect (a detonation by a different aspect is a cross-harmony).
+var aspect: int = AspectSealResource.CardAspect.NONE
 var detonates: bool = false
 var hit_stop_scale: float = 1.0
 ## Taunt lock or pull time, in seconds.
@@ -37,40 +49,68 @@ static func strike_from(attacker: ActorBase, target: ActorBase, action: CombatAc
 	event.attacker_path = attacker.get_path()
 	event.target_path = target.get_path()
 	event.attacker_player_id = attacker.player_id
-	event.attacker_role = attacker.role()
-	event.action_id = action.action_id
-	event.damage = action.damage
-	event.poise_damage = action.poise_damage
-	event.threat = action.damage * action.threat_multiplier * attacker.loadout.stats.threat_modifier
-	event.primer = action.primer
-	event.detonates = action.detonates
-	event.hit_stop_scale = action.hit_stop_scale
 	event.origin = attacker.global_position
-	event.reach = action.reach + action.hit_radius
+	event.fill_from_action(attacker, action)
 	return event
 
 
+## The strike's numbers, read from the action (on whichever peer applies it).
+func fill_from_action(attacker: ActorBase, action: CombatActionResource) -> void:
+	attacker_role = attacker.role()
+	action_id = action.action_id
+	damage = action.damage
+	poise_damage = action.poise_damage
+	threat = action.damage * action.threat_multiplier * attacker.loadout.stats.threat_modifier
+	primer = action.primer
+	aspect = action.aspect
+	detonates = action.detonates
+	hit_stop_scale = action.hit_stop_scale
+	reach = action.reach_distance()
+
+
+## A strike named by action id: true once its numbers are filled in from the
+## attacker's loadout here; false if this peer doesn't know the action.
+func resolve_action(attacker: ActorBase) -> bool:
+	if kind != Kind.STRIKE or action_id == &"":
+		return true
+	if attacker == null or attacker.loadout == null:
+		return false
+	var action: CombatActionResource = attacker.loadout.action_by_id(action_id)
+	if action == null:
+		return false
+	fill_from_action(attacker, action)
+	return true
+
+
 func to_dict() -> Dictionary:
-	return {
+	var data: Dictionary = {
 		"kind": kind,
 		"attacker_path": attacker_path,
 		"target_path": target_path,
 		"attacker_player_id": attacker_player_id,
+		"origin": origin,
+	}
+	if kind == Kind.STRIKE and action_id != &"":
+		data["action_id"] = action_id
+		return data
+	data.merge({
 		"attacker_role": attacker_role,
-		"action_id": action_id,
 		"damage": damage,
 		"poise_damage": poise_damage,
 		"threat": threat,
 		"heal": heal,
 		"resonance": resonance,
+		"stamina": stamina,
+		"echo": echo,
 		"primer": primer,
+		"aspect": aspect,
 		"detonates": detonates,
 		"hit_stop_scale": hit_stop_scale,
 		"duration": duration,
-		"origin": origin,
 		"reach": reach,
 		"unavoidable": unavoidable,
-	}
+	})
+	return data
 
 
 static func from_dict(data: Dictionary) -> CombatEvent:
@@ -79,18 +119,21 @@ static func from_dict(data: Dictionary) -> CombatEvent:
 	event.attacker_path = NodePath(data.get("attacker_path", NodePath()))
 	event.target_path = NodePath(data.get("target_path", NodePath()))
 	event.attacker_player_id = StringName(data.get("attacker_player_id", &""))
-	event.attacker_role = int(data.get("attacker_role", ClassLoadoutResource.Role.DPS))
+	event.origin = data.get("origin", Vector3.ZERO) as Vector3
 	event.action_id = StringName(data.get("action_id", &""))
+	event.attacker_role = int(data.get("attacker_role", ClassLoadoutResource.Role.DPS))
 	event.damage = float(data.get("damage", 0.0))
 	event.poise_damage = float(data.get("poise_damage", 0.0))
 	event.threat = float(data.get("threat", 0.0))
 	event.heal = float(data.get("heal", 0.0))
 	event.resonance = float(data.get("resonance", 0.0))
-	event.primer = int(data.get("primer", CombatActionResource.Synergy.NONE))
+	event.stamina = float(data.get("stamina", 0.0))
+	event.echo = float(data.get("echo", 0.0))
+	event.primer = int(data.get("primer", AspectSealResource.CardAspect.NONE))
+	event.aspect = int(data.get("aspect", AspectSealResource.CardAspect.NONE))
 	event.detonates = bool(data.get("detonates", false))
 	event.hit_stop_scale = float(data.get("hit_stop_scale", 1.0))
 	event.duration = float(data.get("duration", 0.0))
-	event.origin = data.get("origin", Vector3.ZERO) as Vector3
 	event.reach = float(data.get("reach", 0.0))
 	event.unavoidable = bool(data.get("unavoidable", false))
 	return event

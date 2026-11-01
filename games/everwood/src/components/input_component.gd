@@ -81,8 +81,18 @@ const AUTO_EVADE_COOLDOWN: float = 0.8
 const AUTO_GUARD_MIN_STAMINA: float = 25.0
 ## Metres beyond the swipe's reach that still count as in its way.
 const AUTO_GUARD_MARGIN: float = 1.0
-## Beyond this distance the assisted modes open with a gap-closing forward heavy.
+## Beyond this distance (and the heavy's own reach) the assisted modes open
+## with a gap-closing forward heavy.
 const GAP_CLOSE_DISTANCE: float = 4.5
+## Squire Gambit, out of reach: the first of these that can reach the target and
+## is affordable fires (a ranged heavy, or a card shot through a bow or staff).
+const RANGED_PICKS: Array[int] = [
+	CombatActionResource.Command.HEAVY, CombatActionResource.Command.FORWARD_HEAVY, CombatActionResource.Command.BACK_HEAVY,
+]
+## Squire DPS cycles the primer cards in these Grimoire slots.
+const PRIMER_SLOTS: Array[int] = [
+	ScribeCardResource.GrimoireSlot.FORWARD, ScribeCardResource.GrimoireSlot.BACK, ScribeCardResource.GrimoireSlot.SIGNATURE,
+]
 ## Squire healer heals anyone below this share of their health.
 const SQUIRE_HEAL_BELOW: float = 0.7
 ## Stick up / down past this (screen-relative) turns heavy into a forward / back heavy.
@@ -411,7 +421,7 @@ func _issue_attack(base: int) -> void:
 		elif direction < 0:
 			command = CombatActionResource.Command.BACK_HEAVY
 		elif assist_mode == AssistMode.ADVENTURER and not actor.action_queue.is_busy() \
-				and actor.distance_to_soft_target() > GAP_CLOSE_DISTANCE \
+				and actor.distance_to_soft_target() > maxf(GAP_CLOSE_DISTANCE, _reach_of(CombatActionResource.Command.HEAVY)) \
 				and actor.loadout.has_opener(CombatActionResource.Command.FORWARD_HEAVY):
 			command = CombatActionResource.Command.FORWARD_HEAVY
 	_issue(command)
@@ -537,14 +547,16 @@ func _update_auto_guard() -> void:
 		_issue(CombatActionResource.Command.DODGE)
 
 
-## Squire Gambit: one button, and the game picks the smartest move for your role.
+## Squire Gambit: one button, and the game picks the smartest move for your
+## role and weapon. Everything it picks is read from the loadout, so it plays
+## any kit: a ranged weapon fires from where you stand, a melee one closes in.
 func _squire_pick() -> int:
 	var target: ActorBase = actor.soft_target()
 	var distance: float = actor.distance_to_soft_target()
 	match actor.role():
 		ClassLoadoutResource.Role.HEALER:
 			var hurt: ActorBase = actor.most_hurt_ally(SQUIRE_HEAL_BELOW)
-			if hurt != null and actor.tether != null:
+			if hurt != null and actor.tether != null and actor.loadout.has_opener(CombatActionResource.Command.TRIGGER_R_SKILL):
 				actor.tether.bind_actor(hurt)
 				return CombatActionResource.Command.TRIGGER_R_SKILL
 		ClassLoadoutResource.Role.TANK:
@@ -552,17 +564,35 @@ func _squire_pick() -> int:
 					and target.threat.current_target != actor.player_id and actor.stats.resonance_pips() >= 1:
 				return CombatActionResource.Command.TRIGGER_R_SKILL
 		ClassLoadoutResource.Role.DPS:
-			if target != null and distance <= GAP_CLOSE_DISTANCE and CombatDirector.current.primer_on(target) == CombatActionResource.Synergy.NONE:
-				var primers: Array[int] = [
-					CombatActionResource.Command.FORWARD_HEAVY,
-					CombatActionResource.Command.BACK_HEAVY,
-					CombatActionResource.Command.TRIGGER_L_SKILL,
-				]
-				_squire_primer_turn = (_squire_primer_turn + 1) % primers.size()
-				return primers[_squire_primer_turn]
-	if distance > GAP_CLOSE_DISTANCE and actor.loadout.has_opener(CombatActionResource.Command.FORWARD_HEAVY):
-		return CombatActionResource.Command.FORWARD_HEAVY
+			if target != null and CombatDirector.current.primer_on(target) == AspectSealResource.CardAspect.NONE:
+				var primers: Array[int] = []
+				for slot: int in PRIMER_SLOTS:
+					var card: CombatActionResource = actor.loadout.card_action(slot)
+					if card != null and card.primer != AspectSealResource.CardAspect.NONE and _can_use(card.command, distance):
+						primers.append(card.command)
+				if not primers.is_empty():
+					_squire_primer_turn = (_squire_primer_turn + 1) % primers.size()
+					return primers[_squire_primer_turn]
+	# Out of reach: whatever can reach it (a ranged heavy, a card fired through
+	# the weapon), or else close the gap with the forward card.
+	if target != null and distance > _reach_of(CombatActionResource.Command.LIGHT):
+		for command: int in RANGED_PICKS:
+			if _can_use(command, distance):
+				return command
+		if actor.loadout.has_opener(CombatActionResource.Command.FORWARD_HEAVY):
+			return CombatActionResource.Command.FORWARD_HEAVY
 	return CombatActionResource.Command.LIGHT
+
+
+## How far the action a command starts can reach (0 if it starts none).
+func _reach_of(command: int) -> float:
+	var action: CombatActionResource = actor.loadout.opener_for(command as CombatActionResource.Command)
+	return action.reach_distance() if action != null else 0.0
+
+
+func _can_use(command: int, distance: float) -> bool:
+	var action: CombatActionResource = actor.loadout.opener_for(command as CombatActionResource.Command)
+	return action != null and action.reach_distance() >= distance and actor.stats.can_afford(action)
 
 
 # --- Devices --------------------------------------------------------------

@@ -14,8 +14,8 @@ const VOICES: int = 10
 const VOLUME_DB: float = -8.0
 const ATTACK: float = 0.004
 ## Every cue the game plays, by name.
-const CUES: Array[StringName] = [&"hit", &"flow", &"perfect_guard", &"synergy_stagger", &"synergy_frost",
-	&"synergy_radiant", &"reward", &"knockdown", &"telegraph", &"soak_ok", &"soak_fail", &"heal", &"join",
+const CUES: Array[StringName] = [&"hit", &"flow", &"perfect_guard", &"seal_kinetic", &"seal_elemental",
+	&"seal_divine", &"seal_celestial", &"shot", &"equip", &"reward", &"knockdown", &"telegraph", &"soak_ok", &"soak_fail", &"heal", &"join",
 	&"portal_charge", &"portal", &"victory", &"chest", &"purchase", &"refuse", &"menu_move"]
 ## How fast each note fades: amplitude reaches e^-DECAY at the note's end.
 const DECAY: float = 3.5
@@ -106,12 +106,20 @@ func _notes_for(cue: StringName) -> Array[Note]:
 		&"perfect_guard":
 			return [Note.new(0.0, 0.5, 1760.0, 1760.0, Wave.SINE, 0.4), Note.new(0.0, 0.4, 2637.0, 2637.0, Wave.SINE, 0.25),
 				Note.new(0.0, 0.05, 0.0, 0.0, Wave.NOISE, 0.3)]
-		&"synergy_stagger":
+		&"seal_kinetic":
 			return _arpeggio([330.0, 415.0, 494.0, 659.0], 0.07, Wave.SQUARE, 0.3)
-		&"synergy_frost":
+		&"seal_elemental":
 			return _arpeggio([880.0, 1109.0, 1319.0, 1760.0], 0.07, Wave.SINE, 0.45)
-		&"synergy_radiant":
+		&"seal_divine":
 			return _arpeggio([523.0, 659.0, 784.0, 1047.0], 0.08, Wave.SINE, 0.45)
+		&"seal_celestial":
+			var chorus: Array[Note] = _arpeggio([392.0, 587.0, 784.0, 1175.0, 1568.0], 0.09, Wave.SINE, 0.35)
+			chorus.append(Note.new(0.0, 0.9, 196.0, 196.0, Wave.SINE, 0.3))
+			return chorus
+		&"shot":
+			return [Note.new(0.0, 0.12, 900.0, 300.0, Wave.NOISE, 0.25), Note.new(0.0, 0.1, 620.0, 380.0, Wave.SINE, 0.3)]
+		&"equip":
+			return [Note.new(0.0, 0.06, 0.0, 0.0, Wave.NOISE, 0.25), Note.new(0.02, 0.18, 330.0, 494.0, Wave.SQUARE, 0.2)]
 		&"reward":
 			return [Note.new(0.0, 0.25, 988.0, 988.0, Wave.SINE, 0.35), Note.new(0.08, 0.3, 1319.0, 1319.0, Wave.SINE, 0.35)]
 		&"knockdown":

@@ -1,9 +1,13 @@
 ## An actor's base numbers: health, the stamina / resonance / poise economy,
-## threat and guarding (02_COMBAT_GDD.md §1).
+## threat and guarding (02_COMBAT_GDD.md §1). A player's armor fills in its
+## mitigation, stamina regen, roll distance and Perfect Guard window
+## (05_ARSENAL_AND_CARDS_GDD.md §2.1).
 class_name CharacterStatsResource
 extends Resource
 
 @export var max_health: float = 100.0
+## Share of every hit's damage that armor absorbs before guards apply.
+@export var damage_mitigation: float = 0.0
 
 @export_group("Stamina")
 @export var max_stamina: float = 100.0
@@ -35,11 +39,15 @@ extends Resource
 @export var guard_damage_reduction: float = 0.5
 ## Stamina lost per point of damage blocked.
 @export var guard_stamina_per_damage: float = 0.6
-## Tank only: guarding within 200 ms of a hit costs nothing and staggers the attacker.
+## Guarding within the Perfect Guard window of a hit costs nothing and staggers the attacker.
 @export var can_perfect_guard: bool = false
+## Seconds before a hit that a raised guard still counts as perfect (armor sets it).
+@export var perfect_guard_window: float = 0.2
 
 @export_group("Movement")
 @export var move_speed: float = 6.0
 @export var guard_move_speed: float = 2.5
+## How far a dodge roll carries you (armor sets it).
+@export var roll_distance: float = 4.6
 ## Radians per second the actor turns while walking.
 @export var turn_speed: float = 12.0

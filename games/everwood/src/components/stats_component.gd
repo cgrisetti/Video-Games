@@ -1,5 +1,7 @@
 ## Authoritative resource and mitigation math for one actor: health, stamina,
 ## resonance pips, poise, guarding and invulnerable frames (02_COMBAT_GDD.md §1).
+## Armor shows up here through the stats it sets: damage mitigation, stamina
+## regen and the Perfect Guard window (05_ARSENAL_AND_CARDS_GDD.md §2.1).
 class_name StatsComponent
 extends Node
 
@@ -13,9 +15,6 @@ signal downed
 signal revived
 
 enum StrikeOutcome { HIT, GUARDED, PERFECT_GUARD, GUARD_BROKEN, EVADED }
-
-## A guard raised this recently before a hit lands is a Perfect Guard (seconds).
-const PERFECT_GUARD_WINDOW: float = 0.2
 
 var stats: CharacterStatsResource
 var health: float = 100.0
@@ -42,6 +41,16 @@ func setup(base_stats: CharacterStatsResource) -> void:
 	resonance_charge = 0.0
 	is_downed = false
 	knockdown_time_left = 0.0
+
+
+## Swaps in new base stats (a re-equip), keeping the same share of health.
+func rebind(base_stats: CharacterStatsResource, health_ratio_after: float) -> void:
+	stats = base_stats
+	if not is_downed:
+		health = clampf(health_ratio_after, 0.0, 1.0) * stats.max_health
+	stamina = minf(stamina, stats.max_stamina)
+	health_changed.emit(health, stats.max_health)
+	stamina_changed.emit(stamina, stats.max_stamina)
 
 
 func tick(dt: float, can_regen_stamina: bool) -> void:
@@ -83,6 +92,14 @@ func spend_for(action: CombatActionResource) -> bool:
 	return true
 
 
+## Stamina handed back by a card or a sanctuary (Astral Chorus, Hearth Echo).
+func restore_stamina(amount: float) -> void:
+	if amount <= 0.0 or is_downed:
+		return
+	stamina = minf(stats.max_stamina, stamina + amount)
+	stamina_changed.emit(stamina, stats.max_stamina)
+
+
 func resonance_pips() -> int:
 	return floori(resonance_charge + 0.0001)
 
@@ -119,11 +136,13 @@ func mitigate_strike(raw_damage: float, poise_damage: float, from_front: bool, u
 		return StrikeOutcome.EVADED
 	if not unavoidable and is_invulnerable():
 		return StrikeOutcome.EVADED
+	# Armor takes its share first; guards then work on what's left.
+	raw_damage *= 1.0 - stats.damage_mitigation
 	if is_knocked_down():
 		raw_damage *= stats.knockdown_damage_taken
 	if not unavoidable and guarding and from_front:
 		var since_guard: float = CombatDirector.game_time() - guard_started_at
-		if stats.can_perfect_guard and since_guard <= PERFECT_GUARD_WINDOW:
+		if stats.can_perfect_guard and since_guard <= stats.perfect_guard_window:
 			return StrikeOutcome.PERFECT_GUARD
 		var stamina_cost: float = raw_damage * stats.guard_stamina_per_damage
 		if stamina >= stamina_cost:

@@ -6,6 +6,11 @@
 ## the screen 1 to 4, and leaves when it's unplugged. Enter / Start joins a
 ## controller by hand; holding it for a moment leaves.
 ##
+## Each seat wears an equipment kit (ids, carried by the roster). This level
+## picks a new seat's kit (the class's last saved one), checks kit changes from
+## the Scribe Desk against the Grimoire's rules, composes each seat's loadout
+## from its kit, and re-equips an actor in place when its kit changes.
+##
 ## In raids, AI companions fill any Holy Trinity role nobody is playing while
 ## fewer than 3 people are in the party (CompanionAIComponent). The host seats
 ## them, and they step aside as people join.
@@ -13,6 +18,7 @@
 ## Keys: F5 host · F6 join · F7 leave · click to steer the camera with the mouse, Esc to let go.
 ## Command line (after --): --players=N --mode=master|adventurer|squire --instance=ID
 ##   --host --join=ADDRESS --demo --screenshot=PATH --screenshot-delay=S --quit-after=S
+##   --weapon=ITEM_ID --armor=ITEM_ID (this screen's players start with them)
 class_name LevelBase
 extends Node3D
 
@@ -53,6 +59,10 @@ static var _screenshot_path: String = ""
 static var _screenshot_delay: float = SCREENSHOT_DELAY
 static var _screenshot_taken: bool = false
 static var _quit_after: float = 0.0
+static var _start_weapon: StringName = &""
+static var _start_armor: StringName = &""
+## Devices that already got the --weapon / --armor kit this run.
+static var _start_kit_given: Dictionary[int, bool] = {}
 
 
 # --- What each level fills in ---------------------------------------------
@@ -100,8 +110,14 @@ func _report_extra() -> String:
 func _ready() -> void:
 	CombatDirector.current.reset()
 	CombatDirector.current.effects_root = effects_root
+	var pool: FxPool = FxPool.new()
+	pool.name = "FxPool"
+	effects_root.add_child(pool)
+	CombatDirector.current.fx_pool = pool
 	CombatDirector.current.telegraph_cast.connect(_on_telegraph_cast)
 	NetworkManager.current.class_picker = least_used_class
+	NetworkManager.current.kit_picker = pick_kit
+	NetworkManager.current.kit_validator = check_kit
 	grid.set_world(get_world_3d())
 	_setup_level()
 	NetworkManager.current.player_registered.connect(_on_player_registered)
@@ -126,6 +142,8 @@ func _exit_tree() -> void:
 	var director: CombatDirector = CombatDirector.current
 	if director != null and director.telegraph_cast.is_connected(_on_telegraph_cast):
 		director.telegraph_cast.disconnect(_on_telegraph_cast)
+	if director != null and director.fx_pool != null and director.fx_pool.get_parent() == effects_root:
+		director.fx_pool = null
 	var network: NetworkManager = NetworkManager.current
 	if network != null:
 		for connection: Array in [
@@ -193,12 +211,57 @@ func least_used_class(roster: Dictionary[StringName, PartyMember]) -> StringName
 	return best
 
 
+# --- Kits -----------------------------------------------------------------
+
+## The kit a new seat wears: the class's last saved kit while it's still
+## allowed, otherwise its starter kit. Companions always wear the starter kit.
+func pick_kit(class_id: StringName, companion: bool) -> Dictionary:
+	var starter: Dictionary = ClassLoadouts.starter_kit(class_id).to_dict()
+	if companion:
+		return starter
+	var saved: Dictionary = PartyProgress.current.kit_for(class_id)
+	if not saved.is_empty() and check_kit_for_class(class_id, saved) == "":
+		return saved
+	return starter
+
+
+## Host: why a seat may not wear `kit` ("" when it may).
+func check_kit(seat: PartyMember, kit: Dictionary) -> String:
+	return check_kit_for_class(seat.class_id, kit)
+
+
+func check_kit_for_class(class_id: StringName, kit: Dictionary) -> String:
+	var progress: PartyProgress = PartyProgress.current
+	return LoadoutComposer.kit_problem(ClassLoadouts.player_class(class_id), EquipmentLoadoutResource.from_dict(kit),
+		progress.grimoire_level(), progress.collection)
+
+
+## The loadout a seat's class and kit compose into.
+func _compose_for(seat: PartyMember) -> ClassLoadoutResource:
+	var kit: EquipmentLoadoutResource = null if seat.kit.is_empty() else EquipmentLoadoutResource.from_dict(seat.kit)
+	return ClassLoadouts.compose(seat.class_id, kit)
+
+
+## --weapon / --armor: this screen's players swap them into their kit once.
+func _give_start_kit(device_id: int) -> void:
+	var seat: PartyMember = _local_seat(device_id)
+	if seat == null or _start_kit_given.has(device_id):
+		return
+	_start_kit_given[device_id] = true
+	var kit: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(seat.kit)
+	if _start_weapon != &"":
+		kit.weapon_id = _start_weapon
+	if _start_armor != &"":
+		kit.armor_id = _start_armor
+	NetworkManager.current.update_local_kit(device_id, kit.to_dict())
+
+
 func _on_player_registered(seat: PartyMember) -> void:
 	if actors.has(seat.player_id):
 		return
 	var actor: ActorBase = ActorBase.new()
 	actor.name = String(seat.player_id)
-	actor.loadout = ClassLoadouts.by_id(seat.class_id)
+	actor.loadout = _compose_for(seat)
 	actor.player_id = seat.player_id
 	actor.peer_id = seat.peer_id
 	actor.device_id = seat.device_id
@@ -215,6 +278,8 @@ func _on_player_registered(seat: PartyMember) -> void:
 	actor.spawn_at(_spawn_transform(seat.slot))
 	actors[seat.player_id] = actor
 	_queue_companion_refresh()
+	if is_local and not seat.companion and (_start_weapon != &"" or _start_armor != &"") and not _start_kit_given.has(seat.device_id):
+		_give_start_kit.call_deferred(seat.device_id)
 	if is_local and not seat.companion:
 		# Deferred: the request fires inside the actor's own physics step, and a
 		# class change replaces that actor.
@@ -243,6 +308,12 @@ func _on_player_updated(seat: PartyMember) -> void:
 		replacement.place_at(where)
 		_show_notice("%s is now a %s" % [replacement.display_name().get_slice(" ", 0), replacement.loadout.display_name])
 		return
+	# A new kit (the Scribe Desk): re-equip in place, so the view, HUD and menu stay.
+	var composed: ClassLoadoutResource = _compose_for(seat)
+	if not composed.kit.same_as(actor.loadout.kit):
+		actor.re_equip(composed)
+		if NetworkManager.current.is_host() and not seat.companion:
+			PartyProgress.current.save_kit(seat.class_id, seat.kit)
 	actor.party_slot = seat.slot
 	actor.refresh_name_label()
 	if actor.input != null and actor.input.assist_mode != seat.assist_mode:
@@ -446,6 +517,10 @@ func _start_session() -> void:
 			_screenshot_delay = value.to_float()
 		elif arg.begins_with("--quit-after="):
 			_quit_after = value.to_float()
+		elif arg.begins_with("--weapon="):
+			_start_weapon = StringName(value)
+		elif arg.begins_with("--armor="):
+			_start_armor = StringName(value)
 	if host:
 		NetworkManager.current.host_game()
 	elif join:

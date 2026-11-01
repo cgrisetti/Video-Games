@@ -9,6 +9,11 @@
 ## controllers and receive the full roster back whenever it changes. Offline
 ## play runs the same code: Godot's offline peer is peer 1 and acts as host.
 ##
+## Each seat carries its equipment kit (a Dictionary of ids). The host picks a
+## new seat's kit (kit_picker) and checks every change a player asks for
+## (kit_validator); both are set by the level, so this file knows nothing about
+## equipment either.
+##
 ## The host can also seat AI companions (set_companions). They sit on the
 ## host's peer with device ids from COMPANION_DEVICE_BASE up, never count
 ## against a screen's 4 players, and always give way to people: people take
@@ -25,6 +30,8 @@ signal player_registered(member: PartyMember)
 signal player_updated(member: PartyMember)
 signal player_unregistered(player_id: StringName)
 signal registration_refused(device_id: int, reason: String)
+## The host turned down a kit change for one of this machine's controllers.
+signal kit_refused(device_id: int, reason: String)
 signal status_changed(status: String)
 
 const PORT: int = 7777
@@ -41,6 +48,10 @@ var status: String = "Offline"
 ## Chooses a class for a seat that asked for ANY_CLASS: (roster) -> StringName.
 ## The level sets it; the network layer itself knows nothing about classes.
 var class_picker: Callable
+## The kit a seat gets for a class: (class_id: StringName, companion: bool) -> Dictionary.
+var kit_picker: Callable
+## Why a seat may not wear a kit, or "": (seat: PartyMember, kit: Dictionary) -> String.
+var kit_validator: Callable
 
 ## Ask for this class to let the host pick one (see class_picker).
 const ANY_CLASS: StringName = &""
@@ -184,6 +195,16 @@ func update_local_player(device_id: int, class_id: StringName, assist_mode: int)
 		request_local_player(device_id, class_id, assist_mode)
 
 
+## Asks to wear a different kit (the Scribe Desk). The host checks it.
+func update_local_kit(device_id: int, kit: Dictionary) -> void:
+	if not _local_wishes.has(device_id):
+		return
+	if is_host():
+		_server_set_kit(local_peer_id(), device_id, kit)
+	elif is_online():
+		_request_kit.rpc_id(1, device_id, kit)
+
+
 func drop_local_player(device_id: int) -> void:
 	if not _local_wishes.has(device_id):
 		return
@@ -207,6 +228,8 @@ func _server_register(peer_id: int, device_id: int, class_id: StringName, assist
 		var existing: PartyMember = roster[player_id]
 		if class_id == ANY_CLASS:
 			class_id = existing.class_id
+		if class_id != existing.class_id:
+			existing.kit = _pick_kit(class_id, false)
 		existing.class_id = class_id
 		existing.assist_mode = assist_mode
 		player_updated.emit(existing)
@@ -227,6 +250,7 @@ func _server_register(peer_id: int, device_id: int, class_id: StringName, assist
 	seat.device_id = device_id
 	seat.class_id = class_id
 	seat.assist_mode = assist_mode
+	seat.kit = _pick_kit(class_id, false)
 	seat.slot = _free_slot(false)
 	roster[player_id] = seat
 	player_registered.emit(seat)
@@ -265,11 +289,45 @@ func _seat_companion(class_id: StringName) -> void:
 	seat.device_id = device_id
 	seat.class_id = class_id
 	seat.companion = true
+	seat.kit = _pick_kit(class_id, true)
 	seat.slot = _free_slot(true)
 	roster[seat.player_id] = seat
 	player_registered.emit(seat)
 	_log_party()
 	_broadcast_roster()
+
+
+func _pick_kit(class_id: StringName, companion: bool) -> Dictionary:
+	return kit_picker.call(class_id, companion) if kit_picker.is_valid() else {}
+
+
+func _server_set_kit(peer_id: int, device_id: int, kit: Dictionary) -> bool:
+	var player_id: StringName = PartyMember.make_player_id(peer_id, device_id)
+	if not roster.has(player_id):
+		return false
+	var seat: PartyMember = roster[player_id]
+	var reason: String = kit_validator.call(seat, kit) if kit_validator.is_valid() else ""
+	if reason != "":
+		if peer_id == local_peer_id():
+			kit_refused.emit(device_id, reason)
+		elif is_online() and has_peer(peer_id):
+			_kit_refused.rpc_id(peer_id, device_id, reason)
+		return false
+	seat.kit = kit
+	player_updated.emit(seat)
+	_broadcast_roster()
+	return true
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_kit(device_id: int, kit: Dictionary) -> void:
+	if multiplayer.is_server():
+		_server_set_kit(multiplayer.get_remote_sender_id(), device_id, kit)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _kit_refused(device_id: int, reason: String) -> void:
+	kit_refused.emit(device_id, reason)
 
 
 ## A person who just joined may have the same player number as a companion:
@@ -373,8 +431,10 @@ func _receive_roster(entries: Array) -> void:
 		seen[incoming.player_id] = true
 		if roster.has(incoming.player_id):
 			var existing: PartyMember = roster[incoming.player_id]
-			if existing.class_id != incoming.class_id or existing.slot != incoming.slot or existing.assist_mode != incoming.assist_mode:
+			if existing.class_id != incoming.class_id or existing.slot != incoming.slot or existing.assist_mode != incoming.assist_mode \
+					or existing.kit != incoming.kit:
 				existing.companion = incoming.companion
+				existing.kit = incoming.kit
 				existing.class_id = incoming.class_id
 				existing.slot = incoming.slot
 				existing.assist_mode = incoming.assist_mode

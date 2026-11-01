@@ -37,6 +37,7 @@ var _cast_bar: ProgressBar
 var _cast_label: Label
 var _aggro_label: Label
 var _class_label: Label
+var _kit_label: Label
 var _health: ProgressBar
 var _stamina: ProgressBar
 var _pips_label: Label
@@ -107,6 +108,9 @@ func _ready() -> void:
 	bottom.add_child(_queue_label)
 	_class_label = _label(FONT_SIZE)
 	bottom.add_child(_class_label)
+	_kit_label = _label(SMALL_FONT_SIZE)
+	_kit_label.modulate = Color(1.0, 1.0, 1.0, 0.85)
+	bottom.add_child(_kit_label)
 	_health = _bar(HEALTH_COLOR, 14.0)
 	bottom.add_child(_health)
 	_stamina = _bar(STAMINA_COLOR, 8.0)
@@ -233,8 +237,8 @@ func _refresh_boss() -> void:
 		title += " (defeated)"
 	elif boss.stats.is_knocked_down():
 		title += " (KNOCKED DOWN)"
-	if primer != CombatActionResource.Synergy.NONE:
-		title += "  ·  %s primed" % CombatDirector.current.synergy_primer_name(primer)
+	if primer != AspectSealResource.CardAspect.NONE:
+		title += "  ·  %s seal" % ArsenalCatalog.current.aspect_seal(primer).seal_name
 	_boss_label.text = title
 	_boss_health.max_value = boss.stats.stats.max_health
 	_boss_health.value = boss.stats.health
@@ -264,6 +268,10 @@ func _refresh_player() -> void:
 	var stats: StatsComponent = actor.stats
 	var mode: String = actor.input.mode_name() if actor.input != null else ""
 	_class_label.text = "%s  ·  %s  ·  %s" % [actor.display_name(), mode, actor.input.device_label() if actor.input != null else ""]
+	var loadout: ClassLoadoutResource = actor.loadout
+	_kit_label.visible = loadout.weapon != null and loadout.armor != null
+	if _kit_label.visible:
+		_kit_label.text = "%s  ·  %s  ·  Grimoire Lv %d" % [loadout.weapon.display_name, loadout.armor.display_name, PartyProgress.current.grimoire_level()]
 	_class_label.modulate = actor.loadout.body_color.lightened(0.3)
 	_health.max_value = stats.stats.max_health
 	_health.value = stats.health
@@ -399,7 +407,7 @@ func controls_text() -> String:
 	var down: String = input.label(InputComponent.ACTION_MOVE_BACK) if keyboard else "↓"
 	var attacks: String = "%s or %s: smart attack" % [light, heavy]
 	if input.assist_mode != InputComponent.AssistMode.SQUIRE_GAMBIT:
-		attacks = "%s light · %s heavy (%s+%s forward, %s+%s back)" % [light, heavy, up, heavy, down, heavy]
+		attacks = "%s light · %s heavy · %s+%s %s · %s+%s %s" % [light, heavy, up, heavy, loadout.forward_label, down, heavy, loadout.back_label]
 	var ult_keys: String = "%s+%s" % [trigger_l, trigger_r]
 	if keyboard:
 		ult_keys = "%s or %s" % [input.label(InputComponent.ACTION_ULT), ult_keys]

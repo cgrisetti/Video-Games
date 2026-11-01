@@ -1,10 +1,14 @@
 ## Headless smoke test for Everwood. It starts where the game starts, in Hub
 ## Town, and checks every system end to end:
+##   - the Arsenal (Phase 7): the catalog, armor weights, the four weapons,
+##     under-card mutations, kit round trips and the Grimoire's rules
 ##   - the Input Map, the keyboard as Player 1 and pads hot-joining (faked
 ##     presses and plug-ins, one device at a time), D-Pad tethers and chords
 ##   - party caps, then the Raid Portal into the Dungeon Dojo while hosting ENet
-##   - combat: flow-cancels and their windows, hit-stop, all three cross-class
-##     detonations and their rewards and cues, poise, taunt, Perfect Guard,
+##   - combat: flow-cancels and their windows, hit-stop, all four Aspect Seal
+##     detonations and their rewards and cues, bow and staff shots, the effect
+##     pool, armor in play (Perfect Guard window, mitigation, rolls), strikes
+##     crossing the network as ids, Hearth Echo, poise, taunt, Perfect Guard,
 ##     heals, Lifeline, Shadow Sanctuary, Squire auto-evade and auto-guard,
 ##     soak scaling for small parties, telegraphs, wipes
 ##   - AI companions backfilling missing roles, fighting by their Gambits and
@@ -32,6 +36,7 @@ const COMPANION_FIGHT_TIME: float = 8.0
 const TEST_SAVE_PATH: String = "user://smoke_test_progress.cfg"
 
 const Cmd = CombatActionResource.Command
+const Aspect = AspectSealResource.CardAspect
 
 var dojo: DungeonDojo
 var boss: BossDummy
@@ -57,6 +62,7 @@ var _healer_states: Array[StringName] = []
 var _cue_sounds: Array[StringName] = []
 var _audio_cues: Array[StringName] = []
 var _portal_countdowns: int = 0
+var _projectiles: Array[StringName] = []
 
 
 func _initialize() -> void:
@@ -72,6 +78,7 @@ func _run() -> void:
 	_connect_global_signals()
 
 	await _check_hub_and_input_map()
+	_check_arsenal_catalog()
 	await _check_keyboard_is_player_one()
 	await _check_hot_join_and_pad_mapping()
 	await _seat_trinity()
@@ -82,6 +89,7 @@ func _run() -> void:
 	await _check_flow_cancel_and_hit_stop()
 	await _check_flow_windows()
 	await _check_synergies()
+	await _check_ranged_and_armor()
 	await _check_poise_and_knockdown()
 	await _check_taunt()
 	await _check_perfect_guard()
@@ -125,6 +133,125 @@ func _check_hub_and_input_map() -> void:
 		and InputComponent.binding_label(InputComponent.ACTION_TRIGGER_L, FAKE_PADS[0] + 1) == "LT", "a generic pad reads as Xbox letters")
 	_check(InputComponent._pad_button_name(JOY_BUTTON_X, InputComponent.PadFamily.PLAYSTATION) == "□"
 		and InputComponent._pad_button_name(JOY_BUTTON_A, InputComponent.PadFamily.PLAYSTATION) == "✕", "a PlayStation pad reads as shapes")
+
+
+# --- The Arsenal (Phase 7), without actors ---------------------------------
+
+func _check_arsenal_catalog() -> void:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var starters: int = 0
+	var boss_cards: int = 0
+	for card: ScribeCardResource in catalog.cards():
+		if card.is_lead():
+			if card.starter:
+				starters += 1
+			else:
+				boss_cards += 1
+	_check(catalog.armors().size() == 3 and catalog.weapons().size() == 4 and starters == 12 and boss_cards >= 4 and catalog.under_cards().size() == 4,
+		"the Arsenal holds 3 armors, 4 weapons, 12 starter lead cards, %d boss cards and 4 under-cards" % boss_cards)
+	var choices: bool = true
+	for slot: int in EquipmentLoadoutResource.SLOT_COUNT:
+		choices = choices and catalog.lead_cards(slot).size() >= 3
+	_check(choices, "every Grimoire slot has at least three lead cards to choose from")
+
+	var armor_table: Dictionary[StringName, Array] = {
+		ArsenalCatalog.HEARTH_LINEN: [0.10, 27.5, 5.2, 0.20],
+		ArsenalCatalog.RANGER_LEATHER: [0.20, 22.0, 4.6, 0.20],
+		ArsenalCatalog.IRONWOOD_PLATE: [0.35, 18.0, 3.8, 0.26],
+	}
+	var armor_ok: bool = true
+	for armor_id: StringName in armor_table:
+		var stats: CharacterStatsResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, armor_id, &"").stats
+		var expected: Array = armor_table[armor_id]
+		armor_ok = armor_ok and is_equal_approx(stats.damage_mitigation, expected[0]) and is_equal_approx(stats.stamina_regen_per_sec, expected[1]) \
+			and is_equal_approx(stats.roll_distance, expected[2]) and is_equal_approx(stats.perfect_guard_window, expected[3])
+	_check(armor_ok, "Light / Medium / Heavy armor: 10/20/35% mitigation, 27.5/22/18 stamina a second, 5.2/4.6/3.8 m rolls, 200/200/260 ms Perfect Guard")
+
+	var sword: ClassLoadoutResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, &"", ArsenalCatalog.LIGHT_SWORD)
+	var sword_light: CombatActionResource = sword.opener_for(Cmd.LIGHT)
+	var sword_heavy: CombatActionResource = sword.opener_for(Cmd.HEAVY)
+	var sword_card: CombatActionResource = sword.card_action(ScribeCardResource.GrimoireSlot.FORWARD)
+	_check(sword.combo_actions.size() == 2 and is_equal_approx(sword_light.total_time(), 0.55) and not sword_light.is_projectile()
+		and sword_heavy.detonates and is_equal_approx(sword_heavy.damage, 18.0) and sword_card.trail and not sword_card.is_projectile(),
+		"Sword & Buckler: three 0.55 s cuts, an 18-damage thrust that detonates, and cards swung with a ribbon trail")
+	var axe: ClassLoadoutResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, &"", ArsenalCatalog.HEAVY_AXE)
+	var cleave: CombatActionResource = axe.opener_for(Cmd.LIGHT)
+	var splitter: CombatActionResource = axe.opener_for(Cmd.HEAVY)
+	_check(axe.combo_actions.size() == 1 and is_equal_approx(cleave.total_time(), 0.85) and is_equal_approx(cleave.stamina_cost, 16.0)
+		and is_equal_approx(splitter.damage, 28.0) and is_equal_approx(splitter.poise_damage, 35.0), "Greataxe: two 0.85 s cleaves for 16 stamina, a 28-damage, 35-poise Earth-Splitter")
+	var staff: ClassLoadoutResource = _compose(ClassLoadouts.SOUL_TETHER_HEALER, &"", ArsenalCatalog.SCRIBE_STAFF)
+	var staff_chain: Array[CombatActionResource] = [staff.opener_for(Cmd.LIGHT)]
+	staff_chain.append_array(staff.combo_actions)
+	var lance: CombatActionResource = staff.card_action(ScribeCardResource.GrimoireSlot.FORWARD)
+	var ring: CombatActionResource = staff.card_action(ScribeCardResource.GrimoireSlot.BACK)
+	_check(staff_chain.size() == 3 and not staff_chain[0].is_projectile() and staff_chain[2].is_projectile() and is_equal_approx(staff_chain[2].projectile_range, 12.0)
+		and lance.is_projectile() and is_equal_approx(lance.projectile_range, 12.0) and is_equal_approx(ring.effect_radius, 4.5 * 1.25),
+		"Scribe Staff: two sweeps then a 12 m bolt, cards fired as 12 m bolts, sanctuaries 25% wider")
+	var bow: ClassLoadoutResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, &"", ArsenalCatalog.HUNTER_BOW)
+	var snap: CombatActionResource = bow.opener_for(Cmd.LIGHT)
+	var draw: CombatActionResource = bow.opener_for(Cmd.HEAVY)
+	var drive: CombatActionResource = bow.card_action(ScribeCardResource.GrimoireSlot.FORWARD)
+	var crescent: CombatActionResource = bow.card_action(ScribeCardResource.GrimoireSlot.BACK)
+	_check(snap.is_projectile() and is_equal_approx(snap.projectile_range, 14.0) and draw.pierces and is_equal_approx(draw.projectile_range, 18.0)
+		and drive.is_projectile() and is_equal_approx(drive.projectile_range, 18.0) and is_equal_approx(drive.lunge_distance, 0.0) and crescent.lunge_distance < 0.0,
+		"Hunter Bow: 14 m snap-shots, an 18 m piercing draw, cards as 18 m rune arrows (forward lunges planted, back steps kept)")
+
+	var surged: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.DIRECTIONAL_FLOW_DPS)
+	surged.under_ids[0] = ArsenalCatalog.AMBER_GEAR_LINK
+	var surge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, surged).card_action(0)
+	var plain_drive: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS).card_action(0)
+	_check(is_equal_approx(surge.damage, plain_drive.damage * 1.2) and is_equal_approx(surge.poise_damage, plain_drive.poise_damage * 1.2),
+		"Amber Gear Link (Potency Surge) makes Rising Drive hit 20% harder in damage and poise")
+	var infused: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
+	infused.under_ids[0] = ArsenalCatalog.MOON_RING_LINK
+	var charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, infused).card_action(0)
+	_check(charge.primer == Aspect.CELESTIAL and charge.aspect == Aspect.CELESTIAL, "Moon-Ring Link (Aspect Infusion) makes Shield Charge stamp a Violet Moon-Ring seal")
+	var echoed: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SOUL_TETHER_HEALER)
+	echoed.under_ids[1] = ArsenalCatalog.SUN_CREST_LINK
+	echoed.under_ids[2] = ArsenalCatalog.SUN_CREST_LINK
+	var echo_kit: ClassLoadoutResource = ClassLoadouts.compose(ClassLoadouts.SOUL_TETHER_HEALER, echoed)
+	_check(is_equal_approx(echo_kit.card_action(2).echo_heal_ratio, 0.5) and is_equal_approx(echo_kit.card_action(1).zone_stamina_per_second, 8.0),
+		"Sun-Crest Link (Hearth Echo): Homing Heal bounces 50%, Green Sanctuary restores 8 stamina a second")
+
+	var kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
+	var json_kit: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(JSON.parse_string(JSON.stringify(kit.to_dict())) as Dictionary)
+	_check(json_kit.same_as(kit), "a kit is a few ids that survive a JSON round trip (ready for save files)")
+	var first: ClassLoadoutResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, kit)
+	var second: ClassLoadoutResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, kit)
+	var same: bool = first.openers.size() == second.openers.size()
+	for index: int in first.openers.size():
+		same = same and first.openers[index].action_id == second.openers[index].action_id and is_equal_approx(first.openers[index].damage, second.openers[index].damage)
+	_check(same, "composing the same kit twice gives the same action ids and numbers (what lets peers name actions by id)")
+	var broken: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.DIRECTIONAL_FLOW_DPS)
+	broken.weapon_id = &"no_such_weapon"
+	broken.lead_ids[0] = ArsenalCatalog.TAUNT
+	broken.lead_ids[2] = ArsenalCatalog.HOMING_HEAL
+	var fixed: EquipmentLoadoutResource = LoadoutComposer.sanitized(ClassLoadouts.player_class(ClassLoadouts.DIRECTIONAL_FLOW_DPS), broken)
+	_check(fixed.weapon_id == ArsenalCatalog.HUNTER_BOW and fixed.lead_ids[0] == ArsenalCatalog.RISING_DRIVE and fixed.lead_ids[2] == ArsenalCatalog.GALE_RUSH,
+		"unknown items, cards in the wrong slot and tether cards on a class without tethers fall back to the starter kit")
+
+	var tank_class: PlayerClassResource = ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK)
+	var empty_binder: Dictionary[StringName, int] = {}
+	var linked: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
+	linked.under_ids[0] = ArsenalCatalog.AMBER_GEAR_LINK
+	var rare: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
+	rare.lead_ids[0] = ArsenalCatalog.MOONFALL_CLEAVE
+	_check(LoadoutComposer.grimoire_level(0) == 1 and LoadoutComposer.grimoire_level(9) == 5 and LoadoutComposer.under_slots(1) == 0
+		and LoadoutComposer.under_slots(5) == 4 and LoadoutComposer.memory_capacity(1) == 6,
+		"the Grimoire starts at Lv 1 (6 memory, no under-card links) and reaches Lv 5 (14 memory, 4 links)")
+	_check(LoadoutComposer.kit_problem(tank_class, kit, 1, empty_binder) == "" and LoadoutComposer.kit_problem(tank_class, linked, 1, empty_binder).contains("Lv 2")
+		and LoadoutComposer.kit_problem(tank_class, linked, 2, empty_binder) == "" and LoadoutComposer.kit_problem(tank_class, rare, 2, empty_binder).begins_with("Not in the binder"),
+		"the starter kit always fits; under-cards wait for their level; a boss card must be collected first")
+
+
+## A class composed with one item swapped in (&"" keeps the starter's).
+func _compose(class_id: StringName, armor_id: StringName, weapon_id: StringName) -> ClassLoadoutResource:
+	var kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(class_id)
+	if armor_id != &"":
+		kit.armor_id = armor_id
+	if weapon_id != &"":
+		kit.weapon_id = weapon_id
+	return ClassLoadouts.compose(class_id, kit)
 
 
 func _check_keyboard_is_player_one() -> void:
@@ -314,66 +441,192 @@ func _check_flow_windows() -> void:
 	dps.input.inject_command(Cmd.LIGHT)
 	await _seconds(0.8)
 	_check(_flow_speed_scales.size() == flows, "a press during wind-up is too early to buffer")
+	# Press times come from the weapon's Heavy, so the check holds for any weapon.
+	var heavy: CombatActionResource = dps.loadout.opener_for(Cmd.HEAVY)
+	var early: float = heavy.windup_time + 0.1
+	var late: float = heavy.total_time() - 0.3
 	dps.stats.stamina = dps.stats.stats.max_stamina
 	dps.input.inject_command(Cmd.HEAVY)
-	await _seconds(0.5)
+	await _seconds(early)
 	dps.input.inject_command(Cmd.LIGHT)
-	await _seconds(1.2)
-	_check(_flow_speed_scales.size() == flows, "Master: a press 0.51 s before the end is outside the 400 ms window")
+	await _seconds(heavy.total_time() + 0.5)
+	_check(_flow_speed_scales.size() == flows, "Master: a press %.2f s before the end is outside the 400 ms window" % (heavy.total_time() - early))
 	dps.stats.stamina = dps.stats.stats.max_stamina
 	dps.input.inject_command(Cmd.HEAVY)
-	await _seconds(0.75)
+	await _seconds(late)
 	dps.input.inject_command(Cmd.LIGHT)
-	await _seconds(1.0)
+	await _seconds(heavy.total_time())
 	_check(_flow_speed_scales.size() == flows + 1 and is_equal_approx(_flow_speed_scales.back(), 1.15), "Master: inside the window it flows at +15%")
 	NetworkManager.current.update_local_player(2, ClassLoadouts.DIRECTIONAL_FLOW_DPS, InputComponent.AssistMode.ADVENTURER)
 	await _seconds(0.05)
 	dps.stats.stamina = dps.stats.stats.max_stamina
 	dps.input.inject_command(Cmd.HEAVY)
-	await _seconds(0.5)
+	await _seconds(early)
 	dps.input.inject_command(Cmd.LIGHT)
-	await _seconds(1.2)
+	await _seconds(heavy.total_time() + 0.5)
 	_check(_flow_speed_scales.size() == flows + 2 and is_equal_approx(_flow_speed_scales.back(), 1.0), "Adventurer: the same press is inside its 550 ms window, with no speed bonus")
 	NetworkManager.current.update_local_player(2, ClassLoadouts.DIRECTIONAL_FLOW_DPS, InputComponent.AssistMode.MASTER)
 	await _seconds(0.05)
 	boss.set_physics_process(true)
 
 
-## All three primers, each detonated by a different class, rewarding both players.
+## All four Aspect Seals, each stamped by one class's card (fired through its
+## bow or staff) and detonated by another class's Heavy, rewarding both players.
 func _check_synergies() -> void:
 	boss.set_physics_process(false) # Hold the boss still so everyone stays in reach.
-	await _detonate(Cmd.FORWARD_HEAVY, tank, CombatActionResource.Synergy.STAGGER, "SHATTERPOINT  x1.5 CROSS-CLASS", &"synergy_stagger")
+	await _detonate(dps, Cmd.FORWARD_HEAVY, tank, Aspect.KINETIC, "SHATTERPOINT  x1.5 CROSS-HARMONY")
 	_check(boss.stats.is_knocked_down() or boss.stats.poise <= boss.stats.stats.max_poise - 90.0, "Shatterpoint adds the bonus poise damage")
 	_reset_boss_poise()
 	var health_before: float = boss.stats.health
-	await _detonate(Cmd.BACK_HEAVY, healer, CombatActionResource.Synergy.FROST, "GLACIAL RUPTURE  x1.5 CROSS-CLASS", &"synergy_frost")
-	_check(health_before - boss.stats.health >= CombatDirector.FROST_BONUS_DAMAGE * CombatDirector.CROSS_CLASS_MULTIPLIER, "Glacial Rupture adds the bonus damage")
-	healer.stats.take_damage(40.0)
-	var hurt_health: float = healer.stats.health
-	await _detonate(Cmd.TRIGGER_L_SKILL, tank, CombatActionResource.Synergy.RADIANT, "DAWNBURST  x1.5 CROSS-CLASS", &"synergy_radiant")
-	_check(healer.stats.health > hurt_health, "Dawnburst heals the party around the boss")
-	_check(_cross_class_synergies >= 3, "cross-class detonations are flagged")
+	await _detonate(dps, Cmd.BACK_HEAVY, healer, Aspect.ELEMENTAL, "ELEMENTAL RUPTURE  x1.5 CROSS-HARMONY")
+	var rupture: AspectSealResource = ArsenalCatalog.current.aspect_seal(Aspect.ELEMENTAL)
+	_check(health_before - boss.stats.health >= rupture.bonus_damage * CombatDirector.CROSS_HARMONY_MULTIPLIER, "Elemental Rupture adds the bonus damage")
+	_reset_boss_poise()
+	dps.stats.take_damage(40.0)
+	var hurt_health: float = dps.stats.health
+	await _detonate(healer, Cmd.FORWARD_HEAVY, tank, Aspect.DIVINE, "DAWNBURST  x1.5 CROSS-HARMONY")
+	_check(dps.stats.health > hurt_health, "Dawnburst heals the party around the boss")
+	_reset_boss_poise()
+	dps.stats.add_resonance(1.0)
+	healer.stats.stamina = 10.0
+	healer.stats.resonance_charge = 0.0
+	healer.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(4.0, 0.0, 5.0)))
+	var chorus: AspectSealResource = ArsenalCatalog.current.aspect_seal(Aspect.CELESTIAL)
+	await _detonate(dps, Cmd.TRIGGER_R_SKILL, tank, Aspect.CELESTIAL, "ASTRAL CHORUS  x1.5 CROSS-HARMONY", 1.0)
+	_check(healer.stats.stamina >= 10.0 + chorus.party_stamina * CombatDirector.CROSS_HARMONY_MULTIPLIER - 0.5,
+		"Astral Chorus restores +%d stamina to the party within 10 m" % roundi(chorus.party_stamina * CombatDirector.CROSS_HARMONY_MULTIPLIER))
+	_check(healer.stats.resonance_charge >= chorus.party_pips * CombatDirector.CROSS_HARMONY_MULTIPLIER - 0.01,
+		"Astral Chorus grants +¾ pip to the party (the healer wasn't even in the combo)")
+	_check(_cross_class_synergies >= 4, "cross-harmony detonations are flagged")
 	boss.set_physics_process(true)
 
 
-func _detonate(primer_command: int, detonator: ActorBase, primer: int, label: String, sound: StringName) -> void:
-	await _until_idle(dps)
+func _detonate(primer_actor: ActorBase, primer_command: int, detonator: ActorBase, aspect: int, label: String, pips_before: float = 0.0) -> void:
+	await _until_idle(primer_actor)
 	await _until_idle(detonator)
-	_face_boss(dps, Vector3(-1.4, 0.0, 2.6))
+	_face_boss(primer_actor, Vector3(-1.4, 0.0, 2.6))
 	_face_boss(detonator, Vector3(1.3, 0.0, 2.4))
-	for actor: ActorBase in [dps, detonator]:
+	for actor: ActorBase in [primer_actor, detonator]:
 		actor.stats.stamina = actor.stats.stats.max_stamina
 		actor.stats.resonance_charge = 0.0
+	primer_actor.stats.resonance_charge = pips_before
 	var rewards_before: int = _cue_sounds.count(&"reward")
-	dps.input.inject_command(primer_command)
+	var seal: AspectSealResource = ArsenalCatalog.current.aspect_seal(aspect)
+	primer_actor.input.inject_command(primer_command)
 	await _seconds(0.75)
-	_check(_primers.has(primer), "%s primes %s" % [PlayerHUD.command_name(primer_command), CombatDirector.current.synergy_primer_name(primer)])
+	_check(_primers.has(aspect), "%s's %s card stamps the %s seal" % [primer_actor.loadout.display_name, PlayerHUD.command_name(primer_command), seal.seal_name])
 	detonator.input.inject_command(Cmd.HEAVY)
 	await _seconds(1.4)
-	_check(_synergies.has(label), "%s detonates it as %s" % [detonator.loadout.display_name, label])
-	_check(dps.stats.resonance_charge >= 0.7 and detonator.stats.resonance_charge >= 0.7,
-		"%s rewards both players (+¾ pip each)" % CombatDirector.current.synergy_name(primer))
-	_check(_cue_sounds.count(&"reward") - rewards_before >= 2 and _audio_cues.has(sound), "%s shows a burst on both players and plays its sound" % CombatDirector.current.synergy_name(primer))
+	_check(_synergies.has(label), "%s's Heavy detonates it as %s" % [detonator.loadout.display_name, label])
+	_check(primer_actor.stats.resonance_charge >= 0.7 and detonator.stats.resonance_charge >= 0.7,
+		"%s rewards both players (+¾ pip each)" % seal.detonation_name)
+	_check(_cue_sounds.count(&"reward") - rewards_before >= 2 and _audio_cues.has(seal.sound), "%s shows a burst on both players and plays its sound" % seal.detonation_name)
+
+
+## Phase 7, in the fight: bow and staff shots, the effect pool, armor at work,
+## strikes crossing the network as action ids, and a Hearth Echo heal.
+func _check_ranged_and_armor() -> void:
+	boss.set_physics_process(false)
+	_reset_boss_poise()
+	await _until_idle(dps)
+	_face_boss(dps, Vector3(0.0, 0.0, 9.0))
+	dps.stats.stamina = dps.stats.stats.max_stamina
+	var health_before: float = boss.stats.health
+	var shots: int = _projectiles.count(dps.player_id)
+	dps.input.inject_command(Cmd.LIGHT)
+	await _seconds(0.8)
+	_check(_projectiles.count(dps.player_id) > shots and boss.stats.health < health_before, "a Snap-Shot arrow flies 9 m and hits the boss")
+	await _until_idle(healer)
+	_face_boss(healer, Vector3(3.0, 0.0, 7.5))
+	healer.stats.stamina = healer.stats.stats.max_stamina
+	health_before = boss.stats.health
+	shots = _projectiles.count(healer.player_id)
+	healer.input.inject_command(Cmd.FORWARD_HEAVY)
+	await _seconds(0.8)
+	_check(_projectiles.count(healer.player_id) > shots and boss.stats.health < health_before,
+		"the healer's Sunlit Lance card flies through the staff as a rune bolt and hits from 8 m")
+	var pool: FxPool = CombatDirector.current.fx_pool
+	var made: int = pool.made_count
+	for volley: int in 6:
+		dps.stats.stamina = dps.stats.stats.max_stamina
+		dps.input.inject_command(Cmd.LIGHT)
+		await _seconds(0.7)
+	_check(pool.made_count == made and pool.active_count() == 0 and pool.idle_count() >= 1, "landed shots go back to the effect pool and are reused (no new nodes)")
+
+	await _until_idle(tank)
+	_reset_boss_poise()
+	tank.input.inject_guard(true)
+	await _seconds(0.23)
+	var guards: int = _perfect_guards
+	CombatDirector.current.deliver(CombatEvent.strike_from(boss, tank, boss.loadout.openers[0]))
+	await _seconds(0.1)
+	_check(_perfect_guards == guards + 1, "Ironwood Plate's 260 ms window: a guard raised 0.23 s early is still perfect")
+	tank.input.inject_guard(false)
+	await _seconds(0.3)
+	tank.re_equip(_compose(ClassLoadouts.SHIELD_TANK, ArsenalCatalog.RANGER_LEATHER, &""))
+	await _until_idle(tank)
+	tank.input.inject_guard(true)
+	await _seconds(0.23)
+	var outcomes: int = _outcomes.size()
+	CombatDirector.current.deliver(CombatEvent.strike_from(boss, tank, boss.loadout.openers[0]))
+	await _seconds(0.1)
+	_check(_perfect_guards == guards + 1 and _outcomes.slice(outcomes).has(StatsComponent.StrikeOutcome.GUARDED),
+		"in Ranger Leather (200 ms) the same guard is too early: it just blocks")
+	tank.input.inject_guard(false)
+	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK))
+	await _seconds(0.1)
+
+	dps.stats.heal(dps.stats.stats.max_health)
+	var dps_health: float = dps.stats.health
+	CombatDirector.current.deliver(_strike(boss, dps, 50.0, 0.0))
+	await _seconds(0.05)
+	_check(is_equal_approx(dps_health - dps.stats.health, 50.0 * (1.0 - 0.20)), "Ranger Leather takes 20% off a 50-damage hit")
+	dps.stats.heal(dps.stats.stats.max_health)
+	var light_roll: float = await _measure_roll(dps, ArsenalCatalog.HEARTH_LINEN)
+	var heavy_roll: float = await _measure_roll(dps, ArsenalCatalog.IRONWOOD_PLATE)
+	dps.re_equip(ClassLoadouts.compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS))
+	_check(light_roll > heavy_roll + 1.0, "Hearth-Linen rolls farther than Ironwood Plate (%.1f m against %.1f m)" % [light_roll, heavy_roll])
+
+	var arrow: CombatActionResource = dps.loadout.opener_for(Cmd.LIGHT)
+	var packet: Dictionary = CombatEvent.strike_from(dps, boss, arrow).to_dict()
+	var arrived: CombatEvent = CombatEvent.from_dict(packet)
+	_check(packet.has("action_id") and not packet.has("damage") and arrived.resolve_action(dps) and is_equal_approx(arrived.damage, arrow.damage)
+		and is_equal_approx(arrived.reach, arrow.projectile_range), "a strike crosses the network as an action id; the target's owner reads the numbers from its own copy")
+
+	var echo_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SOUL_TETHER_HEALER)
+	echo_kit.under_ids[2] = ArsenalCatalog.SUN_CREST_LINK
+	healer.re_equip(ClassLoadouts.compose(ClassLoadouts.SOUL_TETHER_HEALER, echo_kit))
+	await _until_idle(healer)
+	tank.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(6.0, 0.0, 8.0)))
+	dps.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(8.0, 0.0, 8.0)))
+	healer.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(7.0, 0.0, 12.0)))
+	tank.stats.take_damage(60.0)
+	dps.stats.take_damage(60.0)
+	var dps_hurt: float = dps.stats.health
+	healer.stats.stamina = healer.stats.stats.max_stamina
+	healer.tether.bind_actor(tank)
+	healer.input.inject_command(Cmd.TRIGGER_R_SKILL)
+	await _seconds(1.2)
+	_check(dps.stats.health > dps_hurt, "Hearth Echo: the healer's Homing Heal on the tank bounces half to the hurt DPS beside it")
+	healer.re_equip(ClassLoadouts.compose(ClassLoadouts.SOUL_TETHER_HEALER))
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.stats.heal(actor.stats.stats.max_health)
+	boss.set_physics_process(true)
+	_stage_party()
+
+
+## How far a roll carries the actor in a given armor (in open floor, rolling back).
+func _measure_roll(actor: ActorBase, armor_id: StringName) -> float:
+	actor.re_equip(_compose(actor.loadout.class_id, armor_id, &""))
+	await _until_idle(actor)
+	actor.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(14.0, 0.0, 6.0)))
+	actor.input.inject_move(Vector2.ZERO)
+	actor.stats.stamina = actor.stats.stats.max_stamina
+	await _seconds(0.1)
+	var start: Vector3 = actor.global_position
+	actor.input.inject_command(Cmd.DODGE)
+	await _seconds(1.2)
+	return Vector2(actor.global_position.x - start.x, actor.global_position.z - start.z).length()
 
 
 func _check_poise_and_knockdown() -> void:
@@ -405,8 +658,12 @@ func _check_taunt() -> void:
 
 
 func _check_perfect_guard() -> void:
+	# The test throws the swipes: the boss's own swings mustn't land in the window too.
+	boss.set_physics_process(false)
+	boss.cancel_action()
 	await _until_idle(tank)
 	_reset_boss_poise()
+	var guards_before: int = _perfect_guards
 	tank.stats.resonance_charge = 0.0
 	var threat_before: float = boss.threat.threat_of(tank.player_id)
 	var health_before: float = tank.stats.health
@@ -415,7 +672,7 @@ func _check_perfect_guard() -> void:
 	_check(tank.state_machine.is_in(&"guard"), "holding L raises the tank's Active Guard")
 	CombatDirector.current.deliver(CombatEvent.strike_from(boss, tank, boss.loadout.openers[0]))
 	await _seconds(0.1)
-	_check(_perfect_guards == 1, "a guard raised within 200 ms is a Perfect Guard")
+	_check(_perfect_guards == guards_before + 1, "a guard raised within 200 ms is a Perfect Guard")
 	_check(is_equal_approx(tank.stats.health, health_before), "a Perfect Guard takes no damage")
 	_check(is_equal_approx(boss.stats.poise, boss.stats.stats.max_poise - CombatDirector.PERFECT_GUARD_POISE), "a Perfect Guard deals 50 poise to the attacker")
 	_check(boss.threat.threat_of(tank.player_id) - threat_before >= CombatDirector.PERFECT_GUARD_THREAT, "a Perfect Guard generates big threat")
@@ -425,6 +682,7 @@ func _check_perfect_guard() -> void:
 	await _seconds(0.05)
 	_check(_outcomes.has(StatsComponent.StrikeOutcome.GUARDED), "a late guard still blocks, for stamina")
 	tank.input.inject_guard(false)
+	boss.set_physics_process(true)
 
 
 func _check_healer() -> void:
@@ -444,9 +702,9 @@ func _check_healer() -> void:
 
 	await _until_idle(healer)
 	healer.stats.add_resonance(1.0)
-	healer.input.inject_command(Cmd.TRIGGER_R_HOLD)
+	healer.input.inject_command(Cmd.BACK_HEAVY)
 	await _seconds(0.6)
-	_check(_count_zones(SanctuaryZone.Shape.RING) >= 1, "holding R drops a Green Sanctuary ring")
+	_check(_count_zones(SanctuaryZone.Shape.RING) >= 1, "Back + Heavy plays the healer's Green Sanctuary card: a healing ring")
 
 	await _until_idle(healer)
 	dps.place_at(Transform3D(Basis.IDENTITY, healer.global_position + Vector3(9.0, 0.0, 0.0)))
@@ -494,7 +752,8 @@ func _check_squire_auto_evade() -> void:
 
 
 ## Squire Gambit guards the boss's Crushing Swipe for you (with 25+ stamina);
-## a Squire DPS, who has no guard, rolls clear instead.
+## L is Guard for every class now, so the Squire DPS guards too; and at range
+## Squire fires whatever reaches (a bow shot, a card bolt) instead of running in.
 func _check_squire_auto_guard() -> void:
 	boss.set_physics_process(false) # The test starts each swipe itself.
 	boss.cancel_action()
@@ -535,14 +794,21 @@ func _check_squire_auto_guard() -> void:
 	dps.input.assist_mode = InputComponent.AssistMode.SQUIRE_GAMBIT
 	dps.apply_assist_mode()
 	dps.stats.stamina = dps.stats.stats.max_stamina
-	var start: Vector3 = dps.global_position
 	boss.action_queue.request(Cmd.LIGHT)
 	await _seconds(0.1)
-	_check(dps.state_machine.is_in(&"dodge"), "a Squire DPS, with no guard, rolls clear of the swipe")
-	await _seconds(0.4)
-	_check(not boss.swipe_threatens(dps, 0.0) and dps.global_position.distance_to(boss.global_position) > start.distance_to(boss.global_position),
-		"the roll takes it out of reach")
+	_check(dps.input.is_auto_guarding() and dps.state_machine.is_in(&"guard"), "L is Guard for every class now, so a Squire DPS auto-guards too")
 	boss.cancel_action()
+	await _until_idle(dps)
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.stats.heal(actor.stats.stats.max_health)
+	dps.place_at(Transform3D(Basis.IDENTITY, boss.global_position + boss.facing_vector() * 9.0))
+	healer.place_at(Transform3D(Basis.IDENTITY, boss.global_position + boss.facing_vector() * 9.0 + Vector3(2.0, 0.0, 0.0)))
+	var bow_pick: CombatActionResource = dps.loadout.opener_for(dps.input._squire_pick() as CombatActionResource.Command)
+	_check(bow_pick != null and bow_pick.is_projectile() and bow_pick.reach_distance() >= 9.0,
+		"Squire with a bow at 9 m shoots from where it stands (%s)" % (bow_pick.display_name if bow_pick != null else "nothing"))
+	var staff_pick: int = healer.input._squire_pick()
+	var staff_action: CombatActionResource = healer.loadout.opener_for(staff_pick as CombatActionResource.Command)
+	_check(staff_pick == Cmd.FORWARD_HEAVY and staff_action.is_projectile(), "Squire with a staff out of sweep reach fires its Sunlit Lance card as a bolt")
 	dps.input.assist_mode = InputComponent.AssistMode.MASTER
 	dps.apply_assist_mode()
 	boss.set_physics_process(true)
@@ -557,6 +823,10 @@ func _check_soak_scaling() -> void:
 	_check(required == [1, 1, 1, 2, 2], "a soak needs max(1, players / 2) inside: %s for 1 to 5 players" % str(required))
 	_check(is_equal_approx(BossDummy.soak_total_damage(2), 60.0) and is_equal_approx(BossDummy.soak_total_damage(5), 90.0),
 		"soak damage is 30 per standing player, up to 90")
+	# Earlier zones (a Shadow Sanctuary cone) would soften the numbers below.
+	for child: Node in dojo.effects_root.get_children():
+		if child is SanctuaryZone:
+			child.queue_free()
 	for actor: ActorBase in [tank, healer, dps]:
 		actor.stats.heal(actor.stats.stats.max_health)
 	dps.stats.take_damage(9999.0) # Two left standing: a 2-player couch.
@@ -570,12 +840,13 @@ func _check_soak_scaling() -> void:
 	var alone: Array[ActorBase] = [tank]
 	boss._on_telegraph_resolved(decal, alone)
 	await _seconds(0.05)
-	_check(is_equal_approx(tank_before - tank.stats.health, 60.0) and is_equal_approx(healer.stats.health, healer_before),
-		"with 2 standing, one player soaking alone clears it (60 damage, nobody else hurt)")
+	_check(is_equal_approx(tank_before - tank.stats.health, 60.0 * (1.0 - tank.loadout.stats.damage_mitigation)) and is_equal_approx(healer.stats.health, healer_before),
+		"with 2 standing, one player soaking alone clears it (60 damage before armor, nobody else hurt)")
 	var nobody: Array[ActorBase] = []
 	boss._on_telegraph_resolved(decal, nobody)
 	await _seconds(0.05)
-	_check(is_equal_approx(healer_before - healer.stats.health, BossDummy.SOAK_FAIL_DAMAGE), "an empty soak fails: 30 to everyone standing")
+	_check(is_equal_approx(healer_before - healer.stats.health, BossDummy.SOAK_FAIL_DAMAGE * (1.0 - healer.loadout.stats.damage_mitigation)),
+		"an empty soak fails: 30 to everyone standing (before armor)")
 	decal.queue_free()
 	CombatDirector.current.apply_heal(healer, dps, dps.stats.stats.max_health)
 	await _seconds(0.1)
@@ -653,7 +924,7 @@ func _check_companion_backfill() -> void:
 			tank.stats.heal(80.0) # Keep the test's tank up (a direct heal, so it isn't counted below).
 	_check(_audio_cues.count(&"heal") > heals_before, "the companion healer heals the hurt tank")
 	_check(boss.threat.threat_of(bot_dps.player_id) > 0.0 and (dps_gambits.has(CompanionAIComponent.Gambit.ATTACK)
-		or dps_gambits.has(CompanionAIComponent.Gambit.PRIME)), "the companion DPS closes in and hits the boss")
+		or dps_gambits.has(CompanionAIComponent.Gambit.PRIME)), "the companion DPS fights the boss with its bow")
 
 	# The last person switches to DPS: a companion Tank takes the front.
 	network.update_local_player(InputComponent.KEYBOARD_DEVICE, ClassLoadouts.DIRECTIONAL_FLOW_DPS, InputComponent.AssistMode.ADVENTURER)
@@ -743,7 +1014,7 @@ func _check_audio_cues() -> void:
 			silent.append(cue)
 	_check(silent.is_empty(), "every audio cue synthesizes %s" % ("" if silent.is_empty() else str(silent)))
 	var expected: Array[StringName] = [&"flow", &"hit", &"perfect_guard", &"telegraph", &"heal", &"join", &"portal", &"portal_charge",
-		&"victory", &"chest", &"purchase", &"refuse", &"menu_move"]
+		&"victory", &"chest", &"purchase", &"refuse", &"menu_move", &"shot"]
 	var unheard: PackedStringArray = PackedStringArray()
 	for cue: StringName in expected:
 		if not _audio_cues.has(cue):
@@ -798,7 +1069,7 @@ func _check_shard_vendor() -> void:
 		"and load back next session")
 	NetworkManager.current.update_local_player(2, ClassLoadouts.SHIELD_TANK, InputComponent.AssistMode.MASTER)
 	await _seconds(0.05)
-	_check(is_equal_approx(hub.actors[&"1_2"].stats.stats.max_health, ClassLoadouts.shield_tank().stats.max_health * 1.2),
+	_check(is_equal_approx(hub.actors[&"1_2"].stats.stats.max_health, ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK).base_stats.max_health * 1.2),
 		"a player who changes class starts with the upgrades too")
 	NetworkManager.current.drop_local_player(1)
 	NetworkManager.current.drop_local_player(2)
@@ -827,6 +1098,7 @@ func _connect_global_signals() -> void:
 	director.telegraph_cast.connect(func(decal: RaidTelegraphDecal) -> void:
 		_telegraph_kinds[decal.kind] = _telegraph_kinds.get(decal.kind, 0) + 1)
 	director.cue_shown.connect(func(_at: Vector3, cue: StringName) -> void: _cue_sounds.append(cue))
+	director.projectile_fired.connect(func(attacker: ActorBase, _action: CombatActionResource) -> void: _projectiles.append(attacker.player_id))
 	AudioCues.current.cue_played.connect(func(cue: StringName) -> void: _audio_cues.append(cue))
 	NetworkManager.current.registration_refused.connect(func(_device: int, reason: String) -> void: _refusals.append(reason))
 

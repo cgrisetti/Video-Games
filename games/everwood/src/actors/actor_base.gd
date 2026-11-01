@@ -2,6 +2,11 @@
 ## ActorBase builds the components it needs in code (Code-First Scene Safety),
 ## wires them together through signals, and ticks them with a hit-stop-aware
 ## delta so a landed blow freezes just the two actors involved.
+##
+## What a player swings and casts comes from its compiled loadout (equipment
+## and Scribe Cards, LoadoutComposer). Nothing here knows a weapon or a card by
+## name: props are built from the items' parts, and a strike either swings the
+## hitbox or fires a projectile, as its action says.
 class_name ActorBase
 extends CharacterBody3D
 
@@ -74,8 +79,11 @@ var stagger_time_left: float = 0.0
 var downed_time_left: float = 0.0
 
 var visual: Node3D
+## Melee players: the ribbon a rune-wreathed strike draws.
+var trail: WeaponTrail
 var _body_material: StandardMaterial3D
 var _prop: Node3D
+var _weapon_prop: Node3D
 var _name_label: Label3D
 var _hit_stop_left: float = 0.0
 var _flash_left: float = 0.0
@@ -247,6 +255,10 @@ func _build_visual() -> void:
 	_prop = _build_prop()
 	if _prop != null:
 		visual.add_child(_prop)
+	if loadout.weapon != null:
+		trail = WeaponTrail.new()
+		trail.setup(self)
+		add_child(trail)
 	_name_label = Label3D.new()
 	_name_label.name = "NameLabel"
 	_name_label.text = display_name()
@@ -260,37 +272,41 @@ func _build_visual() -> void:
 	add_child(_name_label)
 
 
-## The class's greybox prop: a shield, a healing orb or a blade.
+## What the actor wears and holds, drawn from its equipped items.
 func _build_prop() -> Node3D:
-	var prop: MeshInstance3D = MeshInstance3D.new()
+	if loadout.weapon == null and loadout.armor == null:
+		return null
+	var prop: Node3D = Node3D.new()
 	prop.name = "Prop"
-	match loadout.role:
-		ClassLoadoutResource.Role.TANK:
-			var shield: BoxMesh = BoxMesh.new()
-			shield.size = Vector3(0.95, 1.15, 0.14)
-			shield.material = _flat_material(Color(0.62, 0.66, 0.74))
-			prop.mesh = shield
-			prop.position = Vector3(-0.15, 1.0, -0.62)
-		ClassLoadoutResource.Role.HEALER:
-			var orb: SphereMesh = SphereMesh.new()
-			orb.radius = 0.2
-			orb.height = 0.4
-			var glow: StandardMaterial3D = _flat_material(Color(0.55, 1.0, 0.65))
-			glow.emission_enabled = true
-			glow.emission = Color(0.4, 1.0, 0.55)
-			glow.emission_energy_multiplier = 2.0
-			orb.material = glow
-			prop.mesh = orb
-			prop.position = Vector3(0.55, 1.55, -0.2)
-		ClassLoadoutResource.Role.DPS:
-			var blade: BoxMesh = BoxMesh.new()
-			blade.size = Vector3(0.09, 0.09, 1.25)
-			blade.material = _flat_material(Color(0.85, 0.86, 0.9))
-			prop.mesh = blade
-			prop.position = Vector3(0.5, 1.0, -0.75)
-		_:
-			return null
+	if loadout.armor != null:
+		prop.add_child(PropBuilder.build(loadout.armor.prop_parts, loadout.armor.model, "Armor"))
+	if loadout.weapon != null:
+		_weapon_prop = PropBuilder.build(loadout.weapon.prop_parts, loadout.weapon.model, "Weapon")
+		prop.add_child(_weapon_prop)
 	return prop
+
+
+## Swaps in a new compiled loadout (the Scribe Desk) without replacing the
+## actor, so its view, HUD and any open menu stay put.
+func re_equip(new_loadout: ClassLoadoutResource) -> void:
+	action_queue.interrupt()
+	hitbox.deactivate()
+	var ratio: float = stats.health_ratio()
+	loadout = new_loadout
+	base_stats = loadout.stats.duplicate() as CharacterStatsResource
+	PartyProgress.current.apply_upgrades(loadout.stats, base_stats)
+	stats.rebind(loadout.stats, ratio)
+	if _prop != null:
+		visual.remove_child(_prop)
+		_prop.queue_free()
+	_weapon_prop = null
+	_prop = _build_prop()
+	if _prop != null:
+		visual.add_child(_prop)
+	if input != null:
+		apply_assist_mode()
+	if not stats.is_downed:
+		state_machine.transition(&"idle")
 
 
 func _flat_material(color: Color) -> StandardMaterial3D:
@@ -568,7 +584,10 @@ func _on_action_finished(_action: CombatActionResource) -> void:
 func _begin_effect(action: CombatActionResource) -> void:
 	match action.effect:
 		CombatActionResource.Effect.STRIKE:
-			hitbox.activate(action)
+			if action.is_projectile():
+				CombatDirector.current.launch_projectile(self, action, action_queue.flowed_into_current)
+			else:
+				hitbox.activate(action)
 		CombatActionResource.Effect.DODGE:
 			stats.grant_invulnerability(action.active_time / action_queue.speed_scale)
 		CombatActionResource.Effect.TAUNT:
@@ -578,7 +597,7 @@ func _begin_effect(action: CombatActionResource) -> void:
 		CombatActionResource.Effect.GREEN_SANCTUARY:
 			CombatDirector.current.spawn_zone(self, SanctuaryZone.Shape.RING, action)
 		CombatActionResource.Effect.HOMING_HEAL:
-			CombatDirector.current.launch_homing_heal(self, tether.tethered_actor(), action.heal_amount)
+			CombatDirector.current.launch_homing_heal(self, tether.tethered_actor(), action.heal_amount, action.echo_heal_ratio)
 		CombatActionResource.Effect.LIFELINE_PULL:
 			CombatDirector.current.lifeline_pull(self, tether.tethered_actor(), action.effect_duration)
 
@@ -709,6 +728,9 @@ func _update_pose(delta: float) -> void:
 	visual.rotation.x = lerpf(visual.rotation.x, -lean, blend)
 	visual.rotation.z = lerpf(visual.rotation.z, tilt, blend)
 	visual.scale.y = lerpf(visual.scale.y, height_scale, blend)
+	if _weapon_prop != null and trail != null:
+		# A rune-wreathed strike sweeps the weapon through the trail's arc.
+		_weapon_prop.rotation.y = trail.swing_angle
 	if _flash_left > 0.0:
 		_body_material.emission = Color(1.0, 1.0, 1.0) * 0.9
 	elif _flow_glow_left > 0.0:
