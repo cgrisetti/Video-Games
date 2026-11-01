@@ -1,10 +1,13 @@
 ## The Armory & Scribe Desk menu, drawn over one player's split-screen cell and
 ## driven by that player's own controller (05_ARSENAL_AND_CARDS_GDD.md §2–3):
 ## up / down picks a row, left / right (or light) changes it, dodge closes.
-##   Armor · Weapon · the four lead cards · the four under-card links
-## It edits a draft of your kit. Whenever the draft follows the Grimoire's rules
-## (an owned copy, an open link, enough memory) it asks the host to equip it and
-## your character changes in place; otherwise the row says why and nothing changes.
+##   Fellowship · Calling · Armor · Weapon · the four lead cards · the four under-card links
+## The Fellowship (your class) and Calling (07 GDD §1.3) change at once; a new
+## Fellowship is a new character, and the desk reopens for it. The rest edits
+## a draft of your kit. Whenever the draft follows the rules (gear your Calling
+## may use, an owned copy, an open link, enough memory) it asks the host to
+## equip it and your character changes in place; otherwise the row says why
+## and nothing changes.
 class_name ScribeDeskMenu
 extends PanelContainer
 
@@ -21,12 +24,14 @@ const GOOD_COLOR: Color = Color(0.6, 1.0, 0.65)
 const PANEL_COLOR: Color = Color(0.07, 0.06, 0.1, 0.93)
 const BORDER_COLOR: Color = Color(0.72, 0.55, 1.0)
 const NOTE_TIME: float = 2.5
-const ROW_ARMOR: int = 0
-const ROW_WEAPON: int = 1
-const ROW_FIRST_LEAD: int = 2
-const ROW_FIRST_LINK: int = 6
-const ROW_CLOSE: int = 10
-const ROW_COUNT: int = 11
+const ROW_FELLOWSHIP: int = 0
+const ROW_CALLING: int = 1
+const ROW_ARMOR: int = 2
+const ROW_WEAPON: int = 3
+const ROW_FIRST_LEAD: int = 4
+const ROW_FIRST_LINK: int = 8
+const ROW_CLOSE: int = 12
+const ROW_COUNT: int = 13
 
 var actor: ActorBase
 var selected: int = ROW_WEAPON
@@ -34,6 +39,8 @@ var selected: int = ROW_WEAPON
 var draft: EquipmentLoadoutResource
 
 var _player_class: PlayerClassResource
+## The loadout the draft was copied from: a new one (a new Calling) resets the draft.
+var _seen_loadout: ClassLoadoutResource
 var _problem: String = ""
 var _header: Label
 var _rows: Array[Label] = []
@@ -43,8 +50,11 @@ var _hint: Label
 var _note_left: float = 0.0
 
 
-func setup(target_actor: ActorBase) -> void:
+## `start_row` reopens the desk where it was (after a Fellowship change); -1 starts on the Weapon row.
+func setup(target_actor: ActorBase, start_row: int = -1) -> void:
 	actor = target_actor
+	if start_row >= 0 and start_row < ROW_COUNT:
+		selected = start_row
 
 
 func _ready() -> void:
@@ -88,8 +98,7 @@ func _ready() -> void:
 	_hint.modulate = Color(0.8, 0.82, 0.9)
 	column.add_child(_hint)
 	if actor != null:
-		_player_class = ClassLoadouts.player_class(actor.loadout.class_id)
-		draft = actor.loadout.kit.copy()
+		_sync_from_actor()
 		if actor.input != null:
 			actor.input.menu_open = true
 			actor.input.menu_input.connect(_on_menu_input)
@@ -114,6 +123,17 @@ func _exit_tree() -> void:
 func _process(delta: float) -> void:
 	_note_left = maxf(0.0, _note_left - delta)
 	_note.modulate.a = minf(1.0, _note_left)
+	if is_instance_valid(actor) and actor.loadout != _seen_loadout:
+		_sync_from_actor()
+		_refresh()
+
+
+## Starts the draft from what the character wears now, under its current Calling.
+func _sync_from_actor() -> void:
+	_seen_loadout = actor.loadout
+	_player_class = ClassLoadouts.player_class(actor.loadout.class_id, actor.loadout.calling)
+	draft = actor.loadout.kit.copy()
+	_problem = ""
 
 
 # --- Moving around --------------------------------------------------------
@@ -169,6 +189,12 @@ func _on_menu_input(action: StringName) -> void:
 ## Steps the selected row to its next (or previous) option and, if the kit is
 ## allowed, asks the host to equip it.
 func cycle(step: int) -> void:
+	if selected == ROW_FELLOWSHIP:
+		_cycle_fellowship(step)
+		return
+	if selected == ROW_CALLING:
+		_cycle_calling(step)
+		return
 	var options: Array[StringName] = options_for(selected)
 	if options.is_empty():
 		return
@@ -182,6 +208,23 @@ func cycle(step: int) -> void:
 	else:
 		AudioCues.play(&"refuse")
 	_refresh()
+
+
+## The next Fellowship: a new class, so a new character (LevelBase reopens the desk for it).
+func _cycle_fellowship(step: int) -> void:
+	var classes: Array[StringName] = ClassLoadouts.PLAYER_CLASSES
+	var next: StringName = classes[wrapi(classes.find(actor.loadout.class_id) + step, 0, classes.size())]
+	var mode: int = actor.input.assist_mode if actor.input != null else InputComponent.AssistMode.ADVENTURER
+	AudioCues.play(&"equip")
+	# Deferred: this runs inside the character's own input step, and a new class replaces it.
+	NetworkManager.current.update_local_player.call_deferred(actor.device_id, next, mode)
+
+
+## The next Secondary Calling: the same character, re-equipped in place.
+func _cycle_calling(step: int) -> void:
+	var next: int = wrapi(Callings.resolve(actor.loadout.class_id, actor.loadout.calling) + step, 0, Callings.SECONDARY_NAMES.size())
+	AudioCues.play(&"equip")
+	NetworkManager.current.update_local_calling(actor.device_id, next)
 
 
 ## What a row can be set to: item ids, lead-card copy keys (starter cards plus
@@ -254,7 +297,7 @@ func _refresh() -> void:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
 	var level: int = PartyProgress.current.grimoire_level()
 	_header.text = "Grimoire Lv %d  ·  Memory %d / %d  ·  Under-Card links open: %d of %d" % [level, LoadoutComposer.memory_used(draft),
-		LoadoutComposer.memory_capacity(level), LoadoutComposer.under_slots(level), EquipmentLoadoutResource.SLOT_COUNT]
+		LoadoutComposer.memory_capacity(level, _player_class.bonus_memory), LoadoutComposer.under_slots(level), EquipmentLoadoutResource.SLOT_COUNT]
 	for row: int in ROW_COUNT:
 		var label: Label = _rows[row]
 		var cursor: String = "▶ " if row == selected else "   "
@@ -277,10 +320,14 @@ func _refresh() -> void:
 
 func _row_text(row: int, level: int) -> String:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	if row == ROW_FELLOWSHIP:
+		return "Fellowship:  %s" % _player_class.fellowship_name
+	if row == ROW_CALLING:
+		return "Calling:  %s  ·  %s" % [_player_class.display_name, Callings.secondary_label(_player_class.calling)]
 	if row == ROW_ARMOR:
-		return "Armor:  %s" % _item_name(draft.armor_id)
+		return "Armor:  %s%s" % [_item_name(draft.armor_id), _lock_note(draft.armor_id)]
 	if row == ROW_WEAPON:
-		return "Weapon:  %s" % _item_name(draft.weapon_id)
+		return "Weapon:  %s%s" % [_item_name(draft.weapon_id), _lock_note(draft.weapon_id)]
 	if _is_lead_row(row):
 		var slot: int = row - ROW_FIRST_LEAD
 		return "%s card:  %s" % [ScribeCardResource.SLOT_NAMES[slot], catalog.copy_name(draft.lead_copy_key(slot))]
@@ -294,6 +341,11 @@ func _row_text(row: int, level: int) -> String:
 
 
 func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
+	if row == ROW_FELLOWSHIP:
+		return "Your raid seat. Changing it changes who you are: the Shield-Sworn hold the boss, the Wayfarers strike and stamp Signs, the Lantern-Bearers mend down their Soul Tethers."
+	if row == ROW_CALLING:
+		return "%s, %s. %s: %s." % [_player_class.display_name, _player_class.calling_subtitle, Callings.SECONDARY_NAMES[_player_class.calling],
+			Callings.summary(_player_class.calling)]
 	if row == ROW_ARMOR:
 		var armor: EquipmentItemResource = catalog.item(draft.armor_id)
 		return "%d%% mitigation · %.1f stamina/s · %.1f m roll · %d ms Perfect Guard. %s" % [roundi(armor.mitigation * 100.0),
@@ -312,6 +364,15 @@ func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
 			return "Slide an Under-Card beneath this slot's lead card to change it with one verb."
 		return "Memory %d. %s" % [under.memory_cost(), under.description]
 	return "Back to Bramblebridge."
+
+
+## "  (needs Swift Foot)" when the Calling can't use an item, else "".
+func _lock_note(id: StringName) -> String:
+	var item: EquipmentItemResource = ArsenalCatalog.current.item(id)
+	if item == null or _player_class.allows(item):
+		return ""
+	var unlock: int = Callings.unlocked_by(item)
+	return "  (needs %s)" % Callings.SECONDARY_NAMES[unlock] if unlock >= 0 else "  (not for this Fellowship)"
 
 
 func _item_name(id: StringName) -> String:

@@ -106,6 +106,8 @@ func resonance_pips() -> int:
 
 func add_resonance(amount: float) -> void:
 	var cap: float = float(stats.max_resonance_pips)
+	if amount > 0.0:
+		amount *= stats.resonance_gain_multiplier
 	resonance_charge = clampf(resonance_charge + amount, 0.0, cap)
 	resonance_changed.emit(resonance_pips(), resonance_charge)
 

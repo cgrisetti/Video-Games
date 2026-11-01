@@ -60,6 +60,7 @@ func _bindings() -> Dictionary[StringName, Array]:
 	map[InputComponent.ACTION_TETHER_LEFT] = [_key(KEY_4), _button(JOY_BUTTON_DPAD_LEFT)]
 	map[InputComponent.ACTION_CHANGE_CLASS] = [_key(KEY_TAB), _button(JOY_BUTTON_BACK)]
 	map[InputComponent.ACTION_CHANGE_MODE] = [_key(KEY_M), _button(JOY_BUTTON_RIGHT_STICK)]
+	map[InputComponent.ACTION_CHANGE_CALLING] = [_key(KEY_C), _button(JOY_BUTTON_LEFT_STICK)]
 	map[InputComponent.ACTION_JOIN] = [_key(KEY_ENTER), _button(JOY_BUTTON_START)]
 	return map
 

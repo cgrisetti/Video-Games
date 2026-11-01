@@ -48,7 +48,9 @@ var status: String = "Offline"
 ## Chooses a class for a seat that asked for ANY_CLASS: (roster) -> StringName.
 ## The level sets it; the network layer itself knows nothing about classes.
 var class_picker: Callable
-## The kit a seat gets for a class: (class_id: StringName, companion: bool) -> Dictionary.
+## The Secondary Calling a new seat gets for a class: (class_id: StringName, companion: bool) -> int.
+var calling_picker: Callable
+## The kit a seat gets for a class and Calling: (class_id: StringName, calling: int, companion: bool) -> Dictionary.
 var kit_picker: Callable
 ## Why a seat may not wear a kit, or "": (seat: PartyMember, kit: Dictionary) -> String.
 var kit_validator: Callable
@@ -195,6 +197,17 @@ func update_local_player(device_id: int, class_id: StringName, assist_mode: int)
 		request_local_player(device_id, class_id, assist_mode)
 
 
+## Asks for a different Secondary Calling (hold C / L3, or the Scribe Desk).
+## The host makes the switch and swaps out any gear the new Calling can't use.
+func update_local_calling(device_id: int, calling: int) -> void:
+	if not _local_wishes.has(device_id):
+		return
+	if is_host():
+		_server_set_calling(local_peer_id(), device_id, calling)
+	elif is_online():
+		_request_calling.rpc_id(1, device_id, calling)
+
+
 ## Asks to wear a different kit (the Scribe Desk). The host checks it.
 func update_local_kit(device_id: int, kit: Dictionary) -> void:
 	if not _local_wishes.has(device_id):
@@ -229,7 +242,8 @@ func _server_register(peer_id: int, device_id: int, class_id: StringName, assist
 		if class_id == ANY_CLASS:
 			class_id = existing.class_id
 		if class_id != existing.class_id:
-			existing.kit = _pick_kit(class_id, false)
+			existing.calling = _pick_calling(class_id, false)
+			existing.kit = _pick_kit(class_id, existing.calling, false)
 		existing.class_id = class_id
 		existing.assist_mode = assist_mode
 		player_updated.emit(existing)
@@ -250,7 +264,8 @@ func _server_register(peer_id: int, device_id: int, class_id: StringName, assist
 	seat.device_id = device_id
 	seat.class_id = class_id
 	seat.assist_mode = assist_mode
-	seat.kit = _pick_kit(class_id, false)
+	seat.calling = _pick_calling(class_id, false)
+	seat.kit = _pick_kit(class_id, seat.calling, false)
 	seat.slot = _free_slot(false)
 	roster[player_id] = seat
 	player_registered.emit(seat)
@@ -289,7 +304,8 @@ func _seat_companion(class_id: StringName) -> void:
 	seat.device_id = device_id
 	seat.class_id = class_id
 	seat.companion = true
-	seat.kit = _pick_kit(class_id, true)
+	seat.calling = _pick_calling(class_id, true)
+	seat.kit = _pick_kit(class_id, seat.calling, true)
 	seat.slot = _free_slot(true)
 	roster[seat.player_id] = seat
 	player_registered.emit(seat)
@@ -297,8 +313,32 @@ func _seat_companion(class_id: StringName) -> void:
 	_broadcast_roster()
 
 
-func _pick_kit(class_id: StringName, companion: bool) -> Dictionary:
-	return kit_picker.call(class_id, companion) if kit_picker.is_valid() else {}
+func _pick_calling(class_id: StringName, companion: bool) -> int:
+	return calling_picker.call(class_id, companion) if calling_picker.is_valid() else -1
+
+
+func _pick_kit(class_id: StringName, calling: int, companion: bool) -> Dictionary:
+	return kit_picker.call(class_id, calling, companion) if kit_picker.is_valid() else {}
+
+
+func _server_set_calling(peer_id: int, device_id: int, calling: int) -> bool:
+	var player_id: StringName = PartyMember.make_player_id(peer_id, device_id)
+	if not roster.has(player_id) or calling < 0:
+		return false
+	var seat: PartyMember = roster[player_id]
+	seat.calling = calling
+	# Gear the new Calling can't use comes off: the class's saved kit or its starter kit goes on.
+	if kit_validator.is_valid() and kit_validator.call(seat, seat.kit) != "":
+		seat.kit = _pick_kit(seat.class_id, calling, seat.companion)
+	player_updated.emit(seat)
+	_broadcast_roster()
+	return true
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_calling(device_id: int, calling: int) -> void:
+	if multiplayer.is_server():
+		_server_set_calling(multiplayer.get_remote_sender_id(), device_id, calling)
 
 
 func _server_set_kit(peer_id: int, device_id: int, kit: Dictionary) -> bool:
@@ -432,9 +472,10 @@ func _receive_roster(entries: Array) -> void:
 		if roster.has(incoming.player_id):
 			var existing: PartyMember = roster[incoming.player_id]
 			if existing.class_id != incoming.class_id or existing.slot != incoming.slot or existing.assist_mode != incoming.assist_mode \
-					or existing.kit != incoming.kit:
+					or existing.kit != incoming.kit or existing.calling != incoming.calling:
 				existing.companion = incoming.companion
 				existing.kit = incoming.kit
+				existing.calling = incoming.calling
 				existing.class_id = incoming.class_id
 				existing.slot = incoming.slot
 				existing.assist_mode = incoming.assist_mode

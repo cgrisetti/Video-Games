@@ -18,6 +18,7 @@ signal command_issued(command: int)
 signal tether_slot_pressed(slot: int)
 signal class_cycle_requested
 signal mode_cycle_requested
+signal calling_cycle_requested
 ## Up / down / accept / back for an open menu (MENU_* below).
 signal menu_input(action: StringName)
 
@@ -43,13 +44,14 @@ const ACTION_TETHER_DOWN: StringName = &"player_tether_down"
 const ACTION_TETHER_LEFT: StringName = &"player_tether_left"
 const ACTION_CHANGE_CLASS: StringName = &"player_change_class"
 const ACTION_CHANGE_MODE: StringName = &"player_change_mode"
+const ACTION_CHANGE_CALLING: StringName = &"player_change_calling"
 const ACTION_JOIN: StringName = &"player_join"
 ## D-Pad Up / Right / Down / Left: Soul Tether slots 0..3.
 const TETHER_ACTIONS: Array[StringName] = [ACTION_TETHER_UP, ACTION_TETHER_RIGHT, ACTION_TETHER_DOWN, ACTION_TETHER_LEFT]
 const BUTTON_ACTIONS: Array[StringName] = [
 	ACTION_LIGHT, ACTION_HEAVY, ACTION_DODGE, ACTION_TRIGGER_L, ACTION_TRIGGER_R, ACTION_ULT,
 	ACTION_TETHER_UP, ACTION_TETHER_RIGHT, ACTION_TETHER_DOWN, ACTION_TETHER_LEFT,
-	ACTION_CHANGE_CLASS, ACTION_CHANGE_MODE,
+	ACTION_CHANGE_CLASS, ACTION_CHANGE_MODE, ACTION_CHANGE_CALLING,
 ]
 
 const MENU_UP: StringName = &"up"
@@ -70,8 +72,8 @@ const RELEASE_THRESHOLD: float = 0.3
 const CHORD_WINDOW: float = 0.12
 ## Holding R this long fires the R-hold skill (the healer's Green Sanctuary).
 const R_HOLD_TIME: float = 0.45
-## Class and mode change only after a deliberate hold, so a bumped Select
-## doesn't swap a child's class mid-fight.
+## Class, Calling and mode change only after a deliberate hold, so a bumped
+## Select doesn't swap a child's class mid-fight.
 const MENU_HOLD_TIME: float = 0.6
 const MASTER_BUFFER_WINDOW: float = 0.40
 const ASSISTED_BUFFER_WINDOW: float = 0.55
@@ -131,6 +133,9 @@ var _last_back_at: float = -INF
 var _mouse_yaw: float = 0.0
 var _menu_stick: int = 0
 var _menu_stick_x: int = 0
+## False on the first tick a menu is open: whatever is already held then
+## (the press that opened it, or a new character's menu reopening) is ignored.
+var _menu_armed: bool = false
 # Tests and bots drive the component through these instead of a device.
 var _scripted: bool = false
 var _scripted_commands: Array[int] = []
@@ -353,16 +358,22 @@ func poll(dt: float) -> void:
 		camera_orbit_input = _read_orbit()
 	_remember_stick_direction()
 	if menu_open:
-		_poll_menu()
+		if _menu_armed:
+			_poll_menu()
+		else:
+			_arm_menu()
 		move_input = Vector2.ZERO
 		camera_orbit_input = 0.0
 		return
+	_menu_armed = false
 	_update_auto_guard()
 
 	if _held_for(ACTION_CHANGE_CLASS, dt):
 		class_cycle_requested.emit()
 	if _held_for(ACTION_CHANGE_MODE, dt):
 		mode_cycle_requested.emit()
+	if _held_for(ACTION_CHANGE_CALLING, dt):
+		calling_cycle_requested.emit()
 	for slot: int in TETHER_ACTIONS.size():
 		if _pressed(TETHER_ACTIONS[slot]):
 			tether_slot_pressed.emit(slot)
@@ -379,6 +390,15 @@ func poll(dt: float) -> void:
 
 	while not _scripted_commands.is_empty():
 		_issue(_scripted_commands.pop_front())
+
+
+## Takes in what's held as a menu opens, so only fresh presses drive it.
+func _arm_menu() -> void:
+	_menu_armed = true
+	_menu_stick = 1 if move_input.y > DIRECTIONAL_THRESHOLD else (-1 if move_input.y < -DIRECTIONAL_THRESHOLD else 0)
+	_menu_stick_x = 1 if move_input.x > DIRECTIONAL_THRESHOLD else (-1 if move_input.x < -DIRECTIONAL_THRESHOLD else 0)
+	for action: StringName in BUTTON_ACTIONS:
+		_was_held[action] = _held.get(action, false)
 
 
 ## Stick, WASD or the D-Pad move the cursor (up / down) and change a value

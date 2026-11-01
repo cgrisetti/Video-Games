@@ -8,6 +8,8 @@ var player_id: StringName = &""
 var peer_id: int = 1
 var device_id: int = 0
 var class_id: StringName = &""
+## The Secondary Calling (Callings.Secondary); -1 until the host picks one.
+var calling: int = -1
 var assist_mode: int = 0
 ## Join order across the whole party; decides spawn point and Soul Tether slot.
 var slot: int = 0
@@ -28,6 +30,7 @@ func to_dict() -> Dictionary:
 		"peer_id": peer_id,
 		"device_id": device_id,
 		"class_id": class_id,
+		"calling": calling,
 		"assist_mode": assist_mode,
 		"slot": slot,
 		"companion": companion,
@@ -41,6 +44,7 @@ static func from_dict(data: Dictionary) -> PartyMember:
 	member.device_id = int(data.get("device_id", 0))
 	member.player_id = make_player_id(member.peer_id, member.device_id)
 	member.class_id = StringName(data.get("class_id", &""))
+	member.calling = int(data.get("calling", -1))
 	member.assist_mode = int(data.get("assist_mode", 0))
 	member.slot = int(data.get("slot", 0))
 	member.companion = bool(data.get("companion", false))

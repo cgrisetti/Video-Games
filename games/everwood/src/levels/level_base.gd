@@ -6,10 +6,12 @@
 ## the screen 1 to 4, and leaves when it's unplugged. Enter / Start joins a
 ## controller by hand; holding it for a moment leaves.
 ##
-## Each seat wears an equipment kit (ids, carried by the roster). This level
-## picks a new seat's kit (the class's last saved one), checks kit changes from
-## the Scribe Desk against the Grimoire's rules, composes each seat's loadout
-## from its kit, and re-equips an actor in place when its kit changes.
+## Each seat is a class (its Primary Fellowship) with a Secondary Calling and
+## wears an equipment kit (ids, carried by the roster). This level picks a new
+## seat's Calling and kit (the class's last saved ones), checks kit changes
+## from the Scribe Desk against the Calling's gear and the Grimoire's rules,
+## composes each seat's loadout, and re-equips an actor in place when its kit
+## or Calling changes.
 ##
 ## In raids, AI companions fill any Holy Trinity role nobody is playing while
 ## fewer than 3 people are in the party (CompanionAIComponent). The host seats
@@ -124,6 +126,7 @@ func _ready() -> void:
 	CombatDirector.current.projectile_fired.connect(_on_projectile_fired)
 	CombatDirector.current.synergy_detonated.connect(_on_synergy_detonated)
 	NetworkManager.current.class_picker = least_used_class
+	NetworkManager.current.calling_picker = pick_calling
 	NetworkManager.current.kit_picker = pick_kit
 	NetworkManager.current.kit_validator = check_kit
 	grid.set_world(get_world_3d())
@@ -227,33 +230,41 @@ func least_used_class(roster: Dictionary[StringName, PartyMember]) -> StringName
 
 # --- Kits -----------------------------------------------------------------
 
+## The Calling a new seat takes: the class's last saved one, otherwise its own
+## column (Bridge-Warden, Hedge-Runner, Lantern-Scribe). Companions take their own column.
+func pick_calling(class_id: StringName, companion: bool) -> int:
+	if companion:
+		return Callings.default_secondary(class_id)
+	return Callings.resolve(class_id, PartyProgress.current.calling_for(class_id))
+
+
 ## The kit a new seat wears: the class's last saved kit while it's still
 ## allowed, otherwise its starter kit. Companions always wear the starter kit.
-func pick_kit(class_id: StringName, companion: bool) -> Dictionary:
+func pick_kit(class_id: StringName, calling: int, companion: bool) -> Dictionary:
 	var starter: Dictionary = ClassLoadouts.starter_kit(class_id).to_dict()
 	if companion:
 		return starter
 	var saved: Dictionary = PartyProgress.current.kit_for(class_id)
-	if not saved.is_empty() and check_kit_for_class(class_id, saved) == "":
+	if not saved.is_empty() and check_kit_for_class(class_id, calling, saved) == "":
 		return saved
 	return starter
 
 
 ## Host: why a seat may not wear `kit` ("" when it may).
 func check_kit(seat: PartyMember, kit: Dictionary) -> String:
-	return check_kit_for_class(seat.class_id, kit)
+	return check_kit_for_class(seat.class_id, seat.calling, kit)
 
 
-func check_kit_for_class(class_id: StringName, kit: Dictionary) -> String:
+func check_kit_for_class(class_id: StringName, calling: int, kit: Dictionary) -> String:
 	var progress: PartyProgress = PartyProgress.current
-	return LoadoutComposer.kit_problem(ClassLoadouts.player_class(class_id), EquipmentLoadoutResource.from_dict(kit),
+	return LoadoutComposer.kit_problem(ClassLoadouts.player_class(class_id, calling), EquipmentLoadoutResource.from_dict(kit),
 		progress.grimoire_level(), progress.collection)
 
 
-## The loadout a seat's class and kit compose into.
+## The loadout a seat's class, Calling and kit compose into.
 func _compose_for(seat: PartyMember) -> ClassLoadoutResource:
 	var kit: EquipmentLoadoutResource = null if seat.kit.is_empty() else EquipmentLoadoutResource.from_dict(seat.kit)
-	return ClassLoadouts.compose(seat.class_id, kit)
+	return ClassLoadouts.compose(seat.class_id, kit, seat.calling)
 
 
 ## --weapon / --armor: this screen's players swap them into their kit once.
@@ -299,6 +310,7 @@ func _on_player_registered(seat: PartyMember) -> void:
 		# class change replaces that actor.
 		actor.input.class_cycle_requested.connect(_on_class_cycle.bind(seat.device_id), CONNECT_DEFERRED)
 		actor.input.mode_cycle_requested.connect(_on_mode_cycle.bind(seat.device_id))
+		actor.input.calling_cycle_requested.connect(_on_calling_cycle.bind(seat.device_id))
 		var overlay: Control = grid.add_player_view(actor)
 		if overlay != null:
 			var hud: PlayerHUD = PlayerHUD.new()
@@ -314,20 +326,32 @@ func _on_player_updated(seat: PartyMember) -> void:
 		_on_player_registered(seat)
 		return
 	if actor.loadout.class_id != seat.class_id:
-		# A new class is a new actor, standing where the old one stood.
+		# A new class is a new actor, standing where the old one stood. If its
+		# player was at the Scribe Desk, the desk reopens on the new HUD.
 		var where: Transform3D = actor.global_transform
+		var old_hud: PlayerHUD = huds.get(seat.player_id) as PlayerHUD
+		var desk_row: int = old_hud.scribe_desk_menu().selected if old_hud != null and old_hud.scribe_desk_menu() != null else -1
 		_remove_actor(seat.player_id)
 		_on_player_registered(seat)
 		var replacement: ActorBase = actors[seat.player_id]
 		replacement.place_at(where)
-		_show_notice("%s is now a %s" % [replacement.display_name().get_slice(" ", 0), replacement.loadout.display_name])
+		var new_hud: PlayerHUD = huds.get(seat.player_id) as PlayerHUD
+		if desk_row >= 0 and new_hud != null:
+			new_hud.open_scribe_desk(desk_row)
+		_show_notice("%s is now a %s: %s" % [replacement.display_name().get_slice(" ", 0), Callings.fellowship_member(seat.class_id),
+			replacement.loadout.display_name])
 		return
-	# A new kit (the Scribe Desk): re-equip in place, so the view, HUD and menu stay.
+	# A new kit (the Scribe Desk) or Calling: re-equip in place, so the view, HUD and menu stay.
 	var composed: ClassLoadoutResource = _compose_for(seat)
-	if not composed.kit.same_as(actor.loadout.kit):
+	if not composed.kit.same_as(actor.loadout.kit) or composed.calling != actor.loadout.calling:
+		var new_calling: bool = composed.calling != actor.loadout.calling
 		actor.re_equip(composed)
+		actor.refresh_name_label()
+		if new_calling:
+			_show_notice("%s is now a %s (%s)" % [actor.display_name().get_slice(" ", 0), composed.display_name, Callings.secondary_label(composed.calling)])
 		if NetworkManager.current.is_host() and not seat.companion:
 			PartyProgress.current.save_kit(seat.class_id, seat.kit)
+			PartyProgress.current.save_calling(seat.class_id, seat.calling)
 	actor.party_slot = seat.slot
 	actor.refresh_name_label()
 	if actor.input != null and actor.input.assist_mode != seat.assist_mode:
@@ -379,6 +403,13 @@ func _on_class_cycle(device_id: int) -> void:
 	var seat: PartyMember = _local_seat(device_id)
 	if seat != null:
 		NetworkManager.current.update_local_player(device_id, ClassLoadouts.next_class(seat.class_id), seat.assist_mode)
+
+
+## Hold C / L3: the next Secondary Calling (Stout Heart, Swift Foot, Wise Hand).
+func _on_calling_cycle(device_id: int) -> void:
+	var seat: PartyMember = _local_seat(device_id)
+	if seat != null:
+		NetworkManager.current.update_local_calling(device_id, Callings.next_secondary(Callings.resolve(seat.class_id, seat.calling)))
 
 
 func _on_mode_cycle(device_id: int) -> void:

@@ -1,7 +1,9 @@
 ## The Lead Card + Under-Card Composition Resolver (05_ARSENAL_AND_CARDS_GDD.md
-## §3.1, §4.1). It turns a class and an equipment kit into the
-## ClassLoadoutResource an actor runs:
+## §3.1, §4.1). It turns a class (as one of its Callings) and an equipment kit
+## into the ClassLoadoutResource an actor runs:
 ##   armor      → stats: mitigation, stamina regen, roll distance, Perfect Guard window
+##   Calling    → adds to those, and scales every action's damage, poise and healing
+##                (Callings, 07 GDD §1.3); it also decides which gear is allowed
 ##   weapon     → the Light chain and the Heavy (a Heavy always detonates seals)
 ##   lead card  → its posture's action, channelled through the weapon: melee
 ##                weapons swing it with a ribbon trail; ranged weapons fire it
@@ -30,6 +32,8 @@ const MEMORY_PER_LEVEL: int = 2
 const GUARD_LABEL: String = "hold: Guard"
 ## How each slot appears in action ids ("card/forward/rising_drive").
 const SLOT_KEYS: Array[String] = ["forward", "back", "signature", "ultimate"]
+## However a Calling and armor combine, stamina always comes back at least this fast.
+const MIN_STAMINA_REGEN: float = 6.0
 
 const Fx = CombatActionResource.Effect
 
@@ -42,6 +46,9 @@ static func compose(player_class: PlayerClassResource, requested: EquipmentLoado
 	var loadout: ClassLoadoutResource = ClassLoadoutResource.new()
 	loadout.class_id = player_class.class_id
 	loadout.display_name = player_class.display_name
+	loadout.calling = player_class.calling
+	loadout.fellowship_name = player_class.fellowship_name
+	loadout.calling_subtitle = player_class.calling_subtitle
 	loadout.role = player_class.role
 	loadout.body_color = player_class.body_color
 	loadout.has_soul_tethers = player_class.has_soul_tethers
@@ -49,7 +56,7 @@ static func compose(player_class: PlayerClassResource, requested: EquipmentLoado
 	loadout.kit = kit
 	loadout.weapon = weapon
 	loadout.armor = armor
-	loadout.stats = _stats_with_armor(player_class.base_stats, armor)
+	loadout.stats = _stats_with_armor(player_class, armor)
 	loadout.dodge = catalog.dodge_template()
 
 	var lights: Array[CombatActionResource] = []
@@ -65,6 +72,8 @@ static func compose(player_class: PlayerClassResource, requested: EquipmentLoado
 			apply_under(action, under)
 		cards.append(action)
 	_link_flows(lights, heavy, cards)
+	for action: CombatActionResource in lights + [heavy] + cards:
+		_apply_calling(action, player_class)
 
 	loadout.openers.append(lights[0])
 	loadout.openers.append(heavy)
@@ -78,17 +87,18 @@ static func compose(player_class: PlayerClassResource, requested: EquipmentLoado
 	return loadout
 
 
-## A copy of `requested` with anything unknown or misplaced swapped for the
-## class's starter choice, so a stale save or a bad packet can't break an actor.
+## A copy of `requested` with anything unknown, misplaced or not allowed by
+## the Calling swapped for the class's starter choice, so a stale save or a bad
+## packet can't break an actor.
 static func sanitized(player_class: PlayerClassResource, requested: EquipmentLoadoutResource) -> EquipmentLoadoutResource:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
 	var starter: EquipmentLoadoutResource = player_class.starter_kit
 	var kit: EquipmentLoadoutResource = (requested if requested != null else starter).copy()
 	var armor: EquipmentItemResource = catalog.item(kit.armor_id)
-	if armor == null or not armor.is_armor():
+	if armor == null or not armor.is_armor() or not player_class.allows(armor):
 		kit.armor_id = starter.armor_id
 	var weapon: EquipmentItemResource = catalog.item(kit.weapon_id)
-	if weapon == null or not weapon.is_weapon():
+	if weapon == null or not weapon.is_weapon() or not player_class.allows(weapon):
 		kit.weapon_id = starter.weapon_id
 	for slot: int in EquipmentLoadoutResource.SLOT_COUNT:
 		if not fits_slot(player_class, catalog.card(kit.lead_ids[slot]), slot):
@@ -133,8 +143,9 @@ static func grimoire_level(victories: int) -> int:
 	return clampi(1 + victories, 1, MAX_GRIMOIRE_LEVEL)
 
 
-static func memory_capacity(level: int) -> int:
-	return BASE_MEMORY + MEMORY_PER_LEVEL * level
+## Grimoire Memory at a level, plus any the Calling adds (a Wise Hand holds one more).
+static func memory_capacity(level: int, bonus: int = 0) -> int:
+	return BASE_MEMORY + MEMORY_PER_LEVEL * level + bonus
 
 
 ## Under-Card link slots open one per level after the first.
@@ -168,6 +179,11 @@ static func owns(copy_key: StringName, uses: int, collection: Dictionary[StringN
 static func kit_problem(player_class: PlayerClassResource, kit: EquipmentLoadoutResource, level: int,
 		collection: Dictionary[StringName, int]) -> String:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	for item_id: StringName in [kit.armor_id, kit.weapon_id]:
+		var item: EquipmentItemResource = catalog.item(item_id)
+		if item != null and not player_class.allows(item):
+			var unlock: int = Callings.unlocked_by(item)
+			return "%s needs a %s Calling" % [item.display_name, Callings.secondary_label(unlock)] if unlock >= 0 else "That doesn't fit this class"
 	if not sanitized(player_class, kit).same_as(kit):
 		return "That doesn't fit this class"
 	var uses: Dictionary[StringName, int] = {}
@@ -184,21 +200,30 @@ static func kit_problem(player_class: PlayerClassResource, kit: EquipmentLoadout
 			return "Not in the binder: %s (%s)" % [missing.display_name if missing != null else String(key),
 				ScribeCardResource.VARIANT_NAMES[ScribeCardResource.copy_variant(key)]]
 	var used: int = memory_used(kit)
-	if used > memory_capacity(level):
-		return "Needs %d Grimoire Memory (Lv %d holds %d)" % [used, level, memory_capacity(level)]
+	var capacity: int = memory_capacity(level, player_class.bonus_memory)
+	if used > capacity:
+		return "Needs %d Grimoire Memory (Lv %d holds %d)" % [used, level, capacity]
 	return ""
 
 
 # --- Building actions -----------------------------------------------------
 
-static func _stats_with_armor(base: CharacterStatsResource, armor: EquipmentItemResource) -> CharacterStatsResource:
-	var stats: CharacterStatsResource = base.duplicate() as CharacterStatsResource
+static func _stats_with_armor(player_class: PlayerClassResource, armor: EquipmentItemResource) -> CharacterStatsResource:
+	var stats: CharacterStatsResource = player_class.base_stats.duplicate() as CharacterStatsResource
 	stats.damage_mitigation = armor.mitigation
-	stats.stamina_regen_per_sec = armor.stamina_regen_per_sec
+	stats.stamina_regen_per_sec = maxf(MIN_STAMINA_REGEN, armor.stamina_regen_per_sec + player_class.stamina_regen_bonus)
 	stats.roll_distance = armor.roll_distance
-	stats.perfect_guard_window = armor.perfect_guard_window
+	stats.perfect_guard_window = armor.perfect_guard_window + player_class.perfect_guard_bonus
 	stats.can_perfect_guard = true
 	return stats
+
+
+## The Secondary Calling's potency: harder strikes, heavier poise hits, stronger heals.
+static func _apply_calling(action: CombatActionResource, player_class: PlayerClassResource) -> void:
+	if action.effect == Fx.STRIKE:
+		action.damage *= player_class.strike_damage_multiplier
+	action.poise_damage *= player_class.poise_damage_multiplier
+	action.heal_amount *= player_class.heal_multiplier
 
 
 static func _weapon_action(weapon: EquipmentItemResource, template: CombatActionResource) -> CombatActionResource:

@@ -1,6 +1,7 @@
-## The playable classes (the Holy Trinity) and the raid boss. A class is a
-## role, base numbers and a starter kit; what it swings and casts comes from
-## its equipment and Scribe Cards (ArsenalCatalog), combined by
+## The playable classes (the Holy Trinity, the three Primary Fellowships) and
+## the raid boss. A class is a role, base numbers and a starter kit; its
+## Secondary Calling (Callings) is applied on top, and what it swings and casts
+## comes from its equipment and Scribe Cards (ArsenalCatalog), combined by
 ## LoadoutComposer. The boss has no kit: its loadout is built here directly.
 class_name ClassLoadouts
 extends RefCounted
@@ -22,21 +23,26 @@ const BOSS_COLOR: Color = Color(0.47, 0.45, 0.41)
 const Cmd = CombatActionResource.Command
 
 
-static func player_class(class_id: StringName) -> PlayerClassResource:
+## A class as one of its three Callings (`secondary` -1: its own column, the default).
+static func player_class(class_id: StringName, secondary: int = -1) -> PlayerClassResource:
+	var made: PlayerClassResource
 	match class_id:
 		SHIELD_TANK:
-			return _shield_tank()
+			made = _shield_tank()
 		SOUL_TETHER_HEALER:
-			return _soul_tether_healer()
+			made = _soul_tether_healer()
 		DIRECTIONAL_FLOW_DPS:
-			return _flow_dps()
-	push_warning("ClassLoadouts: unknown class %s, using the DPS" % class_id)
-	return _flow_dps()
+			made = _flow_dps()
+		_:
+			push_warning("ClassLoadouts: unknown class %s, using the DPS" % class_id)
+			made = _flow_dps()
+	Callings.apply(made, secondary)
+	return made
 
 
-## A class wearing a kit, ready for an actor (no kit means its starter kit).
-static func compose(class_id: StringName, kit: EquipmentLoadoutResource = null) -> ClassLoadoutResource:
-	return LoadoutComposer.compose(player_class(class_id), kit)
+## A class and Calling wearing a kit, ready for an actor (no kit means its starter kit).
+static func compose(class_id: StringName, kit: EquipmentLoadoutResource = null, secondary: int = -1) -> ClassLoadoutResource:
+	return LoadoutComposer.compose(player_class(class_id, secondary), kit)
 
 
 static func starter_kit(class_id: StringName) -> EquipmentLoadoutResource:
@@ -48,7 +54,7 @@ static func next_class(class_id: StringName) -> StringName:
 	return PLAYER_CLASSES[(index + 1) % PLAYER_CLASSES.size()]
 
 
-# --- Shield Tank ------------------------------------------------------------
+# --- Shield Tank (the Shield-Sworn) -----------------------------------------
 # Holds the boss with threat and an Active Guard in Ironwood Plate (the widest
 # Perfect Guard window). Sword & Buckler; Shield Charge, Shadow Sanctuary,
 # Taunt and Bulwark Quake.
@@ -61,12 +67,12 @@ static func _shield_tank() -> PlayerClassResource:
 	stats.guard_stamina_per_damage = 0.5
 	stats.move_speed = 5.6
 	stats.guard_move_speed = 2.6
-	return _class(SHIELD_TANK, "Shield Tank", ClassLoadoutResource.Role.TANK, TANK_COLOR, stats, false,
+	return _class(SHIELD_TANK, ClassLoadoutResource.Role.TANK, TANK_COLOR, stats, false,
 		EquipmentLoadoutResource.make(ArsenalCatalog.IRONWOOD_PLATE, ArsenalCatalog.LIGHT_SWORD,
 			[ArsenalCatalog.SHIELD_CHARGE, ArsenalCatalog.SHADOW_SANCTUARY, ArsenalCatalog.TAUNT, ArsenalCatalog.BULWARK_QUAKE]))
 
 
-# --- Soul-Tether Healer -----------------------------------------------------
+# --- Soul-Tether Healer (the Lantern-Bearers) ------------------------------
 # D-Pad binds a Soul Tether to a party member. Hearth-Linen and the Scribe
 # Staff; Sunlit Lance (Warm-Hearth primer), Green Sanctuary, Homing Heal and
 # Lifeline Pull.
@@ -78,12 +84,12 @@ static func _soul_tether_healer() -> PlayerClassResource:
 	stats.guard_damage_reduction = 0.5
 	stats.guard_stamina_per_damage = 0.7
 	stats.move_speed = 6.0
-	return _class(SOUL_TETHER_HEALER, "Soul-Tether Healer", ClassLoadoutResource.Role.HEALER, HEALER_COLOR, stats, true,
+	return _class(SOUL_TETHER_HEALER, ClassLoadoutResource.Role.HEALER, HEALER_COLOR, stats, true,
 		EquipmentLoadoutResource.make(ArsenalCatalog.HEARTH_LINEN, ArsenalCatalog.SCRIBE_STAFF,
 			[ArsenalCatalog.SUNLIT_LANCE, ArsenalCatalog.GREEN_SANCTUARY, ArsenalCatalog.HOMING_HEAL, ArsenalCatalog.LIFELINE_PULL]))
 
 
-# --- Flow DPS ---------------------------------------------------------------
+# --- Flow DPS (the Wayfarers) -----------------------------------------------
 # The primer specialist. Ranger Leather and the Wind-Ash Bow; Rising Drive
 # (Iron-Root), Frost Crescent (Rime-Gale), Gale Rush (Star-Tide) and Tempest Flow.
 
@@ -91,16 +97,16 @@ static func _flow_dps() -> PlayerClassResource:
 	var stats: CharacterStatsResource = CharacterStatsResource.new()
 	stats.max_health = 100.0
 	stats.move_speed = 6.6
-	return _class(DIRECTIONAL_FLOW_DPS, "Flow DPS", ClassLoadoutResource.Role.DPS, DPS_COLOR, stats, false,
+	return _class(DIRECTIONAL_FLOW_DPS, ClassLoadoutResource.Role.DPS, DPS_COLOR, stats, false,
 		EquipmentLoadoutResource.make(ArsenalCatalog.RANGER_LEATHER, ArsenalCatalog.HUNTER_BOW,
 			[ArsenalCatalog.RISING_DRIVE, ArsenalCatalog.FROST_CRESCENT, ArsenalCatalog.GALE_RUSH, ArsenalCatalog.TEMPEST_FLOW]))
 
 
-static func _class(id: StringName, label: String, role: ClassLoadoutResource.Role, color: Color, stats: CharacterStatsResource,
+static func _class(id: StringName, role: ClassLoadoutResource.Role, color: Color, stats: CharacterStatsResource,
 		tethers: bool, kit: EquipmentLoadoutResource) -> PlayerClassResource:
 	var made: PlayerClassResource = PlayerClassResource.new()
 	made.class_id = id
-	made.display_name = label
+	made.display_name = Callings.fellowship_member(id)
 	made.role = role
 	made.body_color = color
 	made.base_stats = stats

@@ -197,12 +197,12 @@ func open_upgrade_menu() -> void:
 	add_child(menu)
 
 
-## Opens the Armory & Scribe Desk menu over this player's view.
-func open_scribe_desk() -> void:
+## Opens the Armory & Scribe Desk menu over this player's view (`row`: where its cursor starts).
+func open_scribe_desk(row: int = -1) -> void:
 	if _live_menu() != null:
 		return
 	var menu: ScribeDeskMenu = ScribeDeskMenu.new()
-	menu.setup(actor)
+	menu.setup(actor, row)
 	_menu = menu
 	add_child(menu)
 
@@ -434,11 +434,11 @@ func controls_text() -> String:
 	var tethers: String = ""
 	if loadout.has_soul_tethers:
 		tethers = " · %s tether" % ("1-4" if keyboard else "D-Pad")
-	return "%s move · %s · %s dodge · %s %s · %s %s · %s %s%s · %s · hold %s: class · hold %s: mode" % [
+	return "%s move · %s · %s dodge · %s %s · %s %s · %s %s%s · %s · hold %s: class · hold %s: Calling · hold %s: mode" % [
 		"WASD" if keyboard else "Stick", attacks, input.label(InputComponent.ACTION_DODGE),
 		trigger_l, loadout.trigger_l_label, trigger_r, loadout.trigger_r_label, ult_keys, loadout.ult_label, tethers,
 		"Mouse or ←/→ camera" if keyboard else "Right stick camera",
-		input.label(InputComponent.ACTION_CHANGE_CLASS), input.label(InputComponent.ACTION_CHANGE_MODE)]
+		input.label(InputComponent.ACTION_CHANGE_CLASS), input.label(InputComponent.ACTION_CHANGE_CALLING), input.label(InputComponent.ACTION_CHANGE_MODE)]
 
 
 static func command_name(command: int) -> String:

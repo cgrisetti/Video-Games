@@ -8,7 +8,12 @@ extends Resource
 enum Role { TANK, HEALER, DPS, BOSS }
 
 @export var class_id: StringName = &""
+## The Calling's name for players ("Weald-Captain"), the boss's name for the boss.
 @export var display_name: String = ""
+## Players: the Secondary Calling (Callings.Secondary), the Fellowship and the Calling's subtitle.
+@export var calling: int = -1
+@export var fellowship_name: String = ""
+@export var calling_subtitle: String = ""
 @export var role: Role = Role.DPS
 @export var body_color: Color = Color.WHITE
 @export var stats: CharacterStatsResource

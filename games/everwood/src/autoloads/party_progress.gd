@@ -1,6 +1,6 @@
 ## The party's progress (autoload "Progress"): the Chimes earned on raids (07 GDD
 ## §1.2) and the upgrades bought with them at Bramblebridge's Chime-Shrine, the
-## Scribe Card binder (collected copies, by copy key), each class's last kit,
+## Scribe Card binder (collected copies, by copy key), each class's last kit and Calling,
 ## and the victories that set the Grimoire level, all saved between sessions
 ## in user://everwood_progress.cfg. Everything is ids and numbers, so the file
 ## (or a JSON or SQLite store later) never holds game data, only references.
@@ -42,6 +42,8 @@ var collection: Dictionary[StringName, int] = {}
 var victories: int = 0
 ## Class id -> the kit (EquipmentLoadoutResource.to_dict) its players last wore.
 var kits: Dictionary[StringName, Dictionary] = {}
+## Class id -> the Secondary Calling its players last chose (Callings.Secondary).
+var callings: Dictionary[StringName, int] = {}
 ## The host rolls chest cards with this (the smoke test seeds it).
 var drop_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## Where progress is saved (the smoke test points this at its own file).
@@ -162,6 +164,19 @@ func save_kit(class_id: StringName, kit: Dictionary) -> void:
 	_commit()
 
 
+## The Secondary Calling a class's players last chose (-1 if none was saved).
+func calling_for(class_id: StringName) -> int:
+	return callings.get(class_id, -1)
+
+
+## Host only: remembers a class's Calling for its next seat (and next session).
+func save_calling(class_id: StringName, calling: int) -> void:
+	if not NetworkManager.current.is_host() or callings.get(class_id, -1) == calling:
+		return
+	callings[class_id] = calling
+	_commit()
+
+
 ## Host only: a win over the Cairnsman.
 func record_victory() -> void:
 	if not NetworkManager.current.is_host():
@@ -204,6 +219,7 @@ func load_save() -> void:
 	levels.clear()
 	collection.clear()
 	kits.clear()
+	callings.clear()
 	var file: ConfigFile = ConfigFile.new()
 	if file.load(save_path) == OK:
 		# Saves from before the Chimes were called Dojo Shards keep their pouch.
@@ -215,6 +231,9 @@ func load_save() -> void:
 		var saved_kits: Dictionary = file.get_value("kits", "by_class", {}) as Dictionary
 		for class_id: Variant in saved_kits:
 			kits[StringName(str(class_id))] = saved_kits[class_id] as Dictionary
+		var saved_callings: Dictionary = file.get_value("callings", "by_class", {}) as Dictionary
+		for class_id: Variant in saved_callings:
+			callings[StringName(str(class_id))] = int(saved_callings[class_id])
 	progress_changed.emit()
 
 
@@ -229,6 +248,10 @@ func save() -> Error:
 	for class_id: StringName in kits:
 		plain_kits[String(class_id)] = kits[class_id]
 	file.set_value("kits", "by_class", plain_kits)
+	var plain_callings: Dictionary = {}
+	for class_id: StringName in callings:
+		plain_callings[String(class_id)] = callings[class_id]
+	file.set_value("callings", "by_class", plain_callings)
 	return file.save(save_path)
 
 

@@ -18,6 +18,8 @@ extends Resource
 
 @export_group("Resonance")
 @export var max_resonance_pips: int = 3
+## Every pip earned is multiplied by this (a Wise Hand earns 20% more).
+@export var resonance_gain_multiplier: float = 1.0
 
 @export_group("Poise")
 ## Hidden gauge; 0 means no poise (players). Bosses use 100.

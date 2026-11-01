@@ -87,6 +87,7 @@ func _run() -> void:
 
 	await _check_hub_and_input_map()
 	_check_arsenal_catalog()
+	_check_callings()
 	await _check_keyboard_is_player_one()
 	await _check_walk_over_bramblebridge()
 	await _check_hot_join_and_pad_mapping()
@@ -116,6 +117,7 @@ func _run() -> void:
 	await _check_victory_and_loot()
 	await _check_chime_shrine()
 	await _check_scribe_desk()
+	await _check_calling_shortcut_and_fellowship()
 	_check_audio_cues()
 	NetworkManager.current.leave_game()
 	_remove_file(TEST_SAVE_PATH)
@@ -176,21 +178,24 @@ func _check_arsenal_catalog() -> void:
 		ArsenalCatalog.IRONWOOD_PLATE: [0.35, 18.0, 3.8, 0.26],
 	}
 	var armor_ok: bool = true
+	# A Bridge-Warden may wear all three; its Stout Heart takes 2 stamina a second and adds 30 ms.
 	for armor_id: StringName in armor_table:
-		var stats: CharacterStatsResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, armor_id, &"").stats
+		var stats: CharacterStatsResource = _compose(ClassLoadouts.SHIELD_TANK, armor_id, &"", Callings.Secondary.STOUT_HEART).stats
 		var expected: Array = armor_table[armor_id]
-		armor_ok = armor_ok and is_equal_approx(stats.damage_mitigation, expected[0]) and is_equal_approx(stats.stamina_regen_per_sec, expected[1]) \
-			and is_equal_approx(stats.roll_distance, expected[2]) and is_equal_approx(stats.perfect_guard_window, expected[3])
-	_check(armor_ok, "Light / Medium / Heavy armor: 10/20/35% mitigation, 27.5/22/18 stamina a second, 5.2/4.6/3.8 m rolls, 200/200/260 ms Perfect Guard")
+		armor_ok = armor_ok and is_equal_approx(stats.damage_mitigation, expected[0]) \
+			and is_equal_approx(stats.stamina_regen_per_sec, expected[1] + Callings.STOUT_STAMINA_REGEN) \
+			and is_equal_approx(stats.roll_distance, expected[2]) and is_equal_approx(stats.perfect_guard_window, expected[3] + Callings.STOUT_PERFECT_GUARD)
+	_check(armor_ok, "Light / Medium / Heavy armor: 10/20/35% mitigation, 27.5/22/18 stamina a second, 5.2/4.6/3.8 m rolls, 200/200/260 ms Perfect Guard (before the Calling)")
 
-	var sword: ClassLoadoutResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, &"", ArsenalCatalog.LIGHT_SWORD)
+	# Weapon numbers as they stand, on a Sign-Seeker (a Wise Hand changes no damage or poise).
+	var sword: ClassLoadoutResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, &"", ArsenalCatalog.LIGHT_SWORD, Callings.Secondary.WISE_HAND)
 	var sword_light: CombatActionResource = sword.opener_for(Cmd.LIGHT)
 	var sword_heavy: CombatActionResource = sword.opener_for(Cmd.HEAVY)
 	var sword_card: CombatActionResource = sword.card_action(ScribeCardResource.GrimoireSlot.FORWARD)
 	_check(sword.combo_actions.size() == 2 and is_equal_approx(sword_light.total_time(), 0.55) and not sword_light.is_projectile()
 		and sword_heavy.detonates and is_equal_approx(sword_heavy.damage, 18.0) and sword_card.trail and not sword_card.is_projectile(),
 		"Sword & Buckler: three 0.55 s cuts, an 18-damage thrust that detonates, and cards swung with a ribbon trail")
-	var axe: ClassLoadoutResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, &"", ArsenalCatalog.HEAVY_AXE)
+	var axe: ClassLoadoutResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, &"", ArsenalCatalog.HEAVY_AXE, Callings.Secondary.WISE_HAND)
 	var cleave: CombatActionResource = axe.opener_for(Cmd.LIGHT)
 	var splitter: CombatActionResource = axe.opener_for(Cmd.HEAVY)
 	_check(axe.combo_actions.size() == 1 and is_equal_approx(cleave.total_time(), 0.85) and is_equal_approx(cleave.stamina_cost, 16.0)
@@ -203,7 +208,7 @@ func _check_arsenal_catalog() -> void:
 	_check(staff_chain.size() == 3 and not staff_chain[0].is_projectile() and staff_chain[2].is_projectile() and is_equal_approx(staff_chain[2].projectile_range, 12.0)
 		and lance.is_projectile() and is_equal_approx(lance.projectile_range, 12.0) and is_equal_approx(ring.effect_radius, 4.5 * 1.25),
 		"Scribe Staff: two sweeps then a 12 m bolt, cards fired as 12 m bolts, sanctuaries 25% wider")
-	var bow: ClassLoadoutResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, &"", ArsenalCatalog.HUNTER_BOW)
+	var bow: ClassLoadoutResource = _compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, &"", ArsenalCatalog.HUNTER_BOW, Callings.Secondary.WISE_HAND)
 	var snap: CombatActionResource = bow.opener_for(Cmd.LIGHT)
 	var draw: CombatActionResource = bow.opener_for(Cmd.HEAVY)
 	var drive: CombatActionResource = bow.card_action(ScribeCardResource.GrimoireSlot.FORWARD)
@@ -275,6 +280,61 @@ func _check_arsenal_catalog() -> void:
 		"boss chests drop Rare and Legendary cards and Gilded Leaf or Star-Inked Vellum copies (never a Plain Vellum starter card)")
 
 
+## The 3x3 Callings (06 §3, 07 GDD §1.3), without actors: the nine names,
+## each Secondary's numbers, the gear it unlocks, and the roster carrying it.
+func _check_callings() -> void:
+	var names: Array[String] = []
+	for class_id: StringName in Callings.FELLOWSHIP_CLASSES:
+		for secondary: int in Callings.SECONDARY_NAMES.size():
+			names.append(Callings.calling_name(class_id, secondary))
+	_check(names == ["Bridge-Warden", "Weald-Captain", "Hearth-Guard", "Iron-Woodsman", "Hedge-Runner", "Sign-Seeker", "Bell-Keeper", "Wind-Mender", "Lantern-Scribe"],
+		"the 3x3 matrix names all nine Callings: the Shield-Sworn, Wayfarers and Lantern-Bearers, each with a Stout Heart, Swift Foot or Wise Hand")
+	_check(ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK).display_name == "Bridge-Warden"
+		and ClassLoadouts.player_class(ClassLoadouts.DIRECTIONAL_FLOW_DPS).display_name == "Hedge-Runner"
+		and ClassLoadouts.player_class(ClassLoadouts.SOUL_TETHER_HEALER).display_name == "Lantern-Scribe",
+		"each Fellowship starts in its own column: Bridge-Warden, Hedge-Runner, Lantern-Scribe")
+	var warden: ClassLoadoutResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, null, Callings.Secondary.STOUT_HEART)
+	var captain: ClassLoadoutResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, null, Callings.Secondary.SWIFT_FOOT)
+	var guard: ClassLoadoutResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, null, Callings.Secondary.WISE_HAND)
+	_check(is_equal_approx(warden.stats.max_health, 180.0) and is_equal_approx(captain.stats.max_health, 160.0) and is_equal_approx(guard.stats.max_health, 155.0)
+		and is_equal_approx(warden.stats.stamina_regen_per_sec, 16.0) and is_equal_approx(captain.stats.stamina_regen_per_sec, 21.0)
+		and is_equal_approx(guard.stats.stamina_regen_per_sec, 20.0),
+		"on a 160-health Shield-Sworn in plate: Stout Heart +20 health and -2 stamina/s, Swift Foot +3 stamina/s, Wise Hand -5 health and +2 stamina/s")
+	var warden_charge: CombatActionResource = warden.card_action(0)
+	var captain_charge: CombatActionResource = captain.card_action(0)
+	var guard_charge: CombatActionResource = guard.card_action(0)
+	_check(is_equal_approx(warden_charge.poise_damage, guard_charge.poise_damage * 1.25) and is_equal_approx(captain_charge.damage, guard_charge.damage * 1.15)
+		and is_equal_approx(warden.stats.perfect_guard_window, 0.29) and is_equal_approx(captain.stats.perfect_guard_window, 0.26),
+		"a Stout Heart hits poise 25% harder and holds a Perfect Guard 30 ms longer; a Swift Foot strikes 15% harder")
+	var scribe: ClassLoadoutResource = ClassLoadouts.compose(ClassLoadouts.SOUL_TETHER_HEALER, null, Callings.Secondary.WISE_HAND)
+	var bell_keeper: ClassLoadoutResource = ClassLoadouts.compose(ClassLoadouts.SOUL_TETHER_HEALER, null, Callings.Secondary.STOUT_HEART)
+	_check(is_equal_approx(scribe.card_action(2).heal_amount, bell_keeper.card_action(2).heal_amount * 1.2) and is_equal_approx(scribe.stats.resonance_gain_multiplier, 1.2)
+		and is_equal_approx(bell_keeper.stats.resonance_gain_multiplier, 1.0) and LoadoutComposer.memory_capacity(1, ClassLoadouts.player_class(ClassLoadouts.SOUL_TETHER_HEALER).bonus_memory) == 7,
+		"a Wise Hand heals 20% more, earns 20% more pips and holds one more Grimoire Memory")
+	var empty_binder: Dictionary[StringName, int] = {}
+	var axe_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
+	axe_kit.weapon_id = ArsenalCatalog.HEAVY_AXE
+	_check(LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK, Callings.Secondary.STOUT_HEART), axe_kit, 1, empty_binder).contains("needs a Swift Foot (+DPS) Calling")
+		and LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK, Callings.Secondary.SWIFT_FOOT), axe_kit, 1, empty_binder) == "",
+		"a Bridge-Warden can't carry the Greataxe (it needs a Swift Foot); a Weald-Captain can")
+	var plate_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.DIRECTIONAL_FLOW_DPS)
+	plate_kit.armor_id = ArsenalCatalog.IRONWOOD_PLATE
+	_check(LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.DIRECTIONAL_FLOW_DPS), plate_kit, 1, empty_binder).contains("needs a Stout Heart (+Tank)")
+		and LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.DIRECTIONAL_FLOW_DPS, Callings.Secondary.STOUT_HEART), plate_kit, 1, empty_binder) == "",
+		"heavy plate waits for a Stout Heart: a Hedge-Runner can't wear it, an Iron-Woodsman can")
+	var staff_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
+	staff_kit.weapon_id = ArsenalCatalog.SCRIBE_STAFF
+	_check(LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK), staff_kit, 1, empty_binder).contains("Wise Hand")
+		and LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK, Callings.Secondary.WISE_HAND), staff_kit, 1, empty_binder) == "",
+		"a staff needs a Wise Hand: a Hearth-Guard may bear one")
+	_check(LoadoutComposer.sanitized(ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK), axe_kit).weapon_id == ArsenalCatalog.LIGHT_SWORD,
+		"a save naming gear the Calling can't use falls back to the starter weapon")
+	var seat: PartyMember = PartyMember.new()
+	seat.class_id = ClassLoadouts.SOUL_TETHER_HEALER
+	seat.calling = Callings.Secondary.SWIFT_FOOT
+	_check(PartyMember.from_dict(seat.to_dict()).calling == Callings.Secondary.SWIFT_FOOT, "a seat's Calling travels in the party roster")
+
+
 ## Phase 8 (06_WORLD_AND_CALLINGS.md §2): the Four Scribe Signs, their
 ## detonations, the starter cards mapped onto them, and the card finishes.
 func _check_four_signs_and_finishes() -> void:
@@ -316,13 +376,13 @@ func _check_four_signs_and_finishes() -> void:
 
 
 ## A class composed with one item swapped in (&"" keeps the starter's).
-func _compose(class_id: StringName, armor_id: StringName, weapon_id: StringName) -> ClassLoadoutResource:
+func _compose(class_id: StringName, armor_id: StringName, weapon_id: StringName, calling: int = -1) -> ClassLoadoutResource:
 	var kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(class_id)
 	if armor_id != &"":
 		kit.armor_id = armor_id
 	if weapon_id != &"":
 		kit.weapon_id = weapon_id
-	return ClassLoadouts.compose(class_id, kit)
+	return ClassLoadouts.compose(class_id, kit, calling)
 
 
 func _check_keyboard_is_player_one() -> void:
@@ -659,22 +719,22 @@ func _check_ranged_and_armor() -> void:
 	await _until_idle(tank)
 	_reset_boss_poise()
 	tank.input.inject_guard(true)
-	await _seconds(0.23)
+	await _seconds(0.27)
 	var guards: int = _perfect_guards
 	CombatDirector.current.deliver(CombatEvent.strike_from(boss, tank, boss.loadout.openers[0]))
 	await _seconds(0.1)
-	_check(_perfect_guards == guards + 1, "Ironwood Plate's 260 ms window: a guard raised 0.23 s early is still perfect")
+	_check(_perfect_guards == guards + 1, "Ironwood Plate's 260 ms window, +30 ms for a Stout Heart: a guard raised 0.27 s early is still perfect")
 	tank.input.inject_guard(false)
 	await _seconds(0.3)
 	tank.re_equip(_compose(ClassLoadouts.SHIELD_TANK, ArsenalCatalog.RANGER_LEATHER, &""))
 	await _until_idle(tank)
 	tank.input.inject_guard(true)
-	await _seconds(0.23)
+	await _seconds(0.27)
 	var outcomes: int = _outcomes.size()
 	CombatDirector.current.deliver(CombatEvent.strike_from(boss, tank, boss.loadout.openers[0]))
 	await _seconds(0.1)
 	_check(_perfect_guards == guards + 1 and _outcomes.slice(outcomes).has(StatsComponent.StrikeOutcome.GUARDED),
-		"in Ranger Leather (200 ms) the same guard is too early: it just blocks")
+		"in Ranger Leather (200 + 30 ms) the same guard is too early: it just blocks")
 	tank.input.inject_guard(false)
 	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK))
 	await _seconds(0.1)
@@ -796,9 +856,10 @@ func _active_footprints() -> int:
 	return count
 
 
-## How far a roll carries the actor in a given armor (in open floor, rolling back).
+## How far a roll carries the actor in a given armor (in open floor, rolling back),
+## as an Iron-Woodsman (a Stout Heart may wear any armor).
 func _measure_roll(actor: ActorBase, armor_id: StringName) -> float:
-	actor.re_equip(_compose(actor.loadout.class_id, armor_id, &""))
+	actor.re_equip(_compose(actor.loadout.class_id, armor_id, &"", Callings.Secondary.STOUT_HEART))
 	await _until_idle(actor)
 	actor.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(14.0, 0.0, 6.0)))
 	actor.input.inject_move(Vector2.ZERO)
@@ -1304,8 +1365,21 @@ func _check_scribe_desk() -> void:
 	_check(menu != null and keyboard.input.menu_open and not keyboard.action_queue.is_busy(), "J at the desk opens it (instead of swinging)")
 	var weapon_before: StringName = keyboard.loadout.weapon.item_id
 	await _tap_key(KEY_D)
+	_check(keyboard.loadout.weapon.item_id == weapon_before and menu.problem().contains("needs a Swift Foot (+DPS) Calling"),
+		"a Bridge-Warden can't take up the Greataxe: the desk says it needs a Swift Foot Calling")
+	await _tap_key(KEY_W)
+	await _tap_key(KEY_W)
+	await _tap_key(KEY_D)
+	await _seconds(0.05)
+	_check(keyboard.loadout.display_name == "Weald-Captain" and keyboard.loadout.calling == Callings.Secondary.SWIFT_FOOT
+		and hub.actors[&"1_0"] == keyboard and hud.scribe_desk_menu() == menu, "D on the Calling row makes the tank a Weald-Captain (Swift Foot) in place")
+	_check(is_equal_approx(keyboard.base_stats.max_health, 160.0) and is_equal_approx(keyboard.loadout.stats.stamina_regen_per_sec / PartyProgress.current.multiplier(PartyProgress.STAMINA_REGEN), 18.0 + Callings.SWIFT_STAMINA_REGEN),
+		"a Weald-Captain trades the Stout Heart's +20 health for +3 stamina a second")
+	await _tap_key(KEY_S)
+	await _tap_key(KEY_S)
+	await _tap_key(KEY_D)
 	_check(keyboard.loadout.weapon.item_id != weapon_before and hub.actors[&"1_0"] == keyboard and hud.scribe_desk_menu() == menu,
-		"D on the Weapon row swaps the weapon in place: the same character, view and open menu")
+		"with a Swift Foot, D on the Weapon row swaps the weapon in place: the same character, view and open menu")
 	_check(keyboard.loadout.weapon.item_id == ArsenalCatalog.HEAVY_AXE and keyboard.loadout.opener_for(Cmd.LIGHT).action_id == &"heavy_axe/cleave_1",
 		"the tank now swings the Greataxe's cleaves")
 	await _tap_key(KEY_W)
@@ -1332,8 +1406,9 @@ func _check_scribe_desk() -> void:
 			break
 		await _tap_key(KEY_D)
 	var surged: CombatActionResource = keyboard.loadout.card_action(0)
-	_check(keyboard.loadout.kit.under_ids[0] == ArsenalCatalog.IRON_ROOT_LINK and is_equal_approx(surged.damage, 20.0 * LoadoutComposer.UNDER_POTENCY_MULTIPLIER),
-		"back on the Basic Shield Charge the link fits: Iron-Root Link surges it by 20%")
+	_check(keyboard.loadout.kit.under_ids[0] == ArsenalCatalog.IRON_ROOT_LINK
+		and is_equal_approx(surged.damage, 20.0 * LoadoutComposer.UNDER_POTENCY_MULTIPLIER * Callings.SWIFT_STRIKE_DAMAGE),
+		"back on the Basic Shield Charge the link fits: Iron-Root Link surges it by 20% (and the Swift Foot's 15% on top)")
 	for press: int in 5:
 		await _tap_key(KEY_S)
 	await _tap_key(KEY_D)
@@ -1341,13 +1416,51 @@ func _check_scribe_desk() -> void:
 	await _tap_key(KEY_SPACE)
 	_check(hud.scribe_desk_menu() == null and not keyboard.input.menu_open, "Space closes the desk")
 	var saved: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(PartyProgress.current.kit_for(ClassLoadouts.SHIELD_TANK))
-	_check(saved.same_as(keyboard.loadout.kit), "the tank's new kit is saved for the next session")
+	_check(saved.same_as(keyboard.loadout.kit) and PartyProgress.current.calling_for(ClassLoadouts.SHIELD_TANK) == Callings.Secondary.SWIFT_FOOT,
+		"the tank's new kit and Calling are saved for the next session")
 	network.request_local_player(1, ClassLoadouts.SHIELD_TANK, InputComponent.AssistMode.ADVENTURER)
 	await _seconds(0.1)
 	var second: ActorBase = hub.actors.get(&"1_1") as ActorBase
-	_check(second != null and second.loadout.kit.same_as(keyboard.loadout.kit), "a new Shield Tank seat starts in the party's saved tank kit")
+	_check(second != null and second.loadout.kit.same_as(keyboard.loadout.kit) and second.loadout.display_name == "Weald-Captain",
+		"a new Shield-Sworn seat starts as a Weald-Captain in the party's saved tank kit")
 	network.drop_local_player(1)
 	await _seconds(0.05)
+
+
+## Hold C for the next Calling (its gear comes off if it can't use it), then
+## the desk's Fellowship row: a new character, and the desk reopens for it.
+func _check_calling_shortcut_and_fellowship() -> void:
+	var hub: HubTown = current_scene as HubTown
+	var keyboard: ActorBase = hub.actors[&"1_0"]
+	keyboard.input.release_script()
+	_key(KEY_C, true)
+	await _seconds(InputComponent.MENU_HOLD_TIME + 0.15)
+	_key(KEY_C, false)
+	await _seconds(0.05)
+	_check(hub.actors[&"1_0"] == keyboard and keyboard.loadout.calling == Callings.Secondary.WISE_HAND and keyboard.loadout.display_name == "Hearth-Guard",
+		"holding C cycles the Calling in place: the Weald-Captain becomes a Hearth-Guard (Wise Hand)")
+	_check(keyboard.loadout.weapon.item_id == ArsenalCatalog.LIGHT_SWORD, "the Greataxe, which needs a Swift Foot, comes off for the starter sword")
+	var front: Vector3 = -hub.scribe_desk.global_basis.z
+	keyboard.place_at(Transform3D(Basis.IDENTITY, hub.scribe_desk.global_position + front * 1.8))
+	await _seconds(0.1)
+	await _tap_key(KEY_J)
+	for press: int in ScribeDeskMenu.ROW_WEAPON:
+		await _tap_key(KEY_W)
+	await _tap_key(KEY_D)
+	await _seconds(0.1)
+	var lantern: ActorBase = hub.actors[&"1_0"]
+	var reopened: ScribeDeskMenu = (hub.huds[&"1_0"] as PlayerHUD).scribe_desk_menu()
+	_check(lantern != keyboard and lantern.loadout.class_id == ClassLoadouts.SOUL_TETHER_HEALER and lantern.tether != null
+		and reopened != null and reopened.selected == ScribeDeskMenu.ROW_FELLOWSHIP,
+		"on the desk's Fellowship row, D makes P1 a Lantern-Bearer: a new character, and the desk reopens on their screen")
+	_check(lantern.loadout.display_name == "Lantern-Scribe" and lantern.display_name() == "P1 Lantern-Scribe", "a new Lantern-Bearer starts as a Lantern-Scribe")
+	await _tap_key(KEY_A)
+	await _seconds(0.1)
+	var back: ActorBase = hub.actors[&"1_0"]
+	_check(back.loadout.class_id == ClassLoadouts.SHIELD_TANK and back.loadout.display_name == "Hearth-Guard",
+		"A takes P1 back to the Shield-Sworn, as the Hearth-Guard they last chose")
+	await _tap_key(KEY_SPACE)
+	_check((hub.huds[&"1_0"] as PlayerHUD).scribe_desk_menu() == null, "Space closes the reopened desk")
 
 
 ## The first drop seed whose chest card is a Gilded Leaf or Star-Inked copy of a boss card for the Forward slot.
