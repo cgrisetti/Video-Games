@@ -1,4 +1,4 @@
-# 04_BALANCE.md — Balance (Phases 5 and 6)
+# 04_BALANCE.md — Balance (Phases 5, 6 and 7)
 
 First-pass numbers, set by arithmetic rather than playtesting. Tune them after the family plays. Every number is a named constant; the "Where" column says which file.
 
@@ -34,10 +34,10 @@ First-pass numbers, set by arithmetic rather than playtesting. Tune them after t
 | Number | Value | Where |
 |---|---|---|
 | Health | Tank 160 · Healer 110 · DPS 100 | `class_loadouts.gd` |
-| Stamina | 100, regenerates 22/s (from the GDD) after 0.8 s idle | `character_stats_resource.gd` |
-| Dodge | 20 stamina, 4.6 m, 0.32 s invulnerable | `class_loadouts.gd` |
-| Perfect Guard | Within 200 ms; no stamina, 50 poise to the boss, 250 threat, +½ pip | `stats_component.gd`, `combat_director.gd` |
-| Squire auto-guard | Guard goes up when the swipe threatens you and you have 25+ stamina, held until the swing ends (not timed for a Perfect Guard). The DPS rolls instead | `input_component.gd` |
+| Stamina | 100, regenerating after 0.8 s idle at the armor's rate (below) | `character_stats_resource.gd`, `arsenal_catalog.gd` |
+| Dodge | 20 stamina, 0.32 s invulnerable, as far as the armor allows | `arsenal_catalog.gd`, `dodge_state.gd` |
+| Perfect Guard | Every class (L is always Guard), within the armor's window; no stamina, 50 poise to the boss, +½ pip, and 250 threat for a tank (others scaled by their threat modifier, so a DPS draws 83) | `stats_component.gd`, `combat_director.gd` |
+| Squire auto-guard | Guard goes up when the swipe threatens you and you have 25+ stamina, held until the swing ends (not timed for a Perfect Guard). Every class has a guard now | `input_component.gd` |
 | Threat | Tank ×3, Healer ×0.8; heals add 0.5 per HP; Taunt locks for 6 s | `class_loadouts.gd`, `combat_director.gd` |
 
 ## Resonance economy
@@ -49,19 +49,83 @@ First-pass numbers, set by arithmetic rather than playtesting. Tune them after t
 | A hit after a flow-cancel | ×1.5 |
 | Healing | 0.008 per HP restored (one 22-HP homing heal ≈ 0.18) |
 | Perfect Guard | +0.5 |
-| Synergy detonation | +0.5 to **both** partners, ×1.5 across roles (+¾) |
+| Seal detonation | +0.5 to **both** partners, ×1.5 on a cross-harmony (+¾) |
+| Astral Chorus | +0.5 to everyone within 10 m (×1.5 on a cross-harmony), on top of the partners' reward |
 
-Costs: Taunt, Green Sanctuary and Gale Rush cost 1 pip, Lifeline Pull costs 2, ultimates cost 3. At about 1.5 hits per second and half of them flowed, a DPS fills 3 pips in roughly 30 s. Each synergy takes several seconds off that, so teamwork speeds up everyone's ultimates.
+Costs: Taunt, Green Sanctuary and Gale Rush cost 1 pip, Lifeline Pull costs 2, ultimates cost 3. At about 1.5 hits per second and half of them flowed, a DPS fills 3 pips in roughly 30 s. Each detonation takes several seconds off that, so teamwork speeds up everyone's ultimates.
 
-## Cross-Class Synergy
+## Aspect Seals (05 GDD §3.2)
 
-| Primer (DPS) | Detonated by | Bonus (×1.5 across roles) |
+A primer card stamps its aspect's seal on the boss for 8 s; a *teammate's* Heavy (every weapon's Heavy detonates) or a detonating card cashes it in. A different role **or** a different aspect than the seal's is a cross-harmony: ×1.5. The numbers live on each `AspectSealResource` in `arsenal_catalog.gd`; `CombatDirector` applies whatever is set.
+
+| Aspect | Seal | Detonation | Base effect (×1.5 cross-harmony) | Starter primers |
+|---|---|---|---|---|
+| Kinetic | Amber Gear | **Shatterpoint** | +45 (67.5) poise, +1 hit-stop "stagger impulse" | Rising Drive (DPS) |
+| Elemental | Azure Frost-Star | **Elemental Rupture** | +45 (67.5) damage, bursting 4 m to other enemies | Frost Crescent (DPS) |
+| Divine | Gold Sun-Crest | **Dawnburst** | Heals the party within 10 m by 20 (30) | Sunlit Lance (Healer) |
+| Celestial | Violet Moon-Ring | **Astral Chorus** | +25 (37.5) stamina and +0.5 (0.75) pips to the party within 10 m | Gale Rush (DPS) |
+
+The player who stamped a seal can't detonate it. Each detonation plays its own sound on every peer, shows a burst of light on both partners, and lights up their pip display.
+
+## Armor weights (05 GDD §2.1)
+
+| Armor | Mitigation | Stamina regen | Roll | Perfect Guard window | Worn by (starter) |
+|---|---|---|---|---|---|
+| Hearth-Linen (Light) | 10% | 27.5 / s | 5.2 m | 200 ms | Healer |
+| Ranger Leather (Medium) | 20% | 22.0 / s | 4.6 m | 200 ms | DPS |
+| Ironwood Plate (Heavy) | 35% | 18.0 / s | 3.8 m | 260 ms | Tank |
+
+Mitigation comes off every hit before guards (telegraphs too). So a guarded swipe now costs the tank about 2 health (24 × 0.65 × 0.15), and a full soak costs 27 in linen or 19.5 in plate. Fights are a little gentler than in Phase 6; the upgrade and level curves assume that. A roll also slides on after its push, so the distance travelled is longer than the table (the smoke test compares linen against plate rather than exact metres).
+
+## Weapons (05 GDD §2.2)
+
+| Weapon | Light chain | Heavy (always detonates) | Cards travel as | Notes |
+|---|---|---|---|---|
+| Sword & Buckler | 3 cuts, 0.55 s, 10 stamina, 8/9/12 damage | Advancing Thrust: 18 damage, 15 poise, 2 m lunge | Melee swing with a ribbon trail | Tank starter |
+| Greataxe | 2 wide cleaves, 0.85 s, 16 stamina, 14/17 damage | Earth-Splitter: 28 damage, 35 poise | Melee swing with a ribbon trail | Slow and heavy |
+| Hearthwood Scribe Staff | 2 sweeps (7) then a 12 m arcane bolt (10) | Resonant Pulse: 16 damage AoE around you | 12 m rune bolts | Sanctuaries +25% radius; healer starter |
+| Wind-Ash Hunter Bow | 14 m snap-shots, 10 stamina, stepping back 0.6 m | Piercing Draw: 24 damage, 20 poise, 18 m, pierces | 18 m rune arrows | DPS starter |
+
+Ranged cards keep their numbers but are planted: forward lunges are dropped (Rising Drive, Gale Rush), backward steps stay (Frost Crescent). Shots lean toward a target within about 37° of where you face. A shot freezes only its target in hit-stop.
+
+## Scribe Cards (05 GDD §3)
+
+| Slot | Tank | Healer | DPS | Boss drops |
+|---|---|---|---|---|
+| Forward + Heavy | Shield Charge (detonates) | Sunlit Lance (Divine primer) | Rising Drive (Kinetic primer) | Moonfall Cleave (Rare, Celestial primer) |
+| Back + Heavy | Shadow Sanctuary (60% shield cone) | Green Sanctuary (1 pip, 8 HP/s) | Frost Crescent (Elemental primer) | Aegis of Embers (Rare, wider cone) |
+| R (signature) | Taunt (1 pip) | Homing Heal (12 stamina, 22 HP) | Gale Rush (1 pip, Celestial primer) | Starlit Volley (Rare, 1 pip, Elemental primer) |
+| L + R (ultimate) | Bulwark Quake (3 pips) | Lifeline Pull (2 pips) | Tempest Flow (3 pips) | Dawnbreaker (Legendary, 3 pips, detonates and stamps Divine) |
+
+Any class may slot any card except Homing Heal and Lifeline Pull, which need a Soul Tether. Homing Heal costs no pip (see 05 GDD §4.6).
+
+| Under-card (Common) | Verb | Effect |
 |---|---|---|
-| Stagger (Forward + Heavy) | Tank slam or charge, Healer burst | +45 poise: **Shatterpoint** |
-| Frost (Back + Heavy) | Same | +45 damage: **Glacial Rupture** |
-| Radiant (L) | Same | Heals the party within 10 m by 20: **Dawnburst** |
+| Amber Gear Link | Potency Surge | ×1.2 damage, healing and poise |
+| Azure Star Link | Aspect Infusion | The card's hits stamp an Elemental seal |
+| Sun-Crest Link | Hearth Echo | Heals bounce 50% to the next hurt ally within 8 m; sanctuaries restore 8 stamina/s; hits return 8 stamina |
+| Moon-Ring Link | Aspect Infusion | The card's hits stamp a Celestial seal |
 
-A primer lasts 8 s, and the player who applied it can't detonate it. Each detonation plays its own sound, shows a burst of light on both partners, and briefly lights up their pip display.
+## Grimoire and card drops
+
+| Number | Value | Where | Why |
+|---|---|---|---|
+| Grimoire level | 1 + victories, up to 5 | `loadout_composer.gd` | One link and two memory per win: noticeable progress every fight |
+| Memory | 4 + 2 per level (6 at Lv 1, 14 at Lv 5) | `loadout_composer.gd` | The starter kit costs 4; a Rare lead plus a link doesn't fit until Lv 3 |
+| Memory per card | Basic 1 · Common 2 · Uncommon 3 · Rare 4 · Legendary 5 | `scribe_card_resource.gd` | Rarer cards are stronger, so they crowd the Grimoire |
+| Under-card links | Level − 1 (none at Lv 1, all four at Lv 5) | `loadout_composer.gd` | 05 GDD §3.1 |
+| Chest card | One per chest: boss cards weigh 3, each starter card 1 | `arsenal_catalog.gd` | About half the drops are boss cards |
+| Variant odds | Standard 60% · Shiny Foil 30% · Astral Prism 10% | `arsenal_catalog.gd` | A starter card never drops plain (you already have it), so it comes Shiny |
+
+## Card choreography (presentation only)
+
+| Effect | Value | Where |
+|---|---|---|
+| Floor seal | 3 m across, blooms in 0.15 s, gone at 0.6 s | `scribe_invocation_fx.gd`, `scribe_seal.gdshader` |
+| Vellum card | Flips in the first 45% of the seal's life, then dissolves | `scribe_invocation_fx.gd` |
+| Shiny Foil | Gold rings at 1.15 m and 1.42 m, a 1.25× chime, gold ribbon trail | `scribe_invocation_fx.gd`, `weapon_trail.gd` |
+| Astral Prism | 2.4 m starfield dome through the wind-up; footprints every 0.55 m for 2.5 s, each fading in 1 s | `scribe_invocation_fx.gd`, `glow_footprint.gd` |
+| Melee ribbon | A 2-radian sweep in 0.18 s, samples living 0.2 s | `weapon_trail.gd` |
 
 ## Flow-cancel window
 
@@ -70,7 +134,7 @@ A primer lasts 8 s, and the player who applied it can't detonate it. Each detona
 | Master | Last 400 ms of the action | +15% speed on the next action |
 | Adventurer / Squire | Last 550 ms | None (auto-chaining instead) |
 
-The window never opens during wind-up, and the buffer holds two presses. With a short chain like Flow Cut (0.58 s), the 400 ms window covers most of the swing. With a long one like Cleave (1.01 s), Master players have to time the press (`smoke_test.gd` checks both edges).
+The window never opens during wind-up, and the buffer holds two presses. With a short action like a Snap-Shot (0.56 s), the 400 ms window covers most of it. With a long one like the Piercing Draw (1.1 s), Master players have to time the press (`smoke_test.gd` checks both edges, timed from whatever Heavy the DPS holds).
 
 ## Victory and Dojo Shards
 
@@ -89,7 +153,8 @@ Each level adds 10% of the class's own number for the whole party, up to 5 level
 
 | Number | Value | Where | Why |
 |---|---|---|---|
-| Backfill | Up to 3 in the party, missing roles in Tank, Healer, DPS order | `companion_ai_component.gd` | A tank protects children best, then a healer |
+| Backfill | Up to 3 in the party, missing roles in Tank, Healer, DPS order, in their starter kits | `companion_ai_component.gd` | A tank protects children best, then a healer |
+| Range | A bot with a bow or staff stands at 60% of its shot's reach; reach always comes from its loadout | `companion_ai_component.gd` | Plays any kit without per-weapon code |
 | Pause between presses | 0.25 s (rolls and Lifeline skip it) | `companion_ai_component.gd` | Quick, but not faster than a person |
 | Tank guard | Raised 0.12 s before the swipe lands | `companion_ai_component.gd` | Inside the 200 ms window: the bot tank lands Perfect Guards |
 | DPS roll | 0.35 s before the swipe lands | `companion_ai_component.gd` | Clears the reach with time to spare |
@@ -103,3 +168,5 @@ In a headless run, one player plus two companions beat the Warden (2,400 health)
 - Should taunt cost 1 pip, or should the tank's Perfect Guard pip already be enough?
 - Is a companion tank that always lands Perfect Guards too strong next to a child playing tank? (Raise `PERFECT_GUARD_LEAD` past 0.2 s to make it guard early and take chip damage.)
 - Is 16 shards a win the right pace? Maxing both upgrades takes about 8 wins; a family that plays once a week might want it faster.
+- With armor mitigation on every hit, is the Warden now too gentle? Its damage could rise 15–20% to make up for it.
+- Does a Rare card at Lv 2 (memory 7 of 8, no room for a link) feel like a real choice, or should Lv 2 hold 9?

@@ -97,7 +97,9 @@ Every peer compiles the same kit into the same actions with the same ids, so the
 ### 4.4 Network and saves
 - The roster carries each seat's kit as ids. A strike between peers carries the action id; the target's owner looks the numbers up in its own compiled copy of the attacker's loadout (so a peer can't claim more damage than the action does). Telegraph strikes and Perfect Guard counters, which have no action, still carry numbers.
 - Projectiles: the attacker's peer flies the real one and reports hits; other peers fly a look-alike copy that can't hit anything. Card invocations and projectiles cross the network as the actor's path plus an action id.
-- `PartyProgress` saves the card collection (copy keys like `rising_drive:shiny_foil`), each class's last kit, and the victory count that sets the Grimoire level.
+- Detonations: the boss's owner (the host) resolves a seal and broadcasts it, so every peer shows and signals it.
+- Grimoire changes from the Scribe Desk go to the host, which checks them against the rules (owned copy, open link, memory) before the roster carries the new kit; a refusal comes back with the reason.
+- `PartyProgress` saves the card collection (copy keys like `rising_drive:shiny_foil`), each class's last kit, and the victory count that sets the Grimoire level. `--save=PATH` points a run at another file, so tests and demos never touch the family's save.
 
 ### 4.5 Effects
 - Projectiles and Scribe invocation effects come from an `FxPool` that lives under the level's `Effects` node: finished ones go back to the pool, and the whole pool is freed with the level, so nothing outlives an instance.
