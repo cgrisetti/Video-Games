@@ -43,15 +43,15 @@ func _ready() -> void:
 	collision.name = "Collision"
 	collision.shape = shape
 	plinth.add_child(collision)
-	plinth.add_child(_box("Mesh", PLINTH_SIZE, Vector3.ZERO, _material(STONE_COLOR, 0.0)))
-	plinth.add_child(_box("Cap", PLINTH_SIZE + Vector3(0.16, -0.75, 0.16), Vector3(0.0, PLINTH_SIZE.y * 0.5, 0.0), _material(STONE_COLOR.darkened(0.15), 0.0)))
+	plinth.add_child(ShapeKit.box("Mesh", PLINTH_SIZE, Vector3.ZERO, _material(STONE_COLOR, 0.0)))
+	plinth.add_child(ShapeKit.box("Cap", PLINTH_SIZE + Vector3(0.16, -0.75, 0.16), Vector3(0.0, PLINTH_SIZE.y * 0.5, 0.0), _material(STONE_COLOR.darkened(0.15), 0.0)))
 	add_child(plinth)
 	var post_x: float = ROOF_SIZE.x * 0.5 - 0.25
 	var posts: int = 0
 	for side: float in [-1.0, 1.0]:
 		posts += 1
-		add_child(_cylinder("Post%d" % posts, 0.09, POST_HEIGHT, Vector3(side * post_x, POST_HEIGHT * 0.5, PLINTH_Z + 0.4), _material(WOOD_COLOR, 0.0)))
-	add_child(_box("Beam", Vector3(ROOF_SIZE.x - 0.2, 0.16, 0.16), Vector3(0.0, POST_HEIGHT - 0.1, PLINTH_Z + 0.4), _material(WOOD_COLOR, 0.0)))
+		add_child(ShapeKit.cylinder("Post%d" % posts, 0.09, 0.09, POST_HEIGHT, Vector3(side * post_x, POST_HEIGHT * 0.5, PLINTH_Z + 0.4), _material(WOOD_COLOR, 0.0)))
+	add_child(ShapeKit.box("Beam", Vector3(ROOF_SIZE.x - 0.2, 0.16, 0.16), Vector3(0.0, POST_HEIGHT - 0.1, PLINTH_Z + 0.4), _material(WOOD_COLOR, 0.0)))
 	# A little gabled roof of mossy shingles.
 	var roof_mesh: PrismMesh = PrismMesh.new()
 	roof_mesh.size = ROOF_SIZE
@@ -66,12 +66,12 @@ func _ready() -> void:
 	_bell.name = "Bell"
 	_bell.position = Vector3(post_x - 0.55, POST_HEIGHT - 0.2, PLINTH_Z + 0.4)
 	add_child(_bell)
-	var bell: MeshInstance3D = _cylinder("Cup", 0.26, 0.42, Vector3(0.0, -0.3, 0.0), _material(BELL_COLOR, 0.15))
+	var bell: MeshInstance3D = ShapeKit.cylinder("Cup", 0.26, 0.26, 0.42, Vector3(0.0, -0.3, 0.0), _material(BELL_COLOR, 0.15))
 	(bell.mesh as CylinderMesh).top_radius = 0.1
 	_bell.add_child(bell)
-	_bell.add_child(_cylinder("Clapper", 0.04, 0.2, Vector3(0.0, -0.55, 0.0), _material(BELL_COLOR.darkened(0.4), 0.0)))
+	_bell.add_child(ShapeKit.cylinder("Clapper", 0.04, 0.04, 0.2, Vector3(0.0, -0.55, 0.0), _material(BELL_COLOR.darkened(0.4), 0.0)))
 	# An offering bowl, and above it a brass Chime turning in its own glow.
-	var bowl: MeshInstance3D = _cylinder("Bowl", 0.42, 0.18, Vector3(0.0, PLINTH_SIZE.y + 0.09, PLINTH_Z), _material(BOWL_COLOR, 0.0))
+	var bowl: MeshInstance3D = ShapeKit.cylinder("Bowl", 0.42, 0.42, 0.18, Vector3(0.0, PLINTH_SIZE.y + 0.09, PLINTH_Z), _material(BOWL_COLOR, 0.0))
 	(bowl.mesh as CylinderMesh).bottom_radius = 0.26
 	add_child(bowl)
 	_coin = ChimeCoin.make(COIN_SIZE)
@@ -115,31 +115,6 @@ func interact(actor: ActorBase) -> void:
 
 func _refresh_sign() -> void:
 	_sign.text = "Chime-Shrine\n%d Chimes" % PartyProgress.current.chimes
-
-
-func _box(box_name: String, size: Vector3, where: Vector3, material: Material) -> MeshInstance3D:
-	var mesh: BoxMesh = BoxMesh.new()
-	mesh.size = size
-	mesh.material = material
-	var box: MeshInstance3D = MeshInstance3D.new()
-	box.name = box_name
-	box.mesh = mesh
-	box.position = where
-	return box
-
-
-func _cylinder(cylinder_name: String, radius: float, height: float, where: Vector3, material: Material) -> MeshInstance3D:
-	var mesh: CylinderMesh = CylinderMesh.new()
-	mesh.top_radius = radius
-	mesh.bottom_radius = radius
-	mesh.height = height
-	mesh.radial_segments = 16
-	mesh.material = material
-	var cylinder: MeshInstance3D = MeshInstance3D.new()
-	cylinder.name = cylinder_name
-	cylinder.mesh = mesh
-	cylinder.position = where
-	return cylinder
 
 
 ## The storybook cel look, or a glowing material when `glow` is above zero.

@@ -44,25 +44,25 @@ func _ready() -> void:
 	desk.add_child(collision)
 	var wood: Material = _material(WOOD_COLOR, 0.0)
 	var top_size: Vector3 = Vector3(DESK_SIZE.x, 0.08, DESK_SIZE.z)
-	desk.add_child(_box("Top", top_size, Vector3(0.0, DESK_SIZE.y * 0.5 - 0.04, 0.0), wood))
+	desk.add_child(ShapeKit.box("Top", top_size, Vector3(0.0, DESK_SIZE.y * 0.5 - 0.04, 0.0), wood))
 	var leg_x: float = DESK_SIZE.x * 0.5 - 0.1
 	var leg_z: float = DESK_SIZE.z * 0.5 - 0.1
 	var legs: int = 0
 	for side: float in [-1.0, 1.0]:
 		for depth: float in [-1.0, 1.0]:
 			legs += 1
-			desk.add_child(_box("Leg%d" % legs, LEG_SIZE, Vector3(side * leg_x, -0.04, depth * leg_z), wood))
+			desk.add_child(ShapeKit.box("Leg%d" % legs, LEG_SIZE, Vector3(side * leg_x, -0.04, depth * leg_z), wood))
 	add_child(desk)
 	# An open Grimoire on the desk.
 	var page: Material = _material(PAGE_COLOR, 0.0)
 	for side: float in [-1.0, 1.0]:
-		var leaf: MeshInstance3D = _box("Page", BOOK_PAGE_SIZE, Vector3(side * BOOK_PAGE_SIZE.x * 0.5, DESK_SIZE.y + 0.02, DESK_Z - 0.1), page)
+		var leaf: MeshInstance3D = ShapeKit.box("Page", BOOK_PAGE_SIZE, Vector3(side * BOOK_PAGE_SIZE.x * 0.5, DESK_SIZE.y + 0.02, DESK_Z - 0.1), page)
 		leaf.rotation = Vector3(0.0, 0.0, -side * BOOK_TILT)
 		leaf.name = "PageLeft" if side < 0.0 else "PageRight"
 		add_child(leaf)
 	# A candle.
-	add_child(_cylinder("Candle", 0.05, 0.22, Vector3(DESK_SIZE.x * 0.38, DESK_SIZE.y + 0.11, DESK_Z + 0.2), _material(PAGE_COLOR, 0.0)))
-	var flame: MeshInstance3D = _cylinder("Flame", 0.025, 0.08, Vector3(DESK_SIZE.x * 0.38, DESK_SIZE.y + 0.27, DESK_Z + 0.2), _material(CANDLE_COLOR, 4.0))
+	add_child(ShapeKit.no_shadow(ShapeKit.cylinder("Candle", 0.05, 0.05, 0.22, Vector3(DESK_SIZE.x * 0.38, DESK_SIZE.y + 0.11, DESK_Z + 0.2), _material(PAGE_COLOR, 0.0), 12)))
+	var flame: MeshInstance3D = ShapeKit.no_shadow(ShapeKit.cylinder("Flame", 0.025, 0.025, 0.08, Vector3(DESK_SIZE.x * 0.38, DESK_SIZE.y + 0.27, DESK_Z + 0.2), _material(CANDLE_COLOR, 4.0), 12))
 	(flame.mesh as CylinderMesh).top_radius = 0.0
 	add_child(flame)
 	var light: OmniLight3D = OmniLight3D.new()
@@ -77,9 +77,9 @@ func _ready() -> void:
 		var card: Node3D = Node3D.new()
 		card.name = "StandCard%d" % index
 		card.position = Vector3((float(index) - 1.0) * 0.45, STAND_HEIGHT, DESK_Z + 0.15)
-		var vellum: MeshInstance3D = _box("Vellum", STAND_CARD_SIZE, Vector3.ZERO, _material(PAGE_COLOR, 0.0))
+		var vellum: MeshInstance3D = ShapeKit.box("Vellum", STAND_CARD_SIZE, Vector3.ZERO, _material(PAGE_COLOR, 0.0))
 		card.add_child(vellum)
-		var mark: MeshInstance3D = _box("Mark", Vector3(0.12, 0.12, 0.02), Vector3.ZERO, _material(STAND_CARD_COLORS[index], 2.5))
+		var mark: MeshInstance3D = ShapeKit.box("Mark", Vector3(0.12, 0.12, 0.02), Vector3.ZERO, _material(STAND_CARD_COLORS[index], 2.5))
 		mark.rotation = Vector3(0.0, 0.0, PI * 0.25)
 		card.add_child(mark)
 		add_child(card)
@@ -130,32 +130,6 @@ func interact(actor: ActorBase) -> void:
 
 func _refresh_sign() -> void:
 	_sign.text = "Armory & Scribe Desk\nGrimoire Lv %d" % PartyProgress.current.grimoire_level()
-
-
-func _box(box_name: String, size: Vector3, where: Vector3, material: Material) -> MeshInstance3D:
-	var mesh: BoxMesh = BoxMesh.new()
-	mesh.size = size
-	mesh.material = material
-	var box: MeshInstance3D = MeshInstance3D.new()
-	box.name = box_name
-	box.mesh = mesh
-	box.position = where
-	return box
-
-
-func _cylinder(cylinder_name: String, radius: float, height: float, where: Vector3, material: Material) -> MeshInstance3D:
-	var mesh: CylinderMesh = CylinderMesh.new()
-	mesh.top_radius = radius
-	mesh.bottom_radius = radius
-	mesh.height = height
-	mesh.radial_segments = 12
-	mesh.material = material
-	var node: MeshInstance3D = MeshInstance3D.new()
-	node.name = cylinder_name
-	node.mesh = mesh
-	node.position = where
-	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	return node
 
 
 ## The storybook cel look, or a glowing material when `glow` is above zero.

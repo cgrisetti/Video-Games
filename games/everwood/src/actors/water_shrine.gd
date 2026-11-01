@@ -34,13 +34,13 @@ var _glow: OmniLight3D
 
 func _ready() -> void:
 	var stone: Material = _material(STONE_COLOR, 0.0)
-	add_child(_cylinder("Basin", BASIN_RADIUS, BASIN_HEIGHT, Vector3(0.0, BASIN_HEIGHT * 0.5, 0.0), stone))
-	add_child(_cylinder("Moss", BASIN_RADIUS + 0.06, 0.12, Vector3(0.0, BASIN_HEIGHT - 0.04, 0.0), _material(MOSS_COLOR, 0.0)))
+	add_child(ShapeKit.cylinder("Basin", BASIN_RADIUS, BASIN_RADIUS, BASIN_HEIGHT, Vector3(0.0, BASIN_HEIGHT * 0.5, 0.0), stone, 20))
+	add_child(ShapeKit.cylinder("Moss", BASIN_RADIUS + 0.06, BASIN_RADIUS + 0.06, 0.12, Vector3(0.0, BASIN_HEIGHT - 0.04, 0.0), _material(MOSS_COLOR, 0.0), 20))
 	_water = StorybookMaterial.glowing(WATER_COLOR, 1.2)
-	add_child(_cylinder("Water", BASIN_RADIUS - 0.12, 0.05, Vector3(0.0, BASIN_HEIGHT + 0.01, 0.0), _water))
+	add_child(ShapeKit.cylinder("Water", BASIN_RADIUS - 0.12, BASIN_RADIUS - 0.12, 0.05, Vector3(0.0, BASIN_HEIGHT + 0.01, 0.0), _water, 20))
 	var wood: Material = _material(WOOD_COLOR, 0.0)
 	for corner: Vector2 in [Vector2(-1.0, -1.0), Vector2(1.0, -1.0), Vector2(-1.0, 1.0), Vector2(1.0, 1.0)]:
-		add_child(_cylinder("Post", 0.07, ROOF_HEIGHT, Vector3(corner.x * 1.0, ROOF_HEIGHT * 0.5, corner.y * 1.0), wood))
+		add_child(ShapeKit.cylinder("Post", 0.07, 0.07, ROOF_HEIGHT, Vector3(corner.x * 1.0, ROOF_HEIGHT * 0.5, corner.y * 1.0), wood, 20))
 	var roof_mesh: PrismMesh = PrismMesh.new()
 	roof_mesh.size = Vector3(2.7, 0.9, 2.7)
 	roof_mesh.material = _material(SHINGLE_COLOR, 0.0)
@@ -125,20 +125,6 @@ func _bless(by_player_id: String) -> void:
 	add_child(burst)
 	burst.position = Vector3(0.0, BASIN_HEIGHT + 0.3, 0.0)
 	blessed.emit(StringName(by_player_id))
-
-
-func _cylinder(part_name: String, radius: float, height: float, where: Vector3, material: Material) -> MeshInstance3D:
-	var mesh: CylinderMesh = CylinderMesh.new()
-	mesh.top_radius = radius
-	mesh.bottom_radius = radius
-	mesh.height = height
-	mesh.radial_segments = 20
-	mesh.material = material
-	var node: MeshInstance3D = MeshInstance3D.new()
-	node.name = part_name
-	node.mesh = mesh
-	node.position = where
-	return node
 
 
 ## The storybook cel look, or a glowing material when `glow` is above zero.

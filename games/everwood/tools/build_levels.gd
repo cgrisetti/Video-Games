@@ -279,13 +279,12 @@ func _add_forest_gate(parent: Node3D) -> void:
 	parent.add_child(gate)
 	var timber: Material = _material(GATE_COLOR)
 	for side: float in [-1.0, 1.0]:
-		gate.add_child(_mesh_box("Post", Vector3(0.6, GATE_HEIGHT, 0.6), Vector3(side * (GATE_WIDTH * 0.5 + 0.3), GATE_HEIGHT * 0.5, 0.0), timber))
+		gate.add_child(ShapeKit.box("Post", Vector3(0.6, GATE_HEIGHT, 0.6), Vector3(side * (GATE_WIDTH * 0.5 + 0.3), GATE_HEIGHT * 0.5, 0.0), timber))
 		# Open gate leaves, swung outward.
-		var leaf: MeshInstance3D = _mesh_box("Leaf", Vector3(GATE_WIDTH * 0.5 - 0.2, GATE_HEIGHT - 1.2, 0.18),
-			Vector3(side * (GATE_WIDTH * 0.5 + 0.2), (GATE_HEIGHT - 1.2) * 0.5, -1.4), timber)
+		var leaf: MeshInstance3D = ShapeKit.box("Leaf", Vector3(GATE_WIDTH * 0.5 - 0.2, GATE_HEIGHT - 1.2, 0.18), Vector3(side * (GATE_WIDTH * 0.5 + 0.2), (GATE_HEIGHT - 1.2) * 0.5, -1.4), timber)
 		leaf.rotation = Vector3(0.0, side * 1.25, 0.0)
 		gate.add_child(leaf)
-	gate.add_child(_mesh_box("Lintel", Vector3(GATE_WIDTH + 1.8, 0.7, 0.8), Vector3(0.0, GATE_HEIGHT, 0.0), timber))
+	gate.add_child(ShapeKit.box("Lintel", Vector3(GATE_WIDTH + 1.8, 0.7, 0.8), Vector3(0.0, GATE_HEIGHT, 0.0), timber))
 	var roof_mesh: PrismMesh = PrismMesh.new()
 	roof_mesh.size = Vector3(GATE_WIDTH + 2.4, 1.0, 1.6)
 	roof_mesh.material = _material(ROOF_COLOR)
@@ -319,7 +318,7 @@ func _add_forest_gate(parent: Node3D) -> void:
 	# The edge of the forest beyond the wall.
 	var forest: Node3D = _node3d("ForestEdge")
 	parent.add_child(forest)
-	forest.add_child(_mesh_box("Moss", Vector3(HUB_WIDTH * 0.7, 0.1, 16.0), Vector3(0.0, -0.05, -half_depth - 8.0), _material(MOSS_COLOR)))
+	forest.add_child(ShapeKit.box("Moss", Vector3(HUB_WIDTH * 0.7, 0.1, 16.0), Vector3(0.0, -0.05, -half_depth - 8.0), _material(MOSS_COLOR)))
 	for index: int in GATE_TREES.size():
 		forest.add_child(_tree("Oak%d" % (index + 1), GATE_TREES[index], 7.0 + float(index % 3), false))
 
@@ -386,14 +385,14 @@ func _house(house_name: String, where: Vector3, color: Color, bakery: bool) -> S
 func _add_bakery(house: StaticBody3D, toward_middle: float) -> void:
 	var brick: Material = _material(Color(0.62, 0.34, 0.26))
 	var oven_x: float = toward_middle * (HOUSE_SIZE.x * 0.5 + 0.55)
-	house.add_child(_mesh_box("Oven", Vector3(1.0, 1.1, 1.4), Vector3(oven_x, -HOUSE_SIZE.y * 0.5 + 0.55, -HOUSE_SIZE.z * 0.25), brick))
+	house.add_child(ShapeKit.box("Oven", Vector3(1.0, 1.1, 1.4), Vector3(oven_x, -HOUSE_SIZE.y * 0.5 + 0.55, -HOUSE_SIZE.z * 0.25), brick))
 	var mouth: StandardMaterial3D = _standard(Color(1.0, 0.55, 0.2))
 	mouth.emission_enabled = true
 	mouth.emission = Color(1.0, 0.5, 0.15)
 	mouth.emission_energy_multiplier = 2.0
-	house.add_child(_mesh_box("OvenFire", Vector3(0.06, 0.4, 0.6), Vector3(oven_x + toward_middle * 0.5, -HOUSE_SIZE.y * 0.5 + 0.45, -HOUSE_SIZE.z * 0.25), mouth))
+	house.add_child(ShapeKit.box("OvenFire", Vector3(0.06, 0.4, 0.6), Vector3(oven_x + toward_middle * 0.5, -HOUSE_SIZE.y * 0.5 + 0.45, -HOUSE_SIZE.z * 0.25), mouth))
 	var chimney_top: float = HOUSE_SIZE.y * 0.5 + ROOF_HEIGHT + 0.4
-	house.add_child(_mesh_box("Chimney", Vector3(0.6, 1.6, 0.6), Vector3(-toward_middle * 1.2, chimney_top - 0.8, -HOUSE_SIZE.z * 0.25), brick))
+	house.add_child(ShapeKit.box("Chimney", Vector3(0.6, 1.6, 0.6), Vector3(-toward_middle * 1.2, chimney_top - 0.8, -HOUSE_SIZE.z * 0.25), brick))
 	var smoke: CPUParticles3D = CPUParticles3D.new()
 	smoke.name = "Smoke"
 	smoke.position = Vector3(-toward_middle * 1.2, chimney_top + 0.1, -HOUSE_SIZE.z * 0.25)
@@ -426,11 +425,11 @@ func _add_pigment_rack(parent: Node3D) -> void:
 	var timber: Material = _material(GATE_COLOR)
 	var span: float = 3.4
 	for side: float in [-1.0, 1.0]:
-		rack.add_child(_mesh_box("Post", Vector3(0.14, 2.4, 0.14), Vector3(side * span * 0.5, 1.2, 0.0), timber))
-	rack.add_child(_mesh_box("Bar", Vector3(span + 0.3, 0.12, 0.12), Vector3(0.0, 2.35, 0.0), timber))
+		rack.add_child(ShapeKit.box("Post", Vector3(0.14, 2.4, 0.14), Vector3(side * span * 0.5, 1.2, 0.0), timber))
+	rack.add_child(ShapeKit.box("Bar", Vector3(span + 0.3, 0.12, 0.12), Vector3(0.0, 2.35, 0.0), timber))
 	for index: int in PIGMENT_COLORS.size():
 		var x: float = lerpf(-span * 0.4, span * 0.4, float(index) / (PIGMENT_COLORS.size() - 1))
-		rack.add_child(_mesh_box("Bundle%d" % index, Vector3(0.32, 0.8, 0.32), Vector3(x, 1.85, 0.0), _material(PIGMENT_COLORS[index])))
+		rack.add_child(ShapeKit.box("Bundle%d" % index, Vector3(0.32, 0.8, 0.32), Vector3(x, 1.85, 0.0), _material(PIGMENT_COLORS[index])))
 
 
 ## The canal across the village and its stone banks, open only where the bridge crosses.
@@ -440,7 +439,7 @@ func _add_canal(parent: Node3D) -> void:
 	water_material.roughness = 0.15
 	water_material.emission_enabled = true
 	water_material.emission = WATER_COLOR.darkened(0.5)
-	parent.add_child(_mesh_box("CanalWater", Vector3(length, 0.04, CANAL_WIDTH), Vector3(0.0, 0.03, CANAL_Z), water_material))
+	parent.add_child(ShapeKit.box("CanalWater", Vector3(length, 0.04, CANAL_WIDTH), Vector3(0.0, 0.03, CANAL_Z), water_material))
 	var stone: Material = _material(STONE_COLOR)
 	var gap: float = BRIDGE_WIDTH * 0.5 + BRIDGE_PARAPET_THICKNESS
 	var bank_length: float = length * 0.5 - gap
@@ -522,7 +521,7 @@ func _add_bridge(parent: Node3D) -> void:
 			rail.position = where
 			rail.rotation = Vector3(tilt, 0.0, 0.0)
 			parapets.add_child(rail)
-			var rail_mesh: MeshInstance3D = _mesh_box("ParapetMesh", size, where, parapet_stone)
+			var rail_mesh: MeshInstance3D = ShapeKit.box("ParapetMesh", size, where, parapet_stone)
 			rail_mesh.rotation = Vector3(tilt, 0.0, 0.0)
 			parapets.add_child(rail_mesh)
 	var village_sign: Label3D = Label3D.new()
@@ -584,7 +583,7 @@ func _tree(tree_name: String, where: Vector3, height: float, collides: bool) -> 
 	tree.position = where
 	var trunk_height: float = height * 0.55
 	var trunk_radius: float = 0.22 + height * 0.025
-	tree.add_child(_cylinder_mesh("Trunk", trunk_radius * 0.75, trunk_radius, trunk_height, trunk_height * 0.5, _material(OAK_TRUNK_COLOR)))
+	tree.add_child(ShapeKit.cylinder("Trunk", trunk_radius * 0.75, trunk_radius, trunk_height, Vector3(0.0, trunk_height * 0.5, 0.0), _material(OAK_TRUNK_COLOR), 24))
 	var leaves: Material = _material(OAK_LEAF_COLOR)
 	var heaps: Array[Vector3] = [Vector3(0.0, trunk_height + height * 0.12, 0.0), Vector3(height * 0.13, trunk_height + height * 0.28, height * 0.06),
 		Vector3(-height * 0.1, trunk_height + height * 0.3, -height * 0.08)]
@@ -615,17 +614,6 @@ func _tree(tree_name: String, where: Vector3, height: float, collides: bool) -> 
 	return tree
 
 
-func _mesh_box(box_name: String, size: Vector3, where: Vector3, material: Material) -> MeshInstance3D:
-	var mesh: BoxMesh = BoxMesh.new()
-	mesh.size = size
-	mesh.material = material
-	var box: MeshInstance3D = MeshInstance3D.new()
-	box.name = box_name
-	box.mesh = mesh
-	box.position = where
-	return box
-
-
 func _fountain() -> StaticBody3D:
 	var fountain: StaticBody3D = StaticBody3D.new()
 	fountain.name = "Fountain"
@@ -640,19 +628,19 @@ func _fountain() -> StaticBody3D:
 	collision.shape = basin_shape
 	collision.position = Vector3(0.0, 0.35, 0.0)
 	fountain.add_child(collision)
-	fountain.add_child(_cylinder_mesh("Basin", FOUNTAIN_RADIUS, FOUNTAIN_RADIUS, 0.7, 0.35, _material(STONE_COLOR)))
+	fountain.add_child(ShapeKit.cylinder("Basin", FOUNTAIN_RADIUS, FOUNTAIN_RADIUS, 0.7, Vector3(0.0, 0.35, 0.0), _material(STONE_COLOR), 24))
 	var water: StandardMaterial3D = _standard(Color(0.35, 0.6, 0.9))
 	water.emission_enabled = true
 	water.emission = Color(0.2, 0.4, 0.7)
-	fountain.add_child(_cylinder_mesh("Water", FOUNTAIN_RADIUS - 0.25, FOUNTAIN_RADIUS - 0.25, 0.05, 0.68, water))
-	fountain.add_child(_cylinder_mesh("Spout", 0.25, 0.45, 1.8, 0.9, _material(STONE_COLOR)))
+	fountain.add_child(ShapeKit.cylinder("Water", FOUNTAIN_RADIUS - 0.25, FOUNTAIN_RADIUS - 0.25, 0.05, Vector3(0.0, 0.68, 0.0), water, 24))
+	fountain.add_child(ShapeKit.cylinder("Spout", 0.25, 0.45, 1.8, Vector3(0.0, 0.9, 0.0), _material(STONE_COLOR), 24))
 	return fountain
 
 
 func _lantern(lantern_name: String, where: Vector3) -> Node3D:
 	var post: Node3D = _node3d(lantern_name)
 	post.position = where
-	post.add_child(_cylinder_mesh("Post", 0.08, 0.1, 2.4, 1.2, _material(Color(0.25, 0.22, 0.2))))
+	post.add_child(ShapeKit.cylinder("Post", 0.08, 0.1, 2.4, Vector3(0.0, 1.2, 0.0), _material(Color(0.25, 0.22, 0.2)), 24))
 	var glow: StandardMaterial3D = _standard(LANTERN_COLOR)
 	glow.emission_enabled = true
 	glow.emission = LANTERN_COLOR
@@ -732,7 +720,7 @@ func _build_moss_oaks(parent: Node3D) -> void:
 	for index: int in TRAIL_POINTS.size() - 1:
 		var from: Vector3 = TRAIL_POINTS[index]
 		var to: Vector3 = TRAIL_POINTS[index + 1]
-		var strip: MeshInstance3D = _mesh_box("Trail%d" % index, Vector3(3.0, 0.02, from.distance_to(to) + 1.0), (from + to) * 0.5 + Vector3.UP * 0.01, dirt)
+		var strip: MeshInstance3D = ShapeKit.box("Trail%d" % index, Vector3(3.0, 0.02, from.distance_to(to) + 1.0), (from + to) * 0.5 + Vector3.UP * 0.01, dirt)
 		strip.rotation = Vector3(0.0, atan2(to.x - from.x, to.z - from.z), 0.0)
 		oaks.add_child(strip)
 	for index: int in OAK_SPOTS.size():
@@ -763,7 +751,7 @@ func _build_holloway(parent: Node3D) -> void:
 	for side: float in [-1.0, 1.0]:
 		var center: Vector3 = Vector3(side * (HOLLOWAY_HALF_WIDTH + BANK_WIDTH * 0.5), BANK_LIP - bank_height * 0.5, (HOLLOWAY_TOP_Z + HOLLOWAY_EXIT_Z) * 0.5)
 		var bank: StaticBody3D = _low(_box_body("Bank%s" % ("West" if side < 0.0 else "East"), Vector3(BANK_WIDTH, bank_height, bank_length), center, earth))
-		bank.add_child(_mesh_box("Moss", Vector3(BANK_WIDTH + 0.1, 0.12, bank_length), Vector3(0.0, bank_height * 0.5, 0.0), moss))
+		bank.add_child(ShapeKit.box("Moss", Vector3(BANK_WIDTH + 0.1, 0.12, bank_length), Vector3(0.0, bank_height * 0.5, 0.0), moss))
 		holloway.add_child(bank)
 	var roots: Material = _material(ROOT_COLOR)
 	for index: int in ROOT_ARCH_ZS.size():
@@ -833,17 +821,17 @@ func _build_gorge(parent: Node3D) -> void:
 		gorge.add_child(_wall("BayRail%sSouth" % label, Vector2(rail_x, BRIDGE_BAY_Z.y), Vector2(bay_x, BRIDGE_BAY_Z.y), RAIL_HEIGHT, timber, 0.0, 0.2))
 		gorge.add_child(_wall("BayRail%sNorth" % label, Vector2(rail_x, BRIDGE_BAY_Z.x), Vector2(bay_x, BRIDGE_BAY_Z.x), RAIL_HEIGHT, timber, 0.0, 0.2))
 		for z: float in [3.0, -3.0, -9.0]:
-			gorge.add_child(_mesh_box("Trestle%s%d" % [label, int(z)], Vector3(0.5, GORGE_DEPTH, 0.5), Vector3(side * (GORGE_BRIDGE_HALF_WIDTH - 0.4), -GORGE_DEPTH * 0.5 - 0.4, z), timber))
-		var brace: MeshInstance3D = _mesh_box("Brace%s" % label, Vector3(0.3, 0.3, span * 0.9), Vector3(side * (GORGE_BRIDGE_HALF_WIDTH - 0.4), -4.0, middle_z), timber)
+			gorge.add_child(ShapeKit.box("Trestle%s%d" % [label, int(z)], Vector3(0.5, GORGE_DEPTH, 0.5), Vector3(side * (GORGE_BRIDGE_HALF_WIDTH - 0.4), -GORGE_DEPTH * 0.5 - 0.4, z), timber))
+		var brace: MeshInstance3D = ShapeKit.box("Brace%s" % label, Vector3(0.3, 0.3, span * 0.9), Vector3(side * (GORGE_BRIDGE_HALF_WIDTH - 0.4), -4.0, middle_z), timber)
 		brace.rotation = Vector3(0.35, 0.0, 0.0)
 		gorge.add_child(brace)
 	for end_z: float in [SOUTH_CLIFF_Z.x, NORTH_CLIFF_Z.y]:
-		gorge.add_child(_mesh_box("Pier%d" % int(end_z), Vector3(GORGE_BRIDGE_HALF_WIDTH * 2.0 + 1.0, GORGE_DEPTH, 2.0), Vector3(0.0, -GORGE_DEPTH * 0.5 - 0.4, end_z), stone))
+		gorge.add_child(ShapeKit.box("Pier%d" % int(end_z), Vector3(GORGE_BRIDGE_HALF_WIDTH * 2.0 + 1.0, GORGE_DEPTH, 2.0), Vector3(0.0, -GORGE_DEPTH * 0.5 - 0.4, end_z), stone))
 	# The chasm's rock faces.
-	gorge.add_child(_mesh_box("FaceSouth", Vector3(w * 2.0, GORGE_DEPTH, 0.6), Vector3(0.0, -GORGE_DEPTH * 0.5, SOUTH_CLIFF_Z.x - 0.3), cliff))
-	gorge.add_child(_mesh_box("FaceNorth", Vector3(w * 2.0, GORGE_DEPTH, 0.6), Vector3(0.0, -GORGE_DEPTH * 0.5, NORTH_CLIFF_Z.y + 0.3), cliff))
+	gorge.add_child(ShapeKit.box("FaceSouth", Vector3(w * 2.0, GORGE_DEPTH, 0.6), Vector3(0.0, -GORGE_DEPTH * 0.5, SOUTH_CLIFF_Z.x - 0.3), cliff))
+	gorge.add_child(ShapeKit.box("FaceNorth", Vector3(w * 2.0, GORGE_DEPTH, 0.6), Vector3(0.0, -GORGE_DEPTH * 0.5, NORTH_CLIFF_Z.y + 0.3), cliff))
 	for side: float in [-1.0, 1.0]:
-		gorge.add_child(_mesh_box("Face%s" % ("West" if side < 0.0 else "East"), Vector3(0.6, GORGE_DEPTH + 8.0, span), Vector3(side * (w + 0.3), -GORGE_DEPTH * 0.5 + 4.0, middle_z), cliff))
+		gorge.add_child(ShapeKit.box("Face%s" % ("West" if side < 0.0 else "East"), Vector3(0.6, GORGE_DEPTH + 8.0, span), Vector3(side * (w + 0.3), -GORGE_DEPTH * 0.5 + 4.0, middle_z), cliff))
 	# The Doverslap: a roaring fall of water down the east side, misting at its foot.
 	var fall: StandardMaterial3D = StandardMaterial3D.new()
 	fall.albedo_color = WATERFALL_COLOR
@@ -851,7 +839,7 @@ func _build_gorge(parent: Node3D) -> void:
 	fall.emission_enabled = true
 	fall.emission = Color(0.55, 0.75, 0.9)
 	fall.emission_energy_multiplier = 0.6
-	gorge.add_child(_mesh_box("Waterfall", WATERFALL_SIZE, WATERFALL_POSITION, fall))
+	gorge.add_child(ShapeKit.box("Waterfall", WATERFALL_SIZE, WATERFALL_POSITION, fall))
 	gorge.add_child(_mist("FallMist", WATERFALL_POSITION + Vector3(0.0, -WATERFALL_SIZE.y * 0.4, 1.0), Vector3(3.0, 1.0, 2.0)))
 	gorge.add_child(_mist("FallSpray", WATERFALL_POSITION + Vector3(-1.0, WATERFALL_SIZE.y * 0.45, 0.8), Vector3(2.5, 0.5, 1.0)))
 	var wheel: Node3D = Node3D.new()
@@ -861,7 +849,7 @@ func _build_gorge(parent: Node3D) -> void:
 	wheel.rotation = Vector3(0.0, 0.0, PI * 0.5)
 	wheel.scale = Vector3.ONE * MILLWHEEL_SCALE
 	gorge.add_child(wheel)
-	gorge.add_child(_mesh_box("MillHouse", Vector3(4.0, 5.0, 5.0), MILLWHEEL_POSITION + Vector3(-3.5, 0.5, 0.0), _material(MILL_COLOR)))
+	gorge.add_child(ShapeKit.box("MillHouse", Vector3(4.0, 5.0, 5.0), MILLWHEEL_POSITION + Vector3(-3.5, 0.5, 0.0), _material(MILL_COLOR)))
 	# The Sinaya Gatehouse: two stone towers with carved timber turrets, walls out to the cliff sides.
 	var half_gate: float = CoopGate.PORTCULLIS_WIDTH * 0.5
 	for side: float in [-1.0, 1.0]:
@@ -876,11 +864,11 @@ func _build_gorge(parent: Node3D) -> void:
 		roof.mesh = turret
 		roof.position = Vector3(0.0, GATE_TOWER_SIZE.y * 0.5 + 1.6, 0.0)
 		tower.add_child(roof)
-		tower.add_child(_mesh_box("Gallery", Vector3(GATE_TOWER_SIZE.x + 0.6, 0.5, GATE_TOWER_SIZE.z + 0.6), Vector3(0.0, GATE_TOWER_SIZE.y * 0.5 + 0.25, 0.0), timber))
+		tower.add_child(ShapeKit.box("Gallery", Vector3(GATE_TOWER_SIZE.x + 0.6, 0.5, GATE_TOWER_SIZE.z + 0.6), Vector3(0.0, GATE_TOWER_SIZE.y * 0.5 + 0.25, 0.0), timber))
 		gorge.add_child(tower)
 		var wall_from: float = side * (half_gate + GATE_TOWER_SIZE.x)
 		gorge.add_child(_wall("GateWall%s" % label, Vector2(wall_from, GATE_POSITION.z), Vector2(side * w, GATE_POSITION.z), GATE_WALL_HEIGHT, stone, 0.0, 1.2))
-	gorge.add_child(_mesh_box("GateLintel", Vector3(CoopGate.PORTCULLIS_WIDTH + 0.6, 0.6, 0.9), Vector3(0.0, CoopGate.PORTCULLIS_HEIGHT + 0.5, GATE_POSITION.z), timber))
+	gorge.add_child(ShapeKit.box("GateLintel", Vector3(CoopGate.PORTCULLIS_WIDTH + 0.6, 0.6, 0.9), Vector3(0.0, CoopGate.PORTCULLIS_HEIGHT + 0.5, GATE_POSITION.z), timber))
 	var gate_sign: Label3D = Label3D.new()
 	gate_sign.name = "GateSign"
 	gate_sign.text = "Sinaya Gatehouse"
@@ -921,7 +909,7 @@ func _build_ring(parent: Node3D) -> void:
 		var angle: float = TAU * float(index) / PILLAR_COUNT
 		var where: Vector3 = BOSS_POSITION + Vector3(cos(angle), 0.0, sin(angle)) * PILLAR_RING_RADIUS
 		var pillar: StaticBody3D = _pillar("Pillar%d" % (index + 1), where, _material(STONE_COLOR))
-		pillar.add_child(_cylinder_mesh("Moss", PILLAR_RADIUS * 0.95, PILLAR_RADIUS * 1.02, 0.4, PILLAR_HEIGHT * 0.5 - 0.15, moss))
+		pillar.add_child(ShapeKit.cylinder("Moss", PILLAR_RADIUS * 0.95, PILLAR_RADIUS * 1.02, 0.4, Vector3(0.0, PILLAR_HEIGHT * 0.5 - 0.15, 0.0), moss, 24))
 		ring.add_child(pillar)
 	ring.add_child(_mist("Spray", Vector3(0.0, 2.5, north + 1.0), Vector3(half, 1.5, 1.0)))
 
@@ -991,7 +979,7 @@ func _ramp(ramp_name: String, half_width: float, from_z: float, from_y: float, t
 
 ## A round beam from one point to another (roots, boughs).
 func _beam(beam_name: String, from: Vector3, to: Vector3, radius: float, material: Material) -> MeshInstance3D:
-	var beam: MeshInstance3D = _cylinder_mesh(beam_name, radius * 0.8, radius, from.distance_to(to), 0.0, material)
+	var beam: MeshInstance3D = ShapeKit.cylinder(beam_name, radius * 0.8, radius, from.distance_to(to), Vector3(0.0, 0.0, 0.0), material, 24)
 	var up: Vector3 = (to - from).normalized()
 	var side: Vector3 = up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
 	beam.transform = Transform3D(Basis(side, up, side.cross(up)), (from + to) * 0.5)
@@ -1110,20 +1098,6 @@ func _standard(color: Color) -> StandardMaterial3D:
 	return material
 
 
-func _cylinder_mesh(mesh_name: String, top: float, bottom: float, height: float, center_y: float, material: Material) -> MeshInstance3D:
-	var mesh: CylinderMesh = CylinderMesh.new()
-	mesh.top_radius = top
-	mesh.bottom_radius = bottom
-	mesh.height = height
-	mesh.radial_segments = 24
-	mesh.material = material
-	var visual: MeshInstance3D = MeshInstance3D.new()
-	visual.name = mesh_name
-	visual.mesh = mesh
-	visual.position = Vector3(0.0, center_y, 0.0)
-	return visual
-
-
 func _box_body(body_name: String, size: Vector3, where: Vector3, material: Material) -> StaticBody3D:
 	var body: StaticBody3D = StaticBody3D.new()
 	body.name = body_name
@@ -1159,7 +1133,7 @@ func _pillar(body_name: String, where: Vector3, material: Material) -> StaticBod
 	collision.name = "Collision"
 	collision.shape = shape
 	body.add_child(collision)
-	var visual: MeshInstance3D = _cylinder_mesh("Mesh", PILLAR_RADIUS * 0.9, PILLAR_RADIUS, PILLAR_HEIGHT, 0.0, material)
+	var visual: MeshInstance3D = ShapeKit.cylinder("Mesh", PILLAR_RADIUS * 0.9, PILLAR_RADIUS, PILLAR_HEIGHT, Vector3(0.0, 0.0, 0.0), material, 24)
 	body.add_child(visual)
 	return body
 

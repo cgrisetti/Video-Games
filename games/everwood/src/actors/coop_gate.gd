@@ -226,31 +226,10 @@ func _build_portcullis() -> void:
 	var bars: int = int(PORTCULLIS_WIDTH / BAR_SPACING)
 	for index: int in bars + 1:
 		var x: float = -PORTCULLIS_WIDTH * 0.5 + index * PORTCULLIS_WIDTH / bars
-		_portcullis.add_child(_box("Bar%d" % index, Vector3(0.16, PORTCULLIS_HEIGHT, 0.16), Vector3(x, PORTCULLIS_HEIGHT * 0.5, 0.0), timber))
+		_portcullis.add_child(ShapeKit.box("Bar%d" % index, Vector3(0.16, PORTCULLIS_HEIGHT, 0.16), Vector3(x, PORTCULLIS_HEIGHT * 0.5, 0.0), timber))
 	for row: int in 4:
 		var y: float = 0.5 + row * (PORTCULLIS_HEIGHT - 0.8) / 3.0
-		_portcullis.add_child(_box("Band%d" % row, Vector3(PORTCULLIS_WIDTH, 0.14, 0.22), Vector3(0.0, y, 0.0), iron))
+		_portcullis.add_child(ShapeKit.box("Band%d" % row, Vector3(PORTCULLIS_WIDTH, 0.14, 0.22), Vector3(0.0, y, 0.0), iron))
 	for index: int in bars + 1:
 		var x: float = -PORTCULLIS_WIDTH * 0.5 + index * PORTCULLIS_WIDTH / bars
-		var spike: CylinderMesh = CylinderMesh.new()
-		spike.top_radius = 0.0
-		spike.bottom_radius = 0.09
-		spike.height = 0.3
-		spike.material = iron
-		var tip: MeshInstance3D = MeshInstance3D.new()
-		tip.name = "Spike%d" % index
-		tip.mesh = spike
-		tip.position = Vector3(x, -0.15, 0.0)
-		tip.rotation = Vector3(PI, 0.0, 0.0)
-		_portcullis.add_child(tip)
-
-
-func _box(box_name: String, size: Vector3, where: Vector3, material: Material) -> MeshInstance3D:
-	var mesh: BoxMesh = BoxMesh.new()
-	mesh.size = size
-	mesh.material = material
-	var box: MeshInstance3D = MeshInstance3D.new()
-	box.name = box_name
-	box.mesh = mesh
-	box.position = where
-	return box
+		_portcullis.add_child(ShapeKit.tilted(ShapeKit.cone("Spike%d" % index, 0.09, 0.3, Vector3(x, -0.15, 0.0), iron), Vector3(PI, 0.0, 0.0)))

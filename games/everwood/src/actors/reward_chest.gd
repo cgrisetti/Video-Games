@@ -53,15 +53,15 @@ func _ready() -> void:
 	add_child(_model)
 	var wood: Material = _material(WOOD_COLOR, 0.0)
 	var trim: Material = _material(TRIM_COLOR, 1.2)
-	_model.add_child(_box("Body", BODY_SIZE, Vector3(0.0, BODY_SIZE.y * 0.5, 0.0), wood))
-	_model.add_child(_box("Band", Vector3(BODY_SIZE.x + 0.04, 0.12, BODY_SIZE.z + 0.04), Vector3(0.0, BODY_SIZE.y * 0.55, 0.0), trim))
+	_model.add_child(ShapeKit.box("Body", BODY_SIZE, Vector3(0.0, BODY_SIZE.y * 0.5, 0.0), wood))
+	_model.add_child(ShapeKit.box("Band", Vector3(BODY_SIZE.x + 0.04, 0.12, BODY_SIZE.z + 0.04), Vector3(0.0, BODY_SIZE.y * 0.55, 0.0), trim))
 	# The lid hinges on the back edge, so it swings up and away from the party.
 	_lid = Node3D.new()
 	_lid.name = "Lid"
 	_lid.position = Vector3(0.0, BODY_SIZE.y, BODY_SIZE.z * 0.5)
 	_model.add_child(_lid)
-	_lid.add_child(_box("Top", LID_SIZE, Vector3(0.0, LID_SIZE.y * 0.5, -LID_SIZE.z * 0.5), wood))
-	_lid.add_child(_box("Clasp", Vector3(0.24, 0.24, 0.06), Vector3(0.0, 0.0, -LID_SIZE.z - 0.02), trim))
+	_lid.add_child(ShapeKit.box("Top", LID_SIZE, Vector3(0.0, LID_SIZE.y * 0.5, -LID_SIZE.z * 0.5), wood))
+	_lid.add_child(ShapeKit.box("Clasp", Vector3(0.24, 0.24, 0.06), Vector3(0.0, 0.0, -LID_SIZE.z - 0.02), trim))
 	# A brass Chime turns above it.
 	_coin = ChimeCoin.make(COIN_SIZE)
 	_coin.position = Vector3(0.0, COIN_HEIGHT, 0.0)
@@ -133,17 +133,6 @@ func _open(opener_id: String, amount: int, card: String) -> void:
 	coins.position = Vector3(0.0, BODY_SIZE.y, 0.0)
 	AudioCues.play(&"chest")
 	opened.emit(StringName(opener_id), amount, card_key)
-
-
-func _box(box_name: String, size: Vector3, where: Vector3, material: Material) -> MeshInstance3D:
-	var mesh: BoxMesh = BoxMesh.new()
-	mesh.size = size
-	mesh.material = material
-	var box: MeshInstance3D = MeshInstance3D.new()
-	box.name = box_name
-	box.mesh = mesh
-	box.position = where
-	return box
 
 
 ## The storybook cel look, or a glowing material when `glow` is above zero.

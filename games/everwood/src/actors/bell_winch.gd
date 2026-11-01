@@ -19,8 +19,8 @@ func _ready() -> void:
 	reach = 2.4
 	var timber: Material = StorybookMaterial.make(FRAME_COLOR)
 	for side: float in [-1.0, 1.0]:
-		add_child(_box("Post", Vector3(0.18, FRAME_HEIGHT, 0.18), Vector3(side * 0.7, FRAME_HEIGHT * 0.5, 0.0), timber))
-	add_child(_box("Beam", Vector3(1.7, 0.18, 0.2), Vector3(0.0, FRAME_HEIGHT, 0.0), timber))
+		add_child(ShapeKit.box("Post", Vector3(0.18, FRAME_HEIGHT, 0.18), Vector3(side * 0.7, FRAME_HEIGHT * 0.5, 0.0), timber))
+	add_child(ShapeKit.box("Beam", Vector3(1.7, 0.18, 0.2), Vector3(0.0, FRAME_HEIGHT, 0.0), timber))
 	var drum: CylinderMesh = CylinderMesh.new()
 	drum.top_radius = 0.22
 	drum.bottom_radius = 0.22
@@ -66,14 +66,3 @@ func prompt_for(actor: ActorBase) -> String:
 
 func interact(actor: ActorBase) -> void:
 	ring_requested.emit(actor)
-
-
-func _box(box_name: String, size: Vector3, where: Vector3, material: Material) -> MeshInstance3D:
-	var mesh: BoxMesh = BoxMesh.new()
-	mesh.size = size
-	mesh.material = material
-	var box: MeshInstance3D = MeshInstance3D.new()
-	box.name = box_name
-	box.mesh = mesh
-	box.position = where
-	return box

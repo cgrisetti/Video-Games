@@ -105,11 +105,11 @@ func _build_visual() -> void:
 ## A thorny bramble ball on six twig legs, with two ember eyes.
 func _build_scuttler() -> void:
 	var radius: float = RADII[Kind.SCUTTLER]
-	visual.add_child(_sphere("Body", radius, Vector3(0.0, 0.5, 0.0), _body_material, Vector3(1.0, 0.75, 1.0)))
+	visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Body", radius, Vector3(0.0, 0.5, 0.0), _body_material), Vector3(1.0, 0.75, 1.0)))
 	var thorns: Material = _flat_material(THORN_COLOR)
 	for index: int in 10:
 		var angle: float = TAU * float(index) / 10.0
-		var thorn: MeshInstance3D = _cone("Thorn%d" % index, 0.07, 0.3, thorns)
+		var thorn: MeshInstance3D = ShapeKit.cone("Thorn%d" % index, 0.07, 0.3, Vector3.ZERO, thorns)
 		var out: Vector3 = Vector3(cos(angle), 0.35 if index % 2 == 0 else -0.1, sin(angle)).normalized()
 		thorn.position = Vector3(0.0, 0.5, 0.0) + out * radius * 0.85
 		thorn.basis = _pointing(out)
@@ -120,7 +120,7 @@ func _build_scuttler() -> void:
 		var leg: Node3D = Node3D.new()
 		leg.name = "Leg%d" % index
 		leg.position = Vector3(side * radius * 0.6, 0.4, (float(index % 3) - 1.0) * radius * 0.6)
-		var bone: MeshInstance3D = _cylinder("Twig", 0.035, 0.55, twig)
+		var bone: MeshInstance3D = ShapeKit.cylinder("Twig", 0.035, 0.035, 0.55, Vector3.ZERO, twig, 8)
 		bone.position = Vector3(side * 0.18, -0.18, 0.0)
 		bone.rotation = Vector3(0.0, 0.0, side * 0.9)
 		leg.add_child(bone)
@@ -131,19 +131,19 @@ func _build_scuttler() -> void:
 
 ## A hunched moss-grey imp: a round body, a big head with pointed ears, lantern eyes and little arms.
 func _build_imp() -> void:
-	visual.add_child(_sphere("Body", 0.36, Vector3(0.0, 0.5, 0.0), _body_material, Vector3(1.0, 1.25, 0.9)))
-	visual.add_child(_sphere("Head", 0.3, Vector3(0.0, 1.02, -0.08), _body_material, Vector3.ONE))
+	visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Body", 0.36, Vector3(0.0, 0.5, 0.0), _body_material), Vector3(1.0, 1.25, 0.9)))
+	visual.add_child(ShapeKit.sphere("Head", 0.3, Vector3(0.0, 1.02, -0.08), _body_material))
 	var ear_material: Material = _flat_material(loadout.body_color.darkened(0.25))
 	for side: float in [-1.0, 1.0]:
-		var ear: MeshInstance3D = _cone("Ear", 0.09, 0.32, ear_material)
+		var ear: MeshInstance3D = ShapeKit.cone("Ear", 0.09, 0.32, Vector3.ZERO, ear_material)
 		ear.position = Vector3(side * 0.24, 1.2, -0.05)
 		ear.rotation = Vector3(0.0, 0.0, -side * 0.7)
 		visual.add_child(ear)
-		var arm: MeshInstance3D = _cylinder("Arm", 0.06, 0.45, _body_material)
+		var arm: MeshInstance3D = ShapeKit.cylinder("Arm", 0.06, 0.06, 0.45, Vector3.ZERO, _body_material, 8)
 		arm.position = Vector3(side * 0.36, 0.52, -0.12)
 		arm.rotation = Vector3(0.5, 0.0, side * 0.5)
 		visual.add_child(arm)
-		var foot: MeshInstance3D = _sphere("Foot", 0.1, Vector3(side * 0.16, 0.08, -0.04), ear_material, Vector3(1.0, 0.6, 1.4))
+		var foot: MeshInstance3D = ShapeKit.stretched(ShapeKit.sphere("Foot", 0.1, Vector3(side * 0.16, 0.08, -0.04), ear_material), Vector3(1.0, 0.6, 1.4))
 		visual.add_child(foot)
 	_add_eyes(Vector3(0.11, 1.06, -0.33), 0.065)
 
@@ -151,7 +151,7 @@ func _build_imp() -> void:
 func _add_eyes(right_eye: Vector3, size: float) -> void:
 	var glow: StandardMaterial3D = StorybookMaterial.glowing(EYE_COLORS[kind], 3.0)
 	for side: float in [-1.0, 1.0]:
-		visual.add_child(_sphere("Eye", size, Vector3(right_eye.x * side, right_eye.y, right_eye.z), glow, Vector3.ONE))
+		visual.add_child(ShapeKit.sphere("Eye", size, Vector3(right_eye.x * side, right_eye.y, right_eye.z), glow))
 
 
 # --- AI (runs only on the host, which owns minions) ------------------------
@@ -244,44 +244,3 @@ static func _pointing(direction: Vector3) -> Basis:
 	var up: Vector3 = direction.normalized()
 	var side: Vector3 = up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
 	return Basis(side, up, side.cross(up))
-
-
-func _sphere(part_name: String, radius: float, where: Vector3, material: Material, stretch: Vector3) -> MeshInstance3D:
-	var mesh: SphereMesh = SphereMesh.new()
-	mesh.radius = radius
-	mesh.height = radius * 2.0
-	mesh.radial_segments = 16
-	mesh.rings = 8
-	mesh.material = material
-	var node: MeshInstance3D = MeshInstance3D.new()
-	node.name = part_name
-	node.mesh = mesh
-	node.position = where
-	node.scale = stretch
-	return node
-
-
-func _cone(part_name: String, radius: float, height: float, material: Material) -> MeshInstance3D:
-	var mesh: CylinderMesh = CylinderMesh.new()
-	mesh.top_radius = 0.0
-	mesh.bottom_radius = radius
-	mesh.height = height
-	mesh.radial_segments = 8
-	mesh.material = material
-	var node: MeshInstance3D = MeshInstance3D.new()
-	node.name = part_name
-	node.mesh = mesh
-	return node
-
-
-func _cylinder(part_name: String, radius: float, height: float, material: Material) -> MeshInstance3D:
-	var mesh: CylinderMesh = CylinderMesh.new()
-	mesh.top_radius = radius
-	mesh.bottom_radius = radius
-	mesh.height = height
-	mesh.radial_segments = 8
-	mesh.material = material
-	var node: MeshInstance3D = MeshInstance3D.new()
-	node.name = part_name
-	node.mesh = mesh
-	return node
