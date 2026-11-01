@@ -37,7 +37,7 @@ Every hero chooses a **Primary Fellowship** (locking in their Raid Trinity Seat:
 - **`+ MAGIC` Secondary:** `-5.0` Max HP, `+2.0/s` Stamina Regen, `+20%` Resonance Pip Gain & Heal/Shield Potency, `+1` Grimoire Memory Capacity, unlocks `STAFF` & `Sign of Warm-Hearth` / `Sign of Star-Tide` affinity.
 ---
 
-## 4. Build Notes (Phase 8)
+## 4. Build Notes (Phases 8 to 10)
 
 What the game uses today, and what is still design only.
 
@@ -47,12 +47,13 @@ What the game uses today, and what is still design only.
 - **Bramblebridge** is the hub's name, with a greybox pass toward §1: stepped gables, a canal with a bridge, and a turning watermill wheel. Its files and network id stay `hub_town`.
 - **The Cairnsman of Doverslap** is the first raid boss (`BossDummy`), fought in **The Ring of the Cairnsman** (the Phase 7 & 8 brief's name for the boss sanctum). Its files and network id stay `dungeon_dojo`.
 
+**Built in Phases 9 and 10** (see 07_EXPEDITION_HUD_AND_ART_GDD.md §5)
+- The 3x3 Callings, with the names in §3 and the Secondary modifiers above.
+- The expedition trail: the Ariundle Moss-Oaks, the Sunken Holloway, the Doverslap Gorge Bridge with its gatehouse and paper-mill wheel, and the Ring of the Cairnsman. Bramblebridge Green is the hub's spawn green.
+
 **Design only, not built yet**
-- The 3x3 Callings. The game still has the three Phase 7 classes (Shield Tank, Soul-Tether Healer, Flow DPS), which map onto the three Primary Fellowships.
-- The expedition trail's zones (Bramblebridge Green, Ariundle Moss-Oaks, Sunken Holloway, Doverslap Gorge Bridge) and the other regions.
+- The other regions (the Wadden-Green, Millwater Reach, Luka-Bay, Tizzi-Wed, the Saffron Cliffs, Sinaya Mill-Castle and Corvin Bridge-Keep).
 
 **Naming decisions**
 - **The Callings are named as in §3** (Creative Director, 2026-11-01). The Phase 7 & 8 brief used other names (Bastion-Ward, Iron-Gable, Cairn-Breaker, Edgerunner, Carillon Guard, Gale-Warden, High-Scribe); those are retired. Use the §3 names in code and copy.
-
-**Open naming question for the Creative Director**
-- The currency is still called "Dojo Shards", from the old Dojo.
+- **The currency is Chimes** (07 GDD §1.2): octagonal brass wayfarer coins. "Dojo Shards" is retired.

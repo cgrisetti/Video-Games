@@ -1,6 +1,6 @@
-# 04_BALANCE.md — Balance (Phases 5 to 8)
+# 04_BALANCE.md — Balance (Phases 5 to 10)
 
-Phase 8 renamed things (06_WORLD_AND_CALLINGS.md): the Aspects are the Four Scribe Signs, the Dojo Warden is The Cairnsman of Doverslap, and card variants are finishes. The numbers didn't change.
+Phase 8 renamed things (06_WORLD_AND_CALLINGS.md): the Aspects are the Four Scribe Signs, the Dojo Warden is The Cairnsman of Doverslap, and card variants are finishes. The numbers didn't change. Phases 9 and 10 (07_EXPEDITION_HUD_AND_ART_GDD.md) renamed Dojo Shards to Chimes and added the Callings, the Doverslap Expedition and the Phase 2 Gale-Beam: see the sections from "The 3x3 Callings" down.
 
 First-pass numbers, set by arithmetic rather than playtesting. Tune them after the family plays. Every number is a named constant; the "Where" column says which file.
 
@@ -138,18 +138,18 @@ Any class may slot any card except Homing Heal and Lifeline Pull, which need a S
 
 The window never opens during wind-up, and the buffer holds two presses. With a short action like a Snap-Shot (0.56 s), the 400 ms window covers most of it. With a long one like the Piercing Draw (1.1 s), Master players have to time the press (`smoke_test.gd` checks both edges, timed from whatever Heavy the DPS holds).
 
-## Victory and Dojo Shards
+## Victory and Chimes
 
 | Number | Value | Where | Why |
 |---|---|---|---|
 | Slow motion | ×0.2 for 2 real seconds | `dungeon_dojo.gd` | Long enough to see the boss fall, short enough not to drag |
-| Chest | 10 + 2 shards per person (16 for three) | `dungeon_dojo.gd` | Bigger parties beat a tougher boss; companions don't add shards |
+| Chest | 10 + 2 Chimes per person (16 for three) | `dungeon_dojo.gd` | Bigger parties beat a tougher boss; companions don't add Chimes |
 | Chest arming | Opens 1.2 s after it lands | `reward_chest.gd` | Everyone sees it drop before anyone can open it |
 | Trip home | 5 s after the chest opens | `dungeon_dojo.gd` | Time to read the banner |
 
-## Shard Vendor upgrades
+## Chime-Shrine upgrades
 
-Each level adds 10% of the class's own number for the whole party, up to 5 levels. Level n costs 4 × n shards, so one upgrade line costs 60 in all and both cost 120: about 8 wins for a party of three. Fully upgraded, the Shield Tank has 240 health (from 160) and stamina comes back at 33 a second (from 22). Health upgrades also make the boss's fixed damage relatively smaller, so the fight gets gentler as the family progresses.
+Each level adds 10% of the class's own number for the whole party, up to 5 levels. Level n costs 4 × n Chimes, so one upgrade line costs 60 in all and both cost 120: about 3 full expeditions for a party of three (a run pays about 40, see below). Fully upgraded, a Bridge-Warden has 270 health (from 180), and every stamina regen grows by half (22 to 33 a second in medium armor, before the Calling's own change). Health upgrades also make the boss's fixed damage relatively smaller, so the fight gets gentler as the family progresses.
 
 ## Companions
 
@@ -161,14 +161,61 @@ Each level adds 10% of the class's own number for the whole party, up to 5 level
 | Tank guard | Raised 0.12 s before the swipe lands | `companion_ai_component.gd` | Inside the 200 ms window: the bot tank lands Perfect Guards |
 | DPS roll | 0.35 s before the swipe lands | `companion_ai_component.gd` | Clears the reach with time to spare |
 | Healer | Heals anyone under 75%; Lifeline when a friend stands in red that's half full | `companion_ai_component.gd` | Keeps a child up without overhealing |
-| Stamina reserve | Attacks keep 30 back (the tank excepted) | `companion_ai_component.gd` | Always enough for a roll or a guard |
+| Stamina reserve | Attacks keep 30 back; the tank keeps 30 too (25 guards, +5) | `companion_ai_component.gd` | Always enough for a roll or a guard (a Stout Heart's slower stamina had a tank swinging itself too tired to guard) |
+| Minions | Fight any woken minion within 20 m | `companion_ai_component.gd` | Bots help clear camps, but don't wander off after far ones |
+| Catch-up | More than 22 m behind the leader, with no foe nearby: appear 3 m behind them | `companion_ai_component.gd` | A long trail (and walls) would otherwise strand a bot |
+| Gale-Beam | The tank faces the boss and raises Shadow Sanctuary; others go into its cone (45% of its length), or step out of the lane | `companion_ai_component.gd` | Shows children what to do |
 
 In a headless run, one player plus two companions beat the Cairnsman (2,400 health) in about 70 seconds.
+
+## The 3x3 Callings (07 GDD §1.3)
+
+A Calling is the Fellowship's base numbers plus one Secondary modifier (`callings.gd`). Each Fellowship starts in its own column, so out of the box the Shield-Sworn is a Bridge-Warden (180 health), the Wayfarer a Hedge-Runner and the Lantern-Bearer a Lantern-Scribe (105 health).
+
+| Secondary | Health | Stamina regen | Potency | Gear it unlocks |
+|---|---|---|---|---|
+| Stout Heart (+Tank) | +20 | −2 / s | +25% poise damage, +30 ms Perfect Guard | Heavy armor |
+| Swift Foot (+DPS) | +0 | +3 / s | +15% damage on every strike (weapon and card) | Bow and axe |
+| Wise Hand (+Magic) | −5 | +2 / s | +20% pips from every source, +20% healing, +1 Grimoire Memory | Staff |
+
+Everyone may use the Falchion and light or medium armor, and a Fellowship always has its own column's gear (the Shield-Sworn wear plate, Wayfarers carry bows and axes, Lantern-Bearers bear staves). Stamina regen never drops below 6 a second, whatever the armor and Calling. A save naming gear the Calling can't use falls back to the starter piece.
+
+Why these numbers: every Secondary costs something or gives in two directions, so no column is simply best. The double-down Callings (Bridge-Warden, Hedge-Runner, Lantern-Scribe) get the purest version of their seat, and the cross Callings trade a little of it for new gear (a Weald-Captain tank with a Broad-Axe, a Sign-Seeker archer who earns pips faster).
+
+## The Doverslap Expedition (07 GDD §3)
+
+| Number | Value | Where | Why |
+|---|---|---|---|
+| Minions | 65 health, 30 poise (2 s knockdown), Scuttler nip 7, Imp claw 10 | `class_loadouts.gd` | A cleave, a volley or one detonation clears a few; they teach multi-target play, not hurt |
+| Minion speed | Scuttler 4.6 m/s, Imp 3.6 m/s; a strike every 1.5 s | `class_loadouts.gd`, `woodland_minion.gd` | Slower than a player (6+), so you can always walk away |
+| Camp wake / settle | A player within 9 m, or a minion hurt; settles when nobody is within 18 m | `minion_camp.gd` | Visible camps don't jump you from across the clearing |
+| Camp reward | 3 Chimes per cleared camp (2 camps) | `dungeon_dojo.gd` | Small, but it makes the trail worth fighting |
+| Wayfarer's Chest | 15 Chimes and one Uncommon card (own dice, never shifts the boss's drop) | `dungeon_dojo.gd` | A reward for exploring the alcove |
+| Water-Shrine | Full health and stamina for the whole party, then rests 40 s | `water_shrine.gd` | One clean reset before the gorge; not a heal-bot |
+| Rune-Plates | min(2, standing party) plates held together for 2 s | `coop_gate.gd` | Needs teamwork without ever soft-locking a lone player |
+| Gale-Jet | Quiet 3.5 s, gathers 1.4 s (the lane pales), blows 0.6 s: a 5 m shove down the lane, no damage | `gorge_gale_jet.gd` | A readable rhythm that pushes children around without hurting them |
+| Bell-Winch | Only rings from inside a Shadow Sanctuary cone (the tank holding it counts) | `coop_gate.gd` | The tank's shield is the key; teaches "stand behind the tank" before the boss asks for it |
+| Checkpoints | Zone 2 from z < 15, Zone 3 past the gate | `dungeon_dojo.gd` | A wipe never sends you back through the camps |
+
+In a headless run, one player with two companions clears both camps and reaches the gorge in about 40 seconds, and a demo player and a companion open the gate on the plates in under 20.
+
+## Phase 2: the Doverslap Gale-Beam (07 GDD §3, Zone 3)
+
+| Number | Value | Where | Why |
+|---|---|---|---|
+| Phase 2 | At 50% health or less; the first beam 1.5 s later | `boss_dummy.gd` | A clear "the fight changed" moment |
+| Rotation | Beam, then Crimson or Golden by turns, then beam again (every other cast) | `boss_dummy.gd` | The floor mechanics stay, the beam joins them |
+| Gale-Beam | 3.2 s cast; a 22 × 4.5 m lane from the boss through its top-threat player; it tracks them until 70% cast, then locks | `boss_dummy.gd`, `raid_telegraph_decal.gd` | Long enough for the tank to turn and raise the shield and for everyone to get behind it |
+| Sheltered | In any Shadow Sanctuary cone (or holding one): no damage, +½ pip | `boss_dummy.gd` | Rewards doing it right, like a Perfect Guard |
+| Exposed | 40 damage (before armor: 36 in linen, 26 in plate) and a 4 m knockback, never past 16 m from the boss | `boss_dummy.gd` | Hurts but never kills a full-health player on its own |
 
 ## Open questions for playtest
 
 - Should taunt cost 1 pip, or should the tank's Perfect Guard pip already be enough?
 - Is a companion tank that always lands Perfect Guards too strong next to a child playing tank? (Raise `PERFECT_GUARD_LEAD` past 0.2 s to make it guard early and take chip damage.)
-- Is 16 shards a win the right pace? Maxing both upgrades takes about 8 wins; a family that plays once a week might want it faster.
+- Is about 40 Chimes a run the right pace? Maxing both upgrades takes about 3 runs; with the camps and the Wayfarer's Chest that may now be too fast.
 - With armor mitigation on every hit, is the Cairnsman now too gentle? Its damage could rise 15–20% to make up for it.
 - Does a Rare card at Lv 2 (memory 7 of 8, no room for a link) feel like a real choice, or should Lv 2 hold 9?
+- Does the Gale-Beam's 3.2 s give a child at tank enough time to turn and raise Shadow Sanctuary? A Squire-mode tank could raise it automatically.
+- Is the Gale-Jet's push fun for younger players, or should it slow (not shove) them?
+- Do two minion camps feel like enough fighting before the boss, or should the holloway hold a third?

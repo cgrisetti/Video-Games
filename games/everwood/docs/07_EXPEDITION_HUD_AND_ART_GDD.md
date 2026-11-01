@@ -123,3 +123,34 @@ To maintain $100\%$ compliance with `CLAUDE.md` (zero fragile hand-edited `.tscn
 - Create a shared `ShaderMaterial` (`src/actors/storybook_cel_shader.gdshader` or inline `Shader`) featuring:
   - **2-Band Toon Ramp:** Crisp sunlit highlights and warm, never-muddy shadows.
   - **Fresnel Silhouette Rim-Light:** High-contrast rim glow tinted by team/role color so all 4 split-screen viewports remain effortlessly readable from the $4.8\text{ m}$ camera eye-line.
+
+---
+
+## 5. Build Notes (Phases 9 and 10)
+
+What the game does today, where it differs from the spec above, and what's still to come.
+
+**In the code now**
+- **Walkable Bramblebridge** (§1.1). The canal runs east to west across the village under a low stone arch: two 13° ramps and a flat crown, one convex collider flush with the ground at both ends, with parapets. Actors snap to floors within 0.35 m and climb up to 50° (`ActorBase`). The spawn green is south, the village square north (the Armory & Scribe Desk, the Chime-Shrine, a bakery with a smoking chimney, pigment racks), and the Raid Portal stands at the northern forest gate. Knee-high walls, rails and banks are on a `LowScenery` physics layer the cameras ignore.
+- **Chimes** (§1.2). The currency, everywhere: the Chime-Shrine (`chime_shrine.gd`) replaces the Shard Vendor, chests and cleared camps burst into octagonal brass coins (`ChimeCoin`, `ChimeBurst`) that fly to the party with a two-note bell. Saves keep their old `shards` pouch as Chimes.
+- **The 3x3 Callings** (§1.3). `callings.gd` holds the matrix, the Secondary modifiers and the gear rules; `ClassLoadouts.player_class(class_id, secondary)` applies them and `LoadoutComposer` scales every action. Each seat's Calling travels in the roster and is saved per Fellowship. Change it at the Scribe Desk's Fellowship and Calling rows, or hold C / L3 (Tab / View still changes Fellowship).
+- **The Cross-Grimoire HUD** (§2). `CrossGrimoireHUD` and `CrossSlot`, bottom-centre in each split-screen cell, scaled to the cell. Sign-tinted frames, under-card corner ribbons, pip readiness (60% opacity and 6 px low until affordable, then a gold border and glow), a 1.15x white pulse for 150 ms on press or buffer, health, stamina, pip gems, Calling title, Chimes, and the Lantern-Bearer's tether compass. The line of control help is gone.
+- **The Doverslap Expedition** (§3, repo Phase 9). `dungeon_dojo.gd` and `build_levels.gd`. Zone 1: the Moss-Oaks clearing, the Bramble Camp (3 Scuttlers), the alcove's Wayfarer's Chest, the ramp into the Sunken Holloway, root arches with Wind-Lanterns (`wind_lantern.gd`), the Water-Shrine (`water_shrine.gd`) and the Holloway Camp (3 Imps and a Scuttler); minions are `WoodlandMinion` on the enemy side, camps are `MinionCamp`. Zone 2: the trestle bridge with Rune-Plate bays, the waterfall, the paper-mill wheel, the Sinaya Gatehouse and its `CoopGate` (`RunePlate`, `BellWinch`, `GorgeGaleJet`). Zone 3: the causeway and the Ring. Checkpoints per zone; companions fight minions, take a plate, and catch up. The Cairnsman's Phase 2 adds the Doverslap Gale-Beam (`RaidTelegraphDecal` kind `BLUE_BEHIND_TANK`).
+- **Storybook art** (§4, repo Phase 10). `ActorVisuals` builds each hero's puppet by Fellowship, armor weight and Calling, with a speed-driven cape and a working Tether-Lantern light; the weapons' parts were redrawn; the Cairnsman has boulder fists that swing with the swipe, swaying bell-ropes and an amber core that heats up in the wind-up; minions have their own bodies. `storybook_cel.gdshader` (two light bands, a Fresnel rim, a glow for hit flashes) is on actors, items and scenery, under a warm sun with Filmic tone mapping and a light haze. `ResourceLoader.exists("res://assets/models/<id>.glb")` swaps in a dropped model for a hero, weapon, armor, minion or the boss.
+
+**Deliberate differences from this spec**
+- **Calling names.** The Creative Director chose the 06 §3 names on 2026-11-01 (Bridge-Warden, Weald-Captain, Hearth-Guard; Iron-Woodsman, Hedge-Runner, Sign-Seeker; Bell-Keeper, Wind-Mender, Lantern-Scribe), so the game uses those rather than §1.3's table; the subtitles are the same. All nine names are in one list in `callings.gd`.
+- **`ClassLoadoutComposer`** is `ClassLoadouts` (Fellowship and starter kit) with `Callings` (the Secondary) and `LoadoutComposer` (kit to actions).
+- **Gear rules.** Anyone may use the Falchion and light or medium armor; a Fellowship always has its own column's gear, so a Secondary's "unlock" matters for the cross Callings.
+- **The Ultimate crown** sits in the cross's bottom-right corner (the brief allows a side crown) with the Roll chip bottom-left, so the cross stays three rows tall in four-way split-screen. The Fellowship, Calling and mode holds are shown in Bramblebridge's banner.
+- **The Gorge Gale-Jet** shoves (5 m) but does no damage, and the Bell-Winch can only be rung from inside a Shadow Sanctuary cone; the tank holding the cone counts as sheltered for the Gale-Beam too.
+- **The Gale-Beam's 40 damage** is before armor, like every telegraph's.
+- **The Wayfarer's Chest's Uncommon card** comes from four new expedition-only Uncommon cards: Holloway Lunge, Root-Snare Step, Lantern Mote and Gorge Gale.
+- **The weapons** now carry §4.1's names (Falchion, Broad-Axe, Rowan Way-Staff, Yew Longbow); their ids are unchanged, so kits and saves still load.
+- **The puppets** are posed shapes with a swinging cape and lantern, not an animation rig.
+
+**Not built yet**
+- A latecomer joining mid-expedition is told the gate's state but not whether the Wayfarer's Chest is open or the Water-Shrine resting.
+- No models ship in `assets/models/`; the hook is ready for CC0 packs.
+- Companions steer in straight lines and skip ahead when stranded; there's no navigation mesh.
+
