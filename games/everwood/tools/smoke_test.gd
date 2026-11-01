@@ -597,7 +597,7 @@ func _check_doverslap_expedition() -> void:
 			built_right = built_right and is_equal_approx(minion.stats.stats.max_health, 65.0) and is_equal_approx(minion.stats.stats.max_poise, 30.0) \
 				and minion.is_boss() and not minion.is_raid_boss() and not minion.is_engaged()
 	_check(built_right and CombatDirector.current.primary_boss() == boss and CombatDirector.current.enemies().size() == 8,
-		"two sleeping woodland camps (3 Bramble-Scuttlers; 3 Holloway Imps and a Scuttler), 65 health and 30 poise each, and the boss is still the boss")
+		"two sleeping woodland camps (3 Bramble-Scuttlers; 3 Bog-Imps and a Scuttler), 65 health and 30 poise each, and the boss is still the boss")
 	# Down the holloway on the stick alone: a real 1.8 m ramp, no jump.
 	dps.place_at(Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, 48.0)))
 	dps.input.inject_move(Vector2(0.0, 1.0))

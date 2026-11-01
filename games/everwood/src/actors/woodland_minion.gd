@@ -1,6 +1,6 @@
 ## A woodland minion of the Ariundle Moss-Oaks (07_EXPEDITION_HUD_AND_ART_GDD.md
 ## §3, Zone 1): a Bramble-Scuttler, a thorny bramble ball on twig legs, or a
-## Holloway Imp, a hunched moss-grey sprite with lantern eyes. They wait in
+## Bog-Imp, a hunched moss-grey sprite with lantern eyes. They wait in
 ## their MinionCamp until a player comes near or one of them is hit, then the
 ## whole camp charges whoever tops its aggro table (a tank's taunt works on
 ## them too). 65 health and 30 poise: cleaves, bow volleys and Sign
@@ -14,7 +14,7 @@ extends ActorBase
 
 enum Kind { SCUTTLER, IMP }
 
-const KIND_NAMES: Array[String] = ["Bramble-Scuttler", "Holloway Imp"]
+const KIND_NAMES: Array[String] = ["Bramble-Scuttler", "Bog-Imp"]
 const HEALTH: float = 65.0
 const POISE: float = 30.0
 const RADII: Array[float] = [0.55, 0.4]

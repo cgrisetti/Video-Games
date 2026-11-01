@@ -11,7 +11,7 @@ const SOUL_TETHER_HEALER: StringName = &"soul_tether_healer"
 const DIRECTIONAL_FLOW_DPS: StringName = &"directional_flow_dps"
 const RAID_BOSS_DUMMY: StringName = &"raid_boss_dummy"
 ## The Ariundle Moss-Oaks' woodland minions (WoodlandMinion), by WoodlandMinion.Kind.
-const MINION_CLASSES: Array[StringName] = [&"bramble_scuttler", &"holloway_imp"]
+const MINION_CLASSES: Array[StringName] = [&"bramble_scuttler", &"bog_imp"]
 const PLAYER_CLASSES: Array[StringName] = [SHIELD_TANK, SOUL_TETHER_HEALER, DIRECTIONAL_FLOW_DPS]
 ## The Dojo Warden's swing (the Squire auto-guard and companions watch for it).
 const BOSS_SWIPE: StringName = &"boss_crushing_swipe"
@@ -21,7 +21,7 @@ const HEALER_COLOR: Color = Color(0.34, 0.76, 0.46)
 const DPS_COLOR: Color = Color(0.92, 0.5, 0.22)
 ## The Cairnsman's river-stone grey.
 const BOSS_COLOR: Color = Color(0.47, 0.45, 0.41)
-## Bramble-green Scuttlers and moss-grey Imps.
+## Bramble-green Scuttlers and moss-grey Bog-Imps.
 const MINION_COLORS: Array[Color] = [Color(0.36, 0.42, 0.22), Color(0.5, 0.56, 0.47)]
 
 const Cmd = CombatActionResource.Command
@@ -160,7 +160,7 @@ static func raid_boss_dummy() -> ClassLoadoutResource:
 
 # --- Woodland minions (07 GDD §3, Zone 1) ------------------------------------
 
-## A Bramble-Scuttler (quick, a darting nip) or a Holloway Imp (slower, a
+## A Bramble-Scuttler (quick, a darting nip) or a Bog-Imp (slower, a
 ## heavier claw). Both have 65 health and 30 poise: built to be swept up by
 ## cleaves, volleys and Sign detonations on the way to the boss.
 static func woodland_minion(kind: int) -> ClassLoadoutResource:
