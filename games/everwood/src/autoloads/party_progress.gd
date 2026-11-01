@@ -46,6 +46,8 @@ var kits: Dictionary[StringName, Dictionary] = {}
 var callings: Dictionary[StringName, int] = {}
 ## The host rolls chest cards with this (the smoke test seeds it).
 var drop_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+## The host rolls the expedition's finds (the Wayfarer's Chest) with this, so they never shift the boss's drops.
+var trail_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## Where progress is saved (the smoke test points this at its own file).
 var save_path: String = SAVE_PATH
 

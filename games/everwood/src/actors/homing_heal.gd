@@ -49,14 +49,17 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age += delta
-	if not is_instance_valid(target) or _age > LIFETIME:
+	# The target left (a companion stepping aside, a class change): the heal fizzles.
+	if not is_instance_valid(target) or not target.is_inside_tree() or _age > LIFETIME:
 		queue_free()
 		return
 	var aim: Vector3 = target.global_position + Vector3.UP * AIM_HEIGHT
 	var to_aim: Vector3 = aim - global_position
 	if to_aim.length() <= ARRIVE_DISTANCE:
 		if target.is_multiplayer_authority():
-			CombatDirector.current.apply_heal(healer, target, amount, echo)
+			# A healer who has left meanwhile still sent it; the heal lands in their name or the target's.
+			var source: ActorBase = healer if is_instance_valid(healer) and healer.is_inside_tree() else target
+			CombatDirector.current.apply_heal(source, target, amount, echo)
 		queue_free()
 		return
 	var wanted: Vector3 = to_aim.normalized() * SPEED

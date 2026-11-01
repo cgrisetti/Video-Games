@@ -1,17 +1,28 @@
-## The Ring of the Cairnsman (06_WORLD_AND_CALLINGS.md §1): the greybox raid
-## arena of the first boss, The Cairnsman of Doverslap, with an exit portal back
-## to Bramblebridge (its files and network id keep the old name, Dungeon Dojo).
-## Seating, hot-join and the split-screen grid come from LevelBase; this adds
-## the boss and the victory.
+## The Doverslap Expedition (07_EXPEDITION_HUD_AND_ART_GDD.md §3): the raid, three
+## zones end to end (its files and network id keep the old name, Dungeon Dojo):
+##   Zone 1  the Ariundle Moss-Oaks and the Sunken Holloway: two woodland
+##           minion camps (each pays a few Chimes when cleared), the Wayfarer's
+##           Water-Shrine, Wind-Lanterns, and the Wayfarer's Chest in the
+##           alcove (Chimes and an Uncommon Scribe Card)
+##   Zone 2  the Doverslap Gorge Bridge and the Sinaya Gatehouse's Co-Op
+##           Threshold (CoopGate): two Rune-Plates, or a Shield-Sworn's
+##           Shadow Sanctuary and the Bell-Winch, open the portcullis
+##   Zone 3  the Ring of the Cairnsman and its boss, The Cairnsman of Doverslap
+## Reaching a zone moves everyone's respawn to its checkpoint. Seating,
+## hot-join and the split-screen grid come from LevelBase.
 ##
 ## Beating the Cairnsman plays 2 s of slow motion, puts a victory banner on every
 ## player's screen, raises the Grimoire a level and drops a reward chest.
 ## Opening the chest pays the party its Chimes and a collectible Scribe
 ## Card (PartyProgress), and the gold exit portal calls everyone home.
+##
+## Command line (after --), for trying things out: --zone=2 or --zone=3 starts
+## the party at that zone's checkpoint (3 opens the gate), --boss-health=0.4
+## sets the Cairnsman's health share when its fight starts.
 class_name DungeonDojo
 extends LevelBase
 
-# Demo bots (--demo) stand on a ring in front of the boss.
+# Demo bots (--demo) stand on a ring in front of their foe.
 const DEMO_RING_RADIUS: float = 3.0
 const VICTORY_TIME_SCALE: float = 0.2
 ## Real seconds of slow motion (not slowed down themselves).
@@ -20,19 +31,42 @@ const VICTORY_SLOWMO_TIME: float = 2.0
 const CHEST_OFFSET: float = 4.5
 const CHEST_CHIMES_BASE: int = 10
 const CHEST_CHIMES_PER_PLAYER: int = 2
+## A cleared minion camp pays this many Chimes.
+const CAMP_CHIMES: int = 3
+## The Wayfarer's Chest in the Moss-Oaks' alcove.
+const WAYFARER_CHEST_CHIMES: int = 15
 ## Seconds after the chest opens before the exit portal takes everyone home.
 const RECALL_DELAY: float = 5.0
 const VICTORY_COLOR: Color = Color(1.0, 0.86, 0.4)
+const CHECKPOINT_COLOR: Color = Color(0.7, 0.9, 1.0)
+## A zone starts once anyone in the party is past this line (north is -Z).
+const ZONE_TWO_Z: float = 15.0
+const ZONE_THREE_Z: float = -17.0
+const ZONE_NAMES: Array[String] = ["", "The Ariundle Moss-Oaks", "The Doverslap Gorge Bridge", "The Ring of the Cairnsman"]
+## Checkpoint pads sit this far apart across the path.
+const CHECKPOINT_SPACING: float = 1.5
 
 @onready var boss_spawn: Marker3D = $BossSpawn
 @onready var exit_portal: RaidPortal = $ExitPortal
+@onready var camps: Array[MinionCamp] = [$CampOne as MinionCamp, $CampTwo as MinionCamp]
+@onready var water_shrine: WaterShrine = $WaterShrine
+@onready var coop_gate: CoopGate = $CoopGate
+@onready var checkpoints: Dictionary[int, Marker3D] = {2: $Checkpoints/Zone2 as Marker3D, 3: $Checkpoints/Zone3 as Marker3D}
 
 var boss: BossDummy
 var chest: RewardChest
+var wayfarer_chest: RewardChest
 var victory: bool = false
+## The furthest zone the party has reached (1 to 3).
+var zone: int = 1
+
+static var _start_zone: int = 1
+static var _start_boss_health: float = -1.0
+static var _dev_args_read: bool = false
+var _boss_health_applied: bool = false
 
 
-## Chimes in the chest for a party of `players`.
+## Chimes in the boss's chest for a party of `players`.
 static func chest_chimes(players: int) -> int:
 	return CHEST_CHIMES_BASE + CHEST_CHIMES_PER_PLAYER * maxi(1, players)
 
@@ -42,7 +76,7 @@ func instance_id() -> StringName:
 
 
 func level_title() -> String:
-	return "The Ring of the Cairnsman"
+	return "The Doverslap Expedition"
 
 
 func level_hint() -> String:
@@ -50,7 +84,14 @@ func level_hint() -> String:
 		return "Victory! The gold portal is taking you home"
 	if victory:
 		return "Victory! Walk up to the reward chest"
-	return "Stand in the exit portal together to go back to Bramblebridge"
+	match zone:
+		1:
+			return "%s: clear the bramble camps, drink at the Water-Shrine, find the Wayfarer's Chest, then down the holloway" % ZONE_NAMES[1]
+		2:
+			if coop_gate.is_open:
+				return "%s: the gate is open. On to the Ring of the Cairnsman!" % ZONE_NAMES[2]
+			return "%s: stand on both Rune-Plates together, or ring the Bridge-Bell in a Shield-Sworn's Shadow Sanctuary" % ZONE_NAMES[2]
+	return "%s: face the Cairnsman of Doverslap" % ZONE_NAMES[3]
 
 
 ## AI companions fill missing trinity roles in here.
@@ -59,6 +100,7 @@ func wants_companions() -> bool:
 
 
 func _setup_level() -> void:
+	_read_dev_args()
 	boss = BossDummy.new()
 	boss.name = "Boss"
 	boss.player_id = &"boss"
@@ -68,6 +110,31 @@ func _setup_level() -> void:
 	actors_root.add_child(boss)
 	boss.spawn_at(boss_spawn.global_transform)
 	boss.defeated.connect(_on_boss_defeated)
+	for camp: MinionCamp in camps:
+		camp.spawn_minions()
+		camp.cleared.connect(_on_camp_cleared)
+	wayfarer_chest = RewardChest.new()
+	wayfarer_chest.name = "WayfarerChest"
+	wayfarer_chest.title = "Wayfarer's Chest"
+	wayfarer_chest.drop_in = false
+	wayfarer_chest.chimes = WAYFARER_CHEST_CHIMES
+	wayfarer_chest.card_roller = _roll_wayfarer_card
+	effects_root.add_child(wayfarer_chest)
+	wayfarer_chest.global_transform = ($WayfarerChestSpot as Marker3D).global_transform
+	wayfarer_chest.opened.connect(_on_wayfarer_chest_opened)
+	coop_gate.opened.connect(_on_gate_opened)
+
+
+## --zone and --boss-health, read once per run.
+static func _read_dev_args() -> void:
+	if _dev_args_read:
+		return
+	_dev_args_read = true
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--zone="):
+			_start_zone = clampi(arg.get_slice("=", 1).to_int(), 1, 3)
+		elif arg.begins_with("--boss-health="):
+			_start_boss_health = clampf(arg.get_slice("=", 1).to_float(), 0.05, 1.0)
 
 
 func _exit_tree() -> void:
@@ -78,13 +145,138 @@ func _exit_tree() -> void:
 
 func _on_player_unregistered(player_id: StringName) -> void:
 	super._on_player_unregistered(player_id)
-	if boss != null and boss.threat != null:
-		boss.threat.forget(player_id)
+	for enemy: ActorBase in CombatDirector.current.enemies():
+		if enemy.threat != null:
+			enemy.threat.forget(player_id)
+
+
+func _physics_process(_delta: float) -> void:
+	if _start_zone > 1 and InstanceManager.current.is_live() and not actors.is_empty():
+		_jump_to_zone(_start_zone)
+		_start_zone = 1
+	var reached: int = _furthest_zone()
+	if reached > zone:
+		zone = reached
+		_move_respawns_to(zone)
+		for hud: PlayerHUD in huds.values():
+			hud.show_banner(ZONE_NAMES[zone].to_upper(), "Checkpoint: you'll get back up here.", CHECKPOINT_COLOR)
+	if _start_boss_health > 0.0 and not _boss_health_applied and boss.engaged and NetworkManager.current.is_host():
+		_boss_health_applied = true
+		boss.stats.health = boss.stats.stats.max_health * _start_boss_health
+	_steer_companions_to_plates()
+
+
+# --- Zones and checkpoints ------------------------------------------------
+
+func _furthest_zone() -> int:
+	var furthest: int = zone
+	for actor: ActorBase in actors.values():
+		var z: float = actor.global_position.z
+		if z < ZONE_THREE_Z and coop_gate.is_open:
+			furthest = maxi(furthest, 3)
+		elif z < ZONE_TWO_Z:
+			furthest = maxi(furthest, 2)
+	return furthest
+
+
+## Everyone's respawn point moves to the zone's checkpoint pads.
+func _move_respawns_to(reached: int) -> void:
+	for actor: ActorBase in actors.values():
+		actor.spawn_transform = checkpoint_transform(reached, actor.party_slot)
+
+
+## Where party slot `slot` respawns once the party reaches `reached` (zone 2 or 3).
+func checkpoint_transform(reached: int, slot: int) -> Transform3D:
+	var marker: Marker3D = checkpoints[clampi(reached, 2, 3)]
+	@warning_ignore("integer_division")
+	var row: int = slot / 4
+	var column: float = float(slot % 4) - 1.5
+	return marker.global_transform.translated(Vector3(column * CHECKPOINT_SPACING, 0.0, SPAWN_ROW_SPACING * row))
+
+
+## Someone joining mid-expedition starts at the party's latest checkpoint.
+func _spawn_transform(slot: int) -> Transform3D:
+	return checkpoint_transform(zone, slot) if zone >= 2 else super._spawn_transform(slot)
+
+
+## --zone: puts the party straight at a later zone (zone 3 opens the gate).
+func _jump_to_zone(target: int) -> void:
+	if target >= 3 and NetworkManager.current.is_host():
+		coop_gate.open(CoopGate.Method.BELL_WINCH)
+	zone = target
+	for actor: ActorBase in actors.values():
+		actor.spawn_at(checkpoint_transform(target, actor.party_slot))
+
+
+# --- Camps, the shrine and the Wayfarer's Chest ---------------------------
+
+## Every peer sees the Chimes scatter; the host pays them into the pouch.
+func _on_camp_cleared(camp: MinionCamp) -> void:
+	if NetworkManager.current.is_host():
+		PartyProgress.current.award_chimes(CAMP_CHIMES)
+	var coins: ChimeBurst = ChimeBurst.new()
+	var catchers: Array[Node3D] = []
+	for member: ActorBase in CombatDirector.current.alive_party():
+		catchers.append(member)
+	coins.configure(CAMP_CHIMES, catchers)
+	effects_root.add_child(coins)
+	coins.global_position = camp.global_position + Vector3.UP * 0.8
+	AudioCues.play(&"camp_cleared")
+	CombatDirector.current.show_float_text(camp.global_position + Vector3.UP * 2.5, "%s cleared!  +%d Chimes" % [camp.camp_name, CAMP_CHIMES],
+		VICTORY_COLOR, CombatDirector.ANNOUNCE_TEXT_SIZE)
+
+
+## Host: the alcove chest's card, an Uncommon one, rolled when it opens (with
+## its own dice, so it never changes what the boss's chest drops).
+func _roll_wayfarer_card() -> StringName:
+	return ArsenalCatalog.current.roll_card_of_rarity(PartyProgress.current.trail_rng, ScribeCardResource.CardRarity.UNCOMMON)
+
+
+func _on_wayfarer_chest_opened(opener_id: StringName, chimes: int, card_key: StringName) -> void:
+	if NetworkManager.current.is_host():
+		PartyProgress.current.award_chimes(chimes)
+		PartyProgress.current.award_card(card_key)
+	var opener: ActorBase = CombatDirector.current.get_actor(opener_id)
+	var who: String = opener.display_name().get_slice(" ", 0) if opener != null else "Someone"
+	for hud: PlayerHUD in huds.values():
+		hud.show_banner("+%d CHIMES" % chimes, "%s found the Wayfarer's Chest! New card: %s." % [who, ArsenalCatalog.current.copy_name(card_key)], VICTORY_COLOR)
+
+
+# --- The Co-Op Threshold --------------------------------------------------
+
+func _on_gate_opened(method: int) -> void:
+	var how: String = "The Rune-Plates hum together" if method == CoopGate.Method.RUNE_PLATES else "The Bridge-Bell rings out"
+	for hud: PlayerHUD in huds.values():
+		hud.show_banner("THE GATE OPENS", "%s, and the Sinaya Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR)
+	for actor: ActorBase in actors.values():
+		if actor.companion != null:
+			actor.companion.has_assigned_post = false
+
+
+## Host: while someone holds one Rune-Plate and the other needs a body, the
+## nearest companion goes and stands on it.
+func _steer_companions_to_plates() -> void:
+	if not NetworkManager.current.is_host() or zone != 2:
+		return
+	var free: RunePlate = coop_gate.plate_needing_help()
+	var helper: ActorBase = null
+	if free != null:
+		var nearest: float = INF
+		for actor: ActorBase in actors.values():
+			if actor.companion != null and not actor.stats.is_downed and actor.global_position.distance_to(free.global_position) < nearest:
+				nearest = actor.global_position.distance_to(free.global_position)
+				helper = actor
+	for actor: ActorBase in actors.values():
+		if actor.companion == null:
+			continue
+		actor.companion.has_assigned_post = actor == helper
+		if actor == helper:
+			actor.companion.assigned_post = free.global_position
 
 
 # --- Victory --------------------------------------------------------------
 
-## The host saw the boss fall: every peer with the dojo loaded plays the win.
+## The host saw the boss fall: every peer with the expedition loaded plays the win.
 func _on_boss_defeated() -> void:
 	if victory or not NetworkManager.current.is_host():
 		return
@@ -120,7 +312,7 @@ func _begin_victory(spot: Vector3, chimes: int, card_key: String) -> void:
 
 
 ## Time slows to a fifth for 2 real seconds. The timer ignores the time scale
-## and calls Engine directly, so it ends even if the dojo is gone by then.
+## and calls Engine directly, so it ends even if the level is gone by then.
 func _play_slow_motion() -> void:
 	Engine.time_scale = VICTORY_TIME_SCALE
 	var timer: SceneTreeTimer = get_tree().create_timer(VICTORY_SLOWMO_TIME, true, false, true)
@@ -142,9 +334,25 @@ func _on_chest_opened(opener_id: StringName, chimes: int, card_key: StringName) 
 
 # --- Demo and report ------------------------------------------------------
 
+## A --demo bot heads for its Rune-Plate while the gate is sealed in Zone 2,
+## else the nearest woken or nearby minion, else the boss.
 func _demo_post_for(actor: ActorBase) -> Vector3:
+	if zone == 2 and not coop_gate.is_open:
+		return coop_gate.plates[actor.party_slot % coop_gate.plates.size()].global_position
+	var nearest: ActorBase = null
+	var best: float = 25.0
+	for enemy: ActorBase in CombatDirector.current.enemies():
+		if enemy.is_raid_boss() or not enemy.is_targetable():
+			continue
+		var distance: float = enemy.global_position.distance_to(actor.global_position)
+		if distance < best:
+			best = distance
+			nearest = enemy
+	var target: Vector3 = boss.global_position
+	if nearest != null:
+		target = nearest.global_position
 	var angle: float = (float(actor.party_slot) - 1.5) * 0.7
-	return boss.global_position + Vector3(sin(angle), 0.0, cos(angle)) * DEMO_RING_RADIUS
+	return target + Vector3(sin(angle), 0.0, cos(angle)) * DEMO_RING_RADIUS
 
 
 func _demo_attacks() -> bool:
@@ -152,4 +360,8 @@ func _demo_attacks() -> bool:
 
 
 func _report_extra() -> String:
-	return "boss %d/%d hp%s, " % [roundi(boss.stats.health), roundi(boss.stats.stats.max_health), " (victory)" if victory else ""]
+	var standing: int = 0
+	for camp: MinionCamp in camps:
+		standing += camp.standing_count()
+	return "boss %d/%d hp%s, zone %d, %d minions standing, gate %s, " % [roundi(boss.stats.health), roundi(boss.stats.stats.max_health),
+		" (victory)" if victory else "", zone, standing, "open" if coop_gate.is_open else "sealed"]

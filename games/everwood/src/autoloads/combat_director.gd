@@ -160,11 +160,21 @@ func alive_party() -> Array[ActorBase]:
 	return alive
 
 
+## The instance's raid boss (the Cairnsman), never a minion.
 func primary_boss() -> ActorBase:
 	for boss: ActorBase in _bosses:
-		if is_instance_valid(boss):
+		if is_instance_valid(boss) and boss.is_raid_boss():
 			return boss
 	return null
+
+
+## Every enemy here: the raid boss and any minions.
+func enemies() -> Array[ActorBase]:
+	var found: Array[ActorBase] = []
+	for enemy: ActorBase in _bosses:
+		if is_instance_valid(enemy):
+			found.append(enemy)
+	return found
 
 
 func register_telegraph(decal: RaidTelegraphDecal) -> void:
@@ -198,6 +208,16 @@ func register_zone(zone: SanctuaryZone) -> void:
 
 func unregister_zone(zone: SanctuaryZone) -> void:
 	_zones.erase(zone)
+
+
+## Behind a shield: inside someone's Shadow Sanctuary cone, or holding one up
+## yourself. The Gorge Gale-Jet and the Gale-Beam can't touch you there.
+func is_sheltered(actor: ActorBase) -> bool:
+	for zone: SanctuaryZone in _zones:
+		if is_instance_valid(zone) and zone.shape == SanctuaryZone.Shape.CONE \
+				and (zone.owner_player_id == actor.player_id or zone.contains(actor.global_position)):
+			return true
+	return false
 
 
 ## Shadow Sanctuary: allies inside a tank's shield cone take less damage.
@@ -291,11 +311,14 @@ func _apply(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
 				show_float_text(_above(target), "+%d" % roundi(healed), Color(0.5, 1.0, 0.6))
 				AudioCues.play(&"heal", 1.0, -6.0)
 				for boss: ActorBase in _bosses:
-					deliver(_threat_event(event.attacker_path, event.attacker_player_id, boss, healed * HEAL_THREAT_RATIO, 0.0))
+					if is_instance_valid(boss) and boss.is_engaged():
+						deliver(_threat_event(event.attacker_path, event.attacker_player_id, boss, healed * HEAL_THREAT_RATIO, 0.0))
 				var healer: ActorBase = get_actor(event.attacker_player_id)
 				if healer != null:
 					deliver(_reward_event(healer, healed * HEAL_RESONANCE_PER_HP))
 		CombatEvent.Kind.REWARD:
+			if event.heal > 0.0:
+				target.receive_heal(event.heal)
 			target.stats.add_resonance(event.resonance)
 			target.stats.restore_stamina(event.stamina)
 		CombatEvent.Kind.THREAT:
@@ -505,6 +528,28 @@ func _echo_heal(target: ActorBase, event: CombatEvent) -> void:
 			next = member
 	if next != null:
 		deliver(_heal_event(event.attacker_path, event.attacker_player_id, next, event.heal * event.echo))
+
+
+## A Wayfarer's Water-Shrine: everyone back to full health and stamina (each
+## owner refreshes its own; no threat, no healer's pips).
+func refresh_party() -> void:
+	for member: ActorBase in party_actors():
+		var event: CombatEvent = _reward_event(member, 0.0, member.stats.stats.max_stamina)
+		event.heal = member.stats.stats.max_health
+		deliver(event)
+
+
+## Shoves an actor to `destination` over `duration` (a gust, a torrent's
+## knockback); its owner moves it, briefly untouchable on the way.
+func shove(target: ActorBase, destination: Vector3, duration: float) -> void:
+	var event: CombatEvent = CombatEvent.new()
+	event.kind = CombatEvent.Kind.PULL
+	event.attacker_path = target.get_path()
+	event.attacker_player_id = target.player_id
+	event.target_path = target.get_path()
+	event.origin = destination
+	event.duration = duration
+	deliver(event)
 
 
 func lifeline_pull(healer: ActorBase, target: ActorBase, duration: float) -> void:

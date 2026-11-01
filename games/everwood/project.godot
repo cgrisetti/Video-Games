@@ -196,6 +196,7 @@ player_join={
 3d_physics/layer_3="Boss"
 3d_physics/layer_4="PlayerHurtboxes"
 3d_physics/layer_5="BossHurtboxes"
+3d_physics/layer_6="LowScenery"
 
 [physics]
 

@@ -16,7 +16,9 @@ const HEALTH_COLOR: Color = Color(0.85, 0.22, 0.24)
 const POISE_COLOR: Color = Color(0.95, 0.65, 0.25)
 const CAST_COLOR: Color = Color(0.75, 0.55, 1.0)
 const BAR_BACK: Color = Color(0.06, 0.06, 0.08, 0.75)
-## Room left for the dojo's banner when this cell touches the top of the screen.
+## The boss's bars show once it's in the fight or within this many metres.
+const BOSS_BAR_RANGE: float = 36.0
+## Room left for the level's banner when this cell touches the top of the screen.
 const BANNER_CLEARANCE: float = 52.0
 const FLASH_TIME: float = 0.6
 const BANNER_TITLE_SIZE: int = 44
@@ -153,6 +155,11 @@ func open_scribe_desk(row: int = -1) -> void:
 	add_child(menu)
 
 
+## The boss's bars are up (it's in the fight, or near).
+func boss_bar_visible() -> bool:
+	return _top_panel.visible
+
+
 func upgrade_menu() -> HubUpgradeMenu:
 	return _live_menu() as HubUpgradeMenu
 
@@ -193,8 +200,9 @@ func banner_title() -> String:
 
 func _refresh_boss() -> void:
 	var boss: BossDummy = CombatDirector.current.primary_boss() as BossDummy
-	# No boss here (Hub Town), or it's beaten: no bars to show.
-	_top_panel.visible = boss != null and boss.stats != null and not boss.vanquished
+	# No boss here (Bramblebridge), it's beaten, or it's still zones away: no bars to show.
+	_top_panel.visible = boss != null and boss.stats != null and not boss.vanquished \
+		and (boss.engaged or boss.global_position.distance_to(actor.global_position) <= BOSS_BAR_RANGE)
 	if not _top_panel.visible:
 		return
 	var primer: int = CombatDirector.current.primer_on(boss)

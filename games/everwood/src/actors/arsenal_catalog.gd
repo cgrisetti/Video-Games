@@ -44,6 +44,11 @@ const MOONFALL_CLEAVE: StringName = &"moonfall_cleave"
 const EMBER_AEGIS: StringName = &"ember_aegis"
 const STARLIT_VOLLEY: StringName = &"starlit_volley"
 const DAWNBREAKER: StringName = &"dawnbreaker"
+# Uncommon cards found on the Doverslap Expedition (the Wayfarer's Chest).
+const HOLLOWAY_LUNGE: StringName = &"holloway_lunge"
+const ROOT_SNARE_STEP: StringName = &"root_snare_step"
+const LANTERN_MOTE: StringName = &"lantern_mote"
+const GORGE_GALE: StringName = &"gorge_gale"
 # Under-cards
 const IRON_ROOT_LINK: StringName = &"iron_root_link"
 const RIME_GALE_LINK: StringName = &"rime_gale_link"
@@ -170,6 +175,19 @@ func roll_card_drop(rng: RandomNumberGenerator) -> StringName:
 	if chosen.starter and variant == ScribeCardResource.CardVariant.STANDARD:
 		variant = ScribeCardResource.CardVariant.SHINY_FOIL
 	return ScribeCardResource.copy_key(chosen.card_id, variant)
+
+
+## A card of one rarity (the Wayfarer's Chest gives an Uncommon one), evenly
+## picked, with a rolled variant. Returns the copy key.
+func roll_card_of_rarity(rng: RandomNumberGenerator, rarity: ScribeCardResource.CardRarity) -> StringName:
+	var pool: Array[ScribeCardResource] = []
+	for listed: ScribeCardResource in cards():
+		if listed.is_lead() and listed.rarity == rarity:
+			pool.append(listed)
+	if pool.is_empty():
+		return &""
+	var chosen: ScribeCardResource = pool[rng.randi() % pool.size()]
+	return ScribeCardResource.copy_key(chosen.card_id, roll_variant(rng))
 
 
 func roll_variant(rng: RandomNumberGenerator) -> ScribeCardResource.CardVariant:
@@ -554,6 +572,38 @@ func _build_lead_cards() -> void:
 	_boss_drop(dawn_card, ScribeCardResource.CardRarity.LEGENDARY)
 	dawn_card.drop_weight = 1.0
 
+	# Expedition finds: Uncommon cards from the Wayfarer's Chest, one per slot
+	# (never in the boss's chest).
+	var holloway: CombatActionResource = _strike(HOLLOWAY_LUNGE, "Holloway Lunge", Cmd.FORWARD_HEAVY, 0.24, 0.14, 0.5, 18.0, 17.0)
+	holloway.poise_damage = 10.0
+	holloway.lunge_distance = 3.0
+	holloway.primer = Sign.SIGN_RIME_GALE
+	_trail_find(_lead(holloway, Slot.FORWARD, Sign.SIGN_RIME_GALE, "A low lunge down the holloway that stamps the Sign of Rime-Gale."))
+	var snare: CombatActionResource = _strike(ROOT_SNARE_STEP, "Root-Snare Step", Cmd.BACK_HEAVY, 0.26, 0.16, 0.5, 16.0, 14.0)
+	snare.poise_damage = 16.0
+	snare.lunge_distance = -1.5
+	snare.reach = 1.4
+	snare.hit_radius = 2.0
+	snare.primer = Sign.SIGN_IRON_ROOT
+	_trail_find(_lead(snare, Slot.BACK, Sign.SIGN_IRON_ROOT, "Step back as roots snatch at the foe, stamping the Sign of Iron-Root."))
+	var mote: CombatActionResource = _strike(LANTERN_MOTE, "Lantern Mote", Cmd.TRIGGER_R_SKILL, 0.15, 0.12, 0.4, 0.0, 20.0)
+	mote.resonance_cost = 1
+	mote.reach = 2.4
+	mote.hit_radius = 1.8
+	mote.resonance_gain = 0.0
+	mote.primer = Sign.SIGN_WARM_HEARTH
+	_trail_find(_lead(mote, Slot.SIGNATURE, Sign.SIGN_WARM_HEARTH, "A Wind-Lantern's warm mote that stamps the Sign of Warm-Hearth (1 pip)."))
+	var gale: CombatActionResource = _strike(GORGE_GALE, "Gorge Gale", Cmd.TRIGGER_BOTH_ULT, 0.5, 0.25, 0.7, 0.0, 42.0)
+	gale.resonance_cost = 3
+	gale.poise_damage = 35.0
+	gale.reach = 0.0
+	gale.hit_radius = 3.4
+	gale.hit_stop_scale = 2.2
+	gale.resonance_gain = 0.0
+	gale.primer = Sign.SIGN_STAR_TIDE
+	_trail_find(_lead(gale, Slot.ULTIMATE, Sign.SIGN_STAR_TIDE, "The Doverslap's gale bursts out around you, stamping the Sign of Star-Tide (3 pips).",
+		ScribeCardResource.Delivery.AT_CASTER))
+
 
 func _lead(template: CombatActionResource, slot: Slot, scribe_sign: Sign, blurb: String,
 		delivery: ScribeCardResource.Delivery = ScribeCardResource.Delivery.THROUGH_WEAPON) -> ScribeCardResource:
@@ -572,6 +622,13 @@ func _lead(template: CombatActionResource, slot: Slot, scribe_sign: Sign, blurb:
 	lead.drop_weight = 1.0
 	register_card(lead)
 	return lead
+
+
+## An Uncommon card found on the expedition: not a starter, never in the boss's chest.
+func _trail_find(lead: ScribeCardResource) -> void:
+	lead.rarity = ScribeCardResource.CardRarity.UNCOMMON
+	lead.starter = false
+	lead.drop_weight = 0.0
 
 
 func _boss_drop(lead: ScribeCardResource, rarity: ScribeCardResource.CardRarity) -> void:

@@ -90,6 +90,18 @@ func display_name() -> String:
 	return DISPLAY_NAME
 
 
+func is_raid_boss() -> bool:
+	return true
+
+
+func is_engaged() -> bool:
+	return engaged and not vanquished
+
+
+func is_targetable() -> bool:
+	return not vanquished and not stats.is_downed
+
+
 func _build_components() -> void:
 	super._build_components()
 	threat = ThreatComponent.new()

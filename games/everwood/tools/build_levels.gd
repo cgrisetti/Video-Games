@@ -8,9 +8,13 @@
 ##   no jump needed) and turning a watermill; the village square in the north
 ##   with the Armory & Scribe Desk, the Chime-Shrine, a bakery and pigment
 ##   racks among stepped-gable houses; and the Raid Portal at the forest gate.
-## - The Ring of the Cairnsman (dungeon_dojo.tscn): a 44 m greybox arena with low
-##   walls, six pillars for cover in a ring round the boss, four spawn pads and
-##   an exit portal back to Bramblebridge.
+## - The Doverslap Expedition (dungeon_dojo.tscn, 07 GDD §3): Zone 1, the
+##   Ariundle Moss-Oaks (a walled clearing, a bramble camp, a side alcove with
+##   the Wayfarer's Chest) and the Sunken Holloway (a lane between earthen banks
+##   under root arches and Wind-Lanterns, the Water-Shrine, the imp camp);
+##   Zone 2, the Doverslap Gorge Bridge with its waterfall and paper-mill wheel,
+##   and the Sinaya Gatehouse with its Co-Op Threshold; Zone 3, a causeway into
+##   the Ring of the Cairnsman, six pillars round the boss.
 ## Both share the same skeleton (Actors, Telegraphs, Effects, SpawnPoints and
 ## the split-screen Screens), which LevelBase expects.
 extends SceneTree
@@ -23,11 +27,17 @@ const PORTAL_SCRIPT: String = "res://src/actors/raid_portal.gd"
 const SHRINE_SCRIPT: String = "res://src/actors/chime_shrine.gd"
 const WHEEL_SCRIPT: String = "res://src/actors/watermill_wheel.gd"
 const DESK_SCRIPT: String = "res://src/actors/scribe_desk.gd"
+const CAMP_SCRIPT: String = "res://src/actors/minion_camp.gd"
+const SHRINE_WATER_SCRIPT: String = "res://src/actors/water_shrine.gd"
+const LANTERN_SCRIPT: String = "res://src/actors/wind_lantern.gd"
+const GATE_SCRIPT: String = "res://src/actors/coop_gate.gd"
 const GRID_SCRIPT: String = "res://src/ui/split_screen_viewport_grid.gd"
 const GRID_SHADER: String = "res://src/levels/greybox_grid.gdshader"
 
 const FLOOR_THICKNESS: float = 1.0
 const WALL_HEIGHT: float = 1.2
+## Walls this low or lower block bodies but not cameras (ActorBase.LAYER_LOW_SCENERY).
+const LOW_WALL_HEIGHT: float = 1.6
 const WALL_THICKNESS: float = 1.0
 const SPAWN_SPACING: float = 3.0
 const SPAWN_PAD_COLORS: Array[Color] = [
@@ -36,17 +46,85 @@ const SPAWN_PAD_COLORS: Array[Color] = [
 const STONE_COLOR: Color = Color(0.58, 0.56, 0.53)
 const WALL_COLOR: Color = Color(0.48, 0.47, 0.46)
 
-# Dungeon Dojo
-const DOJO_SIZE: float = 44.0
+# The Doverslap Expedition (dungeon_dojo.tscn, 07_EXPEDITION_HUD_AND_ART_GDD.md
+# §3). North is -Z: you arrive among the Ariundle Moss-Oaks in the south, go
+# down the Sunken Holloway, over the Doverslap Gorge Bridge, through the Sinaya
+# Gatehouse and along a causeway into the Ring of the Cairnsman in the north.
+const EARTH_COLOR: Color = Color(0.42, 0.33, 0.24)
+const TRAIL_COLOR: Color = Color(0.52, 0.43, 0.3)
+const DRYSTONE_COLOR: Color = Color(0.56, 0.55, 0.5)
+const CLIFF_COLOR: Color = Color(0.42, 0.39, 0.35)
+const ROOT_COLOR: Color = Color(0.36, 0.27, 0.18)
+const TIMBER_COLOR: Color = Color(0.4, 0.28, 0.17)
+const MUSHROOM_COLOR: Color = Color(0.55, 0.9, 0.75)
+const DRYSTONE_HEIGHT: float = 1.2
+const RAIL_HEIGHT: float = 1.1
+const EXIT_PORTAL_COLOR: Color = Color(0.95, 0.8, 0.4)
+# Zone 1: the Ariundle Moss-Oaks clearing (x and z bounds).
+const OAKS_MIN: Vector2 = Vector2(-24.0, 46.0)
+const OAKS_MAX: Vector2 = Vector2(24.0, 90.0)
+const EXPEDITION_SPAWN_Z: float = 82.0
+const EXIT_PORTAL_POSITION: Vector3 = Vector3(0.0, 0.0, 87.0)
+## A dirt trail winding from the spawn pads to the holloway (decoration).
+const TRAIL_POINTS: Array[Vector3] = [Vector3(0.0, 0.0, 85.0), Vector3(-3.0, 0.0, 75.0), Vector3(2.5, 0.0, 64.0),
+	Vector3(-1.0, 0.0, 54.0), Vector3(0.0, 0.0, 46.0)]
+const OAK_SPOTS: Array[Vector3] = [Vector3(-15.0, 0.0, 84.0), Vector3(14.0, 0.0, 85.0), Vector3(-19.0, 0.0, 72.0), Vector3(-10.0, 0.0, 66.0),
+	Vector3(18.0, 0.0, 74.0), Vector3(19.0, 0.0, 57.0), Vector3(-18.0, 0.0, 60.0), Vector3(-12.0, 0.0, 51.0), Vector3(13.0, 0.0, 50.0),
+	Vector3(-7.0, 0.0, 78.0), Vector3(9.0, 0.0, 79.0), Vector3(16.0, 0.0, 64.0)]
+const CAMP_ONE_POSITION: Vector3 = Vector3(8.0, 0.0, 64.0)
+const CAMP_ONE_KINDS: Array[int] = [0, 0, 0]
+## The deer-run alcove beyond a gap in the west wall, behind dry-stone walls.
+const ALCOVE_MIN: Vector2 = Vector2(-32.0, 50.0)
+const ALCOVE_MAX: Vector2 = Vector2(-24.0, 56.0)
+const WAYFARER_CHEST_POSITION: Vector3 = Vector3(-29.5, 0.0, 53.0)
+# The Sunken Holloway: a lane between earthen banks, six feet down.
+const HOLLOWAY_HALF_WIDTH: float = 4.0
+const HOLLOWAY_DEPTH: float = 1.8
+const HOLLOWAY_TOP_Z: float = 46.0
+const HOLLOWAY_FLOOR_START_Z: float = 38.0
+const HOLLOWAY_FLOOR_END_Z: float = 22.0
+const HOLLOWAY_EXIT_Z: float = 14.0
+const BANK_WIDTH: float = 4.0
+## Banks stand this far above the ground beside them.
+const BANK_LIP: float = 0.8
+const ROOT_ARCH_ZS: Array[float] = [41.0, 34.0, 28.5, 23.5]
+## Height of the root arches' tops (above the ground, not the lane).
+const ROOT_ARCH_APEX: float = 4.2
+const WIND_LANTERN_SPOTS: Array[Vector3] = [Vector3(-1.7, 3.3, 41.0), Vector3(1.7, 3.3, 34.0), Vector3(-1.7, 3.3, 28.5), Vector3(1.7, 3.3, 23.5)]
+const WATER_SHRINE_POSITION: Vector3 = Vector3(2.7, -1.8, 35.5)
+const CAMP_TWO_POSITION: Vector3 = Vector3(-0.5, -1.8, 26.0)
+const CAMP_TWO_KINDS: Array[int] = [1, 1, 0, 1]
+# Zone 2: the Doverslap Gorge Bridge and the Sinaya Gatehouse.
+const CLIFF_HALF_WIDTH: float = 16.0
+const SOUTH_CLIFF_Z: Vector2 = Vector2(6.0, 14.0)
+const NORTH_CLIFF_Z: Vector2 = Vector2(-24.0, -12.0)
+const GORGE_BRIDGE_HALF_WIDTH: float = 3.0
+## The bridge's side bays, where the Rune-Plates sit (z range, and how far they reach out).
+const BRIDGE_BAY_Z: Vector2 = Vector2(-9.0, -3.0)
+const BRIDGE_BAY_DEPTH: float = 3.6
+const GORGE_DEPTH: float = 24.0
+const GATE_POSITION: Vector3 = Vector3(0.0, 0.0, -16.0)
+const GATE_TOWER_SIZE: Vector3 = Vector3(3.6, 7.0, 4.0)
+const GATE_WALL_HEIGHT: float = 4.5
+const WATERFALL_POSITION: Vector3 = Vector3(12.5, -9.0, -3.0)
+const WATERFALL_SIZE: Vector3 = Vector3(5.0, 26.0, 0.5)
+const WATERFALL_COLOR: Color = Color(0.72, 0.9, 1.0, 0.6)
+const MILLWHEEL_POSITION: Vector3 = Vector3(-10.5, -2.6, -3.0)
+const MILLWHEEL_SCALE: float = 2.3
+const CHECKPOINT_TWO_Z: float = 10.0
+# Zone 3: the Ring of the Cairnsman.
+const CAUSEWAY_Z: Vector2 = Vector2(-34.0, -24.0)
+const CAUSEWAY_HALF_WIDTH: float = 3.0
+const RING_SIZE: float = 40.0
+const BOSS_POSITION: Vector3 = Vector3(0.0, 0.0, -54.0)
 const PILLAR_COUNT: int = 6
 const PILLAR_RING_RADIUS: float = 11.0
 const PILLAR_RADIUS: float = 1.1
 ## Taller than a player (cover) but under the cameras' eye line, so they never wall off a view.
 const PILLAR_HEIGHT: float = 3.2
-const DOJO_SPAWN_Z: float = 15.0
-const BOSS_POSITION: Vector3 = Vector3(0.0, 0.0, -2.0)
-const EXIT_PORTAL_POSITION: Vector3 = Vector3(0.0, 0.0, 18.8)
-const EXIT_PORTAL_COLOR: Color = Color(0.95, 0.8, 0.4)
+const CHECKPOINT_THREE_Z: float = -28.0
+## Checkpoint pads across a 6 m path.
+const CHECKPOINT_SPACING: float = 1.5
 
 # Bramblebridge (07_EXPEDITION_HUD_AND_ART_GDD.md §1.1). North is -Z: the
 # spawn green in the south, the canal across the middle with the bridge over
@@ -183,13 +261,13 @@ func _add_hub_walls(parent: Node3D) -> void:
 	var half_width: float = HUB_WIDTH * 0.5
 	var half_depth: float = HUB_DEPTH * 0.5
 	var stone: StandardMaterial3D = _material(WALL_COLOR)
-	parent.add_child(_box_body("WallSouth", Vector3(HUB_WIDTH, WALL_HEIGHT, WALL_THICKNESS), Vector3(0.0, WALL_HEIGHT * 0.5, half_depth), stone))
-	parent.add_child(_box_body("WallWest", Vector3(WALL_THICKNESS, WALL_HEIGHT, HUB_DEPTH), Vector3(-half_width, WALL_HEIGHT * 0.5, 0.0), stone))
-	parent.add_child(_box_body("WallEast", Vector3(WALL_THICKNESS, WALL_HEIGHT, HUB_DEPTH), Vector3(half_width, WALL_HEIGHT * 0.5, 0.0), stone))
+	parent.add_child(_low(_box_body("WallSouth", Vector3(HUB_WIDTH, WALL_HEIGHT, WALL_THICKNESS), Vector3(0.0, WALL_HEIGHT * 0.5, half_depth), stone)))
+	parent.add_child(_low(_box_body("WallWest", Vector3(WALL_THICKNESS, WALL_HEIGHT, HUB_DEPTH), Vector3(-half_width, WALL_HEIGHT * 0.5, 0.0), stone)))
+	parent.add_child(_low(_box_body("WallEast", Vector3(WALL_THICKNESS, WALL_HEIGHT, HUB_DEPTH), Vector3(half_width, WALL_HEIGHT * 0.5, 0.0), stone)))
 	var side_length: float = half_width - GATE_WIDTH * 0.5
 	for side: float in [-1.0, 1.0]:
-		parent.add_child(_box_body("WallNorth%s" % ("West" if side < 0.0 else "East"), Vector3(side_length, WALL_HEIGHT, WALL_THICKNESS),
-			Vector3(side * (GATE_WIDTH * 0.5 + side_length * 0.5), WALL_HEIGHT * 0.5, -half_depth), stone))
+		parent.add_child(_low(_box_body("WallNorth%s" % ("West" if side < 0.0 else "East"), Vector3(side_length, WALL_HEIGHT, WALL_THICKNESS),
+			Vector3(side * (GATE_WIDTH * 0.5 + side_length * 0.5), WALL_HEIGHT * 0.5, -half_depth), stone)))
 
 
 ## The timber gate out to the Ariundle Moss-Oaks, behind the Raid Portal: you
@@ -369,9 +447,9 @@ func _add_canal(parent: Node3D) -> void:
 	for bank: float in [-1.0, 1.0]:
 		var bank_z: float = CANAL_Z + bank * (CANAL_WIDTH * 0.5 + CANAL_BANK_THICKNESS * 0.5)
 		for side: float in [-1.0, 1.0]:
-			parent.add_child(_box_body("CanalBank%s%s" % ["North" if bank < 0.0 else "South", "West" if side < 0.0 else "East"],
+			parent.add_child(_low(_box_body("CanalBank%s%s" % ["North" if bank < 0.0 else "South", "West" if side < 0.0 else "East"],
 				Vector3(bank_length, CANAL_BANK_HEIGHT, CANAL_BANK_THICKNESS),
-				Vector3(side * (gap + bank_length * 0.5), CANAL_BANK_HEIGHT * 0.5, bank_z), stone))
+				Vector3(side * (gap + bank_length * 0.5), CANAL_BANK_HEIGHT * 0.5, bank_z), stone)))
 
 
 ## Bramblebridge: a low stone arch. The walkway is one convex collider shaped
@@ -422,6 +500,11 @@ func _add_bridge(parent: Node3D) -> void:
 	arch.rotation = Vector3(0.0, 0.0, PI * 0.5)
 	bridge.add_child(arch)
 	var parapet_stone: StandardMaterial3D = _material(BRIDGE_COLOR.darkened(0.1))
+	var parapets: StaticBody3D = StaticBody3D.new()
+	parapets.name = "Parapets"
+	parapets.collision_layer = ActorBase.LAYER_LOW_SCENERY
+	parapets.collision_mask = 0
+	bridge.add_child(parapets)
 	for side: float in [-1.0, 1.0]:
 		var x: float = side * (BRIDGE_WIDTH * 0.5 + BRIDGE_PARAPET_THICKNESS * 0.5)
 		for index: int in top.size() - 1:
@@ -439,10 +522,10 @@ func _add_bridge(parent: Node3D) -> void:
 			rail.shape = rail_shape
 			rail.position = where
 			rail.rotation = Vector3(tilt, 0.0, 0.0)
-			bridge.add_child(rail)
+			parapets.add_child(rail)
 			var rail_mesh: MeshInstance3D = _mesh_box("ParapetMesh", size, where, parapet_stone)
 			rail_mesh.rotation = Vector3(tilt, 0.0, 0.0)
-			bridge.add_child(rail_mesh)
+			parapets.add_child(rail_mesh)
 	var village_sign: Label3D = Label3D.new()
 	village_sign.name = "VillageSign"
 	village_sign.text = "Bramblebridge"
@@ -548,7 +631,7 @@ func _fountain() -> StaticBody3D:
 	var fountain: StaticBody3D = StaticBody3D.new()
 	fountain.name = "Fountain"
 	fountain.position = FOUNTAIN_POSITION
-	fountain.collision_layer = ActorBase.LAYER_WORLD
+	fountain.collision_layer = ActorBase.LAYER_LOW_SCENERY
 	fountain.collision_mask = 0
 	var basin_shape: CylinderShape3D = CylinderShape3D.new()
 	basin_shape.radius = FOUNTAIN_RADIUS
@@ -587,34 +670,364 @@ func _lantern(lantern_name: String, where: Vector3) -> Node3D:
 	return post
 
 
-# --- Dungeon Dojo ---------------------------------------------------------
+# --- The Doverslap Expedition ---------------------------------------------
 
 func _build_dojo() -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.name = "DungeonDojo"
 	root.set_script(load(DOJO_SCRIPT))
-	root.add_child(_environment(false))
+	root.add_child(_environment(true))
 	root.add_child(_sun())
-	var arena: Node3D = _node3d("Arena")
-	root.add_child(arena)
-	var grid_material: ShaderMaterial = ShaderMaterial.new()
-	grid_material.shader = load(GRID_SHADER)
-	_add_floor_and_walls(arena, DOJO_SIZE, grid_material)
-	var stone: StandardMaterial3D = _material(STONE_COLOR)
-	for index: int in PILLAR_COUNT:
-		var angle: float = TAU * float(index) / PILLAR_COUNT
-		var where: Vector3 = BOSS_POSITION + Vector3(cos(angle), 0.0, sin(angle)) * PILLAR_RING_RADIUS
-		arena.add_child(_pillar("Pillar%d" % (index + 1), where, stone))
+	var world: Node3D = _node3d("Expedition")
+	root.add_child(world)
+	_build_moss_oaks(world)
+	_build_holloway(world)
+	_build_gorge(world)
+	_build_ring(world)
 	var boss_spawn: Marker3D = Marker3D.new()
 	boss_spawn.name = "BossSpawn"
 	boss_spawn.position = BOSS_POSITION
-	# Face south, toward the spawn pads.
+	# Face south, toward the causeway the party comes in by.
 	boss_spawn.rotation = Vector3(0.0, PI, 0.0)
 	boss_spawn.add_child(_pad("Ring", 2.2, Color(0.35, 0.18, 0.2)))
 	root.add_child(boss_spawn)
 	root.add_child(_portal("ExitPortal", InstanceManager.HUB_TOWN, "Exit: Bramblebridge", EXIT_PORTAL_COLOR, EXIT_PORTAL_POSITION))
-	_add_level_skeleton(root, DOJO_SPAWN_Z)
+	root.add_child(_scripted("CampOne", CAMP_SCRIPT, CAMP_ONE_POSITION, {&"camp_name": "Bramble Camp", &"kinds": CAMP_ONE_KINDS}))
+	root.add_child(_scripted("CampTwo", CAMP_SCRIPT, CAMP_TWO_POSITION, {&"camp_name": "Holloway Camp", &"kinds": CAMP_TWO_KINDS}))
+	root.add_child(_scripted("WaterShrine", SHRINE_WATER_SCRIPT, WATER_SHRINE_POSITION, {}))
+	var lanterns: Node3D = _node3d("WindLanterns")
+	root.add_child(lanterns)
+	for index: int in WIND_LANTERN_SPOTS.size():
+		lanterns.add_child(_scripted("WindLantern%d" % (index + 1), LANTERN_SCRIPT, WIND_LANTERN_SPOTS[index], {}))
+	var chest_spot: Marker3D = Marker3D.new()
+	chest_spot.name = "WayfarerChestSpot"
+	chest_spot.position = WAYFARER_CHEST_POSITION
+	root.add_child(chest_spot)
+	root.add_child(_scripted("CoopGate", GATE_SCRIPT, GATE_POSITION, {}))
+	var checkpoints: Node3D = _node3d("Checkpoints")
+	root.add_child(checkpoints)
+	for checkpoint: Array in [["Zone2", CHECKPOINT_TWO_Z], ["Zone3", CHECKPOINT_THREE_Z]]:
+		var marker: Marker3D = Marker3D.new()
+		marker.name = checkpoint[0]
+		marker.position = Vector3(0.0, 0.0, checkpoint[1])
+		checkpoints.add_child(marker)
+	_add_level_skeleton(root, EXPEDITION_SPAWN_Z)
 	return root
+
+
+## Zone 1: a walled clearing of moss-oaks, the first bramble camp, a winding
+## trail to the holloway, and the deer-run alcove through the west wall.
+func _build_moss_oaks(parent: Node3D) -> void:
+	var oaks: Node3D = _node3d("MossOaks")
+	parent.add_child(oaks)
+	var moss: StandardMaterial3D = _material(MOSS_COLOR)
+	oaks.add_child(_ground("Ground", OAKS_MIN, OAKS_MAX, 0.0, moss))
+	var stone: StandardMaterial3D = _material(DRYSTONE_COLOR)
+	oaks.add_child(_wall("WallSouth", Vector2(OAKS_MIN.x, OAKS_MAX.y), Vector2(OAKS_MAX.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
+	oaks.add_child(_wall("WallEast", Vector2(OAKS_MAX.x, OAKS_MIN.y), Vector2(OAKS_MAX.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
+	oaks.add_child(_wall("WallWestSouth", Vector2(OAKS_MIN.x, ALCOVE_MAX.y), Vector2(OAKS_MIN.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
+	oaks.add_child(_wall("WallWestNorth", Vector2(OAKS_MIN.x, OAKS_MIN.y), Vector2(OAKS_MIN.x, ALCOVE_MIN.y), DRYSTONE_HEIGHT, stone))
+	oaks.add_child(_wall("WallNorthWest", Vector2(OAKS_MIN.x, OAKS_MIN.y), Vector2(-HOLLOWAY_HALF_WIDTH, OAKS_MIN.y), DRYSTONE_HEIGHT, stone))
+	oaks.add_child(_wall("WallNorthEast", Vector2(HOLLOWAY_HALF_WIDTH, OAKS_MIN.y), Vector2(OAKS_MAX.x, OAKS_MIN.y), DRYSTONE_HEIGHT, stone))
+	var dirt: StandardMaterial3D = _material(TRAIL_COLOR)
+	for index: int in TRAIL_POINTS.size() - 1:
+		var from: Vector3 = TRAIL_POINTS[index]
+		var to: Vector3 = TRAIL_POINTS[index + 1]
+		var strip: MeshInstance3D = _mesh_box("Trail%d" % index, Vector3(3.0, 0.02, from.distance_to(to) + 1.0), (from + to) * 0.5 + Vector3.UP * 0.01, dirt)
+		strip.rotation = Vector3(0.0, atan2(to.x - from.x, to.z - from.z), 0.0)
+		oaks.add_child(strip)
+	for index: int in OAK_SPOTS.size():
+		oaks.add_child(_tree("Oak%d" % (index + 1), OAK_SPOTS[index], 7.5 + float(index % 4) * 0.8, true))
+	# The alcove: a short deer-run behind dry-stone walls, where the Wayfarer's Chest waits.
+	var alcove: Node3D = _node3d("Alcove")
+	parent.add_child(alcove)
+	alcove.add_child(_ground("Ground", ALCOVE_MIN, ALCOVE_MAX, 0.0, moss))
+	alcove.add_child(_wall("WallNorth", Vector2(ALCOVE_MIN.x, ALCOVE_MIN.y), Vector2(ALCOVE_MAX.x, ALCOVE_MIN.y), DRYSTONE_HEIGHT, stone))
+	alcove.add_child(_wall("WallSouth", Vector2(ALCOVE_MIN.x, ALCOVE_MAX.y), Vector2(ALCOVE_MAX.x, ALCOVE_MAX.y), DRYSTONE_HEIGHT, stone))
+	alcove.add_child(_wall("WallWest", Vector2(ALCOVE_MIN.x, ALCOVE_MIN.y), Vector2(ALCOVE_MIN.x, ALCOVE_MAX.y), DRYSTONE_HEIGHT, stone))
+	alcove.add_child(_tree("Oak", Vector3(ALCOVE_MIN.x - 3.0, 0.0, (ALCOVE_MIN.y + ALCOVE_MAX.y) * 0.5), 8.0, false))
+
+
+## The Sunken Holloway: a ramp down into a lane between high earthen banks,
+## root arches overhead hung with Wind-Lanterns, and a ramp back up to the gorge.
+func _build_holloway(parent: Node3D) -> void:
+	var holloway: Node3D = _node3d("Holloway")
+	parent.add_child(holloway)
+	var earth: StandardMaterial3D = _material(EARTH_COLOR)
+	var floor_y: float = -HOLLOWAY_DEPTH
+	holloway.add_child(_ramp("RampDown", HOLLOWAY_HALF_WIDTH, HOLLOWAY_TOP_Z, 0.0, HOLLOWAY_FLOOR_START_Z, floor_y, earth))
+	holloway.add_child(_ground("Lane", Vector2(-HOLLOWAY_HALF_WIDTH, HOLLOWAY_FLOOR_END_Z), Vector2(HOLLOWAY_HALF_WIDTH, HOLLOWAY_FLOOR_START_Z), floor_y, earth))
+	holloway.add_child(_ramp("RampUp", HOLLOWAY_HALF_WIDTH, HOLLOWAY_FLOOR_END_Z, floor_y, HOLLOWAY_EXIT_Z, 0.0, earth))
+	var bank_height: float = HOLLOWAY_DEPTH + BANK_LIP + 0.6
+	var bank_length: float = HOLLOWAY_TOP_Z - HOLLOWAY_EXIT_Z
+	var moss: StandardMaterial3D = _material(MOSS_COLOR)
+	for side: float in [-1.0, 1.0]:
+		var center: Vector3 = Vector3(side * (HOLLOWAY_HALF_WIDTH + BANK_WIDTH * 0.5), BANK_LIP - bank_height * 0.5, (HOLLOWAY_TOP_Z + HOLLOWAY_EXIT_Z) * 0.5)
+		var bank: StaticBody3D = _low(_box_body("Bank%s" % ("West" if side < 0.0 else "East"), Vector3(BANK_WIDTH, bank_height, bank_length), center, earth))
+		bank.add_child(_mesh_box("Moss", Vector3(BANK_WIDTH + 0.1, 0.12, bank_length), Vector3(0.0, bank_height * 0.5, 0.0), moss))
+		holloway.add_child(bank)
+	var roots: StandardMaterial3D = _material(ROOT_COLOR)
+	for index: int in ROOT_ARCH_ZS.size():
+		var z: float = ROOT_ARCH_ZS[index]
+		var apex: Vector3 = Vector3(0.0, ROOT_ARCH_APEX, z)
+		for side: float in [-1.0, 1.0]:
+			var foot: Vector3 = Vector3(side * (HOLLOWAY_HALF_WIDTH + 0.3), BANK_LIP, z + side * 0.4)
+			var knee: Vector3 = Vector3(side * 2.4, ROOT_ARCH_APEX - 0.5, z - side * 0.3)
+			holloway.add_child(_beam("Root%d%s" % [index, "W" if side < 0.0 else "E"], foot, knee, 0.22, roots))
+			holloway.add_child(_beam("Bough%d%s" % [index, "W" if side < 0.0 else "E"], knee, apex, 0.16, roots))
+	var glow: StandardMaterial3D = _material(MUSHROOM_COLOR)
+	glow.emission_enabled = true
+	glow.emission = MUSHROOM_COLOR
+	glow.emission_energy_multiplier = 1.6
+	for index: int in 10:
+		var side: float = -1.0 if index % 2 == 0 else 1.0
+		var z: float = lerpf(HOLLOWAY_FLOOR_START_Z - 1.0, HOLLOWAY_FLOOR_END_Z + 1.0, float(index) / 9.0)
+		var cap: SphereMesh = SphereMesh.new()
+		cap.radius = 0.16
+		cap.height = 0.16
+		cap.material = glow
+		var mushroom: MeshInstance3D = MeshInstance3D.new()
+		mushroom.name = "Mushroom%d" % index
+		mushroom.mesh = cap
+		mushroom.position = Vector3(side * (HOLLOWAY_HALF_WIDTH - 0.25), floor_y + 0.1, z)
+		holloway.add_child(mushroom)
+
+
+## Zone 2: the cliff edges, the timber-and-stone trestle bridge over the
+## Doverslap (with side bays for the Rune-Plates), the waterfall and the
+## paper-mill wheel, and the Sinaya Gatehouse's towers around the CoopGate.
+func _build_gorge(parent: Node3D) -> void:
+	var gorge: Node3D = _node3d("Gorge")
+	parent.add_child(gorge)
+	var moss: StandardMaterial3D = _material(MOSS_COLOR)
+	var stone: StandardMaterial3D = _material(DRYSTONE_COLOR)
+	var cliff: StandardMaterial3D = _material(CLIFF_COLOR)
+	var timber: StandardMaterial3D = _material(TIMBER_COLOR)
+	var w: float = CLIFF_HALF_WIDTH
+	gorge.add_child(_ground("SouthCliff", Vector2(-w, SOUTH_CLIFF_Z.x), Vector2(w, SOUTH_CLIFF_Z.y), 0.0, moss))
+	gorge.add_child(_ground("NorthCliff", Vector2(-w, NORTH_CLIFF_Z.x), Vector2(w, NORTH_CLIFF_Z.y), 0.0, moss))
+	var bank_edge: float = HOLLOWAY_HALF_WIDTH + BANK_WIDTH
+	gorge.add_child(_wall("SouthWallWest", Vector2(-w, SOUTH_CLIFF_Z.y), Vector2(-bank_edge, SOUTH_CLIFF_Z.y), DRYSTONE_HEIGHT, stone))
+	gorge.add_child(_wall("SouthWallEast", Vector2(bank_edge, SOUTH_CLIFF_Z.y), Vector2(w, SOUTH_CLIFF_Z.y), DRYSTONE_HEIGHT, stone))
+	for side: float in [-1.0, 1.0]:
+		var label: String = "West" if side < 0.0 else "East"
+		gorge.add_child(_wall("SouthSide%s" % label, Vector2(side * w, SOUTH_CLIFF_Z.x), Vector2(side * w, SOUTH_CLIFF_Z.y), DRYSTONE_HEIGHT, stone))
+		gorge.add_child(_wall("NorthSide%s" % label, Vector2(side * w, NORTH_CLIFF_Z.x), Vector2(side * w, NORTH_CLIFF_Z.y), DRYSTONE_HEIGHT, stone))
+		# Rails along both cliff edges, open only where the bridge lands.
+		gorge.add_child(_wall("SouthEdge%s" % label, Vector2(side * (GORGE_BRIDGE_HALF_WIDTH + 0.2), SOUTH_CLIFF_Z.x), Vector2(side * w, SOUTH_CLIFF_Z.x), RAIL_HEIGHT, timber, 0.0, 0.25))
+		gorge.add_child(_wall("NorthEdge%s" % label, Vector2(side * (GORGE_BRIDGE_HALF_WIDTH + 0.2), NORTH_CLIFF_Z.y), Vector2(side * w, NORTH_CLIFF_Z.y), RAIL_HEIGHT, timber, 0.0, 0.25))
+		gorge.add_child(_wall("NorthEnd%s" % label, Vector2(side * CAUSEWAY_HALF_WIDTH, NORTH_CLIFF_Z.x), Vector2(side * w, NORTH_CLIFF_Z.x), DRYSTONE_HEIGHT, stone))
+	# The trestle bridge: a timber deck on stone piers and timber legs, with two side bays.
+	var span: float = SOUTH_CLIFF_Z.x - NORTH_CLIFF_Z.y
+	var middle_z: float = (SOUTH_CLIFF_Z.x + NORTH_CLIFF_Z.y) * 0.5
+	gorge.add_child(_box_body("BridgeDeck", Vector3(GORGE_BRIDGE_HALF_WIDTH * 2.0, 0.4, span), Vector3(0.0, -0.2, middle_z), timber))
+	var bay_length: float = BRIDGE_BAY_Z.y - BRIDGE_BAY_Z.x
+	var bay_z: float = (BRIDGE_BAY_Z.x + BRIDGE_BAY_Z.y) * 0.5
+	for side: float in [-1.0, 1.0]:
+		var label: String = "West" if side < 0.0 else "East"
+		var rail_x: float = side * (GORGE_BRIDGE_HALF_WIDTH + 0.1)
+		var bay_x: float = side * (GORGE_BRIDGE_HALF_WIDTH + BRIDGE_BAY_DEPTH)
+		gorge.add_child(_box_body("Bay%s" % label, Vector3(BRIDGE_BAY_DEPTH, 0.4, bay_length), Vector3(side * (GORGE_BRIDGE_HALF_WIDTH + BRIDGE_BAY_DEPTH * 0.5), -0.2, bay_z), timber))
+		gorge.add_child(_wall("Rail%sSouth" % label, Vector2(rail_x, BRIDGE_BAY_Z.y), Vector2(rail_x, SOUTH_CLIFF_Z.x), RAIL_HEIGHT, timber, 0.0, 0.2))
+		gorge.add_child(_wall("Rail%sNorth" % label, Vector2(rail_x, NORTH_CLIFF_Z.y), Vector2(rail_x, BRIDGE_BAY_Z.x), RAIL_HEIGHT, timber, 0.0, 0.2))
+		gorge.add_child(_wall("BayRail%sOuter" % label, Vector2(bay_x, BRIDGE_BAY_Z.x), Vector2(bay_x, BRIDGE_BAY_Z.y), RAIL_HEIGHT, timber, 0.0, 0.2))
+		gorge.add_child(_wall("BayRail%sSouth" % label, Vector2(rail_x, BRIDGE_BAY_Z.y), Vector2(bay_x, BRIDGE_BAY_Z.y), RAIL_HEIGHT, timber, 0.0, 0.2))
+		gorge.add_child(_wall("BayRail%sNorth" % label, Vector2(rail_x, BRIDGE_BAY_Z.x), Vector2(bay_x, BRIDGE_BAY_Z.x), RAIL_HEIGHT, timber, 0.0, 0.2))
+		for z: float in [3.0, -3.0, -9.0]:
+			gorge.add_child(_mesh_box("Trestle%s%d" % [label, int(z)], Vector3(0.5, GORGE_DEPTH, 0.5), Vector3(side * (GORGE_BRIDGE_HALF_WIDTH - 0.4), -GORGE_DEPTH * 0.5 - 0.4, z), timber))
+		var brace: MeshInstance3D = _mesh_box("Brace%s" % label, Vector3(0.3, 0.3, span * 0.9), Vector3(side * (GORGE_BRIDGE_HALF_WIDTH - 0.4), -4.0, middle_z), timber)
+		brace.rotation = Vector3(0.35, 0.0, 0.0)
+		gorge.add_child(brace)
+	for end_z: float in [SOUTH_CLIFF_Z.x, NORTH_CLIFF_Z.y]:
+		gorge.add_child(_mesh_box("Pier%d" % int(end_z), Vector3(GORGE_BRIDGE_HALF_WIDTH * 2.0 + 1.0, GORGE_DEPTH, 2.0), Vector3(0.0, -GORGE_DEPTH * 0.5 - 0.4, end_z), stone))
+	# The chasm's rock faces.
+	gorge.add_child(_mesh_box("FaceSouth", Vector3(w * 2.0, GORGE_DEPTH, 0.6), Vector3(0.0, -GORGE_DEPTH * 0.5, SOUTH_CLIFF_Z.x - 0.3), cliff))
+	gorge.add_child(_mesh_box("FaceNorth", Vector3(w * 2.0, GORGE_DEPTH, 0.6), Vector3(0.0, -GORGE_DEPTH * 0.5, NORTH_CLIFF_Z.y + 0.3), cliff))
+	for side: float in [-1.0, 1.0]:
+		gorge.add_child(_mesh_box("Face%s" % ("West" if side < 0.0 else "East"), Vector3(0.6, GORGE_DEPTH + 8.0, span), Vector3(side * (w + 0.3), -GORGE_DEPTH * 0.5 + 4.0, middle_z), cliff))
+	# The Doverslap: a roaring fall of water down the east side, misting at its foot.
+	var fall: StandardMaterial3D = StandardMaterial3D.new()
+	fall.albedo_color = WATERFALL_COLOR
+	fall.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	fall.emission_enabled = true
+	fall.emission = Color(0.55, 0.75, 0.9)
+	fall.emission_energy_multiplier = 0.6
+	gorge.add_child(_mesh_box("Waterfall", WATERFALL_SIZE, WATERFALL_POSITION, fall))
+	gorge.add_child(_mist("FallMist", WATERFALL_POSITION + Vector3(0.0, -WATERFALL_SIZE.y * 0.4, 1.0), Vector3(3.0, 1.0, 2.0)))
+	gorge.add_child(_mist("FallSpray", WATERFALL_POSITION + Vector3(-1.0, WATERFALL_SIZE.y * 0.45, 0.8), Vector3(2.5, 0.5, 1.0)))
+	var wheel: Node3D = Node3D.new()
+	wheel.name = "PaperMillWheel"
+	wheel.set_script(load(WHEEL_SCRIPT))
+	wheel.position = MILLWHEEL_POSITION
+	wheel.rotation = Vector3(0.0, 0.0, PI * 0.5)
+	wheel.scale = Vector3.ONE * MILLWHEEL_SCALE
+	gorge.add_child(wheel)
+	gorge.add_child(_mesh_box("MillHouse", Vector3(4.0, 5.0, 5.0), MILLWHEEL_POSITION + Vector3(-3.5, 0.5, 0.0), _material(MILL_COLOR)))
+	# The Sinaya Gatehouse: two stone towers with carved timber turrets, walls out to the cliff sides.
+	var half_gate: float = CoopGate.PORTCULLIS_WIDTH * 0.5
+	for side: float in [-1.0, 1.0]:
+		var label: String = "West" if side < 0.0 else "East"
+		var tower_x: float = side * (half_gate + GATE_TOWER_SIZE.x * 0.5)
+		var tower: StaticBody3D = _box_body("Tower%s" % label, GATE_TOWER_SIZE, Vector3(tower_x, GATE_TOWER_SIZE.y * 0.5, GATE_POSITION.z), stone)
+		var turret: PrismMesh = PrismMesh.new()
+		turret.size = Vector3(GATE_TOWER_SIZE.x + 0.8, 2.2, GATE_TOWER_SIZE.z + 0.8)
+		turret.material = _material(ROOF_COLOR)
+		var roof: MeshInstance3D = MeshInstance3D.new()
+		roof.name = "Turret"
+		roof.mesh = turret
+		roof.position = Vector3(0.0, GATE_TOWER_SIZE.y * 0.5 + 1.6, 0.0)
+		tower.add_child(roof)
+		tower.add_child(_mesh_box("Gallery", Vector3(GATE_TOWER_SIZE.x + 0.6, 0.5, GATE_TOWER_SIZE.z + 0.6), Vector3(0.0, GATE_TOWER_SIZE.y * 0.5 + 0.25, 0.0), timber))
+		gorge.add_child(tower)
+		var wall_from: float = side * (half_gate + GATE_TOWER_SIZE.x)
+		gorge.add_child(_wall("GateWall%s" % label, Vector2(wall_from, GATE_POSITION.z), Vector2(side * w, GATE_POSITION.z), GATE_WALL_HEIGHT, stone, 0.0, 1.2))
+	gorge.add_child(_mesh_box("GateLintel", Vector3(CoopGate.PORTCULLIS_WIDTH + 0.6, 0.6, 0.9), Vector3(0.0, CoopGate.PORTCULLIS_HEIGHT + 0.5, GATE_POSITION.z), timber))
+	var gate_sign: Label3D = Label3D.new()
+	gate_sign.name = "GateSign"
+	gate_sign.text = "Sinaya Gatehouse"
+	gate_sign.font_size = 52
+	gate_sign.outline_size = 10
+	gate_sign.pixel_size = 0.01
+	gate_sign.modulate = Color(1.0, 0.92, 0.75)
+	gate_sign.position = Vector3(0.0, CoopGate.PORTCULLIS_HEIGHT + 1.3, GATE_POSITION.z + 0.6)
+	gorge.add_child(gate_sign)
+
+
+## Zone 3: a mossy causeway into the walled Ring of the Cairnsman, with its
+## ring of pillars and the waterfall's spray drifting over the north wall.
+func _build_ring(parent: Node3D) -> void:
+	var ring: Node3D = _node3d("Ring")
+	parent.add_child(ring)
+	var moss: StandardMaterial3D = _material(MOSS_COLOR)
+	var stone: StandardMaterial3D = _material(DRYSTONE_COLOR)
+	ring.add_child(_ground("Causeway", Vector2(-CAUSEWAY_HALF_WIDTH, CAUSEWAY_Z.x), Vector2(CAUSEWAY_HALF_WIDTH, CAUSEWAY_Z.y), 0.0, _material(STONE_COLOR)))
+	for side: float in [-1.0, 1.0]:
+		ring.add_child(_wall("CausewayWall%s" % ("West" if side < 0.0 else "East"), Vector2(side * (CAUSEWAY_HALF_WIDTH + 0.2), CAUSEWAY_Z.x),
+			Vector2(side * (CAUSEWAY_HALF_WIDTH + 0.2), CAUSEWAY_Z.y), 0.9, stone, 0.0, 0.4))
+	var floor_material: ShaderMaterial = ShaderMaterial.new()
+	floor_material.shader = load(GRID_SHADER)
+	floor_material.set_shader_parameter(&"base_color", Color(0.5, 0.53, 0.45))
+	floor_material.set_shader_parameter(&"minor_color", Color(0.46, 0.49, 0.41))
+	floor_material.set_shader_parameter(&"major_color", Color(0.4, 0.44, 0.36))
+	var half: float = RING_SIZE * 0.5
+	var south: float = BOSS_POSITION.z + half
+	var north: float = BOSS_POSITION.z - half
+	ring.add_child(_ground("Floor", Vector2(-half, north), Vector2(half, south), 0.0, floor_material))
+	ring.add_child(_wall("WallNorth", Vector2(-half, north), Vector2(half, north), WALL_HEIGHT, stone))
+	ring.add_child(_wall("WallWest", Vector2(-half, north), Vector2(-half, south), WALL_HEIGHT, stone))
+	ring.add_child(_wall("WallEast", Vector2(half, north), Vector2(half, south), WALL_HEIGHT, stone))
+	ring.add_child(_wall("WallSouthWest", Vector2(-half, south), Vector2(-CAUSEWAY_HALF_WIDTH, south), WALL_HEIGHT, stone))
+	ring.add_child(_wall("WallSouthEast", Vector2(CAUSEWAY_HALF_WIDTH, south), Vector2(half, south), WALL_HEIGHT, stone))
+	for index: int in PILLAR_COUNT:
+		var angle: float = TAU * float(index) / PILLAR_COUNT
+		var where: Vector3 = BOSS_POSITION + Vector3(cos(angle), 0.0, sin(angle)) * PILLAR_RING_RADIUS
+		var pillar: StaticBody3D = _pillar("Pillar%d" % (index + 1), where, _material(STONE_COLOR))
+		pillar.add_child(_cylinder_mesh("Moss", PILLAR_RADIUS * 0.95, PILLAR_RADIUS * 1.02, 0.4, PILLAR_HEIGHT * 0.5 - 0.15, moss))
+		ring.add_child(pillar)
+	ring.add_child(_mist("Spray", Vector3(0.0, 2.5, north + 1.0), Vector3(half, 1.5, 1.0)))
+
+
+# --- Expedition helpers ---------------------------------------------------
+
+## A level's scripted node, its exported values set (camps, the shrine, lanterns, the gate).
+func _scripted(node_name: String, script_path: String, where: Vector3, values: Dictionary) -> Node3D:
+	var node: Node3D = Node3D.new()
+	node.name = node_name
+	node.set_script(load(script_path))
+	node.position = where
+	for key: Variant in values:
+		node.set(key, values[key])
+	return node
+
+
+## A slab of walkable ground between two XZ corners, its top at `top_y`.
+func _ground(ground_name: String, corner_min: Vector2, corner_max: Vector2, top_y: float, material: Material) -> StaticBody3D:
+	var size: Vector2 = corner_max - corner_min
+	var middle: Vector2 = (corner_min + corner_max) * 0.5
+	return _box_body(ground_name, Vector3(size.x, FLOOR_THICKNESS, size.y), Vector3(middle.x, top_y - FLOOR_THICKNESS * 0.5, middle.y), material)
+
+
+## A wall from one XZ point to another, standing on `base_y`.
+func _wall(wall_name: String, from: Vector2, to: Vector2, height: float, material: Material, base_y: float = 0.0, thickness: float = WALL_THICKNESS) -> StaticBody3D:
+	var length: float = from.distance_to(to) + thickness
+	var middle: Vector2 = (from + to) * 0.5
+	var body: StaticBody3D = _box_body(wall_name, Vector3(thickness, height, length), Vector3(middle.x, base_y + height * 0.5, middle.y), material)
+	body.rotation = Vector3(0.0, atan2(to.x - from.x, to.y - from.y), 0.0)
+	return _low(body) if height <= LOW_WALL_HEIGHT else body
+
+
+## Makes a body knee-high scenery: bodies bump into it, cameras see past it.
+func _low(body: StaticBody3D) -> StaticBody3D:
+	body.collision_layer = ActorBase.LAYER_LOW_SCENERY
+	return body
+
+
+## A walkable ramp across the full width (`half_width` each side of x = 0),
+## from height `from_y` at `from_z` to `to_y` at `to_z`: one convex collider,
+## flush with the ground at both ends.
+func _ramp(ramp_name: String, half_width: float, from_z: float, from_y: float, to_z: float, to_y: float, material: Material) -> StaticBody3D:
+	var bottom: float = minf(from_y, to_y) - 0.5
+	var profile: PackedVector2Array = PackedVector2Array([Vector2(from_z, from_y), Vector2(to_z, to_y), Vector2(to_z, bottom), Vector2(from_z, bottom)])
+	var body: StaticBody3D = StaticBody3D.new()
+	body.name = ramp_name
+	body.collision_layer = ActorBase.LAYER_WORLD
+	body.collision_mask = 0
+	var points: PackedVector3Array = PackedVector3Array()
+	for side: float in [-1.0, 1.0]:
+		for point: Vector2 in profile:
+			points.append(Vector3(side * half_width, point.y, point.x))
+	var shape: ConvexPolygonShape3D = ConvexPolygonShape3D.new()
+	shape.points = points
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	collision.name = "Collision"
+	collision.shape = shape
+	body.add_child(collision)
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.name = "Mesh"
+	mesh.mesh = _prism_mesh(profile, half_width * 2.0)
+	var surface: Material = material.duplicate() as Material
+	if surface is BaseMaterial3D:
+		(surface as BaseMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
+	mesh.material_override = surface
+	body.add_child(mesh)
+	return body
+
+
+## A round beam from one point to another (roots, boughs).
+func _beam(beam_name: String, from: Vector3, to: Vector3, radius: float, material: Material) -> MeshInstance3D:
+	var beam: MeshInstance3D = _cylinder_mesh(beam_name, radius * 0.8, radius, from.distance_to(to), 0.0, material)
+	var up: Vector3 = (to - from).normalized()
+	var side: Vector3 = up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
+	beam.transform = Transform3D(Basis(side, up, side.cross(up)), (from + to) * 0.5)
+	return beam
+
+
+## Drifting white mist (the waterfall's foot and spray).
+func _mist(mist_name: String, where: Vector3, extents: Vector3) -> CPUParticles3D:
+	var mist: CPUParticles3D = CPUParticles3D.new()
+	mist.name = mist_name
+	mist.position = where
+	mist.amount = 24
+	mist.lifetime = 3.0
+	mist.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	mist.emission_box_extents = extents
+	mist.direction = Vector3.UP
+	mist.spread = 40.0
+	mist.initial_velocity_min = 0.3
+	mist.initial_velocity_max = 0.9
+	mist.gravity = Vector3(0.0, 0.2, 0.0)
+	mist.scale_amount_min = 1.0
+	mist.scale_amount_max = 2.2
+	var puff: SphereMesh = SphereMesh.new()
+	puff.radius = 0.5
+	puff.height = 1.0
+	var puff_material: StandardMaterial3D = StandardMaterial3D.new()
+	puff_material.albedo_color = Color(0.92, 0.97, 1.0, 0.3)
+	puff_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	puff_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	puff.material = puff_material
+	mist.mesh = puff
+	return mist
 
 
 # --- Shared pieces --------------------------------------------------------
@@ -653,16 +1066,6 @@ func _add_level_skeleton(root: Node3D, spawn_z: float) -> void:
 	banner.modulate = Color(1.0, 1.0, 1.0, 0.85)
 	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	screens.add_child(banner)
-
-
-func _add_floor_and_walls(parent: Node3D, size: float, floor_material: Material) -> void:
-	parent.add_child(_box_body("Floor", Vector3(size, FLOOR_THICKNESS, size), Vector3(0.0, -FLOOR_THICKNESS * 0.5, 0.0), floor_material))
-	var half: float = size * 0.5
-	var wall_material: StandardMaterial3D = _material(WALL_COLOR)
-	parent.add_child(_box_body("WallNorth", Vector3(size, WALL_HEIGHT, WALL_THICKNESS), Vector3(0.0, WALL_HEIGHT * 0.5, -half), wall_material))
-	parent.add_child(_box_body("WallSouth", Vector3(size, WALL_HEIGHT, WALL_THICKNESS), Vector3(0.0, WALL_HEIGHT * 0.5, half), wall_material))
-	parent.add_child(_box_body("WallWest", Vector3(WALL_THICKNESS, WALL_HEIGHT, size), Vector3(-half, WALL_HEIGHT * 0.5, 0.0), wall_material))
-	parent.add_child(_box_body("WallEast", Vector3(WALL_THICKNESS, WALL_HEIGHT, size), Vector3(half, WALL_HEIGHT * 0.5, 0.0), wall_material))
 
 
 func _portal(portal_name: String, target: StringName, title: String, color: Color, where: Vector3) -> Node3D:

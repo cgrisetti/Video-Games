@@ -10,6 +10,8 @@ const SHIELD_TANK: StringName = &"shield_tank"
 const SOUL_TETHER_HEALER: StringName = &"soul_tether_healer"
 const DIRECTIONAL_FLOW_DPS: StringName = &"directional_flow_dps"
 const RAID_BOSS_DUMMY: StringName = &"raid_boss_dummy"
+## The Ariundle Moss-Oaks' woodland minions (WoodlandMinion), by WoodlandMinion.Kind.
+const MINION_CLASSES: Array[StringName] = [&"bramble_scuttler", &"holloway_imp"]
 const PLAYER_CLASSES: Array[StringName] = [SHIELD_TANK, SOUL_TETHER_HEALER, DIRECTIONAL_FLOW_DPS]
 ## The Dojo Warden's swing (the Squire auto-guard and companions watch for it).
 const BOSS_SWIPE: StringName = &"boss_crushing_swipe"
@@ -19,6 +21,8 @@ const HEALER_COLOR: Color = Color(0.34, 0.76, 0.46)
 const DPS_COLOR: Color = Color(0.92, 0.5, 0.22)
 ## The Cairnsman's river-stone grey.
 const BOSS_COLOR: Color = Color(0.47, 0.45, 0.41)
+## Bramble-green Scuttlers and moss-grey Imps.
+const MINION_COLORS: Array[Color] = [Color(0.36, 0.42, 0.22), Color(0.5, 0.56, 0.47)]
 
 const Cmd = CombatActionResource.Command
 
@@ -151,4 +155,45 @@ static func raid_boss_dummy() -> ClassLoadoutResource:
 	loadout.body_color = BOSS_COLOR
 	loadout.stats = stats
 	loadout.openers = [swipe]
+	return loadout
+
+
+# --- Woodland minions (07 GDD §3, Zone 1) ------------------------------------
+
+## A Bramble-Scuttler (quick, a darting nip) or a Holloway Imp (slower, a
+## heavier claw). Both have 65 health and 30 poise: built to be swept up by
+## cleaves, volleys and Sign detonations on the way to the boss.
+static func woodland_minion(kind: int) -> ClassLoadoutResource:
+	var imp: bool = kind == WoodlandMinion.Kind.IMP
+	var stats: CharacterStatsResource = CharacterStatsResource.new()
+	stats.max_health = WoodlandMinion.HEALTH
+	stats.max_poise = WoodlandMinion.POISE
+	stats.poise_regen_per_sec = 10.0
+	stats.poise_regen_delay = 2.5
+	stats.poise_knockdown_time = 2.0
+	stats.knockdown_damage_taken = 1.25
+	stats.move_speed = 3.6 if imp else 4.6
+	stats.turn_speed = 7.0
+
+	var strike: CombatActionResource = CombatActionResource.new()
+	strike.action_id = StringName("%s_strike" % MINION_CLASSES[kind])
+	strike.display_name = "Claw" if imp else "Nip"
+	strike.command = Cmd.LIGHT
+	strike.windup_time = 0.55 if imp else 0.4
+	strike.active_time = 0.12
+	strike.recovery_time = 0.6 if imp else 0.45
+	strike.stamina_cost = 0.0
+	strike.damage = 10.0 if imp else 7.0
+	strike.reach = 1.3
+	strike.hit_radius = 0.9
+	strike.hit_stop_scale = 0.8
+	strike.resonance_gain = 0.0
+
+	var loadout: ClassLoadoutResource = ClassLoadoutResource.new()
+	loadout.class_id = MINION_CLASSES[kind]
+	loadout.display_name = WoodlandMinion.KIND_NAMES[kind]
+	loadout.role = ClassLoadoutResource.Role.BOSS
+	loadout.body_color = MINION_COLORS[kind]
+	loadout.stats = stats
+	loadout.openers = [strike]
 	return loadout

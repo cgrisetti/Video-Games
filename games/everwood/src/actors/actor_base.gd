@@ -19,14 +19,19 @@ const LAYER_PLAYERS: int = 2
 const LAYER_BOSS: int = 4
 const LAYER_PLAYER_HURTBOX: int = 8
 const LAYER_BOSS_HURTBOX: int = 16
+## Knee-high walls, rails, parapets and holloway banks: bodies bump into them,
+## but cameras see past them (PlayerCamera only pulls in for LAYER_WORLD).
+const LAYER_LOW_SCENERY: int = 32
 
 const GRAVITY: float = 22.0
 ## How quickly actors reach their wanted speed, in metres per second per second.
 const ACCELERATION: float = 40.0
 const BODY_RADIUS: float = 0.45
 const BODY_HEIGHT: float = 1.7
-## Players soft-lock onto the boss within this distance.
+## Players soft-lock onto an enemy already in the fight within this distance...
 const SOFT_LOCK_RANGE: float = 30.0
+## ...and onto one still asleep (a quiet camp, a boss not yet woken) only this close.
+const PASSIVE_LOCK_RANGE: float = 12.0
 const GUARD_BREAK_STAGGER: float = 0.9
 const DOWNED_RESPAWN_TIME: float = 8.0
 const RESPAWN_HEALTH_RATIO: float = 0.5
@@ -140,7 +145,7 @@ func body_height() -> float:
 func _build_body() -> void:
 	collision_layer = LAYER_BOSS if is_boss() else LAYER_PLAYERS
 	# Players can't walk through the boss; nobody collides with other players.
-	collision_mask = LAYER_WORLD if is_boss() else LAYER_WORLD | LAYER_BOSS
+	collision_mask = LAYER_WORLD | LAYER_LOW_SCENERY if is_boss() else LAYER_WORLD | LAYER_LOW_SCENERY | LAYER_BOSS
 	# No jump button (Space rolls), so slopes and bridges must be walkable: stay
 	# glued to ramps, climb anything up to 50 degrees, and keep pace on slopes.
 	floor_snap_length = FLOOR_SNAP_LENGTH
@@ -329,8 +334,24 @@ func role() -> int:
 	return loadout.role
 
 
+## On the enemy side (the raid boss and its minions share the boss role and layers).
 func is_boss() -> bool:
 	return loadout.role == ClassLoadoutResource.Role.BOSS
+
+
+## The instance's raid boss itself, not a minion (BossDummy says yes).
+func is_raid_boss() -> bool:
+	return false
+
+
+## Enemies: in the fight right now (a woken camp, an engaged boss). Players always are.
+func is_engaged() -> bool:
+	return true
+
+
+## Enemies: still worth aiming at (not beaten, not fading away).
+func is_targetable() -> bool:
+	return not stats.is_downed
 
 
 func is_local_player() -> bool:
@@ -497,14 +518,20 @@ func dodge_direction() -> Vector3:
 
 # --- Targeting ------------------------------------------------------------
 
-## Who this actor's attacks and camera lean toward. Players lock onto the boss.
+## Who this actor's attacks and camera lean toward: the nearest enemy, as far
+## as SOFT_LOCK_RANGE once it's in the fight, PASSIVE_LOCK_RANGE before.
 func soft_target() -> ActorBase:
-	var boss: ActorBase = CombatDirector.current.primary_boss()
-	if boss == null or boss.stats.is_downed:
-		return null
-	if boss.global_position.distance_to(global_position) > SOFT_LOCK_RANGE:
-		return null
-	return boss
+	var best: ActorBase = null
+	var best_distance: float = INF
+	for enemy: ActorBase in CombatDirector.current.enemies():
+		if not enemy.is_targetable():
+			continue
+		var distance: float = enemy.global_position.distance_to(global_position)
+		var reach: float = SOFT_LOCK_RANGE if enemy.is_engaged() else PASSIVE_LOCK_RANGE
+		if distance <= reach and distance < best_distance:
+			best_distance = distance
+			best = enemy
+	return best
 
 
 func direction_to_soft_target() -> Vector3:

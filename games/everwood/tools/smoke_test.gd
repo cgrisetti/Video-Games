@@ -36,6 +36,8 @@ const PORTAL_TIMEOUT: float = 8.0
 const TELEGRAPH_TIMEOUT: float = 50.0
 ## Simulated seconds of fighting alongside companions.
 const COMPANION_FIGHT_TIME: float = 8.0
+## Simulated seconds the companion Tank may wait for a swipe to Perfect Guard.
+const COMPANION_GUARD_TIME: float = 20.0
 ## The test's own save file, so it never touches the real one.
 const TEST_SAVE_PATH: String = "user://smoke_test_progress.cfg"
 
@@ -96,6 +98,7 @@ func _run() -> void:
 	await _seconds(0.1)
 	_orphans_before = _orphan_count()
 	await _check_portal_into_dojo()
+	await _check_doverslap_expedition()
 	_stage_party()
 	await _seconds(0.3)
 	await _check_cross_grimoire_hud()
@@ -556,8 +559,8 @@ func _check_portal_into_dojo() -> void:
 	_check(_portal_countdowns == 1, "the whole party on the Raid Portal starts its countdown")
 	_check(current_scene is DungeonDojo and InstanceManager.current.instance_id == InstanceManager.DUNGEON_DOJO, "the portal moves the party into the Ring of the Cairnsman")
 	var ring: DungeonDojo = current_scene as DungeonDojo
-	_check(ring.level_title() == "The Ring of the Cairnsman" and ring.boss.display_name() == "The Cairnsman of Doverslap"
-		and ring.exit_portal.title == "Exit: Bramblebridge", "the arena is the Ring of the Cairnsman, its boss the Cairnsman of Doverslap, its exit to Bramblebridge")
+	_check(ring.level_title() == "The Doverslap Expedition" and ring.boss.display_name() == "The Cairnsman of Doverslap"
+		and ring.exit_portal.title == "Exit: Bramblebridge", "the raid is the Doverslap Expedition, its boss the Cairnsman of Doverslap, its exit to Bramblebridge")
 	_check(root.multiplayer.multiplayer_peer == session and network.is_online(), "the ENet session survives the instance change")
 	dojo = current_scene as DungeonDojo
 	boss = dojo.boss
@@ -569,6 +572,167 @@ func _check_portal_into_dojo() -> void:
 		"assist modes carry across (Master: 400 ms buffer)")
 	_check(is_equal_approx(healer.action_queue.buffer_window, 0.55) and healer.action_queue.assisted_chaining,
 		"Adventurer mode: 550 ms buffer and auto-chaining")
+
+
+# --- The Doverslap Expedition (07 GDD §3) ---------------------------------
+
+## Zone 1's ramp, lanterns, camps, shrine and chest; Zone 2's checkpoint, gale
+## and Co-Op Threshold opened every way (two players on the plates, a tank's
+## shelter and the bell, a companion taking the second plate); then Zone 3.
+func _check_doverslap_expedition() -> void:
+	var network: NetworkManager = NetworkManager.current
+	var progress: PartyProgress = PartyProgress.current
+	_check(dojo.zone == 1 and tank.global_position.z > 70.0 and boss.global_position.distance_to(tank.global_position) > 100.0 and not boss.engaged,
+		"the party arrives in Zone 1, the Ariundle Moss-Oaks, far from the Cairnsman, who waits unwoken")
+	_check(not (dojo.huds[tank.player_id] as PlayerHUD).boss_bar_visible(), "his health bar stays hidden until the party nears him")
+	var camp_one: MinionCamp = dojo.camps[0]
+	var camp_two: MinionCamp = dojo.camps[1]
+	var built_right: bool = camp_one.minions.size() == 3 and camp_two.minions.size() == 4
+	for camp: MinionCamp in dojo.camps:
+		for minion: WoodlandMinion in camp.minions:
+			built_right = built_right and is_equal_approx(minion.stats.stats.max_health, 65.0) and is_equal_approx(minion.stats.stats.max_poise, 30.0) \
+				and minion.is_boss() and not minion.is_raid_boss() and not minion.is_engaged()
+	_check(built_right and CombatDirector.current.primary_boss() == boss and CombatDirector.current.enemies().size() == 8,
+		"two sleeping woodland camps (3 Bramble-Scuttlers; 3 Holloway Imps and a Scuttler), 65 health and 30 poise each, and the boss is still the boss")
+	# Down the holloway on the stick alone: a real 1.8 m ramp, no jump.
+	dps.place_at(Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, 48.0)))
+	dps.input.inject_move(Vector2(0.0, 1.0))
+	var waited: float = 0.0
+	while waited < 4.0 and dps.global_position.z > 37.5:
+		await physics_frame
+		waited += 1.0 / 60.0
+	dps.input.inject_move(Vector2.ZERO)
+	await _seconds(0.2)
+	_check(dps.global_position.z <= 37.5 and dps.global_position.y < -1.5 and dps.is_on_floor(), "walking down the ramp into the Sunken Holloway, six feet below the oaks")
+	var lantern: WindLantern = dojo.get_node(^"WindLanterns/WindLantern1") as WindLantern
+	# The DPS brushed this one on the way down; let it settle first.
+	await _seconds(WindLantern.COOLDOWN + 0.1)
+	var lantern_chimes: int = lantern.chimes
+	healer.place_at(Transform3D(Basis.IDENTITY, Vector3(lantern.global_position.x, -0.5, lantern.global_position.z)))
+	await _seconds(0.2)
+	_check(lantern.chimes > lantern_chimes and _audio_cues.has(&"lantern"), "brushing past a clay Wind-Lantern makes it chime")
+	# The Bramble Camp wakes, a bow shot finds a Scuttler, and clearing it pays Chimes.
+	tank.place_at(Transform3D(Basis.IDENTITY, camp_one.global_position + Vector3(0.0, 0.0, 3.0)))
+	_face_point(dps, camp_one.global_position, Vector3(0.0, 0.0, 10.0))
+	await _seconds(0.3)
+	var all_awake: bool = camp_one.alert
+	for minion: WoodlandMinion in camp_one.minions:
+		all_awake = all_awake and minion.is_engaged()
+	_check(all_awake and not camp_two.alert, "walking up wakes the whole Bramble Camp (and only that camp)")
+	var nearest: ActorBase = dps.soft_target()
+	_check(nearest is WoodlandMinion, "the DPS's soft-lock picks the nearest woken minion")
+	dps.stats.stamina = dps.stats.stats.max_stamina
+	var shots: int = _projectiles.count(dps.player_id)
+	dps.input.inject_command(Cmd.LIGHT)
+	await _seconds(0.9)
+	var hurt: bool = false
+	for minion: WoodlandMinion in camp_one.minions:
+		hurt = hurt or minion.stats.health < minion.stats.stats.max_health
+	_check(_projectiles.count(dps.player_id) > shots and hurt, "a bow shot flies to a Scuttler and hurts it")
+	var chimes_before: int = progress.chimes
+	for minion: WoodlandMinion in camp_one.minions:
+		CombatDirector.current.deliver(_strike(tank, minion, 500.0, 0.0))
+	await _seconds(0.3)
+	_check(camp_one.is_cleared and progress.chimes == chimes_before + DungeonDojo.CAMP_CHIMES, "clearing the camp pays the party %d Chimes" % DungeonDojo.CAMP_CHIMES)
+	await _seconds(WoodlandMinion.FADE_TIME + 0.2)
+	var faded: bool = true
+	for minion: WoodlandMinion in camp_one.minions:
+		faded = faded and minion.collision_layer == 0 and not minion.visual.visible and not minion.is_targetable()
+	_check(faded, "beaten minions shrink into the moss and are gone")
+	# The Water-Shrine refreshes the whole party.
+	tank.stats.take_damage(60.0)
+	tank.stats.stamina = 10.0
+	healer.stats.take_damage(30.0)
+	dps.place_at(Transform3D(Basis.IDENTITY, dojo.water_shrine.global_position + Vector3(0.0, 0.0, 1.3)))
+	await _seconds(0.3)
+	_check(is_equal_approx(tank.stats.health, tank.stats.stats.max_health) and is_equal_approx(tank.stats.stamina, tank.stats.stats.max_stamina)
+		and is_equal_approx(healer.stats.health, healer.stats.stats.max_health) and dojo.water_shrine.is_resting(),
+		"walking through the Water-Shrine's mist restores the whole party to full health and stamina")
+	_check(not camp_two.alert, "the imp camp beyond the shrine sleeps on")
+	# The Wayfarer's Chest in the alcove.
+	chimes_before = progress.chimes
+	dps.place_at(Transform3D(Basis.IDENTITY, dojo.wayfarer_chest.global_position + Vector3(0.9, 0.0, 0.0)))
+	await _seconds(0.3)
+	var found: StringName = dojo.wayfarer_chest.card_key
+	var found_card: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(found))
+	_check(dojo.wayfarer_chest.is_open and progress.chimes == chimes_before + DungeonDojo.WAYFARER_CHEST_CHIMES
+		and found_card != null and found_card.rarity == ScribeCardResource.CardRarity.UNCOMMON and progress.copies_of(found) == 1,
+		"the Wayfarer's Chest in the alcove pays %d Chimes and an Uncommon card: %s" % [DungeonDojo.WAYFARER_CHEST_CHIMES, ArsenalCatalog.current.copy_name(found)])
+	# Zone 2: the checkpoint moves, and the gale blows down the bridge.
+	var gate: CoopGate = dojo.coop_gate
+	tank.place_at(Transform3D(Basis.IDENTITY, Vector3(-6.0, 0.0, 11.0)))
+	healer.place_at(Transform3D(Basis.IDENTITY, Vector3(6.0, 0.0, 11.0)))
+	await _seconds(0.1)
+	_check(dojo.zone == 2 and absf(tank.spawn_transform.origin.z - dojo.checkpoint_transform(2, tank.party_slot).origin.z) < 0.1,
+		"reaching the Doverslap Gorge moves everyone's respawn to its checkpoint")
+	dps.place_at(Transform3D(Basis.IDENTITY, gate.to_global(Vector3(0.0, 0.0, 6.0))))
+	await _seconds(0.1)
+	var start_z: float = dps.global_position.z
+	_check(gate.gale.blast() >= 1, "the Gorge Gale-Jet blows down the lane")
+	await _seconds(0.6)
+	_check(dps.global_position.z > start_z + 3.0, "and shoves an exposed player back down the bridge")
+	_check(CoopGate.plates_needed(1) == 1 and CoopGate.plates_needed(3) == 2 and CoopGate.plates_needed(5) == 2, "the gate needs min(2, party) Rune-Plates")
+	# Way one: two players on the plates.
+	tank.place_at(Transform3D(Basis.IDENTITY, gate.plates[0].global_position))
+	dps.place_at(Transform3D(Basis.IDENTITY, gate.plates[1].global_position))
+	await _seconds(CoopGate.PLATE_HOLD_TIME + 0.3)
+	_check(gate.is_open and gate.opened_by == CoopGate.Method.RUNE_PLATES and not gate.gale.active,
+		"two players holding both Rune-Plates for 2 s open the portcullis, and the gale dies away")
+	gate.reset_gate()
+	dps.place_at(Transform3D(Basis.IDENTITY, Vector3(6.0, 0.0, 11.0)))
+	await _seconds(CoopGate.PLATE_HOLD_TIME + 0.5)
+	_check(not gate.is_open, "one plate alone doesn't open it for a party of three")
+	# Way two: a Shield-Sworn shelters the bell-ringer from the gale.
+	await _until_idle(tank)
+	tank.place_at(Transform3D(Basis.IDENTITY, gate.to_global(Vector3(0.0, 0.0, 2.2))))
+	dps.place_at(Transform3D(Basis.IDENTITY, gate.to_global(Vector3(0.0, 0.0, 4.2))))
+	await _seconds(0.1)
+	gate.winch.interact(dps)
+	await _seconds(0.1)
+	_check(not gate.is_open and gate.winch.prompt_for(dps).contains("too strong"), "out in the gale, the Bridge-Bell can't be rung")
+	tank.stats.stamina = tank.stats.stats.max_stamina
+	tank.input.inject_command(Cmd.BACK_HEAVY)
+	await _seconds(0.7)
+	_check(CombatDirector.current.is_sheltered(dps) and CombatDirector.current.is_sheltered(tank) and gate.gale.blast() == 0,
+		"behind the tank's Shadow Sanctuary the gale can't touch them")
+	gate.winch.interact(dps)
+	await _seconds(0.1)
+	_check(gate.is_open and gate.opened_by == CoopGate.Method.BELL_WINCH and _audio_cues.has(&"bell"),
+		"sheltered, a teammate rings the Bronze Bridge-Bell and the gate opens")
+	# Way three: alone with companions, a bot takes the second plate.
+	gate.reset_gate()
+	network.drop_local_player(1)
+	network.drop_local_player(2)
+	await _seconds(0.2)
+	_check(_companions().size() == 2, "with only the tank left, companions join at the Gorge checkpoint")
+	tank.place_at(Transform3D(Basis.IDENTITY, gate.plates[0].global_position))
+	waited = 0.0
+	while waited < 10.0 and not gate.is_open:
+		await _seconds(0.25)
+		waited += 0.25
+	_check(gate.is_open and gate.opened_by == CoopGate.Method.RUNE_PLATES, "in solo play a companion walks to the second Rune-Plate and the gate opens (%.1f s)" % waited)
+	network.request_local_player(1, ClassLoadouts.SOUL_TETHER_HEALER, InputComponent.AssistMode.ADVENTURER)
+	network.request_local_player(2, ClassLoadouts.DIRECTIONAL_FLOW_DPS, InputComponent.AssistMode.MASTER)
+	await _seconds(0.2)
+	healer = dojo.actors[&"1_1"]
+	dps = dojo.actors[&"1_2"]
+	_check(network.companion_seats().is_empty() and dojo.actors.size() == 3, "the people come back and the companions step aside")
+	# Zone 3: through the gatehouse to the Ring of the Cairnsman.
+	tank.place_at(Transform3D(Basis.IDENTITY, gate.to_global(Vector3(0.0, 0.0, -6.0))))
+	await _seconds(0.1)
+	_check(dojo.zone == 3 and absf(healer.spawn_transform.origin.z - dojo.checkpoint_transform(3, healer.party_slot).origin.z) < 0.1,
+		"through the gatehouse, Zone 3: everyone now gets back up at the Ring's causeway")
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.stats.heal(actor.stats.stats.max_health)
+		actor.stats.stamina = actor.stats.stats.max_stamina
+
+
+## Puts an actor at `target + offset`, facing the target.
+func _face_point(actor: ActorBase, target: Vector3, offset: Vector3) -> void:
+	var where: Vector3 = target + offset
+	var to_target: Vector3 = target - where
+	to_target.y = 0.0
+	actor.place_at(Transform3D(Basis.looking_at(to_target.normalized(), Vector3.UP), where))
 
 
 # --- The Cross-Grimoire HUD (07 GDD §2) -----------------------------------
@@ -1233,10 +1397,14 @@ func _check_companion_backfill() -> void:
 	boss.threat.taunt(bot_tank.player_id, COMPANION_FIGHT_TIME)
 	var guards_before: int = _companion_perfect_guards
 	waited = 0.0
-	while waited < COMPANION_FIGHT_TIME and _companion_perfect_guards == guards_before:
+	# Hit-stop from the bots' own blows and the boss's telegraph casts both hold its swing back, so allow a few swings' time.
+	while waited < COMPANION_GUARD_TIME and _companion_perfect_guards == guards_before:
 		await _seconds(0.25)
 		waited += 0.25
-	_check(_companion_perfect_guards > guards_before, "the companion Tank times a Perfect Guard on the Crushing Swipe")
+		# A Stout Heart's poise hits would keep the boss knocked down; it has to swing for this.
+		if boss.stats.is_knocked_down():
+			_reset_boss_poise()
+	_check(_companion_perfect_guards > guards_before, "the companion Tank times a Perfect Guard on the Crushing Swipe (%.1f s)" % waited)
 
 	# People come back: the companions step aside and the player numbers are theirs again.
 	network.update_local_player(InputComponent.KEYBOARD_DEVICE, ClassLoadouts.SHIELD_TANK, InputComponent.AssistMode.ADVENTURER)
@@ -1351,6 +1519,8 @@ func _check_chime_shrine() -> void:
 	await _tap_key(KEY_J)
 	var menu: HubUpgradeMenu = hud.upgrade_menu()
 	_check(menu != null and keyboard.input.menu_open and not keyboard.action_queue.is_busy(), "J at the shrine opens the upgrade menu instead of swinging")
+	# Exactly the boss chest's Chimes (the camps and the Wayfarer's Chest paid more), so the prices below add up.
+	progress.chimes = DungeonDojo.chest_chimes(3)
 	var chimes: int = progress.chimes
 	var tank_health: float = keyboard.stats.stats.max_health
 	var healer_health: float = hub.actors[&"1_1"].stats.stats.max_health

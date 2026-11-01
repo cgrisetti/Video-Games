@@ -14,6 +14,10 @@
 ## healers at range, archers at bow range, everyone near the leader outside a
 ## fight) and which command to press; the companion walks there and presses it
 ## like a player. Reach comes from the loadout, so a bot plays any kit.
+## Woken minion camps are fought the same way (the guard and taunt gambits
+## stay for the boss). Outside a fight the level can send a companion to a
+## spot (a Rune-Plate on the Doverslap Gorge Bridge), and a companion left far
+## behind on the trail skips ahead to the party.
 ## Companions belong to the host, so this runs only there.
 class_name CompanionAIComponent
 extends Node
@@ -47,8 +51,10 @@ const HEAL_BELOW: float = 0.75
 const SANCTUARY_BELOW: float = 0.8
 ## A friend standing in a red telegraph this full gets a Lifeline Pull.
 const LIFELINE_FILL: float = 0.5
-## Attacks keep this much stamina back for a dodge or a guard.
+## Attacks keep this much stamina back for a dodge or a guard...
 const STAMINA_RESERVE: float = 30.0
+## ...a tank swings more freely to hold threat, but always keeps enough to raise its guard.
+const TANK_STAMINA_RESERVE: float = InputComponent.AUTO_GUARD_MIN_STAMINA + 5.0
 const TANK_DISTANCE: float = 2.4
 const DPS_DISTANCE: float = 2.3
 ## The DPS stands this many radians round from the boss's face (behind it, to one side).
@@ -64,6 +70,10 @@ const RANGED_POST_SHARE: float = 0.6
 ## Presses start a little inside an action's full reach.
 const REACH_MARGIN: float = 0.3
 const FOLLOW_DISTANCE: float = 3.0
+## Awake minions this close are fair game.
+const FOE_RANGE: float = 20.0
+## Left this far behind the leader with nothing to fight: skip ahead to them.
+const CATCH_UP_DISTANCE: float = 22.0
 const ARRIVE_RADIUS: float = 0.5
 ## Trying to walk but barely moving for this long (a pillar): sidestep for a moment.
 const STUCK_TIME: float = 0.6
@@ -74,6 +84,9 @@ var actor: ActorBase
 var current_gambit: Gambit = Gambit.FOLLOW
 ## Where the companion is walking to.
 var post: Vector3 = Vector3.ZERO
+## A spot the level wants it on when there's no fight (a Rune-Plate).
+var assigned_post: Vector3 = Vector3.ZERO
+var has_assigned_post: bool = false
 
 var _command_cooldown: float = 0.0
 var _guarding: bool = false
@@ -130,11 +143,12 @@ func think(delta: float) -> void:
 				break
 	actor.wants_guard = _guarding
 	actor.move_intent = _steer(delta)
-	# Standing in reach of the boss: face it, so swings land.
-	var boss: BossDummy = _boss_in_fight()
-	if boss != null and actor.move_intent == Vector3.ZERO and not actor.action_queue.is_busy() \
-			and _in_reach(boss, CombatActionResource.Command.LIGHT):
-		actor.turn_toward(boss.global_position - actor.global_position, actor.loadout.stats.turn_speed * delta)
+	var foe: ActorBase = _foe()
+	_catch_up(foe)
+	# Standing in reach of the foe: face it, so swings land.
+	if foe != null and actor.move_intent == Vector3.ZERO and not actor.action_queue.is_busy() \
+			and _in_reach(foe, CombatActionResource.Command.LIGHT):
+		actor.turn_toward(foe.global_position - actor.global_position, actor.loadout.stats.turn_speed * delta)
 
 
 func _run(gambit: Gambit) -> bool:
@@ -278,17 +292,17 @@ func _taunt() -> bool:
 	return _press(CombatActionResource.Command.TRIGGER_R_SKILL, false)
 
 
-## Three pips and the boss in reach: ultimate.
+## Three pips and the foe in reach: ultimate.
 func _ultimate() -> bool:
-	var boss: BossDummy = _boss_in_fight()
+	var boss: ActorBase = _foe()
 	if boss == null or actor.stats.resonance_pips() < 3 or not _in_reach(boss, CombatActionResource.Command.TRIGGER_BOTH_ULT):
 		return false
 	return _press(CombatActionResource.Command.TRIGGER_BOTH_ULT, false)
 
 
-## A teammate primed the boss: close in and cash it in with a heavy.
+## A teammate primed the foe: close in and cash it in with a heavy.
 func _detonate() -> bool:
-	var boss: BossDummy = _boss_in_fight()
+	var boss: ActorBase = _foe()
 	if boss == null or CombatDirector.current.primer_on(boss) == ScribeSignResource.Sign.NONE:
 		return false
 	var heavy: CombatActionResource = actor.loadout.opener_for(CombatActionResource.Command.HEAVY)
@@ -302,7 +316,7 @@ func _detonate() -> bool:
 ## No seal on the boss: stamp one for a teammate, cycling through whichever
 ## Grimoire cards prime (Iron-Root, Rime-Gale and Star-Tide for the starter DPS).
 func _prime() -> bool:
-	var boss: BossDummy = _boss_in_fight()
+	var boss: ActorBase = _foe()
 	if boss == null or CombatDirector.current.primer_on(boss) != ScribeSignResource.Sign.NONE or actor.stats.stamina < STAMINA_RESERVE:
 		return false
 	var primers: Array[int] = []
@@ -319,23 +333,28 @@ func _prime() -> bool:
 	return true
 
 
-## Take up the role's spot by the boss and swing when in reach.
+## Take up the role's spot by the foe and swing when in reach.
 func _attack() -> bool:
-	var boss: BossDummy = _boss_in_fight()
+	var boss: ActorBase = _foe()
 	if boss == null:
 		return false
 	_set_post(_role_post(boss))
-	if _in_reach(boss, CombatActionResource.Command.LIGHT) and (actor.stats.stamina >= STAMINA_RESERVE or actor.role() == ClassLoadoutResource.Role.TANK):
+	var reserve: float = TANK_STAMINA_RESERVE if actor.role() == ClassLoadoutResource.Role.TANK else STAMINA_RESERVE
+	if _in_reach(boss, CombatActionResource.Command.LIGHT) and actor.stats.stamina >= reserve:
 		_press(CombatActionResource.Command.LIGHT, false)
 	return true
 
 
-## In a fight the healer keeps its distance; outside one, everyone stays near the leader.
+## In a fight the healer keeps its distance; outside one, a companion takes the
+## spot the level gave it, or stays near the leader.
 func _follow() -> bool:
-	var boss: BossDummy = _boss_in_fight()
+	var boss: ActorBase = _foe()
 	if boss != null:
 		var bearing: Vector3 = _flat(actor.global_position - boss.global_position)
 		_set_post(boss.global_position + (bearing.normalized() if bearing.length() > 0.1 else boss.facing_vector()) * HEALER_DISTANCE)
+		return true
+	if has_assigned_post:
+		_set_post(assigned_post)
 		return true
 	var leader: ActorBase = _leader()
 	if leader != null:
@@ -355,6 +374,37 @@ func _boss_in_fight() -> BossDummy:
 	return boss
 
 
+## Who to fight: the boss while its fight is on, otherwise the nearest woken
+## minion within FOE_RANGE.
+func _foe() -> ActorBase:
+	var boss: BossDummy = _boss_in_fight()
+	if boss != null:
+		return boss
+	var best: ActorBase = null
+	var best_distance: float = FOE_RANGE
+	for enemy: ActorBase in CombatDirector.current.enemies():
+		if enemy.is_raid_boss() or not enemy.is_engaged() or not enemy.is_targetable():
+			continue
+		var distance: float = _distance_to(enemy)
+		if distance < best_distance:
+			best_distance = distance
+			best = enemy
+	return best
+
+
+## Far behind the leader (a long trail, a wall in the way, just seated at the
+## start while the party is zones ahead) with no fight of its own nearby:
+## appear just behind them, out of the way.
+func _catch_up(foe: ActorBase) -> void:
+	var leader: ActorBase = _leader()
+	if leader == null or has_assigned_post or _distance_to(leader) <= CATCH_UP_DISTANCE:
+		return
+	if foe != null and _distance_to(foe) <= CATCH_UP_DISTANCE:
+		return
+	var back: Vector3 = _flat(actor.global_position - leader.global_position).normalized()
+	actor.place_at(Transform3D(actor.global_basis, leader.global_position + back * FOLLOW_DISTANCE))
+
+
 ## The first standing person in the party (not a companion), who the bots follow.
 func _leader() -> ActorBase:
 	for member: ActorBase in CombatDirector.current.alive_party():
@@ -365,7 +415,7 @@ func _leader() -> ActorBase:
 
 ## Archers and casters keep their shot's distance; tanks stand in front of the
 ## boss; melee DPS round its back, on the side they're on.
-func _role_post(boss: BossDummy) -> Vector3:
+func _role_post(boss: ActorBase) -> Vector3:
 	var bearing_now: Vector3 = _flat(actor.global_position - boss.global_position)
 	var light: CombatActionResource = actor.loadout.opener_for(CombatActionResource.Command.LIGHT)
 	if light != null and light.is_projectile():
