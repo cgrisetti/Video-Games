@@ -50,6 +50,11 @@ func level_hint() -> String:
 	return "Stand in the exit portal together to go back to Hub Town"
 
 
+## AI companions fill missing trinity roles in here.
+func wants_companions() -> bool:
+	return true
+
+
 func _setup_level() -> void:
 	boss = BossDummy.new()
 	boss.name = "Boss"
@@ -82,7 +87,7 @@ func _on_boss_defeated() -> void:
 		return
 	var spot: Vector3 = boss.global_position + boss.facing_vector() * CHEST_OFFSET
 	spot.y = 0.0
-	var shards: int = chest_shards(NetworkManager.current.party_size())
+	var shards: int = chest_shards(NetworkManager.current.human_count())
 	_begin_victory(spot, shards)
 	for peer_id: int in InstanceManager.current.live_remote_peers():
 		_begin_victory.rpc_id(peer_id, spot, shards)

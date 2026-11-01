@@ -153,6 +153,15 @@ func swipe_threatens(target: ActorBase, margin: float) -> bool:
 	return flat.length() <= swing.hit_radius + target.body_radius() + margin
 
 
+## Seconds until a winding-up swipe lands (0 once it swings). Exact on the
+## host, which runs the boss; other peers only know the phase.
+func swipe_time_to_hit() -> float:
+	var swing: CombatActionResource = action_queue.current_action
+	if not is_multiplayer_authority() or swing == null or action_queue.phase != ActionQueueComponent.Phase.WINDUP:
+		return 0.0
+	return maxf(0.0, (swing.windup_time - action_queue.phase_time) / action_queue.speed_scale)
+
+
 func is_casting() -> bool:
 	return cast_started_at >= 0.0 and cast_progress() < 1.0
 

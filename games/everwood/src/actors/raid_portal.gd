@@ -109,14 +109,18 @@ func contains(point: Vector3) -> bool:
 	return Vector2(point.x - global_position.x, point.z - global_position.z).length() <= RADIUS
 
 
-## Standing (not downed) party members, and how many of them are on the platform.
+## Standing (not downed) people, and how many of them are on the platform.
+## AI companions don't need to walk on: they come along.
 func party_on_platform() -> Vector2i:
-	var standing: Array[ActorBase] = CombatDirector.current.alive_party()
 	var inside: int = 0
-	for member: ActorBase in standing:
+	var standing: int = 0
+	for member: ActorBase in CombatDirector.current.alive_party():
+		if member.is_companion:
+			continue
+		standing += 1
 		if contains(member.global_position):
 			inside += 1
-	return Vector2i(inside, standing.size())
+	return Vector2i(inside, standing)
 
 
 ## Takes the whole party through in `seconds`, wherever they're standing.

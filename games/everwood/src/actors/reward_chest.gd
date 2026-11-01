@@ -1,6 +1,7 @@
 ## The reward chest the Dojo Warden leaves behind. It drops into the arena,
-## and the first party member to walk up to it opens it: the lid swings up, a
-## burst of gold, and the party's Dojo Shards are paid out (DungeonDojo).
+## and the first person (not an AI companion) to walk up to it opens it: the
+## lid swings up, a burst of gold, and the party's Dojo Shards are paid out
+## (DungeonDojo).
 ## Every peer shows the chest; the host decides when it opens.
 class_name RewardChest
 extends Node3D
@@ -91,6 +92,8 @@ func _physics_process(delta: float) -> void:
 	if is_open or _age < ARM_TIME or not NetworkManager.current.is_host() or not InstanceManager.current.is_live():
 		return
 	for member: ActorBase in CombatDirector.current.alive_party():
+		if member.is_companion:
+			continue
 		var flat: Vector2 = Vector2(member.global_position.x - global_position.x, member.global_position.z - global_position.z)
 		if flat.length() <= OPEN_RADIUS:
 			_open(String(member.player_id), shards)

@@ -6,6 +6,10 @@
 ## the screen 1 to 4, and leaves when it's unplugged. Enter / Start joins a
 ## controller by hand; holding it for a moment leaves.
 ##
+## In raids, AI companions fill any Holy Trinity role nobody is playing while
+## fewer than 3 people are in the party (CompanionAIComponent). The host seats
+## them, and they step aside as people join.
+##
 ## Keys: F5 host · F6 join · F7 leave · click to steer the camera with the mouse, Esc to let go.
 ## Command line (after --): --players=N --mode=master|adventurer|squire --instance=ID
 ##   --host --join=ADDRESS --demo --screenshot=PATH --screenshot-delay=S --quit-after=S
@@ -37,6 +41,7 @@ var _notice: String = ""
 var _notice_time_left: float = 0.0
 var _telegraphs_seen: int = 0
 var _demo_clock: float = 0.0
+var _companion_refresh_queued: bool = false
 
 # The command line is read once per run; these survive instance changes.
 static var session_clock: float = 0.0
@@ -64,6 +69,11 @@ func level_title() -> String:
 ## A banner line telling players what to do here.
 func level_hint() -> String:
 	return ""
+
+
+## Whether AI companions fill missing roles here (raids yes, Hub Town no).
+func wants_companions() -> bool:
+	return false
 
 
 ## Builds level-specific actors (the boss) before the party is seated.
@@ -101,6 +111,8 @@ func _ready() -> void:
 	NetworkManager.current.status_changed.connect(_on_status_changed)
 	PartyProgress.current.progress_changed.connect(_on_progress_changed)
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+	# Companions from the last instance leave (or new ones join) before anyone is seated.
+	_refresh_companions()
 	for existing: PartyMember in NetworkManager.current.ordered_members():
 		_on_player_registered(existing)
 	InstanceManager.current.level_ready(instance_id())
@@ -165,13 +177,14 @@ func seat_local_player(device_id: int, class_id: StringName, mode: InputComponen
 	NetworkManager.current.request_local_player(device_id, class_id, mode)
 
 
-## The class the party has fewest of, so new players balance the trinity.
+## The class the people in the party play least, so new players balance the
+## trinity (a companion's role counts as open: the newcomer takes it over).
 func least_used_class(roster: Dictionary[StringName, PartyMember]) -> StringName:
 	var counts: Dictionary[StringName, int] = {}
 	for class_id: StringName in ClassLoadouts.PLAYER_CLASSES:
 		counts[class_id] = 0
 	for seat: PartyMember in roster.values():
-		if counts.has(seat.class_id):
+		if counts.has(seat.class_id) and not seat.companion:
 			counts[seat.class_id] += 1
 	var best: StringName = ClassLoadouts.PLAYER_CLASSES[0]
 	for class_id: StringName in ClassLoadouts.PLAYER_CLASSES:
@@ -191,13 +204,18 @@ func _on_player_registered(seat: PartyMember) -> void:
 	actor.device_id = seat.device_id
 	actor.party_slot = seat.slot
 	var is_local: bool = seat.peer_id == NetworkManager.current.local_peer_id()
-	if is_local:
+	actor.is_companion = seat.companion
+	if seat.companion:
+		if is_local:
+			actor.attach_companion()
+	elif is_local:
 		actor.attach_input(seat.device_id, seat.assist_mode)
 	actor.set_multiplayer_authority(seat.peer_id)
 	actors_root.add_child(actor)
 	actor.spawn_at(_spawn_transform(seat.slot))
 	actors[seat.player_id] = actor
-	if is_local:
+	_queue_companion_refresh()
+	if is_local and not seat.companion:
 		# Deferred: the request fires inside the actor's own physics step, and a
 		# class change replaces that actor.
 		actor.input.class_cycle_requested.connect(_on_class_cycle.bind(seat.device_id), CONNECT_DEFERRED)
@@ -211,6 +229,7 @@ func _on_player_registered(seat: PartyMember) -> void:
 
 
 func _on_player_updated(seat: PartyMember) -> void:
+	_queue_companion_refresh()
 	var actor: ActorBase = actors.get(seat.player_id) as ActorBase
 	if actor == null:
 		_on_player_registered(seat)
@@ -234,6 +253,29 @@ func _on_player_updated(seat: PartyMember) -> void:
 
 func _on_player_unregistered(player_id: StringName) -> void:
 	_remove_actor(player_id)
+	_queue_companion_refresh()
+
+
+func _queue_companion_refresh() -> void:
+	if _companion_refresh_queued or not NetworkManager.current.is_host():
+		return
+	_companion_refresh_queued = true
+	_refresh_companions.call_deferred()
+
+
+## Host only: AI companions take the trinity roles nobody is playing (in raids).
+func _refresh_companions() -> void:
+	_companion_refresh_queued = false
+	if not is_inside_tree() or not NetworkManager.current.is_host():
+		return
+	var people: Array[StringName] = []
+	for seat: PartyMember in NetworkManager.current.ordered_members():
+		if not seat.companion:
+			people.append(seat.class_id)
+	var wanted: Array[StringName] = []
+	if wants_companions():
+		wanted = CompanionAIComponent.backfill_classes(people)
+	NetworkManager.current.set_companions(wanted)
 
 
 func _remove_actor(player_id: StringName) -> void:
@@ -365,8 +407,10 @@ func _refresh_banner() -> void:
 			local_count, NetworkManager.MAX_LOCAL_PLAYERS])
 	if level_hint() != "":
 		lines.append(level_hint())
-	lines.append("%s · Party %d/%d · F5 host · F6 join %s · F7 leave" % [
-		NetworkManager.current.status, NetworkManager.current.party_size(), NetworkManager.MAX_PARTY_SIZE, _join_address])
+	var bots: int = NetworkManager.current.companion_seats().size()
+	lines.append("%s · Party %d/%d%s · F5 host · F6 join %s · F7 leave" % [
+		NetworkManager.current.status, NetworkManager.current.human_count(), NetworkManager.MAX_PARTY_SIZE,
+		" + %d bot%s" % [bots, "" if bots == 1 else "s"] if bots > 0 else "", _join_address])
 	if _notice_time_left > 0.0:
 		lines.append(_notice)
 	banner.text = "\n".join(lines)
@@ -457,8 +501,11 @@ func _drive_demo_bots(delta: float) -> void:
 func _print_report() -> void:
 	var players: PackedStringArray = PackedStringArray()
 	for actor: ActorBase in actors.values():
+		var tag: String = " (local)" if actor.is_local_player() else ""
+		if actor.companion != null:
+			tag = " (bot: %s)" % actor.companion.gambit_name()
 		players.append("%s %s %d/%d hp%s" % [actor.player_id, actor.loadout.class_id, roundi(actor.stats.health),
-			roundi(actor.stats.stats.max_health), " (local)" if actor.is_local_player() else ""])
+			roundi(actor.stats.stats.max_health), tag])
 	print("[Level] Report: peer %d in %s, %s%d telegraphs seen, players: %s" % [
 		NetworkManager.current.local_peer_id(), instance_id(), _report_extra(), _telegraphs_seen, ", ".join(players)])
 

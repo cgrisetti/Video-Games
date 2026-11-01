@@ -8,6 +8,11 @@
 ## The host (peer 1) owns the roster. Other peers ask it to seat their
 ## controllers and receive the full roster back whenever it changes. Offline
 ## play runs the same code: Godot's offline peer is peer 1 and acts as host.
+##
+## The host can also seat AI companions (set_companions). They sit on the
+## host's peer with device ids from COMPANION_DEVICE_BASE up, never count
+## against a screen's 4 players, and always give way to people: people take
+## the lowest player numbers, and the party cap counts only people.
 class_name NetworkManager
 extends Node
 
@@ -28,6 +33,8 @@ const MAX_LOCAL_PLAYERS: int = 4
 ## Other machines that can join a host (the party cap still applies).
 const MAX_REMOTE_PEERS: int = 4
 const DEFAULT_ADDRESS: String = "127.0.0.1"
+## AI companions use device ids from here up (no controller has one this high).
+const COMPANION_DEVICE_BASE: int = 100
 
 var roster: Dictionary[StringName, PartyMember] = {}
 var status: String = "Offline"
@@ -83,6 +90,23 @@ func has_peer(peer_id: int) -> bool:
 
 func party_size() -> int:
 	return roster.size()
+
+
+## Seats held by people (not AI companions).
+func human_count() -> int:
+	var count: int = 0
+	for seat: PartyMember in roster.values():
+		if not seat.companion:
+			count += 1
+	return count
+
+
+func companion_seats() -> Array[PartyMember]:
+	var seats: Array[PartyMember] = []
+	for seat: PartyMember in ordered_members():
+		if seat.companion:
+			seats.append(seat)
+	return seats
 
 
 func member(player_id: StringName) -> PartyMember:
@@ -203,12 +227,60 @@ func _server_register(peer_id: int, device_id: int, class_id: StringName, assist
 	seat.device_id = device_id
 	seat.class_id = class_id
 	seat.assist_mode = assist_mode
-	seat.slot = _free_slot()
+	seat.slot = _free_slot(false)
 	roster[player_id] = seat
 	player_registered.emit(seat)
+	_move_companions_off_people()
 	_log_party()
 	_broadcast_roster()
 	return true
+
+
+## Host only: makes the AI companion seats match `class_ids`, one seat per entry.
+func set_companions(class_ids: Array[StringName]) -> void:
+	if not is_host():
+		return
+	var wanted: Array[StringName] = []
+	wanted.assign(class_ids)
+	var stale: Array[StringName] = []
+	for seat: PartyMember in companion_seats():
+		var index: int = wanted.find(seat.class_id)
+		if index >= 0:
+			wanted.remove_at(index)
+		else:
+			stale.append(seat.player_id)
+	for player_id: StringName in stale:
+		_server_unregister(player_id)
+	for class_id: StringName in wanted:
+		_seat_companion(class_id)
+
+
+func _seat_companion(class_id: StringName) -> void:
+	var device_id: int = COMPANION_DEVICE_BASE
+	while roster.has(PartyMember.make_player_id(local_peer_id(), device_id)):
+		device_id += 1
+	var seat: PartyMember = PartyMember.new()
+	seat.player_id = PartyMember.make_player_id(local_peer_id(), device_id)
+	seat.peer_id = local_peer_id()
+	seat.device_id = device_id
+	seat.class_id = class_id
+	seat.companion = true
+	seat.slot = _free_slot(true)
+	roster[seat.player_id] = seat
+	player_registered.emit(seat)
+	_log_party()
+	_broadcast_roster()
+
+
+## A person who just joined may have the same player number as a companion:
+## the companion moves to the next free one.
+func _move_companions_off_people() -> void:
+	for seat: PartyMember in companion_seats():
+		for other: PartyMember in roster.values():
+			if not other.companion and other.slot == seat.slot:
+				seat.slot = _free_slot(true)
+				player_updated.emit(seat)
+				break
 
 
 func _server_unregister(player_id: StringName) -> void:
@@ -221,25 +293,29 @@ func _server_unregister(player_id: StringName) -> void:
 
 
 func _refusal_reason(peer_id: int) -> String:
-	if roster.size() >= MAX_PARTY_SIZE:
+	if human_count() >= MAX_PARTY_SIZE:
 		return "The party is full (%d players)." % MAX_PARTY_SIZE
 	if _count_for_peer(peer_id) >= MAX_LOCAL_PLAYERS:
 		return "That screen already has %d players." % MAX_LOCAL_PLAYERS
 	return ""
 
 
+## People seated from one peer (companions don't take a screen's places).
 func _count_for_peer(peer_id: int) -> int:
 	var count: int = 0
 	for seat: PartyMember in roster.values():
-		if seat.peer_id == peer_id:
+		if seat.peer_id == peer_id and not seat.companion:
 			count += 1
 	return count
 
 
-func _free_slot() -> int:
+## The lowest free player number. People may take a companion's number (the
+## companion then moves); companions only take numbers nobody holds.
+func _free_slot(for_companion: bool) -> int:
 	var used: Dictionary[int, bool] = {}
 	for seat: PartyMember in roster.values():
-		used[seat.slot] = true
+		if for_companion or not seat.companion:
+			used[seat.slot] = true
 	var slot: int = 0
 	while used.has(slot):
 		slot += 1
@@ -298,6 +374,7 @@ func _receive_roster(entries: Array) -> void:
 		if roster.has(incoming.player_id):
 			var existing: PartyMember = roster[incoming.player_id]
 			if existing.class_id != incoming.class_id or existing.slot != incoming.slot or existing.assist_mode != incoming.assist_mode:
+				existing.companion = incoming.companion
 				existing.class_id = incoming.class_id
 				existing.slot = incoming.slot
 				existing.assist_mode = incoming.assist_mode
@@ -354,5 +431,5 @@ func _set_status(text: String) -> void:
 func _log_party() -> void:
 	var ids: PackedStringArray = PackedStringArray()
 	for seat: PartyMember in ordered_members():
-		ids.append("%s(%s)" % [seat.player_id, seat.class_id])
-	print("[Net] Party %d/%d: %s" % [roster.size(), MAX_PARTY_SIZE, ", ".join(ids)])
+		ids.append("%s(%s%s)" % [seat.player_id, seat.class_id, ", bot" if seat.companion else ""])
+	print("[Net] Party %d/%d: %s" % [human_count(), MAX_PARTY_SIZE, ", ".join(ids)])

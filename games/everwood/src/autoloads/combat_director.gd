@@ -160,6 +160,14 @@ func hostile_telegraph_at(position: Vector3, min_fill: float) -> RaidTelegraphDe
 	return null
 
 
+## The gold soak circle being cast right now, if there is one.
+func soak_telegraph() -> RaidTelegraphDecal:
+	for decal: RaidTelegraphDecal in _telegraphs:
+		if is_instance_valid(decal) and not decal.is_hostile() and decal.fill_ratio() < 1.0:
+			return decal
+	return null
+
+
 func register_zone(zone: SanctuaryZone) -> void:
 	_zones.append(zone)
 

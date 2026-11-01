@@ -1,5 +1,6 @@
 ## One seat in the raid party, as the Network Manager's roster records it.
-## `player_id` is the composite "{peer_id}_{device_id}" address.
+## `player_id` is the composite "{peer_id}_{device_id}" address. An AI
+## companion's seat belongs to the host, on a device id no controller uses.
 class_name PartyMember
 extends RefCounted
 
@@ -10,6 +11,8 @@ var class_id: StringName = &""
 var assist_mode: int = 0
 ## Join order across the whole party; decides spawn point and Soul Tether slot.
 var slot: int = 0
+## An AI companion filling a role, not a person.
+var companion: bool = false
 
 
 static func make_player_id(for_peer: int, for_device: int) -> StringName:
@@ -24,6 +27,7 @@ func to_dict() -> Dictionary:
 		"class_id": class_id,
 		"assist_mode": assist_mode,
 		"slot": slot,
+		"companion": companion,
 	}
 
 
@@ -35,6 +39,7 @@ static func from_dict(data: Dictionary) -> PartyMember:
 	member.class_id = StringName(data.get("class_id", &""))
 	member.assist_mode = int(data.get("assist_mode", 0))
 	member.slot = int(data.get("slot", 0))
+	member.companion = bool(data.get("companion", false))
 	return member
 
 

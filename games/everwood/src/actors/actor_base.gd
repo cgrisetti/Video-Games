@@ -52,6 +52,10 @@ var hurtbox: HurtboxComponent
 var net_sync: NetworkSyncComponent
 ## Local players only.
 var input: InputComponent
+## An AI companion's brain (only on the host, which runs companions).
+var companion: CompanionAIComponent
+## True on every peer for an AI companion's actor.
+var is_companion: bool = false
 ## Healers only.
 var tether: SoulTetherComponent
 ## Bosses only.
@@ -88,6 +92,13 @@ var _pull_duration: float = 0.0
 func attach_input(for_device: int, mode: int) -> void:
 	input = InputComponent.new()
 	input.setup(self, for_device, mode as InputComponent.AssistMode)
+
+
+## Hands this actor to an AI companion brain. Call before adding it to the tree.
+func attach_companion() -> void:
+	is_companion = true
+	companion = CompanionAIComponent.new()
+	companion.setup(self)
 
 
 func _ready() -> void:
@@ -169,6 +180,12 @@ func _build_components() -> void:
 		input.command_issued.connect(_on_command)
 		input.tether_slot_pressed.connect(_on_tether_slot)
 		apply_assist_mode()
+
+	if companion != null:
+		add_child(companion)
+		# Companions chain combos the way an Adventurer-mode player does.
+		action_queue.buffer_window = InputComponent.ASSISTED_BUFFER_WINDOW
+		action_queue.assisted_chaining = true
 
 	state_machine = StateMachine.new()
 	add_child(state_machine)
@@ -298,7 +315,7 @@ func is_local_player() -> bool:
 
 
 func display_name() -> String:
-	return "P%d %s" % [party_slot + 1, loadout.display_name]
+	return "P%d %s%s" % [party_slot + 1, loadout.display_name, " (bot)" if is_companion else ""]
 
 
 func refresh_name_label() -> void:
@@ -356,8 +373,12 @@ func _physics_process(delta: float) -> void:
 		respawn()
 
 
-## Fills move_intent and wants_guard. Players read their controller; bosses override with AI.
+## Fills move_intent and wants_guard. Players read their controller, companions
+## ask their Gambit brain; bosses override this with their own AI.
 func _gather_intent(delta: float) -> void:
+	if companion != null:
+		companion.think(delta)
+		return
 	if input == null:
 		move_intent = Vector3.ZERO
 		wants_guard = false

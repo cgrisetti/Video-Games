@@ -7,6 +7,8 @@
 ##     detonations and their rewards and cues, poise, taunt, Perfect Guard,
 ##     heals, Lifeline, Shadow Sanctuary, Squire auto-evade and auto-guard,
 ##     soak scaling for small parties, telegraphs, wipes
+##   - AI companions backfilling missing roles, fighting by their Gambits and
+##     stepping aside when people rejoin
 ##   - the victory: slow motion, the banner, the reward chest and its Dojo
 ##     Shards, and the gold portal home with the same ENet session still up
 ##   - the Shard Vendor in Hub Town: its menu on the keyboard, upgrades for
@@ -24,6 +26,8 @@ const FAKE_PADS: Array[int] = [5, 6, 7, 8]
 const PORTAL_TIMEOUT: float = 8.0
 ## Simulated seconds to wait for the boss to cast both telegraph kinds.
 const TELEGRAPH_TIMEOUT: float = 50.0
+## Simulated seconds of fighting alongside companions.
+const COMPANION_FIGHT_TIME: float = 8.0
 ## The test's own save file, so it never touches the real one.
 const TEST_SAVE_PATH: String = "user://smoke_test_progress.cfg"
 
@@ -44,6 +48,7 @@ var _primers: Array[int] = []
 var _synergies: Array[String] = []
 var _cross_class_synergies: int = 0
 var _perfect_guards: int = 0
+var _companion_perfect_guards: int = 0
 var _outcomes: Array[int] = []
 var _telegraph_kinds: Dictionary[int, int] = {}
 var _telegraph_hits: int = 0
@@ -87,6 +92,7 @@ func _run() -> void:
 	await _check_soak_scaling()
 	await _check_telegraphs()
 	await _check_wipe_resets_fight()
+	await _check_companion_backfill()
 	await _check_victory_and_loot()
 	await _check_shard_vendor()
 	_check_audio_cues()
@@ -611,6 +617,88 @@ func _check_wipe_resets_fight() -> void:
 	await _seconds(0.1)
 
 
+## Fewer than 3 people: AI companions fill the missing trinity roles, fight by
+## their Gambit lists, and step aside when people come back.
+func _check_companion_backfill() -> void:
+	var network: NetworkManager = NetworkManager.current
+	_check(network.companion_seats().is_empty(), "a full trinity of people needs no companions")
+	network.drop_local_player(1)
+	network.drop_local_player(2)
+	await _seconds(0.1)
+	var bot_healer: ActorBase = _companion_with(ClassLoadoutResource.Role.HEALER)
+	var bot_dps: ActorBase = _companion_with(ClassLoadoutResource.Role.DPS)
+	_check(network.human_count() == 1 and _companions().size() == 2 and bot_healer != null and bot_dps != null,
+		"with one person left, companions fill in as the Healer and the DPS")
+	_check(dojo.grid.view_count() == 1 and dojo.huds.size() == 1, "companions get no split-screen view or HUD")
+	var driven: bool = true
+	for bot: ActorBase in _companions():
+		driven = driven and bot.companion != null and bot.input == null and bot.display_name().ends_with("(bot)")
+	_check(driven, "each is driven by a CompanionAIComponent and labelled as a bot")
+	_check(network.local_player_count() == 1 and network.party_size() == 3, "they fill the party without taking a screen's player places")
+
+	# A fight: the tank holds the boss while the companions do their jobs.
+	_reset_boss_poise()
+	tank.place_at(Transform3D(Basis.IDENTITY, boss.global_position + boss.facing_vector() * 2.6))
+	tank.input.inject_move(Vector2.ZERO)
+	boss.threat.taunt(tank.player_id, COMPANION_FIGHT_TIME)
+	tank.stats.take_damage(80.0)
+	var heals_before: int = _audio_cues.count(&"heal")
+	var dps_gambits: Dictionary[int, bool] = {}
+	var waited: float = 0.0
+	while waited < COMPANION_FIGHT_TIME:
+		await _seconds(0.25)
+		waited += 0.25
+		dps_gambits[bot_dps.companion.current_gambit] = true
+		if tank.stats.health < 50.0:
+			tank.stats.heal(80.0) # Keep the test's tank up (a direct heal, so it isn't counted below).
+	_check(_audio_cues.count(&"heal") > heals_before, "the companion healer heals the hurt tank")
+	_check(boss.threat.threat_of(bot_dps.player_id) > 0.0 and (dps_gambits.has(CompanionAIComponent.Gambit.ATTACK)
+		or dps_gambits.has(CompanionAIComponent.Gambit.PRIME)), "the companion DPS closes in and hits the boss")
+
+	# The last person switches to DPS: a companion Tank takes the front.
+	network.update_local_player(InputComponent.KEYBOARD_DEVICE, ClassLoadouts.DIRECTIONAL_FLOW_DPS, InputComponent.AssistMode.ADVENTURER)
+	await _seconds(0.1)
+	var bot_tank: ActorBase = _companion_with(ClassLoadoutResource.Role.TANK)
+	_check(bot_tank != null and _companion_with(ClassLoadoutResource.Role.HEALER) != null and _companions().size() == 2,
+		"switching the last person to DPS swaps the companion DPS for a companion Tank")
+	_reset_boss_poise()
+	bot_tank.place_at(Transform3D(Basis.IDENTITY, boss.global_position + boss.facing_vector() * 2.4))
+	boss.threat.taunt(bot_tank.player_id, COMPANION_FIGHT_TIME)
+	var guards_before: int = _companion_perfect_guards
+	waited = 0.0
+	while waited < COMPANION_FIGHT_TIME and _companion_perfect_guards == guards_before:
+		await _seconds(0.25)
+		waited += 0.25
+	_check(_companion_perfect_guards > guards_before, "the companion Tank times a Perfect Guard on the Crushing Swipe")
+
+	# People come back: the companions step aside and the player numbers are theirs again.
+	network.update_local_player(InputComponent.KEYBOARD_DEVICE, ClassLoadouts.SHIELD_TANK, InputComponent.AssistMode.ADVENTURER)
+	network.request_local_player(1, ClassLoadouts.SOUL_TETHER_HEALER, InputComponent.AssistMode.ADVENTURER)
+	network.request_local_player(2, ClassLoadouts.DIRECTIONAL_FLOW_DPS, InputComponent.AssistMode.MASTER)
+	await _seconds(0.1)
+	_check(network.companion_seats().is_empty() and network.human_count() == 3 and dojo.actors.size() == 3,
+		"when people rejoin, the companions step aside")
+	_check(network.member(&"1_1").slot == 1 and network.member(&"1_2").slot == 2, "and the people get players 2 and 3 back")
+	tank = dojo.actors[&"1_0"]
+	healer = dojo.actors[&"1_1"]
+	dps = dojo.actors[&"1_2"]
+
+
+func _companions() -> Array[ActorBase]:
+	var bots: Array[ActorBase] = []
+	for actor: ActorBase in dojo.actors.values():
+		if actor.is_companion:
+			bots.append(actor)
+	return bots
+
+
+func _companion_with(role: int) -> ActorBase:
+	for bot: ActorBase in _companions():
+		if bot.role() == role:
+			return bot
+	return null
+
+
 ## Beating the boss: slow motion, a banner, a chest of shards, and the gold portal home.
 func _check_victory_and_loot() -> void:
 	var session: MultiplayerPeer = root.multiplayer.multiplayer_peer
@@ -712,6 +800,10 @@ func _check_shard_vendor() -> void:
 	await _seconds(0.05)
 	_check(is_equal_approx(hub.actors[&"1_2"].stats.stats.max_health, ClassLoadouts.shield_tank().stats.max_health * 1.2),
 		"a player who changes class starts with the upgrades too")
+	NetworkManager.current.drop_local_player(1)
+	NetworkManager.current.drop_local_player(2)
+	await _seconds(0.1)
+	_check(NetworkManager.current.companion_seats().is_empty() and hub.actors.size() == 1, "companions only join raids, not Hub Town")
 
 
 # --- Helpers --------------------------------------------------------------
@@ -724,7 +816,10 @@ func _connect_global_signals() -> void:
 		_synergies.append(label)
 		if cross_class:
 			_cross_class_synergies += 1)
-	director.perfect_guard_landed.connect(func(_defender: ActorBase) -> void: _perfect_guards += 1)
+	director.perfect_guard_landed.connect(func(defender: ActorBase) -> void:
+		_perfect_guards += 1
+		if defender.is_companion:
+			_companion_perfect_guards += 1)
 	director.hit_resolved.connect(func(event: CombatEvent, outcome: int) -> void:
 		_outcomes.append(outcome)
 		if event.unavoidable:
