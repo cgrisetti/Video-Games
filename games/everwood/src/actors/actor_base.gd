@@ -31,6 +31,9 @@ const GUARD_BREAK_STAGGER: float = 0.9
 const DOWNED_RESPAWN_TIME: float = 8.0
 const RESPAWN_HEALTH_RATIO: float = 0.5
 const FALL_RESPAWN_HEIGHT: float = -10.0
+## Walking over Bramblebridge's arch and the expedition's ramps (07 GDD §1.1).
+const FLOOR_SNAP_LENGTH: float = 0.35
+const FLOOR_MAX_ANGLE_DEGREES: float = 50.0
 const FLASH_TIME: float = 0.08
 ## Extra invulnerability after a Lifeline Pull lands, so the yank really saves you.
 const PULL_SAFETY_TIME: float = 0.3
@@ -138,7 +141,11 @@ func _build_body() -> void:
 	collision_layer = LAYER_BOSS if is_boss() else LAYER_PLAYERS
 	# Players can't walk through the boss; nobody collides with other players.
 	collision_mask = LAYER_WORLD if is_boss() else LAYER_WORLD | LAYER_BOSS
-	floor_snap_length = 0.3
+	# No jump button (Space rolls), so slopes and bridges must be walkable: stay
+	# glued to ramps, climb anything up to 50 degrees, and keep pace on slopes.
+	floor_snap_length = FLOOR_SNAP_LENGTH
+	floor_max_angle = deg_to_rad(FLOOR_MAX_ANGLE_DEGREES)
+	floor_constant_speed = true
 	var capsule: CapsuleShape3D = CapsuleShape3D.new()
 	capsule.radius = body_radius()
 	capsule.height = body_height()

@@ -88,6 +88,7 @@ func _run() -> void:
 	await _check_hub_and_input_map()
 	_check_arsenal_catalog()
 	await _check_keyboard_is_player_one()
+	await _check_walk_over_bramblebridge()
 	await _check_hot_join_and_pad_mapping()
 	await _seat_trinity()
 	await _check_party_caps()
@@ -350,6 +351,35 @@ func _check_keyboard_is_player_one() -> void:
 	_key(KEY_ENTER, false)
 	await _seconds(0.05)
 	_check(network.roster.has(&"1_0") and network.member(&"1_0").slot == 0, "tapping Enter rejoins as Player 1")
+
+
+## No jump button: Player 1 walks from the spawn green over the stone arch to
+## the village square on the stick alone, with the desk, shrine and portal
+## across the canal (07 GDD §1.1).
+func _check_walk_over_bramblebridge() -> void:
+	var hub: HubTown = current_scene as HubTown
+	var walker: ActorBase = hub.actors[&"1_0"]
+	var canal_z: float = hub.get_node(^"Town/Bramblebridge").global_position.z
+	for spawn: Node in hub.spawn_points.get_children():
+		if (spawn as Node3D).global_position.z <= canal_z:
+			_check(false, "every spawn pad is on the south green")
+	_check(hub.scribe_desk.global_position.z < canal_z and hub.chime_shrine.global_position.z < canal_z
+		and hub.raid_portal.global_position.z < hub.scribe_desk.global_position.z,
+		"the desk and the Chime-Shrine stand across the canal, the Raid Portal beyond them at the forest gate")
+	_check(absf(walker.floor_snap_length - 0.35) < 0.001 and absf(walker.floor_max_angle - deg_to_rad(50.0)) < 0.001, "actors stick to ramps up to 50 degrees")
+	walker.place_at(Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, canal_z + 8.0)))
+	walker.input.inject_move(Vector2(0.0, 1.0))
+	var highest: float = 0.0
+	var waited: float = 0.0
+	while waited < 5.0 and walker.global_position.z > canal_z - 7.0:
+		await physics_frame
+		waited += 1.0 / 60.0
+		highest = maxf(highest, walker.global_position.y)
+	walker.input.inject_move(Vector2.ZERO)
+	_check(walker.global_position.z <= canal_z - 7.0, "walking north on the stick crosses Bramblebridge to the square (%.1f s)" % waited)
+	_check(highest > 0.75 and highest < 1.2, "over the arch's crown (%.2f m up), not around or under it" % highest)
+	walker.input.release_script()
+	walker.respawn()
 
 
 func _check_hot_join_and_pad_mapping() -> void:

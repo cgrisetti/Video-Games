@@ -2,11 +2,12 @@
 ## hand-edits their sub-resources. Re-run after changing anything here:
 ##   godot --headless --path . --script res://tools/build_levels.gd
 ##
-## - Bramblebridge (hub_town.tscn): a safe walled village square with four
-##   stepped-gable houses, a fountain, the Chime-Shrine, the Armory &
-##   Scribe Desk, a lantern-lit lane from four spawn pads to the Raid Portal,
-##   and behind it a canal with the footbridge the village is named for and a
-##   watermill (06_WORLD_AND_CALLINGS.md §1).
+## - Bramblebridge (hub_town.tscn, 07 GDD §1.1): a walled canal village. The
+##   spawn green and its fountain in the south; the canal across the middle,
+##   crossed by the low stone arch the village is named for (walkable ramps,
+##   no jump needed) and turning a watermill; the village square in the north
+##   with the Armory & Scribe Desk, the Chime-Shrine, a bakery and pigment
+##   racks among stepped-gable houses; and the Raid Portal at the forest gate.
 ## - The Ring of the Cairnsman (dungeon_dojo.tscn): a 44 m greybox arena with low
 ##   walls, six pillars for cover in a ring round the boss, four spawn pads and
 ##   an exit portal back to Bramblebridge.
@@ -47,52 +48,80 @@ const BOSS_POSITION: Vector3 = Vector3(0.0, 0.0, -2.0)
 const EXIT_PORTAL_POSITION: Vector3 = Vector3(0.0, 0.0, 18.8)
 const EXIT_PORTAL_COLOR: Color = Color(0.95, 0.8, 0.4)
 
-# Hub Town
-const HUB_SIZE: float = 40.0
-const HUB_SPAWN_Z: float = 12.0
-const RAID_PORTAL_POSITION: Vector3 = Vector3(0.0, 0.0, -13.0)
+# Bramblebridge (07_EXPEDITION_HUD_AND_ART_GDD.md §1.1). North is -Z: the
+# spawn green in the south, the canal across the middle with the bridge over
+# it, and the village square and the forest gate in the north. Nothing needs
+# a jump: Space is the dodge roll.
+const HUB_WIDTH: float = 44.0
+const HUB_DEPTH: float = 60.0
+const HUB_SPAWN_Z: float = 22.0
+## In front of the forest gate, well past the square, so nobody wanders into it.
+const RAID_PORTAL_POSITION: Vector3 = Vector3(0.0, 0.0, -25.0)
 const RAID_PORTAL_COLOR: Color = Color(0.55, 0.5, 1.0)
+## The forest gate: an opening in the north wall, framed in timber.
+const GATE_WIDTH: float = 6.0
+const GATE_HEIGHT: float = 5.0
+const GATE_COLOR: Color = Color(0.42, 0.29, 0.18)
+## Oaks of the Ariundle Moss-Oaks beyond the north wall, seen through the gate.
+const GATE_TREES: Array[Vector3] = [Vector3(-2.0, 0.0, -34.0), Vector3(3.5, 0.0, -36.5), Vector3(-6.5, 0.0, -38.0), Vector3(8.0, 0.0, -33.5),
+	Vector3(0.5, 0.0, -41.0), Vector3(-11.0, 0.0, -34.5)]
 const HOUSE_SIZE: Vector3 = Vector3(6.0, 3.6, 5.0)
-const HOUSE_SPOTS: Array[Vector3] = [Vector3(-13.0, 0.0, -9.0), Vector3(13.0, 0.0, -9.0), Vector3(-13.0, 0.0, 7.0), Vector3(13.0, 0.0, 7.0)]
-const HOUSE_COLORS: Array[Color] = [Color(0.78, 0.7, 0.58), Color(0.7, 0.74, 0.66), Color(0.74, 0.66, 0.7), Color(0.68, 0.7, 0.78)]
+const HOUSE_SPOTS: Array[Vector3] = [Vector3(-15.0, 0.0, -21.0), Vector3(15.0, 0.0, -21.0), Vector3(-15.0, 0.0, -10.0),
+	Vector3(15.0, 0.0, -10.0), Vector3(-15.5, 0.0, 19.0), Vector3(15.5, 0.0, 19.0)]
+const HOUSE_COLORS: Array[Color] = [Color(0.78, 0.7, 0.58), Color(0.7, 0.74, 0.66), Color(0.74, 0.66, 0.7), Color(0.68, 0.7, 0.78),
+	Color(0.8, 0.66, 0.56), Color(0.66, 0.72, 0.7)]
 const ROOF_COLOR: Color = Color(0.55, 0.3, 0.26)
-## Stepped gables face the square and climb above a steep roof (Bruges, Visby).
+## Stepped gables face the lane and climb above a steep roof (Bruges, Visby).
 const GABLE_STEPS: int = 4
 const GABLE_STEP_HEIGHT: float = 0.5
 const GABLE_THICKNESS: float = 0.3
 const ROOF_HEIGHT: float = 1.9
 const WINDOW_SIZE: Vector3 = Vector3(0.08, 0.75, 0.6)
 const WINDOW_COLOR: Color = Color(1.0, 0.82, 0.5)
-## The canal runs along the north wall behind the Raid Portal; a stone bank
-## keeps walkers out of the water.
-const CANAL_Z: float = -17.8
-const CANAL_WIDTH: float = 2.6
-const CANAL_BANK_HEIGHT: float = 0.45
-const CANAL_BANK_THICKNESS: float = 0.35
+## The square's bakery (one of the houses) puffs smoke from its oven chimney.
+const BAKERY_HOUSE: int = 2
+const SMOKE_COLOR: Color = Color(0.85, 0.83, 0.8, 0.5)
+## Drying racks of pigment bundles beside the shrine (saffron, madder, woad, weld, violet).
+const PIGMENT_RACK_POSITION: Vector3 = Vector3(11.0, 0.0, -17.5)
+const PIGMENT_COLORS: Array[Color] = [Color(0.95, 0.68, 0.15), Color(0.72, 0.2, 0.18), Color(0.2, 0.32, 0.7), Color(0.75, 0.78, 0.25),
+	Color(0.5, 0.3, 0.62)]
+## The canal runs east-west across the village. Knee-high stone banks keep
+## walkers out of the water everywhere but the bridge.
+const CANAL_Z: float = 0.0
+const CANAL_WIDTH: float = 3.6
+const CANAL_BANK_HEIGHT: float = 0.55
+const CANAL_BANK_THICKNESS: float = 0.4
 const WATER_COLOR: Color = Color(0.25, 0.5, 0.75)
-## Bramblebridge's footbridge over the canal, behind the portal.
-const BRIDGE_X: float = 0.0
-const BRIDGE_WIDTH: float = 2.2
-const BRIDGE_DECK_HEIGHT: float = 0.9
+## Bramblebridge itself: a low stone arch over the canal. Each ramp climbs
+## BRIDGE_RISE over BRIDGE_RAMP_LENGTH (about 13 degrees, under the 25-degree
+## limit), and its walkway is one convex collider, so there's no lip to catch on.
+const BRIDGE_WIDTH: float = 4.0
+const BRIDGE_RISE: float = 0.9
+const BRIDGE_RAMP_LENGTH: float = 3.8
+const BRIDGE_CROWN_LENGTH: float = 2.8
+const BRIDGE_PARAPET_HEIGHT: float = 0.6
+const BRIDGE_PARAPET_THICKNESS: float = 0.2
 const BRIDGE_COLOR: Color = Color(0.62, 0.58, 0.52)
-## The watermill: a shed by the canal, its wheel turning in the water.
-const MILL_POSITION: Vector3 = Vector3(15.8, 0.0, -14.2)
+## The watermill stands on the north bank, its wheel turning in the canal.
+const MILL_POSITION: Vector3 = Vector3(16.5, 0.0, -5.0)
 const MILL_SIZE: Vector3 = Vector3(3.6, 3.0, 2.8)
 const MILL_COLOR: Color = Color(0.7, 0.62, 0.5)
 const WHEEL_HEIGHT: float = 1.1
 const FOUNTAIN_RADIUS: float = 2.2
-## Off to the side, so the lane from the spawn pads to the Raid Portal stays clear.
-const FOUNTAIN_POSITION: Vector3 = Vector3(-8.5, 0.0, 0.0)
-## Lanterns line the lane to the portal.
+## On the spawn green, off to the side of the lane.
+const FOUNTAIN_POSITION: Vector3 = Vector3(-9.0, 0.0, 10.0)
+## Lanterns line the lane from the spawn green over the bridge to the gate.
 const LANTERN_SPOTS: Array[Vector3] = [
-	Vector3(-5.5, 0.0, -8.0), Vector3(5.5, 0.0, -8.0), Vector3(-5.5, 0.0, 0.0), Vector3(5.5, 0.0, 0.0),
-	Vector3(-5.5, 0.0, 8.0), Vector3(5.5, 0.0, 8.0),
+	Vector3(-3.4, 0.0, 16.0), Vector3(3.4, 0.0, 16.0), Vector3(-3.4, 0.0, 8.0), Vector3(3.4, 0.0, 8.0),
+	Vector3(-3.4, 0.0, -8.0), Vector3(3.4, 0.0, -8.0), Vector3(-3.4, 0.0, -17.0), Vector3(3.4, 0.0, -17.0),
 ]
 const LANTERN_COLOR: Color = Color(1.0, 0.8, 0.45)
-## Across the lane from the fountain, its counter facing the lane.
-const SHRINE_POSITION: Vector3 = Vector3(8.8, 0.0, 0.0)
-## On the fountain's side, further up the lane, its desk facing the lane.
-const DESK_POSITION: Vector3 = Vector3(-8.0, 0.0, -5.5)
+## On the village square: the desk west of the lane, the shrine east of it, both facing the lane.
+const DESK_POSITION: Vector3 = Vector3(-7.5, 0.0, -12.0)
+const SHRINE_POSITION: Vector3 = Vector3(7.5, 0.0, -12.0)
+const OAK_TRUNK_COLOR: Color = Color(0.36, 0.26, 0.18)
+const OAK_LEAF_COLOR: Color = Color(0.28, 0.46, 0.25)
+const MOSS_COLOR: Color = Color(0.36, 0.5, 0.26)
 
 
 func _initialize() -> void:
@@ -103,7 +132,7 @@ func _initialize() -> void:
 	quit(0 if not ", ".join(results).contains("rror") else 1)
 
 
-# --- Hub Town -------------------------------------------------------------
+# --- Bramblebridge --------------------------------------------------------
 
 func _build_hub() -> Node3D:
 	var root: Node3D = Node3D.new()
@@ -118,14 +147,18 @@ func _build_hub() -> Node3D:
 	cobbles.set_shader_parameter(&"base_color", Color(0.55, 0.52, 0.47))
 	cobbles.set_shader_parameter(&"minor_color", Color(0.5, 0.47, 0.42))
 	cobbles.set_shader_parameter(&"major_color", Color(0.45, 0.42, 0.38))
-	_add_floor_and_walls(town, HUB_SIZE, cobbles)
+	town.add_child(_box_body("Floor", Vector3(HUB_WIDTH, FLOOR_THICKNESS, HUB_DEPTH), Vector3(0.0, -FLOOR_THICKNESS * 0.5, 0.0), cobbles))
+	_add_hub_walls(town)
+	_add_forest_gate(town)
 	for index: int in HOUSE_SPOTS.size():
-		town.add_child(_house("House%d" % (index + 1), HOUSE_SPOTS[index], HOUSE_COLORS[index]))
+		town.add_child(_house("House%d" % (index + 1), HOUSE_SPOTS[index], HOUSE_COLORS[index], index == BAKERY_HOUSE))
 	town.add_child(_fountain())
 	for index: int in LANTERN_SPOTS.size():
 		town.add_child(_lantern("Lantern%d" % (index + 1), LANTERN_SPOTS[index]))
 	_add_canal(town)
+	_add_bridge(town)
 	_add_watermill(town)
+	_add_pigment_rack(town)
 	root.add_child(_portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Ring of the Cairnsman", RAID_PORTAL_COLOR, RAID_PORTAL_POSITION))
 	var shrine: Node3D = Node3D.new()
 	shrine.name = "ChimeShrine"
@@ -145,10 +178,78 @@ func _build_hub() -> Node3D:
 	return root
 
 
-func _house(house_name: String, where: Vector3, color: Color) -> StaticBody3D:
+## The village wall, with the forest gate's opening in the north side.
+func _add_hub_walls(parent: Node3D) -> void:
+	var half_width: float = HUB_WIDTH * 0.5
+	var half_depth: float = HUB_DEPTH * 0.5
+	var stone: StandardMaterial3D = _material(WALL_COLOR)
+	parent.add_child(_box_body("WallSouth", Vector3(HUB_WIDTH, WALL_HEIGHT, WALL_THICKNESS), Vector3(0.0, WALL_HEIGHT * 0.5, half_depth), stone))
+	parent.add_child(_box_body("WallWest", Vector3(WALL_THICKNESS, WALL_HEIGHT, HUB_DEPTH), Vector3(-half_width, WALL_HEIGHT * 0.5, 0.0), stone))
+	parent.add_child(_box_body("WallEast", Vector3(WALL_THICKNESS, WALL_HEIGHT, HUB_DEPTH), Vector3(half_width, WALL_HEIGHT * 0.5, 0.0), stone))
+	var side_length: float = half_width - GATE_WIDTH * 0.5
+	for side: float in [-1.0, 1.0]:
+		parent.add_child(_box_body("WallNorth%s" % ("West" if side < 0.0 else "East"), Vector3(side_length, WALL_HEIGHT, WALL_THICKNESS),
+			Vector3(side * (GATE_WIDTH * 0.5 + side_length * 0.5), WALL_HEIGHT * 0.5, -half_depth), stone))
+
+
+## The timber gate out to the Ariundle Moss-Oaks, behind the Raid Portal: you
+## see the oaks through it, but the way out is the portal.
+func _add_forest_gate(parent: Node3D) -> void:
+	var half_depth: float = HUB_DEPTH * 0.5
+	var gate: Node3D = _node3d("ForestGate")
+	gate.position = Vector3(0.0, 0.0, -half_depth)
+	parent.add_child(gate)
+	var timber: StandardMaterial3D = _material(GATE_COLOR)
+	for side: float in [-1.0, 1.0]:
+		gate.add_child(_mesh_box("Post", Vector3(0.6, GATE_HEIGHT, 0.6), Vector3(side * (GATE_WIDTH * 0.5 + 0.3), GATE_HEIGHT * 0.5, 0.0), timber))
+		# Open gate leaves, swung outward.
+		var leaf: MeshInstance3D = _mesh_box("Leaf", Vector3(GATE_WIDTH * 0.5 - 0.2, GATE_HEIGHT - 1.2, 0.18),
+			Vector3(side * (GATE_WIDTH * 0.5 + 0.2), (GATE_HEIGHT - 1.2) * 0.5, -1.4), timber)
+		leaf.rotation = Vector3(0.0, side * 1.25, 0.0)
+		gate.add_child(leaf)
+	gate.add_child(_mesh_box("Lintel", Vector3(GATE_WIDTH + 1.8, 0.7, 0.8), Vector3(0.0, GATE_HEIGHT, 0.0), timber))
+	var roof_mesh: PrismMesh = PrismMesh.new()
+	roof_mesh.size = Vector3(GATE_WIDTH + 2.4, 1.0, 1.6)
+	roof_mesh.material = _material(ROOF_COLOR)
+	var roof: MeshInstance3D = MeshInstance3D.new()
+	roof.name = "Roof"
+	roof.mesh = roof_mesh
+	roof.position = Vector3(0.0, GATE_HEIGHT + 0.85, 0.0)
+	gate.add_child(roof)
+	# Nobody walks out through the gate: the portal is the way.
+	var blocker: StaticBody3D = StaticBody3D.new()
+	blocker.name = "GateBlocker"
+	blocker.collision_layer = ActorBase.LAYER_WORLD
+	blocker.collision_mask = 0
+	var shape: BoxShape3D = BoxShape3D.new()
+	shape.size = Vector3(GATE_WIDTH, GATE_HEIGHT, WALL_THICKNESS)
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	collision.name = "Collision"
+	collision.shape = shape
+	collision.position = Vector3(0.0, GATE_HEIGHT * 0.5, 0.0)
+	blocker.add_child(collision)
+	gate.add_child(blocker)
+	var sign_label: Label3D = Label3D.new()
+	sign_label.name = "GateSign"
+	sign_label.text = "To the Ariundle Moss-Oaks"
+	sign_label.font_size = 48
+	sign_label.outline_size = 10
+	sign_label.pixel_size = 0.01
+	sign_label.modulate = Color(1.0, 0.92, 0.75)
+	sign_label.position = Vector3(0.0, GATE_HEIGHT - 0.6, 0.45)
+	gate.add_child(sign_label)
+	# The edge of the forest beyond the wall.
+	var forest: Node3D = _node3d("ForestEdge")
+	parent.add_child(forest)
+	forest.add_child(_mesh_box("Moss", Vector3(HUB_WIDTH * 0.7, 0.1, 16.0), Vector3(0.0, -0.05, -half_depth - 8.0), _material(MOSS_COLOR)))
+	for index: int in GATE_TREES.size():
+		forest.add_child(_tree("Oak%d" % (index + 1), GATE_TREES[index], 7.0 + float(index % 3), false))
+
+
+func _house(house_name: String, where: Vector3, color: Color, bakery: bool) -> StaticBody3D:
 	var house: StaticBody3D = _box_body(house_name, HOUSE_SIZE, where + Vector3(0.0, HOUSE_SIZE.y * 0.5, 0.0), _material(color))
 	var eave: float = HOUSE_SIZE.y * 0.5
-	# A steep roof whose ridge runs toward the square...
+	# A steep roof whose ridge runs toward the lane...
 	var roof_mesh: PrismMesh = PrismMesh.new()
 	roof_mesh.size = Vector3(HOUSE_SIZE.z + 0.4, ROOF_HEIGHT, HOUSE_SIZE.x - GABLE_THICKNESS * 2.0)
 	roof_mesh.material = _material(ROOF_COLOR)
@@ -177,7 +278,7 @@ func _house(house_name: String, where: Vector3, color: Color) -> StaticBody3D:
 	var door: MeshInstance3D = MeshInstance3D.new()
 	door.name = "Door"
 	door.mesh = door_mesh
-	# Doors face the middle of the plaza.
+	# Doors face the lane down the middle of the village.
 	var toward_middle: float = -signf(where.x)
 	door.position = Vector3(toward_middle * (HOUSE_SIZE.x * 0.5 + 0.05), -HOUSE_SIZE.y * 0.5 + 1.0, 0.0)
 	door.rotation = Vector3(0.0, PI * 0.5, 0.0)
@@ -198,37 +299,150 @@ func _house(house_name: String, where: Vector3, color: Color) -> StaticBody3D:
 		window.mesh = window_mesh
 		window.position = window_spots[index]
 		house.add_child(window)
+	if bakery:
+		_add_bakery(house, toward_middle)
 	return house
 
 
-## The canal along the north wall, its bank, and the footbridge over it.
+## The bakery's brick oven against its lane side, and smoke puffing from the chimney.
+func _add_bakery(house: StaticBody3D, toward_middle: float) -> void:
+	var brick: StandardMaterial3D = _material(Color(0.62, 0.34, 0.26))
+	var oven_x: float = toward_middle * (HOUSE_SIZE.x * 0.5 + 0.55)
+	house.add_child(_mesh_box("Oven", Vector3(1.0, 1.1, 1.4), Vector3(oven_x, -HOUSE_SIZE.y * 0.5 + 0.55, -HOUSE_SIZE.z * 0.25), brick))
+	var mouth: StandardMaterial3D = _material(Color(1.0, 0.55, 0.2))
+	mouth.emission_enabled = true
+	mouth.emission = Color(1.0, 0.5, 0.15)
+	mouth.emission_energy_multiplier = 2.0
+	house.add_child(_mesh_box("OvenFire", Vector3(0.06, 0.4, 0.6), Vector3(oven_x + toward_middle * 0.5, -HOUSE_SIZE.y * 0.5 + 0.45, -HOUSE_SIZE.z * 0.25), mouth))
+	var chimney_top: float = HOUSE_SIZE.y * 0.5 + ROOF_HEIGHT + 0.4
+	house.add_child(_mesh_box("Chimney", Vector3(0.6, 1.6, 0.6), Vector3(-toward_middle * 1.2, chimney_top - 0.8, -HOUSE_SIZE.z * 0.25), brick))
+	var smoke: CPUParticles3D = CPUParticles3D.new()
+	smoke.name = "Smoke"
+	smoke.position = Vector3(-toward_middle * 1.2, chimney_top + 0.1, -HOUSE_SIZE.z * 0.25)
+	smoke.amount = 10
+	smoke.lifetime = 3.2
+	smoke.direction = Vector3.UP
+	smoke.spread = 12.0
+	smoke.initial_velocity_min = 0.5
+	smoke.initial_velocity_max = 0.8
+	smoke.gravity = Vector3(0.25, 0.15, 0.0)
+	smoke.scale_amount_min = 0.6
+	smoke.scale_amount_max = 1.4
+	var puff: SphereMesh = SphereMesh.new()
+	puff.radius = 0.28
+	puff.height = 0.56
+	var puff_material: StandardMaterial3D = StandardMaterial3D.new()
+	puff_material.albedo_color = SMOKE_COLOR
+	puff_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	puff_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	puff.material = puff_material
+	smoke.mesh = puff
+	house.add_child(smoke)
+
+
+## Pigment bundles drying on a timber rack: saffron, madder, woad, weld and violet.
+func _add_pigment_rack(parent: Node3D) -> void:
+	var rack: Node3D = _node3d("PigmentRack")
+	rack.position = PIGMENT_RACK_POSITION
+	parent.add_child(rack)
+	var timber: StandardMaterial3D = _material(GATE_COLOR)
+	var span: float = 3.4
+	for side: float in [-1.0, 1.0]:
+		rack.add_child(_mesh_box("Post", Vector3(0.14, 2.4, 0.14), Vector3(side * span * 0.5, 1.2, 0.0), timber))
+	rack.add_child(_mesh_box("Bar", Vector3(span + 0.3, 0.12, 0.12), Vector3(0.0, 2.35, 0.0), timber))
+	for index: int in PIGMENT_COLORS.size():
+		var x: float = lerpf(-span * 0.4, span * 0.4, float(index) / (PIGMENT_COLORS.size() - 1))
+		rack.add_child(_mesh_box("Bundle%d" % index, Vector3(0.32, 0.8, 0.32), Vector3(x, 1.85, 0.0), _material(PIGMENT_COLORS[index])))
+
+
+## The canal across the village and its stone banks, open only where the bridge crosses.
 func _add_canal(parent: Node3D) -> void:
-	var length: float = HUB_SIZE - WALL_THICKNESS
+	var length: float = HUB_WIDTH - WALL_THICKNESS
 	var water_material: StandardMaterial3D = _material(WATER_COLOR)
 	water_material.roughness = 0.15
 	water_material.emission_enabled = true
 	water_material.emission = WATER_COLOR.darkened(0.5)
-	var water_mesh: BoxMesh = BoxMesh.new()
-	water_mesh.size = Vector3(length, 0.04, CANAL_WIDTH)
-	water_mesh.material = water_material
-	var water: MeshInstance3D = MeshInstance3D.new()
-	water.name = "CanalWater"
-	water.mesh = water_mesh
-	water.position = Vector3(0.0, 0.02, CANAL_Z)
-	parent.add_child(water)
-	var bank_z: float = CANAL_Z + CANAL_WIDTH * 0.5 + CANAL_BANK_THICKNESS * 0.5
-	parent.add_child(_box_body("CanalBank", Vector3(length, CANAL_BANK_HEIGHT, CANAL_BANK_THICKNESS),
-		Vector3(0.0, CANAL_BANK_HEIGHT * 0.5, bank_z), _material(STONE_COLOR)))
-	# Bramblebridge itself: a stone footbridge with parapets (to look at, not to cross).
-	var bridge: Node3D = _node3d("Bramblebridge")
-	bridge.position = Vector3(BRIDGE_X, 0.0, CANAL_Z)
+	parent.add_child(_mesh_box("CanalWater", Vector3(length, 0.04, CANAL_WIDTH), Vector3(0.0, 0.03, CANAL_Z), water_material))
+	var stone: StandardMaterial3D = _material(STONE_COLOR)
+	var gap: float = BRIDGE_WIDTH * 0.5 + BRIDGE_PARAPET_THICKNESS
+	var bank_length: float = length * 0.5 - gap
+	for bank: float in [-1.0, 1.0]:
+		var bank_z: float = CANAL_Z + bank * (CANAL_WIDTH * 0.5 + CANAL_BANK_THICKNESS * 0.5)
+		for side: float in [-1.0, 1.0]:
+			parent.add_child(_box_body("CanalBank%s%s" % ["North" if bank < 0.0 else "South", "West" if side < 0.0 else "East"],
+				Vector3(bank_length, CANAL_BANK_HEIGHT, CANAL_BANK_THICKNESS),
+				Vector3(side * (gap + bank_length * 0.5), CANAL_BANK_HEIGHT * 0.5, bank_z), stone))
+
+
+## Bramblebridge: a low stone arch. The walkway is one convex collider shaped
+## like the arch (ramp, crown, ramp), starting flush with the ground at each
+## end, and parapets follow its edges so nobody steps off into the canal.
+func _add_bridge(parent: Node3D) -> void:
+	var bridge: StaticBody3D = StaticBody3D.new()
+	bridge.name = "Bramblebridge"
+	bridge.position = Vector3(0.0, 0.0, CANAL_Z)
+	bridge.collision_layer = ActorBase.LAYER_WORLD
+	bridge.collision_mask = 0
 	parent.add_child(bridge)
-	var stone: StandardMaterial3D = _material(BRIDGE_COLOR)
-	var span: float = CANAL_WIDTH + 1.4
-	bridge.add_child(_mesh_box("Deck", Vector3(BRIDGE_WIDTH, 0.25, span), Vector3(0.0, BRIDGE_DECK_HEIGHT, 0.0), stone))
+	var foot: float = BRIDGE_CROWN_LENGTH * 0.5 + BRIDGE_RAMP_LENGTH
+	var crown: float = BRIDGE_CROWN_LENGTH * 0.5
+	# The arch's side profile as (z, y), going round: the walkway on top, then under the ground.
+	var top: PackedVector2Array = PackedVector2Array([Vector2(foot, 0.0), Vector2(crown, BRIDGE_RISE), Vector2(-crown, BRIDGE_RISE), Vector2(-foot, 0.0)])
+	var profile: PackedVector2Array = top.duplicate()
+	profile.append(Vector2(-foot, -0.4))
+	profile.append(Vector2(foot, -0.4))
+	var points: PackedVector3Array = PackedVector3Array()
 	for side: float in [-1.0, 1.0]:
-		bridge.add_child(_mesh_box("Parapet", Vector3(0.18, 0.55, span), Vector3(side * (BRIDGE_WIDTH * 0.5 - 0.09), BRIDGE_DECK_HEIGHT + 0.4, 0.0), stone))
-		bridge.add_child(_mesh_box("Abutment", Vector3(BRIDGE_WIDTH, BRIDGE_DECK_HEIGHT, 0.5), Vector3(0.0, BRIDGE_DECK_HEIGHT * 0.5, side * (span * 0.5 - 0.25)), stone))
+		for point: Vector2 in profile:
+			points.append(Vector3(side * BRIDGE_WIDTH * 0.5, point.y, point.x))
+	var shape: ConvexPolygonShape3D = ConvexPolygonShape3D.new()
+	shape.points = points
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	collision.name = "Walkway"
+	collision.shape = shape
+	bridge.add_child(collision)
+	var stone: StandardMaterial3D = _material(BRIDGE_COLOR)
+	stone.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var deck: MeshInstance3D = MeshInstance3D.new()
+	deck.name = "Deck"
+	deck.mesh = _prism_mesh(profile, BRIDGE_WIDTH)
+	deck.material_override = stone
+	bridge.add_child(deck)
+	# The dark arch underneath, showing on both faces above the water.
+	var arch_mesh: CylinderMesh = CylinderMesh.new()
+	arch_mesh.top_radius = 1.25
+	arch_mesh.bottom_radius = 1.25
+	arch_mesh.height = BRIDGE_WIDTH + 0.06
+	arch_mesh.radial_segments = 24
+	arch_mesh.material = _material(Color(0.16, 0.18, 0.2))
+	var arch: MeshInstance3D = MeshInstance3D.new()
+	arch.name = "Arch"
+	arch.mesh = arch_mesh
+	arch.position = Vector3(0.0, -0.45, 0.0)
+	arch.rotation = Vector3(0.0, 0.0, PI * 0.5)
+	bridge.add_child(arch)
+	var parapet_stone: StandardMaterial3D = _material(BRIDGE_COLOR.darkened(0.1))
+	for side: float in [-1.0, 1.0]:
+		var x: float = side * (BRIDGE_WIDTH * 0.5 + BRIDGE_PARAPET_THICKNESS * 0.5)
+		for index: int in top.size() - 1:
+			var from: Vector2 = top[index]
+			var to: Vector2 = top[index + 1]
+			var length: float = from.distance_to(to)
+			var middle: Vector2 = (from + to) * 0.5
+			var size: Vector3 = Vector3(BRIDGE_PARAPET_THICKNESS, BRIDGE_PARAPET_HEIGHT + 0.3, length + 0.2)
+			var where: Vector3 = Vector3(x, middle.y + BRIDGE_PARAPET_HEIGHT * 0.5 - 0.15, middle.x)
+			var tilt: float = atan2(-(to.y - from.y), to.x - from.x)
+			var rail_shape: BoxShape3D = BoxShape3D.new()
+			rail_shape.size = size
+			var rail: CollisionShape3D = CollisionShape3D.new()
+			rail.name = "Parapet%s%d" % ["West" if side < 0.0 else "East", index]
+			rail.shape = rail_shape
+			rail.position = where
+			rail.rotation = Vector3(tilt, 0.0, 0.0)
+			bridge.add_child(rail)
+			var rail_mesh: MeshInstance3D = _mesh_box("ParapetMesh", size, where, parapet_stone)
+			rail_mesh.rotation = Vector3(tilt, 0.0, 0.0)
+			bridge.add_child(rail_mesh)
 	var village_sign: Label3D = Label3D.new()
 	village_sign.name = "VillageSign"
 	village_sign.text = "Bramblebridge"
@@ -237,11 +451,31 @@ func _add_canal(parent: Node3D) -> void:
 	village_sign.outline_size = 12
 	village_sign.pixel_size = 0.012
 	village_sign.modulate = Color(1.0, 0.92, 0.75)
-	village_sign.position = Vector3(0.0, BRIDGE_DECK_HEIGHT + 2.0, 0.0)
+	village_sign.position = Vector3(0.0, BRIDGE_RISE + 2.6, 0.0)
 	bridge.add_child(village_sign)
 
 
-## The watermill: a shed beside the canal and its wheel turning in the water.
+## A closed prism: a side profile of (z, y) points extruded `width` along X.
+func _prism_mesh(profile: PackedVector2Array, width: float) -> ArrayMesh:
+	var tool: SurfaceTool = SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var half: float = width * 0.5
+	var count: int = profile.size()
+	for side: float in [-half, half]:
+		for index: int in range(1, count - 1):
+			for point: Vector2 in [profile[0], profile[index], profile[index + 1]]:
+				tool.add_vertex(Vector3(side, point.y, point.x))
+	for index: int in count:
+		var a: Vector2 = profile[index]
+		var b: Vector2 = profile[(index + 1) % count]
+		for corner: Vector3 in [Vector3(-half, a.y, a.x), Vector3(half, a.y, a.x), Vector3(half, b.y, b.x),
+				Vector3(-half, a.y, a.x), Vector3(half, b.y, b.x), Vector3(-half, b.y, b.x)]:
+			tool.add_vertex(corner)
+	tool.generate_normals()
+	return tool.commit()
+
+
+## The watermill: a shed on the north bank and its wheel turning in the canal.
 func _add_watermill(parent: Node3D) -> void:
 	var shed: StaticBody3D = _box_body("Watermill", MILL_SIZE, MILL_POSITION + Vector3(0.0, MILL_SIZE.y * 0.5, 0.0), _material(MILL_COLOR))
 	var roof_mesh: PrismMesh = PrismMesh.new()
@@ -256,10 +490,47 @@ func _add_watermill(parent: Node3D) -> void:
 	var wheel: Node3D = Node3D.new()
 	wheel.name = "WaterWheel"
 	wheel.set_script(load(WHEEL_SCRIPT))
-	wheel.position = Vector3(MILL_POSITION.x, WHEEL_HEIGHT, CANAL_Z)
-	# The wheel spins about its own Y axis: lay that along the canal's width (X).
-	wheel.rotation = Vector3(0.0, 0.0, PI * 0.5)
+	wheel.position = Vector3(MILL_POSITION.x, WHEEL_HEIGHT, CANAL_Z - CANAL_WIDTH * 0.25)
+	# The wheel spins about its own Y axis: point that across the canal (Z), so it turns with the water.
+	wheel.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 	parent.add_child(wheel)
+
+
+## A moss-oak: a stout trunk under three heaps of leaves. Only the trunk collides.
+func _tree(tree_name: String, where: Vector3, height: float, collides: bool) -> Node3D:
+	var tree: Node3D = _node3d(tree_name)
+	tree.position = where
+	var trunk_height: float = height * 0.55
+	var trunk_radius: float = 0.22 + height * 0.025
+	tree.add_child(_cylinder_mesh("Trunk", trunk_radius * 0.75, trunk_radius, trunk_height, trunk_height * 0.5, _material(OAK_TRUNK_COLOR)))
+	var leaves: StandardMaterial3D = _material(OAK_LEAF_COLOR)
+	var heaps: Array[Vector3] = [Vector3(0.0, trunk_height + height * 0.12, 0.0), Vector3(height * 0.13, trunk_height + height * 0.28, height * 0.06),
+		Vector3(-height * 0.1, trunk_height + height * 0.3, -height * 0.08)]
+	for index: int in heaps.size():
+		var heap_mesh: SphereMesh = SphereMesh.new()
+		heap_mesh.radius = height * (0.27 - 0.04 * index)
+		heap_mesh.height = heap_mesh.radius * 1.6
+		heap_mesh.material = leaves
+		var heap: MeshInstance3D = MeshInstance3D.new()
+		heap.name = "Leaves%d" % index
+		heap.mesh = heap_mesh
+		heap.position = heaps[index]
+		tree.add_child(heap)
+	if collides:
+		var body: StaticBody3D = StaticBody3D.new()
+		body.name = "TrunkBody"
+		body.collision_layer = ActorBase.LAYER_WORLD
+		body.collision_mask = 0
+		var shape: CylinderShape3D = CylinderShape3D.new()
+		shape.radius = trunk_radius
+		shape.height = trunk_height
+		var collision: CollisionShape3D = CollisionShape3D.new()
+		collision.name = "Collision"
+		collision.shape = shape
+		collision.position = Vector3(0.0, trunk_height * 0.5, 0.0)
+		body.add_child(collision)
+		tree.add_child(body)
+	return tree
 
 
 func _mesh_box(box_name: String, size: Vector3, where: Vector3, material: Material) -> MeshInstance3D:

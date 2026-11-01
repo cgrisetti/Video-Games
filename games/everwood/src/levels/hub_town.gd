@@ -1,10 +1,10 @@
-## Bramblebridge (06_WORLD_AND_CALLINGS.md §1), the hub village: a stepped-gable
-## canal and watermill village where the party gathers (its files and network
-## id keep the old name, Hub Town). Walk into the Raid Portal together to face
-## the Cairnsman in his Ring, spend the Chimes from his
-## chest at the Chime-Shrine, and change armor, weapon and Scribe Cards at the
-## Armory & Scribe Desk. Seating, hot-join and the split-screen grid come from
-## LevelBase.
+## Bramblebridge (06_WORLD_AND_CALLINGS.md §1, 07 GDD §1.1), the hub village
+## where the party gathers (its files and network id keep the old name, Hub
+## Town). You arrive on the spawn green, walk over the stone arch across the
+## canal to the village square, change armor, weapon and Scribe Cards at the
+## Armory & Scribe Desk, spend Chimes at the Chime-Shrine, and step into the
+## Raid Portal at the northern forest gate together to set out. Seating,
+## hot-join and the split-screen grid come from LevelBase.
 class_name HubTown
 extends LevelBase
 
