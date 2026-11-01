@@ -8,6 +8,9 @@
 ## tools/build_input_map.gd). Every action listens on every device; this
 ## component evaluates them for its own device only, so four players can share
 ## one machine. Device 0 is the keyboard and mouse; joypad n is device n + 1.
+##
+## While a menu is open on this player's screen (the Shard Vendor), the same
+## controller drives the menu instead of the character (menu_input).
 class_name InputComponent
 extends Node
 
@@ -15,6 +18,8 @@ signal command_issued(command: int)
 signal tether_slot_pressed(slot: int)
 signal class_cycle_requested
 signal mode_cycle_requested
+## Up / down / accept / back for an open menu (MENU_* below).
+signal menu_input(action: StringName)
 
 enum AssistMode { MASTER, ADVENTURER, SQUIRE_GAMBIT }
 enum PadFamily { KEYBOARD, XBOX, PLAYSTATION }
@@ -46,6 +51,11 @@ const BUTTON_ACTIONS: Array[StringName] = [
 	ACTION_TETHER_UP, ACTION_TETHER_RIGHT, ACTION_TETHER_DOWN, ACTION_TETHER_LEFT,
 	ACTION_CHANGE_CLASS, ACTION_CHANGE_MODE,
 ]
+
+const MENU_UP: StringName = &"up"
+const MENU_DOWN: StringName = &"down"
+const MENU_ACCEPT: StringName = &"accept"
+const MENU_BACK: StringName = &"back"
 
 const MODE_NAMES: Array[String] = ["Master", "Adventurer", "Squire Gambit"]
 const KEYBOARD_DEVICE: int = 0
@@ -85,6 +95,8 @@ var actor: ActorBase
 ## Stick or WASD, x = right, y = forward, relative to this player's camera.
 var move_input: Vector2 = Vector2.ZERO
 var camera_orbit_input: float = 0.0
+## A menu is open on this player's screen: buttons go to menu_input instead.
+var menu_open: bool = false
 
 var _held: Dictionary[StringName, bool] = {}
 var _was_held: Dictionary[StringName, bool] = {}
@@ -100,6 +112,7 @@ var _squire_primer_turn: int = 0
 var _last_forward_at: float = -INF
 var _last_back_at: float = -INF
 var _mouse_yaw: float = 0.0
+var _menu_stick: int = 0
 # Tests and bots drive the component through these instead of a device.
 var _scripted: bool = false
 var _scripted_commands: Array[int] = []
@@ -314,6 +327,11 @@ func poll(dt: float) -> void:
 		move_input = _read_move()
 		camera_orbit_input = _read_orbit()
 	_remember_stick_direction()
+	if menu_open:
+		_poll_menu()
+		move_input = Vector2.ZERO
+		camera_orbit_input = 0.0
+		return
 
 	if _held_for(ACTION_CHANGE_CLASS, dt):
 		class_cycle_requested.emit()
@@ -337,11 +355,35 @@ func poll(dt: float) -> void:
 		_issue(_scripted_commands.pop_front())
 
 
+## Stick, W/S or D-Pad up / down move the cursor, light accepts, dodge backs out.
+func _poll_menu() -> void:
+	var stick: int = 0
+	if move_input.y > DIRECTIONAL_THRESHOLD:
+		stick = 1
+	elif move_input.y < -DIRECTIONAL_THRESHOLD:
+		stick = -1
+	if stick != 0 and stick != _menu_stick:
+		menu_input.emit(MENU_UP if stick > 0 else MENU_DOWN)
+	_menu_stick = stick
+	if _pressed(ACTION_TETHER_UP):
+		menu_input.emit(MENU_UP)
+	if _pressed(ACTION_TETHER_DOWN):
+		menu_input.emit(MENU_DOWN)
+	if _pressed(ACTION_LIGHT):
+		menu_input.emit(MENU_ACCEPT)
+	if _pressed(ACTION_DODGE):
+		menu_input.emit(MENU_BACK)
+
+
 func _issue(command: int) -> void:
 	command_issued.emit(command)
 
 
 func _issue_attack(base: int) -> void:
+	# Light next to a stall uses it (opens the Shard Vendor) instead of swinging.
+	if base == CombatActionResource.Command.LIGHT and is_instance_valid(actor.interactable):
+		actor.interactable.interact(actor)
+		return
 	if assist_mode == AssistMode.SQUIRE_GAMBIT:
 		_issue(_squire_pick())
 		return

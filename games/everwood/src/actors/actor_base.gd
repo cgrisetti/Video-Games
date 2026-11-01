@@ -37,6 +37,8 @@ const FLOW_GLOW_COLOR: Color = Color(0.55, 0.8, 1.0)
 @export var loadout: ClassLoadoutResource
 
 var player_id: StringName = &""
+## The class's own numbers, before the party's Hub Town upgrades (players only).
+var base_stats: CharacterStatsResource
 var peer_id: int = 1
 var device_id: int = 0
 var party_slot: int = 0
@@ -54,6 +56,8 @@ var input: InputComponent
 var tether: SoulTetherComponent
 ## Bosses only.
 var threat: ThreatComponent
+## Something this local player is standing at and can use with light (the Shard Vendor).
+var interactable: Interactable
 
 ## Where this actor wants to go this tick (world space, length 0..1).
 var move_intent: Vector3 = Vector3.ZERO
@@ -88,6 +92,9 @@ func attach_input(for_device: int, mode: int) -> void:
 
 func _ready() -> void:
 	assert(loadout != null, "ActorBase needs a loadout before it enters the tree")
+	if not is_boss():
+		base_stats = loadout.stats.duplicate() as CharacterStatsResource
+		PartyProgress.current.apply_upgrades(loadout.stats, base_stats)
 	_build_body()
 	_build_components()
 	_build_visual()
@@ -170,6 +177,17 @@ func _build_components() -> void:
 		DodgeState.new(), StaggerState.new(), DownedState.new(),
 	]
 	state_machine.setup(self, state_list, &"idle")
+
+
+## Re-applies the party's upgrades after a purchase, keeping the same share of health.
+func refresh_upgrades() -> void:
+	if base_stats == null:
+		return
+	var ratio: float = stats.health_ratio()
+	PartyProgress.current.apply_upgrades(loadout.stats, base_stats)
+	if not stats.is_downed:
+		stats.health = ratio * loadout.stats.max_health
+	stats.health_changed.emit(stats.health, loadout.stats.max_health)
 
 
 ## Pushes the input mode's buffer window, flow bonus and auto-chaining into the queue.

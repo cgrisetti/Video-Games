@@ -2,7 +2,8 @@
 ## health, poise, cast and aggro along the top; your health, stamina,
 ## resonance pips, queued input and Soul Tether bottom-left; your controls
 ## along the bottom. A big banner in the middle marks moments the whole party
-## shares (a victory, the loot).
+## shares (a victory, the loot). Next to the Shard Vendor a prompt says what
+## light does, and its upgrade menu opens over this view.
 class_name PlayerHUD
 extends Control
 
@@ -48,6 +49,8 @@ var _compass_labels: Array[Label] = []
 var _banner: VBoxContainer
 var _banner_title: Label
 var _banner_subtitle: Label
+var _prompt_label: Label
+var _menu: HubUpgradeMenu
 var _flow_flash_left: float = 0.0
 var _pips_flash_left: float = 0.0
 var _last_resonance: float = 0.0
@@ -153,6 +156,17 @@ func _ready() -> void:
 	_banner_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_banner_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_banner.add_child(_banner_subtitle)
+
+	_prompt_label = _label(FONT_SIZE)
+	_prompt_label.anchor_left = 0.5
+	_prompt_label.anchor_right = 0.5
+	_prompt_label.anchor_top = 0.7
+	_prompt_label.anchor_bottom = 0.7
+	_prompt_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_prompt_label.modulate = Color(0.75, 0.9, 1.0)
+	_prompt_label.visible = false
+	add_child(_prompt_label)
 	if actor != null:
 		actor.action_queue.flow_cancelled.connect(_on_flow_cancelled)
 		_last_resonance = actor.stats.resonance_charge
@@ -166,6 +180,24 @@ func _process(_delta: float) -> void:
 	_top_panel.offset_top = MARGIN + (BANNER_CLEARANCE if get_global_rect().position.y < 1.0 else 0.0)
 	_refresh_boss()
 	_refresh_player()
+
+
+## Opens the Shard Vendor's upgrade menu over this player's view.
+func open_upgrade_menu() -> void:
+	if upgrade_menu() != null:
+		return
+	_menu = HubUpgradeMenu.new()
+	_menu.setup(actor)
+	add_child(_menu)
+
+
+func upgrade_menu() -> HubUpgradeMenu:
+	return _menu if is_instance_valid(_menu) and not _menu.is_queued_for_deletion() else null
+
+
+## What pressing light does here, or "" when there's nothing to use.
+func prompt_text() -> String:
+	return _prompt_label.text if _prompt_label.visible else ""
 
 
 ## A big centred message for the whole party, like VICTORY!
@@ -277,6 +309,9 @@ func _refresh_player() -> void:
 		status = "Guarding"
 	_status_label.text = status
 	_controls_label.text = controls_text()
+	_prompt_label.visible = is_instance_valid(actor.interactable) and upgrade_menu() == null
+	if _prompt_label.visible:
+		_prompt_label.text = actor.interactable.prompt_for(actor)
 	_refresh_flashes()
 	_refresh_tether_compass()
 

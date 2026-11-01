@@ -8,6 +8,8 @@
 ##     heals, Lifeline, Shadow Sanctuary, Squire auto-evade, telegraphs, wipes
 ##   - the victory: slow motion, the banner, the reward chest and its Dojo
 ##     Shards, and the gold portal home with the same ENet session still up
+##   - the Shard Vendor in Hub Town: its menu on the keyboard, upgrades for
+##     the whole party, refusals, saving and loading
 ## Run from games/everwood:
 ##   godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd
 ## Exits 0 when every check passes, 1 otherwise.
@@ -83,6 +85,7 @@ func _run() -> void:
 	await _check_telegraphs()
 	await _check_wipe_resets_fight()
 	await _check_victory_and_loot()
+	await _check_shard_vendor()
 	_check_audio_cues()
 	NetworkManager.current.leave_game()
 	_remove_file(TEST_SAVE_PATH)
@@ -561,13 +564,63 @@ func _check_audio_cues() -> void:
 			silent.append(cue)
 	_check(silent.is_empty(), "every audio cue synthesizes %s" % ("" if silent.is_empty() else str(silent)))
 	var expected: Array[StringName] = [&"flow", &"hit", &"perfect_guard", &"telegraph", &"heal", &"join", &"portal", &"portal_charge",
-		&"victory", &"chest"]
+		&"victory", &"chest", &"purchase", &"refuse", &"menu_move"]
 	var unheard: PackedStringArray = PackedStringArray()
 	for cue: StringName in expected:
 		if not _audio_cues.has(cue):
 			unheard.append(cue)
-	_check(unheard.is_empty(), "flows, hits, guards, telegraphs, heals, joins, portals, the victory and the chest all play their cues %s" % (
+	_check(unheard.is_empty(), "flows, hits, guards, telegraphs, heals, joins, portals, the victory, the chest and the vendor all play their cues %s" % (
 		"" if unheard.is_empty() else str(unheard)))
+
+
+# --- Hub Town upgrades ----------------------------------------------------
+
+## The Shard Vendor: walk up, press J, spend the chest's shards on upgrades for everyone.
+func _check_shard_vendor() -> void:
+	var hub: HubTown = current_scene as HubTown
+	var progress: PartyProgress = PartyProgress.current
+	var keyboard: ActorBase = hub.actors[&"1_0"]
+	var hud: PlayerHUD = hub.huds[&"1_0"]
+	keyboard.input.release_script()
+	var front: Vector3 = -hub.shard_vendor.global_basis.z
+	keyboard.place_at(Transform3D(Basis.IDENTITY, hub.shard_vendor.global_position + front * 1.6))
+	await _seconds(0.1)
+	_check(keyboard.interactable == hub.shard_vendor and hud.prompt_text().contains("Shard Vendor"), "standing at the stall shows the Shard Vendor prompt")
+	await _tap_key(KEY_J)
+	var menu: HubUpgradeMenu = hud.upgrade_menu()
+	_check(menu != null and keyboard.input.menu_open and not keyboard.action_queue.is_busy(), "J at the stall opens the upgrade menu instead of swinging")
+	var shards: int = progress.shards
+	var tank_health: float = keyboard.stats.stats.max_health
+	var healer_health: float = hub.actors[&"1_1"].stats.stats.max_health
+	await _tap_key(KEY_J)
+	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 1 and progress.shards == shards - PartyProgress.UPGRADE_BASE_COST,
+		"J buys Max Health level 1 for %d shards" % PartyProgress.UPGRADE_BASE_COST)
+	_check(is_equal_approx(keyboard.stats.stats.max_health, tank_health * 1.1) and is_equal_approx(hub.actors[&"1_1"].stats.stats.max_health, healer_health * 1.1),
+		"everyone's max health grows by 10%")
+	_check(is_equal_approx(keyboard.stats.health, keyboard.stats.stats.max_health), "and they stay at full health")
+	var regen: float = keyboard.stats.stats.stamina_regen_per_sec
+	await _tap_key(KEY_S)
+	await _tap_key(KEY_J)
+	_check(progress.level_of(PartyProgress.STAMINA_REGEN) == 1 and is_equal_approx(keyboard.stats.stats.stamina_regen_per_sec, regen * 1.1),
+		"S then J buys Stamina Regen (+10% stamina per second)")
+	await _tap_key(KEY_W)
+	await _tap_key(KEY_J)
+	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 2 and progress.shards == shards - 16, "Max Health level 2 costs 8 shards")
+	await _tap_key(KEY_J)
+	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 2 and progress.shards == 0 and menu.note_text().begins_with("Not enough shards"),
+		"without enough shards the purchase is refused")
+	await _tap_key(KEY_SPACE)
+	_check(hud.upgrade_menu() == null and not keyboard.input.menu_open and not keyboard.state_machine.is_in(&"dodge"), "Space closes the menu without rolling")
+	var saved: ConfigFile = ConfigFile.new()
+	_check(saved.load(TEST_SAVE_PATH) == OK and int(saved.get_value("upgrades", "max_health", 0)) == 2
+		and int(saved.get_value("upgrades", "stamina_regen", 0)) == 1, "the upgrades are saved")
+	progress.load_save()
+	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 2 and progress.level_of(PartyProgress.STAMINA_REGEN) == 1 and progress.shards == 0,
+		"and load back next session")
+	NetworkManager.current.update_local_player(2, ClassLoadouts.SHIELD_TANK, InputComponent.AssistMode.MASTER)
+	await _seconds(0.05)
+	_check(is_equal_approx(hub.actors[&"1_2"].stats.stats.max_health, ClassLoadouts.shield_tank().stats.max_health * 1.2),
+		"a player who changes class starts with the upgrades too")
 
 
 # --- Helpers --------------------------------------------------------------
@@ -681,6 +734,13 @@ func _press_heavy_with_stick(pad: int, stick_y: float) -> void:
 	await _seconds(0.05)
 	_pad_button(pad, JOY_BUTTON_Y, false)
 	_pad_axis(pad, JOY_AXIS_LEFT_Y, 0.0)
+	await _seconds(0.05)
+
+
+func _tap_key(key: Key) -> void:
+	_key(key, true)
+	await _seconds(0.05)
+	_key(key, false)
 	await _seconds(0.05)
 
 

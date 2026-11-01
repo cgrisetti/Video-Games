@@ -3,7 +3,8 @@
 ##   godot --headless --path . --script res://tools/build_levels.gd
 ##
 ## - Hub Town (hub_town.tscn): a safe walled plaza with four houses, a fountain,
-##   a lantern-lit lane from four spawn pads to the Raid Portal to the Dojo.
+##   the Shard Vendor's stall, and a lantern-lit lane from four spawn pads to
+##   the Raid Portal to the Dojo.
 ## - Dungeon Dojo (dungeon_dojo.tscn): a 44 m greybox arena with low walls, six
 ##   pillars for cover in a ring round the boss, four spawn pads and an exit
 ##   portal back to Hub Town.
@@ -16,6 +17,7 @@ const DOJO_PATH: String = "res://src/levels/dungeon_dojo.tscn"
 const HUB_SCRIPT: String = "res://src/levels/hub_town.gd"
 const DOJO_SCRIPT: String = "res://src/levels/dungeon_dojo.gd"
 const PORTAL_SCRIPT: String = "res://src/actors/raid_portal.gd"
+const VENDOR_SCRIPT: String = "res://src/actors/shard_vendor.gd"
 const GRID_SCRIPT: String = "res://src/ui/split_screen_viewport_grid.gd"
 const GRID_SHADER: String = "res://src/levels/greybox_grid.gdshader"
 
@@ -59,6 +61,8 @@ const LANTERN_SPOTS: Array[Vector3] = [
 	Vector3(-5.5, 0.0, 8.0), Vector3(5.5, 0.0, 8.0),
 ]
 const LANTERN_COLOR: Color = Color(1.0, 0.8, 0.45)
+## Across the lane from the fountain, its counter facing the lane.
+const VENDOR_POSITION: Vector3 = Vector3(8.8, 0.0, 0.0)
 
 
 func _initialize() -> void:
@@ -91,6 +95,13 @@ func _build_hub() -> Node3D:
 	for index: int in LANTERN_SPOTS.size():
 		town.add_child(_lantern("Lantern%d" % (index + 1), LANTERN_SPOTS[index]))
 	root.add_child(_portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: Dojo Warden", RAID_PORTAL_COLOR, RAID_PORTAL_POSITION))
+	var vendor: Node3D = Node3D.new()
+	vendor.name = "ShardVendor"
+	vendor.set_script(load(VENDOR_SCRIPT))
+	vendor.position = VENDOR_POSITION
+	# Its front (local -Z) turned to face west, toward the lane.
+	vendor.rotation = Vector3(0.0, PI * 0.5, 0.0)
+	root.add_child(vendor)
 	_add_level_skeleton(root, HUB_SPAWN_Z)
 	return root
 

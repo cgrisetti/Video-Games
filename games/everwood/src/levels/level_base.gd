@@ -99,6 +99,7 @@ func _ready() -> void:
 	NetworkManager.current.player_unregistered.connect(_on_player_unregistered)
 	NetworkManager.current.registration_refused.connect(_on_registration_refused)
 	NetworkManager.current.status_changed.connect(_on_status_changed)
+	PartyProgress.current.progress_changed.connect(_on_progress_changed)
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	for existing: PartyMember in NetworkManager.current.ordered_members():
 		_on_player_registered(existing)
@@ -123,6 +124,9 @@ func _exit_tree() -> void:
 			var callable: Callable = connection[1]
 			if sig.is_connected(callable):
 				sig.disconnect(callable)
+	var progress: PartyProgress = PartyProgress.current
+	if progress != null and progress.progress_changed.is_connected(_on_progress_changed):
+		progress.progress_changed.disconnect(_on_progress_changed)
 	if Input.joy_connection_changed.is_connected(_on_joy_connection_changed):
 		Input.joy_connection_changed.disconnect(_on_joy_connection_changed)
 
@@ -266,6 +270,12 @@ func _on_registration_refused(_device_id: int, reason: String) -> void:
 
 func _on_status_changed(text: String) -> void:
 	_show_notice(text)
+
+
+## An upgrade was bought (here or on the host): everyone's stats grow at once.
+func _on_progress_changed() -> void:
+	for actor: ActorBase in actors.values():
+		actor.refresh_upgrades()
 
 
 func _on_telegraph_cast(_decal: RaidTelegraphDecal) -> void:
