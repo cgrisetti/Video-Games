@@ -125,6 +125,7 @@ func _ready() -> void:
 	NetworkManager.current.player_unregistered.connect(_on_player_unregistered)
 	NetworkManager.current.registration_refused.connect(_on_registration_refused)
 	NetworkManager.current.status_changed.connect(_on_status_changed)
+	NetworkManager.current.kit_refused.connect(_on_kit_refused)
 	PartyProgress.current.progress_changed.connect(_on_progress_changed)
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	# Companions from the last instance leave (or new ones join) before anyone is seated.
@@ -149,7 +150,7 @@ func _exit_tree() -> void:
 		for connection: Array in [
 				[network.player_registered, _on_player_registered], [network.player_updated, _on_player_updated],
 				[network.player_unregistered, _on_player_unregistered], [network.registration_refused, _on_registration_refused],
-				[network.status_changed, _on_status_changed]]:
+				[network.status_changed, _on_status_changed], [network.kit_refused, _on_kit_refused]]:
 			var sig: Signal = connection[0]
 			var callable: Callable = connection[1]
 			if sig.is_connected(callable):
@@ -383,6 +384,10 @@ func _on_registration_refused(_device_id: int, reason: String) -> void:
 
 func _on_status_changed(text: String) -> void:
 	_show_notice(text)
+
+
+func _on_kit_refused(_device_id: int, reason: String) -> void:
+	_show_notice(reason)
 
 
 ## An upgrade was bought (here or on the host): everyone's stats grow at once.

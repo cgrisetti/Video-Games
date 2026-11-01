@@ -1,7 +1,8 @@
 ## Hub Town: the safe greybox plaza where the party gathers. Walk into the Raid
-## Portal together to enter the Dungeon Dojo, and spend the Dojo Shards from its
-## chest at the Shard Vendor. Seating, hot-join and the split-screen grid come
-## from LevelBase.
+## Portal together to enter the Dungeon Dojo, spend the Dojo Shards from its
+## chest at the Shard Vendor, and change armor, weapon and Scribe Cards at the
+## Armory & Scribe Desk. Seating, hot-join and the split-screen grid come from
+## LevelBase.
 class_name HubTown
 extends LevelBase
 
@@ -10,6 +11,7 @@ const DEMO_SPREAD: float = 1.1
 
 @onready var raid_portal: RaidPortal = $RaidPortal
 @onready var shard_vendor: ShardVendor = $ShardVendor
+@onready var scribe_desk: ScribeDesk = $ScribeDesk
 
 
 func instance_id() -> StringName:
@@ -21,11 +23,12 @@ func level_title() -> String:
 
 
 func level_hint() -> String:
-	return "Walk into the Raid Portal together to fight the Dojo Warden · %d Dojo Shards to spend at the Shard Vendor" % PartyProgress.current.shards
+	return "Raid Portal: fight the Dojo Warden · Shard Vendor: %d Dojo Shards · Scribe Desk: armor, weapons and cards" % PartyProgress.current.shards
 
 
 func _setup_level() -> void:
 	shard_vendor.menu_requested.connect(_on_vendor_menu_requested)
+	scribe_desk.menu_requested.connect(_on_desk_menu_requested)
 
 
 ## Light at the stall opens the upgrade menu on that player's own screen.
@@ -33,6 +36,13 @@ func _on_vendor_menu_requested(actor: ActorBase) -> void:
 	var hud: PlayerHUD = huds.get(actor.player_id) as PlayerHUD
 	if hud != null:
 		hud.open_upgrade_menu()
+
+
+## Light at the desk opens the Armory & Scribe Desk on that player's own screen.
+func _on_desk_menu_requested(actor: ActorBase) -> void:
+	var hud: PlayerHUD = huds.get(actor.player_id) as PlayerHUD
+	if hud != null:
+		hud.open_scribe_desk()
 
 
 func _demo_post_for(actor: ActorBase) -> Vector3:

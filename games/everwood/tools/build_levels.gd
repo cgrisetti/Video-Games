@@ -3,8 +3,8 @@
 ##   godot --headless --path . --script res://tools/build_levels.gd
 ##
 ## - Hub Town (hub_town.tscn): a safe walled plaza with four houses, a fountain,
-##   the Shard Vendor's stall, and a lantern-lit lane from four spawn pads to
-##   the Raid Portal to the Dojo.
+##   the Shard Vendor's stall, the Armory & Scribe Desk, and a lantern-lit lane
+##   from four spawn pads to the Raid Portal to the Dojo.
 ## - Dungeon Dojo (dungeon_dojo.tscn): a 44 m greybox arena with low walls, six
 ##   pillars for cover in a ring round the boss, four spawn pads and an exit
 ##   portal back to Hub Town.
@@ -18,6 +18,7 @@ const HUB_SCRIPT: String = "res://src/levels/hub_town.gd"
 const DOJO_SCRIPT: String = "res://src/levels/dungeon_dojo.gd"
 const PORTAL_SCRIPT: String = "res://src/actors/raid_portal.gd"
 const VENDOR_SCRIPT: String = "res://src/actors/shard_vendor.gd"
+const DESK_SCRIPT: String = "res://src/actors/scribe_desk.gd"
 const GRID_SCRIPT: String = "res://src/ui/split_screen_viewport_grid.gd"
 const GRID_SHADER: String = "res://src/levels/greybox_grid.gdshader"
 
@@ -63,6 +64,8 @@ const LANTERN_SPOTS: Array[Vector3] = [
 const LANTERN_COLOR: Color = Color(1.0, 0.8, 0.45)
 ## Across the lane from the fountain, its counter facing the lane.
 const VENDOR_POSITION: Vector3 = Vector3(8.8, 0.0, 0.0)
+## On the fountain's side, further up the lane, its desk facing the lane.
+const DESK_POSITION: Vector3 = Vector3(-8.0, 0.0, -5.5)
 
 
 func _initialize() -> void:
@@ -102,6 +105,13 @@ func _build_hub() -> Node3D:
 	# Its front (local -Z) turned to face west, toward the lane.
 	vendor.rotation = Vector3(0.0, PI * 0.5, 0.0)
 	root.add_child(vendor)
+	var desk: Node3D = Node3D.new()
+	desk.name = "ScribeDesk"
+	desk.set_script(load(DESK_SCRIPT))
+	desk.position = DESK_POSITION
+	# Its front (local -Z) turned to face east, toward the lane.
+	desk.rotation = Vector3(0.0, -PI * 0.5, 0.0)
+	root.add_child(desk)
 	_add_level_skeleton(root, HUB_SPAWN_Z)
 	return root
 

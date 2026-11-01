@@ -129,6 +129,20 @@ func under_cards() -> Array[ScribeCardResource]:
 	return list
 
 
+## How a card copy reads in menus and banners: "Moonfall Cleave (Rare, Shiny Foil)".
+func copy_name(copy_key: StringName) -> String:
+	var named: ScribeCardResource = card(ScribeCardResource.copy_card_id(copy_key))
+	if named == null:
+		return String(copy_key)
+	var variant: ScribeCardResource.CardVariant = ScribeCardResource.copy_variant(copy_key)
+	var extras: PackedStringArray = PackedStringArray()
+	if named.rarity >= ScribeCardResource.CardRarity.RARE:
+		extras.append(named.rarity_name())
+	if variant != ScribeCardResource.CardVariant.STANDARD:
+		extras.append(ScribeCardResource.VARIANT_NAMES[variant])
+	return named.display_name if extras.is_empty() else "%s (%s)" % [named.display_name, ", ".join(extras)]
+
+
 ## A fresh dodge roll; the armor sets how far it carries (DodgeState).
 func dodge_template() -> CombatActionResource:
 	var roll: CombatActionResource = _support(&"dodge_roll", "Dodge Roll", Cmd.DODGE, Fx.DODGE, 0.03, 0.32, 0.22)

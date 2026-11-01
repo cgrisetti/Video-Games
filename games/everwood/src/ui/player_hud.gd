@@ -51,7 +51,8 @@ var _banner: VBoxContainer
 var _banner_title: Label
 var _banner_subtitle: Label
 var _prompt_label: Label
-var _menu: HubUpgradeMenu
+## The menu open over this view (the Shard Vendor's or the Scribe Desk's).
+var _menu: Control
 var _flow_flash_left: float = 0.0
 var _pips_flash_left: float = 0.0
 var _last_resonance: float = 0.0
@@ -188,14 +189,33 @@ func _process(_delta: float) -> void:
 
 ## Opens the Shard Vendor's upgrade menu over this player's view.
 func open_upgrade_menu() -> void:
-	if upgrade_menu() != null:
+	if _live_menu() != null:
 		return
-	_menu = HubUpgradeMenu.new()
-	_menu.setup(actor)
-	add_child(_menu)
+	var menu: HubUpgradeMenu = HubUpgradeMenu.new()
+	menu.setup(actor)
+	_menu = menu
+	add_child(menu)
+
+
+## Opens the Armory & Scribe Desk menu over this player's view.
+func open_scribe_desk() -> void:
+	if _live_menu() != null:
+		return
+	var menu: ScribeDeskMenu = ScribeDeskMenu.new()
+	menu.setup(actor)
+	_menu = menu
+	add_child(menu)
 
 
 func upgrade_menu() -> HubUpgradeMenu:
+	return _live_menu() as HubUpgradeMenu
+
+
+func scribe_desk_menu() -> ScribeDeskMenu:
+	return _live_menu() as ScribeDeskMenu
+
+
+func _live_menu() -> Control:
 	return _menu if is_instance_valid(_menu) and not _menu.is_queued_for_deletion() else null
 
 
@@ -317,7 +337,7 @@ func _refresh_player() -> void:
 		status = "Guarding"
 	_status_label.text = status
 	_controls_label.text = controls_text()
-	_prompt_label.visible = is_instance_valid(actor.interactable) and upgrade_menu() == null
+	_prompt_label.visible = is_instance_valid(actor.interactable) and _live_menu() == null
 	if _prompt_label.visible:
 		_prompt_label.text = actor.interactable.prompt_for(actor)
 	_refresh_flashes()

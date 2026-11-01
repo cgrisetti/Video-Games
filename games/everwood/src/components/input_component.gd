@@ -56,6 +56,8 @@ const MENU_UP: StringName = &"up"
 const MENU_DOWN: StringName = &"down"
 const MENU_ACCEPT: StringName = &"accept"
 const MENU_BACK: StringName = &"back"
+const MENU_LEFT: StringName = &"left"
+const MENU_RIGHT: StringName = &"right"
 
 const MODE_NAMES: Array[String] = ["Master", "Adventurer", "Squire Gambit"]
 const KEYBOARD_DEVICE: int = 0
@@ -128,6 +130,7 @@ var _last_forward_at: float = -INF
 var _last_back_at: float = -INF
 var _mouse_yaw: float = 0.0
 var _menu_stick: int = 0
+var _menu_stick_x: int = 0
 # Tests and bots drive the component through these instead of a device.
 var _scripted: bool = false
 var _scripted_commands: Array[int] = []
@@ -378,7 +381,8 @@ func poll(dt: float) -> void:
 		_issue(_scripted_commands.pop_front())
 
 
-## Stick, W/S or D-Pad up / down move the cursor, light accepts, dodge backs out.
+## Stick, WASD or the D-Pad move the cursor (up / down) and change a value
+## (left / right), light accepts, dodge backs out.
 func _poll_menu() -> void:
 	var stick: int = 0
 	if move_input.y > DIRECTIONAL_THRESHOLD:
@@ -388,10 +392,22 @@ func _poll_menu() -> void:
 	if stick != 0 and stick != _menu_stick:
 		menu_input.emit(MENU_UP if stick > 0 else MENU_DOWN)
 	_menu_stick = stick
+	var side: int = 0
+	if move_input.x > DIRECTIONAL_THRESHOLD:
+		side = 1
+	elif move_input.x < -DIRECTIONAL_THRESHOLD:
+		side = -1
+	if side != 0 and side != _menu_stick_x:
+		menu_input.emit(MENU_RIGHT if side > 0 else MENU_LEFT)
+	_menu_stick_x = side
 	if _pressed(ACTION_TETHER_UP):
 		menu_input.emit(MENU_UP)
 	if _pressed(ACTION_TETHER_DOWN):
 		menu_input.emit(MENU_DOWN)
+	if _pressed(ACTION_TETHER_LEFT):
+		menu_input.emit(MENU_LEFT)
+	if _pressed(ACTION_TETHER_RIGHT):
+		menu_input.emit(MENU_RIGHT)
 	if _pressed(ACTION_LIGHT):
 		menu_input.emit(MENU_ACCEPT)
 	if _pressed(ACTION_DODGE):

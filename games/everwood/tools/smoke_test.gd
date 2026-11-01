@@ -18,6 +18,9 @@
 ##     Shards, and the gold portal home with the same ENet session still up
 ##   - the Shard Vendor in Hub Town: its menu on the keyboard, upgrades for
 ##     the whole party, refusals, saving and loading
+##   - the Armory & Scribe Desk: weapon, armor and card swaps in place, the
+##     chest's card, under-card links and the Grimoire's memory and levels,
+##     saved kits; card drops; no orphaned nodes after the round trip
 ## Run from games/everwood:
 ##   godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd
 ## Exits 0 when every check passes, 1 otherwise.
@@ -65,6 +68,9 @@ var _audio_cues: Array[StringName] = []
 var _portal_countdowns: int = 0
 var _projectiles: Array[StringName] = []
 var _invocations: Array[int] = []
+## The card copy the seeded boss chest dropped (the desk test equips it).
+var _dropped_card: StringName = &""
+var _orphans_before: int = 0
 
 
 func _initialize() -> void:
@@ -85,6 +91,8 @@ func _run() -> void:
 	await _check_hot_join_and_pad_mapping()
 	await _seat_trinity()
 	await _check_party_caps()
+	await _seconds(0.1)
+	_orphans_before = _orphan_count()
 	await _check_portal_into_dojo()
 	_stage_party()
 	await _seconds(0.3)
@@ -106,6 +114,7 @@ func _run() -> void:
 	await _check_companion_backfill()
 	await _check_victory_and_loot()
 	await _check_shard_vendor()
+	await _check_scribe_desk()
 	_check_audio_cues()
 	NetworkManager.current.leave_game()
 	_remove_file(TEST_SAVE_PATH)
@@ -245,6 +254,20 @@ func _check_arsenal_catalog() -> void:
 	_check(LoadoutComposer.kit_problem(tank_class, kit, 1, empty_binder) == "" and LoadoutComposer.kit_problem(tank_class, linked, 1, empty_binder).contains("Lv 2")
 		and LoadoutComposer.kit_problem(tank_class, linked, 2, empty_binder) == "" and LoadoutComposer.kit_problem(tank_class, rare, 2, empty_binder).begins_with("Not in the binder"),
 		"the starter kit always fits; under-cards wait for their level; a boss card must be collected first")
+	var drops: RandomNumberGenerator = RandomNumberGenerator.new()
+	drops.seed = 7
+	var seen_variants: Dictionary[int, bool] = {}
+	var rare_seen: bool = false
+	var plain_starter: bool = false
+	for roll: int in 300:
+		var key: StringName = catalog.roll_card_drop(drops)
+		var dropped: ScribeCardResource = catalog.card(ScribeCardResource.copy_card_id(key))
+		var variant: int = ScribeCardResource.copy_variant(key)
+		seen_variants[variant] = true
+		rare_seen = rare_seen or dropped.rarity >= ScribeCardResource.CardRarity.RARE
+		plain_starter = plain_starter or (dropped.starter and variant == ScribeCardResource.CardVariant.STANDARD)
+	_check(seen_variants.has(ScribeCardResource.CardVariant.SHINY_FOIL) and seen_variants.has(ScribeCardResource.CardVariant.ASTRAL_PRISM) and rare_seen and not plain_starter,
+		"boss chests drop Rare and Legendary cards and Shiny Foil or Astral Prism copies (never a plain starter card)")
 
 
 ## A class composed with one item swapped in (&"" keeps the starter's).
@@ -1055,6 +1078,13 @@ func _companion_with(role: int) -> ActorBase:
 func _check_victory_and_loot() -> void:
 	var session: MultiplayerPeer = root.multiplayer.multiplayer_peer
 	var shards_before: int = PartyProgress.current.shards
+	var level_before: int = PartyProgress.current.grimoire_level()
+	# A seed whose chest card is a Shiny or Astral boss card for the Forward slot.
+	var seed: int = _seed_for_forward_boss_card()
+	PartyProgress.current.drop_rng.seed = seed
+	var probe: RandomNumberGenerator = RandomNumberGenerator.new()
+	probe.seed = seed
+	var expected_card: StringName = ArsenalCatalog.current.roll_card_drop(probe)
 	# Everyone back on the spawn pads, well clear of where the chest lands.
 	for actor: ActorBase in [tank, healer, dps]:
 		actor.respawn()
@@ -1064,6 +1094,7 @@ func _check_victory_and_loot() -> void:
 	_check(dojo.victory and boss.vanquished and boss.state_machine.is_in(&"downed"), "defeating the Dojo Warden starts the victory")
 	_check(is_equal_approx(Engine.time_scale, DungeonDojo.VICTORY_TIME_SCALE), "the win plays out in slow motion (x0.2)")
 	_check(dojo.chest != null and dojo.chest.is_inside_tree(), "a reward chest drops into the arena")
+	_check(PartyProgress.current.grimoire_level() == level_before + 1, "the win raises the Grimoire to Lv %d" % (level_before + 1))
 	var banners: int = 0
 	for hud: PlayerHUD in dojo.huds.values():
 		if hud.banner_title() == "VICTORY!":
@@ -1078,6 +1109,9 @@ func _check_victory_and_loot() -> void:
 	_check(dojo.chest.is_open, "walking up to the chest opens it")
 	var paid: int = DungeonDojo.chest_shards(3)
 	_check(PartyProgress.current.shards == shards_before + paid, "the chest pays the party %d Dojo Shards" % paid)
+	_dropped_card = expected_card
+	_check(dojo.chest.card_key == expected_card and PartyProgress.current.copies_of(expected_card) == 1,
+		"and a collectible card for the binder: %s" % ArsenalCatalog.current.copy_name(expected_card))
 	_check((dojo.huds[tank.player_id] as PlayerHUD).banner_title() == "+%d DOJO SHARDS" % paid, "the banner shows the shards earned")
 	var saved: ConfigFile = ConfigFile.new()
 	_check(saved.load(TEST_SAVE_PATH) == OK and int(saved.get_value("party", "shards", 0)) == shards_before + paid, "the shards are saved for next time")
@@ -1086,6 +1120,9 @@ func _check_victory_and_loot() -> void:
 	_check(current_scene is HubTown, "the gold portal brings the party back to Hub Town")
 	_check(root.multiplayer.multiplayer_peer == session and NetworkManager.current.is_online(), "still the same ENet session after the round trip")
 	_check(NetworkManager.current.party_size() == 3 and _hub().grid.view_count() == 3, "the whole party is back in town")
+	await _seconds(0.2)
+	var orphans: int = _orphan_count()
+	_check(orphans <= _orphans_before, "no orphaned nodes after Hub Town, the Dojo and back (%d before, %d after)" % [_orphans_before, orphans])
 
 
 func _check_audio_cues() -> void:
@@ -1156,6 +1193,89 @@ func _check_shard_vendor() -> void:
 	NetworkManager.current.drop_local_player(2)
 	await _seconds(0.1)
 	_check(NetworkManager.current.companion_seats().is_empty() and hub.actors.size() == 1, "companions only join raids, not Hub Town")
+
+
+# --- Armory & Scribe Desk -------------------------------------------------
+
+## The desk, by keyboard: weapon, armor and card swaps in place; the chest's
+## card; an under-card refused for memory, then fitting; a locked link; and
+## the kit saved for the class's next seat.
+func _check_scribe_desk() -> void:
+	var hub: HubTown = current_scene as HubTown
+	var network: NetworkManager = NetworkManager.current
+	var keyboard: ActorBase = hub.actors[&"1_0"]
+	var hud: PlayerHUD = hub.huds[&"1_0"]
+	keyboard.input.release_script()
+	var front: Vector3 = -hub.scribe_desk.global_basis.z
+	keyboard.place_at(Transform3D(Basis.IDENTITY, hub.scribe_desk.global_position + front * 1.8))
+	await _seconds(0.1)
+	_check(keyboard.interactable == hub.scribe_desk and hud.prompt_text().contains("Scribe Desk"), "standing at the desk shows the Armory & Scribe Desk prompt")
+	await _tap_key(KEY_J)
+	var menu: ScribeDeskMenu = hud.scribe_desk_menu()
+	_check(menu != null and keyboard.input.menu_open and not keyboard.action_queue.is_busy(), "J at the desk opens it (instead of swinging)")
+	var weapon_before: StringName = keyboard.loadout.weapon.item_id
+	await _tap_key(KEY_D)
+	_check(keyboard.loadout.weapon.item_id != weapon_before and hub.actors[&"1_0"] == keyboard and hud.scribe_desk_menu() == menu,
+		"D on the Weapon row swaps the weapon in place: the same character, view and open menu")
+	_check(keyboard.loadout.weapon.item_id == ArsenalCatalog.HEAVY_AXE and keyboard.loadout.opener_for(Cmd.LIGHT).action_id == &"heavy_axe/cleave_1",
+		"the tank now swings the Greataxe's cleaves")
+	await _tap_key(KEY_W)
+	await _tap_key(KEY_A)
+	_check(keyboard.loadout.armor.item_id == ArsenalCatalog.RANGER_LEATHER and is_equal_approx(keyboard.loadout.stats.perfect_guard_window, 0.2),
+		"A on the Armor row trades Ironwood Plate for Ranger Leather (and its 200 ms window)")
+	await _tap_key(KEY_S)
+	await _tap_key(KEY_S)
+	for press: int in 6:
+		if keyboard.loadout.kit.lead_copy_key(0) == _dropped_card:
+			break
+		await _tap_key(KEY_D)
+	_check(keyboard.loadout.kit.lead_copy_key(0) == _dropped_card and keyboard.loadout.card_action(0).card_id == ScribeCardResource.copy_card_id(_dropped_card),
+		"the chest's %s goes into the Forward slot" % ArsenalCatalog.current.copy_name(_dropped_card))
+	for press: int in 4:
+		await _tap_key(KEY_S)
+	await _tap_key(KEY_D)
+	_check(menu.problem().begins_with("Needs 9 Grimoire Memory") and keyboard.loadout.kit.under_ids[0] == &"",
+		"an Under-Card under that Rare card needs more memory than Lv 2 holds: refused, nothing changes")
+	for press: int in 4:
+		await _tap_key(KEY_W)
+	for press: int in 6:
+		if keyboard.loadout.kit.lead_copy_key(0) == ArsenalCatalog.SHIELD_CHARGE:
+			break
+		await _tap_key(KEY_D)
+	var surged: CombatActionResource = keyboard.loadout.card_action(0)
+	_check(keyboard.loadout.kit.under_ids[0] == ArsenalCatalog.AMBER_GEAR_LINK and is_equal_approx(surged.damage, 20.0 * LoadoutComposer.UNDER_POTENCY_MULTIPLIER),
+		"back on the Basic Shield Charge the link fits: Amber Gear Link surges it by 20%")
+	for press: int in 5:
+		await _tap_key(KEY_S)
+	await _tap_key(KEY_D)
+	_check(menu.problem().contains("opens at Grimoire Lv 3") and keyboard.loadout.kit.under_ids[1] == &"", "link 2 stays locked until Grimoire Lv 3")
+	await _tap_key(KEY_SPACE)
+	_check(hud.scribe_desk_menu() == null and not keyboard.input.menu_open, "Space closes the desk")
+	var saved: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(PartyProgress.current.kit_for(ClassLoadouts.SHIELD_TANK))
+	_check(saved.same_as(keyboard.loadout.kit), "the tank's new kit is saved for the next session")
+	network.request_local_player(1, ClassLoadouts.SHIELD_TANK, InputComponent.AssistMode.ADVENTURER)
+	await _seconds(0.1)
+	var second: ActorBase = hub.actors.get(&"1_1") as ActorBase
+	_check(second != null and second.loadout.kit.same_as(keyboard.loadout.kit), "a new Shield Tank seat starts in the party's saved tank kit")
+	network.drop_local_player(1)
+	await _seconds(0.05)
+
+
+## The first drop seed whose chest card is a Shiny or Astral copy of a boss card for the Forward slot.
+func _seed_for_forward_boss_card() -> int:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	for seed: int in range(1, 5000):
+		rng.seed = seed
+		var key: StringName = catalog.roll_card_drop(rng)
+		var card: ScribeCardResource = catalog.card(ScribeCardResource.copy_card_id(key))
+		if not card.starter and card.slot == ScribeCardResource.GrimoireSlot.FORWARD and ScribeCardResource.copy_variant(key) != ScribeCardResource.CardVariant.STANDARD:
+			return seed
+	return 1
+
+
+func _orphan_count() -> int:
+	return int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
 
 
 # --- Helpers --------------------------------------------------------------

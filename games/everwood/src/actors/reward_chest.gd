@@ -1,12 +1,12 @@
 ## The reward chest the Dojo Warden leaves behind. It drops into the arena,
 ## and the first person (not an AI companion) to walk up to it opens it: the
-## lid swings up, a burst of gold, and the party's Dojo Shards are paid out
-## (DungeonDojo).
+## lid swings up, a burst of gold, and the party's Dojo Shards and a
+## collectible Scribe Card are paid out (DungeonDojo).
 ## Every peer shows the chest; the host decides when it opens.
 class_name RewardChest
 extends Node3D
 
-signal opened(opener_id: StringName, shards: int)
+signal opened(opener_id: StringName, shards: int, card_key: StringName)
 
 ## Walking this close opens it.
 const OPEN_RADIUS: float = 2.0
@@ -28,6 +28,8 @@ const LIGHT_ENERGY: float = 2.0
 const LIGHT_RANGE: float = 6.0
 
 var shards: int = 0
+## The card copy inside (the host rolled it when the boss fell).
+var card_key: StringName = &""
 var is_open: bool = false
 
 var _age: float = 0.0
@@ -96,27 +98,28 @@ func _physics_process(delta: float) -> void:
 			continue
 		var flat: Vector2 = Vector2(member.global_position.x - global_position.x, member.global_position.z - global_position.z)
 		if flat.length() <= OPEN_RADIUS:
-			_open(String(member.player_id), shards)
+			_open(String(member.player_id), shards, String(card_key))
 			for peer_id: int in InstanceManager.current.live_remote_peers():
-				_open.rpc_id(peer_id, String(member.player_id), shards)
+				_open.rpc_id(peer_id, String(member.player_id), shards, String(card_key))
 			return
 
 
 ## Runs on every peer: the lid opens and the shards pop out.
 @rpc("authority", "call_local", "reliable")
-func _open(opener_id: String, amount: int) -> void:
+func _open(opener_id: String, amount: int, card: String) -> void:
 	if is_open:
 		return
 	is_open = true
 	shards = amount
+	card_key = StringName(card)
 	var swing: Tween = create_tween()
 	swing.tween_property(_lid, "rotation:x", LID_OPEN_ANGLE, LID_OPEN_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_label.text = "+%d Dojo Shards" % amount
+	_label.text = "+%d Dojo Shards\n%s" % [amount, ArsenalCatalog.current.copy_name(card_key)]
 	var burst: CueBurst = CueBurst.new()
 	burst.configure(TRIM_COLOR)
 	add_child(burst)
 	AudioCues.play(&"chest")
-	opened.emit(StringName(opener_id), amount)
+	opened.emit(StringName(opener_id), amount, card_key)
 
 
 func _box(box_name: String, size: Vector3, where: Vector3, material: Material) -> MeshInstance3D:
