@@ -26,6 +26,7 @@ static var current: CombatDirector
 signal hit_stop_applied(duration: float)
 signal hit_resolved(event: CombatEvent, outcome: int)
 signal primer_applied(target: ActorBase, primer: int)
+## A seal was detonated (every peer emits it: the host resolves it and tells the rest).
 signal synergy_detonated(target: ActorBase, primer: int, cross_class: bool, label: String)
 signal perfect_guard_landed(defender: ActorBase)
 signal telegraph_cast(decal: RaidTelegraphDecal)
@@ -56,6 +57,8 @@ const PERFECT_GUARD_POISE: float = 50.0
 const PERFECT_GUARD_THREAT: float = 250.0
 const TANK_THREAT_MODIFIER: float = 3.0
 const PERFECT_GUARD_HIT_STOP_SCALE: float = 2.5
+## A Perfect Guard's counter reaches the attacker from this far beyond its body.
+const PERFECT_GUARD_COUNTER_REACH: float = 4.0
 const HEAL_THREAT_RATIO: float = 0.5
 const TAUNT_THREAT: float = 50.0
 ## Metres of lag forgiveness when checking a hit reported by another peer.
@@ -69,6 +72,8 @@ const AIM_ASSIST_DOT: float = 0.8
 const SHOT_PITCH_PLAIN: float = 1.3
 const SHOT_VOLUME_DB: float = -6.0
 const FLOAT_TEXT_TIME: float = 0.9
+## Big callouts (detonations, Perfect Guards) are drawn at this size.
+const ANNOUNCE_TEXT_SIZE: int = 54
 const FLOAT_TEXT_RISE: float = 1.4
 
 class PrimerRecord:
@@ -345,7 +350,7 @@ func _on_perfect_guard(defender: ActorBase, event: CombatEvent) -> void:
 	counter.threat = PERFECT_GUARD_THREAT * defender.loadout.stats.threat_modifier / TANK_THREAT_MODIFIER
 	counter.hit_stop_scale = PERFECT_GUARD_HIT_STOP_SCALE
 	counter.origin = defender.global_position
-	counter.reach = attacker.body_radius() + 4.0
+	counter.reach = attacker.body_radius() + PERFECT_GUARD_COUNTER_REACH
 	deliver(counter)
 
 
@@ -391,9 +396,24 @@ func _try_detonate(target: ActorBase, event: CombatEvent) -> void:
 	var label: String = seal.detonation_name
 	if cross:
 		label += "  x%.1f CROSS-HARMONY" % multiplier
-	synergy_detonated.emit(target, record.primer, cross, label)
-	announce(_above(target) + Vector3.UP * 0.9, label, seal.color, seal.sound)
+	if NetworkManager.current.is_online():
+		_show_detonation.rpc(target.get_path(), record.primer, cross, label)
+	else:
+		_show_detonation(target.get_path(), record.primer, cross, label)
 	_reward_synergy(record, event, multiplier, seal)
+
+
+## Every peer shows (and signals) a detonation the target's owner resolved.
+@rpc("any_peer", "call_local", "reliable")
+func _show_detonation(target_path: NodePath, primer: int, cross: bool, label: String) -> void:
+	var target: ActorBase = _actor_at(target_path)
+	if target == null:
+		return
+	var seal: AspectSealResource = ArsenalCatalog.current.aspect_seal(primer)
+	show_float_text(_above(target) + Vector3.UP * 0.9, label, seal.color, ANNOUNCE_TEXT_SIZE)
+	if seal.sound != &"":
+		AudioCues.play(seal.sound)
+	synergy_detonated.emit(target, primer, cross, label)
 
 
 ## Elemental Rupture's burst: the bonus also hits other enemies near the target.
@@ -633,7 +653,7 @@ func announce(at: Vector3, text: String, color: Color, sound: StringName = &"") 
 
 @rpc("any_peer", "call_local", "reliable")
 func _show_announcement(at: Vector3, text: String, color: Color, sound: StringName) -> void:
-	show_float_text(at, text, color, 54)
+	show_float_text(at, text, color, ANNOUNCE_TEXT_SIZE)
 	if sound != &"":
 		AudioCues.play(sound)
 

@@ -17,6 +17,9 @@ signal progress_changed
 signal card_awarded(copy_key: StringName)
 
 const SAVE_PATH: String = "user://everwood_progress.cfg"
+## Command line: --save=PATH plays from another save file (tests and demos use
+## one, so they never touch the family's real progress).
+const SAVE_ARG: String = "--save="
 const MAX_HEALTH: StringName = &"max_health"
 const STAMINA_REGEN: StringName = &"stamina_regen"
 ## What the Shard Vendor sells, in menu order.
@@ -58,6 +61,9 @@ func _exit_tree() -> void:
 
 
 func _ready() -> void:
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with(SAVE_ARG):
+			save_path = arg.trim_prefix(SAVE_ARG)
 	load_save()
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	NetworkManager.current.status_changed.connect(_on_status_changed)

@@ -57,6 +57,8 @@ const HEALER_DISTANCE: float = 7.0
 const DETONATE_DISTANCE: float = 2.0
 ## Stepping back from a swipe: this far from the boss is outside its reach.
 const SWIPE_SAFE_DISTANCE: float = 6.5
+## Inside a soak, the companion holds its spot once it's this far into the circle (share of its radius).
+const SOAK_STACK_SHARE: float = 0.6
 ## A ranged companion stands at this share of its shot's reach from the boss.
 const RANGED_POST_SHARE: float = 0.6
 ## Presses start a little inside an action's full reach.
@@ -222,7 +224,7 @@ func _soak_gold() -> bool:
 	if soak == null:
 		return false
 	_set_post(soak.global_position)
-	if soak.contains(actor.global_position) and _flat(actor.global_position - soak.global_position).length() < soak.radius * 0.6:
+	if soak.contains(actor.global_position) and _flat(actor.global_position - soak.global_position).length() < soak.radius * SOAK_STACK_SHARE:
 		_hold_post = true
 		return false
 	return true

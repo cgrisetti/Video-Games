@@ -87,10 +87,11 @@ func is_peer_live(peer_id: int) -> bool:
 	return live_peers.has(peer_id)
 
 
-## Other peers that can receive actor updates right now.
+## Other peers that can receive actor updates right now (none once offline,
+## even if the last host's list is still around).
 func live_remote_peers() -> PackedInt32Array:
 	var peers: PackedInt32Array = PackedInt32Array()
-	if not is_live():
+	if not is_live() or not NetworkManager.current.is_online():
 		return peers
 	var me: int = NetworkManager.current.local_peer_id()
 	for peer_id: int in live_peers:

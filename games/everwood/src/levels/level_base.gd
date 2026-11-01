@@ -19,6 +19,7 @@
 ## Command line (after --): --players=N --mode=master|adventurer|squire --instance=ID
 ##   --host --join=ADDRESS --demo --screenshot=PATH --screenshot-delay=S --quit-after=S
 ##   --weapon=ITEM_ID --armor=ITEM_ID (this screen's players start with them)
+##   --save=PATH (another save file; read by PartyProgress)
 class_name LevelBase
 extends Node3D
 
@@ -46,6 +47,10 @@ var _keys_held: Dictionary[int, bool] = {}
 var _notice: String = ""
 var _notice_time_left: float = 0.0
 var _telegraphs_seen: int = 0
+# What this peer saw, for the --quit-after report (network checks compare peers).
+var _cards_seen: int = 0
+var _shots_seen: int = 0
+var _detonations_seen: int = 0
 var _demo_clock: float = 0.0
 var _companion_refresh_queued: bool = false
 
@@ -115,6 +120,9 @@ func _ready() -> void:
 	effects_root.add_child(pool)
 	CombatDirector.current.fx_pool = pool
 	CombatDirector.current.telegraph_cast.connect(_on_telegraph_cast)
+	CombatDirector.current.card_invoked.connect(_on_card_invoked)
+	CombatDirector.current.projectile_fired.connect(_on_projectile_fired)
+	CombatDirector.current.synergy_detonated.connect(_on_synergy_detonated)
 	NetworkManager.current.class_picker = least_used_class
 	NetworkManager.current.kit_picker = pick_kit
 	NetworkManager.current.kit_validator = check_kit
@@ -141,8 +149,13 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	var director: CombatDirector = CombatDirector.current
-	if director != null and director.telegraph_cast.is_connected(_on_telegraph_cast):
-		director.telegraph_cast.disconnect(_on_telegraph_cast)
+	if director != null:
+		for connection: Array in [[director.telegraph_cast, _on_telegraph_cast], [director.card_invoked, _on_card_invoked],
+				[director.projectile_fired, _on_projectile_fired], [director.synergy_detonated, _on_synergy_detonated]]:
+			var director_signal: Signal = connection[0]
+			var handler: Callable = connection[1]
+			if director_signal.is_connected(handler):
+				director_signal.disconnect(handler)
 	if director != null and director.fx_pool != null and director.fx_pool.get_parent() == effects_root:
 		director.fx_pool = null
 	var network: NetworkManager = NetworkManager.current
@@ -400,6 +413,18 @@ func _on_telegraph_cast(_decal: RaidTelegraphDecal) -> void:
 	_telegraphs_seen += 1
 
 
+func _on_card_invoked(_caster: ActorBase, _action: CombatActionResource, _variant: int) -> void:
+	_cards_seen += 1
+
+
+func _on_projectile_fired(_attacker: ActorBase, _action: CombatActionResource) -> void:
+	_shots_seen += 1
+
+
+func _on_synergy_detonated(_target: ActorBase, _primer: int, _cross: bool, _label: String) -> void:
+	_detonations_seen += 1
+
+
 ## Hot-join: plugging in a pad seats it as the next player; unplugging drops it.
 func _on_joy_connection_changed(pad: int, connected: bool) -> void:
 	var device_id: int = pad + 1
@@ -584,10 +609,12 @@ func _print_report() -> void:
 		var tag: String = " (local)" if actor.is_local_player() else ""
 		if actor.companion != null:
 			tag = " (bot: %s)" % actor.companion.gambit_name()
-		players.append("%s %s %d/%d hp%s" % [actor.player_id, actor.loadout.class_id, roundi(actor.stats.health),
+		var weapon: String = String(actor.loadout.weapon.item_id) if actor.loadout.weapon != null else "-"
+		players.append("%s %s/%s %d/%d hp%s" % [actor.player_id, actor.loadout.class_id, weapon, roundi(actor.stats.health),
 			roundi(actor.stats.stats.max_health), tag])
-	print("[Level] Report: peer %d in %s, %s%d telegraphs seen, players: %s" % [
-		NetworkManager.current.local_peer_id(), instance_id(), _report_extra(), _telegraphs_seen, ", ".join(players)])
+	print("[Level] Report: peer %d in %s, %s%d telegraphs, %d cards, %d shots, %d detonations seen, players: %s" % [
+		NetworkManager.current.local_peer_id(), instance_id(), _report_extra(), _telegraphs_seen, _cards_seen, _shots_seen,
+		_detonations_seen, ", ".join(players)])
 
 
 func _take_screenshot() -> void:

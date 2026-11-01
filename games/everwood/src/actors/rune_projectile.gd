@@ -20,6 +20,8 @@ const RUNE_RING_SPIN: float = 9.0
 const RUNE_RING_GLOW: float = 3.0
 ## Fast shots check for targets at several points per tick so they can't skip one.
 const MAX_SUBSTEPS: int = 4
+## The smallest gap between those checks (for very thin shots).
+const MIN_PROBE_STEP: float = 0.05
 const MAX_TOUCHES: int = 8
 
 var attacker: ActorBase
@@ -100,7 +102,7 @@ func _physics_process(delta: float) -> void:
 	if not space.intersect_ray(PhysicsRayQueryParameters3D.create(from, to, ActorBase.LAYER_WORLD)).is_empty():
 		finish()
 		return
-	var steps: int = clampi(ceili(from.distance_to(to) / maxf(0.05, action.projectile_radius)), 1, MAX_SUBSTEPS)
+	var steps: int = clampi(ceili(from.distance_to(to) / maxf(MIN_PROBE_STEP, action.projectile_radius)), 1, MAX_SUBSTEPS)
 	for step: int in steps:
 		global_position = from.lerp(to, float(step + 1) / steps)
 		if _touch_targets(space):

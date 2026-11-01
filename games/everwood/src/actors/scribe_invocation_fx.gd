@@ -33,8 +33,11 @@ const FOIL_RING_THICKNESS: float = 0.04
 const FOIL_RING_SPIN: float = 5.0
 const FOIL_COLOR: Color = Color(1.0, 0.82, 0.3)
 const FOIL_GLOW: float = 3.0
+## A Shiny Foil card's vellum glows gold at its edges this brightly.
+const FOIL_EDGE_GLOW: float = 0.6
 ## Astral Prism: the dome grows through the wind-up, then fades.
 const DOME_RADIUS: float = 2.4
+const DOME_START_SCALE: float = 0.3
 const DOME_FADE_TIME: float = 0.35
 const FOOTPRINT_TIME: float = 2.5
 const FOOTPRINT_STRIDE: float = 0.55
@@ -42,6 +45,7 @@ const FOOTPRINT_SIDE_STEP: float = 0.14
 ## Card shots charge through a standing rune ring this far in front of the caster.
 const MUZZLE_RING_OFFSET: Vector3 = Vector3(0.0, 1.2, -0.95)
 const MUZZLE_RING_RADIUS: float = 0.45
+const MUZZLE_RING_START_SCALE: float = 0.4
 const MUZZLE_RING_LINGER: float = 0.25
 ## The chime for each variant, and the Shiny Foil's harmonic pitch boost.
 const VARIANT_SOUNDS: Array[StringName] = [&"card_chime", &"card_chime_foil", &"card_chime_astral"]
@@ -52,7 +56,7 @@ var variant: ScribeCardResource.CardVariant = ScribeCardResource.CardVariant.STA
 
 var _age: float = 0.0
 var _life: float = SEAL_TIME
-var _windup: float = 0.2
+var _windup: float = 0.0
 var _colour: Color = Color.WHITE
 var _ranged: bool = false
 var _seal: MeshInstance3D
@@ -157,7 +161,7 @@ func play(on: ActorBase, seal: AspectSealResource, card_variant: ScribeCardResou
 	_seal_material.set_shader_parameter(&"glyph", seal.glyph)
 	_emblem_material.set_shader_parameter(&"tint", _colour)
 	_emblem_material.set_shader_parameter(&"glyph", seal.glyph)
-	_card_material.emission = FOIL_COLOR * 0.6 if variant == ScribeCardResource.CardVariant.SHINY_FOIL else Color.BLACK
+	_card_material.emission = FOIL_COLOR * FOIL_EDGE_GLOW if variant == ScribeCardResource.CardVariant.SHINY_FOIL else Color.BLACK
 	_muzzle_material.albedo_color = _colour
 	_muzzle_material.emission = _colour
 	_dome_material.set_shader_parameter(&"tint", _colour.lerp(Color(0.75, 0.6, 1.0), 0.5))
@@ -223,13 +227,13 @@ func _update(delta: float) -> void:
 	if _dome.visible:
 		var grow: float = clampf(_age / _windup, 0.0, 1.0)
 		var fade: float = 1.0 - clampf((_age - _windup) / DOME_FADE_TIME, 0.0, 1.0)
-		_dome.scale = Vector3.ONE * lerpf(0.3, 1.0, grow)
+		_dome.scale = Vector3.ONE * lerpf(DOME_START_SCALE, 1.0, grow)
 		_dome_material.set_shader_parameter(&"strength", fade)
 		_dome.visible = fade > 0.0 or _age < _windup
 	# A card shot's rune ring stands in front of the caster until the shot has gone through.
 	if _ranged:
 		_muzzle_ring.global_transform = Transform3D(Basis(Vector3.RIGHT, PI * 0.5).rotated(Vector3.UP, caster.rotation.y), frame * MUZZLE_RING_OFFSET)
-		_muzzle_ring.scale = Vector3.ONE * lerpf(0.4, 1.0, clampf(_age / _windup, 0.0, 1.0))
+		_muzzle_ring.scale = Vector3.ONE * lerpf(MUZZLE_RING_START_SCALE, 1.0, clampf(_age / _windup, 0.0, 1.0))
 		_muzzle_material.albedo_color.a = 1.0 - clampf((_age - _windup) / MUZZLE_RING_LINGER, 0.0, 1.0)
 		_muzzle_ring.visible = _age < _windup + MUZZLE_RING_LINGER
 
