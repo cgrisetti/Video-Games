@@ -51,6 +51,8 @@ What the game uses today, and what is still design only.
 - The 3x3 Callings. The game still has the three Phase 7 classes (Shield Tank, Soul-Tether Healer, Flow DPS), which map onto the three Primary Fellowships.
 - The expedition trail's zones (Bramblebridge Green, Ariundle Moss-Oaks, Sunken Holloway, Doverslap Gorge Bridge) and the other regions.
 
-**Open naming questions for the Creative Director**
-- The Phase 7 & 8 brief names the Callings differently from §3: Shield-Sworn as Bastion-Ward, Weald-Captain and Iron-Gable; Wayfarers as Cairn-Breaker, Edgerunner and Sign-Seeker; Lantern-Bearers as Carillon Guard, Gale-Warden and High-Scribe. This file keeps the §3 names until one set is chosen.
+**Naming decisions**
+- **The Callings are named as in §3** (Creative Director, 2026-11-01). The Phase 7 & 8 brief used other names (Bastion-Ward, Iron-Gable, Cairn-Breaker, Edgerunner, Carillon Guard, Gale-Warden, High-Scribe); those are retired. Use the §3 names in code and copy.
+
+**Open naming question for the Creative Director**
 - The currency is still called "Dojo Shards", from the old Dojo.
