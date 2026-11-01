@@ -5,8 +5,9 @@
 ##   - party caps, then the Raid Portal into the Dungeon Dojo while hosting ENet
 ##   - combat: flow-cancels and their windows, hit-stop, all three cross-class
 ##     detonations and their rewards and cues, poise, taunt, Perfect Guard,
-##     heals, Lifeline, Shadow Sanctuary, Squire auto-evade, telegraphs, reset
-##   - the exit portal back to town, with the same ENet session still up
+##     heals, Lifeline, Shadow Sanctuary, Squire auto-evade, telegraphs, wipes
+##   - the victory: slow motion, the banner, the reward chest and its Dojo
+##     Shards, and the gold portal home with the same ENet session still up
 ## Run from games/everwood:
 ##   godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd
 ## Exits 0 when every check passes, 1 otherwise.
@@ -20,6 +21,8 @@ const FAKE_PADS: Array[int] = [5, 6, 7, 8]
 const PORTAL_TIMEOUT: float = 8.0
 ## Simulated seconds to wait for the boss to cast both telegraph kinds.
 const TELEGRAPH_TIMEOUT: float = 50.0
+## The test's own save file, so it never touches the real one.
+const TEST_SAVE_PATH: String = "user://smoke_test_progress.cfg"
 
 const Cmd = CombatActionResource.Command
 
@@ -54,6 +57,8 @@ func _initialize() -> void:
 
 func _run() -> void:
 	print("Everwood smoke test")
+	_remove_file(TEST_SAVE_PATH)
+	PartyProgress.current.use_save_file(TEST_SAVE_PATH)
 	change_scene_to_file(HUB_SCENE)
 	await _seconds(0.2)
 	_connect_global_signals()
@@ -76,10 +81,11 @@ func _run() -> void:
 	await _check_shadow_sanctuary()
 	await _check_squire_auto_evade()
 	await _check_telegraphs()
-	await _check_boss_reset()
+	await _check_wipe_resets_fight()
+	await _check_victory_and_loot()
 	_check_audio_cues()
-	await _check_portal_back_to_town()
 	NetworkManager.current.leave_game()
+	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
 	if not _failures.is_empty():
@@ -493,16 +499,59 @@ func _check_telegraphs() -> void:
 	_check(_telegraph_hits > 0, "telegraphs resolve into damage on the players inside")
 
 
-func _check_boss_reset() -> void:
-	# The party heads back to the spawn pads, out of aggro range, so the reset sticks.
+## The whole party down: the boss goes home at full health with an empty aggro table.
+func _check_wipe_resets_fight() -> void:
+	_reset_boss_poise()
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(0.0, 0.0, 4.0)))
+	await _seconds(0.3)
+	boss.stats.take_damage(150.0)
+	_check(boss.engaged and boss.stats.health < boss.stats.stats.max_health, "the boss is mid-fight and hurt")
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.stats.take_damage(9999.0)
+	await _seconds(0.3)
+	_check(not boss.engaged and is_equal_approx(boss.stats.health, boss.stats.stats.max_health) and boss.threat.aggro_table.is_empty(),
+		"a party wipe resets the fight (full health, empty aggro table)")
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.stats.heal(actor.stats.stats.max_health)
+	await _seconds(0.1)
+
+
+## Beating the boss: slow motion, a banner, a chest of shards, and the gold portal home.
+func _check_victory_and_loot() -> void:
+	var session: MultiplayerPeer = root.multiplayer.multiplayer_peer
+	var shards_before: int = PartyProgress.current.shards
+	# Everyone back on the spawn pads, well clear of where the chest lands.
 	for actor: ActorBase in [tank, healer, dps]:
 		actor.respawn()
+		actor.input.inject_move(Vector2.ZERO)
 	boss.stats.take_damage(boss.stats.health)
-	await _seconds(0.05)
-	_check(boss.state_machine.is_in(&"downed"), "the boss can be defeated")
-	await _seconds(BossDummy.DEFEAT_RESET_TIME + 0.3)
-	_check(not boss.stats.is_downed and is_equal_approx(boss.stats.health, boss.stats.stats.max_health), "the dojo boss rises again at full health")
-	_check(boss.threat.aggro_table.is_empty(), "its aggro table resets")
+	await _seconds(0.1)
+	_check(dojo.victory and boss.vanquished and boss.state_machine.is_in(&"downed"), "defeating the Dojo Warden starts the victory")
+	_check(is_equal_approx(Engine.time_scale, DungeonDojo.VICTORY_TIME_SCALE), "the win plays out in slow motion (x0.2)")
+	_check(dojo.chest != null and dojo.chest.is_inside_tree(), "a reward chest drops into the arena")
+	var banners: int = 0
+	for hud: PlayerHUD in dojo.huds.values():
+		if hud.banner_title() == "VICTORY!":
+			banners += 1
+	_check(banners == 3, "every player's HUD shows the VICTORY! banner")
+	await _seconds(DungeonDojo.VICTORY_SLOWMO_TIME)
+	_check(is_equal_approx(Engine.time_scale, 1.0), "2 s later the game is back to normal speed")
+	await _seconds(1.0)
+	_check(boss.stats.is_downed and not dojo.chest.is_open, "the boss stays down and the chest waits to be opened")
+	dps.place_at(Transform3D(Basis.IDENTITY, dojo.chest.global_position + Vector3(0.8, 0.0, 0.8)))
+	await _seconds(0.2)
+	_check(dojo.chest.is_open, "walking up to the chest opens it")
+	var paid: int = DungeonDojo.chest_shards(3)
+	_check(PartyProgress.current.shards == shards_before + paid, "the chest pays the party %d Dojo Shards" % paid)
+	_check((dojo.huds[tank.player_id] as PlayerHUD).banner_title() == "+%d DOJO SHARDS" % paid, "the banner shows the shards earned")
+	var saved: ConfigFile = ConfigFile.new()
+	_check(saved.load(TEST_SAVE_PATH) == OK and int(saved.get_value("party", "shards", 0)) == shards_before + paid, "the shards are saved for next time")
+	_check(dojo.exit_portal.is_recalling(), "the gold exit portal starts calling the party home")
+	await _until_live_in(InstanceManager.HUB_TOWN)
+	_check(current_scene is HubTown, "the gold portal brings the party back to Hub Town")
+	_check(root.multiplayer.multiplayer_peer == session and NetworkManager.current.is_online(), "still the same ENet session after the round trip")
+	_check(NetworkManager.current.party_size() == 3 and _hub().grid.view_count() == 3, "the whole party is back in town")
 
 
 func _check_audio_cues() -> void:
@@ -511,21 +560,14 @@ func _check_audio_cues() -> void:
 		if AudioCues.current.stream_for(cue).data.size() < 200:
 			silent.append(cue)
 	_check(silent.is_empty(), "every audio cue synthesizes %s" % ("" if silent.is_empty() else str(silent)))
-	var expected: Array[StringName] = [&"flow", &"hit", &"perfect_guard", &"telegraph", &"heal", &"join", &"portal", &"portal_charge"]
+	var expected: Array[StringName] = [&"flow", &"hit", &"perfect_guard", &"telegraph", &"heal", &"join", &"portal", &"portal_charge",
+		&"victory", &"chest"]
 	var unheard: PackedStringArray = PackedStringArray()
 	for cue: StringName in expected:
 		if not _audio_cues.has(cue):
 			unheard.append(cue)
-	_check(unheard.is_empty(), "flows, hits, guards, telegraphs, heals, joins and portals all play their cues %s" % ("" if unheard.is_empty() else str(unheard)))
-
-
-func _check_portal_back_to_town() -> void:
-	var session: MultiplayerPeer = root.multiplayer.multiplayer_peer
-	_gather_on(dojo.get_node("ExitPortal") as RaidPortal, dojo)
-	await _until_live_in(InstanceManager.HUB_TOWN)
-	_check(current_scene is HubTown, "the exit portal brings the party back to Hub Town")
-	_check(root.multiplayer.multiplayer_peer == session and NetworkManager.current.is_online(), "still the same ENet session after the round trip")
-	_check(NetworkManager.current.party_size() == 3 and _hub().grid.view_count() == 3, "the whole party is back in town")
+	_check(unheard.is_empty(), "flows, hits, guards, telegraphs, heals, joins, portals, the victory and the chest all play their cues %s" % (
+		"" if unheard.is_empty() else str(unheard)))
 
 
 # --- Helpers --------------------------------------------------------------
@@ -686,6 +728,11 @@ func _until_idle(actor: ActorBase) -> void:
 	while (actor.action_queue.is_busy() or not actor.can_act()) and waited < 3.0:
 		await physics_frame
 		waited += 1.0 / 60.0
+
+
+func _remove_file(path: String) -> void:
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func _seconds(duration: float) -> void:

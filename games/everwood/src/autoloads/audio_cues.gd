@@ -16,7 +16,7 @@ const ATTACK: float = 0.004
 ## Every cue the game plays, by name.
 const CUES: Array[StringName] = [&"hit", &"flow", &"perfect_guard", &"synergy_stagger", &"synergy_frost",
 	&"synergy_radiant", &"reward", &"knockdown", &"telegraph", &"soak_ok", &"soak_fail", &"heal", &"join",
-	&"portal_charge", &"portal"]
+	&"portal_charge", &"portal", &"victory", &"chest"]
 ## How fast each note fades: amplitude reaches e^-DECAY at the note's end.
 const DECAY: float = 3.5
 
@@ -130,6 +130,14 @@ func _notes_for(cue: StringName) -> Array[Note]:
 			return _arpeggio([392.0, 494.0, 587.0], 0.18, Wave.SINE, 0.35)
 		&"portal":
 			return [Note.new(0.0, 0.9, 220.0, 1320.0, Wave.SINE, 0.5), Note.new(0.0, 0.9, 330.0, 1980.0, Wave.SINE, 0.25)]
+		&"victory":
+			var fanfare: Array[Note] = _arpeggio([392.0, 523.0, 659.0, 784.0, 1047.0], 0.11, Wave.SQUARE, 0.25)
+			fanfare.append(Note.new(0.0, 1.2, 131.0, 131.0, Wave.SINE, 0.5))
+			return fanfare
+		&"chest":
+			var sparkle: Array[Note] = _arpeggio([1319.0, 1568.0, 1976.0, 2637.0], 0.05, Wave.SINE, 0.3)
+			sparkle.append(Note.new(0.0, 0.12, 180.0, 90.0, Wave.SINE, 0.6))
+			return sparkle
 	return [Note.new(0.0, 0.03, 0.0, 0.0, Wave.NOISE, 0.2)]
 
 

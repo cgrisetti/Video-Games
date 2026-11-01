@@ -1,7 +1,8 @@
 ## A portal between instances (Hub Town to the Dungeon Dojo and back). When
 ## every standing party member is on its platform, a short countdown runs and
 ## the host moves the whole party through the InstanceManager. Every peer shows
-## the count; only the host acts on it.
+## the count; only the host acts on it. After a victory the portal can also
+## call the party home on its own (recall).
 class_name RaidPortal
 extends Node3D
 
@@ -21,6 +22,8 @@ const FLOOR_OFFSET: float = 0.03
 @export var portal_color: Color = Color(0.45, 0.62, 1.0)
 
 var countdown_left: float = -1.0
+
+var _recall_left: float = -1.0
 
 var _ring: MeshInstance3D
 var _veil_material: StandardMaterial3D
@@ -116,8 +119,22 @@ func party_on_platform() -> Vector2i:
 	return Vector2i(inside, standing.size())
 
 
+## Takes the whole party through in `seconds`, wherever they're standing.
+func recall(seconds: float) -> void:
+	if _recall_left < 0.0:
+		AudioCues.play(&"portal_charge")
+	_recall_left = seconds
+
+
+func is_recalling() -> bool:
+	return _recall_left >= 0.0
+
+
 func _physics_process(delta: float) -> void:
 	_ring.rotate_object_local(Vector3.FORWARD, SPIN_SPEED * delta)
+	if _recall_left >= 0.0:
+		_update_recall(delta)
+		return
 	var count: Vector2i = party_on_platform()
 	var everyone: bool = count.y > 0 and count.x == count.y and InstanceManager.current.is_live()
 	if not everyone:
@@ -134,5 +151,15 @@ func _physics_process(delta: float) -> void:
 	_status_label.text = "Entering in %d…" % maxi(1, ceili(countdown_left))
 	if countdown_left <= 0.0:
 		countdown_left = -1.0
+		party_entered.emit(target_instance)
+		InstanceManager.current.change_instance(target_instance)
+
+
+func _update_recall(delta: float) -> void:
+	_recall_left -= delta
+	_veil_material.albedo_color.a = 0.8
+	_status_label.text = "Going home in %d…" % maxi(1, ceili(_recall_left))
+	if _recall_left <= 0.0:
+		_recall_left = -1.0
 		party_entered.emit(target_instance)
 		InstanceManager.current.change_instance(target_instance)

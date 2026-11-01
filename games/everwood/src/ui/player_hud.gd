@@ -1,7 +1,8 @@
 ## One local player's HUD, drawn over their split-screen cell: the boss's
 ## health, poise, cast and aggro along the top; your health, stamina,
 ## resonance pips, queued input and Soul Tether bottom-left; your controls
-## along the bottom.
+## along the bottom. A big banner in the middle marks moments the whole party
+## shares (a victory, the loot).
 class_name PlayerHUD
 extends Control
 
@@ -21,6 +22,9 @@ const FLASH_TIME: float = 0.6
 const TETHER_COLOR: Color = Color(0.5, 1.0, 0.62)
 ## A resonance jump at least this big (a reward, not a hit) makes the pips flash.
 const REWARD_FLASH_PIPS: float = 0.4
+const BANNER_TITLE_SIZE: int = 44
+## Real seconds for the banner to fade in (it ignores slow motion).
+const BANNER_FADE_TIME: float = 0.3
 
 var actor: ActorBase
 
@@ -41,6 +45,9 @@ var _status_label: Label
 var _controls_label: Label
 var _flow_label: Label
 var _compass_labels: Array[Label] = []
+var _banner: VBoxContainer
+var _banner_title: Label
+var _banner_subtitle: Label
 var _flow_flash_left: float = 0.0
 var _pips_flash_left: float = 0.0
 var _last_resonance: float = 0.0
@@ -127,6 +134,25 @@ func _ready() -> void:
 	_flow_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_flow_label.modulate = Color(0.6, 0.85, 1.0, 0.0)
 	add_child(_flow_label)
+
+	_banner = VBoxContainer.new()
+	_banner.name = "Banner"
+	_banner.anchor_left = 0.06
+	_banner.anchor_right = 0.94
+	_banner.anchor_top = 0.2
+	_banner.anchor_bottom = 0.2
+	_banner.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_banner.alignment = BoxContainer.ALIGNMENT_CENTER
+	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.visible = false
+	add_child(_banner)
+	_banner_title = _label(BANNER_TITLE_SIZE)
+	_banner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner.add_child(_banner_title)
+	_banner_subtitle = _label(FONT_SIZE)
+	_banner_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_banner.add_child(_banner_subtitle)
 	if actor != null:
 		actor.action_queue.flow_cancelled.connect(_on_flow_cancelled)
 		_last_resonance = actor.stats.resonance_charge
@@ -142,16 +168,37 @@ func _process(_delta: float) -> void:
 	_refresh_player()
 
 
+## A big centred message for the whole party, like VICTORY!
+func show_banner(title: String, subtitle: String, color: Color) -> void:
+	_banner_title.text = title
+	_banner_title.modulate = color
+	_banner_subtitle.text = subtitle
+	_banner.visible = true
+	_banner.modulate.a = 0.0
+	var fade: Tween = create_tween()
+	fade.set_ignore_time_scale(true)
+	fade.tween_property(_banner, "modulate:a", 1.0, BANNER_FADE_TIME)
+
+
+func hide_banner() -> void:
+	_banner.visible = false
+
+
+## The banner's title, or "" when it's hidden.
+func banner_title() -> String:
+	return _banner_title.text if _banner.visible else ""
+
+
 func _refresh_boss() -> void:
 	var boss: BossDummy = CombatDirector.current.primary_boss() as BossDummy
-	# No boss here (Hub Town): no empty bars either.
-	_top_panel.visible = boss != null and boss.stats != null
+	# No boss here (Hub Town), or it's beaten: no bars to show.
+	_top_panel.visible = boss != null and boss.stats != null and not boss.vanquished
 	if not _top_panel.visible:
 		return
 	var primer: int = CombatDirector.current.primer_on(boss)
 	var title: String = boss.display_name()
 	if boss.stats.is_downed:
-		title += " (defeated, rising again...)"
+		title += " (defeated)"
 	elif boss.stats.is_knocked_down():
 		title += " (KNOCKED DOWN)"
 	if primer != CombatActionResource.Synergy.NONE:

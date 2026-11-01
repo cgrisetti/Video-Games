@@ -6,13 +6,16 @@
 ##     Crimson Bloom     (CRIMSON_DODGE_OUT) a red puddle under every player: get out
 ##     Golden Communion  (GOLD_PARTY_SOAK)   a gold circle on one player: stack in to share it
 ## - Heavy hits and Perfect Guards drain its poise; at zero it's knocked down for 5 s.
-## - Defeated, it rises again after a few seconds so the dojo never ends.
+## - Defeated, it stays down and signals `defeated`: the dojo plays the victory
+##   and drops a reward chest (DungeonDojo).
 ##
 ## The host simulates the boss; other peers see a synced copy and the same telegraphs.
 class_name BossDummy
 extends ActorBase
 
 signal cast_started(cast_name: String, duration: float)
+## Health reached zero (on the host, which simulates the boss).
+signal defeated
 
 const DISPLAY_NAME: String = "Dojo Warden"
 ## Health scales with the party when a fight starts: base + per player.
@@ -42,7 +45,6 @@ const SOAK_TOTAL_DAMAGE: float = 90.0
 const SOAK_FAIL_DAMAGE: float = 30.0
 ## A soak needs this many players inside (or the whole party, if smaller).
 const SOAK_REQUIRED_PLAYERS: int = 2
-const DEFEAT_RESET_TIME: float = 6.0
 const WINDUP_GLOW: Color = Color(1.0, 0.25, 0.1)
 
 ## Where telegraph decals are spawned (the level sets this).
@@ -51,6 +53,8 @@ var cast_name: String = ""
 var cast_duration: float = 0.0
 var cast_started_at: float = -1.0
 var engaged: bool = false
+## Beaten for good: it stays down until the party leaves the instance.
+var vanquished: bool = false
 
 var _cast_timer: float = FIRST_CAST_DELAY
 var _next_cast: RaidTelegraphDecal.Kind = RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT
@@ -247,6 +251,8 @@ func _cast_telegraphs(kind: int, centers: PackedVector3Array, follow_id: String)
 
 
 func _on_telegraph_resolved(decal: RaidTelegraphDecal, inside: Array[ActorBase]) -> void:
+	if vanquished:
+		return
 	if decal.kind == RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT:
 		for member: ActorBase in inside:
 			CombatDirector.current.deliver(_telegraph_strike(member, CRIMSON_DAMAGE))
@@ -284,17 +290,22 @@ func _on_boss_poise_broken() -> void:
 
 
 func _on_boss_defeated() -> void:
-	cast_started_at = -1.0
+	mark_vanquished()
 	CombatDirector.current.announce(global_position + Vector3.UP * (BOSS_HEIGHT + 1.0), "%s defeated!" % DISPLAY_NAME, Color(1.0, 0.95, 0.6))
+	defeated.emit()
 
 
+## Every peer calls this when the boss falls: no more casts, and players can
+## walk over its body to reach the chest.
+func mark_vanquished() -> void:
+	vanquished = true
+	cast_started_at = -1.0
+	collision_layer = 0
+
+
+## A beaten boss never gets up again in this instance.
 func downed_duration() -> float:
-	return DEFEAT_RESET_TIME
-
-
-func recover_from_downed() -> void:
-	stats.revive(1.0)
-	_reset_fight()
+	return INF
 
 
 ## Sets max health for a party of `players` (at full health, so only between fights).
