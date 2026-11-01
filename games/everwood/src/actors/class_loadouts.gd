@@ -16,7 +16,8 @@ const BOSS_SWIPE: StringName = &"boss_crushing_swipe"
 const TANK_COLOR: Color = Color(0.32, 0.52, 0.9)
 const HEALER_COLOR: Color = Color(0.34, 0.76, 0.46)
 const DPS_COLOR: Color = Color(0.92, 0.5, 0.22)
-const BOSS_COLOR: Color = Color(0.4, 0.17, 0.2)
+## The Cairnsman's river-stone grey.
+const BOSS_COLOR: Color = Color(0.47, 0.45, 0.41)
 
 const Cmd = CombatActionResource.Command
 

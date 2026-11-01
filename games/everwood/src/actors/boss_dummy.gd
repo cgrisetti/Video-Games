@@ -49,6 +49,20 @@ const SOAK_DAMAGE_PER_PLAYER: float = 30.0
 const SOAK_DAMAGE_PLAYER_CAP: int = 3
 const SOAK_FAIL_DAMAGE: float = 30.0
 const WINDUP_GLOW: Color = Color(1.0, 0.25, 0.1)
+## The cairn: river-boulders stacked up the body as (height, radius, sideways
+## nudge). They share the body's material, so the wind-up glow lights them all.
+const BOULDERS: Array[Vector3] = [Vector3(0.95, 1.3, 0.1), Vector3(2.15, 1.02, -0.12), Vector3(3.15, 0.74, 0.08)]
+const HEATHER_COLOR: Color = Color(0.62, 0.36, 0.62)
+const HEATHER_TUFTS: int = 6
+const TIMBER_COLOR: Color = Color(0.38, 0.27, 0.18)
+const TIMBER_SIZE: Vector3 = Vector3(0.24, 2.7, 0.24)
+const BRASS_COLOR: Color = Color(0.82, 0.64, 0.3)
+const BELL_ROPE_HEIGHT: float = 1.7
+const BELL_ROPE_RADIUS: float = 1.38
+const VISOR_GLOW: Color = Color(1.0, 0.3, 0.2)
+## The glowing slit on the middle stone's face: its size and how far above the stone's centre.
+const VISOR_SIZE: Vector3 = Vector3(1.1, 0.26, 0.3)
+const VISOR_LIFT: float = 0.3
 
 ## Where telegraph decals are spawned (the level sets this).
 var telegraphs_root: Node3D
@@ -89,33 +103,74 @@ func _build_visual() -> void:
 	super._build_visual()
 	# The HUD's boss bar already names it; a floating tag would cover the aggro line.
 	_name_label.visible = false
+	# The glowing slit between the top stones shows which way it faces instead.
+	var nose: Node3D = visual.get_node_or_null(^"Nose") as Node3D
+	if nose != null:
+		nose.visible = false
 
 
-## Horns and a glowing visor on the greybox body.
+## The Cairnsman, in greybox: stacked river-boulders, crossed bridge timbers on
+## its back, a brass bell-rope ring, a crown of heather, and a glowing slit
+## between the top stones.
 func _build_prop() -> Node3D:
 	var prop: Node3D = Node3D.new()
 	prop.name = "Prop"
+	for index: int in BOULDERS.size():
+		var stone: SphereMesh = SphereMesh.new()
+		stone.radius = BOULDERS[index].y
+		stone.height = BOULDERS[index].y * 1.7
+		stone.material = _body_material
+		var boulder: MeshInstance3D = MeshInstance3D.new()
+		boulder.name = "Boulder%d" % index
+		boulder.mesh = stone
+		boulder.position = Vector3(BOULDERS[index].z, BOULDERS[index].x, 0.0)
+		prop.add_child(boulder)
+	var timber_material: StandardMaterial3D = _flat_material(TIMBER_COLOR)
 	for side: float in [-1.0, 1.0]:
-		var horn: MeshInstance3D = MeshInstance3D.new()
-		var horn_mesh: CylinderMesh = CylinderMesh.new()
-		horn_mesh.top_radius = 0.02
-		horn_mesh.bottom_radius = 0.18
-		horn_mesh.height = 1.0
-		horn_mesh.material = _flat_material(Color(0.85, 0.8, 0.7))
-		horn.mesh = horn_mesh
-		horn.position = Vector3(side * 0.7, BOSS_HEIGHT + 0.1, 0.0)
-		horn.rotation = Vector3(0.0, 0.0, -side * 0.5)
-		prop.add_child(horn)
+		var beam: BoxMesh = BoxMesh.new()
+		beam.size = TIMBER_SIZE
+		beam.material = timber_material
+		var timber: MeshInstance3D = MeshInstance3D.new()
+		timber.name = "Timber"
+		timber.mesh = beam
+		timber.position = Vector3(0.0, BELL_ROPE_HEIGHT + 0.3, BOSS_RADIUS * 0.85)
+		timber.rotation = Vector3(0.0, 0.0, side * 0.45)
+		prop.add_child(timber)
+	var rope: TorusMesh = TorusMesh.new()
+	rope.inner_radius = BELL_ROPE_RADIUS - 0.08
+	rope.outer_radius = BELL_ROPE_RADIUS
+	var brass: StandardMaterial3D = _flat_material(BRASS_COLOR)
+	brass.metallic = 0.8
+	brass.roughness = 0.35
+	rope.material = brass
+	var rope_node: MeshInstance3D = MeshInstance3D.new()
+	rope_node.name = "BellRope"
+	rope_node.mesh = rope
+	rope_node.position = Vector3(0.0, BELL_ROPE_HEIGHT, 0.0)
+	prop.add_child(rope_node)
+	var heather_material: StandardMaterial3D = _flat_material(HEATHER_COLOR)
+	var crown: Vector3 = BOULDERS[BOULDERS.size() - 1]
+	for index: int in HEATHER_TUFTS:
+		var angle: float = TAU * float(index) / HEATHER_TUFTS
+		var tuft_mesh: SphereMesh = SphereMesh.new()
+		tuft_mesh.radius = 0.2
+		tuft_mesh.height = 0.3
+		tuft_mesh.material = heather_material
+		var tuft: MeshInstance3D = MeshInstance3D.new()
+		tuft.name = "Heather%d" % index
+		tuft.mesh = tuft_mesh
+		tuft.position = Vector3(crown.z + cos(angle) * crown.y * 0.55, crown.x + crown.y * 0.7, sin(angle) * crown.y * 0.55)
+		prop.add_child(tuft)
 	var visor: MeshInstance3D = MeshInstance3D.new()
 	var visor_mesh: BoxMesh = BoxMesh.new()
-	visor_mesh.size = Vector3(1.3, 0.22, 0.2)
-	var glow: StandardMaterial3D = _flat_material(Color(1.0, 0.3, 0.2))
+	visor_mesh.size = VISOR_SIZE
+	var glow: StandardMaterial3D = _flat_material(VISOR_GLOW)
 	glow.emission_enabled = true
-	glow.emission = Color(1.0, 0.25, 0.15)
+	glow.emission = VISOR_GLOW
 	glow.emission_energy_multiplier = 3.0
 	visor_mesh.material = glow
 	visor.mesh = visor_mesh
-	visor.position = Vector3(0.0, BOSS_HEIGHT * 0.8, -BOSS_RADIUS * 0.85)
+	visor.position = Vector3(0.0, BOULDERS[1].x + VISOR_LIFT, -BOULDERS[1].y * 0.95)
 	prop.add_child(visor)
 	return prop
 
