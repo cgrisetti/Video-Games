@@ -65,7 +65,7 @@ var is_companion: bool = false
 var tether: SoulTetherComponent
 ## Bosses only.
 var threat: ThreatComponent
-## Something this local player is standing at and can use with light (the Shard Vendor).
+## Something this local player is standing at and can use with light (the Chime-Shrine).
 var interactable: Interactable
 
 ## Where this actor wants to go this tick (world space, length 0..1).

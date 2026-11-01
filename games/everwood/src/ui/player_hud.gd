@@ -2,7 +2,7 @@
 ## health, poise, cast and aggro along the top; your health, stamina,
 ## resonance pips, queued input and Soul Tether bottom-left; your controls
 ## along the bottom. A big banner in the middle marks moments the whole party
-## shares (a victory, the loot). Next to the Shard Vendor a prompt says what
+## shares (a victory, the loot). Next to the Chime-Shrine a prompt says what
 ## light does, and its upgrade menu opens over this view.
 class_name PlayerHUD
 extends Control
@@ -51,7 +51,7 @@ var _banner: VBoxContainer
 var _banner_title: Label
 var _banner_subtitle: Label
 var _prompt_label: Label
-## The menu open over this view (the Shard Vendor's or the Scribe Desk's).
+## The menu open over this view (the Chime-Shrine's or the Scribe Desk's).
 var _menu: Control
 var _flow_flash_left: float = 0.0
 var _pips_flash_left: float = 0.0
@@ -187,7 +187,7 @@ func _process(_delta: float) -> void:
 	_refresh_player()
 
 
-## Opens the Shard Vendor's upgrade menu over this player's view.
+## Opens the Chime-Shrine's upgrade menu over this player's view.
 func open_upgrade_menu() -> void:
 	if _live_menu() != null:
 		return

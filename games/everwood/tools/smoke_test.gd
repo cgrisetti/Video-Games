@@ -14,10 +14,10 @@
 ##     soak scaling for small parties, telegraphs, wipes
 ##   - AI companions backfilling missing roles, fighting by their Gambits and
 ##     stepping aside when people rejoin
-##   - the victory: slow motion, the banner, the reward chest and its Dojo
-##     Shards, and the gold portal home with the same ENet session still up
-##   - the Shard Vendor in Bramblebridge: its menu on the keyboard, upgrades for
-##     the whole party, refusals, saving and loading
+##   - the victory: slow motion, the banner, the reward chest and its Chimes,
+##     and the gold portal home with the same ENet session still up
+##   - the Chime-Shrine in Bramblebridge: its menu on the keyboard, upgrades for
+##     the whole party, refusals, saving and loading (old "shards" saves too)
 ##   - the Armory & Scribe Desk: weapon, armor and card swaps in place, the
 ##     chest's card, under-card links and the Grimoire's memory and levels,
 ##     saved kits; card drops; no orphaned nodes after the round trip
@@ -113,7 +113,7 @@ func _run() -> void:
 	await _check_wipe_resets_fight()
 	await _check_companion_backfill()
 	await _check_victory_and_loot()
-	await _check_shard_vendor()
+	await _check_chime_shrine()
 	await _check_scribe_desk()
 	_check_audio_cues()
 	NetworkManager.current.leave_game()
@@ -1121,10 +1121,10 @@ func _companion_with(role: int) -> ActorBase:
 	return null
 
 
-## Beating the boss: slow motion, a banner, a chest of shards, and the gold portal home.
+## Beating the boss: slow motion, a banner, a chest of Chimes, and the gold portal home.
 func _check_victory_and_loot() -> void:
 	var session: MultiplayerPeer = root.multiplayer.multiplayer_peer
-	var shards_before: int = PartyProgress.current.shards
+	var chimes_before: int = PartyProgress.current.chimes
 	var level_before: int = PartyProgress.current.grimoire_level()
 	# A seed whose chest card is a Gilded Leaf or Star-Inked boss card for the Forward slot.
 	var seed: int = _seed_for_forward_boss_card()
@@ -1154,14 +1154,16 @@ func _check_victory_and_loot() -> void:
 	dps.place_at(Transform3D(Basis.IDENTITY, dojo.chest.global_position + Vector3(0.8, 0.0, 0.8)))
 	await _seconds(0.2)
 	_check(dojo.chest.is_open, "walking up to the chest opens it")
-	var paid: int = DungeonDojo.chest_shards(3)
-	_check(PartyProgress.current.shards == shards_before + paid, "the chest pays the party %d Dojo Shards" % paid)
+	var paid: int = DungeonDojo.chest_chimes(3)
+	_check(PartyProgress.current.chimes == chimes_before + paid, "the chest pays the party %d Chimes" % paid)
 	_dropped_card = expected_card
 	_check(dojo.chest.card_key == expected_card and PartyProgress.current.copies_of(expected_card) == 1,
 		"and a collectible card for the binder: %s" % ArsenalCatalog.current.copy_name(expected_card))
-	_check((dojo.huds[tank.player_id] as PlayerHUD).banner_title() == "+%d DOJO SHARDS" % paid, "the banner shows the shards earned")
+	_check((dojo.huds[tank.player_id] as PlayerHUD).banner_title() == "+%d CHIMES" % paid, "the banner shows the Chimes earned")
 	var saved: ConfigFile = ConfigFile.new()
-	_check(saved.load(TEST_SAVE_PATH) == OK and int(saved.get_value("party", "shards", 0)) == shards_before + paid, "the shards are saved for next time")
+	_check(saved.load(TEST_SAVE_PATH) == OK and int(saved.get_value("party", "chimes", 0)) == chimes_before + paid, "the Chimes are saved for next time")
+	var coins: ChimeBurst = dojo.chest.get_node_or_null(^"ChimeBurst") as ChimeBurst
+	_check(coins != null, "brass Chimes burst out of the chest toward the party")
 	_check(dojo.exit_portal.is_recalling(), "the gold exit portal starts calling the party home")
 	await _until_live_in(InstanceManager.HUB_TOWN)
 	_check(current_scene is HubTown, "the gold portal brings the party back to Bramblebridge")
@@ -1179,37 +1181,37 @@ func _check_audio_cues() -> void:
 			silent.append(cue)
 	_check(silent.is_empty(), "every audio cue synthesizes %s" % ("" if silent.is_empty() else str(silent)))
 	var expected: Array[StringName] = [&"flow", &"hit", &"perfect_guard", &"telegraph", &"heal", &"join", &"portal", &"portal_charge",
-		&"victory", &"chest", &"purchase", &"refuse", &"menu_move", &"shot", &"card_chime", &"card_chime_foil", &"card_chime_astral"]
+		&"victory", &"chest", &"chime", &"purchase", &"refuse", &"menu_move", &"shot", &"card_chime", &"card_chime_foil", &"card_chime_astral"]
 	var unheard: PackedStringArray = PackedStringArray()
 	for cue: StringName in expected:
 		if not _audio_cues.has(cue):
 			unheard.append(cue)
-	_check(unheard.is_empty(), "flows, hits, guards, telegraphs, heals, joins, portals, the victory, the chest and the vendor all play their cues %s" % (
+	_check(unheard.is_empty(), "flows, hits, guards, telegraphs, heals, joins, portals, the victory, the chest, its Chimes and the shrine all play their cues %s" % (
 		"" if unheard.is_empty() else str(unheard)))
 
 
 # --- Hub Town upgrades ----------------------------------------------------
 
-## The Shard Vendor: walk up, press J, spend the chest's shards on upgrades for everyone.
-func _check_shard_vendor() -> void:
+## The Chime-Shrine: walk up, press J, spend the chest's Chimes on upgrades for everyone.
+func _check_chime_shrine() -> void:
 	var hub: HubTown = current_scene as HubTown
 	var progress: PartyProgress = PartyProgress.current
 	var keyboard: ActorBase = hub.actors[&"1_0"]
 	var hud: PlayerHUD = hub.huds[&"1_0"]
 	keyboard.input.release_script()
-	var front: Vector3 = -hub.shard_vendor.global_basis.z
-	keyboard.place_at(Transform3D(Basis.IDENTITY, hub.shard_vendor.global_position + front * 1.6))
+	var front: Vector3 = -hub.chime_shrine.global_basis.z
+	keyboard.place_at(Transform3D(Basis.IDENTITY, hub.chime_shrine.global_position + front * 1.6))
 	await _seconds(0.1)
-	_check(keyboard.interactable == hub.shard_vendor and hud.prompt_text().contains("Shard Vendor"), "standing at the stall shows the Shard Vendor prompt")
+	_check(keyboard.interactable == hub.chime_shrine and hud.prompt_text().contains("Chime-Shrine"), "standing at the shrine shows the Chime-Shrine prompt")
 	await _tap_key(KEY_J)
 	var menu: HubUpgradeMenu = hud.upgrade_menu()
-	_check(menu != null and keyboard.input.menu_open and not keyboard.action_queue.is_busy(), "J at the stall opens the upgrade menu instead of swinging")
-	var shards: int = progress.shards
+	_check(menu != null and keyboard.input.menu_open and not keyboard.action_queue.is_busy(), "J at the shrine opens the upgrade menu instead of swinging")
+	var chimes: int = progress.chimes
 	var tank_health: float = keyboard.stats.stats.max_health
 	var healer_health: float = hub.actors[&"1_1"].stats.stats.max_health
 	await _tap_key(KEY_J)
-	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 1 and progress.shards == shards - PartyProgress.UPGRADE_BASE_COST,
-		"J buys Max Health level 1 for %d shards" % PartyProgress.UPGRADE_BASE_COST)
+	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 1 and progress.chimes == chimes - PartyProgress.UPGRADE_BASE_COST,
+		"J buys Max Health level 1 for %d Chimes" % PartyProgress.UPGRADE_BASE_COST)
 	_check(is_equal_approx(keyboard.stats.stats.max_health, tank_health * 1.1) and is_equal_approx(hub.actors[&"1_1"].stats.stats.max_health, healer_health * 1.1),
 		"everyone's max health grows by 10%")
 	_check(is_equal_approx(keyboard.stats.health, keyboard.stats.stats.max_health), "and they stay at full health")
@@ -1220,18 +1222,28 @@ func _check_shard_vendor() -> void:
 		"S then J buys Stamina Regen (+10% stamina per second)")
 	await _tap_key(KEY_W)
 	await _tap_key(KEY_J)
-	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 2 and progress.shards == shards - 16, "Max Health level 2 costs 8 shards")
+	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 2 and progress.chimes == chimes - 16, "Max Health level 2 costs 8 Chimes")
 	await _tap_key(KEY_J)
-	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 2 and progress.shards == 0 and menu.note_text().begins_with("Not enough shards"),
-		"without enough shards the purchase is refused")
+	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 2 and progress.chimes == 0 and menu.note_text().begins_with("Not enough Chimes"),
+		"without enough Chimes the purchase is refused")
 	await _tap_key(KEY_SPACE)
 	_check(hud.upgrade_menu() == null and not keyboard.input.menu_open and not keyboard.state_machine.is_in(&"dodge"), "Space closes the menu without rolling")
 	var saved: ConfigFile = ConfigFile.new()
 	_check(saved.load(TEST_SAVE_PATH) == OK and int(saved.get_value("upgrades", "max_health", 0)) == 2
 		and int(saved.get_value("upgrades", "stamina_regen", 0)) == 1, "the upgrades are saved")
 	progress.load_save()
-	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 2 and progress.level_of(PartyProgress.STAMINA_REGEN) == 1 and progress.shards == 0,
+	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 2 and progress.level_of(PartyProgress.STAMINA_REGEN) == 1 and progress.chimes == 0,
 		"and load back next session")
+	# A save from before the rename still opens its pouch.
+	var old_save: ConfigFile = ConfigFile.new()
+	old_save.load(TEST_SAVE_PATH)
+	old_save.erase_section_key("party", "chimes")
+	old_save.set_value("party", "shards", 7)
+	old_save.save(TEST_SAVE_PATH)
+	progress.load_save()
+	_check(progress.chimes == 7, "an old save's Dojo Shards load as Chimes")
+	progress.chimes = 0
+	progress.save()
 	NetworkManager.current.update_local_player(2, ClassLoadouts.SHIELD_TANK, InputComponent.AssistMode.MASTER)
 	await _seconds(0.05)
 	_check(is_equal_approx(hub.actors[&"1_2"].stats.stats.max_health, ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK).base_stats.max_health * 1.2),

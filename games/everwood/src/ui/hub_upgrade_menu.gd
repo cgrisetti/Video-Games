@@ -1,4 +1,4 @@
-## The Shard Vendor's upgrade menu, drawn over one player's split-screen cell
+## The Chime-Shrine's upgrade menu, drawn over one player's split-screen cell
 ## and driven by that player's own controller: up / down to choose, light to
 ## buy, dodge to close. Upgrades are shared by the whole party, last between
 ## sessions and scale everyone's base stats (PartyProgress).
@@ -14,14 +14,14 @@ const SMALL_FONT_SIZE: int = 13
 const SELECTED_COLOR: Color = Color(1.0, 0.86, 0.4)
 const DIM_COLOR: Color = Color(0.8, 0.82, 0.9)
 const PANEL_COLOR: Color = Color(0.07, 0.07, 0.1, 0.92)
-const BORDER_COLOR: Color = Color(0.55, 0.85, 1.0)
-## Seconds a "Bought!" or "Not enough shards" note stays up.
+const BORDER_COLOR: Color = Color(1.0, 0.8, 0.42)
+## Seconds a "Bought!" or "Not enough Chimes" note stays up.
 const NOTE_TIME: float = 2.5
 
 var actor: ActorBase
 var selected: int = 0
 
-var _shards_label: Label
+var _chimes_label: Label
 var _rows: Array[Label] = []
 var _note_label: Label
 var _hint_label: Label
@@ -54,11 +54,11 @@ func _ready() -> void:
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(column)
 	var title: Label = _label(TITLE_SIZE)
-	title.text = "SHARD VENDOR"
+	title.text = "CHIME-SHRINE"
 	title.modulate = BORDER_COLOR.lightened(0.3)
 	column.add_child(title)
-	_shards_label = _label(FONT_SIZE)
-	column.add_child(_shards_label)
+	_chimes_label = _label(FONT_SIZE)
+	column.add_child(_chimes_label)
 	for index: int in option_count():
 		var row: Label = _label(FONT_SIZE)
 		column.add_child(row)
@@ -111,7 +111,7 @@ func accept() -> void:
 	if progress.is_maxed(id):
 		_show_note("%s is fully upgraded" % upgrade, false)
 	elif not progress.can_buy(id):
-		_show_note("Not enough shards: %s costs %d" % [upgrade, progress.cost_of(id)], false)
+		_show_note("Not enough Chimes: %s costs %d" % [upgrade, progress.cost_of(id)], false)
 	else:
 		var next_level: int = progress.level_of(id) + 1
 		progress.request_purchase(id)
@@ -151,7 +151,7 @@ func _show_note(text: String, good: bool) -> void:
 
 func _refresh() -> void:
 	var progress: PartyProgress = PartyProgress.current
-	_shards_label.text = "Dojo Shards in the pouch: %d" % progress.shards
+	_chimes_label.text = "Chimes in the pouch: %d" % progress.chimes
 	for index: int in _rows.size():
 		var row: Label = _rows[index]
 		var cursor: String = "▶ " if index == selected else "   "
@@ -159,7 +159,7 @@ func _refresh() -> void:
 			row.text = cursor + "Close"
 		else:
 			var id: StringName = PartyProgress.UPGRADES[index]
-			var price: String = "MAX" if progress.is_maxed(id) else "%d shards" % progress.cost_of(id)
+			var price: String = "MAX" if progress.is_maxed(id) else "%d Chimes" % progress.cost_of(id)
 			row.text = "%s%s   Lv %d/%d   %s\n      %s" % [cursor, PartyProgress.upgrade_name(id), progress.level_of(id),
 				PartyProgress.MAX_UPGRADE_LEVEL, price, PartyProgress.upgrade_blurb(id)]
 		row.modulate = SELECTED_COLOR if index == selected else Color.WHITE

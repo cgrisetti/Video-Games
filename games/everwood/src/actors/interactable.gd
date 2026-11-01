@@ -1,5 +1,5 @@
 ## Something in the world a local player uses by walking up and pressing light
-## (J / X / □), like the Shard Vendor. While a player stands within `reach`,
+## (J / X / □), like the Chime-Shrine. While a player stands within `reach`,
 ## their actor points at it (ActorBase.interactable), their HUD shows its
 ## prompt, and light uses it instead of swinging.
 class_name Interactable

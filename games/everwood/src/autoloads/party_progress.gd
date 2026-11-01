@@ -1,5 +1,5 @@
-## The party's progress (autoload "Progress"): the Dojo Shards earned from raid
-## chests and the Hub Town upgrades bought with them at the Shard Vendor, the
+## The party's progress (autoload "Progress"): the Chimes earned on raids (07 GDD
+## §1.2) and the upgrades bought with them at Bramblebridge's Chime-Shrine, the
 ## Scribe Card binder (collected copies, by copy key), each class's last kit,
 ## and the victories that set the Grimoire level, all saved between sessions
 ## in user://everwood_progress.cfg. Everything is ids and numbers, so the file
@@ -22,23 +22,23 @@ const SAVE_PATH: String = "user://everwood_progress.cfg"
 const SAVE_ARG: String = "--save="
 const MAX_HEALTH: StringName = &"max_health"
 const STAMINA_REGEN: StringName = &"stamina_regen"
-## What the Shard Vendor sells, in menu order.
+## What the Chime-Shrine sells, in menu order.
 const UPGRADES: Array[StringName] = [MAX_HEALTH, STAMINA_REGEN]
 ## Each level adds this share of the class's own value (+10%).
 const UPGRADE_STEP: float = 0.1
 const MAX_UPGRADE_LEVEL: int = 5
-## Level n costs this many shards times n: 4, 8, 12, 16, 20.
+## Level n costs this many Chimes times n: 4, 8, 12, 16, 20.
 const UPGRADE_BASE_COST: int = 4
 
 ## The live autoload node (see NetworkManager.current for why).
 static var current: PartyProgress
 
-var shards: int = 0
+var chimes: int = 0
 ## Upgrade id -> levels bought.
 var levels: Dictionary[StringName, int] = {}
 ## Card copy key ("rising_drive:shiny_foil") -> copies collected.
 var collection: Dictionary[StringName, int] = {}
-## Dojo Warden wins; each one raises the Grimoire a level (LoadoutComposer).
+## Cairnsman wins; each one raises the Grimoire a level (LoadoutComposer).
 var victories: int = 0
 ## Class id -> the kit (EquipmentLoadoutResource.to_dict) its players last wore.
 var kits: Dictionary[StringName, Dictionary] = {}
@@ -97,13 +97,13 @@ func is_maxed(id: StringName) -> bool:
 	return level_of(id) >= MAX_UPGRADE_LEVEL
 
 
-## Shards the next level costs.
+## Chimes the next level costs.
 func cost_of(id: StringName) -> int:
 	return UPGRADE_BASE_COST * (level_of(id) + 1)
 
 
 func can_buy(id: StringName) -> bool:
-	return UPGRADES.has(id) and not is_maxed(id) and shards >= cost_of(id)
+	return UPGRADES.has(id) and not is_maxed(id) and chimes >= cost_of(id)
 
 
 func multiplier(id: StringName) -> float:
@@ -127,7 +127,7 @@ func request_purchase(id: StringName) -> void:
 func _server_purchase(id: StringName) -> bool:
 	if not can_buy(id):
 		return false
-	shards -= cost_of(id)
+	chimes -= cost_of(id)
 	levels[id] = level_of(id) + 1
 	_commit()
 	return true
@@ -162,7 +162,7 @@ func save_kit(class_id: StringName, kit: Dictionary) -> void:
 	_commit()
 
 
-## Host only: a Dojo Warden win.
+## Host only: a win over the Cairnsman.
 func record_victory() -> void:
 	if not NetworkManager.current.is_host():
 		return
@@ -181,11 +181,11 @@ func award_card(copy_key: StringName) -> void:
 
 # --- Earning --------------------------------------------------------------
 
-## Adds shards to the party's pouch. Host only; other peers get the new total.
-func award_shards(amount: int) -> void:
+## Adds Chimes to the party's pouch. Host only; other peers get the new total.
+func award_chimes(amount: int) -> void:
 	if not NetworkManager.current.is_host() or amount <= 0:
 		return
-	shards += amount
+	chimes += amount
 	_commit()
 
 
@@ -199,14 +199,15 @@ func use_save_file(path: String) -> void:
 
 func load_save() -> void:
 	_showing_host = false
-	shards = 0
+	chimes = 0
 	victories = 0
 	levels.clear()
 	collection.clear()
 	kits.clear()
 	var file: ConfigFile = ConfigFile.new()
 	if file.load(save_path) == OK:
-		shards = maxi(0, int(file.get_value("party", "shards", 0)))
+		# Saves from before the Chimes were called Dojo Shards keep their pouch.
+		chimes = maxi(0, int(file.get_value("party", "chimes", file.get_value("party", "shards", 0))))
 		victories = maxi(0, int(file.get_value("party", "victories", 0)))
 		for id: StringName in UPGRADES:
 			levels[id] = clampi(int(file.get_value("upgrades", String(id), 0)), 0, MAX_UPGRADE_LEVEL)
@@ -219,7 +220,7 @@ func load_save() -> void:
 
 func save() -> Error:
 	var file: ConfigFile = ConfigFile.new()
-	file.set_value("party", "shards", shards)
+	file.set_value("party", "chimes", chimes)
 	file.set_value("party", "victories", victories)
 	for id: StringName in UPGRADES:
 		file.set_value("upgrades", String(id), level_of(id))
@@ -263,7 +264,7 @@ func _snapshot() -> Dictionary:
 	var bought: Dictionary = {}
 	for id: StringName in UPGRADES:
 		bought[String(id)] = level_of(id)
-	return {"shards": shards, "levels": bought, "victories": victories, "collection": _plain_collection()}
+	return {"chimes": chimes, "levels": bought, "victories": victories, "collection": _plain_collection()}
 
 
 # --- Network --------------------------------------------------------------
@@ -276,7 +277,7 @@ func _on_peer_connected(peer_id: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func _receive_progress(data: Dictionary) -> void:
 	_showing_host = true
-	shards = int(data.get("shards", 0))
+	chimes = int(data.get("chimes", 0))
 	var bought: Dictionary = data.get("levels", {})
 	for id: StringName in UPGRADES:
 		levels[id] = clampi(int(bought.get(String(id), 0)), 0, MAX_UPGRADE_LEVEL)

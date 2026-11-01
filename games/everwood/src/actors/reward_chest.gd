@@ -1,12 +1,13 @@
-## The reward chest the Dojo Warden leaves behind. It drops into the arena,
-## and the first person (not an AI companion) to walk up to it opens it: the
-## lid swings up, a burst of gold, and the party's Dojo Shards and a
-## collectible Scribe Card are paid out (DungeonDojo).
+## A chest of Chimes and a collectible Scribe Card: the reward chest the
+## Cairnsman leaves behind (it drops in with a bounce), or the Wayfarer's
+## Chest waiting in the Moss-Oaks' side alcove. The first person (not an AI
+## companion) to walk up to it opens it: the lid swings up, brass Chimes burst
+## out and fly to the party, and the level pays out the Chimes and the card.
 ## Every peer shows the chest; the host decides when it opens.
 class_name RewardChest
 extends Node3D
 
-signal opened(opener_id: StringName, shards: int, card_key: StringName)
+signal opened(opener_id: StringName, chimes: int, card_key: StringName)
 
 ## Walking this close opens it.
 const OPEN_RADIUS: float = 2.0
@@ -21,21 +22,28 @@ const DROP_HEIGHT: float = 4.0
 const DROP_TIME: float = 0.5
 const LID_OPEN_ANGLE: float = -1.9
 const LID_OPEN_TIME: float = 0.4
-const CRYSTAL_HEIGHT: float = 1.6
-const CRYSTAL_SPIN: float = 1.5
-const CRYSTAL_BOB: float = 2.2
+const COIN_SIZE: float = 0.55
+const COIN_HEIGHT: float = 1.6
+const COIN_SPIN: float = 1.5
+const COIN_BOB: float = 2.2
 const LIGHT_ENERGY: float = 2.0
 const LIGHT_RANGE: float = 6.0
 
-var shards: int = 0
-## The card copy inside (the host rolled it when the boss fell).
+var chimes: int = 0
+## The card copy inside (the host rolled it when the boss fell, or rolls it on opening).
 var card_key: StringName = &""
+## What the floating label calls it.
+var title: String = "Reward Chest"
+## Drops in from above with a bounce (the boss's chest); false sits there already.
+var drop_in: bool = true
+## Host: rolls the card copy the moment the chest opens, if `card_key` is still empty.
+var card_roller: Callable
 var is_open: bool = false
 
 var _age: float = 0.0
 var _model: Node3D
 var _lid: Node3D
-var _crystal: MeshInstance3D
+var _coin: MeshInstance3D
 var _label: Label3D
 
 
@@ -54,16 +62,10 @@ func _ready() -> void:
 	_model.add_child(_lid)
 	_lid.add_child(_box("Top", LID_SIZE, Vector3(0.0, LID_SIZE.y * 0.5, -LID_SIZE.z * 0.5), wood))
 	_lid.add_child(_box("Clasp", Vector3(0.24, 0.24, 0.06), Vector3(0.0, 0.0, -LID_SIZE.z - 0.02), trim))
-	# A Dojo Shard floats above it: a gem made from a box turned on its corner.
-	_crystal = MeshInstance3D.new()
-	_crystal.name = "Shard"
-	var gem: BoxMesh = BoxMesh.new()
-	gem.size = Vector3(0.36, 0.36, 0.36)
-	gem.material = _material(Color(0.55, 0.85, 1.0), 2.5)
-	_crystal.mesh = gem
-	_crystal.rotation = Vector3(PI * 0.25, 0.0, PI * 0.25)
-	_crystal.position = Vector3(0.0, CRYSTAL_HEIGHT, 0.0)
-	_model.add_child(_crystal)
+	# A brass Chime turns above it.
+	_coin = ChimeCoin.make(COIN_SIZE)
+	_coin.position = Vector3(0.0, COIN_HEIGHT, 0.0)
+	_model.add_child(_coin)
 	var glow: OmniLight3D = OmniLight3D.new()
 	glow.name = "Glow"
 	glow.light_color = TRIM_COLOR
@@ -73,24 +75,25 @@ func _ready() -> void:
 	_model.add_child(glow)
 	_label = Label3D.new()
 	_label.name = "Label"
-	_label.text = "Reward Chest\nwalk up to open"
+	_label.text = "%s\nwalk up to open" % title
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_label.font_size = 44
 	_label.outline_size = 10
 	_label.pixel_size = 0.01
 	_label.modulate = TRIM_COLOR.lightened(0.3)
-	_label.position = Vector3(0.0, CRYSTAL_HEIGHT + 0.8, 0.0)
+	_label.position = Vector3(0.0, COIN_HEIGHT + 0.8, 0.0)
 	add_child(_label)
-	# Drop in from above with a bounce.
-	_model.position = Vector3(0.0, DROP_HEIGHT, 0.0)
-	var drop: Tween = create_tween()
-	drop.tween_property(_model, "position:y", 0.0, DROP_TIME).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	if drop_in:
+		# Drop in from above with a bounce.
+		_model.position = Vector3(0.0, DROP_HEIGHT, 0.0)
+		var drop: Tween = create_tween()
+		drop.tween_property(_model, "position:y", 0.0, DROP_TIME).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 
 func _physics_process(delta: float) -> void:
 	_age += delta
-	_crystal.rotate_y(CRYSTAL_SPIN * delta)
-	_crystal.position.y = CRYSTAL_HEIGHT + sin(_age * CRYSTAL_BOB) * 0.15
+	_coin.rotate_y(COIN_SPIN * delta)
+	_coin.position.y = COIN_HEIGHT + sin(_age * COIN_BOB) * 0.15
 	if is_open or _age < ARM_TIME or not NetworkManager.current.is_host() or not InstanceManager.current.is_live():
 		return
 	for member: ActorBase in CombatDirector.current.alive_party():
@@ -98,26 +101,36 @@ func _physics_process(delta: float) -> void:
 			continue
 		var flat: Vector2 = Vector2(member.global_position.x - global_position.x, member.global_position.z - global_position.z)
 		if flat.length() <= OPEN_RADIUS:
-			_open(String(member.player_id), shards, String(card_key))
+			if card_key == &"" and card_roller.is_valid():
+				card_key = StringName(str(card_roller.call()))
+			_open(String(member.player_id), chimes, String(card_key))
 			for peer_id: int in InstanceManager.current.live_remote_peers():
-				_open.rpc_id(peer_id, String(member.player_id), shards, String(card_key))
+				_open.rpc_id(peer_id, String(member.player_id), chimes, String(card_key))
 			return
 
 
-## Runs on every peer: the lid opens and the shards pop out.
+## Runs on every peer: the lid opens and the Chimes fly out to the party.
 @rpc("authority", "call_local", "reliable")
 func _open(opener_id: String, amount: int, card: String) -> void:
 	if is_open:
 		return
 	is_open = true
-	shards = amount
+	chimes = amount
 	card_key = StringName(card)
 	var swing: Tween = create_tween()
 	swing.tween_property(_lid, "rotation:x", LID_OPEN_ANGLE, LID_OPEN_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_label.text = "+%d Dojo Shards\n%s" % [amount, ArsenalCatalog.current.copy_name(card_key)]
+	_label.text = "+%d Chimes\n%s" % [amount, ArsenalCatalog.current.copy_name(card_key)]
+	_coin.visible = false
 	var burst: CueBurst = CueBurst.new()
 	burst.configure(TRIM_COLOR)
 	add_child(burst)
+	var coins: ChimeBurst = ChimeBurst.new()
+	var catchers: Array[Node3D] = []
+	for member: ActorBase in CombatDirector.current.alive_party():
+		catchers.append(member)
+	coins.configure(amount, catchers)
+	add_child(coins)
+	coins.position = Vector3(0.0, BODY_SIZE.y, 0.0)
 	AudioCues.play(&"chest")
 	opened.emit(StringName(opener_id), amount, card_key)
 

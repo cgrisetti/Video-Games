@@ -16,7 +16,8 @@ const ATTACK: float = 0.004
 ## Every cue the game plays, by name.
 const CUES: Array[StringName] = [&"hit", &"flow", &"perfect_guard", &"seal_iron_root", &"seal_rime_gale",
 	&"seal_warm_hearth", &"seal_star_tide", &"shot", &"equip", &"card_chime", &"card_chime_foil", &"card_chime_astral", &"reward", &"knockdown", &"telegraph", &"soak_ok", &"soak_fail", &"heal", &"join",
-	&"portal_charge", &"portal", &"victory", &"chest", &"purchase", &"refuse", &"menu_move"]
+	&"portal_charge", &"portal", &"victory", &"chest", &"purchase", &"refuse", &"menu_move", &"chime", &"lantern", &"shrine",
+	&"gale", &"bell", &"gate", &"camp_cleared", &"beam"]
 ## How fast each note fades: amplitude reaches e^-DECAY at the note's end.
 const DECAY: float = 3.5
 
@@ -162,6 +163,31 @@ func _notes_for(cue: StringName) -> Array[Note]:
 			var sparkle: Array[Note] = _arpeggio([1319.0, 1568.0, 1976.0, 2637.0], 0.05, Wave.SINE, 0.3)
 			sparkle.append(Note.new(0.0, 0.12, 180.0, 90.0, Wave.SINE, 0.6))
 			return sparkle
+		&"chime":
+			# A Chime landing in a satchel: two brass bell notes, each with a bright partial.
+			return [Note.new(0.0, 0.03, 0.0, 0.0, Wave.NOISE, 0.1), Note.new(0.0, 0.5, 1047.0, 1047.0, Wave.SQUARE, 0.16),
+				Note.new(0.0, 0.35, 2637.0, 2637.0, Wave.SINE, 0.12), Note.new(0.11, 0.7, 1568.0, 1568.0, Wave.SQUARE, 0.16),
+				Note.new(0.11, 0.45, 3951.0, 3951.0, Wave.SINE, 0.1)]
+		&"lantern":
+			# A clay Wind-Lantern brushed in passing: a soft, high chime.
+			return [Note.new(0.0, 0.8, 1760.0, 1760.0, Wave.SINE, 0.18), Note.new(0.0, 0.6, 2794.0, 2794.0, Wave.SINE, 0.08)]
+		&"shrine":
+			var spring: Array[Note] = _arpeggio([659.0, 880.0, 1109.0, 1319.0, 1760.0], 0.07, Wave.SINE, 0.3)
+			spring.append(Note.new(0.0, 0.5, 0.0, 0.0, Wave.NOISE, 0.08))
+			return spring
+		&"gale":
+			return [Note.new(0.0, 0.9, 0.0, 0.0, Wave.NOISE, 0.4), Note.new(0.0, 0.9, 180.0, 90.0, Wave.SINE, 0.25)]
+		&"bell":
+			# The Bronze Bridge-Bell: a deep strike and its long hum.
+			return [Note.new(0.0, 1.6, 196.0, 196.0, Wave.SINE, 0.5), Note.new(0.0, 1.2, 466.0, 466.0, Wave.SINE, 0.25),
+				Note.new(0.0, 0.9, 784.0, 784.0, Wave.SINE, 0.15), Note.new(0.0, 0.04, 0.0, 0.0, Wave.NOISE, 0.3)]
+		&"gate":
+			return [Note.new(0.0, 1.4, 70.0, 45.0, Wave.SAW, 0.35), Note.new(0.0, 1.4, 0.0, 0.0, Wave.NOISE, 0.2),
+				Note.new(1.0, 0.8, 392.0, 392.0, Wave.SINE, 0.3)]
+		&"camp_cleared":
+			return _arpeggio([523.0, 659.0, 784.0], 0.08, Wave.SQUARE, 0.2)
+		&"beam":
+			return [Note.new(0.0, 1.1, 0.0, 0.0, Wave.NOISE, 0.45), Note.new(0.0, 1.1, 110.0, 220.0, Wave.SAW, 0.3)]
 	return [Note.new(0.0, 0.03, 0.0, 0.0, Wave.NOISE, 0.2)]
 
 

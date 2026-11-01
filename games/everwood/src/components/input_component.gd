@@ -9,7 +9,7 @@
 ## component evaluates them for its own device only, so four players can share
 ## one machine. Device 0 is the keyboard and mouse; joypad n is device n + 1.
 ##
-## While a menu is open on this player's screen (the Shard Vendor), the same
+## While a menu is open on this player's screen (the Chime-Shrine), the same
 ## controller drives the menu instead of the character (menu_input).
 class_name InputComponent
 extends Node
@@ -422,7 +422,7 @@ func _issue(command: int) -> void:
 
 
 func _issue_attack(base: int) -> void:
-	# Light next to a stall uses it (opens the Shard Vendor) instead of swinging.
+	# Light next to the shrine or the desk uses it instead of swinging.
 	if base == CombatActionResource.Command.LIGHT and is_instance_valid(actor.interactable):
 		actor.interactable.interact(actor)
 		return

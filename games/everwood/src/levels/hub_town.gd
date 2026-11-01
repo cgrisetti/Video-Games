@@ -1,8 +1,8 @@
 ## Bramblebridge (06_WORLD_AND_CALLINGS.md §1), the hub village: a stepped-gable
 ## canal and watermill village where the party gathers (its files and network
 ## id keep the old name, Hub Town). Walk into the Raid Portal together to face
-## the Cairnsman in his Ring, spend the Dojo Shards from his
-## chest at the Shard Vendor, and change armor, weapon and Scribe Cards at the
+## the Cairnsman in his Ring, spend the Chimes from his
+## chest at the Chime-Shrine, and change armor, weapon and Scribe Cards at the
 ## Armory & Scribe Desk. Seating, hot-join and the split-screen grid come from
 ## LevelBase.
 class_name HubTown
@@ -12,7 +12,7 @@ extends LevelBase
 const DEMO_SPREAD: float = 1.1
 
 @onready var raid_portal: RaidPortal = $RaidPortal
-@onready var shard_vendor: ShardVendor = $ShardVendor
+@onready var chime_shrine: ChimeShrine = $ChimeShrine
 @onready var scribe_desk: ScribeDesk = $ScribeDesk
 
 
@@ -25,16 +25,16 @@ func level_title() -> String:
 
 
 func level_hint() -> String:
-	return "Raid Portal: face the Cairnsman · Shard Vendor: %d Dojo Shards · Scribe Desk: armor, weapons and cards" % PartyProgress.current.shards
+	return "Raid Portal: face the Cairnsman · Chime-Shrine: %d Chimes · Scribe Desk: armor, weapons and cards" % PartyProgress.current.chimes
 
 
 func _setup_level() -> void:
-	shard_vendor.menu_requested.connect(_on_vendor_menu_requested)
+	chime_shrine.menu_requested.connect(_on_shrine_menu_requested)
 	scribe_desk.menu_requested.connect(_on_desk_menu_requested)
 
 
-## Light at the stall opens the upgrade menu on that player's own screen.
-func _on_vendor_menu_requested(actor: ActorBase) -> void:
+## Light at the shrine opens the upgrade menu on that player's own screen.
+func _on_shrine_menu_requested(actor: ActorBase) -> void:
 	var hud: PlayerHUD = huds.get(actor.player_id) as PlayerHUD
 	if hud != null:
 		hud.open_upgrade_menu()

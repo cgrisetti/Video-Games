@@ -3,7 +3,7 @@
 ##   godot --headless --path . --script res://tools/build_levels.gd
 ##
 ## - Bramblebridge (hub_town.tscn): a safe walled village square with four
-##   stepped-gable houses, a fountain, the Shard Vendor's stall, the Armory &
+##   stepped-gable houses, a fountain, the Chime-Shrine, the Armory &
 ##   Scribe Desk, a lantern-lit lane from four spawn pads to the Raid Portal,
 ##   and behind it a canal with the footbridge the village is named for and a
 ##   watermill (06_WORLD_AND_CALLINGS.md §1).
@@ -19,7 +19,7 @@ const DOJO_PATH: String = "res://src/levels/dungeon_dojo.tscn"
 const HUB_SCRIPT: String = "res://src/levels/hub_town.gd"
 const DOJO_SCRIPT: String = "res://src/levels/dungeon_dojo.gd"
 const PORTAL_SCRIPT: String = "res://src/actors/raid_portal.gd"
-const VENDOR_SCRIPT: String = "res://src/actors/shard_vendor.gd"
+const SHRINE_SCRIPT: String = "res://src/actors/chime_shrine.gd"
 const WHEEL_SCRIPT: String = "res://src/actors/watermill_wheel.gd"
 const DESK_SCRIPT: String = "res://src/actors/scribe_desk.gd"
 const GRID_SCRIPT: String = "res://src/ui/split_screen_viewport_grid.gd"
@@ -90,7 +90,7 @@ const LANTERN_SPOTS: Array[Vector3] = [
 ]
 const LANTERN_COLOR: Color = Color(1.0, 0.8, 0.45)
 ## Across the lane from the fountain, its counter facing the lane.
-const VENDOR_POSITION: Vector3 = Vector3(8.8, 0.0, 0.0)
+const SHRINE_POSITION: Vector3 = Vector3(8.8, 0.0, 0.0)
 ## On the fountain's side, further up the lane, its desk facing the lane.
 const DESK_POSITION: Vector3 = Vector3(-8.0, 0.0, -5.5)
 
@@ -127,13 +127,13 @@ func _build_hub() -> Node3D:
 	_add_canal(town)
 	_add_watermill(town)
 	root.add_child(_portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Ring of the Cairnsman", RAID_PORTAL_COLOR, RAID_PORTAL_POSITION))
-	var vendor: Node3D = Node3D.new()
-	vendor.name = "ShardVendor"
-	vendor.set_script(load(VENDOR_SCRIPT))
-	vendor.position = VENDOR_POSITION
+	var shrine: Node3D = Node3D.new()
+	shrine.name = "ChimeShrine"
+	shrine.set_script(load(SHRINE_SCRIPT))
+	shrine.position = SHRINE_POSITION
 	# Its front (local -Z) turned to face west, toward the lane.
-	vendor.rotation = Vector3(0.0, PI * 0.5, 0.0)
-	root.add_child(vendor)
+	shrine.rotation = Vector3(0.0, PI * 0.5, 0.0)
+	root.add_child(shrine)
 	var desk: Node3D = Node3D.new()
 	desk.name = "ScribeDesk"
 	desk.set_script(load(DESK_SCRIPT))
