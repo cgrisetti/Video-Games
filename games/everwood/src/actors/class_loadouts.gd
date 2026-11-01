@@ -67,7 +67,7 @@ static func _shield_tank() -> PlayerClassResource:
 
 # --- Soul-Tether Healer -----------------------------------------------------
 # D-Pad binds a Soul Tether to a party member. Hearth-Linen and the Scribe
-# Staff; Sunlit Lance (Divine primer), Green Sanctuary, Homing Heal and
+# Staff; Sunlit Lance (Warm-Hearth primer), Green Sanctuary, Homing Heal and
 # Lifeline Pull.
 
 static func _soul_tether_healer() -> PlayerClassResource:
@@ -84,7 +84,7 @@ static func _soul_tether_healer() -> PlayerClassResource:
 
 # --- Flow DPS ---------------------------------------------------------------
 # The primer specialist. Ranger Leather and the Wind-Ash Bow; Rising Drive
-# (Kinetic), Frost Crescent (Elemental), Gale Rush (Celestial) and Tempest Flow.
+# (Iron-Root), Frost Crescent (Rime-Gale), Gale Rush (Star-Tide) and Tempest Flow.
 
 static func _flow_dps() -> PlayerClassResource:
 	var stats: CharacterStatsResource = CharacterStatsResource.new()
@@ -139,7 +139,7 @@ static func raid_boss_dummy() -> ClassLoadoutResource:
 
 	var loadout: ClassLoadoutResource = ClassLoadoutResource.new()
 	loadout.class_id = RAID_BOSS_DUMMY
-	loadout.display_name = "Dojo Warden"
+	loadout.display_name = BossDummy.DISPLAY_NAME
 	loadout.role = ClassLoadoutResource.Role.BOSS
 	loadout.body_color = BOSS_COLOR
 	loadout.stats = stats

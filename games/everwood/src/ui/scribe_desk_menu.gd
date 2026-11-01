@@ -303,7 +303,7 @@ func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
 	if _is_lead_row(row):
 		var slot: int = row - ROW_FIRST_LEAD
 		var lead: ScribeCardResource = catalog.card(draft.lead_ids[slot])
-		var seal: AspectSealResource = catalog.aspect_seal(lead.aspect)
+		var seal: ScribeSignResource = catalog.sign_seal(lead.scribe_sign)
 		return "%s · %s · %s · memory %d. %s" % [seal.display_name, lead.rarity_name(),
 			ScribeCardResource.VARIANT_NAMES[draft.lead_variants[slot]], lead.memory_cost(), lead.description]
 	if _is_link_row(row):
@@ -311,7 +311,7 @@ func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
 		if under == null:
 			return "Slide an Under-Card beneath this slot's lead card to change it with one verb."
 		return "Memory %d. %s" % [under.memory_cost(), under.description]
-	return "Back to Hub Town."
+	return "Back to Bramblebridge."
 
 
 func _item_name(id: StringName) -> String:

@@ -1,20 +1,21 @@
-## One of the four Magical Aspects a Scribe Card belongs to
-## (05_ARSENAL_AND_CARDS_GDD.md §3.2): the seal a primer stamps on an enemy,
-## and what a teammate's detonation of that seal does.
+## One of the Four Scribe Signs (06_WORLD_AND_CALLINGS.md §2; mechanics in
+## 05_ARSENAL_AND_CARDS_GDD.md §3.2): the seal a primer card stamps on an
+## enemy, and what a teammate's detonation of that seal does.
 ##
 ## A detonation is pure data: CombatDirector applies every non-zero field the
-## same way for any aspect (bonus poise, bonus damage with its burst radius,
-## a party heal, party stamina and pips), so a new aspect needs no new code.
-class_name AspectSealResource
+## same way for any Sign (bonus poise, bonus damage with its burst radius, a
+## party heal, party stamina and pips), so a new Sign needs no new code.
+class_name ScribeSignResource
 extends Resource
 
-enum CardAspect { NONE, KINETIC, ELEMENTAL, DIVINE, CELESTIAL }
-## The geometric figure drawn in the aspect's floor seal.
+enum Sign { NONE, SIGN_IRON_ROOT, SIGN_RIME_GALE, SIGN_WARM_HEARTH, SIGN_STAR_TIDE }
+## The geometric figure drawn in the Sign's floor seal.
 enum Glyph { RING, GEAR, STAR, SUN, MOON }
 
-@export var aspect: CardAspect = CardAspect.NONE
+@export var scribe_sign: Sign = Sign.NONE
+## The Sign's short name: "Iron-Root".
 @export var display_name: String = ""
-## The seal's look: "Amber Gear", "Violet Moon-Ring".
+## How the seal reads on screen: "Sign of Iron-Root".
 @export var seal_name: String = ""
 ## What a teammate's heavy turns the seal into: "SHATTERPOINT".
 @export var detonation_name: String = ""

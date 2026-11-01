@@ -15,8 +15,8 @@ const BOOK_PAGE_SIZE: Vector3 = Vector3(0.42, 0.04, 0.56)
 const BOOK_TILT: float = 0.18
 const WOOD_COLOR: Color = Color(0.42, 0.27, 0.16)
 const PAGE_COLOR: Color = Color(0.96, 0.92, 0.8)
-## Three cards float and turn over the stand, one in each starter aspect's colour.
-const STAND_CARD_COLORS: Array[Color] = [Color(1.0, 0.62, 0.25), Color(0.55, 0.85, 1.0), Color(0.72, 0.55, 1.0)]
+## Three cards float and turn over the stand, in the Iron-Root, Rime-Gale and Star-Tide colours.
+const STAND_CARD_COLORS: Array[Color] = [Color(0.93, 0.6, 0.22), Color(0.35, 0.72, 0.95), Color(0.6, 0.45, 0.95)]
 const STAND_CARD_SIZE: Vector3 = Vector3(0.28, 0.4, 0.012)
 const STAND_HEIGHT: float = 1.55
 const STAND_SPIN: float = 0.8

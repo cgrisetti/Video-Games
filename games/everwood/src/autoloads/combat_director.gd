@@ -3,10 +3,10 @@
 ## - Local hit-stop: a landed blow freezes just the attacker and target for
 ##   60 ms, scaled per action. No global pause, so other split-screen players
 ##   keep moving.
-## - Aspect Seals (05_ARSENAL_AND_CARDS_GDD.md §3.2): a primer card stamps its
-##   aspect's seal on the boss and a *teammate's* heavy detonates it. What a
-##   detonation does is data on the AspectSealResource, applied the same way
-##   for every aspect; a different role or a different aspect makes it a
+## - Scribe Signs (06_WORLD_AND_CALLINGS.md §2, 05 GDD §3.2): a primer card stamps its
+##   Sign's seal on the boss and a *teammate's* heavy detonates it. What a
+##   detonation does is data on the SignSealResource, applied the same way
+##   for every Sign; a different role or a different Sign makes it a
 ##   cross-harmony (x1.5).
 ## - Projectiles: the attacker's peer flies the real shot (from the level's
 ##   FxPool); other peers fly a look-alike named by action id.
@@ -42,7 +42,7 @@ signal card_invoked(caster: ActorBase, action: CombatActionResource, variant: in
 ## Phase B impact freeze (02_COMBAT_GDD.md §2); each action scales it.
 const BASE_HIT_STOP: float = 0.06
 const PRIMER_DURATION: float = 8.0
-## Detonated by a different role, or a different aspect, than the seal's.
+## Detonated by a different role, or a different Sign, than the seal's.
 const CROSS_HARMONY_MULTIPLIER: float = 1.5
 ## Hits that land after a flow-cancel fill resonance faster.
 const FLOW_RESONANCE_MULTIPLIER: float = 1.5
@@ -77,7 +77,7 @@ const ANNOUNCE_TEXT_SIZE: int = 54
 const FLOAT_TEXT_RISE: float = 1.4
 
 class PrimerRecord:
-	var primer: int = AspectSealResource.CardAspect.NONE
+	var primer: int = ScribeSignResource.Sign.NONE
 	var applier_id: StringName = &""
 	var applier_role: int = ClassLoadoutResource.Role.DPS
 	var expires_at: float = 0.0
@@ -312,7 +312,7 @@ func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> 
 	if target.is_boss():
 		if event.detonates:
 			_try_detonate(target, event)
-		if event.primer != AspectSealResource.CardAspect.NONE:
+		if event.primer != ScribeSignResource.Sign.NONE:
 			_apply_primer(target, event)
 	var outcome: int = target.receive_strike(event)
 	match outcome:
@@ -354,7 +354,7 @@ func _on_perfect_guard(defender: ActorBase, event: CombatEvent) -> void:
 	deliver(counter)
 
 
-# --- Aspect Seals ---------------------------------------------------------
+# --- Scribe Sign seals ----------------------------------------------------
 
 func _apply_primer(target: ActorBase, event: CombatEvent) -> void:
 	var record: PrimerRecord = PrimerRecord.new()
@@ -364,12 +364,12 @@ func _apply_primer(target: ActorBase, event: CombatEvent) -> void:
 	record.expires_at = game_time() + PRIMER_DURATION
 	_primers[target.get_instance_id()] = record
 	primer_applied.emit(target, event.primer)
-	var seal: AspectSealResource = ArsenalCatalog.current.aspect_seal(event.primer)
+	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(event.primer)
 	announce(_above(target) + Vector3.UP * 0.6, "%s seal" % seal.seal_name, seal.color)
 
 
 ## Adds the seal's detonation to this hit if a teammate stamped it. Seals last
-## 8 s. Every aspect goes through the same steps: whatever its seal's data says.
+## 8 s. Every Sign goes through the same steps: whatever its seal's data says.
 func _try_detonate(target: ActorBase, event: CombatEvent) -> void:
 	var key: int = target.get_instance_id()
 	if not _primers.has(key):
@@ -383,9 +383,9 @@ func _try_detonate(target: ActorBase, event: CombatEvent) -> void:
 		return
 	_primers.erase(key)
 	var cross: bool = record.applier_role != event.attacker_role \
-		or (event.aspect != AspectSealResource.CardAspect.NONE and event.aspect != record.primer)
+		or (event.scribe_sign != ScribeSignResource.Sign.NONE and event.scribe_sign != record.primer)
 	var multiplier: float = CROSS_HARMONY_MULTIPLIER if cross else 1.0
-	var seal: AspectSealResource = ArsenalCatalog.current.aspect_seal(record.primer)
+	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(record.primer)
 	event.poise_damage += seal.bonus_poise * multiplier
 	event.damage += seal.bonus_damage * multiplier
 	event.hit_stop_scale += seal.bonus_hit_stop
@@ -409,14 +409,14 @@ func _show_detonation(target_path: NodePath, primer: int, cross: bool, label: St
 	var target: ActorBase = _actor_at(target_path)
 	if target == null:
 		return
-	var seal: AspectSealResource = ArsenalCatalog.current.aspect_seal(primer)
+	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(primer)
 	show_float_text(_above(target) + Vector3.UP * 0.9, label, seal.color, ANNOUNCE_TEXT_SIZE)
 	if seal.sound != &"":
 		AudioCues.play(seal.sound)
 	synergy_detonated.emit(target, primer, cross, label)
 
 
-## Elemental Rupture's burst: the bonus also hits other enemies near the target.
+## Glacial Rupture's burst: the bonus also hits other enemies near the target.
 func _burst(target: ActorBase, event: CombatEvent, damage: float, radius: float) -> void:
 	for boss: ActorBase in _bosses:
 		if boss == target or not is_instance_valid(boss) or boss.global_position.distance_to(target.global_position) > radius:
@@ -434,7 +434,7 @@ func _burst(target: ActorBase, event: CombatEvent, damage: float, radius: float)
 
 
 ## Dawnburst and Astral Chorus: heals, stamina and pips for the party near the target.
-func _bless_party(target: ActorBase, event: CombatEvent, seal: AspectSealResource, multiplier: float) -> void:
+func _bless_party(target: ActorBase, event: CombatEvent, seal: ScribeSignResource, multiplier: float) -> void:
 	for member: ActorBase in party_actors():
 		if member.global_position.distance_to(target.global_position) > seal.party_radius:
 			continue
@@ -446,7 +446,7 @@ func _bless_party(target: ActorBase, event: CombatEvent, seal: AspectSealResourc
 
 ## Both family members behind a detonation earn resonance and get their own
 ## burst of light in the seal's colour, so everyone sees who teamed up.
-func _reward_synergy(record: PrimerRecord, event: CombatEvent, multiplier: float, seal: AspectSealResource) -> void:
+func _reward_synergy(record: PrimerRecord, event: CombatEvent, multiplier: float, seal: ScribeSignResource) -> void:
 	var amount: float = SYNERGY_RESONANCE_REWARD * multiplier
 	for partner_id: StringName in [record.applier_id, event.attacker_player_id]:
 		var partner: ActorBase = get_actor(partner_id)
@@ -466,13 +466,13 @@ func _pip_text(amount: float) -> String:
 	return "%.2f" % amount
 
 
-## The aspect whose seal is on `target` right now (CardAspect.NONE if none).
+## The Sign whose seal is on `target` right now (CardSign.NONE if none).
 func primer_on(target: ActorBase) -> int:
 	if target == null:
-		return AspectSealResource.CardAspect.NONE
+		return ScribeSignResource.Sign.NONE
 	var key: int = target.get_instance_id()
 	if not _primers.has(key) or game_time() > _primers[key].expires_at:
-		return AspectSealResource.CardAspect.NONE
+		return ScribeSignResource.Sign.NONE
 	return _primers[key].primer
 
 
@@ -586,7 +586,7 @@ func _show_invocation(caster: ActorBase, action: CombatActionResource) -> void:
 	if kit != null and action.grimoire_slot >= 0:
 		variant = kit.lead_variant(action.grimoire_slot)
 	var fx: ScribeInvocationFX = fx_pool.take(&"invocation", ScribeInvocationFX.make) as ScribeInvocationFX
-	fx.play(caster, ArsenalCatalog.current.aspect_seal(action.aspect), variant, action.windup_time, action.is_projectile())
+	fx.play(caster, ArsenalCatalog.current.sign_seal(action.scribe_sign), variant, action.windup_time, action.is_projectile())
 	card_invoked.emit(caster, action, variant)
 
 

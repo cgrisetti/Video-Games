@@ -257,8 +257,8 @@ func _refresh_boss() -> void:
 		title += " (defeated)"
 	elif boss.stats.is_knocked_down():
 		title += " (KNOCKED DOWN)"
-	if primer != AspectSealResource.CardAspect.NONE:
-		title += "  ·  %s seal" % ArsenalCatalog.current.aspect_seal(primer).seal_name
+	if primer != ScribeSignResource.Sign.NONE:
+		title += "  ·  %s seal" % ArsenalCatalog.current.sign_seal(primer).seal_name
 	_boss_label.text = title
 	_boss_health.max_value = boss.stats.stats.max_health
 	_boss_health.value = boss.stats.health
@@ -273,7 +273,7 @@ func _refresh_boss() -> void:
 		_cast_bar.value = boss.cast_progress()
 	var target_id: StringName = boss.threat.current_target if boss.threat != null else &""
 	if target_id == &"":
-		_aggro_label.text = "Walk up to the Warden to start the fight"
+		_aggro_label.text = "Walk up to the Cairnsman to start the fight"
 		_aggro_label.modulate = Color.WHITE
 	elif target_id == actor.player_id:
 		_aggro_label.text = "Aggro: on YOU" + ("" if actor.role() == ClassLoadoutResource.Role.TANK else "  (let the tank taunt it back)")

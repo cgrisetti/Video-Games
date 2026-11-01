@@ -580,11 +580,11 @@ func _squire_pick() -> int:
 					and target.threat.current_target != actor.player_id and actor.stats.resonance_pips() >= 1:
 				return CombatActionResource.Command.TRIGGER_R_SKILL
 		ClassLoadoutResource.Role.DPS:
-			if target != null and CombatDirector.current.primer_on(target) == AspectSealResource.CardAspect.NONE:
+			if target != null and CombatDirector.current.primer_on(target) == ScribeSignResource.Sign.NONE:
 				var primers: Array[int] = []
 				for slot: int in PRIMER_SLOTS:
 					var card: CombatActionResource = actor.loadout.card_action(slot)
-					if card != null and card.primer != AspectSealResource.CardAspect.NONE and _can_use(card.command, distance):
+					if card != null and card.primer != ScribeSignResource.Sign.NONE and _can_use(card.command, distance):
 						primers.append(card.command)
 				if not primers.is_empty():
 					_squire_primer_turn = (_squire_primer_turn + 1) % primers.size()

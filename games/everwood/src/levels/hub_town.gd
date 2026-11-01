@@ -1,5 +1,7 @@
-## Hub Town: the safe greybox plaza where the party gathers. Walk into the Raid
-## Portal together to enter the Dungeon Dojo, spend the Dojo Shards from its
+## Bramblebridge (06_WORLD_AND_CALLINGS.md §1), the hub village: a stepped-gable
+## canal and watermill village where the party gathers (its files and network
+## id keep the old name, Hub Town). Walk into the Raid Portal together to face
+## the Cairnsman in his Ring, spend the Dojo Shards from his
 ## chest at the Shard Vendor, and change armor, weapon and Scribe Cards at the
 ## Armory & Scribe Desk. Seating, hot-join and the split-screen grid come from
 ## LevelBase.
@@ -19,11 +21,11 @@ func instance_id() -> StringName:
 
 
 func level_title() -> String:
-	return "Hub Town"
+	return "Bramblebridge"
 
 
 func level_hint() -> String:
-	return "Raid Portal: fight the Dojo Warden · Shard Vendor: %d Dojo Shards · Scribe Desk: armor, weapons and cards" % PartyProgress.current.shards
+	return "Raid Portal: face the Cairnsman · Shard Vendor: %d Dojo Shards · Scribe Desk: armor, weapons and cards" % PartyProgress.current.shards
 
 
 func _setup_level() -> void:

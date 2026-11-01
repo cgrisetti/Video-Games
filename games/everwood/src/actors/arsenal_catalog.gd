@@ -1,4 +1,4 @@
-## The Arsenal Catalog (autoload "Arsenal"): every Aspect Seal, armor, weapon
+## The Arsenal Catalog (autoload "Arsenal"): every Scribe Sign, armor, weapon
 ## and Scribe Card in the game, indexed by StringName id
 ## (05_ARSENAL_AND_CARDS_GDD.md). Kits, the roster, save files and RPCs name
 ## things by id and look them up here, so every peer resolves an id to the
@@ -14,7 +14,7 @@ static var current: ArsenalCatalog
 
 ## Card resources saved as .tres files here are registered at startup too.
 const CARD_FOLDER: String = "res://data/cards/"
-## Odds of a chest card being a Standard, Shiny Foil or Astral Prism copy.
+## Odds of a chest card being a Plain Vellum, Gilded Leaf or Star-Inked Vellum copy.
 const VARIANT_ODDS: Array[float] = [0.6, 0.3, 0.1]
 
 # Armor
@@ -45,18 +45,18 @@ const EMBER_AEGIS: StringName = &"ember_aegis"
 const STARLIT_VOLLEY: StringName = &"starlit_volley"
 const DAWNBREAKER: StringName = &"dawnbreaker"
 # Under-cards
-const AMBER_GEAR_LINK: StringName = &"amber_gear_link"
-const AZURE_STAR_LINK: StringName = &"azure_star_link"
-const SUN_CREST_LINK: StringName = &"sun_crest_link"
-const MOON_RING_LINK: StringName = &"moon_ring_link"
+const IRON_ROOT_LINK: StringName = &"iron_root_link"
+const RIME_GALE_LINK: StringName = &"rime_gale_link"
+const WARM_HEARTH_LINK: StringName = &"warm_hearth_link"
+const STAR_TIDE_LINK: StringName = &"star_tide_link"
 
 const Cmd = CombatActionResource.Command
 const Fx = CombatActionResource.Effect
-const Aspect = AspectSealResource.CardAspect
+const Sign = ScribeSignResource.Sign
 const Slot = ScribeCardResource.GrimoireSlot
 const Part = PropPartResource.Shape
 
-var _aspects: Dictionary[int, AspectSealResource] = {}
+var _signs: Dictionary[int, ScribeSignResource] = {}
 var _items: Dictionary[StringName, EquipmentItemResource] = {}
 var _cards: Dictionary[StringName, ScribeCardResource] = {}
 # Registration order, so menus and drop rolls are the same on every peer.
@@ -65,7 +65,7 @@ var _card_order: Array[StringName] = []
 
 
 func _init() -> void:
-	_build_aspects()
+	_build_signs()
 	_build_armor()
 	_build_weapons()
 	_build_lead_cards()
@@ -84,8 +84,8 @@ func _exit_tree() -> void:
 
 # --- Lookups --------------------------------------------------------------
 
-func aspect_seal(aspect: int) -> AspectSealResource:
-	return _aspects.get(aspect, _aspects[Aspect.NONE])
+func sign_seal(scribe_sign: int) -> ScribeSignResource:
+	return _signs.get(scribe_sign, _signs[Sign.NONE])
 
 
 func item(id: StringName) -> EquipmentItemResource:
@@ -129,7 +129,7 @@ func under_cards() -> Array[ScribeCardResource]:
 	return list
 
 
-## How a card copy reads in menus and banners: "Moonfall Cleave (Rare, Shiny Foil)".
+## How a card copy reads in menus and banners: "Moonfall Cleave (Rare, Gilded Leaf)".
 func copy_name(copy_key: StringName) -> String:
 	var named: ScribeCardResource = card(ScribeCardResource.copy_card_id(copy_key))
 	if named == null:
@@ -183,8 +183,8 @@ func roll_variant(rng: RandomNumberGenerator) -> ScribeCardResource.CardVariant:
 
 # --- Registering ----------------------------------------------------------
 
-func register_aspect(seal: AspectSealResource) -> void:
-	_aspects[seal.aspect] = seal
+func register_sign(seal: ScribeSignResource) -> void:
+	_signs[seal.scribe_sign] = seal
 
 
 func register_item(added: EquipmentItemResource) -> void:
@@ -221,35 +221,39 @@ func _load_card_folder() -> void:
 				register_card(loaded)
 
 
-# --- Aspect Seals (05 GDD §3.2) -------------------------------------------
+# --- The Four Scribe Signs (06 GDD §2) -----------------------------------
 
-func _build_aspects() -> void:
-	register_aspect(_seal(Aspect.NONE, "Plain", "", "", Color(0.9, 0.9, 0.9), AspectSealResource.Glyph.RING, &""))
-	var kinetic: AspectSealResource = _seal(Aspect.KINETIC, "Kinetic", "Amber Gear", "SHATTERPOINT", Color(1.0, 0.62, 0.25),
-		AspectSealResource.Glyph.GEAR, &"seal_kinetic")
-	kinetic.bonus_poise = 45.0
-	kinetic.bonus_hit_stop = 1.0
-	register_aspect(kinetic)
-	var elemental: AspectSealResource = _seal(Aspect.ELEMENTAL, "Elemental", "Azure Frost-Star", "ELEMENTAL RUPTURE", Color(0.55, 0.85, 1.0),
-		AspectSealResource.Glyph.STAR, &"seal_elemental")
-	elemental.bonus_damage = 45.0
-	elemental.burst_radius = 4.0
-	register_aspect(elemental)
-	var divine: AspectSealResource = _seal(Aspect.DIVINE, "Divine", "Gold Sun-Crest", "DAWNBURST", Color(1.0, 0.9, 0.45),
-		AspectSealResource.Glyph.SUN, &"seal_divine")
-	divine.party_heal = 20.0
-	register_aspect(divine)
-	var celestial: AspectSealResource = _seal(Aspect.CELESTIAL, "Celestial", "Violet Moon-Ring", "ASTRAL CHORUS", Color(0.72, 0.55, 1.0),
-		AspectSealResource.Glyph.MOON, &"seal_celestial")
-	celestial.party_stamina = 25.0
-	celestial.party_pips = 0.5
-	register_aspect(celestial)
+func _build_signs() -> void:
+	register_sign(_seal(Sign.NONE, "Plain", "", "", Color(0.9, 0.9, 0.9), ScribeSignResource.Glyph.RING, &""))
+	# Iron-Root (amber / ochre): the poise and stagger lever.
+	var iron_root: ScribeSignResource = _seal(Sign.SIGN_IRON_ROOT, "Iron-Root", "Sign of Iron-Root", "SHATTERPOINT", Color(0.93, 0.6, 0.22),
+		ScribeSignResource.Glyph.GEAR, &"seal_iron_root")
+	iron_root.bonus_poise = 45.0
+	iron_root.bonus_hit_stop = 1.0
+	register_sign(iron_root)
+	# Rime-Gale (sea-azure): the elemental burst lever.
+	var rime_gale: ScribeSignResource = _seal(Sign.SIGN_RIME_GALE, "Rime-Gale", "Sign of Rime-Gale", "GLACIAL RUPTURE", Color(0.35, 0.72, 0.95),
+		ScribeSignResource.Glyph.STAR, &"seal_rime_gale")
+	rime_gale.bonus_damage = 45.0
+	rime_gale.burst_radius = 4.0
+	register_sign(rime_gale)
+	# Warm-Hearth (saffron-gold): the mending and shelter lever.
+	var warm_hearth: ScribeSignResource = _seal(Sign.SIGN_WARM_HEARTH, "Warm-Hearth", "Sign of Warm-Hearth", "DAWNBURST", Color(1.0, 0.76, 0.28),
+		ScribeSignResource.Glyph.SUN, &"seal_warm_hearth")
+	warm_hearth.party_heal = 20.0
+	register_sign(warm_hearth)
+	# Star-Tide (twilight-violet): the tempo and resource lever.
+	var star_tide: ScribeSignResource = _seal(Sign.SIGN_STAR_TIDE, "Star-Tide", "Sign of Star-Tide", "ASTRAL CHORUS", Color(0.6, 0.45, 0.95),
+		ScribeSignResource.Glyph.MOON, &"seal_star_tide")
+	star_tide.party_stamina = 25.0
+	star_tide.party_pips = 0.5
+	register_sign(star_tide)
 
 
-func _seal(aspect: Aspect, label: String, seal_name: String, detonation: String, color: Color,
-		glyph: AspectSealResource.Glyph, sound: StringName) -> AspectSealResource:
-	var seal: AspectSealResource = AspectSealResource.new()
-	seal.aspect = aspect
+func _seal(scribe_sign: Sign, label: String, seal_name: String, detonation: String, color: Color,
+		glyph: ScribeSignResource.Glyph, sound: StringName) -> ScribeSignResource:
+	var seal: ScribeSignResource = ScribeSignResource.new()
+	seal.scribe_sign = scribe_sign
 	seal.display_name = label
 	seal.seal_name = seal_name
 	seal.detonation_name = detonation
@@ -445,53 +449,53 @@ func _build_lead_cards() -> void:
 	charge.detonates = true
 	charge.hit_stop_scale = 1.5
 	charge.resonance_gain = 0.12
-	_lead(charge, Slot.FORWARD, Aspect.KINETIC, "Charge through the gap behind your shield. Detonates seals.")
+	_lead(charge, Slot.FORWARD, Sign.SIGN_IRON_ROOT, "Charge through the gap behind your shield. Detonates seals.")
 	var drive: CombatActionResource = _strike(RISING_DRIVE, "Rising Drive", Cmd.FORWARD_HEAVY, 0.24, 0.14, 0.5, 18.0, 16.0)
 	drive.poise_damage = 12.0
 	drive.lunge_distance = 3.5
-	drive.primer = Aspect.KINETIC
-	_lead(drive, Slot.FORWARD, Aspect.KINETIC, "A rising lunge that stamps an Amber Gear seal.")
+	drive.primer = Sign.SIGN_IRON_ROOT
+	_lead(drive, Slot.FORWARD, Sign.SIGN_IRON_ROOT, "A rising lunge that stamps the Sign of Iron-Root.")
 	var lance: CombatActionResource = _strike(SUNLIT_LANCE, "Sunlit Lance", Cmd.FORWARD_HEAVY, 0.2, 0.1, 0.35, 14.0, 6.0)
 	lance.reach = 2.6
 	lance.hit_radius = 1.6
-	lance.primer = Aspect.DIVINE
-	_lead(lance, Slot.FORWARD, Aspect.DIVINE, "A lance of morning light that stamps a Gold Sun-Crest seal.")
+	lance.primer = Sign.SIGN_WARM_HEARTH
+	_lead(lance, Slot.FORWARD, Sign.SIGN_WARM_HEARTH, "A lance of morning light that stamps the Sign of Warm-Hearth.")
 
 	# Back + Heavy: retreats, sanctuaries and counter primers.
 	var shadow: CombatActionResource = _support(SHADOW_SANCTUARY, "Shadow Sanctuary", Cmd.BACK_HEAVY, Fx.SHADOW_SANCTUARY, 0.35, 0.1, 0.5)
 	shadow.stamina_cost = 25.0
 	shadow.effect_radius = 7.0
 	shadow.effect_duration = 6.0
-	_lead(shadow, Slot.BACK, Aspect.CELESTIAL, "A shield cone behind you: allies inside take 60% less damage.", ScribeCardResource.Delivery.AT_CASTER)
+	_lead(shadow, Slot.BACK, Sign.SIGN_STAR_TIDE, "A shield cone behind you: allies inside take 60% less damage.", ScribeCardResource.Delivery.AT_CASTER)
 	var crescent: CombatActionResource = _strike(FROST_CRESCENT, "Frost Crescent", Cmd.BACK_HEAVY, 0.28, 0.16, 0.5, 18.0, 14.0)
 	crescent.lunge_distance = -1.5
 	crescent.reach = 1.4
 	crescent.hit_radius = 2.0
-	crescent.primer = Aspect.ELEMENTAL
-	_lead(crescent, Slot.BACK, Aspect.ELEMENTAL, "Step back through a frost arc that stamps an Azure Frost-Star seal.")
+	crescent.primer = Sign.SIGN_RIME_GALE
+	_lead(crescent, Slot.BACK, Sign.SIGN_RIME_GALE, "Step back through a frost arc that stamps the Sign of Rime-Gale.")
 	var ring: CombatActionResource = _support(GREEN_SANCTUARY, "Green Sanctuary", Cmd.BACK_HEAVY, Fx.GREEN_SANCTUARY, 0.3, 0.1, 0.45)
 	ring.resonance_cost = 1
 	ring.heal_amount = 8.0
 	ring.effect_radius = 4.5
 	ring.effect_duration = 6.0
-	_lead(ring, Slot.BACK, Aspect.DIVINE, "A healing ring on the floor (1 pip).", ScribeCardResource.Delivery.AT_CASTER)
+	_lead(ring, Slot.BACK, Sign.SIGN_WARM_HEARTH, "A healing ring on the floor (1 pip).", ScribeCardResource.Delivery.AT_CASTER)
 
 	# R: the signature role card.
 	var taunt: CombatActionResource = _support(TAUNT, "Taunt", Cmd.TRIGGER_R_SKILL, Fx.TAUNT, 0.2, 0.1, 0.3)
 	taunt.resonance_cost = 1
 	taunt.effect_duration = 6.0
-	_lead(taunt, Slot.SIGNATURE, Aspect.KINETIC, "Lock the boss onto you for 6 s (1 pip).", ScribeCardResource.Delivery.AT_CASTER)
+	_lead(taunt, Slot.SIGNATURE, Sign.SIGN_IRON_ROOT, "Lock the boss onto you for 6 s (1 pip).", ScribeCardResource.Delivery.AT_CASTER)
 	var heal: CombatActionResource = _support(HOMING_HEAL, "Homing Heal", Cmd.TRIGGER_R_SKILL, Fx.HOMING_HEAL, 0.12, 0.05, 0.3)
 	heal.stamina_cost = 12.0
 	heal.heal_amount = 22.0
-	var heal_card: ScribeCardResource = _lead(heal, Slot.SIGNATURE, Aspect.DIVINE, "A heal that flies down your Soul Tether.", ScribeCardResource.Delivery.AT_CASTER)
+	var heal_card: ScribeCardResource = _lead(heal, Slot.SIGNATURE, Sign.SIGN_WARM_HEARTH, "A heal that flies down your Soul Tether.", ScribeCardResource.Delivery.AT_CASTER)
 	heal_card.needs_soul_tether = true
 	var rush: CombatActionResource = _strike(GALE_RUSH, "Gale Rush", Cmd.TRIGGER_R_SKILL, 0.1, 0.2, 0.4, 0.0, 22.0)
 	rush.resonance_cost = 1
 	rush.lunge_distance = 6.0
 	rush.resonance_gain = 0.0
-	rush.primer = Aspect.CELESTIAL
-	_lead(rush, Slot.SIGNATURE, Aspect.CELESTIAL, "A moonlit dash that stamps a Violet Moon-Ring seal (1 pip).")
+	rush.primer = Sign.SIGN_STAR_TIDE
+	_lead(rush, Slot.SIGNATURE, Sign.SIGN_STAR_TIDE, "A moonlit dash that stamps the Sign of Star-Tide (1 pip).")
 
 	# L + R: the ultimate.
 	var quake: CombatActionResource = _strike(BULWARK_QUAKE, "Bulwark Quake", Cmd.TRIGGER_BOTH_ULT, 0.6, 0.2, 0.8, 0.0, 30.0)
@@ -502,11 +506,11 @@ func _build_lead_cards() -> void:
 	quake.detonates = true
 	quake.hit_stop_scale = 2.5
 	quake.resonance_gain = 0.0
-	_lead(quake, Slot.ULTIMATE, Aspect.KINETIC, "Slam the ground around you; detonates seals (3 pips).", ScribeCardResource.Delivery.AT_CASTER)
+	_lead(quake, Slot.ULTIMATE, Sign.SIGN_IRON_ROOT, "Slam the ground around you; detonates seals (3 pips).", ScribeCardResource.Delivery.AT_CASTER)
 	var pull: CombatActionResource = _support(LIFELINE_PULL, "Lifeline Pull", Cmd.TRIGGER_BOTH_ULT, Fx.LIFELINE_PULL, 0.12, 0.08, 0.4)
 	pull.resonance_cost = 2
 	pull.effect_duration = 0.4
-	var pull_card: ScribeCardResource = _lead(pull, Slot.ULTIMATE, Aspect.DIVINE, "Yank your tethered ally to safety (2 pips).", ScribeCardResource.Delivery.AT_CASTER)
+	var pull_card: ScribeCardResource = _lead(pull, Slot.ULTIMATE, Sign.SIGN_WARM_HEARTH, "Yank your tethered ally to safety (2 pips).", ScribeCardResource.Delivery.AT_CASTER)
 	pull_card.needs_soul_tether = true
 	var tempest: CombatActionResource = _strike(TEMPEST_FLOW, "Tempest Flow", Cmd.TRIGGER_BOTH_ULT, 0.5, 0.3, 0.7, 0.0, 55.0)
 	tempest.resonance_cost = 3
@@ -515,26 +519,26 @@ func _build_lead_cards() -> void:
 	tempest.hit_radius = 3.2
 	tempest.hit_stop_scale = 2.5
 	tempest.resonance_gain = 0.0
-	_lead(tempest, Slot.ULTIMATE, Aspect.ELEMENTAL, "A whirling storm of cuts all around you (3 pips).", ScribeCardResource.Delivery.AT_CASTER)
+	_lead(tempest, Slot.ULTIMATE, Sign.SIGN_RIME_GALE, "A whirling storm of cuts all around you (3 pips).", ScribeCardResource.Delivery.AT_CASTER)
 
 	# Boss drops: collected from the Dojo Warden's chest, not in the starter kit.
 	var moonfall: CombatActionResource = _strike(MOONFALL_CLEAVE, "Moonfall Cleave", Cmd.FORWARD_HEAVY, 0.3, 0.15, 0.5, 20.0, 24.0)
 	moonfall.poise_damage = 18.0
 	moonfall.lunge_distance = 3.0
-	moonfall.primer = Aspect.CELESTIAL
+	moonfall.primer = Sign.SIGN_STAR_TIDE
 	moonfall.hit_stop_scale = 1.6
-	_boss_drop(_lead(moonfall, Slot.FORWARD, Aspect.CELESTIAL, "A falling crescent that stamps a Violet Moon-Ring seal."), ScribeCardResource.CardRarity.RARE)
+	_boss_drop(_lead(moonfall, Slot.FORWARD, Sign.SIGN_STAR_TIDE, "A falling crescent that stamps the Sign of Star-Tide."), ScribeCardResource.CardRarity.RARE)
 	var aegis: CombatActionResource = _support(EMBER_AEGIS, "Aegis of Embers", Cmd.BACK_HEAVY, Fx.SHADOW_SANCTUARY, 0.3, 0.1, 0.45)
 	aegis.stamina_cost = 22.0
 	aegis.effect_radius = 8.5
 	aegis.effect_duration = 7.0
-	_boss_drop(_lead(aegis, Slot.BACK, Aspect.KINETIC, "A wider, longer shield cone of banked embers.", ScribeCardResource.Delivery.AT_CASTER),
+	_boss_drop(_lead(aegis, Slot.BACK, Sign.SIGN_IRON_ROOT, "A wider, longer shield cone of banked embers.", ScribeCardResource.Delivery.AT_CASTER),
 		ScribeCardResource.CardRarity.RARE)
 	var volley: CombatActionResource = _strike(STARLIT_VOLLEY, "Starlit Volley", Cmd.TRIGGER_R_SKILL, 0.15, 0.15, 0.4, 0.0, 26.0)
 	volley.resonance_cost = 1
-	volley.primer = Aspect.ELEMENTAL
+	volley.primer = Sign.SIGN_RIME_GALE
 	volley.resonance_gain = 0.0
-	_boss_drop(_lead(volley, Slot.SIGNATURE, Aspect.ELEMENTAL, "A burst of starlight that stamps an Azure Frost-Star seal (1 pip)."),
+	_boss_drop(_lead(volley, Slot.SIGNATURE, Sign.SIGN_RIME_GALE, "A burst of starlight that stamps the Sign of Rime-Gale (1 pip)."),
 		ScribeCardResource.CardRarity.RARE)
 	var dawn: CombatActionResource = _strike(DAWNBREAKER, "Dawnbreaker", Cmd.TRIGGER_BOTH_ULT, 0.55, 0.25, 0.75, 0.0, 48.0)
 	dawn.resonance_cost = 3
@@ -542,16 +546,16 @@ func _build_lead_cards() -> void:
 	dawn.reach = 0.0
 	dawn.hit_radius = 4.0
 	dawn.detonates = true
-	dawn.primer = Aspect.DIVINE
+	dawn.primer = Sign.SIGN_WARM_HEARTH
 	dawn.hit_stop_scale = 2.6
 	dawn.resonance_gain = 0.0
-	var dawn_card: ScribeCardResource = _lead(dawn, Slot.ULTIMATE, Aspect.DIVINE,
-		"A sunrise around you: detonates the old seal and stamps a Gold Sun-Crest (3 pips).", ScribeCardResource.Delivery.AT_CASTER)
+	var dawn_card: ScribeCardResource = _lead(dawn, Slot.ULTIMATE, Sign.SIGN_WARM_HEARTH,
+		"A sunrise around you: detonates the old seal and stamps the Sign of Warm-Hearth (3 pips).", ScribeCardResource.Delivery.AT_CASTER)
 	_boss_drop(dawn_card, ScribeCardResource.CardRarity.LEGENDARY)
 	dawn_card.drop_weight = 1.0
 
 
-func _lead(template: CombatActionResource, slot: Slot, aspect: Aspect, blurb: String,
+func _lead(template: CombatActionResource, slot: Slot, scribe_sign: Sign, blurb: String,
 		delivery: ScribeCardResource.Delivery = ScribeCardResource.Delivery.THROUGH_WEAPON) -> ScribeCardResource:
 	var lead: ScribeCardResource = ScribeCardResource.new()
 	lead.card_id = template.action_id
@@ -559,10 +563,10 @@ func _lead(template: CombatActionResource, slot: Slot, aspect: Aspect, blurb: St
 	lead.description = blurb
 	lead.kind = ScribeCardResource.CardKind.LEAD
 	lead.slot = slot
-	lead.aspect = aspect
+	lead.scribe_sign = scribe_sign
 	lead.delivery = delivery
 	lead.template = template
-	lead.template.aspect = aspect
+	lead.template.scribe_sign = scribe_sign
 	lead.rarity = ScribeCardResource.CardRarity.BASIC
 	lead.starter = true
 	lead.drop_weight = 1.0
@@ -579,23 +583,23 @@ func _boss_drop(lead: ScribeCardResource, rarity: ScribeCardResource.CardRarity)
 # --- Under-cards (05 GDD §3.1) --------------------------------------------
 
 func _build_under_cards() -> void:
-	_under(AMBER_GEAR_LINK, "Amber Gear Link", Aspect.KINETIC, ScribeCardResource.UnderVerb.POTENCY_SURGE,
+	_under(IRON_ROOT_LINK, "Iron-Root Link", Sign.SIGN_IRON_ROOT, ScribeCardResource.UnderVerb.POTENCY_SURGE,
 		"Potency Surge: +20% damage, healing and poise.")
-	_under(AZURE_STAR_LINK, "Azure Star Link", Aspect.ELEMENTAL, ScribeCardResource.UnderVerb.ASPECT_INFUSION,
-		"Aspect Infusion: the card's hits stamp an Azure Frost-Star seal.")
-	_under(SUN_CREST_LINK, "Sun-Crest Link", Aspect.DIVINE, ScribeCardResource.UnderVerb.HEARTH_ECHO,
+	_under(RIME_GALE_LINK, "Rime-Gale Link", Sign.SIGN_RIME_GALE, ScribeCardResource.UnderVerb.SIGN_INFUSION,
+		"Sign Infusion: the card's hits stamp the Sign of Rime-Gale.")
+	_under(WARM_HEARTH_LINK, "Warm-Hearth Link", Sign.SIGN_WARM_HEARTH, ScribeCardResource.UnderVerb.HEARTH_ECHO,
 		"Hearth Echo: heals bounce 50% to a friend, sanctuaries restore stamina, hits return stamina.")
-	_under(MOON_RING_LINK, "Moon-Ring Link", Aspect.CELESTIAL, ScribeCardResource.UnderVerb.ASPECT_INFUSION,
-		"Aspect Infusion: the card's hits stamp a Violet Moon-Ring seal.")
+	_under(STAR_TIDE_LINK, "Star-Tide Link", Sign.SIGN_STAR_TIDE, ScribeCardResource.UnderVerb.SIGN_INFUSION,
+		"Sign Infusion: the card's hits stamp the Sign of Star-Tide.")
 
 
-func _under(id: StringName, label: String, aspect: Aspect, verb: ScribeCardResource.UnderVerb, blurb: String) -> void:
+func _under(id: StringName, label: String, scribe_sign: Sign, verb: ScribeCardResource.UnderVerb, blurb: String) -> void:
 	var under: ScribeCardResource = ScribeCardResource.new()
 	under.card_id = id
 	under.display_name = label
 	under.description = blurb
 	under.kind = ScribeCardResource.CardKind.UNDER
-	under.aspect = aspect
+	under.scribe_sign = scribe_sign
 	under.verb = verb
 	under.rarity = ScribeCardResource.CardRarity.COMMON
 	under.starter = true

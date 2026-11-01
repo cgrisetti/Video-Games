@@ -2,12 +2,12 @@
 ## hand-edits their sub-resources. Re-run after changing anything here:
 ##   godot --headless --path . --script res://tools/build_levels.gd
 ##
-## - Hub Town (hub_town.tscn): a safe walled plaza with four houses, a fountain,
-##   the Shard Vendor's stall, the Armory & Scribe Desk, and a lantern-lit lane
-##   from four spawn pads to the Raid Portal to the Dojo.
-## - Dungeon Dojo (dungeon_dojo.tscn): a 44 m greybox arena with low walls, six
-##   pillars for cover in a ring round the boss, four spawn pads and an exit
-##   portal back to Hub Town.
+## - Bramblebridge (hub_town.tscn): a safe walled village square with four
+##   houses, a fountain, the Shard Vendor's stall, the Armory & Scribe Desk, and
+##   a lantern-lit lane from four spawn pads to the Raid Portal.
+## - The Ring of the Cairnsman (dungeon_dojo.tscn): a 44 m greybox arena with low
+##   walls, six pillars for cover in a ring round the boss, four spawn pads and
+##   an exit portal back to Bramblebridge.
 ## Both share the same skeleton (Actors, Telegraphs, Effects, SpawnPoints and
 ## the split-screen Screens), which LevelBase expects.
 extends SceneTree
@@ -97,7 +97,7 @@ func _build_hub() -> Node3D:
 	town.add_child(_fountain())
 	for index: int in LANTERN_SPOTS.size():
 		town.add_child(_lantern("Lantern%d" % (index + 1), LANTERN_SPOTS[index]))
-	root.add_child(_portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: Dojo Warden", RAID_PORTAL_COLOR, RAID_PORTAL_POSITION))
+	root.add_child(_portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Ring of the Cairnsman", RAID_PORTAL_COLOR, RAID_PORTAL_POSITION))
 	var vendor: Node3D = Node3D.new()
 	vendor.name = "ShardVendor"
 	vendor.set_script(load(VENDOR_SCRIPT))
@@ -208,7 +208,7 @@ func _build_dojo() -> Node3D:
 	boss_spawn.rotation = Vector3(0.0, PI, 0.0)
 	boss_spawn.add_child(_pad("Ring", 2.2, Color(0.35, 0.18, 0.2)))
 	root.add_child(boss_spawn)
-	root.add_child(_portal("ExitPortal", InstanceManager.HUB_TOWN, "Exit: Hub Town", EXIT_PORTAL_COLOR, EXIT_PORTAL_POSITION))
+	root.add_child(_portal("ExitPortal", InstanceManager.HUB_TOWN, "Exit: Bramblebridge", EXIT_PORTAL_COLOR, EXIT_PORTAL_POSITION))
 	_add_level_skeleton(root, DOJO_SPAWN_Z)
 	return root
 

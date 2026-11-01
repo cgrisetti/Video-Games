@@ -289,7 +289,7 @@ func _ultimate() -> bool:
 ## A teammate primed the boss: close in and cash it in with a heavy.
 func _detonate() -> bool:
 	var boss: BossDummy = _boss_in_fight()
-	if boss == null or CombatDirector.current.primer_on(boss) == AspectSealResource.CardAspect.NONE:
+	if boss == null or CombatDirector.current.primer_on(boss) == ScribeSignResource.Sign.NONE:
 		return false
 	var heavy: CombatActionResource = actor.loadout.opener_for(CombatActionResource.Command.HEAVY)
 	var stand_off: float = DETONATE_DISTANCE if heavy == null or not heavy.is_projectile() else heavy.reach_distance() * RANGED_POST_SHARE
@@ -300,15 +300,15 @@ func _detonate() -> bool:
 
 
 ## No seal on the boss: stamp one for a teammate, cycling through whichever
-## Grimoire cards prime (Kinetic, Elemental, Celestial for the starter DPS).
+## Grimoire cards prime (Iron-Root, Rime-Gale and Star-Tide for the starter DPS).
 func _prime() -> bool:
 	var boss: BossDummy = _boss_in_fight()
-	if boss == null or CombatDirector.current.primer_on(boss) != AspectSealResource.CardAspect.NONE or actor.stats.stamina < STAMINA_RESERVE:
+	if boss == null or CombatDirector.current.primer_on(boss) != ScribeSignResource.Sign.NONE or actor.stats.stamina < STAMINA_RESERVE:
 		return false
 	var primers: Array[int] = []
 	for slot: int in InputComponent.PRIMER_SLOTS:
 		var card: CombatActionResource = actor.loadout.card_action(slot)
-		if card != null and card.primer != AspectSealResource.CardAspect.NONE and actor.stats.can_afford(card) and _in_reach(boss, card.command):
+		if card != null and card.primer != ScribeSignResource.Sign.NONE and actor.stats.can_afford(card) and _in_reach(boss, card.command):
 			primers.append(card.command)
 	if primers.is_empty():
 		return false

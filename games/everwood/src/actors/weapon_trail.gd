@@ -1,8 +1,8 @@
 ## The ribbon a melee weapon draws through a rune-wreathed strike: a Scribe
 ## Card swung through a sword or an axe (05 GDD §4.3). While the strike is
 ## live it sweeps the weapon through an arc and samples its base and tip each
-## frame, drawing the last few samples as a fading strip in the card's aspect
-## colour (gold for a Shiny Foil copy). It reads the actor's synced current
+## frame, drawing the last few samples as a fading strip in the card's Sign
+## colour (gold for a Gilded Leaf copy). It reads the actor's synced current
 ## action, so every peer draws it.
 class_name WeaponTrail
 extends MeshInstance3D
@@ -105,7 +105,7 @@ func _rebuild() -> void:
 
 
 func _colour_for(action: CombatActionResource) -> Color:
-	var colour: Color = ArsenalCatalog.current.aspect_seal(action.aspect).color
+	var colour: Color = ArsenalCatalog.current.sign_seal(action.scribe_sign).color
 	var kit: EquipmentLoadoutResource = actor.loadout.kit
 	if action.grimoire_slot >= 0 and kit != null and kit.lead_variant(action.grimoire_slot) == ScribeCardResource.CardVariant.SHINY_FOIL:
 		colour = SHINY_COLOR

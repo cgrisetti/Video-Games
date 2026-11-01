@@ -1,4 +1,4 @@
-## One luminous footprint an Astral Prism card leaves behind its caster
+## One luminous footprint a Star-Inked Vellum card leaves behind its caster
 ## (05 GDD §3.3): a small glowing oval that fades away. Pooled.
 class_name GlowFootprint
 extends PooledFx

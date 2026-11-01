@@ -28,9 +28,9 @@ var resonance: float = 0.0
 var stamina: float = 0.0
 ## A heal's Hearth Echo: this share bounces on to the next most hurt ally.
 var echo: float = 0.0
-var primer: int = AspectSealResource.CardAspect.NONE
-## The striking action's own aspect (a detonation by a different aspect is a cross-harmony).
-var aspect: int = AspectSealResource.CardAspect.NONE
+var primer: int = ScribeSignResource.Sign.NONE
+## The striking action's own Sign (a detonation by a different Sign is a cross-harmony).
+var scribe_sign: int = ScribeSignResource.Sign.NONE
 var detonates: bool = false
 var hit_stop_scale: float = 1.0
 ## Taunt lock or pull time, in seconds.
@@ -62,7 +62,7 @@ func fill_from_action(attacker: ActorBase, action: CombatActionResource) -> void
 	poise_damage = action.poise_damage
 	threat = action.damage * action.threat_multiplier * attacker.loadout.stats.threat_modifier
 	primer = action.primer
-	aspect = action.aspect
+	scribe_sign = action.scribe_sign
 	detonates = action.detonates
 	hit_stop_scale = action.hit_stop_scale
 	reach = action.reach_distance()
@@ -103,7 +103,7 @@ func to_dict() -> Dictionary:
 		"stamina": stamina,
 		"echo": echo,
 		"primer": primer,
-		"aspect": aspect,
+		"scribe_sign": scribe_sign,
 		"detonates": detonates,
 		"hit_stop_scale": hit_stop_scale,
 		"duration": duration,
@@ -129,8 +129,8 @@ static func from_dict(data: Dictionary) -> CombatEvent:
 	event.resonance = float(data.get("resonance", 0.0))
 	event.stamina = float(data.get("stamina", 0.0))
 	event.echo = float(data.get("echo", 0.0))
-	event.primer = int(data.get("primer", AspectSealResource.CardAspect.NONE))
-	event.aspect = int(data.get("aspect", AspectSealResource.CardAspect.NONE))
+	event.primer = int(data.get("primer", ScribeSignResource.Sign.NONE))
+	event.scribe_sign = int(data.get("scribe_sign", ScribeSignResource.Sign.NONE))
 	event.detonates = bool(data.get("detonates", false))
 	event.hit_stop_scale = float(data.get("hit_stop_scale", 1.0))
 	event.duration = float(data.get("duration", 0.0))

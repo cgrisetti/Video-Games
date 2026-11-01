@@ -71,12 +71,12 @@ enum Delivery { MELEE, PROJECTILE }
 ## How far in front of the actor the hitbox centre sits (0 = around the actor).
 @export var reach: float = 1.6
 @export var hit_radius: float = 1.2
-## Stamps this aspect's seal on the target (a teammate's heavy detonates it).
-@export var primer: AspectSealResource.CardAspect = AspectSealResource.CardAspect.NONE
+## Stamps this Sign's seal on the target (a teammate's heavy detonates it).
+@export var primer: ScribeSignResource.Sign = ScribeSignResource.Sign.NONE
 @export var detonates: bool = false
-## The action's own aspect: a detonation by a different aspect than the seal's
+## The action's own Sign: a detonation by a different Sign than the seal's
 ## is a cross-harmony (x1.5). Also colours its rune effects.
-@export var aspect: AspectSealResource.CardAspect = AspectSealResource.CardAspect.NONE
+@export var scribe_sign: ScribeSignResource.Sign = ScribeSignResource.Sign.NONE
 @export var delivery: Delivery = Delivery.MELEE
 
 @export_group("Projectile")

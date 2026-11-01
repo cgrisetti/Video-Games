@@ -1,8 +1,10 @@
-## The Dungeon Dojo: a greybox raid instance with the first boss, the Dojo
-## Warden, and an exit portal back to Hub Town. Seating, hot-join and the
-## split-screen grid come from LevelBase; this adds the boss and the victory.
+## The Ring of the Cairnsman (06_WORLD_AND_CALLINGS.md §1): the greybox raid
+## arena of the first boss, The Cairnsman of Doverslap, with an exit portal back
+## to Bramblebridge (its files and network id keep the old name, Dungeon Dojo).
+## Seating, hot-join and the split-screen grid come from LevelBase; this adds
+## the boss and the victory.
 ##
-## Beating the Warden plays 2 s of slow motion, puts a victory banner on every
+## Beating the Cairnsman plays 2 s of slow motion, puts a victory banner on every
 ## player's screen, raises the Grimoire a level and drops a reward chest.
 ## Opening the chest pays the party its Dojo Shards and a collectible Scribe
 ## Card (PartyProgress), and the gold exit portal calls everyone home.
@@ -40,7 +42,7 @@ func instance_id() -> StringName:
 
 
 func level_title() -> String:
-	return "Dungeon Dojo"
+	return "The Ring of the Cairnsman"
 
 
 func level_hint() -> String:
@@ -48,7 +50,7 @@ func level_hint() -> String:
 		return "Victory! The gold portal is taking you home"
 	if victory:
 		return "Victory! Walk up to the reward chest"
-	return "Stand in the exit portal together to go back to Hub Town"
+	return "Stand in the exit portal together to go back to Bramblebridge"
 
 
 ## AI companions fill missing trinity roles in here.

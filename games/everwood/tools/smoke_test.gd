@@ -4,19 +4,19 @@
 ##     under-card mutations, kit round trips and the Grimoire's rules
 ##   - the Input Map, the keyboard as Player 1 and pads hot-joining (faked
 ##     presses and plug-ins, one device at a time), D-Pad tethers and chords
-##   - party caps, then the Raid Portal into the Dungeon Dojo while hosting ENet
-##   - combat: flow-cancels and their windows, hit-stop, all four Aspect Seal
+##   - party caps, then the Raid Portal into the Ring of the Cairnsman while hosting ENet
+##   - combat: flow-cancels and their windows, hit-stop, all four Sign seal
 ##     detonations and their rewards and cues, bow and staff shots, the effect
 ##     pool, armor in play (Perfect Guard window, mitigation, rolls), strikes
 ##     crossing the network as ids, Hearth Echo, card invocations and their
-##     Standard / Shiny Foil / Astral Prism flourishes, poise, taunt, Perfect Guard,
+##     Plain Vellum / Gilded Leaf / Star-Inked Vellum flourishes, poise, taunt, Perfect Guard,
 ##     heals, Lifeline, Shadow Sanctuary, Squire auto-evade and auto-guard,
 ##     soak scaling for small parties, telegraphs, wipes
 ##   - AI companions backfilling missing roles, fighting by their Gambits and
 ##     stepping aside when people rejoin
 ##   - the victory: slow motion, the banner, the reward chest and its Dojo
 ##     Shards, and the gold portal home with the same ENet session still up
-##   - the Shard Vendor in Hub Town: its menu on the keyboard, upgrades for
+##   - the Shard Vendor in Bramblebridge: its menu on the keyboard, upgrades for
 ##     the whole party, refusals, saving and loading
 ##   - the Armory & Scribe Desk: weapon, armor and card swaps in place, the
 ##     chest's card, under-card links and the Grimoire's memory and levels,
@@ -40,7 +40,7 @@ const COMPANION_FIGHT_TIME: float = 8.0
 const TEST_SAVE_PATH: String = "user://smoke_test_progress.cfg"
 
 const Cmd = CombatActionResource.Command
-const Aspect = AspectSealResource.CardAspect
+const Sign = ScribeSignResource.Sign
 
 var dojo: DungeonDojo
 var boss: BossDummy
@@ -128,9 +128,12 @@ func _run() -> void:
 # --- Hub Town, Input Map, hot-join ----------------------------------------
 
 func _check_hub_and_input_map() -> void:
-	_check(current_scene is HubTown, "the game starts in Hub Town")
+	_check(current_scene is HubTown, "the game starts in Bramblebridge (Hub Town)")
 	_check(ProjectSettings.get_setting("application/run/main_scene") == HUB_SCENE, "Hub Town is the main scene")
 	_check(InstanceManager.current.instance_id == InstanceManager.HUB_TOWN and InstanceManager.current.is_live(), "Hub Town is the live instance")
+	var hub: HubTown = current_scene as HubTown
+	_check(hub.level_title() == "Bramblebridge" and hub.raid_portal.title.contains("Cairnsman"),
+		"the hub is Bramblebridge, and its Raid Portal leads to the Ring of the Cairnsman")
 	var actions: Array[StringName] = [InputComponent.ACTION_MOVE_LEFT, InputComponent.ACTION_MOVE_RIGHT,
 		InputComponent.ACTION_MOVE_FORWARD, InputComponent.ACTION_MOVE_BACK, InputComponent.ACTION_CAMERA_LEFT,
 		InputComponent.ACTION_CAMERA_RIGHT, InputComponent.ACTION_JOIN]
@@ -209,21 +212,21 @@ func _check_arsenal_catalog() -> void:
 		"Hunter Bow: 14 m snap-shots, an 18 m piercing draw, cards as 18 m rune arrows (forward lunges planted, back steps kept)")
 
 	var surged: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.DIRECTIONAL_FLOW_DPS)
-	surged.under_ids[0] = ArsenalCatalog.AMBER_GEAR_LINK
+	surged.under_ids[0] = ArsenalCatalog.IRON_ROOT_LINK
 	var surge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS, surged).card_action(0)
 	var plain_drive: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS).card_action(0)
 	_check(is_equal_approx(surge.damage, plain_drive.damage * 1.2) and is_equal_approx(surge.poise_damage, plain_drive.poise_damage * 1.2),
-		"Amber Gear Link (Potency Surge) makes Rising Drive hit 20% harder in damage and poise")
+		"Iron-Root Link (Potency Surge) makes Rising Drive hit 20% harder in damage and poise")
 	var infused: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
-	infused.under_ids[0] = ArsenalCatalog.MOON_RING_LINK
+	infused.under_ids[0] = ArsenalCatalog.STAR_TIDE_LINK
 	var charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, infused).card_action(0)
-	_check(charge.primer == Aspect.CELESTIAL and charge.aspect == Aspect.CELESTIAL, "Moon-Ring Link (Aspect Infusion) makes Shield Charge stamp a Violet Moon-Ring seal")
+	_check(charge.primer == Sign.SIGN_STAR_TIDE and charge.scribe_sign == Sign.SIGN_STAR_TIDE, "Star-Tide Link (Sign Infusion) makes Shield Charge stamp the Sign of Star-Tide")
 	var echoed: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SOUL_TETHER_HEALER)
-	echoed.under_ids[1] = ArsenalCatalog.SUN_CREST_LINK
-	echoed.under_ids[2] = ArsenalCatalog.SUN_CREST_LINK
+	echoed.under_ids[1] = ArsenalCatalog.WARM_HEARTH_LINK
+	echoed.under_ids[2] = ArsenalCatalog.WARM_HEARTH_LINK
 	var echo_kit: ClassLoadoutResource = ClassLoadouts.compose(ClassLoadouts.SOUL_TETHER_HEALER, echoed)
 	_check(is_equal_approx(echo_kit.card_action(2).echo_heal_ratio, 0.5) and is_equal_approx(echo_kit.card_action(1).zone_stamina_per_second, 8.0),
-		"Sun-Crest Link (Hearth Echo): Homing Heal bounces 50%, Green Sanctuary restores 8 stamina a second")
+		"Warm-Hearth Link (Hearth Echo): Homing Heal bounces 50%, Green Sanctuary restores 8 stamina a second")
 
 	var kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
 	var json_kit: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(JSON.parse_string(JSON.stringify(kit.to_dict())) as Dictionary)
@@ -245,7 +248,7 @@ func _check_arsenal_catalog() -> void:
 	var tank_class: PlayerClassResource = ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK)
 	var empty_binder: Dictionary[StringName, int] = {}
 	var linked: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
-	linked.under_ids[0] = ArsenalCatalog.AMBER_GEAR_LINK
+	linked.under_ids[0] = ArsenalCatalog.IRON_ROOT_LINK
 	var rare: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
 	rare.lead_ids[0] = ArsenalCatalog.MOONFALL_CLEAVE
 	_check(LoadoutComposer.grimoire_level(0) == 1 and LoadoutComposer.grimoire_level(9) == 5 and LoadoutComposer.under_slots(1) == 0
@@ -254,6 +257,7 @@ func _check_arsenal_catalog() -> void:
 	_check(LoadoutComposer.kit_problem(tank_class, kit, 1, empty_binder) == "" and LoadoutComposer.kit_problem(tank_class, linked, 1, empty_binder).contains("Lv 2")
 		and LoadoutComposer.kit_problem(tank_class, linked, 2, empty_binder) == "" and LoadoutComposer.kit_problem(tank_class, rare, 2, empty_binder).begins_with("Not in the binder"),
 		"the starter kit always fits; under-cards wait for their level; a boss card must be collected first")
+	_check_four_signs_and_finishes()
 	var drops: RandomNumberGenerator = RandomNumberGenerator.new()
 	drops.seed = 7
 	var seen_variants: Dictionary[int, bool] = {}
@@ -267,7 +271,47 @@ func _check_arsenal_catalog() -> void:
 		rare_seen = rare_seen or dropped.rarity >= ScribeCardResource.CardRarity.RARE
 		plain_starter = plain_starter or (dropped.starter and variant == ScribeCardResource.CardVariant.STANDARD)
 	_check(seen_variants.has(ScribeCardResource.CardVariant.SHINY_FOIL) and seen_variants.has(ScribeCardResource.CardVariant.ASTRAL_PRISM) and rare_seen and not plain_starter,
-		"boss chests drop Rare and Legendary cards and Shiny Foil or Astral Prism copies (never a plain starter card)")
+		"boss chests drop Rare and Legendary cards and Gilded Leaf or Star-Inked Vellum copies (never a Plain Vellum starter card)")
+
+
+## Phase 8 (06_WORLD_AND_CALLINGS.md §2): the Four Scribe Signs, their
+## detonations, the starter cards mapped onto them, and the card finishes.
+func _check_four_signs_and_finishes() -> void:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var expected: Dictionary[int, Array] = {
+		Sign.SIGN_IRON_ROOT: ["Sign of Iron-Root", "SHATTERPOINT"],
+		Sign.SIGN_RIME_GALE: ["Sign of Rime-Gale", "GLACIAL RUPTURE"],
+		Sign.SIGN_WARM_HEARTH: ["Sign of Warm-Hearth", "DAWNBURST"],
+		Sign.SIGN_STAR_TIDE: ["Sign of Star-Tide", "ASTRAL CHORUS"],
+	}
+	var named: bool = true
+	for scribe_sign: int in expected:
+		var seal: ScribeSignResource = catalog.sign_seal(scribe_sign)
+		named = named and seal.scribe_sign == scribe_sign and seal.seal_name == expected[scribe_sign][0] and seal.detonation_name == expected[scribe_sign][1]
+	_check(named, "the Four Signs: Iron-Root -> Shatterpoint, Rime-Gale -> Glacial Rupture, Warm-Hearth -> Dawnburst, Star-Tide -> Astral Chorus")
+	var iron_root: ScribeSignResource = catalog.sign_seal(Sign.SIGN_IRON_ROOT)
+	var rime_gale: ScribeSignResource = catalog.sign_seal(Sign.SIGN_RIME_GALE)
+	var warm_hearth: ScribeSignResource = catalog.sign_seal(Sign.SIGN_WARM_HEARTH)
+	var star_tide: ScribeSignResource = catalog.sign_seal(Sign.SIGN_STAR_TIDE)
+	_check(is_equal_approx(iron_root.bonus_poise, 45.0) and is_equal_approx(rime_gale.bonus_damage, 45.0) and is_equal_approx(warm_hearth.party_heal, 20.0)
+		and is_equal_approx(warm_hearth.party_radius, 10.0) and is_equal_approx(star_tide.party_stamina, 25.0) and is_equal_approx(star_tide.party_pips, 0.5),
+		"each Sign detonates for its §2 numbers: +45 poise, +45 burst damage, a 20 HP heal in 10 m, +25 stamina and +½ pip in 10 m")
+	var primed: Dictionary[int, bool] = {}
+	var every_card_signed: bool = true
+	for card: ScribeCardResource in catalog.cards():
+		every_card_signed = every_card_signed and card.scribe_sign != Sign.NONE
+		if card.is_lead() and card.starter and card.primes():
+			primed[card.template.primer] = true
+	_check(every_card_signed and primed.size() == 4, "every card belongs to one of the Four Signs, and each Sign has a starter primer card")
+	var linked: Dictionary[int, bool] = {}
+	for under: ScribeCardResource in catalog.under_cards():
+		linked[under.scribe_sign] = true
+	_check(linked.size() == 4, "one under-card for each Sign: Iron-Root, Rime-Gale, Warm-Hearth and Star-Tide Links")
+	_check(ScribeCardResource.VARIANT_NAMES == ["Plain Vellum", "Gilded Leaf", "Star-Inked Vellum"]
+		and catalog.copy_name(&"moonfall_cleave:shiny_foil") == "Moonfall Cleave (Rare, Gilded Leaf)",
+		"card finishes read as Plain Vellum, Gilded Leaf and Star-Inked Vellum")
+	_check(ScribeCardResource.copy_variant(&"gale_rush:astral_prism") == ScribeCardResource.CardVariant.ASTRAL_PRISM,
+		"save files keep the Phase 7 finish keys, so existing binders still load")
 
 
 ## A class composed with one item swapped in (&"" keeps the starter's).
@@ -419,7 +463,10 @@ func _check_portal_into_dojo() -> void:
 	_gather_on(hub.raid_portal, hub)
 	await _until_live_in(InstanceManager.DUNGEON_DOJO)
 	_check(_portal_countdowns == 1, "the whole party on the Raid Portal starts its countdown")
-	_check(current_scene is DungeonDojo and InstanceManager.current.instance_id == InstanceManager.DUNGEON_DOJO, "the portal moves the party into the Dungeon Dojo")
+	_check(current_scene is DungeonDojo and InstanceManager.current.instance_id == InstanceManager.DUNGEON_DOJO, "the portal moves the party into the Ring of the Cairnsman")
+	var ring: DungeonDojo = current_scene as DungeonDojo
+	_check(ring.level_title() == "The Ring of the Cairnsman" and ring.boss.display_name() == "The Cairnsman of Doverslap"
+		and ring.exit_portal.title == "Exit: Bramblebridge", "the arena is the Ring of the Cairnsman, its boss the Cairnsman of Doverslap, its exit to Bramblebridge")
 	_check(root.multiplayer.multiplayer_peer == session and network.is_online(), "the ENet session survives the instance change")
 	dojo = current_scene as DungeonDojo
 	boss = dojo.boss
@@ -496,29 +543,29 @@ func _check_flow_windows() -> void:
 	boss.set_physics_process(true)
 
 
-## All four Aspect Seals, each stamped by one class's card (fired through its
+## All four Sign seals, each stamped by one class's card (fired through its
 ## bow or staff) and detonated by another class's Heavy, rewarding both players.
 func _check_synergies() -> void:
 	boss.set_physics_process(false) # Hold the boss still so everyone stays in reach.
-	await _detonate(dps, Cmd.FORWARD_HEAVY, tank, Aspect.KINETIC, "SHATTERPOINT  x1.5 CROSS-HARMONY")
+	await _detonate(dps, Cmd.FORWARD_HEAVY, tank, Sign.SIGN_IRON_ROOT, "SHATTERPOINT  x1.5 CROSS-HARMONY")
 	_check(boss.stats.is_knocked_down() or boss.stats.poise <= boss.stats.stats.max_poise - 90.0, "Shatterpoint adds the bonus poise damage")
 	_reset_boss_poise()
 	var health_before: float = boss.stats.health
-	await _detonate(dps, Cmd.BACK_HEAVY, healer, Aspect.ELEMENTAL, "ELEMENTAL RUPTURE  x1.5 CROSS-HARMONY")
-	var rupture: AspectSealResource = ArsenalCatalog.current.aspect_seal(Aspect.ELEMENTAL)
-	_check(health_before - boss.stats.health >= rupture.bonus_damage * CombatDirector.CROSS_HARMONY_MULTIPLIER, "Elemental Rupture adds the bonus damage")
+	await _detonate(dps, Cmd.BACK_HEAVY, healer, Sign.SIGN_RIME_GALE, "GLACIAL RUPTURE  x1.5 CROSS-HARMONY")
+	var rupture: ScribeSignResource = ArsenalCatalog.current.sign_seal(Sign.SIGN_RIME_GALE)
+	_check(health_before - boss.stats.health >= rupture.bonus_damage * CombatDirector.CROSS_HARMONY_MULTIPLIER, "Glacial Rupture adds the bonus damage")
 	_reset_boss_poise()
 	dps.stats.take_damage(40.0)
 	var hurt_health: float = dps.stats.health
-	await _detonate(healer, Cmd.FORWARD_HEAVY, tank, Aspect.DIVINE, "DAWNBURST  x1.5 CROSS-HARMONY")
+	await _detonate(healer, Cmd.FORWARD_HEAVY, tank, Sign.SIGN_WARM_HEARTH, "DAWNBURST  x1.5 CROSS-HARMONY")
 	_check(dps.stats.health > hurt_health, "Dawnburst heals the party around the boss")
 	_reset_boss_poise()
 	dps.stats.add_resonance(1.0)
 	healer.stats.stamina = 10.0
 	healer.stats.resonance_charge = 0.0
 	healer.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(4.0, 0.0, 5.0)))
-	var chorus: AspectSealResource = ArsenalCatalog.current.aspect_seal(Aspect.CELESTIAL)
-	await _detonate(dps, Cmd.TRIGGER_R_SKILL, tank, Aspect.CELESTIAL, "ASTRAL CHORUS  x1.5 CROSS-HARMONY", 1.0)
+	var chorus: ScribeSignResource = ArsenalCatalog.current.sign_seal(Sign.SIGN_STAR_TIDE)
+	await _detonate(dps, Cmd.TRIGGER_R_SKILL, tank, Sign.SIGN_STAR_TIDE, "ASTRAL CHORUS  x1.5 CROSS-HARMONY", 1.0)
 	_check(healer.stats.stamina >= 10.0 + chorus.party_stamina * CombatDirector.CROSS_HARMONY_MULTIPLIER - 0.5,
 		"Astral Chorus restores +%d stamina to the party within 10 m" % roundi(chorus.party_stamina * CombatDirector.CROSS_HARMONY_MULTIPLIER))
 	_check(healer.stats.resonance_charge >= chorus.party_pips * CombatDirector.CROSS_HARMONY_MULTIPLIER - 0.01,
@@ -527,7 +574,7 @@ func _check_synergies() -> void:
 	boss.set_physics_process(true)
 
 
-func _detonate(primer_actor: ActorBase, primer_command: int, detonator: ActorBase, aspect: int, label: String, pips_before: float = 0.0) -> void:
+func _detonate(primer_actor: ActorBase, primer_command: int, detonator: ActorBase, scribe_sign: int, label: String, pips_before: float = 0.0) -> void:
 	await _until_idle(primer_actor)
 	await _until_idle(detonator)
 	_face_boss(primer_actor, Vector3(-1.4, 0.0, 2.6))
@@ -537,10 +584,10 @@ func _detonate(primer_actor: ActorBase, primer_command: int, detonator: ActorBas
 		actor.stats.resonance_charge = 0.0
 	primer_actor.stats.resonance_charge = pips_before
 	var rewards_before: int = _cue_sounds.count(&"reward")
-	var seal: AspectSealResource = ArsenalCatalog.current.aspect_seal(aspect)
+	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(scribe_sign)
 	primer_actor.input.inject_command(primer_command)
 	await _seconds(0.75)
-	_check(_primers.has(aspect), "%s's %s card stamps the %s seal" % [primer_actor.loadout.display_name, PlayerHUD.command_name(primer_command), seal.seal_name])
+	_check(_primers.has(scribe_sign), "%s's %s card stamps the %s seal" % [primer_actor.loadout.display_name, PlayerHUD.command_name(primer_command), seal.seal_name])
 	detonator.input.inject_command(Cmd.HEAVY)
 	await _seconds(1.4)
 	_check(_synergies.has(label), "%s's Heavy detonates it as %s" % [detonator.loadout.display_name, label])
@@ -620,7 +667,7 @@ func _check_ranged_and_armor() -> void:
 		and is_equal_approx(arrived.reach, arrow.projectile_range), "a strike crosses the network as an action id; the target's owner reads the numbers from its own copy")
 
 	var echo_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SOUL_TETHER_HEALER)
-	echo_kit.under_ids[2] = ArsenalCatalog.SUN_CREST_LINK
+	echo_kit.under_ids[2] = ArsenalCatalog.WARM_HEARTH_LINK
 	healer.re_equip(ClassLoadouts.compose(ClassLoadouts.SOUL_TETHER_HEALER, echo_kit))
 	await _until_idle(healer)
 	tank.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(6.0, 0.0, 8.0)))
@@ -641,39 +688,39 @@ func _check_ranged_and_armor() -> void:
 	_stage_party()
 
 
-## Every card invocation shows its seal and vellum card; Shiny Foil and Astral
-## Prism copies add their flourishes; none of it changes the numbers.
+## Every card invocation shows its seal and vellum card; Gilded Leaf and
+## Star-Inked Vellum copies add their flourishes; none of it changes the numbers.
 func _check_card_invocations() -> void:
 	boss.set_physics_process(false)
 	_reset_boss_poise()
 	var standard: ScribeInvocationFX = await _charge_with(ScribeCardResource.CardVariant.STANDARD)
 	_check(_invocations.back() == ScribeCardResource.CardVariant.STANDARD and standard != null and not standard.is_showing_foil() and not standard.is_showing_dome(),
-		"invoking Shield Charge blooms its Amber Gear seal and flips a vellum card over the tank's shoulder")
+		"invoking Shield Charge blooms the Sign of Iron-Root and flips a vellum card over the tank's shoulder")
 	await _seconds(ScribeInvocationFX.SEAL_TIME + 0.2)
 	_check(standard != null and not standard.in_use, "the Standard flourish ends after 0.6 s and goes back to the effect pool")
 
 	var foil_chimes: int = _audio_cues.count(&"card_chime_foil")
 	var foil: ScribeInvocationFX = await _charge_with(ScribeCardResource.CardVariant.SHINY_FOIL)
 	_check(foil != null and foil.is_showing_foil() and _audio_cues.count(&"card_chime_foil") > foil_chimes,
-		"a Shiny Foil copy adds two counter-rotating gold rings and a brighter chime")
+		"a Gilded Leaf copy adds two counter-rotating gold rings and a brighter chime")
 	await _seconds(tank.loadout.card_action(0).windup_time)
 	_check(tank.trail.is_swinging() and tank.trail.colour().is_equal_approx(Color(WeaponTrail.SHINY_COLOR, WeaponTrail.TRAIL_ALPHA)),
 		"and its sword swings a gold ribbon trail")
 	await _seconds(1.0)
 
 	var astral: ScribeInvocationFX = await _charge_with(ScribeCardResource.CardVariant.ASTRAL_PRISM)
-	_check(astral != null and astral.is_showing_dome(), "an Astral Prism copy raises a starfield dome through the wind-up")
+	_check(astral != null and astral.is_showing_dome(), "a Star-Inked Vellum copy raises a starfield dome through the wind-up")
 	await _seconds(0.8)
 	_check(_active_footprints() >= 2, "and the charge leaves glowing footprints behind the tank")
 	await _seconds(ScribeInvocationFX.FOOTPRINT_TIME)
-	_check(astral != null and not astral.in_use, "the Astral flourish lasts 2.5 s, then goes back to the pool")
+	_check(astral != null and not astral.in_use, "the Star-Inked flourish lasts 2.5 s, then goes back to the pool")
 
 	var shiny_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
 	shiny_kit.lead_variants[0] = ScribeCardResource.CardVariant.SHINY_FOIL
 	var shiny_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, shiny_kit).card_action(0)
 	var plain_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK).card_action(0)
 	_check(is_equal_approx(shiny_charge.damage, plain_charge.damage) and shiny_charge.action_id == plain_charge.action_id,
-		"variants change the look only: a Shiny Foil Shield Charge hits exactly as hard")
+		"finishes change the look only: a Gilded Leaf Shield Charge hits exactly as hard")
 	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK))
 
 	await _until_idle(dps)
@@ -1079,7 +1126,7 @@ func _check_victory_and_loot() -> void:
 	var session: MultiplayerPeer = root.multiplayer.multiplayer_peer
 	var shards_before: int = PartyProgress.current.shards
 	var level_before: int = PartyProgress.current.grimoire_level()
-	# A seed whose chest card is a Shiny or Astral boss card for the Forward slot.
+	# A seed whose chest card is a Gilded Leaf or Star-Inked boss card for the Forward slot.
 	var seed: int = _seed_for_forward_boss_card()
 	PartyProgress.current.drop_rng.seed = seed
 	var probe: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -1091,7 +1138,7 @@ func _check_victory_and_loot() -> void:
 		actor.input.inject_move(Vector2.ZERO)
 	boss.stats.take_damage(boss.stats.health)
 	await _seconds(0.1)
-	_check(dojo.victory and boss.vanquished and boss.state_machine.is_in(&"downed"), "defeating the Dojo Warden starts the victory")
+	_check(dojo.victory and boss.vanquished and boss.state_machine.is_in(&"downed"), "defeating the Cairnsman starts the victory")
 	_check(is_equal_approx(Engine.time_scale, DungeonDojo.VICTORY_TIME_SCALE), "the win plays out in slow motion (x0.2)")
 	_check(dojo.chest != null and dojo.chest.is_inside_tree(), "a reward chest drops into the arena")
 	_check(PartyProgress.current.grimoire_level() == level_before + 1, "the win raises the Grimoire to Lv %d" % (level_before + 1))
@@ -1117,12 +1164,12 @@ func _check_victory_and_loot() -> void:
 	_check(saved.load(TEST_SAVE_PATH) == OK and int(saved.get_value("party", "shards", 0)) == shards_before + paid, "the shards are saved for next time")
 	_check(dojo.exit_portal.is_recalling(), "the gold exit portal starts calling the party home")
 	await _until_live_in(InstanceManager.HUB_TOWN)
-	_check(current_scene is HubTown, "the gold portal brings the party back to Hub Town")
+	_check(current_scene is HubTown, "the gold portal brings the party back to Bramblebridge")
 	_check(root.multiplayer.multiplayer_peer == session and NetworkManager.current.is_online(), "still the same ENet session after the round trip")
 	_check(NetworkManager.current.party_size() == 3 and _hub().grid.view_count() == 3, "the whole party is back in town")
 	await _seconds(0.2)
 	var orphans: int = _orphan_count()
-	_check(orphans <= _orphans_before, "no orphaned nodes after Hub Town, the Dojo and back (%d before, %d after)" % [_orphans_before, orphans])
+	_check(orphans <= _orphans_before, "no orphaned nodes after Bramblebridge, the Ring and back (%d before, %d after)" % [_orphans_before, orphans])
 
 
 func _check_audio_cues() -> void:
@@ -1192,7 +1239,7 @@ func _check_shard_vendor() -> void:
 	NetworkManager.current.drop_local_player(1)
 	NetworkManager.current.drop_local_player(2)
 	await _seconds(0.1)
-	_check(NetworkManager.current.companion_seats().is_empty() and hub.actors.size() == 1, "companions only join raids, not Hub Town")
+	_check(NetworkManager.current.companion_seats().is_empty() and hub.actors.size() == 1, "companions only join raids, not Bramblebridge")
 
 
 # --- Armory & Scribe Desk -------------------------------------------------
@@ -1243,8 +1290,8 @@ func _check_scribe_desk() -> void:
 			break
 		await _tap_key(KEY_D)
 	var surged: CombatActionResource = keyboard.loadout.card_action(0)
-	_check(keyboard.loadout.kit.under_ids[0] == ArsenalCatalog.AMBER_GEAR_LINK and is_equal_approx(surged.damage, 20.0 * LoadoutComposer.UNDER_POTENCY_MULTIPLIER),
-		"back on the Basic Shield Charge the link fits: Amber Gear Link surges it by 20%")
+	_check(keyboard.loadout.kit.under_ids[0] == ArsenalCatalog.IRON_ROOT_LINK and is_equal_approx(surged.damage, 20.0 * LoadoutComposer.UNDER_POTENCY_MULTIPLIER),
+		"back on the Basic Shield Charge the link fits: Iron-Root Link surges it by 20%")
 	for press: int in 5:
 		await _tap_key(KEY_S)
 	await _tap_key(KEY_D)
@@ -1261,7 +1308,7 @@ func _check_scribe_desk() -> void:
 	await _seconds(0.05)
 
 
-## The first drop seed whose chest card is a Shiny or Astral copy of a boss card for the Forward slot.
+## The first drop seed whose chest card is a Gilded Leaf or Star-Inked copy of a boss card for the Forward slot.
 func _seed_for_forward_boss_card() -> int:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()

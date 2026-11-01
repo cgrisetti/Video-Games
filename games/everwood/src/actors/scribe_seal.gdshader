@@ -1,7 +1,7 @@
 // A Scribe Card's floor seal (and the emblem on its vellum card): two rings
-// with turning rune ticks around an aspect's geometric figure. It blooms out
+// with turning rune ticks around a Scribe Sign's geometric figure. It blooms out
 // in the first quarter of its life and fades in the last part.
-//   glyph 0 ring only · 1 gear (Kinetic) · 2 star (Elemental) · 3 sun (Divine) · 4 moon (Celestial)
+//   glyph 0 ring only · 1 gear (Iron-Root) · 2 star (Rime-Gale) · 3 sun (Warm-Hearth) · 4 moon (Star-Tide)
 shader_type spatial;
 render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabled;
 

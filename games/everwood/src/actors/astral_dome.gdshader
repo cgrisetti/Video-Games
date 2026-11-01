@@ -1,4 +1,4 @@
-// An Astral Prism card's starfield dome: twinkling points of light on a
+// A Star-Inked Vellum card's starfield dome: twinkling points of light on a
 // translucent hemisphere, brightest at its rim.
 shader_type spatial;
 render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabled;

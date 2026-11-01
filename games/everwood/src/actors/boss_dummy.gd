@@ -1,4 +1,6 @@
-## The Dojo Warden: the first raid boss, a training dummy that fights back.
+## The Cairnsman of Doverslap (06_WORLD_AND_CALLINGS.md §1): the first raid boss,
+## an ancient sentinel of stacked river-boulders, heather and weathered bridge
+## timbers bound with brass bell-ropes.
 ##
 ## - Chases whoever tops its aggro table (ThreatComponent) and swings a
 ##   Crushing Swipe with a long, readable wind-up.
@@ -17,7 +19,7 @@ signal cast_started(cast_name: String, duration: float)
 ## Health reached zero (on the host, which simulates the boss).
 signal defeated
 
-const DISPLAY_NAME: String = "Dojo Warden"
+const DISPLAY_NAME: String = "The Cairnsman of Doverslap"
 ## Health scales with the party when a fight starts: base + per player.
 const HEALTH_BASE: float = 900.0
 const HEALTH_PER_PLAYER: float = 500.0

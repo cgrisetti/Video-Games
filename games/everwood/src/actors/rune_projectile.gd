@@ -1,6 +1,6 @@
 ## A shot from a bow or a staff: a weapon's own light or heavy, or a Scribe
 ## Card channelled through it, which flies wrapped in a spinning ring of its
-## aspect's colour (05 GDD §4.3). It flies straight for the action's range and
+## Sign's colour (05 GDD §4.3). It flies straight for the action's range and
 ## stops at walls.
 ##
 ## On the attacker's peer it's the real thing: the first hurtbox it touches is
@@ -83,7 +83,7 @@ func launch(from_actor: ActorBase, shot: CombatActionResource, origin: Vector3, 
 	global_transform = Transform3D(Basis.looking_at(_direction, Vector3.UP), origin)
 	_ring.visible = shot.is_card()
 	if _ring.visible:
-		var colour: Color = ArsenalCatalog.current.aspect_seal(shot.aspect).color
+		var colour: Color = ArsenalCatalog.current.sign_seal(shot.scribe_sign).color
 		_ring_material.albedo_color = colour
 		_ring_material.emission = colour
 	_probe.radius = shot.projectile_radius

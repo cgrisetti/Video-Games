@@ -14,13 +14,14 @@ enum CardKind { LEAD, UNDER }
 ## The four posture slots, in Grimoire order.
 enum GrimoireSlot { FORWARD, BACK, SIGNATURE, ULTIMATE }
 enum CardRarity { BASIC, COMMON, UNCOMMON, RARE, LEGENDARY }
-## A copy's look. Presentation only: the mechanics never read it.
+## A copy's finish (06_WORLD_AND_CALLINGS.md §2): Plain Vellum, Gilded Leaf or
+## Star-Inked Vellum. Presentation only: the mechanics never read it.
 enum CardVariant { STANDARD, SHINY_FOIL, ASTRAL_PRISM }
 ## THROUGH_WEAPON cards take the weapon's delivery (a swing or a projectile);
 ## AT_CASTER cards happen around the caster whatever is in their hands.
 enum Delivery { THROUGH_WEAPON, AT_CASTER }
 ## What an under-card does to the lead card above it.
-enum UnderVerb { NONE, ASPECT_INFUSION, POTENCY_SURGE, HEARTH_ECHO }
+enum UnderVerb { NONE, SIGN_INFUSION, POTENCY_SURGE, HEARTH_ECHO }
 
 ## The posture command each Grimoire slot answers to.
 const SLOT_COMMANDS: Array[int] = [
@@ -29,8 +30,9 @@ const SLOT_COMMANDS: Array[int] = [
 ]
 const SLOT_NAMES: Array[String] = ["Forward", "Back", "Signature", "Ultimate"]
 const RARITY_NAMES: Array[String] = ["Basic", "Common", "Uncommon", "Rare", "Legendary"]
-const VARIANT_NAMES: Array[String] = ["Standard", "Shiny Foil", "Astral Prism"]
-## How variants are spelled in copy keys and save files.
+## The finishes' display names (06 GDD §2).
+const VARIANT_NAMES: Array[String] = ["Plain Vellum", "Gilded Leaf", "Star-Inked Vellum"]
+## How variants are spelled in copy keys and save files (kept from Phase 7, so old binders load).
 const VARIANT_KEYS: Array[String] = ["standard", "shiny_foil", "astral_prism"]
 ## Grimoire Memory each rarity takes up.
 const MEMORY_COST: Array[int] = [1, 2, 3, 4, 5]
@@ -40,7 +42,7 @@ const COPY_KEY_SEPARATOR: String = ":"
 @export var display_name: String = ""
 @export_multiline var description: String = ""
 @export var kind: CardKind = CardKind.LEAD
-@export var aspect: AspectSealResource.CardAspect = AspectSealResource.CardAspect.NONE
+@export var scribe_sign: ScribeSignResource.Sign = ScribeSignResource.Sign.NONE
 @export var rarity: CardRarity = CardRarity.BASIC
 ## Always in the party's binder (the starter kit); other cards must be collected.
 @export var starter: bool = false
@@ -71,9 +73,9 @@ func memory_cost() -> int:
 	return MEMORY_COST[rarity]
 
 
-## Landing it stamps its aspect's seal on the enemy.
+## Landing it stamps its Sign's seal on the enemy.
 func primes() -> bool:
-	return template != null and template.primer != AspectSealResource.CardAspect.NONE
+	return template != null and template.primer != ScribeSignResource.Sign.NONE
 
 
 func rarity_name() -> String:

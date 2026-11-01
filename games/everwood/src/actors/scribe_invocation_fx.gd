@@ -1,11 +1,12 @@
 ## The choreography of a Scribe Card invocation (05 GDD §3.3), shown on every
 ## peer when a card's wind-up begins:
-##   STANDARD      the aspect's geometric seal blooms under the caster's boots for
-##                 0.6 s, and a vellum card flips and dissolves above their shoulder
-##   SHINY_FOIL    + two counter-rotating gold rings and a brighter, higher chime
-##                 (the weapon's ribbon trail turns gold: WeaponTrail)
-##   ASTRAL_PRISM  + a starfield dome through the wind-up and luminous footprints
-##                 for 2.5 s
+##   Plain Vellum (STANDARD)          the Sign's geometric seal blooms under the
+##                                    caster's boots for 0.6 s, and a vellum card
+##                                    flips and dissolves above their shoulder
+##   Gilded Leaf (SHINY_FOIL)         + two counter-rotating gold rings and a
+##                                    brighter, higher chime (and a gold ribbon trail)
+##   Star-Inked Vellum (ASTRAL_PRISM) + a starfield dome through the wind-up and
+##                                    luminous footprints for 2.5 s
 ## A card fired through a bow or staff also charges through a standing rune ring
 ## in front of the caster. Presentation only: nothing here changes the fight.
 ## Pooled: when the last flourish ends, finish() hands it back to the FxPool.
@@ -27,15 +28,15 @@ const CARD_DISSOLVE_GROWTH: float = 0.4
 const VELLUM_COLOR: Color = Color(0.96, 0.91, 0.78)
 const EMBLEM_SIZE: float = 0.24
 const EMBLEM_INTENSITY: float = 1.8
-## Shiny Foil: gold rings just above the seal, turning opposite ways.
+## Gilded Leaf: gold rings just above the seal, turning opposite ways.
 const FOIL_RING_RADII: Array[float] = [1.15, 1.42]
 const FOIL_RING_THICKNESS: float = 0.04
 const FOIL_RING_SPIN: float = 5.0
 const FOIL_COLOR: Color = Color(1.0, 0.82, 0.3)
 const FOIL_GLOW: float = 3.0
-## A Shiny Foil card's vellum glows gold at its edges this brightly.
+## A Gilded Leaf card's vellum glows gold at its edges this brightly.
 const FOIL_EDGE_GLOW: float = 0.6
-## Astral Prism: the dome grows through the wind-up, then fades.
+## Star-Inked Vellum: the dome grows through the wind-up, then fades.
 const DOME_RADIUS: float = 2.4
 const DOME_START_SCALE: float = 0.3
 const DOME_FADE_TIME: float = 0.35
@@ -47,7 +48,7 @@ const MUZZLE_RING_OFFSET: Vector3 = Vector3(0.0, 1.2, -0.95)
 const MUZZLE_RING_RADIUS: float = 0.45
 const MUZZLE_RING_START_SCALE: float = 0.4
 const MUZZLE_RING_LINGER: float = 0.25
-## The chime for each variant, and the Shiny Foil's harmonic pitch boost.
+## The chime for each variant, and the Gilded Leaf's harmonic pitch boost.
 const VARIANT_SOUNDS: Array[StringName] = [&"card_chime", &"card_chime_foil", &"card_chime_astral"]
 const FOIL_PITCH: float = 1.25
 
@@ -143,9 +144,9 @@ func _build() -> void:
 	add_child(_muzzle_ring)
 
 
-## Starts the show for a card `on` an actor: its aspect's seal, its copy's
+## Starts the show for a card `on` an actor: its Sign's seal, its copy's
 ## variant, and how long its wind-up lasts (the dome and muzzle ring follow it).
-func play(on: ActorBase, seal: AspectSealResource, card_variant: ScribeCardResource.CardVariant, windup: float, ranged: bool) -> void:
+func play(on: ActorBase, seal: ScribeSignResource, card_variant: ScribeCardResource.CardVariant, windup: float, ranged: bool) -> void:
 	caster = on
 	variant = card_variant
 	_windup = maxf(0.05, windup)
@@ -219,11 +220,11 @@ func _update(delta: float) -> void:
 	_card.scale = Vector3.ONE * (1.0 + dissolve_t * CARD_DISSOLVE_GROWTH)
 	_card_material.albedo_color.a = 1.0 - dissolve_t
 	_emblem_material.set_shader_parameter(&"intensity", EMBLEM_INTENSITY * (1.0 - dissolve_t))
-	# Shiny Foil rings turn opposite ways and fade with the seal.
+	# Gilded Leaf rings turn opposite ways and fade with the seal.
 	for index: int in _rings.size():
 		_rings[index].rotate_y(FOIL_RING_SPIN * delta * (1.0 if index % 2 == 0 else -1.0))
 	_ring_material.albedo_color.a = 1.0 - seal_t
-	# Astral Prism dome: grows through the wind-up, then fades.
+	# Star-Inked Vellum dome: grows through the wind-up, then fades.
 	if _dome.visible:
 		var grow: float = clampf(_age / _windup, 0.0, 1.0)
 		var fade: float = 1.0 - clampf((_age - _windup) / DOME_FADE_TIME, 0.0, 1.0)
@@ -238,7 +239,7 @@ func _update(delta: float) -> void:
 		_muzzle_ring.visible = _age < _windup + MUZZLE_RING_LINGER
 
 
-## Astral Prism: a glowing print every stride the caster takes, left and right in turn.
+## Star-Inked Vellum: a glowing print every stride the caster takes, left and right in turn.
 func _leave_footprints() -> void:
 	var feet: Vector3 = caster.global_position
 	if feet.distance_to(_last_step) < FOOTPRINT_STRIDE or pool == null:

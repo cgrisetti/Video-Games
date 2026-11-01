@@ -108,10 +108,10 @@ static func fits_slot(player_class: PlayerClassResource, lead: ScribeCardResourc
 ## One under-card verb applied to the lead card's action above it.
 static func apply_under(action: CombatActionResource, under: ScribeCardResource) -> void:
 	match under.verb:
-		ScribeCardResource.UnderVerb.ASPECT_INFUSION:
+		ScribeCardResource.UnderVerb.SIGN_INFUSION:
 			if action.effect == Fx.STRIKE:
-				action.primer = under.aspect
-			action.aspect = under.aspect
+				action.primer = under.scribe_sign
+			action.scribe_sign = under.scribe_sign
 		ScribeCardResource.UnderVerb.POTENCY_SURGE:
 			action.damage *= UNDER_POTENCY_MULTIPLIER
 			action.heal_amount *= UNDER_POTENCY_MULTIPLIER
@@ -217,7 +217,7 @@ static func _card_action(lead: ScribeCardResource, slot: int, weapon: EquipmentI
 	action.command = ScribeCardResource.SLOT_COMMANDS[slot] as CombatActionResource.Command
 	action.card_id = lead.card_id
 	action.grimoire_slot = slot
-	action.aspect = lead.aspect
+	action.scribe_sign = lead.scribe_sign
 	action.flow_links = []
 	if lead.delivery == ScribeCardResource.Delivery.THROUGH_WEAPON and action.effect == Fx.STRIKE:
 		_channel_through(action, weapon)
