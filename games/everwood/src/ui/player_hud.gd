@@ -144,8 +144,9 @@ func _process(_delta: float) -> void:
 
 func _refresh_boss() -> void:
 	var boss: BossDummy = CombatDirector.current.primary_boss() as BossDummy
-	if boss == null or boss.stats == null:
-		_boss_label.text = ""
+	# No boss here (Hub Town): no empty bars either.
+	_top_panel.visible = boss != null and boss.stats != null
+	if not _top_panel.visible:
 		return
 	var primer: int = CombatDirector.current.primer_on(boss)
 	var title: String = boss.display_name()

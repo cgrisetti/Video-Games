@@ -2,7 +2,7 @@
 
 A cooperative raid action-RPG for a family party, built in [Godot 4.7](https://docs.godotengine.org/en/stable/) (GDScript, Jolt physics). Up to 4 players share one screen in split-screen, and up to 5 play together over the network. It's a separate project from Lanternwood: no Vite, no three.js, no launcher page.
 
-Read the design stack first: [CLAUDE.md](CLAUDE.md) (engineering rules), then [docs/01_VISION.md](docs/01_VISION.md), [docs/02_COMBAT_GDD.md](docs/02_COMBAT_GDD.md) and [docs/03_GODOT_TDD.md](docs/03_GODOT_TDD.md).
+Read the design stack first: [CLAUDE.md](CLAUDE.md) (engineering rules), then [docs/01_VISION.md](docs/01_VISION.md), [docs/02_COMBAT_GDD.md](docs/02_COMBAT_GDD.md), [docs/03_GODOT_TDD.md](docs/03_GODOT_TDD.md) and [docs/04_BALANCE.md](docs/04_BALANCE.md).
 
 ## What's playable
 
@@ -19,7 +19,7 @@ Three assist modes, one per player: **Master** (manual, +15% flow speed), **Adve
 
 The game starts in **Hub Town**. Walk into the Raid Portal together (everyone standing on it) for a 3-second countdown into the Dungeon Dojo; the gold exit portal there brings you back. The host moves the whole party and the ENet session stays up (`InstanceManager`).
 
-The keyboard and mouse is Player 1. Plugging in a pad joins the next player and splits the screen; unplugging drops them. Tap Enter / Start to join by hand, hold it 1.5 s to leave. Hold Tab / View for 0.6 s to change class, hold M / RS to change assist mode. Click to steer the camera with the mouse, Esc to let go. Balance numbers and reasoning: `docs/04_BALANCE.md` (not yet written; see the constants in `class_loadouts.gd` and `boss_dummy.gd`).
+The keyboard and mouse is Player 1. Plugging in a pad joins the next player and splits the screen; unplugging drops them. Tap Enter / Start to join by hand, hold it 1.5 s to leave. Hold Tab / View for 0.6 s to change class, hold M / RS to change assist mode. Click to steer the camera with the mouse, Esc to let go. Balance numbers and the reasoning behind them: [docs/04_BALANCE.md](docs/04_BALANCE.md).
 
 ## Run it
 
