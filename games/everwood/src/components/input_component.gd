@@ -78,8 +78,11 @@ const MENU_HOLD_TIME: float = 0.6
 const MASTER_BUFFER_WINDOW: float = 0.40
 const ASSISTED_BUFFER_WINDOW: float = 0.55
 const MASTER_FLOW_SPEED_BONUS: float = 0.15
-## Squire Gambit dodges out of a red telegraph once it is this full.
+## Squire Gambit dodges out of a red telegraph (or an unsheltered Gale-Beam lane) once it is this full.
 const AUTO_EVADE_FILL: float = 0.85
+## A Squire tank the Gale-Beam is aimed at raises Shadow Sanctuary once the beam is this full
+## (early enough for the wind-up, and before the lane locks).
+const AUTO_SHELTER_FILL: float = 0.25
 const AUTO_EVADE_COOLDOWN: float = 0.8
 ## Squire Gambit raises the guard through the boss's Crushing Swipe with at least this much stamina.
 const AUTO_GUARD_MIN_STAMINA: float = 25.0
@@ -546,6 +549,8 @@ func _update_auto_evade(dt: float) -> void:
 	_auto_evade_cooldown = maxf(0.0, _auto_evade_cooldown - dt)
 	if assist_mode != AssistMode.SQUIRE_GAMBIT or _auto_evade_cooldown > 0.0:
 		return
+	if _shelter_from_beam():
+		return
 	var danger: RaidTelegraphDecal = CombatDirector.current.hostile_telegraph_at(actor.global_position, AUTO_EVADE_FILL)
 	if danger == null or actor.stats.stamina < actor.loadout.dodge.stamina_cost:
 		return
@@ -556,6 +561,35 @@ func _update_auto_evade(dt: float) -> void:
 	actor.evade_direction = away.normalized()
 	_auto_evade_cooldown = AUTO_EVADE_COOLDOWN
 	_issue(CombatActionResource.Command.DODGE)
+
+
+## Squire Gambit and the Gale-Beam (08 Gate 5: an assisted child must survive
+## every mechanic): a tank the beam is aimed at turns to the boss and raises
+## Shadow Sanctuary for everyone; anyone else caught in the lane outside a
+## shield rolls out sideways at the last moment. True when it acted.
+func _shelter_from_beam() -> bool:
+	var beam: RaidTelegraphDecal = CombatDirector.current.beam_telegraph()
+	if beam == null or not beam.contains(actor.global_position) or CombatDirector.current.is_sheltered(actor):
+		return false
+	var cone: CombatActionResource = actor.loadout.card_action(ScribeCardResource.GrimoireSlot.BACK)
+	if beam.follow_target == actor and cone != null and cone.effect == CombatActionResource.Effect.SHADOW_SANCTUARY \
+			and beam.fill_ratio() >= AUTO_SHELTER_FILL and actor.stats.can_afford(cone) and actor.can_act():
+		if is_instance_valid(beam.origin_actor):
+			actor.turn_toward(beam.origin_actor.global_position - actor.global_position, PI)
+		if actor.action_queue.is_busy() and actor.action_queue.phase != ActionQueueComponent.Phase.ACTIVE:
+			actor.cancel_action()
+		_auto_evade_cooldown = AUTO_EVADE_COOLDOWN
+		_issue(CombatActionResource.Command.BACK_HEAVY)
+		return true
+	if beam.fill_ratio() < AUTO_EVADE_FILL or actor.stats.stamina < actor.loadout.dodge.stamina_cost:
+		return false
+	var across: Vector3 = beam.global_basis.x.normalized()
+	var side: float = signf(across.dot(actor.global_position - beam.global_position))
+	actor.cancel_action()
+	actor.evade_direction = across * (side if side != 0.0 else 1.0)
+	_auto_evade_cooldown = AUTO_EVADE_COOLDOWN
+	_issue(CombatActionResource.Command.DODGE)
+	return true
 
 
 ## Squire Gambit safety net: when the boss winds up its Crushing Swipe at you,

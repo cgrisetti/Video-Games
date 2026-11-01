@@ -81,6 +81,9 @@ func _ready() -> void:
 	add_child(mesh)
 	if is_beam():
 		_build_pillar()
+		# Aimed from its first frame, so nobody (a Squire safety net, a companion) reads a lane pointing nowhere.
+		if is_instance_valid(follow_target):
+			_aim_beam()
 	CombatDirector.current.register_telegraph(self)
 
 

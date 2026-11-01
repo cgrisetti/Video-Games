@@ -119,6 +119,7 @@ func _run() -> void:
 	await _check_telegraphs()
 	await _check_wipe_resets_fight()
 	await _check_gale_beam()
+	await _check_squire_beam_assist()
 	await _check_companion_backfill()
 	await _check_victory_and_loot()
 	await _check_chime_shrine()
@@ -1457,6 +1458,54 @@ func _check_gale_beam() -> void:
 		"behind the shield the DPS takes nothing and earns half a pip")
 	_check(healer_health - healer.stats.health >= BossDummy.BEAM_DAMAGE * 0.75 and healer.global_position.distance_to(boss.global_position) > healer_distance + 2.0,
 		"out in the lane the healer is hit hard (%d) and thrown back" % roundi(healer_health - healer.stats.health))
+	boss._reset_fight()
+	boss.threat.clear()
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.stats.heal(actor.stats.stats.max_health)
+	await _seconds(0.1)
+
+
+## 08 Gate 5: a Squire-mode child survives the Gale-Beam. Aimed at a Squire
+## tank facing the wrong way, it turns and raises Shadow Sanctuary itself; a
+## Squire archer left out in the lane rolls clear before the torrent.
+func _check_squire_beam_assist() -> void:
+	var tank_mode: InputComponent.AssistMode = tank.input.assist_mode
+	var dps_mode: InputComponent.AssistMode = dps.input.assist_mode
+	for actor: ActorBase in [tank, dps]:
+		actor.input.assist_mode = InputComponent.AssistMode.SQUIRE_GAMBIT
+		actor.apply_assist_mode()
+	_reset_boss_poise()
+	await _until_idle(tank)
+	# The tank stands in front of the boss but faces away from it.
+	tank.place_at(Transform3D(Basis.looking_at(Vector3(0.0, 0.0, 1.0), Vector3.UP), boss.global_position + Vector3(0.0, 0.0, 2.8)))
+	_face_boss(dps, Vector3(0.0, 0.0, 13.0))
+	_face_boss(healer, Vector3(9.0, 0.0, 4.0))
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.input.inject_move(Vector2.ZERO)
+		actor.stats.heal(actor.stats.stats.max_health)
+		actor.stats.stamina = actor.stats.stats.max_stamina
+	boss.threat.taunt(tank.player_id, 30.0)
+	await _seconds(0.3)
+	boss.stats.health = boss.stats.stats.max_health * 0.45
+	boss._next_cast = RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK
+	boss._cast_timer = 0.0
+	var beam: RaidTelegraphDecal = null
+	var waited: float = 0.0
+	while waited < 4.0 and beam == null:
+		await physics_frame
+		waited += 1.0 / 60.0
+		beam = CombatDirector.current.beam_telegraph()
+	_check(beam != null and beam.follow_target == tank and beam.contains(dps.global_position), "a Gale-Beam is aimed at the Squire tank, with the Squire archer out in its lane")
+	if beam == null:
+		return
+	var dps_health: float = dps.stats.health
+	await _seconds(BossDummy.BEAM_CAST_TIME + 0.4)
+	_check(CombatDirector.current.has_zone_from(tank.player_id) and tank.facing_vector().dot((boss.global_position - tank.global_position).normalized()) > 0.9,
+		"Squire Gambit turns the tank to the boss and raises Shadow Sanctuary for it")
+	_check(is_equal_approx(dps.stats.health, dps_health), "the Squire archer rolls out of the lane before the torrent and takes nothing")
+	for actor: ActorBase in [tank, dps]:
+		actor.input.assist_mode = tank_mode if actor == tank else dps_mode
+		actor.apply_assist_mode()
 	boss._reset_fight()
 	boss.threat.clear()
 	for actor: ActorBase in [tank, healer, dps]:
