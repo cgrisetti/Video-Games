@@ -382,6 +382,30 @@ func can_guard() -> bool:
 	return loadout.guard_on_trigger_l and not action_queue.is_busy() and can_act()
 
 
+## What this actor is doing right now, on any peer: copies of other peers'
+## actors read what the owner last sent.
+func current_action() -> CombatActionResource:
+	if is_multiplayer_authority():
+		return action_queue.current_action
+	if net_sync.remote_action_id == &"":
+		return null
+	return loadout.action_by_id(net_sync.remote_action_id)
+
+
+func current_phase() -> ActionQueueComponent.Phase:
+	if is_multiplayer_authority():
+		return action_queue.phase
+	return net_sync.remote_phase
+
+
+## Drops the current action and stands ready, so a guard can go up at once.
+func cancel_action() -> void:
+	action_queue.interrupt()
+	hitbox.deactivate()
+	if state_machine.is_in(&"attack") or state_machine.is_in(&"dodge"):
+		state_machine.transition(&"idle")
+
+
 func apply_hit_stop(duration: float) -> void:
 	_hit_stop_left = maxf(_hit_stop_left, duration)
 

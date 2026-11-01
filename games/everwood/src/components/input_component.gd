@@ -77,6 +77,10 @@ const MASTER_FLOW_SPEED_BONUS: float = 0.15
 ## Squire Gambit dodges out of a red telegraph once it is this full.
 const AUTO_EVADE_FILL: float = 0.85
 const AUTO_EVADE_COOLDOWN: float = 0.8
+## Squire Gambit raises the guard through the boss's Crushing Swipe with at least this much stamina.
+const AUTO_GUARD_MIN_STAMINA: float = 25.0
+## Metres beyond the swipe's reach that still count as in its way.
+const AUTO_GUARD_MARGIN: float = 1.0
 ## Beyond this distance the assisted modes open with a gap-closing forward heavy.
 const GAP_CLOSE_DISTANCE: float = 4.5
 ## Squire healer heals anyone below this share of their health.
@@ -108,6 +112,7 @@ var _r_tracking: bool = false
 var _r_held_time: float = 0.0
 var _r_hold_fired: bool = false
 var _auto_evade_cooldown: float = 0.0
+var _auto_guard: bool = false
 var _squire_primer_turn: int = 0
 var _last_forward_at: float = -INF
 var _last_back_at: float = -INF
@@ -268,11 +273,18 @@ func label(action: StringName) -> String:
 	return binding_label(action, device_id)
 
 
-## L held as a posture (Active Guard), once it's clear it isn't half of an ult chord.
+## L held as a posture (Active Guard), once it's clear it isn't half of an ult
+## chord, or the Squire auto-guard holding it up for you.
 func is_guard_held() -> bool:
+	if _auto_guard:
+		return true
 	if _scripted:
 		return _scripted_guard
 	return _held.get(ACTION_TRIGGER_L, false) and not _chord_lock and _pending_trigger != ACTION_TRIGGER_L
+
+
+func is_auto_guarding() -> bool:
+	return _auto_guard
 
 
 ## Camera yaw from mouse movement since the last call (keyboard player only).
@@ -332,6 +344,7 @@ func poll(dt: float) -> void:
 		move_input = Vector2.ZERO
 		camera_orbit_input = 0.0
 		return
+	_update_auto_guard()
 
 	if _held_for(ACTION_CHANGE_CLASS, dt):
 		class_cycle_requested.emit()
@@ -376,6 +389,9 @@ func _poll_menu() -> void:
 
 
 func _issue(command: int) -> void:
+	# While the Squire auto-guard holds the shield up, mashed attacks wait.
+	if _auto_guard and command != CombatActionResource.Command.DODGE:
+		return
 	command_issued.emit(command)
 
 
@@ -494,6 +510,31 @@ func _update_auto_evade(dt: float) -> void:
 	actor.evade_direction = away.normalized()
 	_auto_evade_cooldown = AUTO_EVADE_COOLDOWN
 	_issue(CombatActionResource.Command.DODGE)
+
+
+## Squire Gambit safety net: when the boss winds up its Crushing Swipe at you,
+## raise the guard if there's stamina for it, and hold it until the swing is
+## over. A class with no guard (the DPS) rolls clear instead.
+func _update_auto_guard() -> void:
+	var boss: BossDummy = actor.soft_target() as BossDummy
+	if assist_mode != AssistMode.SQUIRE_GAMBIT or boss == null or not boss.swipe_threatens(actor, AUTO_GUARD_MARGIN):
+		_auto_guard = false
+		return
+	if _auto_guard or actor.stats.stamina < AUTO_GUARD_MIN_STAMINA:
+		return
+	# A swing still winding up or recovering is dropped so the guard (or roll) goes now.
+	var mid_swing: bool = actor.action_queue.phase == ActionQueueComponent.Phase.ACTIVE
+	if actor.loadout.guard_on_trigger_l:
+		_auto_guard = true
+		if not mid_swing:
+			actor.cancel_action()
+	elif _auto_evade_cooldown <= 0.0 and not mid_swing and actor.stats.stamina >= actor.loadout.dodge.stamina_cost:
+		actor.cancel_action()
+		var away: Vector3 = actor.global_position - boss.global_position
+		away.y = 0.0
+		actor.evade_direction = away.normalized() if away.length() > 0.1 else -actor.facing_vector()
+		_auto_evade_cooldown = AUTO_EVADE_COOLDOWN
+		_issue(CombatActionResource.Command.DODGE)
 
 
 ## Squire Gambit: one button, and the game picks the smartest move for your role.

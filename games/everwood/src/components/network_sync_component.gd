@@ -1,6 +1,6 @@
 ## Keeps an actor in step across the network. The peer that owns the actor sends
-## its position, facing, state and gauges a few times a second; every other peer
-## glides its copy toward them.
+## its position, facing, state, gauges and current action a few times a second;
+## every other peer glides its copy toward them.
 class_name NetworkSyncComponent
 extends Node
 
@@ -11,6 +11,9 @@ const SNAP_DISTANCE: float = 6.0
 
 var actor: ActorBase
 var remote_state: StringName = &"idle"
+## The owner's current action and its phase (so other peers see a boss wind up).
+var remote_action_id: StringName = &""
+var remote_phase: ActionQueueComponent.Phase = ActionQueueComponent.Phase.IDLE
 
 var _send_accum: float = 0.0
 var _target_position: Vector3 = Vector3.ZERO
@@ -32,9 +35,12 @@ func tick_owner(delta: float) -> void:
 	_send_accum = 0.0
 	var gauges: PackedFloat32Array = PackedFloat32Array([
 		actor.stats.health, actor.stats.stamina, actor.stats.poise, actor.stats.resonance_charge, actor.stats.stats.max_health])
+	var action: CombatActionResource = actor.action_queue.current_action
+	var action_id: StringName = action.action_id if action != null else &""
 	# Only peers with this instance loaded have a copy of the actor to update.
 	for peer_id: int in InstanceManager.current.live_remote_peers():
-		_receive_state.rpc_id(peer_id, actor.global_position, actor.rotation.y, actor.state_machine.current_name(), gauges)
+		_receive_state.rpc_id(peer_id, actor.global_position, actor.rotation.y, actor.state_machine.current_name(), gauges,
+			action_id, actor.action_queue.phase)
 
 
 func tick_copy(delta: float) -> void:
@@ -50,10 +56,12 @@ func tick_copy(delta: float) -> void:
 
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _receive_state(position: Vector3, yaw: float, state: StringName, gauges: PackedFloat32Array) -> void:
+func _receive_state(position: Vector3, yaw: float, state: StringName, gauges: PackedFloat32Array, action_id: StringName, phase: int) -> void:
 	_target_position = position
 	_target_yaw = yaw
 	remote_state = state
+	remote_action_id = action_id
+	remote_phase = phase as ActionQueueComponent.Phase
 	_has_state = true
 	if gauges.size() >= 4:
 		actor.stats.health = gauges[0]

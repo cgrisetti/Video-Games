@@ -41,10 +41,11 @@ const CRIMSON_DAMAGE: float = 35.0
 const SOAK_NAME: String = "Golden Communion"
 const SOAK_RADIUS: float = 3.2
 const SOAK_CAST_TIME: float = 4.0
-const SOAK_TOTAL_DAMAGE: float = 90.0
+## A soak hurts this much per standing player, split among those inside...
+const SOAK_DAMAGE_PER_PLAYER: float = 30.0
+## ...counting at most this many players (90 in all), so big parties split it thinner.
+const SOAK_DAMAGE_PLAYER_CAP: int = 3
 const SOAK_FAIL_DAMAGE: float = 30.0
-## A soak needs this many players inside (or the whole party, if smaller).
-const SOAK_REQUIRED_PLAYERS: int = 2
 const WINDUP_GLOW: Color = Color(1.0, 0.25, 0.1)
 
 ## Where telegraph decals are spawned (the level sets this).
@@ -123,6 +124,33 @@ func soft_target() -> ActorBase:
 		return null
 	var target: ActorBase = CombatDirector.current.get_actor(threat.current_target)
 	return target if target != null and not target.stats.is_downed else null
+
+
+## Players a Golden Communion needs inside: half the standing party, at least
+## one, so a 2-player couch can always clear it.
+static func soak_required(active_players: int) -> int:
+	@warning_ignore("integer_division")
+	return maxi(1, active_players / 2)
+
+
+## The soak's total damage for this many standing players: 30 each, up to 90.
+static func soak_total_damage(active_players: int) -> float:
+	return SOAK_DAMAGE_PER_PLAYER * clampi(active_players, 1, SOAK_DAMAGE_PLAYER_CAP)
+
+
+## True while a Crushing Swipe is winding up or swinging and `target` stands in
+## its reach (plus `margin` metres, since the boss turns as it swings). Works
+## on every peer.
+func swipe_threatens(target: ActorBase, margin: float) -> bool:
+	var swing: CombatActionResource = current_action()
+	if swing == null or swing.action_id != ClassLoadouts.BOSS_SWIPE or stats.is_downed:
+		return false
+	var phase: ActionQueueComponent.Phase = current_phase()
+	if phase != ActionQueueComponent.Phase.WINDUP and phase != ActionQueueComponent.Phase.ACTIVE:
+		return false
+	var strike_center: Vector3 = global_position + facing_vector() * swing.reach
+	var flat: Vector2 = Vector2(target.global_position.x - strike_center.x, target.global_position.z - strike_center.z)
+	return flat.length() <= swing.hit_radius + target.body_radius() + margin
 
 
 func is_casting() -> bool:
@@ -258,9 +286,8 @@ func _on_telegraph_resolved(decal: RaidTelegraphDecal, inside: Array[ActorBase])
 			CombatDirector.current.deliver(_telegraph_strike(member, CRIMSON_DAMAGE))
 		return
 	var alive: Array[ActorBase] = CombatDirector.current.alive_party()
-	var required: int = mini(SOAK_REQUIRED_PLAYERS, alive.size())
-	if not inside.is_empty() and inside.size() >= required:
-		var share: float = SOAK_TOTAL_DAMAGE / inside.size()
+	if not inside.is_empty() and inside.size() >= soak_required(alive.size()):
+		var share: float = soak_total_damage(alive.size()) / inside.size()
 		for member: ActorBase in inside:
 			CombatDirector.current.deliver(_telegraph_strike(member, share))
 		CombatDirector.current.announce(decal.global_position + Vector3.UP * 2.0, "Soaked! %d each" % roundi(share), RaidTelegraphDecal.GOLD_COLOR, &"soak_ok")
@@ -331,5 +358,7 @@ func _reset_fight() -> void:
 func _update_pose(delta: float) -> void:
 	super._update_pose(delta)
 	# The visor and body glow hotter through the swipe's wind-up: a readable tell.
-	if action_queue.phase == ActionQueueComponent.Phase.WINDUP and _flash_left <= 0.0:
-		_body_material.emission = WINDUP_GLOW * action_queue.progress() * 2.0
+	# (Other peers don't know how far along it is, so they show a steady glow.)
+	if current_phase() == ActionQueueComponent.Phase.WINDUP and _flash_left <= 0.0:
+		var heat: float = action_queue.progress() if is_multiplayer_authority() else 0.5
+		_body_material.emission = WINDUP_GLOW * heat * 2.0

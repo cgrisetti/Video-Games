@@ -9,6 +9,8 @@ const SOUL_TETHER_HEALER: StringName = &"soul_tether_healer"
 const DIRECTIONAL_FLOW_DPS: StringName = &"directional_flow_dps"
 const RAID_BOSS_DUMMY: StringName = &"raid_boss_dummy"
 const PLAYER_CLASSES: Array[StringName] = [SHIELD_TANK, SOUL_TETHER_HEALER, DIRECTIONAL_FLOW_DPS]
+## The Dojo Warden's swing (the Squire auto-guard and companions watch for it).
+const BOSS_SWIPE: StringName = &"boss_crushing_swipe"
 
 const TANK_COLOR: Color = Color(0.32, 0.52, 0.9)
 const HEALER_COLOR: Color = Color(0.34, 0.76, 0.46)
@@ -254,7 +256,7 @@ static func raid_boss_dummy() -> ClassLoadoutResource:
 	stats.turn_speed = 2.6
 
 	# A long, readable wind-up: the tank's cue to raise a Perfect Guard.
-	var swipe: CombatActionResource = _strike(&"boss_crushing_swipe", "Crushing Swipe", Cmd.LIGHT, 0.85, 0.15, 0.9, 0.0, 24.0)
+	var swipe: CombatActionResource = _strike(BOSS_SWIPE, "Crushing Swipe", Cmd.LIGHT, 0.85, 0.15, 0.9, 0.0, 24.0)
 	swipe.reach = 2.6
 	swipe.hit_radius = 2.2
 	swipe.hit_stop_scale = 1.5

@@ -5,7 +5,8 @@
 ##   - party caps, then the Raid Portal into the Dungeon Dojo while hosting ENet
 ##   - combat: flow-cancels and their windows, hit-stop, all three cross-class
 ##     detonations and their rewards and cues, poise, taunt, Perfect Guard,
-##     heals, Lifeline, Shadow Sanctuary, Squire auto-evade, telegraphs, wipes
+##     heals, Lifeline, Shadow Sanctuary, Squire auto-evade and auto-guard,
+##     soak scaling for small parties, telegraphs, wipes
 ##   - the victory: slow motion, the banner, the reward chest and its Dojo
 ##     Shards, and the gold portal home with the same ENet session still up
 ##   - the Shard Vendor in Hub Town: its menu on the keyboard, upgrades for
@@ -82,6 +83,8 @@ func _run() -> void:
 	await _check_healer()
 	await _check_shadow_sanctuary()
 	await _check_squire_auto_evade()
+	await _check_squire_auto_guard()
+	await _check_soak_scaling()
 	await _check_telegraphs()
 	await _check_wipe_resets_fight()
 	await _check_victory_and_loot()
@@ -482,6 +485,94 @@ func _check_squire_auto_evade() -> void:
 	_check(not decal.is_inside_tree() or not decal.contains(healer.global_position), "the auto-evade rolls out of the red zone")
 	healer.input.assist_mode = InputComponent.AssistMode.ADVENTURER
 	healer.apply_assist_mode()
+
+
+## Squire Gambit guards the boss's Crushing Swipe for you (with 25+ stamina);
+## a Squire DPS, who has no guard, rolls clear instead.
+func _check_squire_auto_guard() -> void:
+	boss.set_physics_process(false) # The test starts each swipe itself.
+	boss.cancel_action()
+	await _until_idle(tank)
+	_reset_boss_poise()
+	boss.threat.taunt(tank.player_id, 5.0)
+	tank.place_at(Transform3D(Basis.IDENTITY, boss.global_position + boss.facing_vector() * 2.4))
+	tank.input.inject_guard(false)
+	tank.input.assist_mode = InputComponent.AssistMode.SQUIRE_GAMBIT
+	tank.apply_assist_mode()
+	tank.stats.stamina = tank.stats.stats.max_stamina
+	await _seconds(0.1)
+	_check(not tank.state_machine.is_in(&"guard"), "no swipe, no guard")
+	var outcomes_before: int = _outcomes.size()
+	boss.action_queue.request(Cmd.LIGHT)
+	await _seconds(0.1)
+	_check(tank.input.is_auto_guarding() and tank.state_machine.is_in(&"guard"), "Squire Gambit raises the guard as the boss winds up its Crushing Swipe")
+	boss.set_physics_process(true)
+	await _seconds(1.2)
+	_check(_outcomes.slice(outcomes_before).has(StatsComponent.StrikeOutcome.GUARDED), "the swipe lands on the raised guard")
+	_check(not tank.input.is_auto_guarding() and not tank.state_machine.is_in(&"guard"), "and the guard drops once the swing is over")
+
+	boss.set_physics_process(false)
+	boss.cancel_action()
+	await _until_idle(tank)
+	tank.stats.stamina = InputComponent.AUTO_GUARD_MIN_STAMINA - 5.0
+	boss.action_queue.request(Cmd.LIGHT)
+	await _seconds(0.1)
+	_check(not tank.input.is_auto_guarding() and not tank.state_machine.is_in(&"guard"), "with under 25 stamina there's no auto-guard")
+	boss.cancel_action()
+	tank.input.assist_mode = InputComponent.AssistMode.ADVENTURER
+	tank.apply_assist_mode()
+	tank.stats.stamina = tank.stats.stats.max_stamina
+
+	await _until_idle(dps)
+	tank.place_at(Transform3D(Basis.IDENTITY, boss.global_position + boss.facing_vector() * 9.0))
+	dps.place_at(Transform3D(Basis.IDENTITY, boss.global_position + boss.facing_vector() * 2.2))
+	dps.input.assist_mode = InputComponent.AssistMode.SQUIRE_GAMBIT
+	dps.apply_assist_mode()
+	dps.stats.stamina = dps.stats.stats.max_stamina
+	var start: Vector3 = dps.global_position
+	boss.action_queue.request(Cmd.LIGHT)
+	await _seconds(0.1)
+	_check(dps.state_machine.is_in(&"dodge"), "a Squire DPS, with no guard, rolls clear of the swipe")
+	await _seconds(0.4)
+	_check(not boss.swipe_threatens(dps, 0.0) and dps.global_position.distance_to(boss.global_position) > start.distance_to(boss.global_position),
+		"the roll takes it out of reach")
+	boss.cancel_action()
+	dps.input.assist_mode = InputComponent.AssistMode.MASTER
+	dps.apply_assist_mode()
+	boss.set_physics_process(true)
+
+
+## Golden Communion needs max(1, standing / 2) players inside and hurts 30 per
+## standing player (up to 90), so a 2-player couch can always clear it.
+func _check_soak_scaling() -> void:
+	var required: Array[int] = []
+	for players: int in range(1, 6):
+		required.append(BossDummy.soak_required(players))
+	_check(required == [1, 1, 1, 2, 2], "a soak needs max(1, players / 2) inside: %s for 1 to 5 players" % str(required))
+	_check(is_equal_approx(BossDummy.soak_total_damage(2), 60.0) and is_equal_approx(BossDummy.soak_total_damage(5), 90.0),
+		"soak damage is 30 per standing player, up to 90")
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.stats.heal(actor.stats.stats.max_health)
+	dps.stats.take_damage(9999.0) # Two left standing: a 2-player couch.
+	await _seconds(0.05)
+	var decal: RaidTelegraphDecal = RaidTelegraphDecal.new()
+	decal.configure(RaidTelegraphDecal.Kind.GOLD_PARTY_SOAK, BossDummy.SOAK_RADIUS, BossDummy.SOAK_CAST_TIME, null)
+	dojo.telegraphs_root.add_child(decal)
+	decal.global_position = tank.global_position
+	var tank_before: float = tank.stats.health
+	var healer_before: float = healer.stats.health
+	var alone: Array[ActorBase] = [tank]
+	boss._on_telegraph_resolved(decal, alone)
+	await _seconds(0.05)
+	_check(is_equal_approx(tank_before - tank.stats.health, 60.0) and is_equal_approx(healer.stats.health, healer_before),
+		"with 2 standing, one player soaking alone clears it (60 damage, nobody else hurt)")
+	var nobody: Array[ActorBase] = []
+	boss._on_telegraph_resolved(decal, nobody)
+	await _seconds(0.05)
+	_check(is_equal_approx(healer_before - healer.stats.health, BossDummy.SOAK_FAIL_DAMAGE), "an empty soak fails: 30 to everyone standing")
+	decal.queue_free()
+	CombatDirector.current.apply_heal(healer, dps, dps.stats.stats.max_health)
+	await _seconds(0.1)
 
 
 func _check_telegraphs() -> void:
