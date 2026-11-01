@@ -222,9 +222,9 @@ func _cycle_fellowship(step: int) -> void:
 
 ## The next Secondary Calling: the same character, re-equipped in place.
 func _cycle_calling(step: int) -> void:
-	var next: int = wrapi(Callings.resolve(actor.loadout.class_id, actor.loadout.calling) + step, 0, Callings.SECONDARY_NAMES.size())
+	var next: int = wrapi(Callings.resolve(actor.loadout.class_id, actor.loadout.calling) + step, 0, Callings.count())
 	AudioCues.play(&"equip")
-	NetworkManager.current.update_local_calling(actor.device_id, next)
+	NetworkManager.current.update_local_calling(actor.device_id, Callings.id_of(next))
 
 
 ## What a row can be set to: item ids, lead-card copy keys (starter cards plus
@@ -344,7 +344,7 @@ func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
 	if row == ROW_FELLOWSHIP:
 		return "Your raid seat. Changing it changes who you are: the Shield-Sworn hold the boss, the Wayfarers strike and stamp Signs, the Lantern-Bearers mend down their Soul Tethers."
 	if row == ROW_CALLING:
-		return "%s, %s. %s: %s." % [_player_class.display_name, _player_class.calling_subtitle, Callings.SECONDARY_NAMES[_player_class.calling],
+		return "%s, %s. %s: %s." % [_player_class.display_name, _player_class.calling_subtitle, Callings.secondary_name(_player_class.calling),
 			Callings.summary(_player_class.calling)]
 	if row == ROW_ARMOR:
 		var armor: EquipmentItemResource = catalog.item(draft.armor_id)
@@ -372,7 +372,7 @@ func _lock_note(id: StringName) -> String:
 	if item == null or _player_class.allows(item):
 		return ""
 	var unlock: int = Callings.unlocked_by(item)
-	return "  (needs %s)" % Callings.SECONDARY_NAMES[unlock] if unlock >= 0 else "  (not for this Fellowship)"
+	return "  (needs %s)" % Callings.secondary_name(unlock) if unlock >= 0 else "  (not for this Fellowship)"
 
 
 func _item_name(id: StringName) -> String:

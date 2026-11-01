@@ -42,8 +42,8 @@ var collection: Dictionary[StringName, int] = {}
 var victories: int = 0
 ## Class id -> the kit (EquipmentLoadoutResource.to_dict) its players last wore.
 var kits: Dictionary[StringName, Dictionary] = {}
-## Class id -> the Secondary Calling its players last chose (Callings.Secondary).
-var callings: Dictionary[StringName, int] = {}
+## Class id -> the Secondary Calling id its players last chose (&"swift_foot").
+var callings: Dictionary[StringName, StringName] = {}
 ## The host rolls chest cards with this (the smoke test seeds it).
 var drop_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## The host rolls the expedition's finds (the Wayfarer's Chest) with this, so they never shift the boss's drops.
@@ -166,14 +166,14 @@ func save_kit(class_id: StringName, kit: Dictionary) -> void:
 	_commit()
 
 
-## The Secondary Calling a class's players last chose (-1 if none was saved).
-func calling_for(class_id: StringName) -> int:
-	return callings.get(class_id, -1)
+## The Secondary Calling id a class's players last chose (&"" if none was saved).
+func calling_for(class_id: StringName) -> StringName:
+	return callings.get(class_id, &"")
 
 
 ## Host only: remembers a class's Calling for its next seat (and next session).
-func save_calling(class_id: StringName, calling: int) -> void:
-	if not NetworkManager.current.is_host() or callings.get(class_id, -1) == calling:
+func save_calling(class_id: StringName, calling: StringName) -> void:
+	if not NetworkManager.current.is_host() or callings.get(class_id, &"") == calling:
 		return
 	callings[class_id] = calling
 	_commit()
@@ -235,7 +235,9 @@ func load_save() -> void:
 			kits[StringName(str(class_id))] = saved_kits[class_id] as Dictionary
 		var saved_callings: Dictionary = file.get_value("callings", "by_class", {}) as Dictionary
 		for class_id: Variant in saved_callings:
-			callings[StringName(str(class_id))] = int(saved_callings[class_id])
+			var saved: Variant = saved_callings[class_id]
+			# A column number from the first Callings build reads back as its id.
+			callings[StringName(str(class_id))] = Callings.id_of(int(saved)) if saved is int else StringName(str(saved))
 	progress_changed.emit()
 
 
@@ -252,7 +254,7 @@ func save() -> Error:
 	file.set_value("kits", "by_class", plain_kits)
 	var plain_callings: Dictionary = {}
 	for class_id: StringName in callings:
-		plain_callings[String(class_id)] = callings[class_id]
+		plain_callings[String(class_id)] = String(callings[class_id])
 	file.set_value("callings", "by_class", plain_callings)
 	return file.save(save_path)
 

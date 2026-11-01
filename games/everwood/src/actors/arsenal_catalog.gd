@@ -55,6 +55,11 @@ const RIME_GALE_LINK: StringName = &"rime_gale_link"
 const WARM_HEARTH_LINK: StringName = &"warm_hearth_link"
 const STAR_TIDE_LINK: StringName = &"star_tide_link"
 
+# The Secondary Callings (06 §3, 07 GDD §1.3), in column order.
+const STOUT_HEART: StringName = &"stout_heart"
+const SWIFT_FOOT: StringName = &"swift_foot"
+const WISE_HAND: StringName = &"wise_hand"
+
 const Cmd = CombatActionResource.Command
 const Fx = CombatActionResource.Effect
 const Sign = ScribeSignResource.Sign
@@ -62,6 +67,9 @@ const Slot = ScribeCardResource.GrimoireSlot
 const Part = PropPartResource.Shape
 
 var _signs: Dictionary[int, ScribeSignResource] = {}
+var _secondaries: Dictionary[StringName, SecondaryCallingResource] = {}
+var _callings: Dictionary[StringName, CallingResource] = {}
+var _secondary_order: Array[StringName] = []
 var _items: Dictionary[StringName, EquipmentItemResource] = {}
 var _cards: Dictionary[StringName, ScribeCardResource] = {}
 # Registration order, so menus and drop rolls are the same on every peer.
@@ -75,6 +83,7 @@ func _init() -> void:
 	_build_weapons()
 	_build_lead_cards()
 	_build_under_cards()
+	_build_callings()
 	_load_card_folder()
 
 
@@ -99,6 +108,39 @@ func item(id: StringName) -> EquipmentItemResource:
 
 func card(id: StringName) -> ScribeCardResource:
 	return _cards.get(id, null)
+
+
+## A Secondary Calling by id (&"swift_foot"), or null.
+func secondary_calling(id: StringName) -> SecondaryCallingResource:
+	return _secondaries.get(id, null)
+
+
+## The Secondary Calling in a column of the matrix (Callings.Secondary), or null.
+func secondary_at(column: int) -> SecondaryCallingResource:
+	return _secondaries[_secondary_order[column]] if column >= 0 and column < _secondary_order.size() else null
+
+
+## The Secondary Callings in column order.
+func secondary_callings() -> Array[SecondaryCallingResource]:
+	var list: Array[SecondaryCallingResource] = []
+	for id: StringName in _secondary_order:
+		list.append(_secondaries[id])
+	return list
+
+
+## The Calling a Fellowship becomes with a Secondary (by id), or null.
+func calling_for(fellowship_class_id: StringName, secondary_id: StringName) -> CallingResource:
+	for listed: CallingResource in _callings.values():
+		if listed.fellowship_class_id == fellowship_class_id and listed.secondary_id == secondary_id:
+			return listed
+	return null
+
+
+## Every registered Calling.
+func callings() -> Array[CallingResource]:
+	var list: Array[CallingResource] = []
+	list.assign(_callings.values())
+	return list
 
 
 func armors() -> Array[EquipmentItemResource]:
@@ -210,6 +252,16 @@ func register_item(added: EquipmentItemResource) -> void:
 	if not _items.has(added.item_id):
 		_item_order.append(added.item_id)
 	_items[added.item_id] = added
+
+
+func register_secondary_calling(added: SecondaryCallingResource) -> void:
+	if not _secondaries.has(added.calling_id):
+		_secondary_order.append(added.calling_id)
+	_secondaries[added.calling_id] = added
+
+
+func register_calling(added: CallingResource) -> void:
+	_callings[added.calling_id] = added
 
 
 func register_card(added: ScribeCardResource) -> void:
@@ -656,6 +708,61 @@ func _boss_drop(lead: ScribeCardResource, rarity: ScribeCardResource.CardRarity)
 	lead.rarity = rarity
 	lead.starter = false
 	lead.drop_weight = 3.0
+
+
+# --- The 3x3 Callings (06 §3, 07 GDD §1.3) ---------------------------------
+
+## The three Secondary Callings and the nine Callings they make with the
+## Fellowships. The names are the Creative Director's (06 §3, chosen
+## 2026-11-01); a rename is one line here.
+func _build_callings() -> void:
+	var stout: SecondaryCallingResource = _secondary(STOUT_HEART, "Stout Heart", "+Tank", Color(0.86, 0.56, 0.26))
+	stout.health_bonus = 20.0
+	stout.stamina_regen_bonus = -2.0
+	stout.poise_damage_multiplier = 1.25
+	stout.perfect_guard_bonus = 0.03
+	stout.unlocked_armor_weights = [EquipmentItemResource.ArmorWeight.HEAVY]
+	var swift: SecondaryCallingResource = _secondary(SWIFT_FOOT, "Swift Foot", "+DPS", Color(0.38, 0.76, 0.5))
+	swift.stamina_regen_bonus = 3.0
+	swift.strike_damage_multiplier = 1.15
+	swift.unlocked_weapon_types = [EquipmentItemResource.WeaponType.BOW, EquipmentItemResource.WeaponType.HEAVY_AXE]
+	var wise: SecondaryCallingResource = _secondary(WISE_HAND, "Wise Hand", "+Magic", Color(0.68, 0.54, 0.95))
+	wise.health_bonus = -5.0
+	wise.stamina_regen_bonus = 2.0
+	wise.resonance_gain_multiplier = 1.2
+	wise.heal_multiplier = 1.2
+	wise.bonus_memory = 1
+	wise.unlocked_weapon_types = [EquipmentItemResource.WeaponType.STAFF]
+	_calling(&"bridge_warden", "Bridge-Warden", "Keeper of the Stone-Span", ClassLoadouts.SHIELD_TANK, STOUT_HEART)
+	_calling(&"weald_captain", "Weald-Captain", "Vanguard of the Green Company", ClassLoadouts.SHIELD_TANK, SWIFT_FOOT)
+	_calling(&"hearth_guard", "Hearth-Guard", "Watcher of the Kindled Stone", ClassLoadouts.SHIELD_TANK, WISE_HAND)
+	_calling(&"iron_woodsman", "Iron-Woodsman", "Hewn-Hand of the High Pines", ClassLoadouts.DIRECTIONAL_FLOW_DPS, STOUT_HEART)
+	_calling(&"hedge_runner", "Hedge-Runner", "Outrider of the Bramble-Ways", ClassLoadouts.DIRECTIONAL_FLOW_DPS, SWIFT_FOOT)
+	_calling(&"sign_seeker", "Sign-Seeker", "Journeyman of the Four Signs", ClassLoadouts.DIRECTIONAL_FLOW_DPS, WISE_HAND)
+	_calling(&"bell_keeper", "Bell-Keeper", "Ringer of the Sanctuary Chime", ClassLoadouts.SOUL_TETHER_HEALER, STOUT_HEART)
+	_calling(&"wind_mender", "Wind-Mender", "Weather-Worker of the Sound", ClassLoadouts.SOUL_TETHER_HEALER, SWIFT_FOOT)
+	_calling(&"lantern_scribe", "Lantern-Scribe", "Bearer of the Reed-Light", ClassLoadouts.SOUL_TETHER_HEALER, WISE_HAND)
+
+
+func _secondary(id: StringName, label: String, tag: String, trim: Color) -> SecondaryCallingResource:
+	var secondary: SecondaryCallingResource = SecondaryCallingResource.new()
+	secondary.calling_id = id
+	secondary.column = _secondary_order.size()
+	secondary.display_name = label
+	secondary.tag = tag
+	secondary.trim_color = trim
+	register_secondary_calling(secondary)
+	return secondary
+
+
+func _calling(id: StringName, label: String, subtitle: String, fellowship_class_id: StringName, secondary_id: StringName) -> void:
+	var calling: CallingResource = CallingResource.new()
+	calling.calling_id = id
+	calling.display_name = label
+	calling.subtitle = subtitle
+	calling.fellowship_class_id = fellowship_class_id
+	calling.secondary_id = secondary_id
+	register_calling(calling)
 
 
 # --- Under-cards (05 GDD §3.1) --------------------------------------------

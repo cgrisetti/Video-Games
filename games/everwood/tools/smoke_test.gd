@@ -191,8 +191,9 @@ func _check_arsenal_catalog() -> void:
 		var stats: CharacterStatsResource = _compose(ClassLoadouts.SHIELD_TANK, armor_id, &"", Callings.Secondary.STOUT_HEART).stats
 		var expected: Array = armor_table[armor_id]
 		armor_ok = armor_ok and is_equal_approx(stats.damage_mitigation, expected[0]) \
-			and is_equal_approx(stats.stamina_regen_per_sec, expected[1] + Callings.STOUT_STAMINA_REGEN) \
-			and is_equal_approx(stats.roll_distance, expected[2]) and is_equal_approx(stats.perfect_guard_window, expected[3] + Callings.STOUT_PERFECT_GUARD)
+			and is_equal_approx(stats.stamina_regen_per_sec, expected[1] + _secondary(ArsenalCatalog.STOUT_HEART).stamina_regen_bonus) \
+			and is_equal_approx(stats.roll_distance, expected[2]) \
+			and is_equal_approx(stats.perfect_guard_window, expected[3] + _secondary(ArsenalCatalog.STOUT_HEART).perfect_guard_bonus)
 	_check(armor_ok, "Light / Medium / Heavy armor: 10/20/35% mitigation, 27.5/22/18 stamina a second, 5.2/4.6/3.8 m rolls, 200/200/260 ms Perfect Guard (before the Calling)")
 
 	# Weapon numbers as they stand, on a Sign-Seeker (a Wise Hand changes no damage or poise).
@@ -293,7 +294,7 @@ func _check_arsenal_catalog() -> void:
 func _check_callings() -> void:
 	var names: Array[String] = []
 	for class_id: StringName in Callings.FELLOWSHIP_CLASSES:
-		for secondary: int in Callings.SECONDARY_NAMES.size():
+		for secondary: int in Callings.count():
 			names.append(Callings.calling_name(class_id, secondary))
 	_check(names == ["Bridge-Warden", "Weald-Captain", "Hearth-Guard", "Iron-Woodsman", "Hedge-Runner", "Sign-Seeker", "Bell-Keeper", "Wind-Mender", "Lantern-Scribe"],
 		"the 3x3 matrix names all nine Callings: the Shield-Sworn, Wayfarers and Lantern-Bearers, each with a Stout Heart, Swift Foot or Wise Hand")
@@ -339,8 +340,17 @@ func _check_callings() -> void:
 		"a save naming gear the Calling can't use falls back to the starter weapon")
 	var seat: PartyMember = PartyMember.new()
 	seat.class_id = ClassLoadouts.SOUL_TETHER_HEALER
-	seat.calling = Callings.Secondary.SWIFT_FOOT
-	_check(PartyMember.from_dict(seat.to_dict()).calling == Callings.Secondary.SWIFT_FOOT, "a seat's Calling travels in the party roster")
+	seat.calling = ArsenalCatalog.SWIFT_FOOT
+	_check(seat.to_dict()["calling"] == "swift_foot" and PartyMember.from_dict(seat.to_dict()).calling == ArsenalCatalog.SWIFT_FOOT,
+		"a seat's Calling travels in the party roster as a short id (\"swift_foot\")")
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var weald: CallingResource = catalog.calling_for(ClassLoadouts.SHIELD_TANK, ArsenalCatalog.SWIFT_FOOT)
+	_check(catalog.callings().size() == 9 and catalog.secondary_callings().size() == 3 and weald != null and weald.calling_id == &"weald_captain"
+		and weald.subtitle == "Vanguard of the Green Company" and catalog.secondary_calling(ArsenalCatalog.WISE_HAND).bonus_memory == 1
+		and Callings.column_of(ArsenalCatalog.WISE_HAND) == Callings.Secondary.WISE_HAND and Callings.id_of(Callings.Secondary.STOUT_HEART) == ArsenalCatalog.STOUT_HEART,
+		"the Arsenal registers the 3 Secondary Callings and all 9 Callings as typed data, by id (08 Gate 4)")
+	_check(catalog.secondary_calling(ArsenalCatalog.STOUT_HEART).summary().contains("+20 health") and catalog.secondary_calling(ArsenalCatalog.SWIFT_FOOT).summary().contains("unlocks bow"),
+		"each Secondary describes itself for the Scribe Desk from its numbers")
 
 
 ## Phase 8 (06_WORLD_AND_CALLINGS.md §2): the Four Scribe Signs, their
@@ -729,6 +739,11 @@ func _check_doverslap_expedition() -> void:
 	for actor: ActorBase in [tank, healer, dps]:
 		actor.stats.heal(actor.stats.stats.max_health)
 		actor.stats.stamina = actor.stats.stats.max_stamina
+
+
+## A Secondary Calling's registered data.
+func _secondary(id: StringName) -> SecondaryCallingResource:
+	return ArsenalCatalog.current.secondary_calling(id)
 
 
 ## Puts an actor at `target + offset`, facing the target.
@@ -1710,7 +1725,7 @@ func _check_scribe_desk() -> void:
 	await _seconds(0.05)
 	_check(keyboard.loadout.display_name == "Weald-Captain" and keyboard.loadout.calling == Callings.Secondary.SWIFT_FOOT
 		and hub.actors[&"1_0"] == keyboard and hud.scribe_desk_menu() == menu, "D on the Calling row makes the tank a Weald-Captain (Swift Foot) in place")
-	_check(is_equal_approx(keyboard.base_stats.max_health, 160.0) and is_equal_approx(keyboard.loadout.stats.stamina_regen_per_sec / PartyProgress.current.multiplier(PartyProgress.STAMINA_REGEN), 18.0 + Callings.SWIFT_STAMINA_REGEN),
+	_check(is_equal_approx(keyboard.base_stats.max_health, 160.0) and is_equal_approx(keyboard.loadout.stats.stamina_regen_per_sec / PartyProgress.current.multiplier(PartyProgress.STAMINA_REGEN), 18.0 + _secondary(ArsenalCatalog.SWIFT_FOOT).stamina_regen_bonus),
 		"a Weald-Captain trades the Stout Heart's +20 health for +3 stamina a second")
 	await _tap_key(KEY_S)
 	await _tap_key(KEY_S)
@@ -1744,7 +1759,7 @@ func _check_scribe_desk() -> void:
 		await _tap_key(KEY_D)
 	var surged: CombatActionResource = keyboard.loadout.card_action(0)
 	_check(keyboard.loadout.kit.under_ids[0] == ArsenalCatalog.IRON_ROOT_LINK
-		and is_equal_approx(surged.damage, 20.0 * LoadoutComposer.UNDER_POTENCY_MULTIPLIER * Callings.SWIFT_STRIKE_DAMAGE),
+		and is_equal_approx(surged.damage, 20.0 * LoadoutComposer.UNDER_POTENCY_MULTIPLIER * _secondary(ArsenalCatalog.SWIFT_FOOT).strike_damage_multiplier),
 		"back on the Basic Shield Charge the link fits: Iron-Root Link surges it by 20% (and the Swift Foot's 15% on top)")
 	for press: int in 5:
 		await _tap_key(KEY_S)
@@ -1753,8 +1768,11 @@ func _check_scribe_desk() -> void:
 	await _tap_key(KEY_SPACE)
 	_check(hud.scribe_desk_menu() == null and not keyboard.input.menu_open, "Space closes the desk")
 	var saved: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(PartyProgress.current.kit_for(ClassLoadouts.SHIELD_TANK))
-	_check(saved.same_as(keyboard.loadout.kit) and PartyProgress.current.calling_for(ClassLoadouts.SHIELD_TANK) == Callings.Secondary.SWIFT_FOOT,
-		"the tank's new kit and Calling are saved for the next session")
+	var calling_save: ConfigFile = ConfigFile.new()
+	calling_save.load(TEST_SAVE_PATH)
+	_check(saved.same_as(keyboard.loadout.kit) and PartyProgress.current.calling_for(ClassLoadouts.SHIELD_TANK) == ArsenalCatalog.SWIFT_FOOT
+		and str((calling_save.get_value("callings", "by_class", {}) as Dictionary).get("shield_tank", "")) == "swift_foot",
+		"the tank's new kit and Calling are saved for the next session (the Calling as its id)")
 	network.request_local_player(1, ClassLoadouts.SHIELD_TANK, InputComponent.AssistMode.ADVENTURER)
 	await _seconds(0.1)
 	var second: ActorBase = hub.actors.get(&"1_1") as ActorBase

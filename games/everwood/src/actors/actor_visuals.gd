@@ -25,8 +25,6 @@ const BRASS_COLOR: Color = Color(0.88, 0.68, 0.3)
 const OAK_COLOR: Color = Color(0.46, 0.31, 0.18)
 const EYE_COLOR: Color = Color(0.12, 0.1, 0.1)
 const LANTERN_GLOW: Color = Color(1.0, 0.78, 0.4)
-## Trim per Secondary Calling: Stout Heart bronze, Swift Foot leaf-green, Wise Hand violet.
-const CALLING_TRIM: Array[Color] = [Color(0.86, 0.56, 0.26), Color(0.38, 0.76, 0.5), Color(0.68, 0.54, 0.95)]
 ## Cape length per Fellowship: a heavy oilskin, a travel cloak, a short mantle.
 const CAPE_LENGTHS: Array[float] = [1.0, 0.9, 0.6]
 ## The cape lifts back this far (radians) at full running speed...
@@ -87,7 +85,9 @@ func rebuild() -> void:
 		return
 	var loadout: ClassLoadoutResource = actor.loadout
 	var row: int = Callings.fellowship_row(loadout.class_id)
-	var trim: Color = CALLING_TRIM[clampi(loadout.calling, 0, CALLING_TRIM.size() - 1)]
+	# Trim in the Secondary Calling's colour (its SecondaryCallingResource).
+	var calling: SecondaryCallingResource = Callings.secondary(Callings.resolve(loadout.class_id, loadout.calling))
+	var trim: Color = calling.trim_color if calling != null else Color.WHITE
 	var body: Color = loadout.body_color
 	var weight: EquipmentItemResource.ArmorWeight = loadout.armor.armor_weight if loadout.armor != null else EquipmentItemResource.ArmorWeight.MEDIUM
 	_build_body(body)

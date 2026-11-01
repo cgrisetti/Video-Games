@@ -230,17 +230,17 @@ func least_used_class(roster: Dictionary[StringName, PartyMember]) -> StringName
 
 # --- Kits -----------------------------------------------------------------
 
-## The Calling a new seat takes: the class's last saved one, otherwise its own
-## column (Bridge-Warden, Hedge-Runner, Lantern-Scribe). Companions take their own column.
-func pick_calling(class_id: StringName, companion: bool) -> int:
+## The Calling a new seat takes, by id: the class's last saved one, otherwise
+## its own column (Bridge-Warden, Hedge-Runner, Lantern-Scribe). Companions take their own column.
+func pick_calling(class_id: StringName, companion: bool) -> StringName:
 	if companion:
-		return Callings.default_secondary(class_id)
-	return Callings.resolve(class_id, PartyProgress.current.calling_for(class_id))
+		return Callings.id_of(Callings.default_secondary(class_id))
+	return Callings.id_of(Callings.resolve(class_id, Callings.column_of(PartyProgress.current.calling_for(class_id))))
 
 
 ## The kit a new seat wears: the class's last saved kit while it's still
 ## allowed, otherwise its starter kit. Companions always wear the starter kit.
-func pick_kit(class_id: StringName, calling: int, companion: bool) -> Dictionary:
+func pick_kit(class_id: StringName, calling: StringName, companion: bool) -> Dictionary:
 	var starter: Dictionary = ClassLoadouts.starter_kit(class_id).to_dict()
 	if companion:
 		return starter
@@ -255,16 +255,16 @@ func check_kit(seat: PartyMember, kit: Dictionary) -> String:
 	return check_kit_for_class(seat.class_id, seat.calling, kit)
 
 
-func check_kit_for_class(class_id: StringName, calling: int, kit: Dictionary) -> String:
+func check_kit_for_class(class_id: StringName, calling: StringName, kit: Dictionary) -> String:
 	var progress: PartyProgress = PartyProgress.current
-	return LoadoutComposer.kit_problem(ClassLoadouts.player_class(class_id, calling), EquipmentLoadoutResource.from_dict(kit),
+	return LoadoutComposer.kit_problem(ClassLoadouts.player_class(class_id, Callings.column_of(calling)), EquipmentLoadoutResource.from_dict(kit),
 		progress.grimoire_level(), progress.collection)
 
 
 ## The loadout a seat's class, Calling and kit compose into.
 func _compose_for(seat: PartyMember) -> ClassLoadoutResource:
 	var kit: EquipmentLoadoutResource = null if seat.kit.is_empty() else EquipmentLoadoutResource.from_dict(seat.kit)
-	return ClassLoadouts.compose(seat.class_id, kit, seat.calling)
+	return ClassLoadouts.compose(seat.class_id, kit, Callings.column_of(seat.calling))
 
 
 ## --weapon / --armor: this screen's players swap them into their kit once.
@@ -409,7 +409,8 @@ func _on_class_cycle(device_id: int) -> void:
 func _on_calling_cycle(device_id: int) -> void:
 	var seat: PartyMember = _local_seat(device_id)
 	if seat != null:
-		NetworkManager.current.update_local_calling(device_id, Callings.next_secondary(Callings.resolve(seat.class_id, seat.calling)))
+		var column: int = Callings.resolve(seat.class_id, Callings.column_of(seat.calling))
+		NetworkManager.current.update_local_calling(device_id, Callings.id_of(Callings.next_secondary(column)))
 
 
 func _on_mode_cycle(device_id: int) -> void:

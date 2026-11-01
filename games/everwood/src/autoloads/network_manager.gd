@@ -48,9 +48,9 @@ var status: String = "Offline"
 ## Chooses a class for a seat that asked for ANY_CLASS: (roster) -> StringName.
 ## The level sets it; the network layer itself knows nothing about classes.
 var class_picker: Callable
-## The Secondary Calling a new seat gets for a class: (class_id: StringName, companion: bool) -> int.
+## The Secondary Calling id a new seat gets for a class: (class_id: StringName, companion: bool) -> StringName.
 var calling_picker: Callable
-## The kit a seat gets for a class and Calling: (class_id: StringName, calling: int, companion: bool) -> Dictionary.
+## The kit a seat gets for a class and Calling: (class_id: StringName, calling: StringName, companion: bool) -> Dictionary.
 var kit_picker: Callable
 ## Why a seat may not wear a kit, or "": (seat: PartyMember, kit: Dictionary) -> String.
 var kit_validator: Callable
@@ -199,13 +199,13 @@ func update_local_player(device_id: int, class_id: StringName, assist_mode: int)
 
 ## Asks for a different Secondary Calling (hold C / L3, or the Scribe Desk).
 ## The host makes the switch and swaps out any gear the new Calling can't use.
-func update_local_calling(device_id: int, calling: int) -> void:
+func update_local_calling(device_id: int, calling: StringName) -> void:
 	if not _local_wishes.has(device_id):
 		return
 	if is_host():
 		_server_set_calling(local_peer_id(), device_id, calling)
 	elif is_online():
-		_request_calling.rpc_id(1, device_id, calling)
+		_request_calling.rpc_id(1, device_id, String(calling))
 
 
 ## Asks to wear a different kit (the Scribe Desk). The host checks it.
@@ -313,17 +313,17 @@ func _seat_companion(class_id: StringName) -> void:
 	_broadcast_roster()
 
 
-func _pick_calling(class_id: StringName, companion: bool) -> int:
-	return calling_picker.call(class_id, companion) if calling_picker.is_valid() else -1
+func _pick_calling(class_id: StringName, companion: bool) -> StringName:
+	return calling_picker.call(class_id, companion) if calling_picker.is_valid() else &""
 
 
-func _pick_kit(class_id: StringName, calling: int, companion: bool) -> Dictionary:
+func _pick_kit(class_id: StringName, calling: StringName, companion: bool) -> Dictionary:
 	return kit_picker.call(class_id, calling, companion) if kit_picker.is_valid() else {}
 
 
-func _server_set_calling(peer_id: int, device_id: int, calling: int) -> bool:
+func _server_set_calling(peer_id: int, device_id: int, calling: StringName) -> bool:
 	var player_id: StringName = PartyMember.make_player_id(peer_id, device_id)
-	if not roster.has(player_id) or calling < 0:
+	if not roster.has(player_id) or calling == &"":
 		return false
 	var seat: PartyMember = roster[player_id]
 	seat.calling = calling
@@ -336,9 +336,9 @@ func _server_set_calling(peer_id: int, device_id: int, calling: int) -> bool:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_calling(device_id: int, calling: int) -> void:
+func _request_calling(device_id: int, calling: String) -> void:
 	if multiplayer.is_server():
-		_server_set_calling(multiplayer.get_remote_sender_id(), device_id, calling)
+		_server_set_calling(multiplayer.get_remote_sender_id(), device_id, StringName(calling))
 
 
 func _server_set_kit(peer_id: int, device_id: int, kit: Dictionary) -> bool:
