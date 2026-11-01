@@ -51,8 +51,8 @@ func _ready() -> void:
 	_model = Node3D.new()
 	_model.name = "Model"
 	add_child(_model)
-	var wood: StandardMaterial3D = _material(WOOD_COLOR, 0.0)
-	var trim: StandardMaterial3D = _material(TRIM_COLOR, 1.2)
+	var wood: Material = _material(WOOD_COLOR, 0.0)
+	var trim: Material = _material(TRIM_COLOR, 1.2)
 	_model.add_child(_box("Body", BODY_SIZE, Vector3(0.0, BODY_SIZE.y * 0.5, 0.0), wood))
 	_model.add_child(_box("Band", Vector3(BODY_SIZE.x + 0.04, 0.12, BODY_SIZE.z + 0.04), Vector3(0.0, BODY_SIZE.y * 0.55, 0.0), trim))
 	# The lid hinges on the back edge, so it swings up and away from the party.
@@ -146,12 +146,6 @@ func _box(box_name: String, size: Vector3, where: Vector3, material: Material) -
 	return box
 
 
-func _material(color: Color, glow: float) -> StandardMaterial3D:
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.6
-	if glow > 0.0:
-		material.emission_enabled = true
-		material.emission = color
-		material.emission_energy_multiplier = glow
-	return material
+## The storybook cel look, or a glowing material when `glow` is above zero.
+func _material(color: Color, glow: float) -> Material:
+	return StorybookMaterial.glowing(color, glow) if glow > 0.0 else StorybookMaterial.make(color)

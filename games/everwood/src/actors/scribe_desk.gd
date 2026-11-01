@@ -42,7 +42,7 @@ func _ready() -> void:
 	collision.name = "Collision"
 	collision.shape = shape
 	desk.add_child(collision)
-	var wood: StandardMaterial3D = _material(WOOD_COLOR, 0.0)
+	var wood: Material = _material(WOOD_COLOR, 0.0)
 	var top_size: Vector3 = Vector3(DESK_SIZE.x, 0.08, DESK_SIZE.z)
 	desk.add_child(_box("Top", top_size, Vector3(0.0, DESK_SIZE.y * 0.5 - 0.04, 0.0), wood))
 	var leg_x: float = DESK_SIZE.x * 0.5 - 0.1
@@ -54,7 +54,7 @@ func _ready() -> void:
 			desk.add_child(_box("Leg%d" % legs, LEG_SIZE, Vector3(side * leg_x, -0.04, depth * leg_z), wood))
 	add_child(desk)
 	# An open Grimoire on the desk.
-	var page: StandardMaterial3D = _material(PAGE_COLOR, 0.0)
+	var page: Material = _material(PAGE_COLOR, 0.0)
 	for side: float in [-1.0, 1.0]:
 		var leaf: MeshInstance3D = _box("Page", BOOK_PAGE_SIZE, Vector3(side * BOOK_PAGE_SIZE.x * 0.5, DESK_SIZE.y + 0.02, DESK_Z - 0.1), page)
 		leaf.rotation = Vector3(0.0, 0.0, -side * BOOK_TILT)
@@ -85,7 +85,7 @@ func _ready() -> void:
 		add_child(card)
 		_cards.append(card)
 	# A faint rune circle where players stand.
-	var circle_material: StandardMaterial3D = _material(RUNE_CIRCLE_COLOR, 1.5)
+	var circle_material: StandardMaterial3D = StorybookMaterial.glowing(RUNE_CIRCLE_COLOR, 1.5)
 	circle_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	circle_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var circle: TorusMesh = TorusMesh.new()
@@ -158,12 +158,6 @@ func _cylinder(cylinder_name: String, radius: float, height: float, where: Vecto
 	return node
 
 
-func _material(color: Color, glow: float) -> StandardMaterial3D:
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.8
-	if glow > 0.0:
-		material.emission_enabled = true
-		material.emission = color
-		material.emission_energy_multiplier = glow
-	return material
+## The storybook cel look, or a glowing material when `glow` is above zero.
+func _material(color: Color, glow: float) -> Material:
+	return StorybookMaterial.glowing(color, glow) if glow > 0.0 else StorybookMaterial.make(color)

@@ -17,9 +17,7 @@ var _bell: Node3D
 
 func _ready() -> void:
 	reach = 2.4
-	var timber: StandardMaterial3D = StandardMaterial3D.new()
-	timber.albedo_color = FRAME_COLOR
-	timber.roughness = 0.85
+	var timber: Material = StorybookMaterial.make(FRAME_COLOR)
 	for side: float in [-1.0, 1.0]:
 		add_child(_box("Post", Vector3(0.18, FRAME_HEIGHT, 0.18), Vector3(side * 0.7, FRAME_HEIGHT * 0.5, 0.0), timber))
 	add_child(_box("Beam", Vector3(1.7, 0.18, 0.2), Vector3(0.0, FRAME_HEIGHT, 0.0), timber))
@@ -38,10 +36,7 @@ func _ready() -> void:
 	_bell.name = "Bell"
 	_bell.position = Vector3(0.0, FRAME_HEIGHT - 0.1, 0.0)
 	add_child(_bell)
-	var bronze: StandardMaterial3D = StandardMaterial3D.new()
-	bronze.albedo_color = BELL_COLOR
-	bronze.metallic = 0.7
-	bronze.roughness = 0.35
+	var bronze: Material = StorybookMaterial.make(BELL_COLOR, 0.5)
 	var cup: CylinderMesh = CylinderMesh.new()
 	cup.top_radius = 0.16
 	cup.bottom_radius = 0.38

@@ -102,6 +102,7 @@ func _run() -> void:
 	_stage_party()
 	await _seconds(0.3)
 	await _check_cross_grimoire_hud()
+	await _check_storybook_art()
 	await _check_flow_cancel_and_hit_stop()
 	await _check_flow_windows()
 	await _check_synergies()
@@ -154,6 +155,8 @@ func _check_hub_and_input_map() -> void:
 	_check(InputComponent.binding_label(InputComponent.ACTION_LIGHT, 0) == "J", "keyboard light reads as J")
 	_check(InputComponent.binding_label(InputComponent.ACTION_LIGHT, FAKE_PADS[0] + 1) == "X"
 		and InputComponent.binding_label(InputComponent.ACTION_TRIGGER_L, FAKE_PADS[0] + 1) == "LT", "a generic pad reads as Xbox letters")
+	var house: MeshInstance3D = hub.get_node(^"Town/House1/Mesh") as MeshInstance3D
+	_check(house != null and (house.mesh as PrimitiveMesh).material is ShaderMaterial, "Bramblebridge's houses wear the storybook cel shader")
 	_check(InputComponent._pad_button_name(JOY_BUTTON_X, InputComponent.PadFamily.PLAYSTATION) == "□"
 		and InputComponent._pad_button_name(JOY_BUTTON_A, InputComponent.PadFamily.PLAYSTATION) == "✕", "a PlayStation pad reads as shapes")
 
@@ -787,6 +790,48 @@ func _check_cross_grimoire_hud() -> void:
 		and is_equal_approx(CrossGrimoireHUD.scale_for(Vector2(800.0, 450.0)), CrossGrimoireHUD.MIN_SCALE),
 		"the cross scales with the split-screen cell, down to a floor for four players")
 	await _until_idle(dps)
+
+
+# --- Storybook art (07 GDD §4) ----------------------------------------------
+
+## Heroes are puppets that read by Fellowship, everything wears the cel look,
+## hits flash the whole puppet, and dropped-in .glb models would be picked up.
+func _check_storybook_art() -> void:
+	_check(tank.visuals != null and tank.visuals.find_child("Greatshield", true, false) != null and tank.visuals.find_child("Crest", true, false) != null
+		and tank.visuals.find_child("Breastplate", true, false) != null,
+		"the Shield-Sworn is a puppet with a crested helm, plate and a banded Greatshield")
+	var lantern: Node = healer.visuals.find_child("TetherLantern", true, false)
+	_check(lantern != null and lantern.find_child("Light", true, false) is OmniLight3D and healer.visuals.find_child("Hat", true, false) != null,
+		"the Lantern-Bearer wears a pointed scribe hat and carries a Tether-Lantern that really glows")
+	_check(dps.visuals.find_child("Quiver", true, false) != null and dps.visuals.find_child("Feather", true, false) != null
+		and dps.visuals.find_child("Cape", true, false) != null, "the Wayfarer has a feathered hood, a travel cloak and a quiver for the bow")
+	var tunic: MeshInstance3D = tank.visuals.find_child("Tunic", true, false) as MeshInstance3D
+	var cel: ShaderMaterial = (tunic.mesh as PrimitiveMesh).material as ShaderMaterial if tunic != null else null
+	var blade: MeshInstance3D = tank.find_child("Weapon", true, false).get_child(0) as MeshInstance3D
+	_check(cel != null and cel.shader == StorybookMaterial.SHADER and (blade.mesh as PrimitiveMesh).material is ShaderMaterial,
+		"heroes and their weapons wear the storybook cel shader (two-band light, rim glow)")
+	_check(tank.loadout.weapon.display_name == "Falchion" and dps.loadout.weapon.display_name == "Yew Longbow"
+		and healer.loadout.weapon.display_name == "Rowan Way-Staff", "the weapons are the Falchion, Yew Longbow and Rowan Way-Staff")
+	CombatDirector.current.deliver(_strike(boss, dps, 1.0, 0.0))
+	await physics_frame
+	await physics_frame
+	var dps_tunic: MeshInstance3D = dps.visuals.find_child("Tunic", true, false) as MeshInstance3D
+	var glow: Color = ((dps_tunic.mesh as PrimitiveMesh).material as ShaderMaterial).get_shader_parameter(&"glow")
+	_check(glow.r > 0.5, "a hit flashes the whole puppet white")
+	_check(ActorVisuals.model_path(ClassLoadouts.SHIELD_TANK) == "res://assets/models/shield_tank.glb"
+		and not ActorVisuals.has_model(ClassLoadouts.SHIELD_TANK) and ActorVisuals.load_model(ClassLoadouts.SHIELD_TANK) == null,
+		"a model dropped at res://assets/models/<id>.glb would replace the procedural body (none is there now)")
+	var leather: EquipmentLoadoutResource = tank.loadout.kit.copy()
+	leather.armor_id = ArsenalCatalog.RANGER_LEATHER
+	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, leather, tank.loadout.calling))
+	await physics_frame
+	_check(tank.visuals.find_child("Jerkin", true, false) != null and tank.visuals.find_child("Breastplate", true, false) == null,
+		"a new armor weight redraws the puppet (plate off, a leather jerkin on)")
+	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, null, tank.loadout.calling))
+	var core: Node = boss.find_child("AmberCore", true, false)
+	_check(boss.find_child("ArmLeft", true, false) != null and boss.find_child("ArmRight", true, false) != null and core != null
+		and boss.find_child("BellRope3", true, false) != null, "the Cairnsman has boulder fists on timber arms, a glowing amber core and swinging bell-ropes")
+	await _seconds(0.2)
 
 
 # --- Combat ---------------------------------------------------------------

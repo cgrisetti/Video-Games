@@ -78,12 +78,11 @@ func _build_visual() -> void:
 	visual = Node3D.new()
 	visual.name = "Visual"
 	add_child(visual)
-	_body_material = StandardMaterial3D.new()
-	_body_material.albedo_color = loadout.body_color
-	_body_material.roughness = 0.85
-	_body_material.emission_enabled = true
-	_body_material.emission = Color.BLACK
-	if kind == Kind.SCUTTLER:
+	_body_material = StorybookMaterial.actor(loadout.body_color, EYE_COLORS[kind])
+	var dropped: Node3D = ActorVisuals.load_model(loadout.class_id)
+	if dropped != null:
+		visual.add_child(dropped)
+	elif kind == Kind.SCUTTLER:
 		_build_scuttler()
 	else:
 		_build_imp()
@@ -107,7 +106,7 @@ func _build_visual() -> void:
 func _build_scuttler() -> void:
 	var radius: float = RADII[Kind.SCUTTLER]
 	visual.add_child(_sphere("Body", radius, Vector3(0.0, 0.5, 0.0), _body_material, Vector3(1.0, 0.75, 1.0)))
-	var thorns: StandardMaterial3D = _flat_material(THORN_COLOR)
+	var thorns: Material = _flat_material(THORN_COLOR)
 	for index: int in 10:
 		var angle: float = TAU * float(index) / 10.0
 		var thorn: MeshInstance3D = _cone("Thorn%d" % index, 0.07, 0.3, thorns)
@@ -115,7 +114,7 @@ func _build_scuttler() -> void:
 		thorn.position = Vector3(0.0, 0.5, 0.0) + out * radius * 0.85
 		thorn.basis = _pointing(out)
 		visual.add_child(thorn)
-	var twig: StandardMaterial3D = _flat_material(TWIG_COLOR)
+	var twig: Material = _flat_material(TWIG_COLOR)
 	for index: int in 6:
 		var side: float = -1.0 if index < 3 else 1.0
 		var leg: Node3D = Node3D.new()
@@ -134,7 +133,7 @@ func _build_scuttler() -> void:
 func _build_imp() -> void:
 	visual.add_child(_sphere("Body", 0.36, Vector3(0.0, 0.5, 0.0), _body_material, Vector3(1.0, 1.25, 0.9)))
 	visual.add_child(_sphere("Head", 0.3, Vector3(0.0, 1.02, -0.08), _body_material, Vector3.ONE))
-	var ear_material: StandardMaterial3D = _flat_material(loadout.body_color.darkened(0.25))
+	var ear_material: Material = _flat_material(loadout.body_color.darkened(0.25))
 	for side: float in [-1.0, 1.0]:
 		var ear: MeshInstance3D = _cone("Ear", 0.09, 0.32, ear_material)
 		ear.position = Vector3(side * 0.24, 1.2, -0.05)
@@ -150,10 +149,7 @@ func _build_imp() -> void:
 
 
 func _add_eyes(right_eye: Vector3, size: float) -> void:
-	var glow: StandardMaterial3D = _flat_material(EYE_COLORS[kind])
-	glow.emission_enabled = true
-	glow.emission = EYE_COLORS[kind]
-	glow.emission_energy_multiplier = 3.0
+	var glow: StandardMaterial3D = StorybookMaterial.glowing(EYE_COLORS[kind], 3.0)
 	for side: float in [-1.0, 1.0]:
 		visual.add_child(_sphere("Eye", size, Vector3(right_eye.x * side, right_eye.y, right_eye.z), glow, Vector3.ONE))
 

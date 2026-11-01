@@ -6,7 +6,8 @@
 ## What a player swings and casts comes from its compiled loadout (equipment
 ## and Scribe Cards, LoadoutComposer). Nothing here knows a weapon or a card by
 ## name: props are built from the items' parts, and a strike either swings the
-## hitbox or fires a projectile, as its action says.
+## hitbox or fires a projectile, as its action says. A player is drawn as a
+## storybook puppet (ActorVisuals); enemies draw their own bodies.
 class_name ActorBase
 extends CharacterBody3D
 
@@ -87,9 +88,14 @@ var stagger_time_left: float = 0.0
 var downed_time_left: float = 0.0
 
 var visual: Node3D
+## Players: the storybook puppet (its parts, cape and off-hand).
+var visuals: ActorVisuals
 ## Melee players: the ribbon a rune-wreathed strike draws.
 var trail: WeaponTrail
-var _body_material: StandardMaterial3D
+## Enemies: the body's material, lit by hit flashes and wind-up tells.
+var _body_material: Material
+var _glow: Color = Color.BLACK
+var _last_pose_position: Vector3 = Vector3.ZERO
 var _prop: Node3D
 var _weapon_prop: Node3D
 var _name_label: Label3D
@@ -240,30 +246,12 @@ func _build_visual() -> void:
 	visual = Node3D.new()
 	visual.name = "Visual"
 	add_child(visual)
-	_body_material = StandardMaterial3D.new()
-	_body_material.albedo_color = loadout.body_color
-	_body_material.roughness = 0.7
-	# Emission stays on (black) so a hit flash never swaps shaders mid-fight.
-	_body_material.emission_enabled = true
-	_body_material.emission = Color.BLACK
-	var body: MeshInstance3D = MeshInstance3D.new()
-	body.name = "Body"
-	var capsule: CapsuleMesh = CapsuleMesh.new()
-	capsule.radius = body_radius()
-	capsule.height = body_height()
-	capsule.material = _body_material
-	body.mesh = capsule
-	body.position = Vector3(0.0, body_height() * 0.5, 0.0)
-	visual.add_child(body)
-	# A darker nose shows which way the actor faces.
-	var nose: MeshInstance3D = MeshInstance3D.new()
-	nose.name = "Nose"
-	var nose_mesh: BoxMesh = BoxMesh.new()
-	nose_mesh.size = Vector3(0.4, 0.22, 0.4) * (body_radius() / BODY_RADIUS)
-	nose_mesh.material = _flat_material(loadout.body_color.darkened(0.55))
-	nose.mesh = nose_mesh
-	nose.position = Vector3(0.0, body_height() * 0.78, -body_radius() * 0.85)
-	visual.add_child(nose)
+	if is_boss():
+		_build_capsule_body()
+	else:
+		visuals = ActorVisuals.new()
+		visuals.setup(self)
+		visual.add_child(visuals)
 	_prop = _build_prop()
 	if _prop != null:
 		visual.add_child(_prop)
@@ -284,16 +272,39 @@ func _build_visual() -> void:
 	add_child(_name_label)
 
 
-## What the actor wears and holds, drawn from its equipped items.
+## An enemy's plain body: a cel capsule with a darker nose showing which way it faces.
+func _build_capsule_body() -> void:
+	_body_material = StorybookMaterial.actor(loadout.body_color, loadout.body_color)
+	var body: MeshInstance3D = MeshInstance3D.new()
+	body.name = "Body"
+	var capsule: CapsuleMesh = CapsuleMesh.new()
+	capsule.radius = body_radius()
+	capsule.height = body_height()
+	capsule.material = _body_material
+	body.mesh = capsule
+	body.position = Vector3(0.0, body_height() * 0.5, 0.0)
+	visual.add_child(body)
+	# A darker nose shows which way the actor faces.
+	var nose: MeshInstance3D = MeshInstance3D.new()
+	nose.name = "Nose"
+	var nose_mesh: BoxMesh = BoxMesh.new()
+	nose_mesh.size = Vector3(0.4, 0.22, 0.4) * (body_radius() / BODY_RADIUS)
+	nose_mesh.material = _flat_material(loadout.body_color.darkened(0.55))
+	nose.mesh = nose_mesh
+	nose.position = Vector3(0.0, body_height() * 0.78, -body_radius() * 0.85)
+	visual.add_child(nose)
+
+
+## What the actor holds (and, without a puppet to show it, wears), drawn from its items.
 func _build_prop() -> Node3D:
 	if loadout.weapon == null and loadout.armor == null:
 		return null
 	var prop: Node3D = Node3D.new()
 	prop.name = "Prop"
-	if loadout.armor != null:
-		prop.add_child(PropBuilder.build(loadout.armor.prop_parts, loadout.armor.model, "Armor"))
+	if loadout.armor != null and visuals == null:
+		prop.add_child(PropBuilder.build(loadout.armor.prop_parts, loadout.armor.model, "Armor", loadout.armor.item_id))
 	if loadout.weapon != null:
-		_weapon_prop = PropBuilder.build(loadout.weapon.prop_parts, loadout.weapon.model, "Weapon")
+		_weapon_prop = PropBuilder.build(loadout.weapon.prop_parts, loadout.weapon.model, "Weapon", loadout.weapon.item_id)
 		prop.add_child(_weapon_prop)
 	return prop
 
@@ -312,6 +323,9 @@ func re_equip(new_loadout: ClassLoadoutResource) -> void:
 		visual.remove_child(_prop)
 		_prop.queue_free()
 	_weapon_prop = null
+	if visuals != null:
+		visuals.rebuild()
+		_glow = Color.BLACK
 	_prop = _build_prop()
 	if _prop != null:
 		visual.add_child(_prop)
@@ -321,11 +335,20 @@ func re_equip(new_loadout: ClassLoadoutResource) -> void:
 		state_machine.transition(&"idle")
 
 
-func _flat_material(color: Color) -> StandardMaterial3D:
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.6
-	return material
+## A cel material for a part of this actor, rimmed in its colour.
+func _flat_material(color: Color) -> Material:
+	return StorybookMaterial.make(color, StorybookMaterial.ACTOR_RIM * 0.6, loadout.body_color.lightened(0.35))
+
+
+## Lights the body up (a hit flash, a flow glow, a wind-up tell); black turns it off.
+func _set_glow(color: Color) -> void:
+	if color == _glow:
+		return
+	_glow = color
+	if visuals != null:
+		visuals.set_glow(color)
+	elif _body_material != null:
+		StorybookMaterial.set_glow(_body_material, color)
 
 
 # --- Identity -------------------------------------------------------------
@@ -768,8 +791,13 @@ func _update_pose(delta: float) -> void:
 		# A rune-wreathed strike sweeps the weapon through the trail's arc.
 		_weapon_prop.rotation.y = trail.swing_angle
 	if _flash_left > 0.0:
-		_body_material.emission = Color(1.0, 1.0, 1.0) * 0.9
+		_set_glow(Color(1.0, 1.0, 1.0) * 0.9)
 	elif _flow_glow_left > 0.0:
-		_body_material.emission = FLOW_GLOW_COLOR * (_flow_glow_left / FLOW_GLOW_TIME) * 1.4
+		_set_glow(FLOW_GLOW_COLOR * (_flow_glow_left / FLOW_GLOW_TIME) * 1.4)
 	else:
-		_body_material.emission = Color.BLACK
+		_set_glow(Color.BLACK)
+	if visuals != null:
+		# Worked out from how far it moved, so a networked copy's cape streams too.
+		var moved: Vector3 = (global_position - _last_pose_position) / maxf(delta, 0.0001)
+		visuals.update_motion(delta, moved if moved.length() < 30.0 else Vector3.ZERO, loadout.stats.move_speed)
+	_last_pose_position = global_position

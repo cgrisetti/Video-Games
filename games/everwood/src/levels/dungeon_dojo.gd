@@ -39,6 +39,8 @@ const WAYFARER_CHEST_CHIMES: int = 15
 const RECALL_DELAY: float = 5.0
 const VICTORY_COLOR: Color = Color(1.0, 0.86, 0.4)
 const CHECKPOINT_COLOR: Color = Color(0.7, 0.9, 1.0)
+## Real seconds a passing banner (a new zone, the gate, the Wayfarer's Chest) stays up.
+const PASSING_BANNER_TIME: float = 4.0
 ## A zone starts once anyone in the party is past this line (north is -Z).
 const ZONE_TWO_Z: float = 15.0
 const ZONE_THREE_Z: float = -17.0
@@ -159,7 +161,7 @@ func _physics_process(_delta: float) -> void:
 		zone = reached
 		_move_respawns_to(zone)
 		for hud: PlayerHUD in huds.values():
-			hud.show_banner(ZONE_NAMES[zone].to_upper(), "Checkpoint: you'll get back up here.", CHECKPOINT_COLOR)
+			hud.show_banner(ZONE_NAMES[zone].to_upper(), "Checkpoint: you'll get back up here.", CHECKPOINT_COLOR, PASSING_BANNER_TIME)
 	if _start_boss_health > 0.0 and not _boss_health_applied and boss.engaged and NetworkManager.current.is_host():
 		_boss_health_applied = true
 		boss.stats.health = boss.stats.stats.max_health * _start_boss_health
@@ -239,7 +241,8 @@ func _on_wayfarer_chest_opened(opener_id: StringName, chimes: int, card_key: Str
 	var opener: ActorBase = CombatDirector.current.get_actor(opener_id)
 	var who: String = opener.display_name().get_slice(" ", 0) if opener != null else "Someone"
 	for hud: PlayerHUD in huds.values():
-		hud.show_banner("+%d CHIMES" % chimes, "%s found the Wayfarer's Chest! New card: %s." % [who, ArsenalCatalog.current.copy_name(card_key)], VICTORY_COLOR)
+		hud.show_banner("+%d CHIMES" % chimes, "%s found the Wayfarer's Chest! New card: %s." % [who, ArsenalCatalog.current.copy_name(card_key)], VICTORY_COLOR,
+			PASSING_BANNER_TIME)
 
 
 # --- The Co-Op Threshold --------------------------------------------------
@@ -247,7 +250,7 @@ func _on_wayfarer_chest_opened(opener_id: StringName, chimes: int, card_key: Str
 func _on_gate_opened(method: int) -> void:
 	var how: String = "The Rune-Plates hum together" if method == CoopGate.Method.RUNE_PLATES else "The Bridge-Bell rings out"
 	for hud: PlayerHUD in huds.values():
-		hud.show_banner("THE GATE OPENS", "%s, and the Sinaya Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR)
+		hud.show_banner("THE GATE OPENS", "%s, and the Sinaya Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR, PASSING_BANNER_TIME)
 	for actor: ActorBase in actors.values():
 		if actor.companion != null:
 			actor.companion.has_assigned_post = false

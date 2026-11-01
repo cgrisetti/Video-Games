@@ -120,14 +120,7 @@ func _cylinder(radius: float, height: float, color: Color, glow: float) -> MeshI
 	mesh.bottom_radius = radius
 	mesh.height = height
 	mesh.radial_segments = 12
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.8
-	if glow > 0.0:
-		material.emission_enabled = true
-		material.emission = color
-		material.emission_energy_multiplier = glow
-	mesh.material = material
+	mesh.material = StorybookMaterial.glowing(color, glow) if glow > 0.0 else StorybookMaterial.make(color)
 	var node: MeshInstance3D = MeshInstance3D.new()
 	node.mesh = mesh
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

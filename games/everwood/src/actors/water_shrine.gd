@@ -33,12 +33,12 @@ var _glow: OmniLight3D
 
 
 func _ready() -> void:
-	var stone: StandardMaterial3D = _material(STONE_COLOR, 0.0)
+	var stone: Material = _material(STONE_COLOR, 0.0)
 	add_child(_cylinder("Basin", BASIN_RADIUS, BASIN_HEIGHT, Vector3(0.0, BASIN_HEIGHT * 0.5, 0.0), stone))
 	add_child(_cylinder("Moss", BASIN_RADIUS + 0.06, 0.12, Vector3(0.0, BASIN_HEIGHT - 0.04, 0.0), _material(MOSS_COLOR, 0.0)))
-	_water = _material(WATER_COLOR, 1.2)
+	_water = StorybookMaterial.glowing(WATER_COLOR, 1.2)
 	add_child(_cylinder("Water", BASIN_RADIUS - 0.12, 0.05, Vector3(0.0, BASIN_HEIGHT + 0.01, 0.0), _water))
-	var wood: StandardMaterial3D = _material(WOOD_COLOR, 0.0)
+	var wood: Material = _material(WOOD_COLOR, 0.0)
 	for corner: Vector2 in [Vector2(-1.0, -1.0), Vector2(1.0, -1.0), Vector2(-1.0, 1.0), Vector2(1.0, 1.0)]:
 		add_child(_cylinder("Post", 0.07, ROOF_HEIGHT, Vector3(corner.x * 1.0, ROOF_HEIGHT * 0.5, corner.y * 1.0), wood))
 	var roof_mesh: PrismMesh = PrismMesh.new()
@@ -141,12 +141,6 @@ func _cylinder(part_name: String, radius: float, height: float, where: Vector3, 
 	return node
 
 
-func _material(color: Color, glow: float) -> StandardMaterial3D:
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.85
-	if glow > 0.0:
-		material.emission_enabled = true
-		material.emission = color
-		material.emission_energy_multiplier = glow
-	return material
+## The storybook cel look, or a glowing material when `glow` is above zero.
+func _material(color: Color, glow: float) -> Material:
+	return StorybookMaterial.glowing(color, glow) if glow > 0.0 else StorybookMaterial.make(color)

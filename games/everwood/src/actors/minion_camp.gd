@@ -91,9 +91,7 @@ func _physics_process(_delta: float) -> void:
 
 ## Stones in a ring and a mound of brambles in the middle, built in code.
 func _build_nest() -> void:
-	var stone: StandardMaterial3D = StandardMaterial3D.new()
-	stone.albedo_color = STONE_COLOR
-	stone.roughness = 0.95
+	var stone: Material = StorybookMaterial.make(STONE_COLOR)
 	for index: int in STONES:
 		var angle: float = TAU * float(index) / STONES + 0.2
 		var mesh: SphereMesh = SphereMesh.new()
@@ -105,9 +103,7 @@ func _build_nest() -> void:
 		node.mesh = mesh
 		node.position = Vector3(cos(angle), 0.12, sin(angle)) * STONE_RING_RADIUS
 		add_child(node)
-	var nest: StandardMaterial3D = StandardMaterial3D.new()
-	nest.albedo_color = NEST_COLOR
-	nest.roughness = 1.0
+	var nest: Material = StorybookMaterial.make(NEST_COLOR)
 	for index: int in 4:
 		var mesh: SphereMesh = SphereMesh.new()
 		mesh.radius = 0.55 - 0.08 * index

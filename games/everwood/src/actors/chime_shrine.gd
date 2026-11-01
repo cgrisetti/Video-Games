@@ -142,12 +142,6 @@ func _cylinder(cylinder_name: String, radius: float, height: float, where: Vecto
 	return cylinder
 
 
-func _material(color: Color, glow: float) -> StandardMaterial3D:
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.8
-	if glow > 0.0:
-		material.emission_enabled = true
-		material.emission = color
-		material.emission_energy_multiplier = glow
-	return material
+## The storybook cel look, or a glowing material when `glow` is above zero.
+func _material(color: Color, glow: float) -> Material:
+	return StorybookMaterial.glowing(color, glow) if glow > 0.0 else StorybookMaterial.make(color)

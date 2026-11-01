@@ -177,8 +177,9 @@ func prompt_text() -> String:
 	return _prompt_label.text if _prompt_label.visible else ""
 
 
-## A big centred message for the whole party, like VICTORY!
-func show_banner(title: String, subtitle: String, color: Color) -> void:
+## A big centred message for the whole party, like VICTORY! It stays up until
+## another replaces it, or for `seconds` (real time) when that's above zero.
+func show_banner(title: String, subtitle: String, color: Color, seconds: float = 0.0) -> void:
 	_banner_title.text = title
 	_banner_title.modulate = color
 	_banner_subtitle.text = subtitle
@@ -187,6 +188,15 @@ func show_banner(title: String, subtitle: String, color: Color) -> void:
 	var fade: Tween = create_tween()
 	fade.set_ignore_time_scale(true)
 	fade.tween_property(_banner, "modulate:a", 1.0, BANNER_FADE_TIME)
+	if seconds > 0.0:
+		var timer: SceneTreeTimer = get_tree().create_timer(seconds, true, false, true)
+		timer.timeout.connect(_hide_banner_if.bind(title))
+
+
+## Hides the banner if it still shows `title` (a newer one stays up).
+func _hide_banner_if(title: String) -> void:
+	if is_instance_valid(_banner) and _banner.visible and _banner_title.text == title:
+		_banner.visible = false
 
 
 func hide_banner() -> void:

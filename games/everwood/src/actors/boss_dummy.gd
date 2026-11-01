@@ -83,6 +83,20 @@ const VISOR_GLOW: Color = Color(1.0, 0.3, 0.2)
 ## The glowing slit on the middle stone's face: its size and how far above the stone's centre.
 const VISOR_SIZE: Vector3 = Vector3(1.1, 0.26, 0.3)
 const VISOR_LIFT: float = 0.3
+const MOSS_COLOR: Color = Color(0.36, 0.52, 0.26)
+## Timber arms from the shoulder yoke, each ending in a boulder fist.
+const ARM_SPAN: float = 1.45
+const ARM_HEIGHT: float = 2.6
+const ARM_LENGTH: float = 1.5
+const FIST_RADIUS: float = 0.5
+## How far the arms rear back in the wind-up and sweep through the swing (radians).
+const ARM_RAISE: float = 1.3
+const ARM_SWEEP: float = 1.0
+const ARM_SHARPNESS: float = 10.0
+const BELL_ROPES: int = 4
+const BELL_SWAY: float = 0.25
+const CORE_GLOW: Color = Color(1.0, 0.6, 0.18)
+const CORE_ENERGY: float = 2.0
 
 ## Where telegraph decals are spawned (the level sets this).
 var telegraphs_root: Node3D
@@ -100,6 +114,9 @@ var _next_cast: RaidTelegraphDecal.Kind = RaidTelegraphDecal.Kind.CRIMSON_DODGE_
 ## Phase 2 weaves the beam between the floor casts; this is the last floor cast.
 var _last_floor_cast: RaidTelegraphDecal.Kind = RaidTelegraphDecal.Kind.GOLD_PARTY_SOAK
 var _swipe_cooldown: float = 0.0
+var _arms: Array[Node3D] = []
+var _bell_ropes: Array[Node3D] = []
+var _core_material: StandardMaterial3D
 
 
 func body_radius() -> float:
@@ -145,12 +162,19 @@ func _build_visual() -> void:
 		nose.visible = false
 
 
-## The Cairnsman, in greybox: stacked river-boulders, crossed bridge timbers on
-## its back, a brass bell-rope ring, a crown of heather, and a glowing slit
-## between the top stones.
+## The Cairnsman as an articulated storybook sentinel (07 GDD §4.1): stacked
+## mossy river-boulders, bridge timbers across its shoulders, boulder fists on
+## timber arms that swing with the Crushing Swipe, brass bell-ropes that sway, a
+## crown of heather, a glowing amber core and a glowing slit for eyes. A model
+## dropped at res://assets/models/raid_boss_dummy.glb is used instead.
 func _build_prop() -> Node3D:
 	var prop: Node3D = Node3D.new()
 	prop.name = "Prop"
+	var dropped: Node3D = ActorVisuals.load_model(loadout.class_id)
+	if dropped != null:
+		prop.add_child(dropped)
+		return prop
+	var moss: Material = _flat_material(MOSS_COLOR)
 	for index: int in BOULDERS.size():
 		var stone: SphereMesh = SphereMesh.new()
 		stone.radius = BOULDERS[index].y
@@ -161,7 +185,17 @@ func _build_prop() -> Node3D:
 		boulder.mesh = stone
 		boulder.position = Vector3(BOULDERS[index].z, BOULDERS[index].x, 0.0)
 		prop.add_child(boulder)
-	var timber_material: StandardMaterial3D = _flat_material(TIMBER_COLOR)
+		# A cap of moss on each stone's shoulders.
+		var cap: SphereMesh = SphereMesh.new()
+		cap.radius = BOULDERS[index].y * 0.82
+		cap.height = BOULDERS[index].y * 0.6
+		cap.material = moss
+		var cap_node: MeshInstance3D = MeshInstance3D.new()
+		cap_node.name = "Moss%d" % index
+		cap_node.mesh = cap
+		cap_node.position = Vector3(BOULDERS[index].z, BOULDERS[index].x + BOULDERS[index].y * 0.55, 0.12)
+		prop.add_child(cap_node)
+	var timber_material: Material = _flat_material(TIMBER_COLOR)
 	for side: float in [-1.0, 1.0]:
 		var beam: BoxMesh = BoxMesh.new()
 		beam.size = TIMBER_SIZE
@@ -172,19 +206,79 @@ func _build_prop() -> Node3D:
 		timber.position = Vector3(0.0, BELL_ROPE_HEIGHT + 0.3, BOSS_RADIUS * 0.85)
 		timber.rotation = Vector3(0.0, 0.0, side * 0.45)
 		prop.add_child(timber)
+	# A bridge timber across the shoulders, and an arm on each end ending in a boulder fist.
+	var yoke: BoxMesh = BoxMesh.new()
+	yoke.size = Vector3(ARM_SPAN * 2.0 + 0.6, 0.3, 0.34)
+	yoke.material = timber_material
+	var yoke_node: MeshInstance3D = MeshInstance3D.new()
+	yoke_node.name = "Yoke"
+	yoke_node.mesh = yoke
+	yoke_node.position = Vector3(0.0, ARM_HEIGHT, 0.0)
+	prop.add_child(yoke_node)
+	_arms.clear()
+	for side: float in [-1.0, 1.0]:
+		var arm: Node3D = Node3D.new()
+		arm.name = "Arm%s" % ("Left" if side < 0.0 else "Right")
+		arm.position = Vector3(side * ARM_SPAN, ARM_HEIGHT, 0.0)
+		prop.add_child(arm)
+		var limb: BoxMesh = BoxMesh.new()
+		limb.size = Vector3(0.26, ARM_LENGTH, 0.26)
+		limb.material = timber_material
+		var limb_node: MeshInstance3D = MeshInstance3D.new()
+		limb_node.name = "Limb"
+		limb_node.mesh = limb
+		limb_node.position = Vector3(0.0, -ARM_LENGTH * 0.5, 0.0)
+		arm.add_child(limb_node)
+		var fist: SphereMesh = SphereMesh.new()
+		fist.radius = FIST_RADIUS
+		fist.height = FIST_RADIUS * 1.6
+		fist.material = _body_material
+		var fist_node: MeshInstance3D = MeshInstance3D.new()
+		fist_node.name = "Fist"
+		fist_node.mesh = fist
+		fist_node.position = Vector3(0.0, -ARM_LENGTH, 0.0)
+		arm.add_child(fist_node)
+		_arms.append(arm)
 	var rope: TorusMesh = TorusMesh.new()
 	rope.inner_radius = BELL_ROPE_RADIUS - 0.08
 	rope.outer_radius = BELL_ROPE_RADIUS
-	var brass: StandardMaterial3D = _flat_material(BRASS_COLOR)
-	brass.metallic = 0.8
-	brass.roughness = 0.35
+	var brass: Material = _flat_material(BRASS_COLOR)
 	rope.material = brass
 	var rope_node: MeshInstance3D = MeshInstance3D.new()
 	rope_node.name = "BellRope"
 	rope_node.mesh = rope
 	rope_node.position = Vector3(0.0, BELL_ROPE_HEIGHT, 0.0)
 	prop.add_child(rope_node)
-	var heather_material: StandardMaterial3D = _flat_material(HEATHER_COLOR)
+	# Braided brass bell-ropes hanging from the rope ring, each with a little bell.
+	_bell_ropes.clear()
+	for index: int in BELL_ROPES:
+		var angle: float = TAU * (float(index) + 0.5) / BELL_ROPES
+		var hang: Node3D = Node3D.new()
+		hang.name = "BellRope%d" % index
+		hang.position = Vector3(cos(angle) * BELL_ROPE_RADIUS, BELL_ROPE_HEIGHT, sin(angle) * BELL_ROPE_RADIUS)
+		prop.add_child(hang)
+		var cord: CylinderMesh = CylinderMesh.new()
+		cord.top_radius = 0.04
+		cord.bottom_radius = 0.04
+		cord.height = 0.7
+		cord.material = brass
+		var cord_node: MeshInstance3D = MeshInstance3D.new()
+		cord_node.name = "Cord"
+		cord_node.mesh = cord
+		cord_node.position = Vector3(0.0, -0.35, 0.0)
+		hang.add_child(cord_node)
+		var bell: CylinderMesh = CylinderMesh.new()
+		bell.top_radius = 0.06
+		bell.bottom_radius = 0.16
+		bell.height = 0.2
+		bell.material = brass
+		var bell_node: MeshInstance3D = MeshInstance3D.new()
+		bell_node.name = "Bell"
+		bell_node.mesh = bell
+		bell_node.position = Vector3(0.0, -0.78, 0.0)
+		hang.add_child(bell_node)
+		_bell_ropes.append(hang)
+	var heather_material: Material = _flat_material(HEATHER_COLOR)
 	var crown: Vector3 = BOULDERS[BOULDERS.size() - 1]
 	for index: int in HEATHER_TUFTS:
 		var angle: float = TAU * float(index) / HEATHER_TUFTS
@@ -197,14 +291,21 @@ func _build_prop() -> Node3D:
 		tuft.mesh = tuft_mesh
 		tuft.position = Vector3(crown.z + cos(angle) * crown.y * 0.55, crown.x + crown.y * 0.7, sin(angle) * crown.y * 0.55)
 		prop.add_child(tuft)
+	# The amber core glows between the lower stones, hotter through a wind-up.
+	_core_material = StorybookMaterial.glowing(CORE_GLOW, CORE_ENERGY)
+	var core: SphereMesh = SphereMesh.new()
+	core.radius = 0.42
+	core.height = 0.84
+	core.material = _core_material
+	var core_node: MeshInstance3D = MeshInstance3D.new()
+	core_node.name = "AmberCore"
+	core_node.mesh = core
+	core_node.position = Vector3(0.0, (BOULDERS[0].x + BOULDERS[1].x) * 0.5, -BOULDERS[1].y * 0.82)
+	prop.add_child(core_node)
 	var visor: MeshInstance3D = MeshInstance3D.new()
 	var visor_mesh: BoxMesh = BoxMesh.new()
 	visor_mesh.size = VISOR_SIZE
-	var glow: StandardMaterial3D = _flat_material(VISOR_GLOW)
-	glow.emission_enabled = true
-	glow.emission = VISOR_GLOW
-	glow.emission_energy_multiplier = 3.0
-	visor_mesh.material = glow
+	visor_mesh.material = StorybookMaterial.glowing(VISOR_GLOW, 3.0)
 	visor.mesh = visor_mesh
 	visor.position = Vector3(0.0, BOULDERS[1].x + VISOR_LIFT, -BOULDERS[1].y * 0.95)
 	prop.add_child(visor)
@@ -525,8 +626,32 @@ func _reset_fight() -> void:
 
 func _update_pose(delta: float) -> void:
 	super._update_pose(delta)
-	# The visor and body glow hotter through the swipe's wind-up: a readable tell.
-	# (Other peers don't know how far along it is, so they show a steady glow.)
-	if current_phase() == ActionQueueComponent.Phase.WINDUP and _flash_left <= 0.0:
-		var heat: float = action_queue.progress() if is_multiplayer_authority() else 0.5
-		_body_material.emission = WINDUP_GLOW * heat * 2.0
+	# The stones and the amber core glow hotter through the swipe's wind-up, as
+	# the fists rear back: a readable tell. (Other peers don't know how far
+	# along it is, so they show a steady glow.)
+	var phase: ActionQueueComponent.Phase = current_phase()
+	var heat: float = 0.0
+	if phase == ActionQueueComponent.Phase.WINDUP:
+		heat = action_queue.progress() if is_multiplayer_authority() else 0.5
+		if _flash_left <= 0.0:
+			_set_glow(WINDUP_GLOW * heat * 2.0)
+	if _core_material != null:
+		_core_material.emission_energy_multiplier = CORE_ENERGY * (1.0 + heat * 2.5)
+	var swing: CombatActionResource = current_action()
+	var arm_angle: float = 0.0
+	if swing != null and swing.action_id == ClassLoadouts.BOSS_SWIPE:
+		match phase:
+			ActionQueueComponent.Phase.WINDUP:
+				arm_angle = ARM_RAISE * maxf(heat, 0.4)
+			ActionQueueComponent.Phase.ACTIVE:
+				arm_angle = -ARM_SWEEP
+			ActionQueueComponent.Phase.RECOVERY:
+				arm_angle = -ARM_SWEEP * 0.4
+	var blend: float = 1.0 - exp(-ARM_SHARPNESS * delta)
+	for arm: Node3D in _arms:
+		arm.rotation.x = lerpf(arm.rotation.x, arm_angle, blend)
+	var now: float = Time.get_ticks_msec() * 0.001
+	for index: int in _bell_ropes.size():
+		var rope: Node3D = _bell_ropes[index]
+		rope.rotation.x = sin(now * 2.1 + index) * BELL_SWAY * (2.0 if arm_angle != 0.0 else 1.0)
+		rope.rotation.z = cos(now * 1.7 + index * 1.3) * BELL_SWAY * 0.6

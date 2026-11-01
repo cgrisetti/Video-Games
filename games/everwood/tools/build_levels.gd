@@ -260,7 +260,7 @@ func _build_hub() -> Node3D:
 func _add_hub_walls(parent: Node3D) -> void:
 	var half_width: float = HUB_WIDTH * 0.5
 	var half_depth: float = HUB_DEPTH * 0.5
-	var stone: StandardMaterial3D = _material(WALL_COLOR)
+	var stone: Material = _material(WALL_COLOR)
 	parent.add_child(_low(_box_body("WallSouth", Vector3(HUB_WIDTH, WALL_HEIGHT, WALL_THICKNESS), Vector3(0.0, WALL_HEIGHT * 0.5, half_depth), stone)))
 	parent.add_child(_low(_box_body("WallWest", Vector3(WALL_THICKNESS, WALL_HEIGHT, HUB_DEPTH), Vector3(-half_width, WALL_HEIGHT * 0.5, 0.0), stone)))
 	parent.add_child(_low(_box_body("WallEast", Vector3(WALL_THICKNESS, WALL_HEIGHT, HUB_DEPTH), Vector3(half_width, WALL_HEIGHT * 0.5, 0.0), stone)))
@@ -277,7 +277,7 @@ func _add_forest_gate(parent: Node3D) -> void:
 	var gate: Node3D = _node3d("ForestGate")
 	gate.position = Vector3(0.0, 0.0, -half_depth)
 	parent.add_child(gate)
-	var timber: StandardMaterial3D = _material(GATE_COLOR)
+	var timber: Material = _material(GATE_COLOR)
 	for side: float in [-1.0, 1.0]:
 		gate.add_child(_mesh_box("Post", Vector3(0.6, GATE_HEIGHT, 0.6), Vector3(side * (GATE_WIDTH * 0.5 + 0.3), GATE_HEIGHT * 0.5, 0.0), timber))
 		# Open gate leaves, swung outward.
@@ -338,7 +338,7 @@ func _house(house_name: String, where: Vector3, color: Color, bakery: bool) -> S
 	roof.rotation = Vector3(0.0, PI * 0.5, 0.0)
 	house.add_child(roof)
 	# ...between two stepped gables.
-	var gable: StandardMaterial3D = _material(color.darkened(0.08))
+	var gable: Material = _material(color.darkened(0.08))
 	for side: float in [-1.0, 1.0]:
 		for step: int in GABLE_STEPS:
 			var width: float = HOUSE_SIZE.z * (1.0 - float(step) / GABLE_STEPS)
@@ -362,7 +362,7 @@ func _house(house_name: String, where: Vector3, color: Color, bakery: bool) -> S
 	door.rotation = Vector3(0.0, PI * 0.5, 0.0)
 	house.add_child(door)
 	# Warm windows either side of the door and one up in the gable.
-	var glass: StandardMaterial3D = _material(WINDOW_COLOR)
+	var glass: StandardMaterial3D = _standard(WINDOW_COLOR)
 	glass.emission_enabled = true
 	glass.emission = WINDOW_COLOR
 	glass.emission_energy_multiplier = 0.8
@@ -384,10 +384,10 @@ func _house(house_name: String, where: Vector3, color: Color, bakery: bool) -> S
 
 ## The bakery's brick oven against its lane side, and smoke puffing from the chimney.
 func _add_bakery(house: StaticBody3D, toward_middle: float) -> void:
-	var brick: StandardMaterial3D = _material(Color(0.62, 0.34, 0.26))
+	var brick: Material = _material(Color(0.62, 0.34, 0.26))
 	var oven_x: float = toward_middle * (HOUSE_SIZE.x * 0.5 + 0.55)
 	house.add_child(_mesh_box("Oven", Vector3(1.0, 1.1, 1.4), Vector3(oven_x, -HOUSE_SIZE.y * 0.5 + 0.55, -HOUSE_SIZE.z * 0.25), brick))
-	var mouth: StandardMaterial3D = _material(Color(1.0, 0.55, 0.2))
+	var mouth: StandardMaterial3D = _standard(Color(1.0, 0.55, 0.2))
 	mouth.emission_enabled = true
 	mouth.emission = Color(1.0, 0.5, 0.15)
 	mouth.emission_energy_multiplier = 2.0
@@ -423,7 +423,7 @@ func _add_pigment_rack(parent: Node3D) -> void:
 	var rack: Node3D = _node3d("PigmentRack")
 	rack.position = PIGMENT_RACK_POSITION
 	parent.add_child(rack)
-	var timber: StandardMaterial3D = _material(GATE_COLOR)
+	var timber: Material = _material(GATE_COLOR)
 	var span: float = 3.4
 	for side: float in [-1.0, 1.0]:
 		rack.add_child(_mesh_box("Post", Vector3(0.14, 2.4, 0.14), Vector3(side * span * 0.5, 1.2, 0.0), timber))
@@ -436,12 +436,12 @@ func _add_pigment_rack(parent: Node3D) -> void:
 ## The canal across the village and its stone banks, open only where the bridge crosses.
 func _add_canal(parent: Node3D) -> void:
 	var length: float = HUB_WIDTH - WALL_THICKNESS
-	var water_material: StandardMaterial3D = _material(WATER_COLOR)
+	var water_material: StandardMaterial3D = _standard(WATER_COLOR)
 	water_material.roughness = 0.15
 	water_material.emission_enabled = true
 	water_material.emission = WATER_COLOR.darkened(0.5)
 	parent.add_child(_mesh_box("CanalWater", Vector3(length, 0.04, CANAL_WIDTH), Vector3(0.0, 0.03, CANAL_Z), water_material))
-	var stone: StandardMaterial3D = _material(STONE_COLOR)
+	var stone: Material = _material(STONE_COLOR)
 	var gap: float = BRIDGE_WIDTH * 0.5 + BRIDGE_PARAPET_THICKNESS
 	var bank_length: float = length * 0.5 - gap
 	for bank: float in [-1.0, 1.0]:
@@ -479,8 +479,7 @@ func _add_bridge(parent: Node3D) -> void:
 	collision.name = "Walkway"
 	collision.shape = shape
 	bridge.add_child(collision)
-	var stone: StandardMaterial3D = _material(BRIDGE_COLOR)
-	stone.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var stone: Material = StorybookMaterial.make(BRIDGE_COLOR, StorybookMaterial.SCENERY_RIM, StorybookMaterial.WARM_RIM, true)
 	var deck: MeshInstance3D = MeshInstance3D.new()
 	deck.name = "Deck"
 	deck.mesh = _prism_mesh(profile, BRIDGE_WIDTH)
@@ -499,7 +498,7 @@ func _add_bridge(parent: Node3D) -> void:
 	arch.position = Vector3(0.0, -0.45, 0.0)
 	arch.rotation = Vector3(0.0, 0.0, PI * 0.5)
 	bridge.add_child(arch)
-	var parapet_stone: StandardMaterial3D = _material(BRIDGE_COLOR.darkened(0.1))
+	var parapet_stone: Material = _material(BRIDGE_COLOR.darkened(0.1))
 	var parapets: StaticBody3D = StaticBody3D.new()
 	parapets.name = "Parapets"
 	parapets.collision_layer = ActorBase.LAYER_LOW_SCENERY
@@ -586,7 +585,7 @@ func _tree(tree_name: String, where: Vector3, height: float, collides: bool) -> 
 	var trunk_height: float = height * 0.55
 	var trunk_radius: float = 0.22 + height * 0.025
 	tree.add_child(_cylinder_mesh("Trunk", trunk_radius * 0.75, trunk_radius, trunk_height, trunk_height * 0.5, _material(OAK_TRUNK_COLOR)))
-	var leaves: StandardMaterial3D = _material(OAK_LEAF_COLOR)
+	var leaves: Material = _material(OAK_LEAF_COLOR)
 	var heaps: Array[Vector3] = [Vector3(0.0, trunk_height + height * 0.12, 0.0), Vector3(height * 0.13, trunk_height + height * 0.28, height * 0.06),
 		Vector3(-height * 0.1, trunk_height + height * 0.3, -height * 0.08)]
 	for index: int in heaps.size():
@@ -642,7 +641,7 @@ func _fountain() -> StaticBody3D:
 	collision.position = Vector3(0.0, 0.35, 0.0)
 	fountain.add_child(collision)
 	fountain.add_child(_cylinder_mesh("Basin", FOUNTAIN_RADIUS, FOUNTAIN_RADIUS, 0.7, 0.35, _material(STONE_COLOR)))
-	var water: StandardMaterial3D = _material(Color(0.35, 0.6, 0.9))
+	var water: StandardMaterial3D = _standard(Color(0.35, 0.6, 0.9))
 	water.emission_enabled = true
 	water.emission = Color(0.2, 0.4, 0.7)
 	fountain.add_child(_cylinder_mesh("Water", FOUNTAIN_RADIUS - 0.25, FOUNTAIN_RADIUS - 0.25, 0.05, 0.68, water))
@@ -654,7 +653,7 @@ func _lantern(lantern_name: String, where: Vector3) -> Node3D:
 	var post: Node3D = _node3d(lantern_name)
 	post.position = where
 	post.add_child(_cylinder_mesh("Post", 0.08, 0.1, 2.4, 1.2, _material(Color(0.25, 0.22, 0.2))))
-	var glow: StandardMaterial3D = _material(LANTERN_COLOR)
+	var glow: StandardMaterial3D = _standard(LANTERN_COLOR)
 	glow.emission_enabled = true
 	glow.emission = LANTERN_COLOR
 	glow.emission_energy_multiplier = 2.5
@@ -720,16 +719,16 @@ func _build_dojo() -> Node3D:
 func _build_moss_oaks(parent: Node3D) -> void:
 	var oaks: Node3D = _node3d("MossOaks")
 	parent.add_child(oaks)
-	var moss: StandardMaterial3D = _material(MOSS_COLOR)
+	var moss: Material = _material(MOSS_COLOR)
 	oaks.add_child(_ground("Ground", OAKS_MIN, OAKS_MAX, 0.0, moss))
-	var stone: StandardMaterial3D = _material(DRYSTONE_COLOR)
+	var stone: Material = _material(DRYSTONE_COLOR)
 	oaks.add_child(_wall("WallSouth", Vector2(OAKS_MIN.x, OAKS_MAX.y), Vector2(OAKS_MAX.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
 	oaks.add_child(_wall("WallEast", Vector2(OAKS_MAX.x, OAKS_MIN.y), Vector2(OAKS_MAX.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
 	oaks.add_child(_wall("WallWestSouth", Vector2(OAKS_MIN.x, ALCOVE_MAX.y), Vector2(OAKS_MIN.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
 	oaks.add_child(_wall("WallWestNorth", Vector2(OAKS_MIN.x, OAKS_MIN.y), Vector2(OAKS_MIN.x, ALCOVE_MIN.y), DRYSTONE_HEIGHT, stone))
 	oaks.add_child(_wall("WallNorthWest", Vector2(OAKS_MIN.x, OAKS_MIN.y), Vector2(-HOLLOWAY_HALF_WIDTH, OAKS_MIN.y), DRYSTONE_HEIGHT, stone))
 	oaks.add_child(_wall("WallNorthEast", Vector2(HOLLOWAY_HALF_WIDTH, OAKS_MIN.y), Vector2(OAKS_MAX.x, OAKS_MIN.y), DRYSTONE_HEIGHT, stone))
-	var dirt: StandardMaterial3D = _material(TRAIL_COLOR)
+	var dirt: Material = _material(TRAIL_COLOR)
 	for index: int in TRAIL_POINTS.size() - 1:
 		var from: Vector3 = TRAIL_POINTS[index]
 		var to: Vector3 = TRAIL_POINTS[index + 1]
@@ -753,20 +752,20 @@ func _build_moss_oaks(parent: Node3D) -> void:
 func _build_holloway(parent: Node3D) -> void:
 	var holloway: Node3D = _node3d("Holloway")
 	parent.add_child(holloway)
-	var earth: StandardMaterial3D = _material(EARTH_COLOR)
+	var earth: Material = _material(EARTH_COLOR)
 	var floor_y: float = -HOLLOWAY_DEPTH
 	holloway.add_child(_ramp("RampDown", HOLLOWAY_HALF_WIDTH, HOLLOWAY_TOP_Z, 0.0, HOLLOWAY_FLOOR_START_Z, floor_y, earth))
 	holloway.add_child(_ground("Lane", Vector2(-HOLLOWAY_HALF_WIDTH, HOLLOWAY_FLOOR_END_Z), Vector2(HOLLOWAY_HALF_WIDTH, HOLLOWAY_FLOOR_START_Z), floor_y, earth))
 	holloway.add_child(_ramp("RampUp", HOLLOWAY_HALF_WIDTH, HOLLOWAY_FLOOR_END_Z, floor_y, HOLLOWAY_EXIT_Z, 0.0, earth))
 	var bank_height: float = HOLLOWAY_DEPTH + BANK_LIP + 0.6
 	var bank_length: float = HOLLOWAY_TOP_Z - HOLLOWAY_EXIT_Z
-	var moss: StandardMaterial3D = _material(MOSS_COLOR)
+	var moss: Material = _material(MOSS_COLOR)
 	for side: float in [-1.0, 1.0]:
 		var center: Vector3 = Vector3(side * (HOLLOWAY_HALF_WIDTH + BANK_WIDTH * 0.5), BANK_LIP - bank_height * 0.5, (HOLLOWAY_TOP_Z + HOLLOWAY_EXIT_Z) * 0.5)
 		var bank: StaticBody3D = _low(_box_body("Bank%s" % ("West" if side < 0.0 else "East"), Vector3(BANK_WIDTH, bank_height, bank_length), center, earth))
 		bank.add_child(_mesh_box("Moss", Vector3(BANK_WIDTH + 0.1, 0.12, bank_length), Vector3(0.0, bank_height * 0.5, 0.0), moss))
 		holloway.add_child(bank)
-	var roots: StandardMaterial3D = _material(ROOT_COLOR)
+	var roots: Material = _material(ROOT_COLOR)
 	for index: int in ROOT_ARCH_ZS.size():
 		var z: float = ROOT_ARCH_ZS[index]
 		var apex: Vector3 = Vector3(0.0, ROOT_ARCH_APEX, z)
@@ -775,7 +774,7 @@ func _build_holloway(parent: Node3D) -> void:
 			var knee: Vector3 = Vector3(side * 2.4, ROOT_ARCH_APEX - 0.5, z - side * 0.3)
 			holloway.add_child(_beam("Root%d%s" % [index, "W" if side < 0.0 else "E"], foot, knee, 0.22, roots))
 			holloway.add_child(_beam("Bough%d%s" % [index, "W" if side < 0.0 else "E"], knee, apex, 0.16, roots))
-	var glow: StandardMaterial3D = _material(MUSHROOM_COLOR)
+	var glow: StandardMaterial3D = _standard(MUSHROOM_COLOR)
 	glow.emission_enabled = true
 	glow.emission = MUSHROOM_COLOR
 	glow.emission_energy_multiplier = 1.6
@@ -799,10 +798,10 @@ func _build_holloway(parent: Node3D) -> void:
 func _build_gorge(parent: Node3D) -> void:
 	var gorge: Node3D = _node3d("Gorge")
 	parent.add_child(gorge)
-	var moss: StandardMaterial3D = _material(MOSS_COLOR)
-	var stone: StandardMaterial3D = _material(DRYSTONE_COLOR)
-	var cliff: StandardMaterial3D = _material(CLIFF_COLOR)
-	var timber: StandardMaterial3D = _material(TIMBER_COLOR)
+	var moss: Material = _material(MOSS_COLOR)
+	var stone: Material = _material(DRYSTONE_COLOR)
+	var cliff: Material = _material(CLIFF_COLOR)
+	var timber: Material = _material(TIMBER_COLOR)
 	var w: float = CLIFF_HALF_WIDTH
 	gorge.add_child(_ground("SouthCliff", Vector2(-w, SOUTH_CLIFF_Z.x), Vector2(w, SOUTH_CLIFF_Z.y), 0.0, moss))
 	gorge.add_child(_ground("NorthCliff", Vector2(-w, NORTH_CLIFF_Z.x), Vector2(w, NORTH_CLIFF_Z.y), 0.0, moss))
@@ -898,8 +897,8 @@ func _build_gorge(parent: Node3D) -> void:
 func _build_ring(parent: Node3D) -> void:
 	var ring: Node3D = _node3d("Ring")
 	parent.add_child(ring)
-	var moss: StandardMaterial3D = _material(MOSS_COLOR)
-	var stone: StandardMaterial3D = _material(DRYSTONE_COLOR)
+	var moss: Material = _material(MOSS_COLOR)
+	var stone: Material = _material(DRYSTONE_COLOR)
 	ring.add_child(_ground("Causeway", Vector2(-CAUSEWAY_HALF_WIDTH, CAUSEWAY_Z.x), Vector2(CAUSEWAY_HALF_WIDTH, CAUSEWAY_Z.y), 0.0, _material(STONE_COLOR)))
 	for side: float in [-1.0, 1.0]:
 		ring.add_child(_wall("CausewayWall%s" % ("West" if side < 0.0 else "East"), Vector2(side * (CAUSEWAY_HALF_WIDTH + 0.2), CAUSEWAY_Z.x),
@@ -985,10 +984,7 @@ func _ramp(ramp_name: String, half_width: float, from_z: float, from_y: float, t
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.name = "Mesh"
 	mesh.mesh = _prism_mesh(profile, half_width * 2.0)
-	var surface: Material = material.duplicate() as Material
-	if surface is BaseMaterial3D:
-		(surface as BaseMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
-	mesh.material_override = surface
+	mesh.material_override = StorybookMaterial.double_sided(material)
 	body.add_child(mesh)
 	return body
 
@@ -1101,7 +1097,13 @@ func _node3d(node_name: String) -> Node3D:
 	return node
 
 
-func _material(color: Color) -> StandardMaterial3D:
+## Scenery in the storybook cel look (07 GDD §4.2).
+func _material(color: Color) -> Material:
+	return StorybookMaterial.make(color)
+
+
+## For what glows or shines (windows, lanterns, water): a plain material to light up.
+func _standard(color: Color) -> StandardMaterial3D:
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = 0.9
@@ -1180,23 +1182,40 @@ func _pad(pad_name: String, radius: float, color: Color) -> MeshInstance3D:
 func _environment(daylight: bool) -> WorldEnvironment:
 	var sky_material: ProceduralSkyMaterial = ProceduralSkyMaterial.new()
 	if daylight:
-		sky_material.sky_top_color = Color(0.32, 0.5, 0.78)
-		sky_material.sky_horizon_color = Color(0.7, 0.76, 0.82)
+		# A warm, sunlit storybook day (07 GDD §4.2): beyond the walls the world
+		# fades to meadow rather than black.
+		sky_material.sky_top_color = Color(0.36, 0.56, 0.84)
+		sky_material.sky_horizon_color = Color(0.82, 0.84, 0.8)
+		sky_material.ground_horizon_color = Color(0.62, 0.66, 0.5)
+		sky_material.ground_bottom_color = Color(0.36, 0.42, 0.28)
 	else:
 		sky_material.sky_top_color = Color(0.16, 0.2, 0.3)
 		sky_material.sky_horizon_color = Color(0.45, 0.47, 0.52)
-	sky_material.ground_horizon_color = Color(0.3, 0.3, 0.32)
-	sky_material.ground_bottom_color = Color(0.12, 0.12, 0.14)
+		sky_material.ground_horizon_color = Color(0.3, 0.3, 0.32)
+		sky_material.ground_bottom_color = Color(0.12, 0.12, 0.14)
 	var sky: Sky = Sky.new()
 	sky.sky_material = sky_material
 	var environment: Environment = Environment.new()
 	environment.background_mode = Environment.BG_SKY
 	environment.sky = sky
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 1.0 if daylight else 0.8
-	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
+	if daylight:
+		# A steady warm fill, so the bright meadow below the horizon doesn't wash the scene out.
+		environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		environment.ambient_light_color = Color(0.62, 0.62, 0.7)
+		environment.ambient_light_energy = 0.45
+	else:
+		environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		environment.ambient_light_energy = 0.8
+	# Filmic keeps the toon bands' sunlit colours rich (ACES washed them out to pastel).
+	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
 	environment.glow_intensity = 0.6
+	if daylight:
+		# A light warm haze gives distance and keeps far scenery from competing with the fight.
+		environment.fog_enabled = true
+		environment.fog_light_color = Color(0.86, 0.84, 0.76)
+		environment.fog_density = 0.0035
+		environment.fog_sky_affect = 0.15
 	var world_environment: WorldEnvironment = WorldEnvironment.new()
 	world_environment.name = "WorldEnvironment"
 	world_environment.environment = environment
@@ -1207,8 +1226,8 @@ func _sun() -> DirectionalLight3D:
 	var sun: DirectionalLight3D = DirectionalLight3D.new()
 	sun.name = "Sun"
 	sun.rotation = Vector3(deg_to_rad(-55.0), deg_to_rad(35.0), 0.0)
-	sun.light_energy = 1.15
-	sun.light_color = Color(1.0, 0.95, 0.88)
+	sun.light_energy = 0.95
+	sun.light_color = Color(1.0, 0.93, 0.8)
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 60.0
 	return sun

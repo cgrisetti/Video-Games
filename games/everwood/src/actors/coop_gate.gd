@@ -221,13 +221,8 @@ func _build_portcullis() -> void:
 	_portcullis_collision.shape = shape
 	_portcullis_collision.position = Vector3(0.0, PORTCULLIS_HEIGHT * 0.5, 0.0)
 	_portcullis.add_child(_portcullis_collision)
-	var timber: StandardMaterial3D = StandardMaterial3D.new()
-	timber.albedo_color = TIMBER_COLOR
-	timber.roughness = 0.85
-	var iron: StandardMaterial3D = StandardMaterial3D.new()
-	iron.albedo_color = IRON_COLOR
-	iron.metallic = 0.6
-	iron.roughness = 0.5
+	var timber: Material = StorybookMaterial.make(TIMBER_COLOR)
+	var iron: Material = StorybookMaterial.make(IRON_COLOR, 0.4)
 	var bars: int = int(PORTCULLIS_WIDTH / BAR_SPACING)
 	for index: int in bars + 1:
 		var x: float = -PORTCULLIS_WIDTH * 0.5 + index * PORTCULLIS_WIDTH / bars

@@ -18,9 +18,7 @@ var _progress: float = 0.0
 
 
 func _ready() -> void:
-	var stone: StandardMaterial3D = StandardMaterial3D.new()
-	stone.albedo_color = Color(0.55, 0.54, 0.5)
-	stone.roughness = 0.9
+	var stone: Material = StorybookMaterial.make(Color(0.55, 0.54, 0.5))
 	var disc: CylinderMesh = CylinderMesh.new()
 	disc.top_radius = RADIUS
 	disc.bottom_radius = RADIUS + 0.08

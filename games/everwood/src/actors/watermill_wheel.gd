@@ -18,7 +18,7 @@ const SPIN_SPEED: float = 0.55
 
 
 func _ready() -> void:
-	var wood: StandardMaterial3D = _material(WOOD_COLOR)
+	var wood: Material = _material(WOOD_COLOR)
 	for side: float in [-1.0, 1.0]:
 		var rim: TorusMesh = TorusMesh.new()
 		rim.inner_radius = RADIUS - RIM_TUBE
@@ -63,8 +63,5 @@ func _mesh(node_name: String, mesh: Mesh) -> MeshInstance3D:
 	return node
 
 
-func _material(color: Color) -> StandardMaterial3D:
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.9
-	return material
+func _material(color: Color) -> Material:
+	return StorybookMaterial.make(color)

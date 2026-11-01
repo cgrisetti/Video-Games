@@ -1,18 +1,24 @@
 ## Builds the look of equipment and projectiles: the item's model when it has
-## one, otherwise its greybox parts. Small props cast no shadows.
+## one (or a .glb dropped at res://assets/models/<item_id>.glb), otherwise its
+## parts in the storybook cel look. Small props cast no shadows.
 class_name PropBuilder
 extends RefCounted
 
 const CYLINDER_SEGMENTS: int = 12
-const PROP_ROUGHNESS: float = 0.6
+## Weapons and gear catch a little more rim light than scenery, so they read in a hand.
+const PROP_RIM: float = 0.35
 
 
-static func build(parts: Array[PropPartResource], model: PackedScene, node_name: String) -> Node3D:
+static func build(parts: Array[PropPartResource], model: PackedScene, node_name: String, item_id: StringName = &"") -> Node3D:
 	if model != null:
 		var art: Node3D = model.instantiate() as Node3D
 		if art != null:
 			art.name = node_name
 			return art
+	var dropped: Node3D = ActorVisuals.load_model(item_id)
+	if dropped != null:
+		dropped.name = node_name
+		return dropped
 	var root: Node3D = Node3D.new()
 	root.name = node_name
 	for index: int in parts.size():
@@ -41,14 +47,7 @@ static func build_part(part: PropPartResource) -> MeshInstance3D:
 			var box: BoxMesh = BoxMesh.new()
 			box.size = part.size
 			mesh = box
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = part.color
-	material.roughness = PROP_ROUGHNESS
-	if part.glow > 0.0:
-		material.emission_enabled = true
-		material.emission = part.color
-		material.emission_energy_multiplier = part.glow
-	mesh.material = material
+	mesh.material = StorybookMaterial.glowing(part.color, part.glow) if part.glow > 0.0 else StorybookMaterial.make(part.color, PROP_RIM)
 	var instance: MeshInstance3D = MeshInstance3D.new()
 	instance.mesh = mesh
 	instance.position = part.offset

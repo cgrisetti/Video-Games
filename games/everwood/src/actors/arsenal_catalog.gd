@@ -327,7 +327,7 @@ func _build_weapons() -> void:
 	var steel: Color = Color(0.85, 0.86, 0.9)
 	var wood: Color = Color(0.45, 0.3, 0.18)
 
-	var sword: EquipmentItemResource = _weapon(LIGHT_SWORD, "Sword & Buckler", EquipmentItemResource.WeaponType.LIGHT_SWORD,
+	var sword: EquipmentItemResource = _weapon(LIGHT_SWORD, "Falchion", EquipmentItemResource.WeaponType.LIGHT_SWORD,
 		EquipmentItemResource.DeliveryVector.MELEE, "A crisp three-cut chain and an advancing thrust. Cards land as rune-wreathed cuts.")
 	var slash_1: CombatActionResource = _strike(&"slash_1", "Slash", Cmd.LIGHT, 0.15, 0.1, 0.3, 10.0, 8.0)
 	slash_1.poise_damage = 4.0
@@ -350,14 +350,18 @@ func _build_weapons() -> void:
 	sword.trail_color = Color(0.95, 0.96, 1.0, 0.8)
 	sword.trail_base = Vector3(0.5, 1.0, -0.25)
 	sword.trail_tip = Vector3(0.5, 1.0, -1.3)
+	# A broad, single-edged falchion with a clipped point, a brass guard and pommel.
+	var brass: Color = Color(0.86, 0.66, 0.3)
 	sword.prop_parts = [
-		PropPartResource.make(Part.BOX, Vector3(0.08, 0.08, 1.1), Vector3(0.5, 1.0, -0.8), steel),
-		PropPartResource.make(Part.BOX, Vector3(0.26, 0.06, 0.06), Vector3(0.5, 1.0, -0.24), Color(0.6, 0.5, 0.3)),
-		PropPartResource.make(Part.CYLINDER, Vector3(0.38, 0.07, 0.38), Vector3(-0.52, 1.05, -0.32), Color(0.62, 0.66, 0.74), Vector3(90.0, 0.0, 0.0)),
+		PropPartResource.make(Part.BOX, Vector3(0.05, 0.17, 0.86), Vector3(0.48, 1.0, -0.82), steel),
+		PropPartResource.make(Part.BOX, Vector3(0.05, 0.13, 0.26), Vector3(0.48, 1.03, -1.31), steel, Vector3(22.0, 0.0, 0.0)),
+		PropPartResource.make(Part.BOX, Vector3(0.32, 0.06, 0.07), Vector3(0.48, 1.0, -0.36), brass),
+		PropPartResource.make(Part.CYLINDER, Vector3(0.035, 0.22, 0.035), Vector3(0.48, 1.0, -0.24), Color(0.38, 0.24, 0.14), Vector3(90.0, 0.0, 0.0)),
+		PropPartResource.make(Part.SPHERE, Vector3(0.05, 0.05, 0.05), Vector3(0.48, 1.0, -0.12), brass),
 	]
 	register_item(sword)
 
-	var axe: EquipmentItemResource = _weapon(HEAVY_AXE, "Greataxe", EquipmentItemResource.WeaponType.HEAVY_AXE,
+	var axe: EquipmentItemResource = _weapon(HEAVY_AXE, "Broad-Axe", EquipmentItemResource.WeaponType.HEAVY_AXE,
 		EquipmentItemResource.DeliveryVector.MELEE, "Two deliberate, wide cleaves and an earth-splitting heavy. Slow, heavy, honest.")
 	var cleave_1: CombatActionResource = _strike(&"cleave_1", "Wide Cleave", Cmd.LIGHT, 0.3, 0.15, 0.4, 16.0, 14.0)
 	cleave_1.poise_damage = 10.0
@@ -382,13 +386,18 @@ func _build_weapons() -> void:
 	axe.trail_color = Color(1.0, 0.85, 0.7, 0.8)
 	axe.trail_base = Vector3(0.5, 1.05, -0.5)
 	axe.trail_tip = Vector3(0.5, 1.15, -1.45)
+	# A long oak haft with a leather grip and a wide, bearded broad-axe head.
+	var axe_steel: Color = Color(0.58, 0.6, 0.64)
 	axe.prop_parts = [
 		PropPartResource.make(Part.CYLINDER, Vector3(0.05, 1.6, 0.05), Vector3(0.5, 1.0, -0.6), wood, Vector3(90.0, 0.0, 0.0)),
-		PropPartResource.make(Part.BOX, Vector3(0.06, 0.5, 0.42), Vector3(0.5, 1.12, -1.25), Color(0.5, 0.52, 0.56)),
+		PropPartResource.make(Part.CYLINDER, Vector3(0.062, 0.26, 0.062), Vector3(0.5, 1.0, -0.2), Color(0.32, 0.2, 0.12), Vector3(90.0, 0.0, 0.0)),
+		PropPartResource.make(Part.BOX, Vector3(0.07, 0.62, 0.36), Vector3(0.5, 1.14, -1.24), axe_steel),
+		PropPartResource.make(Part.BOX, Vector3(0.07, 0.26, 0.2), Vector3(0.5, 0.86, -1.17), axe_steel, Vector3(-20.0, 0.0, 0.0)),
+		PropPartResource.make(Part.BOX, Vector3(0.06, 0.12, 0.2), Vector3(0.5, 1.1, -1.48), axe_steel.darkened(0.2)),
 	]
 	register_item(axe)
 
-	var staff: EquipmentItemResource = _weapon(SCRIBE_STAFF, "Hearthwood Scribe Staff", EquipmentItemResource.WeaponType.STAFF,
+	var staff: EquipmentItemResource = _weapon(SCRIBE_STAFF, "Rowan Way-Staff", EquipmentItemResource.WeaponType.STAFF,
 		EquipmentItemResource.DeliveryVector.RANGED_BOLT, "Two sweeps and an arcane bolt; a grounded pulse. Cards fly as bolts, sanctuaries grow 25%.")
 	var sweep_1: CombatActionResource = _strike(&"sweep_1", "Staff Sweep", Cmd.LIGHT, 0.16, 0.1, 0.4, 7.0, 7.0)
 	sweep_1.resonance_gain = 0.06
@@ -408,13 +417,20 @@ func _build_weapons() -> void:
 	staff.projectile_radius = 0.38
 	staff.support_radius_multiplier = 1.25
 	staff.projectile_parts = [PropPartResource.make(Part.SPHERE, Vector3(0.24, 0.24, 0.24), Vector3.ZERO, Color(0.6, 1.0, 0.75), Vector3.ZERO, 3.0)]
+	# A rowan way-staff: a reddish forked crook cradling a glowing seed, rowan berries and a ribbon.
+	var rowan: Color = Color(0.56, 0.33, 0.2)
 	staff.prop_parts = [
-		PropPartResource.make(Part.CYLINDER, Vector3(0.045, 1.9, 0.045), Vector3(0.55, 1.0, -0.2), wood),
-		PropPartResource.make(Part.SPHERE, Vector3(0.15, 0.15, 0.15), Vector3(0.55, 1.98, -0.2), Color(0.55, 1.0, 0.65), Vector3.ZERO, 2.0),
+		PropPartResource.make(Part.CYLINDER, Vector3(0.045, 1.9, 0.04), Vector3(0.55, 1.0, -0.2), rowan),
+		PropPartResource.make(Part.CYLINDER, Vector3(0.03, 0.34, 0.02), Vector3(0.48, 2.06, -0.2), rowan, Vector3(0.0, 0.0, 28.0)),
+		PropPartResource.make(Part.CYLINDER, Vector3(0.03, 0.34, 0.02), Vector3(0.62, 2.06, -0.2), rowan, Vector3(0.0, 0.0, -28.0)),
+		PropPartResource.make(Part.SPHERE, Vector3(0.13, 0.13, 0.13), Vector3(0.55, 2.04, -0.2), Color(0.6, 1.0, 0.68), Vector3.ZERO, 2.0),
+		PropPartResource.make(Part.SPHERE, Vector3(0.045, 0.045, 0.045), Vector3(0.49, 1.82, -0.16), Color(0.85, 0.18, 0.15)),
+		PropPartResource.make(Part.SPHERE, Vector3(0.045, 0.045, 0.045), Vector3(0.52, 1.77, -0.24), Color(0.85, 0.18, 0.15)),
+		PropPartResource.make(Part.BOX, Vector3(0.02, 0.32, 0.07), Vector3(0.6, 1.72, -0.2), Color(0.95, 0.85, 0.5), Vector3(0.0, 0.0, -10.0)),
 	]
 	register_item(staff)
 
-	var bow: EquipmentItemResource = _weapon(HUNTER_BOW, "Wind-Ash Hunter Bow", EquipmentItemResource.WeaponType.BOW,
+	var bow: EquipmentItemResource = _weapon(HUNTER_BOW, "Yew Longbow", EquipmentItemResource.WeaponType.BOW,
 		EquipmentItemResource.DeliveryVector.RANGED_ARROW, "Stepping snap-shots and a planted, piercing draw. Cards fly as rune arrows.")
 	var snap_1: CombatActionResource = _shot(&"snap_shot_1", "Snap-Shot", Cmd.LIGHT, 0.14, 0.08, 0.34, 10.0, 8.0, 14.0, 34.0)
 	snap_1.lunge_distance = -0.6
@@ -437,10 +453,15 @@ func _build_weapons() -> void:
 		PropPartResource.make(Part.BOX, Vector3(0.16, 0.16, 0.16), Vector3(0.0, 0.0, -0.48), Color(0.9, 0.95, 1.0), Vector3(0.0, 45.0, 0.0), 3.0),
 		PropPartResource.make(Part.BOX, Vector3(0.2, 0.03, 0.2), Vector3(0.0, 0.0, 0.4), Color(0.95, 0.9, 0.8), Vector3.ZERO, 1.0),
 	]
+	# A tall yew longbow: golden limbs, a leather grip, brass nocks and a pale string.
+	var yew: Color = Color(0.66, 0.48, 0.26)
 	bow.prop_parts = [
-		PropPartResource.make(Part.BOX, Vector3(0.05, 0.75, 0.06), Vector3(-0.5, 1.45, -0.42), wood, Vector3(-18.0, 0.0, 0.0)),
-		PropPartResource.make(Part.BOX, Vector3(0.05, 0.75, 0.06), Vector3(-0.5, 0.85, -0.42), wood, Vector3(18.0, 0.0, 0.0)),
-		PropPartResource.make(Part.CYLINDER, Vector3(0.008, 1.3, 0.008), Vector3(-0.5, 1.15, -0.26), Color(0.95, 0.95, 0.9)),
+		PropPartResource.make(Part.BOX, Vector3(0.05, 0.86, 0.07), Vector3(-0.5, 1.53, -0.42), yew, Vector3(-16.0, 0.0, 0.0)),
+		PropPartResource.make(Part.BOX, Vector3(0.05, 0.86, 0.07), Vector3(-0.5, 0.77, -0.42), yew, Vector3(16.0, 0.0, 0.0)),
+		PropPartResource.make(Part.BOX, Vector3(0.07, 0.2, 0.09), Vector3(-0.5, 1.15, -0.46), Color(0.34, 0.22, 0.13)),
+		PropPartResource.make(Part.SPHERE, Vector3(0.035, 0.035, 0.035), Vector3(-0.5, 1.94, -0.3), Color(0.86, 0.66, 0.3)),
+		PropPartResource.make(Part.SPHERE, Vector3(0.035, 0.035, 0.035), Vector3(-0.5, 0.36, -0.3), Color(0.86, 0.66, 0.3)),
+		PropPartResource.make(Part.CYLINDER, Vector3(0.008, 1.5, 0.008), Vector3(-0.5, 1.15, -0.27), Color(0.95, 0.95, 0.9)),
 	]
 	register_item(bow)
 
