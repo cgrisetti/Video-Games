@@ -10,6 +10,8 @@ extends LevelBase
 
 ## Demo bots (--demo) gather on the portal, spread out this far.
 const DEMO_SPREAD: float = 1.1
+## The holds that change who you are, named for keyboards and pads alike (the HUD's cross shows the fighting moves).
+const CHANGE_KEYS: String = "Hold Tab / View: Fellowship · hold C / L3: Calling · hold M / R3: assist mode"
 
 @onready var raid_portal: RaidPortal = $RaidPortal
 @onready var chime_shrine: ChimeShrine = $ChimeShrine
@@ -25,7 +27,8 @@ func level_title() -> String:
 
 
 func level_hint() -> String:
-	return "Raid Portal: face the Cairnsman · Chime-Shrine: %d Chimes · Scribe Desk: armor, weapons and cards" % PartyProgress.current.chimes
+	return "Raid Portal: set out for the Cairnsman · Chime-Shrine: %d Chimes · Scribe Desk: armor, weapons, cards and Calling\n%s" % [
+		PartyProgress.current.chimes, CHANGE_KEYS]
 
 
 func _setup_level() -> void:

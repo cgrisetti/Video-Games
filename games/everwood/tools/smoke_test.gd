@@ -98,6 +98,7 @@ func _run() -> void:
 	await _check_portal_into_dojo()
 	_stage_party()
 	await _seconds(0.3)
+	await _check_cross_grimoire_hud()
 	await _check_flow_cancel_and_hit_stop()
 	await _check_flow_windows()
 	await _check_synergies()
@@ -568,6 +569,59 @@ func _check_portal_into_dojo() -> void:
 		"assist modes carry across (Master: 400 ms buffer)")
 	_check(is_equal_approx(healer.action_queue.buffer_window, 0.55) and healer.action_queue.assisted_chaining,
 		"Adventurer mode: 550 ms buffer and auto-chaining")
+
+
+# --- The Cross-Grimoire HUD (07 GDD §2) -----------------------------------
+
+## Each player's cross: the right card in each slot, tinted by its Sign, dipped
+## until there are pips for it and popping up gold when there are, pulsing when
+## pressed; no line of control help along the bottom.
+func _check_cross_grimoire_hud() -> void:
+	var hud: PlayerHUD = dojo.huds[tank.player_id]
+	var cross: CrossGrimoireHUD = hud.cross_grimoire
+	_check(cross != null and not hud.has_method("controls_text"), "the HUD is a Cross-Grimoire, and the old line of control help is gone")
+	var north: CrossSlot = cross.slot_for_command(Cmd.FORWARD_HEAVY)
+	var south: CrossSlot = cross.slot_for_command(Cmd.BACK_HEAVY)
+	var east: CrossSlot = cross.slot_for_command(Cmd.TRIGGER_R_SKILL)
+	var crown: CrossSlot = cross.slot_for_command(Cmd.TRIGGER_BOTH_ULT)
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var forward: CombatActionResource = tank.loadout.card_action(ScribeCardResource.GrimoireSlot.FORWARD)
+	_check(north.title == forward.display_name and south.title == tank.loadout.card_action(1).display_name
+		and east.title == tank.loadout.card_action(2).display_name and crown.title == tank.loadout.card_action(3).display_name,
+		"north, south, east and the crown hold the Forward, Back, Signature and Ultimate cards")
+	_check(north.key_text == "W+K" and south.key_text == "S+K" and east.key_text == "E" and crown.key_text.contains("Q+E"),
+		"each slot names its keys: W+K, S+K, E, and R or Q+E for the ultimate")
+	_check(north.sign_color == catalog.sign_seal(forward.scribe_sign).color and north.tag_text == "IRON-ROOT" and east.pip_cost == 1 and crown.pip_cost == 3,
+		"each card frame is tinted by its Sign (Shield Charge in Iron-Root amber), with its pip cost as gems")
+	_check(cross.guard_slot.title == "Guard" and cross.slot_for_command(Cmd.LIGHT).title == tank.loadout.weapon.display_name
+		and cross.slot_for_command(Cmd.LIGHT).subtitle.contains("Greatshield"), "the west wing is the Guard, the centre the weapon and the Shield-Sworn's greatshield")
+	var pips_before: float = tank.stats.resonance_charge
+	tank.stats.resonance_charge = 0.0
+	await _seconds(0.5)
+	_check(not east.is_ready and is_equal_approx(east.lift(), CrossSlot.UNREADY_DROP) and is_equal_approx(east.modulate.a, CrossSlot.UNREADY_ALPHA)
+		and north.is_ready and is_equal_approx(north.lift(), 0.0), "without a pip, Taunt sits dimmed and 6 px low while the free Shield Charge stands ready")
+	tank.stats.add_resonance(1.0)
+	await _seconds(0.5)
+	_check(east.is_ready and east.lift() < 0.1 and not crown.is_ready, "one pip earned: Taunt slides up gold, the 3-pip ultimate still waits")
+	tank.stats.resonance_charge = pips_before
+	var dps_cross: CrossGrimoireHUD = (dojo.huds[dps.player_id] as PlayerHUD).cross_grimoire
+	await _until_idle(dps)
+	dps.stats.stamina = dps.stats.stats.max_stamina
+	dps.input.inject_command(Cmd.FORWARD_HEAVY)
+	await physics_frame
+	await physics_frame
+	_check(dps_cross.slot_for_command(Cmd.FORWARD_HEAVY).is_pulsing(), "pressing Forward + heavy pulses the DPS's north slot")
+	tank.input.inject_guard(true)
+	await _seconds(0.15)
+	_check(cross.guard_slot.lit, "raising the guard lights the Guard wing")
+	tank.input.inject_guard(false)
+	var healer_cross: CrossGrimoireHUD = (dojo.huds[healer.player_id] as PlayerHUD).cross_grimoire
+	_check(healer_cross.actor.tether != null and healer_cross.slot_for_command(Cmd.LIGHT).subtitle.contains("Tether-Lantern"),
+		"a Lantern-Bearer's cross carries the Tether-Lantern and the Soul Tether compass")
+	_check(is_equal_approx(CrossGrimoireHUD.scale_for(Vector2(1600.0, 900.0)), CrossGrimoireHUD.BASE_SCALE)
+		and is_equal_approx(CrossGrimoireHUD.scale_for(Vector2(800.0, 450.0)), CrossGrimoireHUD.MIN_SCALE),
+		"the cross scales with the split-screen cell, down to a floor for four players")
+	await _until_idle(dps)
 
 
 # --- Combat ---------------------------------------------------------------

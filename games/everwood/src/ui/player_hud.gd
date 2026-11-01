@@ -1,33 +1,31 @@
 ## One local player's HUD, drawn over their split-screen cell: the boss's
-## health, poise, cast and aggro along the top; your health, stamina,
-## resonance pips, queued input and Soul Tether bottom-left; your controls
-## along the bottom. A big banner in the middle marks moments the whole party
-## shares (a victory, the loot). Next to the Chime-Shrine a prompt says what
-## light does, and its upgrade menu opens over this view.
+## health, poise, cast and aggro along the top, and the Cross-Grimoire HUD
+## bottom-centre (CrossGrimoireHUD: health, stamina, pips, Chimes and every
+## move's slot, readable by shape and colour). A big banner in the middle marks
+## moments the whole party shares (a victory, the loot). Next to the
+## Chime-Shrine or the Scribe Desk a prompt says what light does, and their
+## menus open over this view.
 class_name PlayerHUD
 extends Control
 
 const MARGIN: float = 14.0
 const BOSS_BAR_WIDTH: float = 0.56
-const PLAYER_BAR_WIDTH: float = 240.0
 const FONT_SIZE: int = 17
 const SMALL_FONT_SIZE: int = 13
 const HEALTH_COLOR: Color = Color(0.85, 0.22, 0.24)
-const STAMINA_COLOR: Color = Color(0.95, 0.8, 0.3)
 const POISE_COLOR: Color = Color(0.95, 0.65, 0.25)
 const CAST_COLOR: Color = Color(0.75, 0.55, 1.0)
 const BAR_BACK: Color = Color(0.06, 0.06, 0.08, 0.75)
 ## Room left for the dojo's banner when this cell touches the top of the screen.
 const BANNER_CLEARANCE: float = 52.0
 const FLASH_TIME: float = 0.6
-const TETHER_COLOR: Color = Color(0.5, 1.0, 0.62)
-## A resonance jump at least this big (a reward, not a hit) makes the pips flash.
-const REWARD_FLASH_PIPS: float = 0.4
 const BANNER_TITLE_SIZE: int = 44
 ## Real seconds for the banner to fade in (it ignores slow motion).
 const BANNER_FADE_TIME: float = 0.3
 
 var actor: ActorBase
+## The bottom-centre cross of move slots and gauges.
+var cross_grimoire: CrossGrimoireHUD
 
 var _top_panel: VBoxContainer
 var _boss_label: Label
@@ -36,17 +34,7 @@ var _boss_poise: ProgressBar
 var _cast_bar: ProgressBar
 var _cast_label: Label
 var _aggro_label: Label
-var _class_label: Label
-var _kit_label: Label
-var _health: ProgressBar
-var _stamina: ProgressBar
-var _pips_label: Label
-var _queue_label: Label
-var _tether_label: Label
-var _status_label: Label
-var _controls_label: Label
 var _flow_label: Label
-var _compass_labels: Array[Label] = []
 var _banner: VBoxContainer
 var _banner_title: Label
 var _banner_subtitle: Label
@@ -54,8 +42,6 @@ var _prompt_label: Label
 ## The menu open over this view (the Chime-Shrine's or the Scribe Desk's).
 var _menu: Control
 var _flow_flash_left: float = 0.0
-var _pips_flash_left: float = 0.0
-var _last_resonance: float = 0.0
 
 
 func setup(target_actor: ActorBase) -> void:
@@ -91,53 +77,16 @@ func _ready() -> void:
 	_aggro_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	top.add_child(_aggro_label)
 
-	var bottom: VBoxContainer = VBoxContainer.new()
-	bottom.anchor_top = 1.0
-	bottom.anchor_bottom = 1.0
-	bottom.offset_left = MARGIN
-	bottom.offset_bottom = -MARGIN - 34.0
-	bottom.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	bottom.custom_minimum_size = Vector2(PLAYER_BAR_WIDTH, 0.0)
-	bottom.add_theme_constant_override(&"separation", 3)
-	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bottom)
-	_status_label = _label(FONT_SIZE)
-	bottom.add_child(_status_label)
-	_tether_label = _label(SMALL_FONT_SIZE)
-	bottom.add_child(_tether_label)
-	_queue_label = _label(SMALL_FONT_SIZE)
-	bottom.add_child(_queue_label)
-	_class_label = _label(FONT_SIZE)
-	bottom.add_child(_class_label)
-	_kit_label = _label(SMALL_FONT_SIZE)
-	_kit_label.modulate = Color(1.0, 1.0, 1.0, 0.85)
-	bottom.add_child(_kit_label)
-	_health = _bar(HEALTH_COLOR, 14.0)
-	bottom.add_child(_health)
-	_stamina = _bar(STAMINA_COLOR, 8.0)
-	bottom.add_child(_stamina)
-	_pips_label = _label(FONT_SIZE)
-	bottom.add_child(_pips_label)
-
-	_controls_label = _label(SMALL_FONT_SIZE)
-	_controls_label.anchor_top = 1.0
-	_controls_label.anchor_bottom = 1.0
-	_controls_label.anchor_right = 1.0
-	_controls_label.offset_left = MARGIN
-	_controls_label.offset_right = -MARGIN
-	_controls_label.offset_top = -MARGIN - 32.0
-	_controls_label.offset_bottom = -6.0
-	_controls_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_controls_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	_controls_label.modulate = Color(1.0, 1.0, 1.0, 0.8)
-	add_child(_controls_label)
+	cross_grimoire = CrossGrimoireHUD.new()
+	cross_grimoire.setup(actor)
+	add_child(cross_grimoire)
 
 	# "FLOW" pops up mid-screen when a buffered follow-up skips the recovery.
 	_flow_label = _label(30)
 	_flow_label.anchor_left = 0.5
 	_flow_label.anchor_right = 0.5
-	_flow_label.anchor_top = 0.62
-	_flow_label.anchor_bottom = 0.62
+	_flow_label.anchor_top = 0.42
+	_flow_label.anchor_bottom = 0.42
 	_flow_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_flow_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_flow_label.modulate = Color(0.6, 0.85, 1.0, 0.0)
@@ -165,8 +114,8 @@ func _ready() -> void:
 	_prompt_label = _label(FONT_SIZE)
 	_prompt_label.anchor_left = 0.5
 	_prompt_label.anchor_right = 0.5
-	_prompt_label.anchor_top = 0.7
-	_prompt_label.anchor_bottom = 0.7
+	_prompt_label.anchor_top = 0.52
+	_prompt_label.anchor_bottom = 0.52
 	_prompt_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_prompt_label.modulate = Color(0.75, 0.9, 1.0)
@@ -174,9 +123,6 @@ func _ready() -> void:
 	add_child(_prompt_label)
 	if actor != null:
 		actor.action_queue.flow_cancelled.connect(_on_flow_cancelled)
-		_last_resonance = actor.stats.resonance_charge
-		if actor.tether != null:
-			add_child(_build_tether_compass())
 
 
 func _process(_delta: float) -> void:
@@ -285,63 +231,10 @@ func _refresh_boss() -> void:
 
 
 func _refresh_player() -> void:
-	var stats: StatsComponent = actor.stats
-	var mode: String = actor.input.mode_name() if actor.input != null else ""
-	_class_label.text = "%s  ·  %s  ·  %s" % [actor.display_name(), mode, actor.input.device_label() if actor.input != null else ""]
-	var loadout: ClassLoadoutResource = actor.loadout
-	_kit_label.visible = loadout.weapon != null and loadout.armor != null
-	if _kit_label.visible:
-		_kit_label.text = "%s  ·  %s  ·  Grimoire Lv %d" % [loadout.weapon.display_name, loadout.armor.display_name, PartyProgress.current.grimoire_level()]
-	_class_label.modulate = actor.loadout.body_color.lightened(0.3)
-	_health.max_value = stats.stats.max_health
-	_health.value = stats.health
-	_stamina.max_value = stats.stats.max_stamina
-	_stamina.value = stats.stamina
-	var pips: int = stats.resonance_pips()
-	var dots: String = ""
-	for index: int in stats.stats.max_resonance_pips:
-		if index < pips:
-			dots += "● "
-		elif index == pips and stats.resonance_charge - pips > 0.01:
-			dots += "◐ "
-		else:
-			dots += "○ "
-	_pips_label.text = "Resonance  " + dots
-
-	var queue: ActionQueueComponent = actor.action_queue
-	var queued: PackedStringArray = PackedStringArray()
-	for command: int in queue.buffer:
-		queued.append(command_name(command))
-	var line: String = ""
-	if queue.current_action != null:
-		line = queue.current_action.display_name
-		if queue.flowed_into_current:
-			line += "  (FLOW%s)" % (" +15%" if queue.speed_scale > 1.0 else "")
-	if not queued.is_empty():
-		line += "   Queued ▶ " + ", ".join(queued)
-	_queue_label.text = line
-
-	_tether_label.visible = actor.tether != null
-	if actor.tether != null:
-		var tethered: ActorBase = actor.tether.tethered_actor()
-		if tethered != null:
-			_tether_label.text = "Soul Tether %s %s (%d%%)" % [
-				actor.tether.slot_arrow_for(tethered.player_id), tethered.display_name(), roundi(tethered.stats.health_ratio() * 100.0)]
-
-	var status: String = ""
-	if stats.is_downed:
-		status = "Downed: back up in %ds (a heal brings you back sooner)" % ceili(actor.downed_time_left)
-	elif actor.state_machine.is_in(&"stagger"):
-		status = "Staggered!"
-	elif stats.guarding:
-		status = "Guarding"
-	_status_label.text = status
-	_controls_label.text = controls_text()
 	_prompt_label.visible = is_instance_valid(actor.interactable) and _live_menu() == null
 	if _prompt_label.visible:
 		_prompt_label.text = actor.interactable.prompt_for(actor)
 	_refresh_flashes()
-	_refresh_tether_compass()
 
 
 func _on_flow_cancelled(_from: CombatActionResource, _to: CombatActionResource) -> void:
@@ -354,91 +247,6 @@ func _refresh_flashes() -> void:
 	var delta: float = get_process_delta_time()
 	_flow_flash_left = maxf(0.0, _flow_flash_left - delta)
 	_flow_label.modulate.a = _flow_flash_left / FLASH_TIME
-	var charge: float = actor.stats.resonance_charge
-	if charge - _last_resonance >= REWARD_FLASH_PIPS:
-		_pips_flash_left = FLASH_TIME
-	_last_resonance = charge
-	_pips_flash_left = maxf(0.0, _pips_flash_left - delta)
-	var glow: float = _pips_flash_left / FLASH_TIME
-	_pips_label.modulate = Color(1.0, 1.0, 1.0).lerp(Color(1.0, 0.9, 0.4), glow)
-	_pips_label.scale = Vector2.ONE * (1.0 + glow * 0.25)
-
-
-## The healer's D-Pad compass: which direction tethers whom, with their health.
-func _build_tether_compass() -> Control:
-	var compass: GridContainer = GridContainer.new()
-	compass.name = "TetherCompass"
-	compass.columns = 3
-	compass.anchor_left = 1.0
-	compass.anchor_right = 1.0
-	compass.anchor_top = 1.0
-	compass.anchor_bottom = 1.0
-	compass.offset_left = -MARGIN - 330.0
-	compass.offset_right = -MARGIN
-	compass.offset_top = -MARGIN - 150.0
-	compass.offset_bottom = -MARGIN - 40.0
-	compass.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Up, right, down, left sit in the middle cells of a 3 x 3 grid around the D-Pad.
-	var cell_for_slot: Array[int] = [1, 5, 7, 3]
-	var cells: Array[Control] = []
-	for index: int in 9:
-		var cell: Label = _label(SMALL_FONT_SIZE)
-		cell.custom_minimum_size = Vector2(110.0, 0.0)
-		cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		cell.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		compass.add_child(cell)
-		cells.append(cell)
-	(cells[4] as Label).text = "✚"
-	for slot: int in cell_for_slot.size():
-		_compass_labels.append(cells[cell_for_slot[slot]] as Label)
-	return compass
-
-
-func _refresh_tether_compass() -> void:
-	if actor.tether == null:
-		return
-	var allies: Array[ActorBase] = actor.tether.allies()
-	for slot: int in _compass_labels.size():
-		var label: Label = _compass_labels[slot]
-		if slot >= allies.size():
-			label.text = "%s —" % SoulTetherComponent.SLOT_ARROWS[slot]
-			label.modulate = Color(1.0, 1.0, 1.0, 0.4)
-			continue
-		var ally: ActorBase = allies[slot]
-		var tethered: bool = ally.player_id == actor.tether.tethered_id
-		label.text = "%s %s\n%s %d%%" % [SoulTetherComponent.SLOT_ARROWS[slot], ally.display_name().get_slice(" ", 0),
-			ally.loadout.display_name.get_slice(" ", 0), roundi(ally.stats.health_ratio() * 100.0)]
-		label.modulate = TETHER_COLOR if tethered else Color(1.0, 1.0, 1.0, 0.85)
-
-
-## The controls line, named from the Input Map for this player's own device:
-## keys for the keyboard player, Xbox letters or PlayStation shapes for pads.
-func controls_text() -> String:
-	if actor.input == null:
-		return ""
-	var input: InputComponent = actor.input
-	var loadout: ClassLoadoutResource = actor.loadout
-	var keyboard: bool = input.is_keyboard()
-	var light: String = input.label(InputComponent.ACTION_LIGHT)
-	var heavy: String = input.label(InputComponent.ACTION_HEAVY)
-	var trigger_l: String = input.label(InputComponent.ACTION_TRIGGER_L)
-	var trigger_r: String = input.label(InputComponent.ACTION_TRIGGER_R)
-	var up: String = input.label(InputComponent.ACTION_MOVE_FORWARD) if keyboard else "↑"
-	var down: String = input.label(InputComponent.ACTION_MOVE_BACK) if keyboard else "↓"
-	var attacks: String = "%s or %s: smart attack" % [light, heavy]
-	if input.assist_mode != InputComponent.AssistMode.SQUIRE_GAMBIT:
-		attacks = "%s light · %s heavy · %s+%s %s · %s+%s %s" % [light, heavy, up, heavy, loadout.forward_label, down, heavy, loadout.back_label]
-	var ult_keys: String = "%s+%s" % [trigger_l, trigger_r]
-	if keyboard:
-		ult_keys = "%s or %s" % [input.label(InputComponent.ACTION_ULT), ult_keys]
-	var tethers: String = ""
-	if loadout.has_soul_tethers:
-		tethers = " · %s tether" % ("1-4" if keyboard else "D-Pad")
-	return "%s move · %s · %s dodge · %s %s · %s %s · %s %s%s · %s · hold %s: class · hold %s: Calling · hold %s: mode" % [
-		"WASD" if keyboard else "Stick", attacks, input.label(InputComponent.ACTION_DODGE),
-		trigger_l, loadout.trigger_l_label, trigger_r, loadout.trigger_r_label, ult_keys, loadout.ult_label, tethers,
-		"Mouse or ←/→ camera" if keyboard else "Right stick camera",
-		input.label(InputComponent.ACTION_CHANGE_CLASS), input.label(InputComponent.ACTION_CHANGE_CALLING), input.label(InputComponent.ACTION_CHANGE_MODE)]
 
 
 static func command_name(command: int) -> String:
