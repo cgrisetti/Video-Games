@@ -170,7 +170,7 @@ In a headless run, one player plus two companions beat the Cairnsman (2,400 heal
 
 ## The 3x3 Callings (07 GDD §1.3)
 
-A Calling is the Fellowship's base numbers plus one Secondary modifier (`callings.gd`). Each Fellowship starts in its own column, so out of the box the Shield-Sworn is a Bridge-Warden (180 health), the Wayfarer a Hedge-Runner and the Lantern-Bearer a Lantern-Scribe (105 health).
+A Calling is the Fellowship's base numbers plus one Secondary modifier. The modifiers are `SecondaryCallingResource` data registered in `ArsenalCatalog._build_callings()` (`arsenal_catalog.gd`); `callings.gd` applies them. Each Fellowship starts in its own column, so out of the box the Shield-Sworn is a Bridge-Warden (180 health), the Wayfarer a Hedge-Runner and the Lantern-Bearer a Lantern-Scribe (105 health).
 
 | Secondary | Health | Stamina regen | Potency | Gear it unlocks |
 |---|---|---|---|---|
@@ -186,8 +186,8 @@ Why these numbers: every Secondary costs something or gives in two directions, s
 
 | Number | Value | Where | Why |
 |---|---|---|---|
-| Minions | 65 health, 30 poise (2 s knockdown), Scuttler nip 7, Imp claw 10 | `class_loadouts.gd` | A cleave, a volley or one detonation clears a few; they teach multi-target play, not hurt |
-| Minion speed | Scuttler 4.6 m/s, Imp 3.6 m/s; a strike every 1.5 s | `class_loadouts.gd`, `woodland_minion.gd` | Slower than a player (6+), so you can always walk away |
+| Minions | 65 health, 30 poise (2 s knockdown), Scuttler nip 7, Bog-Imp claw 10 | `class_loadouts.gd` | A cleave, a volley or one detonation clears a few; they teach multi-target play, not hurt |
+| Minion speed | Scuttler 4.6 m/s, Bog-Imp 3.6 m/s; a strike every 1.5 s | `class_loadouts.gd`, `woodland_minion.gd` | Slower than a player (6+), so you can always walk away |
 | Camp wake / settle | A player within 9 m, or a minion hurt; settles when nobody is within 18 m | `minion_camp.gd` | Visible camps don't jump you from across the clearing |
 | Camp reward | 3 Chimes per cleared camp (2 camps) | `dungeon_dojo.gd` | Small, but it makes the trail worth fighting |
 | Wayfarer's Chest | 15 Chimes and one Uncommon card (own dice, never shifts the boss's drop) | `dungeon_dojo.gd` | A reward for exploring the alcove |
@@ -208,6 +208,7 @@ In a headless run, one player with two companions clears both camps and reaches 
 | Gale-Beam | 3.2 s cast; a 22 × 4.5 m lane from the boss through its top-threat player; it tracks them until 70% cast, then locks | `boss_dummy.gd`, `raid_telegraph_decal.gd` | Long enough for the tank to turn and raise the shield and for everyone to get behind it |
 | Sheltered | In any Shadow Sanctuary cone (or holding one): no damage, +½ pip | `boss_dummy.gd` | Rewards doing it right, like a Perfect Guard |
 | Exposed | 40 damage (before armor: 36 in linen, 26 in plate) and a 4 m knockback, never past 16 m from the boss | `boss_dummy.gd` | Hurts but never kills a full-health player on its own |
+| Squire shelter | A Squire tank the beam is aimed at turns to the boss and raises Shadow Sanctuary once the beam is 25% full (if it has the stamina); anyone else in the lane outside a shield rolls sideways at 85% | `input_component.gd` (`AUTO_SHELTER_FILL`, `AUTO_EVADE_FILL`) | 08 Gate 5: an assisted child survives every mechanic |
 
 ## Open questions for playtest
 
@@ -216,6 +217,6 @@ In a headless run, one player with two companions clears both camps and reaches 
 - Is about 40 Chimes a run the right pace? Maxing both upgrades takes about 3 runs; with the camps and the Wayfarer's Chest that may now be too fast.
 - With armor mitigation on every hit, is the Cairnsman now too gentle? Its damage could rise 15–20% to make up for it.
 - Does a Rare card at Lv 2 (memory 7 of 8, no room for a link) feel like a real choice, or should Lv 2 hold 9?
-- Does the Gale-Beam's 3.2 s give a child at tank enough time to turn and raise Shadow Sanctuary? A Squire-mode tank could raise it automatically.
+- Does the Gale-Beam's 3.2 s give a child at tank, in Adventurer or Master mode, enough time to turn and raise Shadow Sanctuary? (Squire Gambit now does it for them.)
 - Is the Gale-Jet's push fun for younger players, or should it slow (not shove) them?
 - Do two minion camps feel like enough fighting before the boss, or should the holloway hold a third?
