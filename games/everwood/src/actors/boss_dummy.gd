@@ -7,6 +7,11 @@
 ## - Every few seconds it casts a raid telegraph, alternating:
 ##     Crimson Bloom     (CRIMSON_DODGE_OUT) a red puddle under every player: get out
 ##     Golden Communion  (GOLD_PARTY_SOAK)   a gold circle on one player: stack in to share it
+## - Phase 2, at half health or less (07 GDD §3, Zone 3), every other cast is the
+##     Doverslap Gale-Beam (BLUE_BEHIND_TANK) a 3.2 s lane from the boss to its
+##                       tank: anyone in the tank's Shadow Sanctuary cone (and
+##                       the tank holding it) takes nothing and earns ½ a pip;
+##                       anyone else in the lane takes 40 and is knocked back
 ## - Heavy hits and Perfect Guards drain its poise; at zero it's knocked down for 5 s.
 ## - Defeated, it stays down and signals `defeated`: the dojo plays the victory
 ##   and drops a reward chest (DungeonDojo).
@@ -48,6 +53,21 @@ const SOAK_DAMAGE_PER_PLAYER: float = 30.0
 ## ...counting at most this many players (90 in all), so big parties split it thinner.
 const SOAK_DAMAGE_PLAYER_CAP: int = 3
 const SOAK_FAIL_DAMAGE: float = 30.0
+## Phase 2 starts at this share of health.
+const PHASE_TWO_HEALTH: float = 0.5
+## Seconds from entering Phase 2 to its first Gale-Beam.
+const PHASE_TWO_FIRST_BEAM: float = 1.5
+const BEAM_NAME: String = "Doverslap Gale-Beam"
+const BEAM_CAST_TIME: float = 3.2
+const BEAM_LENGTH: float = 22.0
+const BEAM_WIDTH: float = 4.5
+## Before armor, like every telegraph's damage.
+const BEAM_DAMAGE: float = 40.0
+const BEAM_SHELTER_PIPS: float = 0.5
+const BEAM_KNOCKBACK: float = 4.0
+const BEAM_KNOCKBACK_TIME: float = 0.3
+## The torrent never throws anyone further than this from the boss (inside the Ring).
+const BEAM_PUSH_LIMIT: float = 16.0
 const WINDUP_GLOW: Color = Color(1.0, 0.25, 0.1)
 ## The cairn: river-boulders stacked up the body as (height, radius, sideways
 ## nudge). They share the body's material, so the wind-up glow lights them all.
@@ -72,9 +92,13 @@ var cast_started_at: float = -1.0
 var engaged: bool = false
 ## Beaten for good: it stays down until the party leaves the instance.
 var vanquished: bool = false
+## At half health or less: the Gale-Beam joins its casts (the host decides; others are told).
+var phase_two: bool = false
 
 var _cast_timer: float = FIRST_CAST_DELAY
 var _next_cast: RaidTelegraphDecal.Kind = RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT
+## Phase 2 weaves the beam between the floor casts; this is the last floor cast.
+var _last_floor_cast: RaidTelegraphDecal.Kind = RaidTelegraphDecal.Kind.GOLD_PARTY_SOAK
 var _swipe_cooldown: float = 0.0
 
 
@@ -262,6 +286,8 @@ func _gather_intent(delta: float) -> void:
 		engaged = true
 		_cast_timer = FIRST_CAST_DELAY
 		scale_health_to_party(CombatDirector.current.party_actors().size())
+	if not phase_two and stats.health_ratio() <= PHASE_TWO_HEALTH:
+		_enter_phase_two()
 	var target_id: StringName = threat.top_target(eligible)
 	if target_id == &"":
 		var nearest_any: ActorBase = _nearest_player(eligible, INF)
@@ -313,9 +339,35 @@ func _nearest_player(ids: Array[StringName], within: float) -> ActorBase:
 	return best
 
 
+## Half health: it plants its boulder-fist, and a Gale-Beam comes next.
+func _enter_phase_two() -> void:
+	_set_phase_two(true)
+	for peer_id: int in InstanceManager.current.live_remote_peers():
+		_set_phase_two.rpc_id(peer_id, true)
+	CombatDirector.current.announce(global_position + Vector3.UP * (BOSS_HEIGHT + 1.0), "The Cairnsman plants its boulder-fist!", RaidTelegraphDecal.BLUE_COLOR)
+	_next_cast = RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK
+	_cast_timer = minf(_cast_timer, PHASE_TWO_FIRST_BEAM)
+
+
+@rpc("authority", "call_local", "reliable")
+func _set_phase_two(on: bool) -> void:
+	phase_two = on
+
+
+## What it casts after `kind`: Crimson and Golden by turns, with the beam between them in Phase 2.
+func _cast_after(kind: RaidTelegraphDecal.Kind) -> RaidTelegraphDecal.Kind:
+	if kind != RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK:
+		_last_floor_cast = kind
+		if phase_two:
+			return RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK
+	if _last_floor_cast == RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT:
+		return RaidTelegraphDecal.Kind.GOLD_PARTY_SOAK
+	return RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT
+
+
 func _begin_cast() -> void:
 	var kind: RaidTelegraphDecal.Kind = _next_cast
-	_next_cast = RaidTelegraphDecal.Kind.GOLD_PARTY_SOAK if kind == RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT else RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT
+	_next_cast = _cast_after(kind)
 	_cast_timer = CAST_INTERVAL
 	var alive: Array[ActorBase] = CombatDirector.current.alive_party()
 	if alive.is_empty():
@@ -325,6 +377,11 @@ func _begin_cast() -> void:
 	if kind == RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT:
 		for member: ActorBase in alive:
 			centers.append(member.global_position)
+	elif kind == RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK:
+		# Aimed at whoever tops its aggro table: the tank, if the tank is doing its job.
+		var aimed: ActorBase = soft_target()
+		centers.append(global_position)
+		follow_id = String((aimed if aimed != null else alive[0]).player_id)
 	else:
 		var chosen: ActorBase = alive[randi() % alive.size()]
 		centers.append(chosen.global_position)
@@ -339,17 +396,21 @@ func _begin_cast() -> void:
 @rpc("authority", "call_local", "reliable")
 func _cast_telegraphs(kind: int, centers: PackedVector3Array, follow_id: String) -> void:
 	var crimson: bool = kind == RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT
-	cast_name = CRIMSON_NAME if crimson else SOAK_NAME
-	cast_duration = CRIMSON_CAST_TIME if crimson else SOAK_CAST_TIME
+	var beam: bool = kind == RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK
+	cast_name = BEAM_NAME if beam else (CRIMSON_NAME if crimson else SOAK_NAME)
+	cast_duration = BEAM_CAST_TIME if beam else (CRIMSON_CAST_TIME if crimson else SOAK_CAST_TIME)
 	cast_started_at = CombatDirector.game_time()
 	cast_started.emit(cast_name, cast_duration)
-	AudioCues.play(&"telegraph", 1.0 if crimson else 0.8)
+	AudioCues.play(&"beam" if beam else &"telegraph", 1.0 if crimson or beam else 0.8)
 	if telegraphs_root == null:
 		return
 	var follow: ActorBase = CombatDirector.current.get_actor(StringName(follow_id)) if follow_id != "" else null
 	for center: Vector3 in centers:
 		var decal: RaidTelegraphDecal = RaidTelegraphDecal.new()
-		decal.configure(kind as RaidTelegraphDecal.Kind, CRIMSON_RADIUS if crimson else SOAK_RADIUS, cast_duration, follow)
+		if beam:
+			decal.configure_beam(BEAM_LENGTH, BEAM_WIDTH, cast_duration, self, follow)
+		else:
+			decal.configure(kind as RaidTelegraphDecal.Kind, CRIMSON_RADIUS if crimson else SOAK_RADIUS, cast_duration, follow)
 		telegraphs_root.add_child(decal)
 		decal.global_position = Vector3(center.x, 0.0, center.z)
 		if is_multiplayer_authority():
@@ -358,6 +419,9 @@ func _cast_telegraphs(kind: int, centers: PackedVector3Array, follow_id: String)
 
 func _on_telegraph_resolved(decal: RaidTelegraphDecal, inside: Array[ActorBase]) -> void:
 	if vanquished:
+		return
+	if decal.is_beam():
+		_resolve_beam(decal, inside)
 		return
 	if decal.kind == RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT:
 		for member: ActorBase in inside:
@@ -373,6 +437,28 @@ func _on_telegraph_resolved(decal: RaidTelegraphDecal, inside: Array[ActorBase])
 		for member: ActorBase in alive:
 			CombatDirector.current.deliver(_telegraph_strike(member, SOAK_FAIL_DAMAGE))
 		CombatDirector.current.announce(decal.global_position + Vector3.UP * 2.0, "Soak failed! Stack in the gold", Color(1.0, 0.4, 0.3), &"soak_fail")
+
+
+## The torrent sweeps the lane: the sheltered earn half a pip, the rest are hit and thrown back.
+func _resolve_beam(decal: RaidTelegraphDecal, inside: Array[ActorBase]) -> void:
+	var down_lane: Vector3 = -decal.global_basis.z.normalized()
+	var sheltered: int = 0
+	for member: ActorBase in inside:
+		if CombatDirector.current.is_sheltered(member):
+			sheltered += 1
+			CombatDirector.current.reward(member, BEAM_SHELTER_PIPS)
+			CombatDirector.current.show_cue(member, RaidTelegraphDecal.BLUE_COLOR, &"reward")
+			continue
+		CombatDirector.current.deliver(_telegraph_strike(member, BEAM_DAMAGE))
+		var out: float = minf(_flat_distance(member.global_position, decal.global_position) + BEAM_KNOCKBACK, BEAM_PUSH_LIMIT)
+		var landing: Vector3 = decal.global_position + down_lane * out
+		CombatDirector.current.shove(member, Vector3(landing.x, member.global_position.y, landing.z), BEAM_KNOCKBACK_TIME)
+	if sheltered > 0:
+		CombatDirector.current.announce(decal.global_position + Vector3.UP * 3.0, "Sheltered behind the shield!  +½ pip", RaidTelegraphDecal.BLUE_COLOR, &"soak_ok")
+
+
+static func _flat_distance(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
 ## Telegraph damage depends only on where you stand: guards and rolls don't stop it.
@@ -427,6 +513,10 @@ func _reset_fight() -> void:
 	cast_started_at = -1.0
 	_cast_timer = FIRST_CAST_DELAY
 	_next_cast = RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT
+	_last_floor_cast = RaidTelegraphDecal.Kind.GOLD_PARTY_SOAK
+	_set_phase_two(false)
+	for peer_id: int in InstanceManager.current.live_remote_peers():
+		_set_phase_two.rpc_id(peer_id, false)
 	stats.heal(stats.stats.max_health)
 	stats.poise = stats.stats.max_poise
 	stats.poise_changed.emit(stats.poise, stats.stats.max_poise)

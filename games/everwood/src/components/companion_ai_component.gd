@@ -4,12 +4,14 @@
 ## It thinks like a KOTOR Gambit list. Every tick it walks its role's gambits in
 ## priority order and runs the first one whose condition holds, so staying
 ## alive beats teamwork, and teamwork beats damage:
-##   Tank    evade red · Perfect Guard the swipe · soak gold · taunt it back
-##           · ultimate · detonate a primer · attack · follow
-##   Healer  evade red · guard the swipe · soak gold · Lifeline a friend out of
-##           red · heal the most hurt · Green Sanctuary · detonate · follow
-##   DPS     evade red · roll from the swipe · soak gold · ultimate · prime
-##           · attack · follow
+##   Tank    evade red · shield the party from the Gale-Beam · Perfect Guard
+##           the swipe · soak gold · taunt it back · ultimate · detonate a
+##           primer · attack · follow
+##   Healer  evade red · get behind the tank's shield · guard the swipe · soak
+##           gold · Lifeline a friend out of red · heal the most hurt · Green
+##           Sanctuary · detonate · follow
+##   DPS     evade red · get behind the tank's shield · roll from the swipe ·
+##           soak gold · ultimate · prime · attack · follow
 ## Gambits pick where to stand (tanks in front of the boss, DPS at its back,
 ## healers at range, archers at bow range, everyone near the leader outside a
 ## fight) and which command to press; the companion walks there and presses it
@@ -22,16 +24,21 @@
 class_name CompanionAIComponent
 extends Node
 
-enum Gambit { EVADE_RED, GUARD_SWIPE, DODGE_SWIPE, SOAK_GOLD, LIFELINE, HEAL, SANCTUARY, TAUNT, ULTIMATE, DETONATE, PRIME, ATTACK, FOLLOW }
+enum Gambit { EVADE_RED, GUARD_SWIPE, DODGE_SWIPE, SOAK_GOLD, LIFELINE, HEAL, SANCTUARY, TAUNT, ULTIMATE, DETONATE, PRIME, ATTACK, FOLLOW,
+	SHELTER_BEAM }
 
-const TANK_GAMBITS: Array[Gambit] = [Gambit.EVADE_RED, Gambit.GUARD_SWIPE, Gambit.SOAK_GOLD, Gambit.TAUNT,
+const TANK_GAMBITS: Array[Gambit] = [Gambit.EVADE_RED, Gambit.SHELTER_BEAM, Gambit.GUARD_SWIPE, Gambit.SOAK_GOLD, Gambit.TAUNT,
 	Gambit.ULTIMATE, Gambit.DETONATE, Gambit.ATTACK, Gambit.FOLLOW]
-const HEALER_GAMBITS: Array[Gambit] = [Gambit.EVADE_RED, Gambit.GUARD_SWIPE, Gambit.SOAK_GOLD, Gambit.LIFELINE,
+const HEALER_GAMBITS: Array[Gambit] = [Gambit.EVADE_RED, Gambit.SHELTER_BEAM, Gambit.GUARD_SWIPE, Gambit.SOAK_GOLD, Gambit.LIFELINE,
 	Gambit.HEAL, Gambit.SANCTUARY, Gambit.DETONATE, Gambit.FOLLOW]
-const DPS_GAMBITS: Array[Gambit] = [Gambit.EVADE_RED, Gambit.DODGE_SWIPE, Gambit.SOAK_GOLD, Gambit.ULTIMATE,
+const DPS_GAMBITS: Array[Gambit] = [Gambit.EVADE_RED, Gambit.SHELTER_BEAM, Gambit.DODGE_SWIPE, Gambit.SOAK_GOLD, Gambit.ULTIMATE,
 	Gambit.PRIME, Gambit.ATTACK, Gambit.FOLLOW]
 const GAMBIT_NAMES: Array[String] = ["Evade red", "Guard swipe", "Dodge swipe", "Soak gold", "Lifeline", "Heal",
-	"Sanctuary", "Taunt", "Ultimate", "Detonate", "Prime", "Attack", "Follow"]
+	"Sanctuary", "Taunt", "Ultimate", "Detonate", "Prime", "Attack", "Follow", "Shelter from the beam"]
+## The tank raises its cone only once it faces the boss this squarely (the cone opens behind it).
+const SHELTER_FACING_DOT: float = 0.9
+## Others aim for this far into the cone's length.
+const SHELTER_DEPTH_SHARE: float = 0.45
 
 ## The backfill fills the party up to this many, missing roles in this order.
 const PARTY_TARGET: int = 3
@@ -177,6 +184,8 @@ func _run(gambit: Gambit) -> bool:
 			return _prime()
 		Gambit.ATTACK:
 			return _attack()
+		Gambit.SHELTER_BEAM:
+			return _shelter_beam()
 	return _follow()
 
 
@@ -196,6 +205,43 @@ func _evade_red() -> bool:
 		actor.evade_direction = away
 		_press(CombatActionResource.Command.DODGE, true)
 	return true
+
+
+## A Gale-Beam is coming. The tank turns to the boss and raises Shadow
+## Sanctuary (if its Back card is one); everyone else gets into a cone if one
+## is up, or else steps out of the beam's lane.
+func _shelter_beam() -> bool:
+	var beam: RaidTelegraphDecal = CombatDirector.current.beam_telegraph()
+	if beam == null:
+		return false
+	if actor.role() == ClassLoadoutResource.Role.TANK:
+		var boss: BossDummy = _boss_in_fight()
+		var cone_card: CombatActionResource = actor.loadout.card_action(ScribeCardResource.GrimoireSlot.BACK)
+		if boss == null or cone_card == null or cone_card.effect != CombatActionResource.Effect.SHADOW_SANCTUARY \
+				or CombatDirector.current.has_zone_from(actor.player_id):
+			return false
+		var to_boss: Vector3 = _flat(boss.global_position - actor.global_position)
+		actor.turn_toward(to_boss, PI)
+		_set_post(actor.global_position)
+		if actor.facing_vector().dot(to_boss.normalized()) >= SHELTER_FACING_DOT and actor.stats.stamina >= cone_card.stamina_cost:
+			if actor.action_queue.is_busy() and actor.action_queue.phase != ActionQueueComponent.Phase.ACTIVE:
+				actor.cancel_action()
+			_press(CombatActionResource.Command.BACK_HEAVY, true)
+		return true
+	var cone: SanctuaryZone = CombatDirector.current.shelter_cone()
+	if cone != null:
+		if cone.contains(actor.global_position):
+			_set_post(actor.global_position)
+			_hold_post = true
+			return false
+		_set_post(cone.global_position + cone.global_basis.z.normalized() * cone.radius * SHELTER_DEPTH_SHARE)
+		return true
+	if beam.contains(actor.global_position):
+		var across: Vector3 = beam.global_basis.x.normalized()
+		var side: float = signf(across.dot(actor.global_position - beam.global_position))
+		_set_post(actor.global_position + across * (side if side != 0.0 else 1.0) * beam.width)
+		return true
+	return false
 
 
 ## The swipe is coming: hold still and raise the guard. The tank waits for the

@@ -117,6 +117,7 @@ func _run() -> void:
 	await _check_soak_scaling()
 	await _check_telegraphs()
 	await _check_wipe_resets_fight()
+	await _check_gale_beam()
 	await _check_companion_backfill()
 	await _check_victory_and_loot()
 	await _check_chime_shrine()
@@ -1350,6 +1351,59 @@ func _check_wipe_resets_fight() -> void:
 
 ## Fewer than 3 people: AI companions fill the missing trinity roles, fight by
 ## their Gambit lists, and step aside when people come back.
+## The Cairnsman's Phase 2 (07 GDD §3, Zone 3): at half health the Doverslap
+## Gale-Beam joins its casts, aimed at the tank. Behind the tank's Shadow
+## Sanctuary nobody is hurt and everyone earns half a pip; out in the lane it hits
+## for 40 (before armor) and throws you back.
+func _check_gale_beam() -> void:
+	_reset_boss_poise()
+	await _until_idle(tank)
+	_face_boss(tank, Vector3(0.0, 0.0, 2.6))
+	_face_boss(dps, Vector3(0.0, 0.0, 5.5))
+	_face_boss(healer, Vector3(0.0, 0.0, 12.5))
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.input.inject_move(Vector2.ZERO)
+	boss.threat.taunt(tank.player_id, 30.0)
+	await _seconds(0.3)
+	_check(boss.engaged and not boss.phase_two, "a fresh fight starts in Phase 1")
+	boss.stats.health = boss.stats.stats.max_health * 0.45
+	await _seconds(0.2)
+	_check(boss.phase_two and boss._cast_after(RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT) == RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK
+		and boss._cast_after(RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK) != RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK,
+		"at half health the Cairnsman enters Phase 2: the Gale-Beam comes between his other casts")
+	var beam: RaidTelegraphDecal = null
+	var waited: float = 0.0
+	while waited < 4.0 and beam == null:
+		await physics_frame
+		waited += 1.0 / 60.0
+		beam = CombatDirector.current.beam_telegraph()
+	_check(beam != null and beam.follow_target == tank and boss.cast_name == "Doverslap Gale-Beam" and is_equal_approx(beam.cast_time, 3.2),
+		"the Doverslap Gale-Beam: a blue lane from the boss to the tank with a shield pillar, cast over 3.2 s")
+	if beam == null:
+		return
+	tank.stats.stamina = tank.stats.stats.max_stamina
+	tank.input.inject_command(Cmd.BACK_HEAVY)
+	dps.stats.resonance_charge = 0.0
+	healer.stats.heal(healer.stats.stats.max_health)
+	dps.stats.heal(dps.stats.stats.max_health)
+	await _seconds(0.6)
+	_check(beam.contains(dps.global_position) and beam.contains(healer.global_position) and CombatDirector.current.is_sheltered(dps)
+		and not CombatDirector.current.is_sheltered(healer), "the DPS stands in the tank's cone; the healer stands out in the lane")
+	var dps_health: float = dps.stats.health
+	var healer_health: float = healer.stats.health
+	var healer_distance: float = healer.global_position.distance_to(boss.global_position)
+	await _seconds(BossDummy.BEAM_CAST_TIME - beam.elapsed + 0.5)
+	_check(is_equal_approx(dps.stats.health, dps_health) and is_equal_approx(dps.stats.resonance_charge, BossDummy.BEAM_SHELTER_PIPS),
+		"behind the shield the DPS takes nothing and earns half a pip")
+	_check(healer_health - healer.stats.health >= BossDummy.BEAM_DAMAGE * 0.75 and healer.global_position.distance_to(boss.global_position) > healer_distance + 2.0,
+		"out in the lane the healer is hit hard (%d) and thrown back" % roundi(healer_health - healer.stats.health))
+	boss._reset_fight()
+	boss.threat.clear()
+	for actor: ActorBase in [tank, healer, dps]:
+		actor.stats.heal(actor.stats.stats.max_health)
+	await _seconds(0.1)
+
+
 func _check_companion_backfill() -> void:
 	var network: NetworkManager = NetworkManager.current
 	_check(network.companion_seats().is_empty(), "a full trinity of people needs no companions")
@@ -1405,6 +1459,20 @@ func _check_companion_backfill() -> void:
 		if boss.stats.is_knocked_down():
 			_reset_boss_poise()
 	_check(_companion_perfect_guards > guards_before, "the companion Tank times a Perfect Guard on the Crushing Swipe (%.1f s)" % waited)
+	# The Gale-Beam at the bot tank: it raises Shadow Sanctuary, and the bot healer gets behind it.
+	var beam_healer: ActorBase = _companion_with(ClassLoadoutResource.Role.HEALER)
+	_reset_boss_poise() # That Perfect Guard may have knocked it down, and a knocked-down boss casts nothing.
+	boss.threat.taunt(bot_tank.player_id, COMPANION_FIGHT_TIME)
+	boss._next_cast = RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK
+	boss._cast_timer = 0.0
+	waited = 0.0
+	var sheltered_healer: bool = false
+	while waited < 6.0 and not (CombatDirector.current.has_zone_from(bot_tank.player_id) and sheltered_healer):
+		await _seconds(0.1)
+		waited += 0.1
+		sheltered_healer = sheltered_healer or CombatDirector.current.is_sheltered(beam_healer)
+	_check(CombatDirector.current.has_zone_from(bot_tank.player_id), "against the Gale-Beam the companion Tank turns to the boss and raises Shadow Sanctuary")
+	_check(sheltered_healer, "and the companion healer gets behind its shield")
 
 	# People come back: the companions step aside and the player numbers are theirs again.
 	network.update_local_player(InputComponent.KEYBOARD_DEVICE, ClassLoadouts.SHIELD_TANK, InputComponent.AssistMode.ADVENTURER)

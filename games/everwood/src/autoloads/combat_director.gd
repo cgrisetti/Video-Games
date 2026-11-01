@@ -197,9 +197,33 @@ func hostile_telegraph_at(position: Vector3, min_fill: float) -> RaidTelegraphDe
 ## The gold soak circle being cast right now, if there is one.
 func soak_telegraph() -> RaidTelegraphDecal:
 	for decal: RaidTelegraphDecal in _telegraphs:
-		if is_instance_valid(decal) and not decal.is_hostile() and decal.fill_ratio() < 1.0:
+		if is_instance_valid(decal) and decal.is_soak() and decal.fill_ratio() < 1.0:
 			return decal
 	return null
+
+
+## The blue Gale-Beam lane being cast right now, if there is one.
+func beam_telegraph() -> RaidTelegraphDecal:
+	for decal: RaidTelegraphDecal in _telegraphs:
+		if is_instance_valid(decal) and decal.is_beam() and decal.fill_ratio() < 1.0:
+			return decal
+	return null
+
+
+## A Shadow Sanctuary cone that's up right now, if there is one.
+func shelter_cone() -> SanctuaryZone:
+	for zone: SanctuaryZone in _zones:
+		if is_instance_valid(zone) and zone.shape == SanctuaryZone.Shape.CONE:
+			return zone
+	return null
+
+
+## Whether `player_id` has a sanctuary of their own up.
+func has_zone_from(player_id: StringName) -> bool:
+	for zone: SanctuaryZone in _zones:
+		if is_instance_valid(zone) and zone.owner_player_id == player_id:
+			return true
+	return false
 
 
 func register_zone(zone: SanctuaryZone) -> void:
@@ -528,6 +552,11 @@ func _echo_heal(target: ActorBase, event: CombatEvent) -> void:
 			next = member
 	if next != null:
 		deliver(_heal_event(event.attacker_path, event.attacker_player_id, next, event.heal * event.echo))
+
+
+## Pips and stamina for one player, applied by their owner (a mechanic's reward).
+func reward(target: ActorBase, pips: float, stamina: float = 0.0) -> void:
+	deliver(_reward_event(target, pips, stamina))
 
 
 ## A Wayfarer's Water-Shrine: everyone back to full health and stamina (each
