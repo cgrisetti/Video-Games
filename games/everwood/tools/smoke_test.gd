@@ -8,7 +8,8 @@
 ##   - combat: flow-cancels and their windows, hit-stop, all four Aspect Seal
 ##     detonations and their rewards and cues, bow and staff shots, the effect
 ##     pool, armor in play (Perfect Guard window, mitigation, rolls), strikes
-##     crossing the network as ids, Hearth Echo, poise, taunt, Perfect Guard,
+##     crossing the network as ids, Hearth Echo, card invocations and their
+##     Standard / Shiny Foil / Astral Prism flourishes, poise, taunt, Perfect Guard,
 ##     heals, Lifeline, Shadow Sanctuary, Squire auto-evade and auto-guard,
 ##     soak scaling for small parties, telegraphs, wipes
 ##   - AI companions backfilling missing roles, fighting by their Gambits and
@@ -63,6 +64,7 @@ var _cue_sounds: Array[StringName] = []
 var _audio_cues: Array[StringName] = []
 var _portal_countdowns: int = 0
 var _projectiles: Array[StringName] = []
+var _invocations: Array[int] = []
 
 
 func _initialize() -> void:
@@ -90,6 +92,7 @@ func _run() -> void:
 	await _check_flow_windows()
 	await _check_synergies()
 	await _check_ranged_and_armor()
+	await _check_card_invocations()
 	await _check_poise_and_knockdown()
 	await _check_taunt()
 	await _check_perfect_guard()
@@ -615,6 +618,84 @@ func _check_ranged_and_armor() -> void:
 	_stage_party()
 
 
+## Every card invocation shows its seal and vellum card; Shiny Foil and Astral
+## Prism copies add their flourishes; none of it changes the numbers.
+func _check_card_invocations() -> void:
+	boss.set_physics_process(false)
+	_reset_boss_poise()
+	var standard: ScribeInvocationFX = await _charge_with(ScribeCardResource.CardVariant.STANDARD)
+	_check(_invocations.back() == ScribeCardResource.CardVariant.STANDARD and standard != null and not standard.is_showing_foil() and not standard.is_showing_dome(),
+		"invoking Shield Charge blooms its Amber Gear seal and flips a vellum card over the tank's shoulder")
+	await _seconds(ScribeInvocationFX.SEAL_TIME + 0.2)
+	_check(standard != null and not standard.in_use, "the Standard flourish ends after 0.6 s and goes back to the effect pool")
+
+	var foil_chimes: int = _audio_cues.count(&"card_chime_foil")
+	var foil: ScribeInvocationFX = await _charge_with(ScribeCardResource.CardVariant.SHINY_FOIL)
+	_check(foil != null and foil.is_showing_foil() and _audio_cues.count(&"card_chime_foil") > foil_chimes,
+		"a Shiny Foil copy adds two counter-rotating gold rings and a brighter chime")
+	await _seconds(tank.loadout.card_action(0).windup_time)
+	_check(tank.trail.is_swinging() and tank.trail.colour().is_equal_approx(Color(WeaponTrail.SHINY_COLOR, WeaponTrail.TRAIL_ALPHA)),
+		"and its sword swings a gold ribbon trail")
+	await _seconds(1.0)
+
+	var astral: ScribeInvocationFX = await _charge_with(ScribeCardResource.CardVariant.ASTRAL_PRISM)
+	_check(astral != null and astral.is_showing_dome(), "an Astral Prism copy raises a starfield dome through the wind-up")
+	await _seconds(0.8)
+	_check(_active_footprints() >= 2, "and the charge leaves glowing footprints behind the tank")
+	await _seconds(ScribeInvocationFX.FOOTPRINT_TIME)
+	_check(astral != null and not astral.in_use, "the Astral flourish lasts 2.5 s, then goes back to the pool")
+
+	var shiny_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
+	shiny_kit.lead_variants[0] = ScribeCardResource.CardVariant.SHINY_FOIL
+	var shiny_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, shiny_kit).card_action(0)
+	var plain_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK).card_action(0)
+	_check(is_equal_approx(shiny_charge.damage, plain_charge.damage) and shiny_charge.action_id == plain_charge.action_id,
+		"variants change the look only: a Shiny Foil Shield Charge hits exactly as hard")
+	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK))
+
+	await _until_idle(dps)
+	_face_boss(dps, Vector3(0.0, 0.0, 9.0))
+	dps.stats.stamina = dps.stats.stats.max_stamina
+	dps.input.inject_command(Cmd.BACK_HEAVY)
+	await _seconds(0.05)
+	var shot_fx: ScribeInvocationFX = _active_invocation(dps)
+	_check(shot_fx != null and shot_fx.is_showing_muzzle_ring(), "a card fired through the bow charges through a standing rune ring first")
+	await _seconds(1.0)
+	boss.set_physics_process(true)
+	_stage_party()
+
+
+## The tank, re-equipped with a Shield Charge copy of `variant`, charges the boss;
+## returns its invocation effect.
+func _charge_with(variant: ScribeCardResource.CardVariant) -> ScribeInvocationFX:
+	var kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
+	kit.lead_variants[0] = variant
+	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, kit))
+	await _until_idle(tank)
+	_face_boss(tank, Vector3(0.0, 0.0, 7.5))
+	tank.stats.stamina = tank.stats.stats.max_stamina
+	tank.input.inject_command(Cmd.FORWARD_HEAVY)
+	await _seconds(0.05)
+	return _active_invocation(tank)
+
+
+func _active_invocation(caster: ActorBase) -> ScribeInvocationFX:
+	for child: Node in CombatDirector.current.fx_pool.get_children():
+		var fx: ScribeInvocationFX = child as ScribeInvocationFX
+		if fx != null and fx.in_use and fx.caster == caster:
+			return fx
+	return null
+
+
+func _active_footprints() -> int:
+	var count: int = 0
+	for child: Node in CombatDirector.current.fx_pool.get_children():
+		var footprint: GlowFootprint = child as GlowFootprint
+		if footprint != null and footprint.in_use:
+			count += 1
+	return count
+
+
 ## How far a roll carries the actor in a given armor (in open floor, rolling back).
 func _measure_roll(actor: ActorBase, armor_id: StringName) -> float:
 	actor.re_equip(_compose(actor.loadout.class_id, armor_id, &""))
@@ -1014,7 +1095,7 @@ func _check_audio_cues() -> void:
 			silent.append(cue)
 	_check(silent.is_empty(), "every audio cue synthesizes %s" % ("" if silent.is_empty() else str(silent)))
 	var expected: Array[StringName] = [&"flow", &"hit", &"perfect_guard", &"telegraph", &"heal", &"join", &"portal", &"portal_charge",
-		&"victory", &"chest", &"purchase", &"refuse", &"menu_move", &"shot"]
+		&"victory", &"chest", &"purchase", &"refuse", &"menu_move", &"shot", &"card_chime", &"card_chime_foil", &"card_chime_astral"]
 	var unheard: PackedStringArray = PackedStringArray()
 	for cue: StringName in expected:
 		if not _audio_cues.has(cue):
@@ -1099,6 +1180,7 @@ func _connect_global_signals() -> void:
 		_telegraph_kinds[decal.kind] = _telegraph_kinds.get(decal.kind, 0) + 1)
 	director.cue_shown.connect(func(_at: Vector3, cue: StringName) -> void: _cue_sounds.append(cue))
 	director.projectile_fired.connect(func(attacker: ActorBase, _action: CombatActionResource) -> void: _projectiles.append(attacker.player_id))
+	director.card_invoked.connect(func(_caster: ActorBase, _action: CombatActionResource, variant: int) -> void: _invocations.append(variant))
 	AudioCues.current.cue_played.connect(func(cue: StringName) -> void: _audio_cues.append(cue))
 	NetworkManager.current.registration_refused.connect(func(_device: int, reason: String) -> void: _refusals.append(reason))
 

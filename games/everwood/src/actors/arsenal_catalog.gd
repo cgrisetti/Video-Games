@@ -371,7 +371,7 @@ func _build_weapons() -> void:
 	staff.projectile_speed = 22.0
 	staff.projectile_radius = 0.38
 	staff.support_radius_multiplier = 1.25
-	staff.projectile_parts = [PropPartResource.make(Part.SPHERE, Vector3(0.18, 0.18, 0.18), Vector3.ZERO, Color(0.6, 1.0, 0.75), Vector3.ZERO, 3.0)]
+	staff.projectile_parts = [PropPartResource.make(Part.SPHERE, Vector3(0.24, 0.24, 0.24), Vector3.ZERO, Color(0.6, 1.0, 0.75), Vector3.ZERO, 3.0)]
 	staff.prop_parts = [
 		PropPartResource.make(Part.CYLINDER, Vector3(0.045, 1.9, 0.045), Vector3(0.55, 1.0, -0.2), wood),
 		PropPartResource.make(Part.SPHERE, Vector3(0.15, 0.15, 0.15), Vector3(0.55, 1.98, -0.2), Color(0.55, 1.0, 0.65), Vector3.ZERO, 2.0),
@@ -397,9 +397,9 @@ func _build_weapons() -> void:
 	bow.projectile_speed = 38.0
 	bow.projectile_radius = 0.3
 	bow.projectile_parts = [
-		PropPartResource.make(Part.BOX, Vector3(0.04, 0.04, 0.8), Vector3.ZERO, Color(0.55, 0.42, 0.28)),
-		PropPartResource.make(Part.BOX, Vector3(0.1, 0.1, 0.1), Vector3(0.0, 0.0, -0.42), Color(0.9, 0.95, 1.0), Vector3(0.0, 45.0, 0.0), 2.0),
-		PropPartResource.make(Part.BOX, Vector3(0.14, 0.02, 0.16), Vector3(0.0, 0.0, 0.36), Color(0.9, 0.85, 0.75)),
+		PropPartResource.make(Part.BOX, Vector3(0.07, 0.07, 0.9), Vector3.ZERO, Color(0.75, 0.6, 0.4), Vector3.ZERO, 0.6),
+		PropPartResource.make(Part.BOX, Vector3(0.16, 0.16, 0.16), Vector3(0.0, 0.0, -0.48), Color(0.9, 0.95, 1.0), Vector3(0.0, 45.0, 0.0), 3.0),
+		PropPartResource.make(Part.BOX, Vector3(0.2, 0.03, 0.2), Vector3(0.0, 0.0, 0.4), Color(0.95, 0.9, 0.8), Vector3.ZERO, 1.0),
 	]
 	bow.prop_parts = [
 		PropPartResource.make(Part.BOX, Vector3(0.05, 0.75, 0.06), Vector3(-0.5, 1.45, -0.42), wood, Vector3(-18.0, 0.0, 0.0)),

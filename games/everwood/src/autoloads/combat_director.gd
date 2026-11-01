@@ -10,6 +10,8 @@
 ##   cross-harmony (x1.5).
 ## - Projectiles: the attacker's peer flies the real shot (from the level's
 ##   FxPool); other peers fly a look-alike named by action id.
+## - Scribe Card invocations: every peer shows the card's seal, vellum card and
+##   variant flourish (ScribeInvocationFX), named by action id.
 ## - One rule for networked combat: the peer that owns the target applies the
 ##   effect. Every strike, heal, threat and pull goes through deliver(), which
 ##   applies it here or sends it to the owner as a validation RPC.
@@ -33,6 +35,8 @@ signal cue_shown(at: Vector3, cue: StringName)
 signal synergy_rewarded(applier_id: StringName, detonator_id: StringName, resonance: float)
 ## A projectile left an attacker (the real one, or another peer's look-alike).
 signal projectile_fired(attacker: ActorBase, action: CombatActionResource)
+## A Scribe Card's invocation effect started (on every peer that showed it).
+signal card_invoked(caster: ActorBase, action: CombatActionResource, variant: int)
 
 ## Phase B impact freeze (02_COMBAT_GDD.md §2); each action scales it.
 const BASE_HIT_STOP: float = 0.06
@@ -532,6 +536,38 @@ func _spawn_homing_heal(healer_path: NodePath, target_path: NodePath, amount: fl
 	orb.configure(healer, target, amount, echo)
 	effects_root.add_child(orb)
 	orb.global_position = healer.global_position + Vector3.UP * 1.5
+
+
+# --- Scribe Card invocations ----------------------------------------------
+
+## A card's wind-up began on its caster's peer: every peer with this instance
+## loaded shows its seal, vellum card and variant flourish.
+func invoke_card(caster: ActorBase, action: CombatActionResource) -> void:
+	_show_invocation(caster, action)
+	for peer_id: int in InstanceManager.current.live_remote_peers():
+		_show_invocation_copy.rpc_id(peer_id, caster.get_path(), action.action_id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _show_invocation_copy(caster_path: NodePath, action_id: StringName) -> void:
+	var caster: ActorBase = _actor_at(caster_path)
+	if caster == null or caster.get_multiplayer_authority() != multiplayer.get_remote_sender_id():
+		return
+	var action: CombatActionResource = caster.loadout.action_by_id(action_id)
+	if action != null and action.is_card():
+		_show_invocation(caster, action)
+
+
+func _show_invocation(caster: ActorBase, action: CombatActionResource) -> void:
+	if fx_pool == null:
+		return
+	var kit: EquipmentLoadoutResource = caster.loadout.kit
+	var variant: ScribeCardResource.CardVariant = ScribeCardResource.CardVariant.STANDARD
+	if kit != null and action.grimoire_slot >= 0:
+		variant = kit.lead_variant(action.grimoire_slot)
+	var fx: ScribeInvocationFX = fx_pool.take(&"invocation", ScribeInvocationFX.make) as ScribeInvocationFX
+	fx.play(caster, ArsenalCatalog.current.aspect_seal(action.aspect), variant, action.windup_time, action.is_projectile())
+	card_invoked.emit(caster, action, variant)
 
 
 # --- Projectiles ----------------------------------------------------------

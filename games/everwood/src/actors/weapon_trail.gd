@@ -51,6 +51,11 @@ func is_swinging() -> bool:
 	return _swing_time >= 0.0
 
 
+## The colour of the current (or last) ribbon.
+func colour() -> Color:
+	return _colour
+
+
 func _process(delta: float) -> void:
 	var weapon: EquipmentItemResource = actor.loadout.weapon
 	var action: CombatActionResource = actor.current_action()

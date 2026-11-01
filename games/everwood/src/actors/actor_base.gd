@@ -557,6 +557,8 @@ func try_begin_action(action: CombatActionResource) -> bool:
 func _on_action_started(action: CombatActionResource, flowed: bool) -> void:
 	if stats.guarding:
 		stats.end_guard()
+	if action.is_card():
+		CombatDirector.current.invoke_card(self, action)
 	if flowed and is_local_player():
 		_flow_glow_left = FLOW_GLOW_TIME
 		AudioCues.play(&"flow", 1.0 + (action_queue.speed_scale - 1.0) * 2.0)
