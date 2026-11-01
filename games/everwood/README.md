@@ -2,31 +2,31 @@
 
 A cooperative raid action-RPG for a family party, built in [Godot 4.7](https://docs.godotengine.org/en/stable/) (GDScript, Jolt physics). Up to 4 players share one screen in split-screen, and up to 5 play together over the network. It's a separate project from Lanternwood: no Vite, no three.js, no launcher page.
 
-Read the design stack first: [CLAUDE.md](CLAUDE.md) (engineering rules), then [docs/01_VISION.md](docs/01_VISION.md), [docs/02_COMBAT_GDD.md](docs/02_COMBAT_GDD.md), [docs/03_GODOT_TDD.md](docs/03_GODOT_TDD.md), [docs/04_BALANCE.md](docs/04_BALANCE.md) and [docs/05_ARSENAL_AND_CARDS_GDD.md](docs/05_ARSENAL_AND_CARDS_GDD.md) (weapons, armor and Scribe Cards, with the build blueprint).
+Read the design stack first: [CLAUDE.md](CLAUDE.md) (engineering rules), then [docs/01_VISION.md](docs/01_VISION.md), [docs/02_COMBAT_GDD.md](docs/02_COMBAT_GDD.md), [docs/03_GODOT_TDD.md](docs/03_GODOT_TDD.md), [docs/04_BALANCE.md](docs/04_BALANCE.md) and [docs/05_ARSENAL_AND_CARDS_GDD.md](docs/05_ARSENAL_AND_CARDS_GDD.md) (weapons, armor and Scribe Cards, with the build blueprint) and [docs/06_WORLD_AND_CALLINGS.md](docs/06_WORLD_AND_CALLINGS.md) (Bramblebridge, the Four Signs, card finishes and the Callings).
 
 ## What's playable
 
-The **Dungeon Dojo**: a greybox arena with pillars for cover and the first raid boss, the **Dojo Warden**.
+**The Ring of the Cairnsman**: a greybox arena with pillars for cover and the first raid boss, **The Cairnsman of Doverslap**, a sentinel of stacked river stones, heather and brass bell-rope.
 
 **The Weapon Channels the Card.** Light and heavy come from your weapon; Forward + heavy, Back + heavy, R and L + R cast the four **Scribe Cards** in your Grimoire, delivered through that weapon: a sword or axe swings them with a ribbon trail, a bow or staff fires them as rune projectiles. Holding L is always Guard, and a guard raised just before a hit (200 ms, 260 ms in heavy plate) is a Perfect Guard. Armor sets how much damage you shrug off, your stamina, how far you roll and that window.
 
 - **Shield Tank** (Sword & Buckler, Ironwood Plate): holds the boss with threat. Shield Charge, Shadow Sanctuary (a shield cone for everyone behind you), Taunt and Bulwark Quake.
-- **Soul-Tether Healer** (Scribe Staff, Hearth-Linen): the D-Pad tethers you to a party member. Sunlit Lance (a Divine primer bolt), Green Sanctuary, Homing Heal down the tether, and Lifeline Pull.
-- **Flow DPS** (Wind-Ash Hunter Bow, Ranger Leather): the primer specialist. Rising Drive, Frost Crescent and Gale Rush stamp Kinetic, Elemental and Celestial seals; Tempest Flow is the ultimate.
-- **Aspect Seals:** a primer card stamps its seal on the boss and a teammate's heavy detonates it: **Shatterpoint** (poise), **Elemental Rupture** (damage), **Dawnburst** (party heal) or **Astral Chorus** (party stamina and pips). Different roles or different aspects make it a x1.5 cross-harmony, and both players earn pips.
-- **Card looks:** every invocation blooms its aspect's geometric seal under you and flips a vellum card over your shoulder. **Shiny Foil** copies add gold rings and a gold trail; **Astral Prism** copies raise a starfield dome and leave glowing footprints.
+- **Soul-Tether Healer** (Scribe Staff, Hearth-Linen): the D-Pad tethers you to a party member. Sunlit Lance (a Warm-Hearth primer bolt), Green Sanctuary, Homing Heal down the tether, and Lifeline Pull.
+- **Flow DPS** (Wind-Ash Hunter Bow, Ranger Leather): the primer specialist. Rising Drive, Frost Crescent and Gale Rush stamp the Signs of Iron-Root, Rime-Gale and Star-Tide; Tempest Flow is the ultimate.
+- **The Four Scribe Signs:** a primer card stamps its Sign on the boss and a teammate's heavy detonates it: Iron-Root into **Shatterpoint** (poise), Rime-Gale into **Glacial Rupture** (damage), Warm-Hearth into **Dawnburst** (party heal) or Star-Tide into **Astral Chorus** (party stamina and pips). Different roles or different Signs make it a x1.5 cross-harmony, and both players earn pips.
+- **Card looks:** every invocation blooms its Sign's geometric seal under you and flips a vellum card over your shoulder. Cards come in three finishes: **Plain Vellum**; **Gilded Leaf**, which adds gold rings and a gold trail; and **Star-Inked Vellum**, which raises a starfield dome and leaves glowing footprints.
 - **The boss** chases whoever has the most threat, telegraphs a slow Crushing Swipe, and casts raid mechanics: **Crimson Bloom** (red circles under everyone: get out) and **Golden Communion** (a gold circle on one player: stack in to share the damage; half the standing party is enough, so two players can clear it). Heavy hits and Perfect Guards break its poise for a 5-second knockdown.
-- **Victory:** beat it and time slows for 2 seconds, everyone's screen says VICTORY!, the Grimoire levels up, and a reward chest drops in. Walk up to it for the party's **Dojo Shards** and a collectible card (Rare and Legendary boss cards, Shiny Foil and Astral Prism copies); the gold portal then takes everyone home.
+- **Victory:** beat it and time slows for 2 seconds, everyone's screen says VICTORY!, the Grimoire levels up, and a reward chest drops in. Walk up to it for the party's **Dojo Shards** and a collectible card (Rare and Legendary boss cards, Gilded Leaf and Star-Inked Vellum copies); the gold portal then takes everyone home.
 
 Three assist modes, one per player: **Master** (manual, +15% flow speed), **Adventurer** (bigger input buffer, camera follows the boss, combos chain for you) and **Squire Gambit** (one button picks the move, from range with a bow or staff; you auto-roll out of red circles, and your guard goes up by itself when the boss swings at you).
 
 **Fewer than 3 people?** In the Dojo, AI companions (marked "bot") fill whichever of Tank, Healer and DPS nobody is playing. They fight by a KOTOR-style Gambit list (dodge first, then help, then hit) and step aside when someone joins.
 
-## Hub Town and hot-join
+## Bramblebridge and hot-join
 
-The game starts in **Hub Town**. Walk into the Raid Portal together (everyone standing on it) for a 3-second countdown into the Dungeon Dojo; the gold exit portal there brings you back. The host moves the whole party and the ENet session stays up (`InstanceManager`).
+The game starts in **Bramblebridge**, a stepped-gable canal village with a watermill and the footbridge it's named for (in the files it's still `hub_town`). Walk into the Raid Portal together (everyone standing on it) for a 3-second countdown into the Ring of the Cairnsman (`dungeon_dojo`); the gold exit portal there brings you back. The host moves the whole party and the ENet session stays up (`InstanceManager`).
 
-The **Armory & Scribe Desk** stands up the lane past the fountain. Press light there to change your armor, weapon, the four lead cards and the four under-card links on your own screen (up / down picks, left / right changes, dodge closes); you change in place. The **Grimoire** starts at Lv 1 and gains a level with each win: more memory for Rare cards and one more under-card link (an under-card changes the card above it: Aspect Infusion, a 20% Potency Surge or Hearth Echo). Each class's last kit is saved for its next seat.
+The **Armory & Scribe Desk** stands up the lane past the fountain. Press light there to change your armor, weapon, the four lead cards and the four under-card links on your own screen (up / down picks, left / right changes, dodge closes); you change in place. The **Grimoire** starts at Lv 1 and gains a level with each win: more memory for Rare cards and one more under-card link (an under-card changes the card above it: Sign Infusion, a 20% Potency Surge or Hearth Echo). Each class's last kit is saved for its next seat.
 
 The **Shard Vendor's** stall stands across the lane from the fountain. Walk up and press light (J / X / □) to open its menu on your own screen: move up and down, light buys, dodge closes. Upgrades raise the whole party's Max Health or Stamina Regen by 10% a level (5 levels, costing 4, 8, 12, 16 and 20 shards). The shards, upgrades, card binder, kits and victories are shared by the party and saved in `user://everwood_progress.cfg` (on a Mac, `~/Library/Application Support/Godot/app_userdata/Everwood/`); delete that file to start fresh. Online, the host's save is the one that counts.
 
@@ -68,12 +68,12 @@ Command-line options go after `--`: `--players=N`, `--mode=master|adventurer|squ
 ```text
 project.godot
 CLAUDE.md, docs/              design stack and engineering contract
-src/autoloads/                NetworkManager (ENet + party roster and kits), CombatDirector (hit-stop, Aspect Seals,
-                              projectiles, routing), InstanceManager (Hub Town / raid changes), AudioCues,
+src/autoloads/                NetworkManager (ENet + party roster and kits), CombatDirector (hit-stop, Sign seals,
+                              projectiles, routing), InstanceManager (Bramblebridge / raid changes), AudioCues,
                               PartyProgress (shards, upgrades, card binder, kits, Grimoire level)
 src/resources/                CombatActionResource (frame data), CharacterStatsResource, ClassLoadoutResource (the
                               compiled loadout), PlayerClassResource, EquipmentItemResource, ScribeCardResource,
-                              EquipmentLoadoutResource (a kit of ids), AspectSealResource, PropPartResource,
+                              EquipmentLoadoutResource (a kit of ids), ScribeSignResource, PropPartResource,
                               CombatEvent, PartyMember
 src/components/               Input (3 assist modes, menus), ActionQueue (4-phase pipeline + buffer), Stats,
                               Threat, Hitbox, Hurtbox, NetworkSync, SoulTether, CompanionAI (Gambit bots),
@@ -109,6 +109,6 @@ godot --headless --path . --quit
 godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd
 ```
 
-The smoke test seats a Tank, Healer and DPS, drives them with scripted input and checks 204 things: the Arsenal (catalog, armor weights, the four weapons, under-card mutations, JSON kits, the Grimoire's rules, card drops); Hub Town, the Input Map, hot-join, party caps, the split-screen grid and portals; flow-cancels and their windows, hit-stop, all four Aspect Seals and their rewards, bow and staff shots, the effect pool, armor in play, strikes crossing the network as ids, Hearth Echo, card invocations and their variants, poise, taunt, Perfect Guard, heals, Lifeline, Shadow Sanctuary, both telegraphs and soak scaling; the Squire auto-evade, auto-guard and ranged picks; companions; the victory, chest, card and Grimoire level; the Shard Vendor and the Scribe Desk; and no orphaned nodes after Hub, Dojo, Hub (it uses its own save, never yours). Untyped variables, parameters and return values are build errors (`project.godot` sets that), so the check-only loop enforces the static-typing rule.
+The smoke test seats a Tank, Healer and DPS, drives them with scripted input and checks 212 things: the Arsenal (catalog, armor weights, the four weapons, under-card mutations, JSON kits, the Grimoire's rules, card drops, the Four Signs and finishes); Bramblebridge, the Input Map, hot-join, party caps, the split-screen grid and portals; flow-cancels and their windows, hit-stop, all four Sign detonations and their rewards, bow and staff shots, the effect pool, armor in play, strikes crossing the network as ids, Hearth Echo, card invocations and their variants, poise, taunt, Perfect Guard, heals, Lifeline, Shadow Sanctuary, both telegraphs and soak scaling; the Squire auto-evade, auto-guard and ranged picks; companions; the victory, chest, card and Grimoire level; the Shard Vendor and the Scribe Desk; and no orphaned nodes after Bramblebridge, the Ring and back (it uses its own save, never yours). Untyped variables, parameters and return values are build errors (`project.godot` sets that), so the check-only loop enforces the static-typing rule.
 
 To see a frame without playing: `godot --path . -- --players=3 --demo --screenshot=/tmp/dojo.png --screenshot-delay=8`.

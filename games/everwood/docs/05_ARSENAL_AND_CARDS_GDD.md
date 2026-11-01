@@ -1,5 +1,7 @@
 # 05_ARSENAL_AND_CARDS_GDD.md — Grounded Arsenal & Scribe Rune-Cards
 
+> **Renamed in Phase 8** ([06_WORLD_AND_CALLINGS.md](06_WORLD_AND_CALLINGS.md) §2): the four Aspects are now the Four Scribe Signs. Kinetic is Iron-Root, Elemental is Rime-Gale (its detonation is **Glacial Rupture**), Divine is Warm-Hearth and Celestial is Star-Tide. Card variants are finishes: Plain Vellum, Gilded Leaf and Star-Inked Vellum. The rules below are unchanged; only the names moved. In code, `AspectSealResource` is `ScribeSignResource`.
+
 ## 1. Core Design Philosophy & Aesthetic Guardrails
 - **World & Combat Tone:** Lived-in, tactile craftsmanship (*Kiki's Delivery Service*, *Log Horizon*) fused with committed physical weight (*Elden Ring*) and geometric rune-card invocations (*Cardcaptor Sakura*, *FFXIV*, *Kingdom Hearts*).
 - **Strict Anti-Goals:** NEVER a weightless hack-and-slash (*God of War*, *Dynasty Warriors*, *No More Heroes*). No air-juggling, no 10-hit mash strings, no mid-combat card-deck scrolling, and no random hand draws.
@@ -85,9 +87,9 @@ ClassLoadoutResource (compiled: openers, combo actions, dodge, labels)  ← what
 Every peer compiles the same kit into the same actions with the same ids, so the network only ever names things by id.
 
 ### 4.2 Registry
-- `ArsenalCatalog` (autoload `Arsenal`, `src/actors/arsenal_catalog.gd`) owns every `AspectSealResource`, `EquipmentItemResource` and `ScribeCardResource`, indexed by `StringName` id. Cards and items register through one `register_*` call each, so loading `.tres` definitions later is a loop over a folder.
+- `ArsenalCatalog` (autoload `Arsenal`, `src/actors/arsenal_catalog.gd`) owns every `ScribeSignResource`, `EquipmentItemResource` and `ScribeCardResource`, indexed by `StringName` id. Cards and items register through one `register_*` call each, so loading `.tres` definitions later is a loop over a folder.
 - Cards are data: a template `CombatActionResource` plus slot, aspect, rarity, delivery and whether it primes. Weapons are data: Light chain, Heavy, delivery vector, card range, projectile and prop parts.
-- Aspect detonations are data (`AspectSealResource`: bonus poise, bonus damage and burst radius, party heal, party stamina and pips). `CombatDirector` applies whatever is non-zero, so there is no per-aspect code.
+- Aspect detonations are data (`ScribeSignResource`: bonus poise, bonus damage and burst radius, party heal, party stamina and pips). `CombatDirector` applies whatever is non-zero, so there is no per-aspect code.
 
 ### 4.3 The Weapon Channels the Card
 - A lead card marked `THROUGH_WEAPON` keeps its numbers but takes the weapon's delivery: `MELEE` weapons swing it with a ribbon trail; `RANGED_BOLT` and `RANGED_ARROW` weapons fire it as a rune-wreathed projectile out to the weapon's card range. Forward lunges are dropped for ranged delivery (you plant and cast); backward steps stay.

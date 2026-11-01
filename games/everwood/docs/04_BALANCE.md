@@ -1,4 +1,6 @@
-# 04_BALANCE.md — Balance (Phases 5, 6 and 7)
+# 04_BALANCE.md — Balance (Phases 5 to 8)
+
+Phase 8 renamed things (06_WORLD_AND_CALLINGS.md): the Aspects are the Four Scribe Signs, the Dojo Warden is The Cairnsman of Doverslap, and card variants are finishes. The numbers didn't change.
 
 First-pass numbers, set by arithmetic rather than playtesting. Tune them after the family plays. Every number is a named constant; the "Where" column says which file.
 
@@ -17,7 +19,7 @@ First-pass numbers, set by arithmetic rather than playtesting. Tune them after t
 - Sustained damage per second, counting stamina pauses: Flow DPS about 12 to 16, Shield Tank about 8 to 10, Healer about 5. A 3-player party deals about 25 once you allow for moving and dodging.
 - 2,400 HP ÷ 25 ≈ 96 s. Health scales with the party when the fight starts: **900 + 500 per player** (1,400 solo, 2,400 for three, 3,400 for five).
 
-## Boss: Dojo Warden
+## Boss: The Cairnsman of Doverslap
 
 | Number | Value | Where | Why |
 |---|---|---|---|
@@ -54,16 +56,16 @@ First-pass numbers, set by arithmetic rather than playtesting. Tune them after t
 
 Costs: Taunt, Green Sanctuary and Gale Rush cost 1 pip, Lifeline Pull costs 2, ultimates cost 3. At about 1.5 hits per second and half of them flowed, a DPS fills 3 pips in roughly 30 s. Each detonation takes several seconds off that, so teamwork speeds up everyone's ultimates.
 
-## Aspect Seals (05 GDD §3.2)
+## The Four Scribe Signs (06 GDD §2, 05 GDD §3.2)
 
-A primer card stamps its aspect's seal on the boss for 8 s; a *teammate's* Heavy (every weapon's Heavy detonates) or a detonating card cashes it in. A different role **or** a different aspect than the seal's is a cross-harmony: ×1.5. The numbers live on each `AspectSealResource` in `arsenal_catalog.gd`; `CombatDirector` applies whatever is set.
+A primer card stamps its Sign on the boss for 8 s; a *teammate's* Heavy (every weapon's Heavy detonates) or a detonating card cashes it in. A different role **or** a different Sign than the seal's is a cross-harmony: ×1.5. The numbers live on each `ScribeSignResource` in `arsenal_catalog.gd`; `CombatDirector` applies whatever is set.
 
-| Aspect | Seal | Detonation | Base effect (×1.5 cross-harmony) | Starter primers |
+| Sign | Colour | Detonation | Base effect (×1.5 cross-harmony) | Starter primers |
 |---|---|---|---|---|
-| Kinetic | Amber Gear | **Shatterpoint** | +45 (67.5) poise, +1 hit-stop "stagger impulse" | Rising Drive (DPS) |
-| Elemental | Azure Frost-Star | **Elemental Rupture** | +45 (67.5) damage, bursting 4 m to other enemies | Frost Crescent (DPS) |
-| Divine | Gold Sun-Crest | **Dawnburst** | Heals the party within 10 m by 20 (30) | Sunlit Lance (Healer) |
-| Celestial | Violet Moon-Ring | **Astral Chorus** | +25 (37.5) stamina and +0.5 (0.75) pips to the party within 10 m | Gale Rush (DPS) |
+| `SIGN_IRON_ROOT` (Iron-Root) | Amber / ochre | **Shatterpoint** | +45 (67.5) poise, +1 hit-stop "stagger impulse" | Rising Drive (DPS) |
+| `SIGN_RIME_GALE` (Rime-Gale) | Sea-azure | **Glacial Rupture** | +45 (67.5) damage, bursting 4 m to other enemies | Frost Crescent (DPS) |
+| `SIGN_WARM_HEARTH` (Warm-Hearth) | Saffron-gold | **Dawnburst** | Heals the party within 10 m by 20 (30) | Sunlit Lance (Healer) |
+| `SIGN_STAR_TIDE` (Star-Tide) | Twilight-violet | **Astral Chorus** | +25 (37.5) stamina and +0.5 (0.75) pips to the party within 10 m | Gale Rush (DPS) |
 
 The player who stamped a seal can't detonate it. Each detonation plays its own sound on every peer, shows a burst of light on both partners, and lights up their pip display.
 
@@ -92,19 +94,19 @@ Ranged cards keep their numbers but are planted: forward lunges are dropped (Ris
 
 | Slot | Tank | Healer | DPS | Boss drops |
 |---|---|---|---|---|
-| Forward + Heavy | Shield Charge (detonates) | Sunlit Lance (Divine primer) | Rising Drive (Kinetic primer) | Moonfall Cleave (Rare, Celestial primer) |
-| Back + Heavy | Shadow Sanctuary (60% shield cone) | Green Sanctuary (1 pip, 8 HP/s) | Frost Crescent (Elemental primer) | Aegis of Embers (Rare, wider cone) |
-| R (signature) | Taunt (1 pip) | Homing Heal (12 stamina, 22 HP) | Gale Rush (1 pip, Celestial primer) | Starlit Volley (Rare, 1 pip, Elemental primer) |
-| L + R (ultimate) | Bulwark Quake (3 pips) | Lifeline Pull (2 pips) | Tempest Flow (3 pips) | Dawnbreaker (Legendary, 3 pips, detonates and stamps Divine) |
+| Forward + Heavy | Shield Charge (detonates) | Sunlit Lance (Warm-Hearth primer) | Rising Drive (Iron-Root primer) | Moonfall Cleave (Rare, Star-Tide primer) |
+| Back + Heavy | Shadow Sanctuary (60% shield cone) | Green Sanctuary (1 pip, 8 HP/s) | Frost Crescent (Rime-Gale primer) | Aegis of Embers (Rare, wider cone) |
+| R (signature) | Taunt (1 pip) | Homing Heal (12 stamina, 22 HP) | Gale Rush (1 pip, Star-Tide primer) | Starlit Volley (Rare, 1 pip, Rime-Gale primer) |
+| L + R (ultimate) | Bulwark Quake (3 pips) | Lifeline Pull (2 pips) | Tempest Flow (3 pips) | Dawnbreaker (Legendary, 3 pips, detonates and stamps Warm-Hearth) |
 
 Any class may slot any card except Homing Heal and Lifeline Pull, which need a Soul Tether. Homing Heal costs no pip (see 05 GDD §4.6).
 
 | Under-card (Common) | Verb | Effect |
 |---|---|---|
-| Amber Gear Link | Potency Surge | ×1.2 damage, healing and poise |
-| Azure Star Link | Aspect Infusion | The card's hits stamp an Elemental seal |
-| Sun-Crest Link | Hearth Echo | Heals bounce 50% to the next hurt ally within 8 m; sanctuaries restore 8 stamina/s; hits return 8 stamina |
-| Moon-Ring Link | Aspect Infusion | The card's hits stamp a Celestial seal |
+| Iron-Root Link | Potency Surge | ×1.2 damage, healing and poise |
+| Rime-Gale Link | Sign Infusion | The card's hits stamp the Sign of Rime-Gale |
+| Warm-Hearth Link | Hearth Echo | Heals bounce 50% to the next hurt ally within 8 m; sanctuaries restore 8 stamina/s; hits return 8 stamina |
+| Star-Tide Link | Sign Infusion | The card's hits stamp the Sign of Star-Tide |
 
 ## Grimoire and card drops
 
@@ -115,7 +117,7 @@ Any class may slot any card except Homing Heal and Lifeline Pull, which need a S
 | Memory per card | Basic 1 · Common 2 · Uncommon 3 · Rare 4 · Legendary 5 | `scribe_card_resource.gd` | Rarer cards are stronger, so they crowd the Grimoire |
 | Under-card links | Level − 1 (none at Lv 1, all four at Lv 5) | `loadout_composer.gd` | 05 GDD §3.1 |
 | Chest card | One per chest: boss cards weigh 3, each starter card 1 | `arsenal_catalog.gd` | About half the drops are boss cards |
-| Variant odds | Standard 60% · Shiny Foil 30% · Astral Prism 10% | `arsenal_catalog.gd` | A starter card never drops plain (you already have it), so it comes Shiny |
+| Finish odds | Plain Vellum 60% · Gilded Leaf 30% · Star-Inked Vellum 10% | `arsenal_catalog.gd` | A starter card never drops in Plain Vellum (you already have it), so it comes Gilded |
 
 ## Card choreography (presentation only)
 
@@ -123,8 +125,8 @@ Any class may slot any card except Homing Heal and Lifeline Pull, which need a S
 |---|---|---|
 | Floor seal | 3 m across, blooms in 0.15 s, gone at 0.6 s | `scribe_invocation_fx.gd`, `scribe_seal.gdshader` |
 | Vellum card | Flips in the first 45% of the seal's life, then dissolves | `scribe_invocation_fx.gd` |
-| Shiny Foil | Gold rings at 1.15 m and 1.42 m, a 1.25× chime, gold ribbon trail | `scribe_invocation_fx.gd`, `weapon_trail.gd` |
-| Astral Prism | 2.4 m starfield dome through the wind-up; footprints every 0.55 m for 2.5 s, each fading in 1 s | `scribe_invocation_fx.gd`, `glow_footprint.gd` |
+| Gilded Leaf | Gold rings at 1.15 m and 1.42 m, a 1.25× chime, gold ribbon trail | `scribe_invocation_fx.gd`, `weapon_trail.gd` |
+| Star-Inked Vellum | 2.4 m starfield dome through the wind-up; footprints every 0.55 m for 2.5 s, each fading in 1 s | `scribe_invocation_fx.gd`, `glow_footprint.gd` |
 | Melee ribbon | A 2-radian sweep in 0.18 s, samples living 0.2 s | `weapon_trail.gd` |
 
 ## Flow-cancel window
@@ -161,12 +163,12 @@ Each level adds 10% of the class's own number for the whole party, up to 5 level
 | Healer | Heals anyone under 75%; Lifeline when a friend stands in red that's half full | `companion_ai_component.gd` | Keeps a child up without overhealing |
 | Stamina reserve | Attacks keep 30 back (the tank excepted) | `companion_ai_component.gd` | Always enough for a roll or a guard |
 
-In a headless run, one player plus two companions beat the Warden (2,400 health) in about 70 seconds.
+In a headless run, one player plus two companions beat the Cairnsman (2,400 health) in about 70 seconds.
 
 ## Open questions for playtest
 
 - Should taunt cost 1 pip, or should the tank's Perfect Guard pip already be enough?
 - Is a companion tank that always lands Perfect Guards too strong next to a child playing tank? (Raise `PERFECT_GUARD_LEAD` past 0.2 s to make it guard early and take chip damage.)
 - Is 16 shards a win the right pace? Maxing both upgrades takes about 8 wins; a family that plays once a week might want it faster.
-- With armor mitigation on every hit, is the Warden now too gentle? Its damage could rise 15–20% to make up for it.
+- With armor mitigation on every hit, is the Cairnsman now too gentle? Its damage could rise 15–20% to make up for it.
 - Does a Rare card at Lv 2 (memory 7 of 8, no room for a link) feel like a real choice, or should Lv 2 hold 9?
