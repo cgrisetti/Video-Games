@@ -1,4 +1,4 @@
-# 04_BALANCE.md — Phase 5 Balance Pass
+# 04_BALANCE.md — Balance (Phases 5 and 6)
 
 First-pass numbers, set by arithmetic rather than playtesting. Tune them after the family plays. Every number is a named constant; the "Where" column says which file.
 
@@ -27,7 +27,7 @@ First-pass numbers, set by arithmetic rather than playtesting. Tune them after t
 | Crushing Swipe | 24 damage, 0.85 s wind-up, every 2.8 s | `class_loadouts.gd`, `boss_dummy.gd` | A guarded hit costs the tank about 4 health and 12 stamina; an unguarded one costs a DPS a quarter of their health |
 | First cast / interval | 8 s after the pull, then every 10 s | `boss_dummy.gd` | Time to settle in before the first mechanic |
 | Crimson Bloom | 3.5 m circles, 3.0 s cast, 35 damage | `boss_dummy.gd` | 3 s gives kids time to react; a 4.6 m roll clears a circle from its centre |
-| Golden Communion | 3.2 m circle, 4.0 s cast, 90 split among those inside (2 needed), 30 to everyone on a fail | `boss_dummy.gd` | A 3-player soak costs 30 each |
+| Golden Communion | 3.2 m circle, 4.0 s cast. Needs max(1, standing ÷ 2) inside. Deals 30 per standing player (up to 90), split among those inside; 30 to everyone on a fail | `boss_dummy.gd` | A full stack always costs about 30 each. A 2-player couch can clear it with one player (60 to them), never the full 90 |
 
 ## Players
 
@@ -37,6 +37,7 @@ First-pass numbers, set by arithmetic rather than playtesting. Tune them after t
 | Stamina | 100, regenerates 22/s (from the GDD) after 0.8 s idle | `character_stats_resource.gd` |
 | Dodge | 20 stamina, 4.6 m, 0.32 s invulnerable | `class_loadouts.gd` |
 | Perfect Guard | Within 200 ms; no stamina, 50 poise to the boss, 250 threat, +½ pip | `stats_component.gd`, `combat_director.gd` |
+| Squire auto-guard | Guard goes up when the swipe threatens you and you have 25+ stamina, held until the swing ends (not timed for a Perfect Guard). The DPS rolls instead | `input_component.gd` |
 | Threat | Tank ×3, Healer ×0.8; heals add 0.5 per HP; Taunt locks for 6 s | `class_loadouts.gd`, `combat_director.gd` |
 
 ## Resonance economy
@@ -71,8 +72,34 @@ A primer lasts 8 s, and the player who applied it can't detonate it. Each detona
 
 The window never opens during wind-up, and the buffer holds two presses. With a short chain like Flow Cut (0.58 s), the 400 ms window covers most of the swing. With a long one like Cleave (1.01 s), Master players have to time the press (`smoke_test.gd` checks both edges).
 
+## Victory and Dojo Shards
+
+| Number | Value | Where | Why |
+|---|---|---|---|
+| Slow motion | ×0.2 for 2 real seconds | `dungeon_dojo.gd` | Long enough to see the boss fall, short enough not to drag |
+| Chest | 10 + 2 shards per person (16 for three) | `dungeon_dojo.gd` | Bigger parties beat a tougher boss; companions don't add shards |
+| Chest arming | Opens 1.2 s after it lands | `reward_chest.gd` | Everyone sees it drop before anyone can open it |
+| Trip home | 5 s after the chest opens | `dungeon_dojo.gd` | Time to read the banner |
+
+## Shard Vendor upgrades
+
+Each level adds 10% of the class's own number for the whole party, up to 5 levels. Level n costs 4 × n shards, so one upgrade line costs 60 in all and both cost 120: about 8 wins for a party of three. Fully upgraded, the Shield Tank has 240 health (from 160) and stamina comes back at 33 a second (from 22). Health upgrades also make the boss's fixed damage relatively smaller, so the fight gets gentler as the family progresses.
+
+## Companions
+
+| Number | Value | Where | Why |
+|---|---|---|---|
+| Backfill | Up to 3 in the party, missing roles in Tank, Healer, DPS order | `companion_ai_component.gd` | A tank protects children best, then a healer |
+| Pause between presses | 0.25 s (rolls and Lifeline skip it) | `companion_ai_component.gd` | Quick, but not faster than a person |
+| Tank guard | Raised 0.12 s before the swipe lands | `companion_ai_component.gd` | Inside the 200 ms window: the bot tank lands Perfect Guards |
+| DPS roll | 0.35 s before the swipe lands | `companion_ai_component.gd` | Clears the reach with time to spare |
+| Healer | Heals anyone under 75%; Lifeline when a friend stands in red that's half full | `companion_ai_component.gd` | Keeps a child up without overhealing |
+| Stamina reserve | Attacks keep 30 back (the tank excepted) | `companion_ai_component.gd` | Always enough for a roll or a guard |
+
+In a headless run, one player plus two companions beat the Warden (2,400 health) in about 70 seconds.
+
 ## Open questions for playtest
 
-- Is 0.85 s enough warning on the swipe for a child to guard, or should Squire Gambit also auto-guard?
-- Does the soak's 2-player minimum suit a 2-player couch? (A party of 2 needs both inside.)
 - Should taunt cost 1 pip, or should the tank's Perfect Guard pip already be enough?
+- Is a companion tank that always lands Perfect Guards too strong next to a child playing tank? (Raise `PERFECT_GUARD_LEAD` past 0.2 s to make it guard early and take chip damage.)
+- Is 16 shards a win the right pace? Maxing both upgrades takes about 8 wins; a family that plays once a week might want it faster.
