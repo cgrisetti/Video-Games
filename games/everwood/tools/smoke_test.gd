@@ -826,6 +826,20 @@ func _check_storybook_art() -> void:
 	var blade: MeshInstance3D = tank.find_child("Weapon", true, false).get_child(0) as MeshInstance3D
 	_check(cel != null and cel.shader == StorybookMaterial.SHADER and (blade.mesh as PrimitiveMesh).material is ShaderMaterial,
 		"heroes and their weapons wear the storybook cel shader (two-band light, rim glow)")
+	var tabards_match: bool = true
+	for hero: ActorBase in [tank, dps, healer]:
+		var calling: SecondaryCallingResource = Callings.secondary(Callings.resolve(hero.loadout.class_id, hero.loadout.calling))
+		for flap_name: String in ["Tabard", "TabardBack"]:
+			var flap: MeshInstance3D = hero.visuals.find_child(flap_name, true, false) as MeshInstance3D
+			var cloth: ShaderMaterial = (flap.mesh as PrimitiveMesh).material as ShaderMaterial if flap != null else null
+			tabards_match = tabards_match and cloth != null and cloth.get_shader_parameter(&"albedo") == calling.trim_color
+	_check(tabards_match, "every hero wears a tabard, front and back, in their Secondary Calling's colour")
+	var hem: Node3D = tank.visuals.find_child("Hem", true, false) as Node3D
+	var hand: Node3D = tank.visuals.find_child("RightArm", true, false).find_child("Hand", true, false) as Node3D
+	var lantern_hand: Node3D = healer.visuals.find_child("LeftArm", true, false).find_child("Hand", true, false) as Node3D
+	_check(tank.to_local(hem.global_position).z > 0.4 and tank.to_local(hand.global_position).z < -0.3
+		and healer.to_local(lantern_hand.global_position).z < -0.1,
+		"capes hang behind the hero, clear of the body, and arms reach forward to the weapon and the lantern")
 	_check(tank.loadout.weapon.display_name == "Falchion" and dps.loadout.weapon.display_name == "Yew Longbow"
 		and healer.loadout.weapon.display_name == "Rowan Way-Staff", "the weapons are the Falchion, Yew Longbow and Rowan Way-Staff")
 	CombatDirector.current.deliver(_strike(boss, dps, 1.0, 0.0))

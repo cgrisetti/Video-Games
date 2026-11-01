@@ -7,8 +7,10 @@
 ##                      as they run, and a quiver (with a bow) or a Scribe Satchel
 ##   the Lantern-Bearers a pointed scribe hat, a mantle and a swinging brass
 ##                      Tether-Lantern that really glows
-## Armor shows by weight (a sash, a leather jerkin, or plate), trimmed in the
-## Calling's colour; the weapon in the right hand comes from its item (PropBuilder).
+## The tunic keeps the seat's colour; a tabard front and back (so it reads from
+## the camera behind you) shows the Secondary Calling's colour. Armor shows by
+## weight (a sash, a leather jerkin, or plate), trimmed in the Calling's colour;
+## the weapon in the right hand comes from its item (PropBuilder).
 ##
 ## Drop a model at res://assets/models/<class_id>.glb (say, a CC0 KayKit or
 ## Quaternius character named shield_tank.glb) and it's used instead of the
@@ -29,10 +31,14 @@ const LANTERN_GLOW: Color = Color(1.0, 0.78, 0.4)
 const CAPE_LENGTHS: Array[float] = [1.0, 0.9, 0.6]
 ## The cape lifts back this far (radians) at full running speed...
 const CAPE_SWING: float = 0.95
-## ...hangs with this tilt at rest, and follows this quickly.
-const CAPE_REST: float = 0.1
+## ...hangs back with this tilt at rest (clear of the skirt), and follows this quickly.
+## Heroes face -Z, so a cape tilts back with a negative turn about X and an arm
+## reaches forward with a positive one.
+const CAPE_REST: float = 0.2
 const CAPE_SHARPNESS: float = 8.0
 const LANTERN_SWAY: float = 0.25
+## The tabard flaps hanging below the belt, front and back.
+const TABARD_SIZE: Vector3 = Vector3(0.3, 0.4, 0.03)
 
 var actor: ActorBase
 ## Every cel material on the puppet, lit together by a hit flash.
@@ -91,6 +97,7 @@ func rebuild() -> void:
 	var body: Color = loadout.body_color
 	var weight: EquipmentItemResource.ArmorWeight = loadout.armor.armor_weight if loadout.armor != null else EquipmentItemResource.ArmorWeight.MEDIUM
 	_build_body(body)
+	_build_tabard(body, trim)
 	_build_armor(weight, body, trim)
 	_build_head(row, body, trim)
 	_build_cape(row, body, trim)
@@ -109,7 +116,7 @@ func update_motion(delta: float, velocity: Vector3, move_speed: float) -> void:
 	if _cape_pivot != null:
 		var run: float = clampf(Vector2(velocity.x, velocity.z).length() / maxf(0.1, move_speed), 0.0, 1.0)
 		var wanted: float = CAPE_REST + CAPE_SWING * run + sin(_age * 3.0) * 0.04
-		_cape_pivot.rotation.x = lerpf(_cape_pivot.rotation.x, wanted, 1.0 - exp(-CAPE_SHARPNESS * delta))
+		_cape_pivot.rotation.x = lerpf(_cape_pivot.rotation.x, -wanted, 1.0 - exp(-CAPE_SHARPNESS * delta))
 	if _lantern != null:
 		_lantern.rotation.z = sin(_age * 2.4) * LANTERN_SWAY * 0.4
 		_lantern.rotation.x = sin(_age * 1.7) * LANTERN_SWAY * 0.3
@@ -129,12 +136,21 @@ func _build_body(body: Color) -> void:
 	add_child(ShapeKit.box("Buckle", Vector3(0.1, 0.08, 0.04), Vector3(0.0, 0.82, -0.38), _cel(BRASS_COLOR, body)))
 	# Arms: the right reaches forward to the weapon's grip, the left hangs to the off hand.
 	var sleeve: Material = _cel(body.darkened(0.08), body)
-	var right: Node3D = _pivot("RightArm", Vector3(0.39, 1.36, 0.0), Vector3(-0.95, 0.0, 0.12))
+	var right: Node3D = _pivot("RightArm", Vector3(0.39, 1.36, 0.0), Vector3(0.95, 0.0, 0.12))
 	right.add_child(ShapeKit.capsule("Sleeve", 0.08, 0.6, Vector3(0.0, -0.28, 0.0), sleeve))
 	right.add_child(ShapeKit.sphere("Hand", 0.07, Vector3(0.0, -0.6, 0.0), _cel(SKIN_COLOR, body)))
-	var left: Node3D = _pivot("LeftArm", Vector3(-0.39, 1.36, 0.0), Vector3(-0.35, 0.0, -0.15))
+	var left: Node3D = _pivot("LeftArm", Vector3(-0.39, 1.36, 0.0), Vector3(0.35, 0.0, -0.15))
 	left.add_child(ShapeKit.capsule("Sleeve", 0.08, 0.6, Vector3(0.0, -0.28, 0.0), sleeve))
 	left.add_child(ShapeKit.sphere("Hand", 0.07, Vector3(0.0, -0.6, 0.0), _cel(SKIN_COLOR, body)))
+
+
+## The Calling's tabard: a flap below the belt in front and one behind, flared a little.
+func _build_tabard(body: Color, trim: Color) -> void:
+	var cloth: Material = _cel(trim, body)
+	for side: float in [-1.0, 1.0]:
+		var flap: MeshInstance3D = ShapeKit.box("Tabard" if side < 0.0 else "TabardBack", TABARD_SIZE, Vector3(0.0, 0.57, side * 0.41), cloth)
+		flap.rotation = Vector3(side * 0.08, 0.0, 0.0)
+		add_child(flap)
 
 
 func _build_armor(weight: EquipmentItemResource.ArmorWeight, body: Color, trim: Color) -> void:
@@ -188,7 +204,7 @@ func _build_head(row: int, body: Color, trim: Color) -> void:
 
 func _build_cape(row: int, body: Color, trim: Color) -> void:
 	var length: float = CAPE_LENGTHS[row]
-	_cape_pivot = _pivot("Cape", Vector3(0.0, 1.44, 0.27), Vector3(CAPE_REST, 0.0, 0.0))
+	_cape_pivot = _pivot("Cape", Vector3(0.0, 1.44, 0.27), Vector3(-CAPE_REST, 0.0, 0.0))
 	_cape_pivot.add_child(ShapeKit.box("Cloth", Vector3(0.62, length, 0.04), Vector3(0.0, -length * 0.5, 0.0), _cel(body.darkened(0.35), body)))
 	_cape_pivot.add_child(ShapeKit.box("Hem", Vector3(0.62, 0.06, 0.05), Vector3(0.0, -length + 0.03, 0.0), _cel(trim, body)))
 
