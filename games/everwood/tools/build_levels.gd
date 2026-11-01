@@ -237,7 +237,7 @@ func _build_hub() -> Node3D:
 	_add_bridge(town)
 	_add_watermill(town)
 	_add_pigment_rack(town)
-	root.add_child(_portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Ring of the Cairnsman", RAID_PORTAL_COLOR, RAID_PORTAL_POSITION))
+	root.add_child(_portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Doverslap Expedition", RAID_PORTAL_COLOR, RAID_PORTAL_POSITION))
 	var shrine: Node3D = Node3D.new()
 	shrine.name = "ChimeShrine"
 	shrine.set_script(load(SHRINE_SCRIPT))
@@ -309,11 +309,12 @@ func _add_forest_gate(parent: Node3D) -> void:
 	var sign_label: Label3D = Label3D.new()
 	sign_label.name = "GateSign"
 	sign_label.text = "To the Ariundle Moss-Oaks"
-	sign_label.font_size = 48
+	sign_label.font_size = 40
 	sign_label.outline_size = 10
 	sign_label.pixel_size = 0.01
 	sign_label.modulate = Color(1.0, 0.92, 0.75)
-	sign_label.position = Vector3(0.0, GATE_HEIGHT - 0.6, 0.45)
+	# On the roof's gable, well above the Raid Portal's title in front, so the two never overlap on screen.
+	sign_label.position = Vector3(0.0, GATE_HEIGHT + 0.6, 0.85)
 	gate.add_child(sign_label)
 	# The edge of the forest beyond the wall.
 	var forest: Node3D = _node3d("ForestEdge")

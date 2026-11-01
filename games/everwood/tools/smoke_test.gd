@@ -142,8 +142,8 @@ func _check_hub_and_input_map() -> void:
 	_check(ProjectSettings.get_setting("application/run/main_scene") == HUB_SCENE, "Hub Town is the main scene")
 	_check(InstanceManager.current.instance_id == InstanceManager.HUB_TOWN and InstanceManager.current.is_live(), "Hub Town is the live instance")
 	var hub: HubTown = current_scene as HubTown
-	_check(hub.level_title() == "Bramblebridge" and hub.raid_portal.title.contains("Cairnsman"),
-		"the hub is Bramblebridge, and its Raid Portal leads to the Ring of the Cairnsman")
+	_check(hub.level_title() == "Bramblebridge" and hub.raid_portal.title.contains("Doverslap Expedition"),
+		"the hub is Bramblebridge, and its Raid Portal is labelled for the Doverslap Expedition")
 	var actions: Array[StringName] = [InputComponent.ACTION_MOVE_LEFT, InputComponent.ACTION_MOVE_RIGHT,
 		InputComponent.ACTION_MOVE_FORWARD, InputComponent.ACTION_MOVE_BACK, InputComponent.ACTION_CAMERA_LEFT,
 		InputComponent.ACTION_CAMERA_RIGHT, InputComponent.ACTION_JOIN]
@@ -572,7 +572,7 @@ func _check_portal_into_dojo() -> void:
 	_gather_on(hub.raid_portal, hub)
 	await _until_live_in(InstanceManager.DUNGEON_DOJO)
 	_check(_portal_countdowns == 1, "the whole party on the Raid Portal starts its countdown")
-	_check(current_scene is DungeonDojo and InstanceManager.current.instance_id == InstanceManager.DUNGEON_DOJO, "the portal moves the party into the Ring of the Cairnsman")
+	_check(current_scene is DungeonDojo and InstanceManager.current.instance_id == InstanceManager.DUNGEON_DOJO, "the portal moves the party onto the Doverslap Expedition")
 	var ring: DungeonDojo = current_scene as DungeonDojo
 	_check(ring.level_title() == "The Doverslap Expedition" and ring.boss.display_name() == "The Cairnsman of Doverslap"
 		and ring.exit_portal.title == "Exit: Bramblebridge", "the raid is the Doverslap Expedition, its boss the Cairnsman of Doverslap, its exit to Bramblebridge")
@@ -1456,6 +1456,10 @@ func _check_gale_beam() -> void:
 		"the Doverslap Gale-Beam: a blue lane from the boss to the tank with a shield pillar, cast over 3.2 s")
 	if beam == null:
 		return
+	await physics_frame
+	_check((dojo.huds[tank.player_id] as PlayerHUD).callout() == "RAISE SHADOW SANCTUARY!"
+		and (dojo.huds[healer.player_id] as PlayerHUD).callout() == "STAND BEHIND THE TANK!",
+		"under the boss frame, the tank's HUD says raise Shadow Sanctuary and everyone else's says stand behind the tank")
 	tank.stats.stamina = tank.stats.stats.max_stamina
 	tank.input.inject_command(Cmd.BACK_HEAVY)
 	dps.stats.resonance_charge = 0.0

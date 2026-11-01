@@ -15,6 +15,9 @@ const SMALL_FONT_SIZE: int = 13
 const HEALTH_COLOR: Color = Color(0.85, 0.22, 0.24)
 const POISE_COLOR: Color = Color(0.95, 0.65, 0.25)
 const CAST_COLOR: Color = Color(0.75, 0.55, 1.0)
+## The Gale-Beam's callout, in the beam's blue.
+const CALLOUT_COLOR: Color = Color(0.62, 0.82, 1.0)
+const CALLOUT_SIZE: int = 24
 const BAR_BACK: Color = Color(0.06, 0.06, 0.08, 0.75)
 ## The boss's bars show once it's in the fight or within this many metres.
 const BOSS_BAR_RANGE: float = 36.0
@@ -22,6 +25,8 @@ const BOSS_BAR_RANGE: float = 36.0
 const BANNER_CLEARANCE: float = 52.0
 const FLASH_TIME: float = 0.6
 const BANNER_TITLE_SIZE: int = 44
+## Pixels between the boss frame and a banner moved down under it.
+const BANNER_GAP: float = 8.0
 ## Real seconds for the banner to fade in (it ignores slow motion).
 const BANNER_FADE_TIME: float = 0.3
 
@@ -35,6 +40,7 @@ var _boss_health: ProgressBar
 var _boss_poise: ProgressBar
 var _cast_bar: ProgressBar
 var _cast_label: Label
+var _callout_label: Label
 var _aggro_label: Label
 var _flow_label: Label
 var _banner: VBoxContainer
@@ -78,6 +84,13 @@ func _ready() -> void:
 	_aggro_label = _label(SMALL_FONT_SIZE)
 	_aggro_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	top.add_child(_aggro_label)
+	# What to do about the Gale-Beam, on screen under the boss frame (a sign in
+	# the world would sit right on the frame from a camera behind the party).
+	_callout_label = _label(CALLOUT_SIZE)
+	_callout_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_callout_label.modulate = CALLOUT_COLOR
+	_callout_label.visible = false
+	top.add_child(_callout_label)
 
 	cross_grimoire = CrossGrimoireHUD.new()
 	cross_grimoire.setup(actor)
@@ -132,6 +145,7 @@ func _process(_delta: float) -> void:
 		return
 	_top_panel.offset_top = MARGIN + (BANNER_CLEARANCE if get_global_rect().position.y < 1.0 else 0.0)
 	_refresh_boss()
+	_place_banner()
 	_refresh_player()
 
 
@@ -158,6 +172,11 @@ func open_scribe_desk(row: int = -1) -> void:
 ## The boss's bars are up (it's in the fight, or near).
 func boss_bar_visible() -> bool:
 	return _top_panel.visible
+
+
+## The Gale-Beam's callout under the boss frame ("" when there's none).
+func callout() -> String:
+	return _callout_label.text if _top_panel.visible and _callout_label.visible else ""
 
 
 func upgrade_menu() -> HubUpgradeMenu:
@@ -194,6 +213,17 @@ func show_banner(title: String, subtitle: String, color: Color, seconds: float =
 
 
 ## Hides the banner if it still shows `title` (a newer one stays up).
+## A banner's centre sits a fifth of the way down the view, or just under the
+## boss frame while that shows, so neither hides the other.
+func _place_banner() -> void:
+	var shift: float = 0.0
+	if _top_panel.visible:
+		var frame_bottom: float = _top_panel.offset_top + _top_panel.size.y
+		shift = maxf(0.0, frame_bottom + BANNER_GAP + _banner.size.y * 0.5 - size.y * 0.2)
+	_banner.offset_top = shift
+	_banner.offset_bottom = shift
+
+
 func _hide_banner_if(title: String) -> void:
 	if is_instance_valid(_banner) and _banner.visible and _banner_title.text == title:
 		_banner.visible = false
@@ -233,6 +263,10 @@ func _refresh_boss() -> void:
 	_cast_label.visible = casting
 	if casting:
 		_cast_label.text = "Casting %s" % boss.cast_name
+	var beam: RaidTelegraphDecal = CombatDirector.current.beam_telegraph()
+	_callout_label.visible = beam != null
+	if beam != null:
+		_callout_label.text = "RAISE SHADOW SANCTUARY!" if beam.follow_target == actor else "STAND BEHIND THE TANK!"
 		_cast_bar.max_value = 1.0
 		_cast_bar.value = boss.cast_progress()
 	var target_id: StringName = boss.threat.current_target if boss.threat != null else &""

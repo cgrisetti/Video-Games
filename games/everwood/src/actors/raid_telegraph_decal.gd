@@ -4,7 +4,8 @@
 ##   GOLD_PARTY_SOAK    gold: stack in to split the damage
 ##   BLUE_BEHIND_TANK   blue: a long lane from the boss to its tank, with a
 ##                      shield pillar on the tank: get behind the tank's
-##                      Shadow Sanctuary (the Cairnsman's Doverslap Gale-Beam)
+##                      Shadow Sanctuary (the Cairnsman's Doverslap Gale-Beam;
+##                      each player's HUD says what to do)
 ## Every peer shows the decal; only the boss's owner turns it into damage.
 class_name RaidTelegraphDecal
 extends Node3D
@@ -108,17 +109,6 @@ func _build_pillar() -> void:
 	beam_column.position = Vector3(0.0, PILLAR_HEIGHT * 0.5, 0.0)
 	beam_column.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_pillar.add_child(beam_column)
-	var sign_label: Label3D = Label3D.new()
-	sign_label.name = "Sign"
-	sign_label.text = "STAND BEHIND THE TANK!"
-	sign_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	sign_label.no_depth_test = true
-	sign_label.font_size = 52
-	sign_label.outline_size = 12
-	sign_label.pixel_size = 0.009
-	sign_label.modulate = BLUE_COLOR.lightened(0.4)
-	sign_label.position = Vector3(0.0, PILLAR_HEIGHT + 0.5, 0.0)
-	_pillar.add_child(sign_label)
 
 
 func _exit_tree() -> void:

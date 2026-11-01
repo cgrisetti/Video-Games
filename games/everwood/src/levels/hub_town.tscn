@@ -1828,447 +1828,447 @@ bottom_radius = 0.8
 height = 0.04
 radial_segments = 32
 
-[node name="HubTown" type="Node3D" unique_id=1399677977]
+[node name="HubTown" type="Node3D" unique_id=22833930]
 script = ExtResource("1_aeufk")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=719381392]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1994240837]
 environment = SubResource("Environment_1kvqe")
 
-[node name="Sun" type="DirectionalLight3D" parent="." unique_id=488378868]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1365733452]
 transform = Transform3D(0.81915206, -0.46984634, 0.32898995, 0, 0.57357645, 0.81915206, -0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
 light_color = Color(1, 0.93, 0.8, 1)
 light_energy = 0.95
 shadow_enabled = true
 directional_shadow_max_distance = 60.0
 
-[node name="Town" type="Node3D" parent="." unique_id=724737616]
+[node name="Town" type="Node3D" parent="." unique_id=1243278298]
 
-[node name="Floor" type="StaticBody3D" parent="Town" unique_id=1771210177]
+[node name="Floor" type="StaticBody3D" parent="Town" unique_id=1944638193]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/Floor" unique_id=626269487]
+[node name="Collision" type="CollisionShape3D" parent="Town/Floor" unique_id=1098177252]
 shape = SubResource("BoxShape3D_mrvhm")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/Floor" unique_id=84045534]
+[node name="Mesh" type="MeshInstance3D" parent="Town/Floor" unique_id=671438594]
 mesh = SubResource("BoxMesh_iqwl6")
 
-[node name="WallSouth" type="StaticBody3D" parent="Town" unique_id=797571717]
+[node name="WallSouth" type="StaticBody3D" parent="Town" unique_id=1448484866]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 30)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/WallSouth" unique_id=1183922735]
+[node name="Collision" type="CollisionShape3D" parent="Town/WallSouth" unique_id=348743193]
 shape = SubResource("BoxShape3D_jff54")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/WallSouth" unique_id=484988976]
+[node name="Mesh" type="MeshInstance3D" parent="Town/WallSouth" unique_id=534881230]
 mesh = SubResource("BoxMesh_exnwt")
 
-[node name="WallWest" type="StaticBody3D" parent="Town" unique_id=1395650122]
+[node name="WallWest" type="StaticBody3D" parent="Town" unique_id=281494304]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 0.6, 0)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/WallWest" unique_id=205658910]
+[node name="Collision" type="CollisionShape3D" parent="Town/WallWest" unique_id=1691308171]
 shape = SubResource("BoxShape3D_0g8xc")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/WallWest" unique_id=899072449]
+[node name="Mesh" type="MeshInstance3D" parent="Town/WallWest" unique_id=1878604245]
 mesh = SubResource("BoxMesh_njil0")
 
-[node name="WallEast" type="StaticBody3D" parent="Town" unique_id=640889430]
+[node name="WallEast" type="StaticBody3D" parent="Town" unique_id=1554300951]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0.6, 0)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/WallEast" unique_id=197706510]
+[node name="Collision" type="CollisionShape3D" parent="Town/WallEast" unique_id=591275955]
 shape = SubResource("BoxShape3D_pcnqo")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/WallEast" unique_id=1660703837]
+[node name="Mesh" type="MeshInstance3D" parent="Town/WallEast" unique_id=1366781691]
 mesh = SubResource("BoxMesh_oo2h8")
 
-[node name="WallNorthWest" type="StaticBody3D" parent="Town" unique_id=1627557802]
+[node name="WallNorthWest" type="StaticBody3D" parent="Town" unique_id=1913638496]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 0.6, -30)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/WallNorthWest" unique_id=573875193]
+[node name="Collision" type="CollisionShape3D" parent="Town/WallNorthWest" unique_id=199455660]
 shape = SubResource("BoxShape3D_62bqo")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/WallNorthWest" unique_id=1906317788]
+[node name="Mesh" type="MeshInstance3D" parent="Town/WallNorthWest" unique_id=161770618]
 mesh = SubResource("BoxMesh_rwat8")
 
-[node name="WallNorthEast" type="StaticBody3D" parent="Town" unique_id=97576224]
+[node name="WallNorthEast" type="StaticBody3D" parent="Town" unique_id=1369800257]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0.6, -30)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/WallNorthEast" unique_id=1591972873]
+[node name="Collision" type="CollisionShape3D" parent="Town/WallNorthEast" unique_id=1840424638]
 shape = SubResource("BoxShape3D_121n4")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/WallNorthEast" unique_id=594201626]
+[node name="Mesh" type="MeshInstance3D" parent="Town/WallNorthEast" unique_id=1122155579]
 mesh = SubResource("BoxMesh_jdp3p")
 
-[node name="ForestGate" type="Node3D" parent="Town" unique_id=1226461517]
+[node name="ForestGate" type="Node3D" parent="Town" unique_id=1542867921]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -30)
 
-[node name="Post" type="MeshInstance3D" parent="Town/ForestGate" unique_id=681327491]
+[node name="Post" type="MeshInstance3D" parent="Town/ForestGate" unique_id=1848826320]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.3, 2.5, 0)
 mesh = SubResource("BoxMesh_ibx0u")
 
-[node name="Leaf" type="MeshInstance3D" parent="Town/ForestGate" unique_id=101189006]
+[node name="Leaf" type="MeshInstance3D" parent="Town/ForestGate" unique_id=1623203831]
 transform = Transform3D(0.31532237, 0, -0.9489846, 0, 1, 0, 0.9489846, 0, 0.31532237, -3.2, 1.9, -1.4)
 mesh = SubResource("BoxMesh_qomu3")
 
-[node name="@MeshInstance3D@2" type="MeshInstance3D" parent="Town/ForestGate" unique_id=215244197]
+[node name="@MeshInstance3D@2" type="MeshInstance3D" parent="Town/ForestGate" unique_id=963693523]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.3, 2.5, 0)
 mesh = SubResource("BoxMesh_e3urp")
 
-[node name="@MeshInstance3D@3" type="MeshInstance3D" parent="Town/ForestGate" unique_id=1335485159]
+[node name="@MeshInstance3D@3" type="MeshInstance3D" parent="Town/ForestGate" unique_id=313217532]
 transform = Transform3D(0.31532237, 0, 0.9489846, 0, 1, 0, -0.9489846, 0, 0.31532237, 3.2, 1.9, -1.4)
 mesh = SubResource("BoxMesh_yqt4y")
 
-[node name="Lintel" type="MeshInstance3D" parent="Town/ForestGate" unique_id=44375973]
+[node name="Lintel" type="MeshInstance3D" parent="Town/ForestGate" unique_id=450127915]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
 mesh = SubResource("BoxMesh_u5664")
 
-[node name="Roof" type="MeshInstance3D" parent="Town/ForestGate" unique_id=591573347]
+[node name="Roof" type="MeshInstance3D" parent="Town/ForestGate" unique_id=946967678]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.85, 0)
 mesh = SubResource("PrismMesh_8c45y")
 
-[node name="GateBlocker" type="StaticBody3D" parent="Town/ForestGate" unique_id=231986392]
+[node name="GateBlocker" type="StaticBody3D" parent="Town/ForestGate" unique_id=285035890]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/ForestGate/GateBlocker" unique_id=1294134394]
+[node name="Collision" type="CollisionShape3D" parent="Town/ForestGate/GateBlocker" unique_id=1584892007]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 shape = SubResource("BoxShape3D_17qin")
 
-[node name="GateSign" type="Label3D" parent="Town/ForestGate" unique_id=765536672]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.4, 0.45)
+[node name="GateSign" type="Label3D" parent="Town/ForestGate" unique_id=473821113]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.6, 0.85)
 pixel_size = 0.01
 modulate = Color(1, 0.92, 0.75, 1)
 text = "To the Ariundle Moss-Oaks"
-font_size = 48
+font_size = 40
 outline_size = 10
 
-[node name="ForestEdge" type="Node3D" parent="Town" unique_id=127011449]
+[node name="ForestEdge" type="Node3D" parent="Town" unique_id=1284824321]
 
-[node name="Moss" type="MeshInstance3D" parent="Town/ForestEdge" unique_id=567689220]
+[node name="Moss" type="MeshInstance3D" parent="Town/ForestEdge" unique_id=1049467224]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, -38)
 mesh = SubResource("BoxMesh_427fo")
 
-[node name="Oak1" type="Node3D" parent="Town/ForestEdge" unique_id=1761107336]
+[node name="Oak1" type="Node3D" parent="Town/ForestEdge" unique_id=1677634222]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -34)
 
-[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak1" unique_id=965985418]
+[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak1" unique_id=1682652195]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.925, 0)
 mesh = SubResource("CylinderMesh_stp6f")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak1" unique_id=1916041135]
+[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak1" unique_id=1614283601]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.69, 0)
 mesh = SubResource("SphereMesh_46ioq")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak1" unique_id=679260394]
+[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak1" unique_id=606515851]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.91, 5.81, 0.42)
 mesh = SubResource("SphereMesh_eg2pm")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak1" unique_id=2770321]
+[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak1" unique_id=469596793]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, 5.95, -0.56)
 mesh = SubResource("SphereMesh_org3n")
 
-[node name="Oak2" type="Node3D" parent="Town/ForestEdge" unique_id=1602447073]
+[node name="Oak2" type="Node3D" parent="Town/ForestEdge" unique_id=1607313463]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 0, -36.5)
 
-[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak2" unique_id=507295996]
+[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak2" unique_id=666342591]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
 mesh = SubResource("CylinderMesh_bbkc2")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak2" unique_id=359422724]
+[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak2" unique_id=151627215]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.36, 0)
 mesh = SubResource("SphereMesh_cse6g")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak2" unique_id=1186205702]
+[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak2" unique_id=322352757]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 6.64, 0.48)
 mesh = SubResource("SphereMesh_7t2j2")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak2" unique_id=1016856391]
+[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak2" unique_id=905563481]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 6.8, -0.64)
 mesh = SubResource("SphereMesh_gjexh")
 
-[node name="Oak3" type="Node3D" parent="Town/ForestEdge" unique_id=1180867796]
+[node name="Oak3" type="Node3D" parent="Town/ForestEdge" unique_id=1854697574]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0, -38)
 
-[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak3" unique_id=1768905616]
+[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak3" unique_id=1735224757]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.475, 0)
 mesh = SubResource("CylinderMesh_8iake")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak3" unique_id=624332818]
+[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak3" unique_id=1327560372]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.03, 0)
 mesh = SubResource("SphereMesh_ktvkb")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak3" unique_id=1471064338]
+[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak3" unique_id=2013678054]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.17, 7.47, 0.54)
 mesh = SubResource("SphereMesh_6xg8f")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak3" unique_id=2020576496]
+[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak3" unique_id=1829878925]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 7.65, -0.72)
 mesh = SubResource("SphereMesh_supwc")
 
-[node name="Oak4" type="Node3D" parent="Town/ForestEdge" unique_id=1838553954]
+[node name="Oak4" type="Node3D" parent="Town/ForestEdge" unique_id=1598567193]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -33.5)
 
-[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak4" unique_id=650681181]
+[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak4" unique_id=1171124551]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.925, 0)
 mesh = SubResource("CylinderMesh_k4i82")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak4" unique_id=2090142537]
+[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak4" unique_id=390551644]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.69, 0)
 mesh = SubResource("SphereMesh_gysxq")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak4" unique_id=1637536685]
+[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak4" unique_id=1800553959]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.91, 5.81, 0.42)
 mesh = SubResource("SphereMesh_n75g3")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak4" unique_id=376329077]
+[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak4" unique_id=1662383907]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, 5.95, -0.56)
 mesh = SubResource("SphereMesh_vbg40")
 
-[node name="Oak5" type="Node3D" parent="Town/ForestEdge" unique_id=1538227823]
+[node name="Oak5" type="Node3D" parent="Town/ForestEdge" unique_id=68181446]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, -41)
 
-[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak5" unique_id=694238961]
+[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak5" unique_id=550223736]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
 mesh = SubResource("CylinderMesh_3j74w")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak5" unique_id=143605654]
+[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak5" unique_id=1440245177]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.36, 0)
 mesh = SubResource("SphereMesh_47ifb")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak5" unique_id=968752019]
+[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak5" unique_id=1539836521]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 6.64, 0.48)
 mesh = SubResource("SphereMesh_87e6t")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak5" unique_id=1171670756]
+[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak5" unique_id=1111117106]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 6.8, -0.64)
 mesh = SubResource("SphereMesh_tkp12")
 
-[node name="Oak6" type="Node3D" parent="Town/ForestEdge" unique_id=437534797]
+[node name="Oak6" type="Node3D" parent="Town/ForestEdge" unique_id=751601243]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0, -34.5)
 
-[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak6" unique_id=297577508]
+[node name="Trunk" type="MeshInstance3D" parent="Town/ForestEdge/Oak6" unique_id=1164736677]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.475, 0)
 mesh = SubResource("CylinderMesh_fiwcm")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak6" unique_id=1483506160]
+[node name="Leaves0" type="MeshInstance3D" parent="Town/ForestEdge/Oak6" unique_id=374066626]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.03, 0)
 mesh = SubResource("SphereMesh_84flu")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak6" unique_id=939890324]
+[node name="Leaves1" type="MeshInstance3D" parent="Town/ForestEdge/Oak6" unique_id=1907706250]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.17, 7.47, 0.54)
 mesh = SubResource("SphereMesh_24pwg")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak6" unique_id=1999069413]
+[node name="Leaves2" type="MeshInstance3D" parent="Town/ForestEdge/Oak6" unique_id=1958870574]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 7.65, -0.72)
 mesh = SubResource("SphereMesh_sr1sn")
 
-[node name="House1" type="StaticBody3D" parent="Town" unique_id=2139029579]
+[node name="House1" type="StaticBody3D" parent="Town" unique_id=1945036722]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 1.8, -21)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/House1" unique_id=1908933101]
+[node name="Collision" type="CollisionShape3D" parent="Town/House1" unique_id=1328011494]
 shape = SubResource("BoxShape3D_bhvv5")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/House1" unique_id=603276353]
+[node name="Mesh" type="MeshInstance3D" parent="Town/House1" unique_id=2076417738]
 mesh = SubResource("BoxMesh_y4rjv")
 
-[node name="Roof" type="MeshInstance3D" parent="Town/House1" unique_id=1908843725]
+[node name="Roof" type="MeshInstance3D" parent="Town/House1" unique_id=729878616]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 2.75, 0)
 mesh = SubResource("PrismMesh_jy2as")
 
-[node name="GableWest0" type="MeshInstance3D" parent="Town/House1" unique_id=981910870]
+[node name="GableWest0" type="MeshInstance3D" parent="Town/House1" unique_id=1899494969]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_i02ep")
 
-[node name="GableWest1" type="MeshInstance3D" parent="Town/House1" unique_id=1683243174]
+[node name="GableWest1" type="MeshInstance3D" parent="Town/House1" unique_id=1914534501]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_yakwa")
 
-[node name="GableWest2" type="MeshInstance3D" parent="Town/House1" unique_id=225403380]
+[node name="GableWest2" type="MeshInstance3D" parent="Town/House1" unique_id=95795081]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_li5xx")
 
-[node name="GableWest3" type="MeshInstance3D" parent="Town/House1" unique_id=625812235]
+[node name="GableWest3" type="MeshInstance3D" parent="Town/House1" unique_id=393303300]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_hm1rn")
 
-[node name="GableEast0" type="MeshInstance3D" parent="Town/House1" unique_id=1288102362]
+[node name="GableEast0" type="MeshInstance3D" parent="Town/House1" unique_id=918402001]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_g461r")
 
-[node name="GableEast1" type="MeshInstance3D" parent="Town/House1" unique_id=314392381]
+[node name="GableEast1" type="MeshInstance3D" parent="Town/House1" unique_id=580662217]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_vlguy")
 
-[node name="GableEast2" type="MeshInstance3D" parent="Town/House1" unique_id=1703959909]
+[node name="GableEast2" type="MeshInstance3D" parent="Town/House1" unique_id=1304572293]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_ulp11")
 
-[node name="GableEast3" type="MeshInstance3D" parent="Town/House1" unique_id=1812219717]
+[node name="GableEast3" type="MeshInstance3D" parent="Town/House1" unique_id=414607158]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_jrgw0")
 
-[node name="Door" type="MeshInstance3D" parent="Town/House1" unique_id=383565726]
+[node name="Door" type="MeshInstance3D" parent="Town/House1" unique_id=1966586245]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 3.05, -0.79999995, 0)
 mesh = SubResource("BoxMesh_dpi47")
 
-[node name="Window0" type="MeshInstance3D" parent="Town/House1" unique_id=1651751288]
+[node name="Window0" type="MeshInstance3D" parent="Town/House1" unique_id=331466119]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.05, 0.4, -1.5)
 mesh = SubResource("BoxMesh_veh0u")
 
-[node name="Window1" type="MeshInstance3D" parent="Town/House1" unique_id=176719132]
+[node name="Window1" type="MeshInstance3D" parent="Town/House1" unique_id=742698761]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.05, 0.4, 1.5)
 mesh = SubResource("BoxMesh_q3105")
 
-[node name="Window2" type="MeshInstance3D" parent="Town/House1" unique_id=653455541]
+[node name="Window2" type="MeshInstance3D" parent="Town/House1" unique_id=1332342167]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.05, 2.55, 0)
 mesh = SubResource("BoxMesh_jr6su")
 
-[node name="House2" type="StaticBody3D" parent="Town" unique_id=940395834]
+[node name="House2" type="StaticBody3D" parent="Town" unique_id=1305661500]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1.8, -21)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/House2" unique_id=502179358]
+[node name="Collision" type="CollisionShape3D" parent="Town/House2" unique_id=1769050072]
 shape = SubResource("BoxShape3D_g1fee")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/House2" unique_id=993539164]
+[node name="Mesh" type="MeshInstance3D" parent="Town/House2" unique_id=1323042768]
 mesh = SubResource("BoxMesh_nw6to")
 
-[node name="Roof" type="MeshInstance3D" parent="Town/House2" unique_id=736257760]
+[node name="Roof" type="MeshInstance3D" parent="Town/House2" unique_id=890428030]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 2.75, 0)
 mesh = SubResource("PrismMesh_tij3u")
 
-[node name="GableWest0" type="MeshInstance3D" parent="Town/House2" unique_id=1828262770]
+[node name="GableWest0" type="MeshInstance3D" parent="Town/House2" unique_id=927312336]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_47we3")
 
-[node name="GableWest1" type="MeshInstance3D" parent="Town/House2" unique_id=536540988]
+[node name="GableWest1" type="MeshInstance3D" parent="Town/House2" unique_id=537293868]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_yg1h5")
 
-[node name="GableWest2" type="MeshInstance3D" parent="Town/House2" unique_id=1852988198]
+[node name="GableWest2" type="MeshInstance3D" parent="Town/House2" unique_id=2140467247]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_df61k")
 
-[node name="GableWest3" type="MeshInstance3D" parent="Town/House2" unique_id=1480403807]
+[node name="GableWest3" type="MeshInstance3D" parent="Town/House2" unique_id=1236826837]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_vjxan")
 
-[node name="GableEast0" type="MeshInstance3D" parent="Town/House2" unique_id=543932264]
+[node name="GableEast0" type="MeshInstance3D" parent="Town/House2" unique_id=1351334060]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_lv2jp")
 
-[node name="GableEast1" type="MeshInstance3D" parent="Town/House2" unique_id=1337991949]
+[node name="GableEast1" type="MeshInstance3D" parent="Town/House2" unique_id=1945893392]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_kn48f")
 
-[node name="GableEast2" type="MeshInstance3D" parent="Town/House2" unique_id=1191314912]
+[node name="GableEast2" type="MeshInstance3D" parent="Town/House2" unique_id=786056383]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_x3gfo")
 
-[node name="GableEast3" type="MeshInstance3D" parent="Town/House2" unique_id=449612694]
+[node name="GableEast3" type="MeshInstance3D" parent="Town/House2" unique_id=1333490201]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_bflpu")
 
-[node name="Door" type="MeshInstance3D" parent="Town/House2" unique_id=1067285948]
+[node name="Door" type="MeshInstance3D" parent="Town/House2" unique_id=1819088108]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -3.05, -0.79999995, 0)
 mesh = SubResource("BoxMesh_2y10s")
 
-[node name="Window0" type="MeshInstance3D" parent="Town/House2" unique_id=1964294521]
+[node name="Window0" type="MeshInstance3D" parent="Town/House2" unique_id=197871984]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.05, 0.4, -1.5)
 mesh = SubResource("BoxMesh_3xa1o")
 
-[node name="Window1" type="MeshInstance3D" parent="Town/House2" unique_id=2082030422]
+[node name="Window1" type="MeshInstance3D" parent="Town/House2" unique_id=456576542]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.05, 0.4, 1.5)
 mesh = SubResource("BoxMesh_arev3")
 
-[node name="Window2" type="MeshInstance3D" parent="Town/House2" unique_id=50394220]
+[node name="Window2" type="MeshInstance3D" parent="Town/House2" unique_id=1357758769]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.05, 2.55, 0)
 mesh = SubResource("BoxMesh_bgfaw")
 
-[node name="House3" type="StaticBody3D" parent="Town" unique_id=724481022]
+[node name="House3" type="StaticBody3D" parent="Town" unique_id=489228158]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 1.8, -10)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/House3" unique_id=1963312144]
+[node name="Collision" type="CollisionShape3D" parent="Town/House3" unique_id=1402242410]
 shape = SubResource("BoxShape3D_coa7r")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/House3" unique_id=696617092]
+[node name="Mesh" type="MeshInstance3D" parent="Town/House3" unique_id=2013283804]
 mesh = SubResource("BoxMesh_govym")
 
-[node name="Roof" type="MeshInstance3D" parent="Town/House3" unique_id=1845945656]
+[node name="Roof" type="MeshInstance3D" parent="Town/House3" unique_id=136062990]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 2.75, 0)
 mesh = SubResource("PrismMesh_04t3w")
 
-[node name="GableWest0" type="MeshInstance3D" parent="Town/House3" unique_id=2056320214]
+[node name="GableWest0" type="MeshInstance3D" parent="Town/House3" unique_id=1972373658]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_bl5bs")
 
-[node name="GableWest1" type="MeshInstance3D" parent="Town/House3" unique_id=2110791521]
+[node name="GableWest1" type="MeshInstance3D" parent="Town/House3" unique_id=1457745731]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_oiw2r")
 
-[node name="GableWest2" type="MeshInstance3D" parent="Town/House3" unique_id=1743745547]
+[node name="GableWest2" type="MeshInstance3D" parent="Town/House3" unique_id=1304404426]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_khm6c")
 
-[node name="GableWest3" type="MeshInstance3D" parent="Town/House3" unique_id=1052629752]
+[node name="GableWest3" type="MeshInstance3D" parent="Town/House3" unique_id=561281440]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_1eb6w")
 
-[node name="GableEast0" type="MeshInstance3D" parent="Town/House3" unique_id=1766234021]
+[node name="GableEast0" type="MeshInstance3D" parent="Town/House3" unique_id=1182250180]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_jj63y")
 
-[node name="GableEast1" type="MeshInstance3D" parent="Town/House3" unique_id=153580308]
+[node name="GableEast1" type="MeshInstance3D" parent="Town/House3" unique_id=284453616]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_bkukn")
 
-[node name="GableEast2" type="MeshInstance3D" parent="Town/House3" unique_id=1743403034]
+[node name="GableEast2" type="MeshInstance3D" parent="Town/House3" unique_id=434567629]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_p5nyq")
 
-[node name="GableEast3" type="MeshInstance3D" parent="Town/House3" unique_id=295975785]
+[node name="GableEast3" type="MeshInstance3D" parent="Town/House3" unique_id=464356823]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_ww1gb")
 
-[node name="Door" type="MeshInstance3D" parent="Town/House3" unique_id=890548214]
+[node name="Door" type="MeshInstance3D" parent="Town/House3" unique_id=1210075136]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 3.05, -0.79999995, 0)
 mesh = SubResource("BoxMesh_rxvv8")
 
-[node name="Window0" type="MeshInstance3D" parent="Town/House3" unique_id=2006223849]
+[node name="Window0" type="MeshInstance3D" parent="Town/House3" unique_id=2030486716]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.05, 0.4, -1.5)
 mesh = SubResource("BoxMesh_f0et4")
 
-[node name="Window1" type="MeshInstance3D" parent="Town/House3" unique_id=420386143]
+[node name="Window1" type="MeshInstance3D" parent="Town/House3" unique_id=1586890700]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.05, 0.4, 1.5)
 mesh = SubResource("BoxMesh_t6j14")
 
-[node name="Window2" type="MeshInstance3D" parent="Town/House3" unique_id=1338031508]
+[node name="Window2" type="MeshInstance3D" parent="Town/House3" unique_id=1241183455]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.05, 2.55, 0)
 mesh = SubResource("BoxMesh_f5vvl")
 
-[node name="Oven" type="MeshInstance3D" parent="Town/House3" unique_id=833973279]
+[node name="Oven" type="MeshInstance3D" parent="Town/House3" unique_id=116456486]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.55, -1.25, -1.25)
 mesh = SubResource("BoxMesh_krn5n")
 
-[node name="OvenFire" type="MeshInstance3D" parent="Town/House3" unique_id=1028562110]
+[node name="OvenFire" type="MeshInstance3D" parent="Town/House3" unique_id=142218858]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.05, -1.3499999, -1.25)
 mesh = SubResource("BoxMesh_d5epm")
 
-[node name="Chimney" type="MeshInstance3D" parent="Town/House3" unique_id=334654638]
+[node name="Chimney" type="MeshInstance3D" parent="Town/House3" unique_id=1201451710]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 3.3, -1.25)
 mesh = SubResource("BoxMesh_ba8qv")
 
-[node name="Smoke" type="CPUParticles3D" parent="Town/House3" unique_id=1896705985]
+[node name="Smoke" type="CPUParticles3D" parent="Town/House3" unique_id=867616877]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 4.2, -1.25)
 amount = 10
 lifetime = 3.2
@@ -2281,416 +2281,416 @@ initial_velocity_max = 0.8
 scale_amount_min = 0.6
 scale_amount_max = 1.4
 
-[node name="House4" type="StaticBody3D" parent="Town" unique_id=620714636]
+[node name="House4" type="StaticBody3D" parent="Town" unique_id=1375843660]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1.8, -10)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/House4" unique_id=1758370276]
+[node name="Collision" type="CollisionShape3D" parent="Town/House4" unique_id=148570970]
 shape = SubResource("BoxShape3D_fvtw0")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/House4" unique_id=668465202]
+[node name="Mesh" type="MeshInstance3D" parent="Town/House4" unique_id=1556467640]
 mesh = SubResource("BoxMesh_04awl")
 
-[node name="Roof" type="MeshInstance3D" parent="Town/House4" unique_id=1552490456]
+[node name="Roof" type="MeshInstance3D" parent="Town/House4" unique_id=671423917]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 2.75, 0)
 mesh = SubResource("PrismMesh_hn34a")
 
-[node name="GableWest0" type="MeshInstance3D" parent="Town/House4" unique_id=579652749]
+[node name="GableWest0" type="MeshInstance3D" parent="Town/House4" unique_id=1652147216]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_cpvjv")
 
-[node name="GableWest1" type="MeshInstance3D" parent="Town/House4" unique_id=473529784]
+[node name="GableWest1" type="MeshInstance3D" parent="Town/House4" unique_id=760355016]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_27v4l")
 
-[node name="GableWest2" type="MeshInstance3D" parent="Town/House4" unique_id=1926344555]
+[node name="GableWest2" type="MeshInstance3D" parent="Town/House4" unique_id=285439130]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_nyf08")
 
-[node name="GableWest3" type="MeshInstance3D" parent="Town/House4" unique_id=731041486]
+[node name="GableWest3" type="MeshInstance3D" parent="Town/House4" unique_id=1620638339]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_jr0qw")
 
-[node name="GableEast0" type="MeshInstance3D" parent="Town/House4" unique_id=1097695225]
+[node name="GableEast0" type="MeshInstance3D" parent="Town/House4" unique_id=152676051]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_bnn3n")
 
-[node name="GableEast1" type="MeshInstance3D" parent="Town/House4" unique_id=1138866243]
+[node name="GableEast1" type="MeshInstance3D" parent="Town/House4" unique_id=523967195]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_f4b6h")
 
-[node name="GableEast2" type="MeshInstance3D" parent="Town/House4" unique_id=1905114311]
+[node name="GableEast2" type="MeshInstance3D" parent="Town/House4" unique_id=284180425]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_kk57p")
 
-[node name="GableEast3" type="MeshInstance3D" parent="Town/House4" unique_id=757614645]
+[node name="GableEast3" type="MeshInstance3D" parent="Town/House4" unique_id=387082150]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_6u1rk")
 
-[node name="Door" type="MeshInstance3D" parent="Town/House4" unique_id=1491714234]
+[node name="Door" type="MeshInstance3D" parent="Town/House4" unique_id=611464971]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -3.05, -0.79999995, 0)
 mesh = SubResource("BoxMesh_l5lkd")
 
-[node name="Window0" type="MeshInstance3D" parent="Town/House4" unique_id=673733501]
+[node name="Window0" type="MeshInstance3D" parent="Town/House4" unique_id=2007579262]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.05, 0.4, -1.5)
 mesh = SubResource("BoxMesh_snjvl")
 
-[node name="Window1" type="MeshInstance3D" parent="Town/House4" unique_id=1939758282]
+[node name="Window1" type="MeshInstance3D" parent="Town/House4" unique_id=827174647]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.05, 0.4, 1.5)
 mesh = SubResource("BoxMesh_sl7lh")
 
-[node name="Window2" type="MeshInstance3D" parent="Town/House4" unique_id=1397169100]
+[node name="Window2" type="MeshInstance3D" parent="Town/House4" unique_id=535763863]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.05, 2.55, 0)
 mesh = SubResource("BoxMesh_cuq6k")
 
-[node name="House5" type="StaticBody3D" parent="Town" unique_id=1197037612]
+[node name="House5" type="StaticBody3D" parent="Town" unique_id=1761300364]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.5, 1.8, 19)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/House5" unique_id=577148855]
+[node name="Collision" type="CollisionShape3D" parent="Town/House5" unique_id=1073769232]
 shape = SubResource("BoxShape3D_44tx8")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/House5" unique_id=661585839]
+[node name="Mesh" type="MeshInstance3D" parent="Town/House5" unique_id=2006063054]
 mesh = SubResource("BoxMesh_jq7pl")
 
-[node name="Roof" type="MeshInstance3D" parent="Town/House5" unique_id=1894848644]
+[node name="Roof" type="MeshInstance3D" parent="Town/House5" unique_id=1261941205]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 2.75, 0)
 mesh = SubResource("PrismMesh_jh6xn")
 
-[node name="GableWest0" type="MeshInstance3D" parent="Town/House5" unique_id=245771229]
+[node name="GableWest0" type="MeshInstance3D" parent="Town/House5" unique_id=396741053]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_4nh1j")
 
-[node name="GableWest1" type="MeshInstance3D" parent="Town/House5" unique_id=1949736327]
+[node name="GableWest1" type="MeshInstance3D" parent="Town/House5" unique_id=1538458468]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_ejb78")
 
-[node name="GableWest2" type="MeshInstance3D" parent="Town/House5" unique_id=1167397018]
+[node name="GableWest2" type="MeshInstance3D" parent="Town/House5" unique_id=801295066]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_h805q")
 
-[node name="GableWest3" type="MeshInstance3D" parent="Town/House5" unique_id=557799710]
+[node name="GableWest3" type="MeshInstance3D" parent="Town/House5" unique_id=1671960769]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_8neae")
 
-[node name="GableEast0" type="MeshInstance3D" parent="Town/House5" unique_id=1252502293]
+[node name="GableEast0" type="MeshInstance3D" parent="Town/House5" unique_id=177489408]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_o67qk")
 
-[node name="GableEast1" type="MeshInstance3D" parent="Town/House5" unique_id=211446613]
+[node name="GableEast1" type="MeshInstance3D" parent="Town/House5" unique_id=1830189590]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_cljch")
 
-[node name="GableEast2" type="MeshInstance3D" parent="Town/House5" unique_id=825072185]
+[node name="GableEast2" type="MeshInstance3D" parent="Town/House5" unique_id=884584811]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_v0kdm")
 
-[node name="GableEast3" type="MeshInstance3D" parent="Town/House5" unique_id=1415905975]
+[node name="GableEast3" type="MeshInstance3D" parent="Town/House5" unique_id=1624940554]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_n0age")
 
-[node name="Door" type="MeshInstance3D" parent="Town/House5" unique_id=116497893]
+[node name="Door" type="MeshInstance3D" parent="Town/House5" unique_id=402917543]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 3.05, -0.79999995, 0)
 mesh = SubResource("BoxMesh_kdpkj")
 
-[node name="Window0" type="MeshInstance3D" parent="Town/House5" unique_id=2133179241]
+[node name="Window0" type="MeshInstance3D" parent="Town/House5" unique_id=785053627]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.05, 0.4, -1.5)
 mesh = SubResource("BoxMesh_exwsa")
 
-[node name="Window1" type="MeshInstance3D" parent="Town/House5" unique_id=787702393]
+[node name="Window1" type="MeshInstance3D" parent="Town/House5" unique_id=1543922762]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.05, 0.4, 1.5)
 mesh = SubResource("BoxMesh_o4ud2")
 
-[node name="Window2" type="MeshInstance3D" parent="Town/House5" unique_id=1245562631]
+[node name="Window2" type="MeshInstance3D" parent="Town/House5" unique_id=825594109]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.05, 2.55, 0)
 mesh = SubResource("BoxMesh_xn08f")
 
-[node name="House6" type="StaticBody3D" parent="Town" unique_id=895042074]
+[node name="House6" type="StaticBody3D" parent="Town" unique_id=45755702]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.5, 1.8, 19)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/House6" unique_id=1057413505]
+[node name="Collision" type="CollisionShape3D" parent="Town/House6" unique_id=1411921623]
 shape = SubResource("BoxShape3D_g3s78")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/House6" unique_id=1419054394]
+[node name="Mesh" type="MeshInstance3D" parent="Town/House6" unique_id=897187760]
 mesh = SubResource("BoxMesh_qmk3a")
 
-[node name="Roof" type="MeshInstance3D" parent="Town/House6" unique_id=797302181]
+[node name="Roof" type="MeshInstance3D" parent="Town/House6" unique_id=1545841471]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 2.75, 0)
 mesh = SubResource("PrismMesh_lkhvc")
 
-[node name="GableWest0" type="MeshInstance3D" parent="Town/House6" unique_id=762739509]
+[node name="GableWest0" type="MeshInstance3D" parent="Town/House6" unique_id=2024933494]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_htghr")
 
-[node name="GableWest1" type="MeshInstance3D" parent="Town/House6" unique_id=206864945]
+[node name="GableWest1" type="MeshInstance3D" parent="Town/House6" unique_id=103828090]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_ti6dc")
 
-[node name="GableWest2" type="MeshInstance3D" parent="Town/House6" unique_id=2103774916]
+[node name="GableWest2" type="MeshInstance3D" parent="Town/House6" unique_id=1056363551]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_es4gj")
 
-[node name="GableWest3" type="MeshInstance3D" parent="Town/House6" unique_id=1240307409]
+[node name="GableWest3" type="MeshInstance3D" parent="Town/House6" unique_id=1248645767]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_an0jw")
 
-[node name="GableEast0" type="MeshInstance3D" parent="Town/House6" unique_id=180610849]
+[node name="GableEast0" type="MeshInstance3D" parent="Town/House6" unique_id=472694116]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.05, 0)
 mesh = SubResource("BoxMesh_0wafc")
 
-[node name="GableEast1" type="MeshInstance3D" parent="Town/House6" unique_id=2057925159]
+[node name="GableEast1" type="MeshInstance3D" parent="Town/House6" unique_id=1565803712]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.55, 0)
 mesh = SubResource("BoxMesh_gm4bp")
 
-[node name="GableEast2" type="MeshInstance3D" parent="Town/House6" unique_id=1113505127]
+[node name="GableEast2" type="MeshInstance3D" parent="Town/House6" unique_id=836453205]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.05, 0)
 mesh = SubResource("BoxMesh_al0vc")
 
-[node name="GableEast3" type="MeshInstance3D" parent="Town/House6" unique_id=1170991566]
+[node name="GableEast3" type="MeshInstance3D" parent="Town/House6" unique_id=838902904]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.55, 0)
 mesh = SubResource("BoxMesh_3tb4w")
 
-[node name="Door" type="MeshInstance3D" parent="Town/House6" unique_id=2147405244]
+[node name="Door" type="MeshInstance3D" parent="Town/House6" unique_id=2030045563]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -3.05, -0.79999995, 0)
 mesh = SubResource("BoxMesh_h4hvo")
 
-[node name="Window0" type="MeshInstance3D" parent="Town/House6" unique_id=366849462]
+[node name="Window0" type="MeshInstance3D" parent="Town/House6" unique_id=152702109]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.05, 0.4, -1.5)
 mesh = SubResource("BoxMesh_pycjf")
 
-[node name="Window1" type="MeshInstance3D" parent="Town/House6" unique_id=1359267402]
+[node name="Window1" type="MeshInstance3D" parent="Town/House6" unique_id=48891690]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.05, 0.4, 1.5)
 mesh = SubResource("BoxMesh_ukjrs")
 
-[node name="Window2" type="MeshInstance3D" parent="Town/House6" unique_id=107155624]
+[node name="Window2" type="MeshInstance3D" parent="Town/House6" unique_id=1254449353]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.05, 2.55, 0)
 mesh = SubResource("BoxMesh_og3ce")
 
-[node name="Fountain" type="StaticBody3D" parent="Town" unique_id=267471587]
+[node name="Fountain" type="StaticBody3D" parent="Town" unique_id=1304908829]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 10)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/Fountain" unique_id=1902857179]
+[node name="Collision" type="CollisionShape3D" parent="Town/Fountain" unique_id=530877972]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
 shape = SubResource("CylinderShape3D_sxny6")
 
-[node name="Basin" type="MeshInstance3D" parent="Town/Fountain" unique_id=1125287771]
+[node name="Basin" type="MeshInstance3D" parent="Town/Fountain" unique_id=261659979]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
 mesh = SubResource("CylinderMesh_u3kka")
 
-[node name="Water" type="MeshInstance3D" parent="Town/Fountain" unique_id=838390100]
+[node name="Water" type="MeshInstance3D" parent="Town/Fountain" unique_id=2009678293]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.68, 0)
 mesh = SubResource("CylinderMesh_iqcqm")
 
-[node name="Spout" type="MeshInstance3D" parent="Town/Fountain" unique_id=1385780042]
+[node name="Spout" type="MeshInstance3D" parent="Town/Fountain" unique_id=1045489382]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 mesh = SubResource("CylinderMesh_mkwxk")
 
-[node name="Lantern1" type="Node3D" parent="Town" unique_id=186849558]
+[node name="Lantern1" type="Node3D" parent="Town" unique_id=1794445035]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4, 0, 16)
 
-[node name="Post" type="MeshInstance3D" parent="Town/Lantern1" unique_id=578343851]
+[node name="Post" type="MeshInstance3D" parent="Town/Lantern1" unique_id=1503875702]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("CylinderMesh_3abw5")
 
-[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern1" unique_id=1673837995]
+[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern1" unique_id=3594968]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 mesh = SubResource("SphereMesh_kr2y5")
 
-[node name="Lantern2" type="Node3D" parent="Town" unique_id=930095975]
+[node name="Lantern2" type="Node3D" parent="Town" unique_id=1253383762]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 0, 16)
 
-[node name="Post" type="MeshInstance3D" parent="Town/Lantern2" unique_id=258579574]
+[node name="Post" type="MeshInstance3D" parent="Town/Lantern2" unique_id=1474244206]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("CylinderMesh_jh0oo")
 
-[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern2" unique_id=1052859823]
+[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern2" unique_id=1216668693]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 mesh = SubResource("SphereMesh_tfger")
 
-[node name="Lantern3" type="Node3D" parent="Town" unique_id=1761210137]
+[node name="Lantern3" type="Node3D" parent="Town" unique_id=1105305781]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4, 0, 8)
 
-[node name="Post" type="MeshInstance3D" parent="Town/Lantern3" unique_id=1562302196]
+[node name="Post" type="MeshInstance3D" parent="Town/Lantern3" unique_id=1515278955]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("CylinderMesh_qfhl5")
 
-[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern3" unique_id=1692984619]
+[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern3" unique_id=1294804946]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 mesh = SubResource("SphereMesh_jspl8")
 
-[node name="Lantern4" type="Node3D" parent="Town" unique_id=386417143]
+[node name="Lantern4" type="Node3D" parent="Town" unique_id=1946210561]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 0, 8)
 
-[node name="Post" type="MeshInstance3D" parent="Town/Lantern4" unique_id=449699576]
+[node name="Post" type="MeshInstance3D" parent="Town/Lantern4" unique_id=1043528222]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("CylinderMesh_fhkq3")
 
-[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern4" unique_id=1523309848]
+[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern4" unique_id=705782625]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 mesh = SubResource("SphereMesh_yof68")
 
-[node name="Lantern5" type="Node3D" parent="Town" unique_id=1307928733]
+[node name="Lantern5" type="Node3D" parent="Town" unique_id=1950663299]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4, 0, -8)
 
-[node name="Post" type="MeshInstance3D" parent="Town/Lantern5" unique_id=212175286]
+[node name="Post" type="MeshInstance3D" parent="Town/Lantern5" unique_id=1943296226]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("CylinderMesh_f5f1t")
 
-[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern5" unique_id=1861381838]
+[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern5" unique_id=1434480809]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 mesh = SubResource("SphereMesh_vy4p0")
 
-[node name="Lantern6" type="Node3D" parent="Town" unique_id=183562128]
+[node name="Lantern6" type="Node3D" parent="Town" unique_id=509096579]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 0, -8)
 
-[node name="Post" type="MeshInstance3D" parent="Town/Lantern6" unique_id=1984412973]
+[node name="Post" type="MeshInstance3D" parent="Town/Lantern6" unique_id=233524021]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("CylinderMesh_uwlmo")
 
-[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern6" unique_id=1918599278]
+[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern6" unique_id=1580273812]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 mesh = SubResource("SphereMesh_yop53")
 
-[node name="Lantern7" type="Node3D" parent="Town" unique_id=1075738546]
+[node name="Lantern7" type="Node3D" parent="Town" unique_id=1553752144]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4, 0, -17)
 
-[node name="Post" type="MeshInstance3D" parent="Town/Lantern7" unique_id=1379301536]
+[node name="Post" type="MeshInstance3D" parent="Town/Lantern7" unique_id=1759237153]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("CylinderMesh_a5yn1")
 
-[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern7" unique_id=678876655]
+[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern7" unique_id=998404781]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 mesh = SubResource("SphereMesh_d4pxm")
 
-[node name="Lantern8" type="Node3D" parent="Town" unique_id=1520460463]
+[node name="Lantern8" type="Node3D" parent="Town" unique_id=85067759]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 0, -17)
 
-[node name="Post" type="MeshInstance3D" parent="Town/Lantern8" unique_id=1489910007]
+[node name="Post" type="MeshInstance3D" parent="Town/Lantern8" unique_id=2084342644]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("CylinderMesh_wnnoy")
 
-[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern8" unique_id=2077331880]
+[node name="Lamp" type="MeshInstance3D" parent="Town/Lantern8" unique_id=2044005819]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 mesh = SubResource("SphereMesh_18d4c")
 
-[node name="CanalWater" type="MeshInstance3D" parent="Town" unique_id=299300198]
+[node name="CanalWater" type="MeshInstance3D" parent="Town" unique_id=95472556]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
 mesh = SubResource("BoxMesh_pv8iy")
 
-[node name="CanalBankNorthWest" type="StaticBody3D" parent="Town" unique_id=427946453]
+[node name="CanalBankNorthWest" type="StaticBody3D" parent="Town" unique_id=771495781]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.85, 0.275, -2)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/CanalBankNorthWest" unique_id=1400913783]
+[node name="Collision" type="CollisionShape3D" parent="Town/CanalBankNorthWest" unique_id=1979532704]
 shape = SubResource("BoxShape3D_0e65x")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/CanalBankNorthWest" unique_id=1000984871]
+[node name="Mesh" type="MeshInstance3D" parent="Town/CanalBankNorthWest" unique_id=2139702003]
 mesh = SubResource("BoxMesh_5vd8u")
 
-[node name="CanalBankNorthEast" type="StaticBody3D" parent="Town" unique_id=1058344350]
+[node name="CanalBankNorthEast" type="StaticBody3D" parent="Town" unique_id=244801193]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.85, 0.275, -2)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/CanalBankNorthEast" unique_id=1174944648]
+[node name="Collision" type="CollisionShape3D" parent="Town/CanalBankNorthEast" unique_id=223460422]
 shape = SubResource("BoxShape3D_2mmcv")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/CanalBankNorthEast" unique_id=752860348]
+[node name="Mesh" type="MeshInstance3D" parent="Town/CanalBankNorthEast" unique_id=882236264]
 mesh = SubResource("BoxMesh_7khr4")
 
-[node name="CanalBankSouthWest" type="StaticBody3D" parent="Town" unique_id=1229769731]
+[node name="CanalBankSouthWest" type="StaticBody3D" parent="Town" unique_id=1363446372]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.85, 0.275, 2)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/CanalBankSouthWest" unique_id=245984792]
+[node name="Collision" type="CollisionShape3D" parent="Town/CanalBankSouthWest" unique_id=1367745618]
 shape = SubResource("BoxShape3D_n73k0")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/CanalBankSouthWest" unique_id=1107270751]
+[node name="Mesh" type="MeshInstance3D" parent="Town/CanalBankSouthWest" unique_id=818090843]
 mesh = SubResource("BoxMesh_vqdtn")
 
-[node name="CanalBankSouthEast" type="StaticBody3D" parent="Town" unique_id=1647206435]
+[node name="CanalBankSouthEast" type="StaticBody3D" parent="Town" unique_id=597174943]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.85, 0.275, 2)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/CanalBankSouthEast" unique_id=1235271111]
+[node name="Collision" type="CollisionShape3D" parent="Town/CanalBankSouthEast" unique_id=1372521515]
 shape = SubResource("BoxShape3D_8mgwa")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/CanalBankSouthEast" unique_id=2063822203]
+[node name="Mesh" type="MeshInstance3D" parent="Town/CanalBankSouthEast" unique_id=736603451]
 mesh = SubResource("BoxMesh_6hd5x")
 
-[node name="Bramblebridge" type="StaticBody3D" parent="Town" unique_id=2144580172]
+[node name="Bramblebridge" type="StaticBody3D" parent="Town" unique_id=678089863]
 collision_mask = 0
 
-[node name="Walkway" type="CollisionShape3D" parent="Town/Bramblebridge" unique_id=2010579694]
+[node name="Walkway" type="CollisionShape3D" parent="Town/Bramblebridge" unique_id=1524023672]
 shape = SubResource("ConvexPolygonShape3D_qi27n")
 
-[node name="Deck" type="MeshInstance3D" parent="Town/Bramblebridge" unique_id=547297546]
+[node name="Deck" type="MeshInstance3D" parent="Town/Bramblebridge" unique_id=130722749]
 material_override = SubResource("ShaderMaterial_gs3qh")
 mesh = SubResource("ArrayMesh_kpaa1")
 
-[node name="Arch" type="MeshInstance3D" parent="Town/Bramblebridge" unique_id=611042795]
+[node name="Arch" type="MeshInstance3D" parent="Town/Bramblebridge" unique_id=1977833824]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, -0.45, 0)
 mesh = SubResource("CylinderMesh_644y8")
 
-[node name="Parapets" type="StaticBody3D" parent="Town/Bramblebridge" unique_id=1572610567]
+[node name="Parapets" type="StaticBody3D" parent="Town/Bramblebridge" unique_id=1785257203]
 collision_layer = 32
 collision_mask = 0
 
-[node name="ParapetWest0" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=1460672171]
+[node name="ParapetWest0" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=1357547548]
 transform = Transform3D(1, 0, 0, 0, -0.9730803, 0.23046641, 0, -0.23046641, -0.9730803, -2.1, 0.59999996, 3.3)
 shape = SubResource("BoxShape3D_38bsy")
 
-[node name="ParapetMesh" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=2051044248]
+[node name="ParapetMesh" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=544710787]
 transform = Transform3D(1, 0, 0, 0, -0.9730803, 0.23046641, 0, -0.23046641, -0.9730803, -2.1, 0.59999996, 3.3)
 mesh = SubResource("BoxMesh_w6n3m")
 
-[node name="ParapetWest1" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=136974056]
+[node name="ParapetWest1" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=1551201955]
 transform = Transform3D(1, 0, 0, 0, -1, -8.742278e-08, 0, 8.742278e-08, -1, -2.1, 1.05, 0)
 shape = SubResource("BoxShape3D_4djpo")
 
-[node name="@MeshInstance3D@4" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=1988560308]
+[node name="@MeshInstance3D@4" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=1938940905]
 transform = Transform3D(1, 0, 0, 0, -1, -8.742278e-08, 0, 8.742278e-08, -1, -2.1, 1.05, 0)
 mesh = SubResource("BoxMesh_gi1lt")
 
-[node name="ParapetWest2" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=1475074325]
+[node name="ParapetWest2" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=1826174093]
 transform = Transform3D(1, 0, 0, 0, -0.9730803, -0.23046641, 0, 0.23046641, -0.9730803, -2.1, 0.59999996, -3.3)
 shape = SubResource("BoxShape3D_6u33f")
 
-[node name="@MeshInstance3D@5" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=1445991435]
+[node name="@MeshInstance3D@5" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=1652859477]
 transform = Transform3D(1, 0, 0, 0, -0.9730803, -0.23046641, 0, 0.23046641, -0.9730803, -2.1, 0.59999996, -3.3)
 mesh = SubResource("BoxMesh_34a58")
 
-[node name="ParapetEast0" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=1866267064]
+[node name="ParapetEast0" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=442891497]
 transform = Transform3D(1, 0, 0, 0, -0.9730803, 0.23046641, 0, -0.23046641, -0.9730803, 2.1, 0.59999996, 3.3)
 shape = SubResource("BoxShape3D_phybj")
 
-[node name="@MeshInstance3D@6" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=1862172576]
+[node name="@MeshInstance3D@6" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=1736258604]
 transform = Transform3D(1, 0, 0, 0, -0.9730803, 0.23046641, 0, -0.23046641, -0.9730803, 2.1, 0.59999996, 3.3)
 mesh = SubResource("BoxMesh_5v1oq")
 
-[node name="ParapetEast1" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=370892781]
+[node name="ParapetEast1" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=2050361610]
 transform = Transform3D(1, 0, 0, 0, -1, -8.742278e-08, 0, 8.742278e-08, -1, 2.1, 1.05, 0)
 shape = SubResource("BoxShape3D_idwk6")
 
-[node name="@MeshInstance3D@7" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=415796158]
+[node name="@MeshInstance3D@7" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=555402633]
 transform = Transform3D(1, 0, 0, 0, -1, -8.742278e-08, 0, 8.742278e-08, -1, 2.1, 1.05, 0)
 mesh = SubResource("BoxMesh_nyfpd")
 
-[node name="ParapetEast2" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=1911771568]
+[node name="ParapetEast2" type="CollisionShape3D" parent="Town/Bramblebridge/Parapets" unique_id=1080606948]
 transform = Transform3D(1, 0, 0, 0, -0.9730803, -0.23046641, 0, 0.23046641, -0.9730803, 2.1, 0.59999996, -3.3)
 shape = SubResource("BoxShape3D_4g1gn")
 
-[node name="@MeshInstance3D@8" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=50711040]
+[node name="@MeshInstance3D@8" type="MeshInstance3D" parent="Town/Bramblebridge/Parapets" unique_id=1460326990]
 transform = Transform3D(1, 0, 0, 0, -0.9730803, -0.23046641, 0, 0.23046641, -0.9730803, 2.1, 0.59999996, -3.3)
 mesh = SubResource("BoxMesh_ev65t")
 
-[node name="VillageSign" type="Label3D" parent="Town/Bramblebridge" unique_id=906249010]
+[node name="VillageSign" type="Label3D" parent="Town/Bramblebridge" unique_id=1910460124]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
 pixel_size = 0.012
 billboard = 1
@@ -2698,113 +2698,113 @@ modulate = Color(1, 0.92, 0.75, 1)
 text = "Bramblebridge"
 font_size = 64
 
-[node name="Watermill" type="StaticBody3D" parent="Town" unique_id=1637617296]
+[node name="Watermill" type="StaticBody3D" parent="Town" unique_id=2088349418]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 1.5, -5)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Town/Watermill" unique_id=1256899346]
+[node name="Collision" type="CollisionShape3D" parent="Town/Watermill" unique_id=886332357]
 shape = SubResource("BoxShape3D_4wfai")
 
-[node name="Mesh" type="MeshInstance3D" parent="Town/Watermill" unique_id=684502793]
+[node name="Mesh" type="MeshInstance3D" parent="Town/Watermill" unique_id=1927972545]
 mesh = SubResource("BoxMesh_w6x8j")
 
-[node name="Roof" type="MeshInstance3D" parent="Town/Watermill" unique_id=1508466532]
+[node name="Roof" type="MeshInstance3D" parent="Town/Watermill" unique_id=1620541189]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
 mesh = SubResource("PrismMesh_qpn6q")
 
-[node name="WaterWheel" type="Node3D" parent="Town" unique_id=291318750]
+[node name="WaterWheel" type="Node3D" parent="Town" unique_id=904995347]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 16.5, 1.1, -0.9)
 script = ExtResource("5_wbka0")
 
-[node name="PigmentRack" type="Node3D" parent="Town" unique_id=998453101]
+[node name="PigmentRack" type="Node3D" parent="Town" unique_id=308418859]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, -17.5)
 
-[node name="Post" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=144709230]
+[node name="Post" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=1378759048]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7, 1.2, 0)
 mesh = SubResource("BoxMesh_46yk8")
 
-[node name="@MeshInstance3D@9" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=746566524]
+[node name="@MeshInstance3D@9" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=857950805]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7, 1.2, 0)
 mesh = SubResource("BoxMesh_qjwvg")
 
-[node name="Bar" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=494799282]
+[node name="Bar" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=1395068677]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
 mesh = SubResource("BoxMesh_kg4j5")
 
-[node name="Bundle0" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=168092758]
+[node name="Bundle0" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=937040796]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.36, 1.85, 0)
 mesh = SubResource("BoxMesh_n68y3")
 
-[node name="Bundle1" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=692321039]
+[node name="Bundle1" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=2102841278]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.68, 1.85, 0)
 mesh = SubResource("BoxMesh_grnp4")
 
-[node name="Bundle2" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=1546872033]
+[node name="Bundle2" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=1145029582]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.85, 0)
 mesh = SubResource("BoxMesh_wfhhd")
 
-[node name="Bundle3" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=1041994315]
+[node name="Bundle3" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=1739764764]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.68, 1.85, 0)
 mesh = SubResource("BoxMesh_5eymr")
 
-[node name="Bundle4" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=1917278015]
+[node name="Bundle4" type="MeshInstance3D" parent="Town/PigmentRack" unique_id=266562719]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.36, 1.85, 0)
 mesh = SubResource("BoxMesh_cqv1q")
 
-[node name="RaidPortal" type="Node3D" parent="." unique_id=387522522]
+[node name="RaidPortal" type="Node3D" parent="." unique_id=1457916601]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -25)
 script = ExtResource("6_g1d26")
 target_instance = &"dungeon_dojo"
-title = "Raid: The Ring of the Cairnsman"
+title = "Raid: The Doverslap Expedition"
 portal_color = Color(0.55, 0.5, 1, 1)
 
-[node name="ChimeShrine" type="Node3D" parent="." unique_id=1649128063]
+[node name="ChimeShrine" type="Node3D" parent="." unique_id=1991398333]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 7.5, 0, -12)
 script = ExtResource("7_1opya")
 
-[node name="ScribeDesk" type="Node3D" parent="." unique_id=1484240148]
+[node name="ScribeDesk" type="Node3D" parent="." unique_id=1964846500]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -7.5, 0, -12)
 script = ExtResource("8_qyyj7")
 
-[node name="SpawnPoints" type="Node3D" parent="." unique_id=158573843]
+[node name="SpawnPoints" type="Node3D" parent="." unique_id=2009219152]
 
-[node name="Spawn1" type="Marker3D" parent="SpawnPoints" unique_id=1935239047]
+[node name="Spawn1" type="Marker3D" parent="SpawnPoints" unique_id=849978075]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0, 22)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn1" unique_id=1551105914]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn1" unique_id=1860343016]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_dm1ij")
 
-[node name="Spawn2" type="Marker3D" parent="SpawnPoints" unique_id=275699478]
+[node name="Spawn2" type="Marker3D" parent="SpawnPoints" unique_id=1898208274]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 22)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn2" unique_id=1272965559]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn2" unique_id=1128682745]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_38ou5")
 
-[node name="Spawn3" type="Marker3D" parent="SpawnPoints" unique_id=1519616752]
+[node name="Spawn3" type="Marker3D" parent="SpawnPoints" unique_id=2092257253]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 22)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn3" unique_id=1005657788]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn3" unique_id=101899702]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_ut2gh")
 
-[node name="Spawn4" type="Marker3D" parent="SpawnPoints" unique_id=567056936]
+[node name="Spawn4" type="Marker3D" parent="SpawnPoints" unique_id=680000239]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0, 22)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn4" unique_id=1017575594]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn4" unique_id=2064567837]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_ob6ol")
 
-[node name="Actors" type="Node3D" parent="." unique_id=1066944630]
+[node name="Actors" type="Node3D" parent="." unique_id=1715513084]
 
-[node name="Telegraphs" type="Node3D" parent="." unique_id=627809767]
+[node name="Telegraphs" type="Node3D" parent="." unique_id=668872708]
 
-[node name="Effects" type="Node3D" parent="." unique_id=1645170152]
+[node name="Effects" type="Node3D" parent="." unique_id=141609925]
 
-[node name="Screens" type="CanvasLayer" parent="." unique_id=1597753621]
+[node name="Screens" type="CanvasLayer" parent="." unique_id=815349476]
 
-[node name="Grid" type="Control" parent="Screens" unique_id=515026645]
+[node name="Grid" type="Control" parent="Screens" unique_id=1011025213]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -2812,7 +2812,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("9_rqqlb")
 
-[node name="Banner" type="Label" parent="Screens" unique_id=1738935085]
+[node name="Banner" type="Label" parent="Screens" unique_id=1456438854]
 modulate = Color(1, 1, 1, 0.85)
 anchors_preset = 5
 anchor_left = 0.5
