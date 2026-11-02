@@ -38,9 +38,18 @@ signal synergy_rewarded(applier_id: StringName, detonator_id: StringName, resona
 signal projectile_fired(attacker: ActorBase, action: CombatActionResource)
 ## A Scribe Card's invocation effect started (on every peer that showed it).
 signal card_invoked(caster: ActorBase, action: CombatActionResource, variant: int)
+## A Flow-Link Pulse rang round a hero (on every peer).
+signal flow_link_shown(actor: ActorBase)
 
 ## Phase B impact freeze (02_COMBAT_GDD.md §2); each action scales it.
 const BASE_HIT_STOP: float = 0.06
+## Sakurai hit-stop by kind of blow (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §4.2,
+## Layer 1): a Light, a Heavy or Un-Inked Flourish, an inked card, a Sign
+## detonation. LoadoutComposer sets each hero action's hit_stop_scale from these.
+const HIT_STOP_LIGHT: float = 0.05
+const HIT_STOP_HEAVY: float = 0.10
+const HIT_STOP_CARD: float = 0.14
+const HIT_STOP_DETONATION: float = 0.18
 const PRIMER_DURATION: float = 8.0
 ## Detonated by a different role, or a different Sign, than the seal's.
 const CROSS_HARMONY_MULTIPLIER: float = 1.5
@@ -90,6 +99,8 @@ var fx_pool: FxPool
 var _actors: Dictionary[StringName, ActorBase] = {}
 var _bosses: Array[ActorBase] = []
 var _primers: Dictionary[int, PrimerRecord] = {}
+## Every peer's Sign Ring and badge on each primed enemy (SignMark), by the enemy's instance id.
+var _marks: Dictionary[int, SignMark] = {}
 var _zones: Array[SanctuaryZone] = []
 var _telegraphs: Array[RaidTelegraphDecal] = []
 
@@ -115,6 +126,7 @@ func reset() -> void:
 	_actors.clear()
 	_bosses.clear()
 	_primers.clear()
+	_marks.clear()
 	_zones.clear()
 	_telegraphs.clear()
 
@@ -125,6 +137,8 @@ func register_actor(actor: ActorBase) -> void:
 	if actor.is_boss():
 		if not _bosses.has(actor):
 			_bosses.append(actor)
+		if not actor.went_down.is_connected(_on_enemy_down):
+			actor.went_down.connect(_on_enemy_down)
 	else:
 		_actors[actor.player_id] = actor
 
@@ -134,6 +148,12 @@ func unregister_actor(actor: ActorBase) -> void:
 	if _actors.has(actor.player_id) and _actors[actor.player_id] == actor:
 		_actors.erase(actor.player_id)
 	_primers.erase(actor.get_instance_id())
+	_clear_mark(actor.get_instance_id())
+
+
+## The trail's XP for a fallen foe (11 GDD §5.2): +35 a mob, +200 a boss. The host awards it.
+func _on_enemy_down(enemy: ActorBase) -> void:
+	PartyProgress.current.award_xp(PartyProgress.XP_PER_BOSS if enemy.is_raid_boss() else PartyProgress.XP_PER_MOB)
 
 
 func get_actor(player_id: StringName) -> ActorBase:
@@ -413,6 +433,50 @@ func _apply_primer(target: ActorBase, event: CombatEvent) -> void:
 	primer_applied.emit(target, event.primer)
 	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(event.primer)
 	announce(_above(target) + Vector3.UP * 0.6, "%s seal" % seal.seal_name, seal.color)
+	# Every peer sees the Sign Ring and badge, and knows who primed it (the R prompt reads that).
+	if NetworkManager.current.is_online():
+		_show_primer.rpc(target.get_path(), event.primer, event.attacker_player_id, event.attacker_role)
+	else:
+		_show_primer(target.get_path(), event.primer, event.attacker_player_id, event.attacker_role)
+
+
+## The seal on every peer (11 GDD §4.2, Layer 3): a turning Sign Ring under the
+## enemy and a badge over it. Other peers keep a copy of the record for the HUD;
+## only the enemy's owner detonates.
+@rpc("any_peer", "call_local", "reliable")
+func _show_primer(target_path: NodePath, primer: int, applier_id: StringName, applier_role: int) -> void:
+	var target: ActorBase = _actor_at(target_path)
+	if target == null:
+		return
+	var key: int = target.get_instance_id()
+	if not target.is_multiplayer_authority():
+		var record: PrimerRecord = PrimerRecord.new()
+		record.primer = primer
+		record.applier_id = applier_id
+		record.applier_role = applier_role
+		record.expires_at = game_time() + PRIMER_DURATION
+		_primers[key] = record
+	_clear_mark(key)
+	if effects_root != null and effects_root.is_inside_tree():
+		var mark: SignMark = SignMark.new()
+		mark.configure(target, primer, PRIMER_DURATION)
+		effects_root.add_child(mark)
+		_marks[key] = mark
+
+
+func _clear_mark(key: int) -> void:
+	if _marks.has(key):
+		if is_instance_valid(_marks[key]):
+			_marks[key].queue_free()
+		_marks.erase(key)
+
+
+## The Sign Ring and badge on an enemy right now, or null.
+func sign_mark_on(target: ActorBase) -> SignMark:
+	if target == null or not _marks.has(target.get_instance_id()):
+		return null
+	var mark: SignMark = _marks[target.get_instance_id()]
+	return mark if is_instance_valid(mark) and not mark.is_queued_for_deletion() else null
 
 
 ## Adds the seal's detonation to this hit if a teammate stamped it. Seals last
@@ -435,7 +499,13 @@ func _try_detonate(target: ActorBase, event: CombatEvent) -> void:
 	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(record.primer)
 	event.poise_damage += seal.bonus_poise * multiplier
 	event.damage += seal.bonus_damage * multiplier
-	event.hit_stop_scale += seal.bonus_hit_stop
+	# A detonation freezes for 180 ms (11 GDD §4.2), plus any extra its seal adds.
+	event.hit_stop_scale = maxf(event.hit_stop_scale, HIT_STOP_DETONATION / BASE_HIT_STOP) + seal.bonus_hit_stop
+	var frozen: Array[ActorBase] = [target]
+	var detonator: ActorBase = _actor_at(event.attacker_path)
+	if detonator != null and detonator.is_multiplayer_authority():
+		frozen.append(detonator)
+	request_hit_stop(frozen, event.hit_stop_scale)
 	if seal.bonus_damage > 0.0 and seal.burst_radius > 0.0:
 		_burst(target, event, seal.bonus_damage * multiplier, seal.burst_radius)
 	if seal.has_party_effect():
@@ -460,6 +530,9 @@ func _show_detonation(target_path: NodePath, primer: int, cross: bool, label: St
 	show_float_text(_above(target) + Vector3.UP * 0.9, label, seal.color, ANNOUNCE_TEXT_SIZE)
 	if seal.sound != &"":
 		AudioCues.play(seal.sound)
+	_primers.erase(target.get_instance_id())
+	_clear_mark(target.get_instance_id())
+	SignMark.shockwave(effects_root, target.global_position, seal.color)
 	synergy_detonated.emit(target, primer, cross, label)
 
 
@@ -513,6 +586,13 @@ func _pip_text(amount: float) -> String:
 	return "%.2f" % amount
 
 
+## Who stamped the seal on `target` (&"" if there's none): teammates detonate it.
+func primer_applier(target: ActorBase) -> StringName:
+	if primer_on(target) == ScribeSignResource.Sign.NONE:
+		return &""
+	return _primers[target.get_instance_id()].applier_id
+
+
 ## The Sign whose seal is on `target` right now (CardSign.NONE if none).
 func primer_on(target: ActorBase) -> int:
 	if target == null:
@@ -552,6 +632,41 @@ func _echo_heal(target: ActorBase, event: CombatEvent) -> void:
 			next = member
 	if next != null:
 		deliver(_heal_event(event.attacker_path, event.attacker_player_id, next, event.heal * event.echo))
+
+
+## The Way-Staff's flourish (11 GDD §4.1): the most hurt party member within
+## `radius` of the healer (themself included) is mended.
+func mend_most_hurt(healer: ActorBase, amount: float, radius: float) -> void:
+	var chosen: ActorBase = null
+	var lowest: float = 1.0
+	for member: ActorBase in alive_party():
+		if member.global_position.distance_to(healer.global_position) > radius:
+			continue
+		if member.stats.health_ratio() < lowest:
+			lowest = member.stats.health_ratio()
+			chosen = member
+	if chosen != null:
+		apply_heal(healer, chosen, amount)
+
+
+## A Flow-Link Pulse's white-gold ring and chime, on every peer.
+func show_flow_link(actor: ActorBase) -> void:
+	if NetworkManager.current.is_online():
+		_show_flow_link.rpc(actor.get_path())
+	else:
+		_show_flow_link(actor.get_path())
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _show_flow_link(actor_path: NodePath) -> void:
+	var actor: ActorBase = _actor_at(actor_path)
+	if actor == null:
+		return
+	if actor.visuals != null:
+		actor.visuals.flash_flow_ring()
+	if actor.is_local_player():
+		AudioCues.play(&"flow", 1.3)
+	flow_link_shown.emit(actor)
 
 
 ## Pips and stamina for one player, applied by their owner (a mechanic's reward).

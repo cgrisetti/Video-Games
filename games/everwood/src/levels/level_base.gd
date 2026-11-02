@@ -131,6 +131,7 @@ func _ready() -> void:
 	NetworkManager.current.calling_picker = pick_calling
 	NetworkManager.current.kit_picker = pick_kit
 	NetworkManager.current.kit_validator = check_kit
+	NetworkManager.current.calling_validator = check_calling
 	grid.set_world(get_world_3d())
 	_setup_level()
 	NetworkManager.current.player_registered.connect(_on_player_registered)
@@ -140,6 +141,7 @@ func _ready() -> void:
 	NetworkManager.current.status_changed.connect(_on_status_changed)
 	NetworkManager.current.kit_refused.connect(_on_kit_refused)
 	PartyProgress.current.progress_changed.connect(_on_progress_changed)
+	PartyProgress.current.trail_level_reached.connect(_on_trail_level_reached)
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	# Companions from the last instance leave (or new ones join) before anyone is seated.
 	_refresh_companions()
@@ -176,6 +178,8 @@ func _exit_tree() -> void:
 	var progress: PartyProgress = PartyProgress.current
 	if progress != null and progress.progress_changed.is_connected(_on_progress_changed):
 		progress.progress_changed.disconnect(_on_progress_changed)
+	if progress != null and progress.trail_level_reached.is_connected(_on_trail_level_reached):
+		progress.trail_level_reached.disconnect(_on_trail_level_reached)
 	if Input.joy_connection_changed.is_connected(_on_joy_connection_changed):
 		Input.joy_connection_changed.disconnect(_on_joy_connection_changed)
 
@@ -232,24 +236,29 @@ func least_used_class(roster: Dictionary[StringName, PartyMember]) -> StringName
 
 # --- Kits -----------------------------------------------------------------
 
-## The Calling a new seat takes, by id: the class's last saved one, otherwise
-## its own column (Bridge-Warden, Hedge-Runner, Lantern-Scribe). Companions take their own column.
+## The Calling a new seat takes, by id: Unsworn until the trail reaches Level
+## 10 (11 GDD §5.2); then the class's last saved one, otherwise its own column
+## (Bridge-Warden, Hedge-Runner, Lantern-Scribe). Companions take their own column.
 func pick_calling(class_id: StringName, companion: bool) -> StringName:
+	if not PartyProgress.current.callings_unlocked():
+		return Callings.UNSWORN_ID
 	if companion:
 		return Callings.id_of(Callings.default_secondary(class_id))
-	return Callings.id_of(Callings.resolve(class_id, Callings.column_of(PartyProgress.current.calling_for(class_id))))
+	var saved: int = Callings.column_of(PartyProgress.current.calling_for(class_id))
+	return Callings.id_of(saved if Callings.is_valid(saved) else Callings.default_secondary(class_id))
 
 
 ## The kit a new seat wears: the class's last saved kit while it's still
-## allowed, otherwise its starter kit. Companions always wear the starter kit.
+## allowed, otherwise the kit the trail has earned it so far (PartyProgress.trail_kit:
+## Tier 1 timber and an un-inked R and L+R at Level 1). Companions wear the trail kit.
 func pick_kit(class_id: StringName, calling: StringName, companion: bool) -> Dictionary:
-	var starter: Dictionary = ClassLoadouts.starter_kit(class_id).to_dict()
+	var earned: Dictionary = PartyProgress.current.trail_kit(class_id)
 	if companion:
-		return starter
+		return earned
 	var saved: Dictionary = PartyProgress.current.kit_for(class_id)
 	if not saved.is_empty() and check_kit_for_class(class_id, calling, saved) == "":
 		return saved
-	return starter
+	return earned
 
 
 ## Host: why a seat may not wear `kit` ("" when it may).
@@ -260,7 +269,14 @@ func check_kit(seat: PartyMember, kit: Dictionary) -> String:
 func check_kit_for_class(class_id: StringName, calling: StringName, kit: Dictionary) -> String:
 	var progress: PartyProgress = PartyProgress.current
 	return LoadoutComposer.kit_problem(ClassLoadouts.player_class(class_id, Callings.column_of(calling)), EquipmentLoadoutResource.from_dict(kit),
-		progress.grimoire_level(), progress.collection)
+		progress.grimoire_level(), progress.collection, progress.trail_level())
+
+
+## Host: why a seat may not take a Calling ("" when it may): they open at Level 10.
+func check_calling(_seat: PartyMember, calling: StringName) -> String:
+	if calling != Callings.UNSWORN_ID and not PartyProgress.current.callings_unlocked():
+		return "The Secondary Callings open at Level %d" % ArsenalCatalog.CALLING_LEVEL
+	return ""
 
 
 ## The loadout a seat's class, Calling and kit compose into.
@@ -410,6 +426,9 @@ func _on_class_cycle(device_id: int) -> void:
 ## Hold C / L3: the next Secondary Calling (Stout Heart, Swift Foot, Wise Hand).
 func _on_calling_cycle(device_id: int) -> void:
 	var seat: PartyMember = _local_seat(device_id)
+	if seat != null and not PartyProgress.current.callings_unlocked():
+		_show_notice("The Secondary Callings open at Level %d" % ArsenalCatalog.CALLING_LEVEL)
+		return
 	if seat != null:
 		var column: int = Callings.resolve(seat.class_id, Callings.column_of(seat.calling))
 		NetworkManager.current.update_local_calling(device_id, Callings.id_of(Callings.next_secondary(column)))
@@ -441,6 +460,38 @@ func _on_kit_refused(_device_id: int, reason: String) -> void:
 func _on_progress_changed() -> void:
 	for actor: ActorBase in actors.values():
 		actor.refresh_upgrades()
+
+
+## The party reached a trail level (11 GDD §6): a Wayfarer Pennant over every
+## hero, and on the host the milestone's grant auto-slots into every seat's kit
+## (and every class's saved kit), so the power is there on the very next press.
+func _on_trail_level_reached(level: int) -> void:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	for actor: ActorBase in actors.values():
+		var grant: Dictionary = catalog.get_milestone_grant_for_level(level, actor.role())
+		actor.show_milestone_pennant(level, PlayerHUD.grant_text(grant))
+	for hud: PlayerHUD in huds.values():
+		hud.show_milestone(level, PlayerHUD.grant_text(catalog.get_milestone_grant_for_level(level, hud.actor.role())))
+	if not NetworkManager.current.is_host():
+		return
+	var progress: PartyProgress = PartyProgress.current
+	for class_id: StringName in ClassLoadouts.PLAYER_CLASSES:
+		var saved: Dictionary = progress.kit_for(class_id)
+		if not saved.is_empty():
+			var saved_kit: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(saved)
+			catalog.apply_milestone_grant(saved_kit, catalog.get_milestone_grant_for_level(level, ClassLoadouts.player_class(class_id).role))
+			progress.save_kit(class_id, saved_kit.to_dict())
+	for seat: PartyMember in NetworkManager.current.ordered_members():
+		var grant: Dictionary = catalog.get_milestone_grant_for_level(level, ClassLoadouts.player_class(seat.class_id).role)
+		if grant.is_empty():
+			continue
+		var kit: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(seat.kit) if not seat.kit.is_empty() \
+			else EquipmentLoadoutResource.from_dict(progress.trail_kit(seat.class_id))
+		catalog.apply_milestone_grant(kit, grant)
+		var calling: StringName = seat.calling
+		if grant.get("unlocks_secondary_calling", false) and calling == Callings.UNSWORN_ID:
+			calling = pick_calling(seat.class_id, seat.companion)
+		NetworkManager.current.grant_seat(seat.player_id, kit.to_dict(), calling)
 
 
 func _on_telegraph_cast(_decal: RaidTelegraphDecal) -> void:

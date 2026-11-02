@@ -1,5 +1,7 @@
 ## Committed to an action. During wind-up (Phase A) the actor may turn up to
-## 45 degrees toward its target; wind-up and active frames carry the lunge.
+## 45 degrees toward its target; wind-up and active frames carry the lunge (a
+## hero's posture step, ActorBase.STEP_*). Holding guard in a Light's
+## Flow-Link window drops the swing into the guard (11 GDD §3.1).
 class_name AttackState
 extends ActorState
 
@@ -20,6 +22,9 @@ func enter(_from_state: StringName) -> void:
 func physics_update(dt: float) -> void:
 	var queue: ActionQueueComponent = actor.action_queue
 	var action: CombatActionResource = queue.current_action
+	if actor.wants_guard and actor.loadout.guard_on_trigger_l and queue.cancel_into_guard():
+		machine.transition(&"guard")
+		return
 	if action == null:
 		actor.steer_horizontal(Vector3.ZERO, actor.loadout.stats.move_speed, dt)
 		return

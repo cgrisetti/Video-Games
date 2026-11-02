@@ -54,6 +54,8 @@ var calling_picker: Callable
 var kit_picker: Callable
 ## Why a seat may not wear a kit, or "": (seat: PartyMember, kit: Dictionary) -> String.
 var kit_validator: Callable
+## Why a seat may not take a Calling, or "": (seat: PartyMember, calling: StringName) -> String.
+var calling_validator: Callable
 
 ## Ask for this class to let the host pick one (see class_picker).
 const ANY_CLASS: StringName = &""
@@ -326,6 +328,13 @@ func _server_set_calling(peer_id: int, device_id: int, calling: StringName) -> b
 	if not roster.has(player_id) or calling == &"":
 		return false
 	var seat: PartyMember = roster[player_id]
+	var refusal: String = calling_validator.call(seat, calling) if calling_validator.is_valid() else ""
+	if refusal != "":
+		if peer_id == local_peer_id():
+			kit_refused.emit(device_id, refusal)
+		elif is_online() and has_peer(peer_id):
+			_kit_refused.rpc_id(peer_id, device_id, refusal)
+		return false
 	seat.calling = calling
 	# Gear the new Calling can't use comes off: the class's saved kit or its starter kit goes on.
 	if kit_validator.is_valid() and kit_validator.call(seat, seat.kit) != "":
@@ -333,6 +342,20 @@ func _server_set_calling(peer_id: int, device_id: int, calling: StringName) -> b
 	player_updated.emit(seat)
 	_broadcast_roster()
 	return true
+
+
+## Host only: a trail milestone (11 GDD §6) hands a seat its new kit and, at
+## Level 10, its Calling. The host built both, so they go on unchecked.
+func grant_seat(player_id: StringName, kit: Dictionary, calling: StringName) -> void:
+	if not is_host() or not roster.has(player_id):
+		return
+	var seat: PartyMember = roster[player_id]
+	if seat.kit == kit and seat.calling == calling:
+		return
+	seat.kit = kit
+	seat.calling = calling
+	player_updated.emit(seat)
+	_broadcast_roster()
 
 
 @rpc("any_peer", "call_remote", "reliable")

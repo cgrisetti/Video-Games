@@ -15,6 +15,11 @@
 ## Drop a model at res://assets/models/<class_id>.glb (say, a CC0 KayKit or
 ## Quaternius character named shield_tank.glb) and it's used instead of the
 ## procedural body.
+##
+## It also shows what a hero's power just did (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md
+## §4.2, §6): R and L+R swell the weapon to 2x (2.4x) in its Sign's colour, or
+## warm ivory-gold un-inked; a Flow-Link Pulse rings the waist white-gold; and
+## a new trail level unfurls a Saffron-Gold Wayfarer Pennant overhead.
 class_name ActorVisuals
 extends Node3D
 
@@ -39,6 +44,28 @@ const CAPE_SHARPNESS: float = 8.0
 const LANTERN_SWAY: float = 0.25
 ## The tabard flaps hanging below the belt, front and back.
 const TABARD_SIZE: Vector3 = Vector3(0.3, 0.4, 0.03)
+## Martial Imbuement's silhouette (11 GDD §4.2, Layer 2): R swells the weapon to
+## 2x, L+R to 2.4x, over the 450 ms the skill channels, rimmed in its Sign's
+## colour (or warm ivory-gold un-inked). It swells in the first 15% and
+## settles in the last 20%.
+const CHANNEL_TIME: float = 0.45
+const CHANNEL_SCALE: float = 2.0
+const ULT_CHANNEL_SCALE: float = 2.4
+const CHANNEL_RISE: float = 0.15
+const CHANNEL_FALL: float = 0.8
+const CHANNEL_GLOW: float = 1.6
+const UNINKED_CHANNEL_COLOR: Color = Color(1.0, 0.9, 0.62)
+## A bow swells from its grip in the left hand.
+const BOW_GRIP: Vector3 = Vector3(-0.5, 1.15, -0.46)
+## The Flow-Link Pulse ring at the waist.
+const FLOW_RING_TIME: float = 0.35
+const FLOW_RING_RADIUS: float = 1.1
+const FLOW_RING_HEIGHT: float = 0.95
+## The Wayfarer Pennant (11 GDD §6): Saffron-Gold, 2.4 m above the head, 3 s.
+const PENNANT_TIME: float = 3.0
+const PENNANT_HEIGHT: float = 2.4
+const PENNANT_UNFURL: float = 0.4
+const PENNANT_COLOR: Color = Color(0.98, 0.72, 0.18)
 
 var actor: ActorBase
 ## Every cel material on the puppet, lit together by a hit flash.
@@ -49,6 +76,15 @@ var model: Node3D
 var _cape_pivot: Node3D
 var _lantern: Node3D
 var _age: float = 0.0
+## The weapon in hand (ActorBase's prop) and where it swells from.
+var _weapon: Node3D
+var _weapon_pivot: Vector3 = Vector3.ZERO
+var _weapon_materials: Array[Material] = []
+var _channel_action: StringName = &""
+var _channel_left: float = 0.0
+var _channel_peak: float = 1.0
+var _channel_color: Color = UNINKED_CHANNEL_COLOR
+var _pennant: Node3D
 
 
 static func model_path(id: StringName) -> String:
@@ -93,7 +129,7 @@ func rebuild() -> void:
 	var row: int = Callings.fellowship_row(loadout.class_id)
 	# Trim and tabard in the Secondary Calling's colour (its SecondaryCallingResource).
 	var calling: SecondaryCallingResource = Callings.secondary(Callings.resolve(loadout.class_id, loadout.calling))
-	var trim: Color = calling.trim_color if calling != null else Color.WHITE
+	var trim: Color = calling.trim_color if calling != null else Callings.UNSWORN_TRIM
 	var body: Color = loadout.body_color
 	var weight: EquipmentItemResource.ArmorWeight = loadout.armor.armor_weight if loadout.armor != null else EquipmentItemResource.ArmorWeight.MEDIUM
 	_build_body(body)
@@ -102,6 +138,115 @@ func rebuild() -> void:
 	_build_head(row, body, trim)
 	_build_cape(row, body, trim)
 	_build_off_hand(row, loadout, trim)
+
+
+## The weapon this hero holds (built by ActorBase from its item), so R and L+R can swell it.
+func set_weapon(weapon_root: Node3D, item: EquipmentItemResource) -> void:
+	_weapon = weapon_root
+	_weapon_pivot = BOW_GRIP if item.weapon_type == EquipmentItemResource.WeaponType.BOW else item.trail_base
+	_weapon_materials.clear()
+	_channel_left = 0.0
+	for mesh: Node in weapon_root.find_children("*", "MeshInstance3D", true, false):
+		var primitive: PrimitiveMesh = (mesh as MeshInstance3D).mesh as PrimitiveMesh
+		if primitive != null and primitive.material != null:
+			_weapon_materials.append(primitive.material)
+
+
+## How big the weapon is drawn right now (2.0 at the height of an R channel).
+func weapon_scale() -> float:
+	return _weapon.scale.x if is_instance_valid(_weapon) else 1.0
+
+
+## Starts the swell when an R or L+R begins, and plays it out (every peer calls
+## this each frame with the action the hero is doing).
+func update_channel(delta: float, action: CombatActionResource) -> void:
+	var action_id: StringName = action.action_id if action != null else &""
+	if action_id != _channel_action:
+		_channel_action = action_id
+		if action != null and action.is_skill():
+			_channel_left = CHANNEL_TIME
+			_channel_peak = ULT_CHANNEL_SCALE if action.command == CombatActionResource.Command.TRIGGER_BOTH_ULT else CHANNEL_SCALE
+			_channel_color = UNINKED_CHANNEL_COLOR if action.scribe_sign == ScribeSignResource.Sign.NONE \
+				else ArsenalCatalog.current.sign_seal(action.scribe_sign).color
+	if not is_instance_valid(_weapon):
+		return
+	var swell: float = 0.0
+	if _channel_left > 0.0:
+		_channel_left = maxf(0.0, _channel_left - delta)
+		var t: float = 1.0 - _channel_left / CHANNEL_TIME
+		swell = smoothstep(0.0, CHANNEL_RISE, t) * (1.0 - smoothstep(CHANNEL_FALL, 1.0, t))
+	var size: float = lerpf(1.0, _channel_peak, swell)
+	_weapon.scale = Vector3.ONE * size
+	# Swell about the grip, wherever the swing has turned the weapon.
+	_weapon.position = Basis.from_euler(_weapon.rotation) * (_weapon_pivot * (1.0 - size))
+	var glow: Color = _channel_color * CHANNEL_GLOW * swell
+	for material: Material in _weapon_materials:
+		StorybookMaterial.set_glow(material, glow)
+		var cel: ShaderMaterial = material as ShaderMaterial
+		if cel != null:
+			cel.set_shader_parameter(&"rim_color", _channel_color if swell > 0.0 else StorybookMaterial.WARM_RIM)
+			cel.set_shader_parameter(&"rim_strength", lerpf(PropBuilder.PROP_RIM, 2.5, swell))
+
+
+## The Flow-Link Pulse: a crisp white-gold ring that bursts out from the waist.
+func flash_flow_ring() -> void:
+	var ring: MeshInstance3D = MeshInstance3D.new()
+	ring.name = "FlowLinkRing"
+	var torus: TorusMesh = TorusMesh.new()
+	torus.inner_radius = 0.82
+	torus.outer_radius = 1.0
+	torus.rings = 24
+	torus.material = StorybookMaterial.glowing(ActorBase.FLOW_LINK_COLOR, 3.0)
+	ring.mesh = torus
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ring.position = Vector3(0.0, FLOW_RING_HEIGHT, 0.0)
+	ring.scale = Vector3.ONE * 0.4
+	add_child(ring)
+	var tween: Tween = ring.create_tween()
+	tween.tween_property(ring, "scale", Vector3(FLOW_RING_RADIUS, 0.6, FLOW_RING_RADIUS), FLOW_RING_TIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_callback(ring.queue_free)
+
+
+## A Saffron-Gold Wayfarer Pennant unfurls over the hero for 3 s: the new
+## level, and what it brought ("Hedgerow Iron Falchion").
+func show_milestone_pennant(level: int, granted: String) -> void:
+	if is_instance_valid(_pennant):
+		_pennant.queue_free()
+	_pennant = Node3D.new()
+	_pennant.name = "WayfarerPennant"
+	_pennant.position = Vector3(0.0, PENNANT_HEIGHT, 0.0)
+	# On the hero itself, not the puppet, so it stays upright while they lean into swings.
+	actor.add_child(_pennant)
+	var pole: MeshInstance3D = ShapeKit.cylinder("Pole", 0.025, 0.025, 1.1, Vector3(-0.55, 0.0, 0.0), _cel(OAK_COLOR, PENNANT_COLOR))
+	_pennant.add_child(pole)
+	var cloth: Node3D = Node3D.new()
+	cloth.name = "Cloth"
+	cloth.position = Vector3(-0.55, 0.45, 0.0)
+	_pennant.add_child(cloth)
+	cloth.add_child(ShapeKit.box("Banner", Vector3(1.1, 0.42, 0.02), Vector3(0.55, -0.21, 0.0), StorybookMaterial.glowing(PENNANT_COLOR, 0.6)))
+	cloth.add_child(ShapeKit.box("Hem", Vector3(1.1, 0.05, 0.03), Vector3(0.55, -0.44, 0.0), StorybookMaterial.glowing(PENNANT_COLOR.lightened(0.5), 1.2)))
+	var title: Label3D = Label3D.new()
+	title.name = "Title"
+	title.text = "LEVEL %d" % level if granted == "" else "LEVEL %d\n%s" % [level, granted]
+	title.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	title.no_depth_test = true
+	title.font_size = 44
+	title.outline_size = 12
+	title.pixel_size = 0.006
+	title.modulate = PENNANT_COLOR.lightened(0.35)
+	title.position = Vector3(0.0, 0.75, 0.0)
+	_pennant.add_child(title)
+	cloth.scale = Vector3(0.05, 1.0, 1.0)
+	var tween: Tween = _pennant.create_tween()
+	tween.tween_property(cloth, "scale", Vector3.ONE, PENNANT_UNFURL).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_interval(PENNANT_TIME - PENNANT_UNFURL * 2.0)
+	tween.tween_property(cloth, "scale", Vector3(0.05, 1.0, 1.0), PENNANT_UNFURL)
+	tween.tween_callback(_pennant.queue_free)
+
+
+## The pennant over the hero right now, or null.
+func milestone_pennant() -> Node3D:
+	return _pennant if is_instance_valid(_pennant) and not _pennant.is_queued_for_deletion() else null
 
 
 ## Lights the whole puppet (a hit flash or flow glow); black turns it off.

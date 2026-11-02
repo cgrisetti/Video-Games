@@ -5,6 +5,10 @@
 ## in user://everwood_progress.cfg. Everything is ids and numbers, so the file
 ## (or a JSON or SQLite store later) never holds game data, only references.
 ##
+## The party's trail level and XP live here too (the Trail of the Four Signs,
+## 11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §5.2): mobs, co-op gates and bosses pay
+## XP, and each milestone level grants every Fellowship new gear and cards.
+##
 ## The whole party shares one pouch and one set of upgrades, like a family
 ## purse: every player's base stats grow together. The host owns it: other
 ## peers are shown the host's copy while they're connected and never save it,
@@ -15,6 +19,8 @@ extends Node
 signal progress_changed
 ## A card copy joined the binder (on the host, which awards cards).
 signal card_awarded(copy_key: StringName)
+## The party reached a new trail level, on every peer (the host then grants its milestone).
+signal trail_level_reached(level: int)
 
 const SAVE_PATH: String = "user://everwood_progress.cfg"
 ## Command line: --save=PATH plays from another save file (tests and demos use
@@ -29,6 +35,14 @@ const UPGRADE_STEP: float = 0.1
 const MAX_UPGRADE_LEVEL: int = 5
 ## Level n costs this many Chimes times n: 4, 8, 12, 16, 20.
 const UPGRADE_BASE_COST: int = 4
+## XP the trail pays the party (11 GDD §5.2).
+const XP_PER_MOB: int = 35
+const XP_PER_GATE: int = 80
+const XP_PER_BOSS: int = 200
+## Total XP for each trail level, Level 1 first. One expedition (7 mobs, the
+## Gorge gate and the Cairnsman: 525 XP) reaches Level 5 at the Gatehouse; the
+## second reaches Level 10 at the Cairnsman.
+const LEVEL_XP: Array[int] = [0, 70, 105, 230, 320, 560, 700, 800, 850, 1050]
 
 ## The live autoload node (see NetworkManager.current for why).
 static var current: PartyProgress
@@ -40,6 +54,11 @@ var levels: Dictionary[StringName, int] = {}
 var collection: Dictionary[StringName, int] = {}
 ## Cairnsman wins; each one raises the Grimoire a level (LoadoutComposer).
 var victories: int = 0
+## The party's trail XP (trail_level reads the level from it).
+var xp: int = 0
+## Tests only (apply_full_endgame_kit_for_testing): new seats wear the classic
+## full kits. Survives load_save, so a test that reloads its save keeps it.
+var endgame_kits_for_testing: bool = false
 ## Class id -> the kit (EquipmentLoadoutResource.to_dict) its players last wore.
 var kits: Dictionary[StringName, Dictionary] = {}
 ## Class id -> the Secondary Calling id its players last chose (&"swift_foot").
@@ -173,7 +192,7 @@ func calling_for(class_id: StringName) -> StringName:
 
 ## Host only: remembers a class's Calling for its next seat (and next session).
 func save_calling(class_id: StringName, calling: StringName) -> void:
-	if not NetworkManager.current.is_host() or callings.get(class_id, &"") == calling:
+	if not NetworkManager.current.is_host() or callings.get(class_id, &"") == calling or calling == Callings.UNSWORN_ID:
 		return
 	callings[class_id] = calling
 	_commit()
@@ -193,6 +212,65 @@ func award_card(copy_key: StringName) -> void:
 		return
 	collection[copy_key] = copies_of(copy_key) + 1
 	card_awarded.emit(copy_key)
+	_commit()
+
+
+# --- The trail (11 GDD §5) -------------------------------------------------
+
+## The party's trail level, 1 to 10.
+func trail_level() -> int:
+	return level_for_xp(xp)
+
+
+static func level_for_xp(amount: int) -> int:
+	var level: int = 1
+	for index: int in LEVEL_XP.size():
+		if amount >= LEVEL_XP[index]:
+			level = index + 1
+	return level
+
+
+## XP still to earn before the next level (0 at Level 10).
+func xp_to_next_level() -> int:
+	var level: int = trail_level()
+	return 0 if level >= LEVEL_XP.size() else LEVEL_XP[level] - xp
+
+
+## The Secondary Callings open at Level 10; until then every hero is Unsworn.
+func callings_unlocked() -> bool:
+	return trail_level() >= ArsenalCatalog.CALLING_LEVEL
+
+
+## Host only: trail XP for the party (a mob, a gate, a boss). Each level it
+## crosses is announced, so the level can grant its milestone.
+func award_xp(amount: int) -> void:
+	if not NetworkManager.current.is_host() or amount <= 0:
+		return
+	var before: int = trail_level()
+	var gained: int = mini(xp + amount, LEVEL_XP.back())
+	if gained == xp:
+		return
+	xp = gained
+	_commit()
+	for level: int in range(before + 1, trail_level() + 1):
+		trail_level_reached.emit(level)
+
+
+## The kit a fresh seat of this class wears at the party's trail level: the
+## Level 1 kit with every milestone so far auto-slotted (ArsenalCatalog), or
+## the classic full kit while apply_full_endgame_kit_for_testing is on.
+func trail_kit(class_id: StringName) -> Dictionary:
+	if endgame_kits_for_testing:
+		return ClassLoadouts.starter_kit(class_id).to_dict()
+	return ArsenalCatalog.current.trail_kit_for_role(ClassLoadouts.player_class(class_id).role, trail_level()).to_dict()
+
+
+## Test helper (tools/smoke_test.gd): the party at Level 10, every Calling open,
+## and every class in its classic full kit, as before the trail, so the older
+## checks measure what they always measured. Never called by the game.
+func apply_full_endgame_kit_for_testing() -> void:
+	endgame_kits_for_testing = true
+	xp = LEVEL_XP.back()
 	_commit()
 
 
@@ -218,6 +296,7 @@ func load_save() -> void:
 	_showing_host = false
 	chimes = 0
 	victories = 0
+	xp = 0
 	levels.clear()
 	collection.clear()
 	kits.clear()
@@ -227,6 +306,10 @@ func load_save() -> void:
 		# Saves from before the Chimes were called Dojo Shards keep their pouch.
 		chimes = maxi(0, int(file.get_value("party", "chimes", file.get_value("party", "shards", 0))))
 		victories = maxi(0, int(file.get_value("party", "victories", 0)))
+		# A save from before the trail: each Cairnsman win stands for an
+		# expedition (Level 5 after one, Level 10 after two), so no gear is lost.
+		var migrated: int = [0, LEVEL_XP[4], LEVEL_XP.back()][mini(victories, 2)]
+		xp = clampi(int(file.get_value("trail", "xp", migrated)), 0, LEVEL_XP.back())
 		for id: StringName in UPGRADES:
 			levels[id] = clampi(int(file.get_value("upgrades", String(id), 0)), 0, MAX_UPGRADE_LEVEL)
 		_read_collection(file.get_value("cards", "collection", {}) as Dictionary)
@@ -245,6 +328,7 @@ func save() -> Error:
 	var file: ConfigFile = ConfigFile.new()
 	file.set_value("party", "chimes", chimes)
 	file.set_value("party", "victories", victories)
+	file.set_value("trail", "xp", xp)
 	for id: StringName in UPGRADES:
 		file.set_value("upgrades", String(id), level_of(id))
 	file.set_value("cards", "collection", _plain_collection())
@@ -291,7 +375,7 @@ func _snapshot() -> Dictionary:
 	var bought: Dictionary = {}
 	for id: StringName in UPGRADES:
 		bought[String(id)] = level_of(id)
-	return {"chimes": chimes, "levels": bought, "victories": victories, "collection": _plain_collection()}
+	return {"chimes": chimes, "levels": bought, "victories": victories, "xp": xp, "collection": _plain_collection()}
 
 
 # --- Network --------------------------------------------------------------
@@ -303,14 +387,19 @@ func _on_peer_connected(peer_id: int) -> void:
 
 @rpc("authority", "call_remote", "reliable")
 func _receive_progress(data: Dictionary) -> void:
+	# Levels crossed while we watch are celebrated; joining a party that's further along isn't.
+	var level_before: int = trail_level() if _showing_host else LEVEL_XP.size()
 	_showing_host = true
 	chimes = int(data.get("chimes", 0))
 	var bought: Dictionary = data.get("levels", {})
 	for id: StringName in UPGRADES:
 		levels[id] = clampi(int(bought.get(String(id), 0)), 0, MAX_UPGRADE_LEVEL)
 	victories = maxi(0, int(data.get("victories", 0)))
+	xp = clampi(int(data.get("xp", 0)), 0, LEVEL_XP.back())
 	_read_collection(data.get("collection", {}) as Dictionary)
 	progress_changed.emit()
+	for level: int in range(level_before + 1, trail_level() + 1):
+		trail_level_reached.emit(level)
 
 
 func _on_status_changed(_text: String) -> void:

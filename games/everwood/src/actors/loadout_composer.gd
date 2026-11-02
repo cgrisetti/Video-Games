@@ -9,6 +9,10 @@
 ##                weapons swing it with a ribbon trail; ranged weapons fire it
 ##                as a rune projectile out to the weapon's card range
 ##   under-card → one verb changes that action (infusion, surge or echo)
+##   empty R / L+R → the weapon's Un-Inked Martial Flourish (11 GDD §4.1)
+## Every hero strike also gets its posture's step (ActorBase.STEP_*) and its
+## kind of blow's hit-stop (CombatDirector.HIT_STOP_*), and R and L+R strikes
+## detonate a teammate's seal (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §3-4).
 ## Deterministic: the same class and kit give the same actions with the same
 ## ids on every peer, which is what lets the network name actions by id.
 ##
@@ -34,6 +38,20 @@ const GUARD_LABEL: String = "hold: Guard"
 const SLOT_KEYS: Array[String] = ["forward", "back", "signature", "ultimate"]
 ## However a Calling and armor combine, stamina always comes back at least this fast.
 const MIN_STAMINA_REGEN: float = 6.0
+## Un-Inked Martial Flourishes (11 GDD §4.1), by WeaponType (Falchion, Broad-Axe,
+## Way-Staff, Longbow): damage as a multiple of the weapon's Heavy, poise (times
+## the tier's multiplier) and the step it takes.
+const FLOURISH_DAMAGE: Array[float] = [1.6, 1.8, 1.4, 1.7]
+const FLOURISH_POISE: Array[float] = [15.0, 28.0, 10.0, 20.0]
+const FLOURISH_STEP: Array[float] = [1.8, 1.5, 0.0, -1.5]
+## L+R's flourish hits this much harder, with twice the poise, all around the hero
+## after a heroic surge forward.
+const ULT_FLOURISH_MULTIPLIER: float = 1.75
+const ULT_FLOURISH_STEP: float = 2.0
+## The Way-Staff's flourishes mend the most hurt ally this close.
+const STAFF_FLOURISH_HEAL: float = 10.0
+const STAFF_ULT_FLOURISH_HEAL: float = 25.0
+const STAFF_FLOURISH_HEAL_RADIUS: float = 8.0
 
 const Fx = CombatActionResource.Effect
 
@@ -66,7 +84,8 @@ static func compose(player_class: PlayerClassResource, requested: EquipmentLoado
 	heavy.detonates = true
 	var cards: Array[CombatActionResource] = []
 	for slot: int in EquipmentLoadoutResource.SLOT_COUNT:
-		var action: CombatActionResource = _card_action(catalog.card(kit.lead_ids[slot]), slot, weapon)
+		var lead: ScribeCardResource = catalog.card(kit.lead_ids[slot])
+		var action: CombatActionResource = _flourish_action(weapon, slot) if lead == null else _card_action(lead, slot, weapon)
 		var under: ScribeCardResource = catalog.card(kit.under_ids[slot])
 		if under != null and under.is_under():
 			apply_under(action, under)
@@ -74,6 +93,7 @@ static func compose(player_class: PlayerClassResource, requested: EquipmentLoado
 	_link_flows(lights, heavy, cards)
 	for action: CombatActionResource in lights + [heavy] + cards:
 		_apply_calling(action, player_class)
+		_apply_kinetics(action)
 
 	loadout.openers.append(lights[0])
 	loadout.openers.append(heavy)
@@ -101,13 +121,20 @@ static func sanitized(player_class: PlayerClassResource, requested: EquipmentLoa
 	if weapon == null or not weapon.is_weapon() or not player_class.allows(weapon):
 		kit.weapon_id = starter.weapon_id
 	for slot: int in EquipmentLoadoutResource.SLOT_COUNT:
-		if not fits_slot(player_class, catalog.card(kit.lead_ids[slot]), slot):
+		if kit.lead_ids[slot] == &"" and can_stay_uninked(slot):
+			kit.lead_variants[slot] = ScribeCardResource.CardVariant.STANDARD
+		elif not fits_slot(player_class, catalog.card(kit.lead_ids[slot]), slot):
 			kit.lead_ids[slot] = starter.lead_ids[slot]
 			kit.lead_variants[slot] = ScribeCardResource.CardVariant.STANDARD
 		var under: ScribeCardResource = catalog.card(kit.under_ids[slot])
 		if under == null or not under.is_under():
 			kit.under_ids[slot] = &""
 	return kit
+
+
+## R and L+R may be left empty: they fire the weapon's Un-Inked Martial Flourish.
+static func can_stay_uninked(slot: int) -> bool:
+	return slot == ScribeCardResource.GrimoireSlot.SIGNATURE or slot == ScribeCardResource.GrimoireSlot.ULTIMATE
 
 
 ## Whether a lead card can sit in a slot for this class.
@@ -175,23 +202,37 @@ static func owns(copy_key: StringName, uses: int, collection: Dictionary[StringN
 	return collection.get(copy_key, 0) >= uses
 
 
-## Why this kit can't be equipped at this Grimoire level, or "" when it can.
+## Whether an Under-Card link is open: none before the trail reaches
+## UNDER_TUCK_LEVEL; then the one beneath R, plus one per Grimoire level after the first.
+static func under_link_open(slot: int, level: int, trail_level: int = ArsenalCatalog.MAX_TRAIL_LEVEL) -> bool:
+	if trail_level < ArsenalCatalog.UNDER_TUCK_LEVEL:
+		return false
+	return slot < under_slots(level) or slot == ScribeCardResource.GrimoireSlot.SIGNATURE
+
+
+## Why this kit can't be equipped at this Grimoire level (and party trail
+## level, 11 GDD §5), or "" when it can.
 static func kit_problem(player_class: PlayerClassResource, kit: EquipmentLoadoutResource, level: int,
-		collection: Dictionary[StringName, int]) -> String:
+		collection: Dictionary[StringName, int], trail_level: int = ArsenalCatalog.MAX_TRAIL_LEVEL) -> String:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
 	for item_id: StringName in [kit.armor_id, kit.weapon_id]:
 		var item: EquipmentItemResource = catalog.item(item_id)
 		if item != null and not player_class.allows(item):
 			var unlock: int = Callings.unlocked_by(item)
 			return "%s needs a %s Calling" % [item.display_name, Callings.secondary_label(unlock)] if unlock >= 0 else "That doesn't fit this class"
+		if item != null and item.required_level > trail_level:
+			return "%s opens at Level %d" % [item.display_name, item.required_level]
 	if not sanitized(player_class, kit).same_as(kit):
 		return "That doesn't fit this class"
 	var uses: Dictionary[StringName, int] = {}
 	for slot: int in EquipmentLoadoutResource.SLOT_COUNT:
-		var lead_key: StringName = kit.lead_copy_key(slot)
-		uses[lead_key] = uses.get(lead_key, 0) + 1
+		if kit.lead_ids[slot] != &"":
+			var lead_key: StringName = kit.lead_copy_key(slot)
+			uses[lead_key] = uses.get(lead_key, 0) + 1
 		if kit.under_ids[slot] != &"":
-			if slot >= under_slots(level):
+			if trail_level < ArsenalCatalog.UNDER_TUCK_LEVEL:
+				return "Under-Card links open at Level %d" % ArsenalCatalog.UNDER_TUCK_LEVEL
+			if not under_link_open(slot, level, trail_level):
 				return "Under-Card link %d opens at Grimoire Lv %d" % [slot + 1, slot + 2]
 			uses[kit.under_ids[slot]] = uses.get(kit.under_ids[slot], 0) + 1
 	for key: StringName in uses:
@@ -251,6 +292,86 @@ static func _card_action(lead: ScribeCardResource, slot: int, weapon: EquipmentI
 	return action
 
 
+## Martial Imbuement's un-inked half (11 GDD §4.1): R (1 pip) or L+R (3 pips)
+## with no card slotted swings the weapon itself, harder than a Heavy and with
+## no seal. The Falchion lunges through an X-slash, the Broad-Axe leaps into a
+## slam, the Longbow vaults back and looses a piercing bodkin, and the Way-Staff
+## sweeps a warm gust that mends the most hurt ally near you. L+R surges
+## forward first and lands it all around you.
+static func _flourish_action(weapon: EquipmentItemResource, slot: int) -> CombatActionResource:
+	var ult: bool = slot == ScribeCardResource.GrimoireSlot.ULTIMATE
+	var kind: int = weapon.weapon_type
+	var action: CombatActionResource = CombatActionResource.new()
+	action.action_id = StringName("uninked/%s/%s" % [SLOT_KEYS[slot], weapon.item_id])
+	action.display_name = weapon.uninked_ult_name if ult else weapon.uninked_r_skill_name
+	action.command = ScribeCardResource.SLOT_COMMANDS[slot] as CombatActionResource.Command
+	action.effect = Fx.STRIKE
+	action.grimoire_slot = slot
+	action.uninked = true
+	action.stamina_cost = 0.0
+	action.resonance_cost = 3 if ult else 1
+	action.resonance_gain = 0.0
+	action.windup_time = 0.3 if ult else 0.2
+	action.active_time = 0.28 if ult else 0.2
+	action.recovery_time = 0.32 if ult else 0.24
+	action.damage = weapon.heavy.damage * FLOURISH_DAMAGE[kind] * (ULT_FLOURISH_MULTIPLIER if ult else 1.0)
+	action.poise_damage = FLOURISH_POISE[kind] * weapon.damage_multiplier * (2.0 if ult else 1.0)
+	action.lunge_distance = ULT_FLOURISH_STEP if ult else FLOURISH_STEP[kind]
+	action.reach = 0.0 if ult else 1.8
+	action.hit_radius = 3.2 if ult else 1.8
+	match kind:
+		EquipmentItemResource.WeaponType.HEAVY_AXE:
+			action.reach = 0.0 if ult else 1.4
+			action.hit_radius = 3.5 if ult else 2.2
+		EquipmentItemResource.WeaponType.STAFF:
+			action.reach = 0.0 if ult else 1.5
+			action.hit_radius = 4.0 if ult else 3.0
+			action.heal_amount = STAFF_ULT_FLOURISH_HEAL if ult else STAFF_FLOURISH_HEAL
+			action.effect_radius = STAFF_FLOURISH_HEAL_RADIUS
+		EquipmentItemResource.WeaponType.BOW:
+			action.delivery = CombatActionResource.Delivery.PROJECTILE
+			action.projectile_range = weapon.card_range
+			action.projectile_speed = weapon.projectile_speed
+			action.projectile_radius = weapon.projectile_radius * (2.0 if ult else 1.4)
+			action.projectile_look = weapon.item_id
+			action.pierces = true
+			if ult:
+				action.lunge_distance = 0.0
+	action.trail = not action.is_projectile()
+	return action
+
+
+## The kinetic loop and the hit-stop ladder (11 GDD §3.1, §4.2) on a hero strike:
+## a melee swing with no lunge of its own steps along its posture (projectiles
+## plant, except Back+Heavy's back-hop, which every strike takes); R and L+R
+## detonate a teammate's seal; and the freeze on a hit is 50 ms for a Light,
+## 100 for a Heavy or flourish, 140 for an inked card.
+static func _apply_kinetics(action: CombatActionResource) -> void:
+	if action.effect != Fx.STRIKE:
+		return
+	var planted: bool = action.is_projectile() or not is_zero_approx(action.lunge_distance)
+	match action.command:
+		CombatActionResource.Command.LIGHT:
+			if not planted:
+				action.lunge_distance = ActorBase.STEP_LIGHT_M
+		CombatActionResource.Command.HEAVY:
+			if not planted:
+				action.lunge_distance = ActorBase.STEP_HEAVY_M
+		CombatActionResource.Command.FORWARD_HEAVY:
+			if not planted:
+				action.lunge_distance = ActorBase.STEP_FORWARD_HEAVY_M
+		CombatActionResource.Command.BACK_HEAVY:
+			action.lunge_distance = minf(action.lunge_distance, ActorBase.STEP_BACK_HEAVY_M)
+	if action.is_skill():
+		action.detonates = true
+	var freeze: float = CombatDirector.HIT_STOP_LIGHT
+	if action.is_card():
+		freeze = CombatDirector.HIT_STOP_CARD
+	elif action.uninked or action.is_heavy_family():
+		freeze = CombatDirector.HIT_STOP_HEAVY
+	action.hit_stop_scale = freeze / CombatDirector.BASE_HIT_STOP
+
+
 ## "The Weapon Channels the Card": a ranged weapon fires the card as a rune
 ## projectile (you plant and cast, so forward lunges go; backward steps stay);
 ## a melee weapon swings it with a ribbon trail.
@@ -266,23 +387,23 @@ static func _channel_through(action: CombatActionResource, weapon: EquipmentItem
 		action.trail = true
 
 
-## Each light flows into the next swing, the Heavy and the movement cards; the
-## Heavy and cards flow back into the chain. Ultimates end a combo.
+## Each light flows into the next swing, the Heavy, the movement cards, R and
+## L+R (11 GDD §3.1: the skills chain from any Flow-Link window); the Heavy and
+## cards flow back into the chain. Ultimates end a combo.
 static func _link_flows(lights: Array[CombatActionResource], heavy: CombatActionResource, cards: Array[CombatActionResource]) -> void:
 	var forward: CombatActionResource = cards[ScribeCardResource.GrimoireSlot.FORWARD]
 	var back: CombatActionResource = cards[ScribeCardResource.GrimoireSlot.BACK]
 	var signature: CombatActionResource = cards[ScribeCardResource.GrimoireSlot.SIGNATURE]
+	var ultimate: CombatActionResource = cards[ScribeCardResource.GrimoireSlot.ULTIMATE]
 	for index: int in lights.size():
 		var links: Array[CombatActionResource] = []
 		if index < lights.size() - 1:
 			links.append(lights[index + 1])
-		links.append_array([heavy, forward, back])
-		if index == lights.size() - 1:
-			links.append(signature)
+		links.append_array([heavy, forward, back, signature, ultimate])
 		lights[index].flow_links = _ids(links)
-	heavy.flow_links = _ids([lights[0], forward, back])
-	forward.flow_links = _ids([lights[0], back])
-	back.flow_links = _ids([lights[0], forward])
+	heavy.flow_links = _ids([lights[0], forward, back, signature, ultimate])
+	forward.flow_links = _ids([lights[0], back, signature, ultimate])
+	back.flow_links = _ids([lights[0], forward, signature, ultimate])
 	signature.flow_links = _ids([lights[0]])
 
 

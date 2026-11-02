@@ -29,6 +29,9 @@ const BANNER_TITLE_SIZE: int = 44
 const BANNER_GAP: float = 8.0
 ## Real seconds for the banner to fade in (it ignores slow motion).
 const BANNER_FADE_TIME: float = 0.3
+## A new trail level's banner, in the Wayfarer Pennant's Saffron-Gold.
+const MILESTONE_COLOR: Color = Color(0.98, 0.72, 0.18)
+const MILESTONE_BANNER_TIME: float = 3.0
 
 var actor: ActorBase
 ## The bottom-centre cross of move slots and gauges.
@@ -138,6 +141,7 @@ func _ready() -> void:
 	add_child(_prompt_label)
 	if actor != null:
 		actor.action_queue.flow_cancelled.connect(_on_flow_cancelled)
+		actor.action_queue.flow_link_pulsed.connect(_on_flow_link_pulsed)
 
 
 func _process(_delta: float) -> void:
@@ -293,6 +297,39 @@ func _on_flow_cancelled(_from: CombatActionResource, _to: CombatActionResource) 
 	_flow_flash_left = FLASH_TIME
 	var bonus: float = actor.action_queue.speed_scale - 1.0
 	_flow_label.text = "FLOW  +%d%% speed" % roundi(bonus * 100.0) if bonus > 0.0 else "FLOW"
+
+
+## A Flow-Link Pulse: the flow pop says what it gave back.
+func _on_flow_link_pulsed(_from: CombatActionResource, _to_command: int) -> void:
+	_flow_flash_left = FLASH_TIME
+	_flow_label.text = "FLOW-LINK!  +%d stamina" % roundi(ActorBase.FLOW_LINK_STAMINA_REFUND)
+
+
+## A new trail level (11 GDD §6): a short Saffron-Gold banner while the
+## Wayfarer Pennant flies over the hero.
+func show_milestone(level: int, granted: String) -> void:
+	show_banner("LEVEL %d!" % level, granted if granted != "" else "The trail grows longer", MILESTONE_COLOR, MILESTONE_BANNER_TIME)
+
+
+## What a milestone grant brings, in a line: "Hedgerow Iron Falchion · Taunt in R".
+static func grant_text(grant: Dictionary) -> String:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var parts: PackedStringArray = PackedStringArray()
+	var weapon: EquipmentItemResource = catalog.item(grant.get("weapon_id", &""))
+	if weapon != null:
+		parts.append(weapon.display_name)
+	var r_card: ScribeCardResource = catalog.card(grant.get("r_card_id", &""))
+	if r_card != null:
+		parts.append("%s in R" % r_card.display_name)
+	var ult_card: ScribeCardResource = catalog.card(grant.get("ult_card_id", &""))
+	if ult_card != null:
+		parts.append("%s in L+R" % ult_card.display_name)
+	var under: ScribeCardResource = catalog.card(grant.get("under_card_id", &""))
+	if under != null:
+		parts.append("%s tucked under R" % under.display_name)
+	if grant.get("unlocks_secondary_calling", false):
+		parts.append("Secondary Callings open")
+	return "  ·  ".join(parts)
 
 
 func _refresh_flashes() -> void:

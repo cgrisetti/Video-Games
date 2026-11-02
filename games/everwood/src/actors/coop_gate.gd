@@ -154,6 +154,8 @@ func open(method: Method) -> void:
 	_open(method)
 	for peer_id: int in InstanceManager.current.live_remote_peers():
 		_open.rpc_id(peer_id, method)
+	# The trail pays for a co-op threshold (11 GDD §5.2).
+	PartyProgress.current.award_xp(PartyProgress.XP_PER_GATE)
 
 
 ## Every peer: the bell rings, the portcullis sinks into the ground and the gale dies away.

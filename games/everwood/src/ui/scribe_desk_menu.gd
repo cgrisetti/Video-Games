@@ -201,7 +201,7 @@ func cycle(step: int) -> void:
 	var index: int = options.find(_current_option(selected))
 	_set_option(selected, options[wrapi(index + step, 0, options.size())])
 	var progress: PartyProgress = PartyProgress.current
-	_problem = LoadoutComposer.kit_problem(_player_class, draft, progress.grimoire_level(), progress.collection)
+	_problem = LoadoutComposer.kit_problem(_player_class, draft, progress.grimoire_level(), progress.collection, progress.trail_level())
 	if _problem == "":
 		NetworkManager.current.update_local_kit(actor.device_id, draft.to_dict())
 		AudioCues.play(&"equip")
@@ -222,24 +222,34 @@ func _cycle_fellowship(step: int) -> void:
 
 ## The next Secondary Calling: the same character, re-equipped in place.
 func _cycle_calling(step: int) -> void:
+	if not PartyProgress.current.callings_unlocked():
+		_show_note("The Secondary Callings open at Level %d" % ArsenalCatalog.CALLING_LEVEL, false)
+		AudioCues.play(&"refuse")
+		return
 	var next: int = wrapi(Callings.resolve(actor.loadout.class_id, actor.loadout.calling) + step, 0, Callings.count())
 	AudioCues.play(&"equip")
 	NetworkManager.current.update_local_calling(actor.device_id, Callings.id_of(next))
 
 
-## What a row can be set to: item ids, lead-card copy keys (starter cards plus
-## every copy in the binder that fits the slot), or under-card ids ("" = empty).
+## What a row can be set to: item ids (those the trail has opened), lead-card
+## copy keys (starter cards plus every copy in the binder that fits the slot;
+## R and L+R can also be left un-inked, ""), or under-card ids ("" = empty).
 func options_for(row: int) -> Array[StringName]:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
 	var options: Array[StringName] = []
+	var trail_level: int = PartyProgress.current.trail_level()
 	if row == ROW_ARMOR:
 		for item: EquipmentItemResource in catalog.armors():
-			options.append(item.item_id)
+			if item.required_level <= trail_level:
+				options.append(item.item_id)
 	elif row == ROW_WEAPON:
 		for item: EquipmentItemResource in catalog.weapons():
-			options.append(item.item_id)
+			if item.required_level <= trail_level:
+				options.append(item.item_id)
 	elif _is_lead_row(row):
 		var slot: int = row - ROW_FIRST_LEAD
+		if LoadoutComposer.can_stay_uninked(slot):
+			options.append(&"")
 		for card: ScribeCardResource in catalog.lead_cards(slot):
 			if not LoadoutComposer.fits_slot(_player_class, card, slot):
 				continue
@@ -261,7 +271,8 @@ func _current_option(row: int) -> StringName:
 	if row == ROW_WEAPON:
 		return draft.weapon_id
 	if _is_lead_row(row):
-		return draft.lead_copy_key(row - ROW_FIRST_LEAD)
+		var slot: int = row - ROW_FIRST_LEAD
+		return draft.lead_copy_key(slot) if draft.lead_ids[slot] != &"" else &""
 	if _is_link_row(row):
 		return draft.under_ids[row - ROW_FIRST_LINK]
 	return &""
@@ -274,8 +285,8 @@ func _set_option(row: int, option: StringName) -> void:
 		draft.weapon_id = option
 	elif _is_lead_row(row):
 		var slot: int = row - ROW_FIRST_LEAD
-		draft.lead_ids[slot] = ScribeCardResource.copy_card_id(option)
-		draft.lead_variants[slot] = ScribeCardResource.copy_variant(option)
+		draft.lead_ids[slot] = ScribeCardResource.copy_card_id(option) if option != &"" else &""
+		draft.lead_variants[slot] = ScribeCardResource.copy_variant(option) if option != &"" else ScribeCardResource.CardVariant.STANDARD
 	elif _is_link_row(row):
 		draft.under_ids[row - ROW_FIRST_LINK] = option
 
@@ -302,7 +313,7 @@ func _refresh() -> void:
 		var label: Label = _rows[row]
 		var cursor: String = "▶ " if row == selected else "   "
 		label.text = cursor + _row_text(row, level)
-		var locked: bool = _is_link_row(row) and row - ROW_FIRST_LINK >= LoadoutComposer.under_slots(level)
+		var locked: bool = _is_link_row(row) and not LoadoutComposer.under_link_open(row - ROW_FIRST_LINK, level, PartyProgress.current.trail_level())
 		label.modulate = SELECTED_COLOR if row == selected else (LOCKED_COLOR if locked else Color.WHITE)
 	if _problem != "":
 		_detail.text = _problem
@@ -323,6 +334,8 @@ func _row_text(row: int, level: int) -> String:
 	if row == ROW_FELLOWSHIP:
 		return "Fellowship:  %s" % _player_class.fellowship_name
 	if row == ROW_CALLING:
+		if _player_class.calling == Callings.UNSWORN:
+			return "Calling:  Unsworn  ·  opens at Level %d" % ArsenalCatalog.CALLING_LEVEL
 		return "Calling:  %s  ·  %s" % [_player_class.display_name, Callings.secondary_label(_player_class.calling)]
 	if row == ROW_ARMOR:
 		return "Armor:  %s%s" % [_item_name(draft.armor_id), _lock_note(draft.armor_id)]
@@ -330,10 +343,15 @@ func _row_text(row: int, level: int) -> String:
 		return "Weapon:  %s%s" % [_item_name(draft.weapon_id), _lock_note(draft.weapon_id)]
 	if _is_lead_row(row):
 		var slot: int = row - ROW_FIRST_LEAD
+		if draft.lead_ids[slot] == &"":
+			return "%s card:  un-inked (%s)" % [ScribeCardResource.SLOT_NAMES[slot], _flourish_name(slot)]
 		return "%s card:  %s" % [ScribeCardResource.SLOT_NAMES[slot], catalog.copy_name(draft.lead_copy_key(slot))]
 	if _is_link_row(row):
 		var link: int = row - ROW_FIRST_LINK
-		if link >= LoadoutComposer.under_slots(level):
+		var trail_level: int = PartyProgress.current.trail_level()
+		if trail_level < ArsenalCatalog.UNDER_TUCK_LEVEL:
+			return "Link %d:  locked (Level %d)" % [link + 1, ArsenalCatalog.UNDER_TUCK_LEVEL]
+		if not LoadoutComposer.under_link_open(link, level, trail_level):
 			return "Link %d:  locked (Grimoire Lv %d)" % [link + 1, link + 2]
 		var under: ScribeCardResource = catalog.card(draft.under_ids[link])
 		return "Link %d:  %s" % [link + 1, under.display_name if under != null else "empty"]
@@ -344,6 +362,9 @@ func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
 	if row == ROW_FELLOWSHIP:
 		return "Your raid seat. Changing it changes who you are: the Shield-Sworn hold the boss, the Wayfarers strike and stamp Signs, the Lantern-Bearers mend down their Soul Tethers."
 	if row == ROW_CALLING:
+		if _player_class.calling == Callings.UNSWORN:
+			return "%s, %s. At Level %d you choose a Secondary Calling: Stout Heart, Swift Foot or Wise Hand." % [_player_class.display_name,
+				_player_class.calling_subtitle, ArsenalCatalog.CALLING_LEVEL]
 		return "%s, %s. %s: %s." % [_player_class.display_name, _player_class.calling_subtitle, Callings.secondary_name(_player_class.calling),
 			Callings.summary(_player_class.calling)]
 	if row == ROW_ARMOR:
@@ -355,6 +376,8 @@ func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
 	if _is_lead_row(row):
 		var slot: int = row - ROW_FIRST_LEAD
 		var lead: ScribeCardResource = catalog.card(draft.lead_ids[slot])
+		if lead == null:
+			return "No card slotted: the weapon itself swings %s, a raw physical flourish with no seal. Slot a card to imbue it with a Sign." % _flourish_name(slot)
 		var seal: ScribeSignResource = catalog.sign_seal(lead.scribe_sign)
 		return "%s · %s · %s · memory %d. %s" % [seal.display_name, lead.rarity_name(),
 			ScribeCardResource.VARIANT_NAMES[draft.lead_variants[slot]], lead.memory_cost(), lead.description]
@@ -364,6 +387,14 @@ func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
 			return "Slide an Under-Card beneath this slot's lead card to change it with one verb."
 		return "Memory %d. %s" % [under.memory_cost(), under.description]
 	return "Back to Bramblebridge."
+
+
+## The weapon's Un-Inked Martial Flourish for R or L+R.
+func _flourish_name(slot: int) -> String:
+	var weapon: EquipmentItemResource = ArsenalCatalog.current.item(draft.weapon_id)
+	if weapon == null:
+		return "a flourish"
+	return weapon.uninked_ult_name if slot == ScribeCardResource.GrimoireSlot.ULTIMATE else weapon.uninked_r_skill_name
 
 
 ## "  (needs Swift Foot)" when the Calling can't use an item, else "".

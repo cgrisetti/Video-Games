@@ -5,7 +5,10 @@
 ##     in the Under-Card's Sign colour
 ##   - a card that needs more Resonance Pips than you have sits dimmed and 6 px
 ##     low; the moment you have enough it slides up and its border turns gold
-##   - pressing or buffering its move pops it to 1.15x with a white flash
+##   - pressing or buffering its move pops it to 1.35x over 180 ms with a white
+##     flash (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §4.2, Layer 4)
+##   - when a teammate's seal waits within reach and you have the pip, the R
+##     slot wears a bright golden ring (`detonate_ready`)
 ## The slot draws itself; CrossGrimoireHUD positions it and feeds it numbers.
 class_name CrossSlot
 extends Control
@@ -17,8 +20,8 @@ enum Icon { NONE, SHIELD, STAR, SWORD, AXE, STAFF, BOW, ROLL }
 const UNREADY_DROP: float = 6.0
 const UNREADY_ALPHA: float = 0.6
 const LIFT_SPEED: float = 12.0
-const PULSE_TIME: float = 0.15
-const PULSE_SCALE: float = 1.15
+const PULSE_TIME: float = 0.18
+const PULSE_SCALE: float = 1.35
 ## The gold flash when a card becomes ready.
 const READY_FLASH_TIME: float = 0.5
 const CORNER: int = 10
@@ -56,6 +59,8 @@ var pip_cost: int = 0
 var is_ready: bool = true
 ## Highlighted for its own reason (a guard that's up, a tether bound).
 var lit: bool = false
+## R only: a teammate's seal is close and you have the pip to detonate it.
+var detonate_ready: bool = false
 
 var _lift: float = 0.0
 var _pulse_left: float = 0.0
@@ -83,7 +88,7 @@ func set_ready(ready_now: bool) -> void:
 	is_ready = ready_now
 
 
-## The press-or-buffer pop: 1.15x and a crisp white flash for 150 ms.
+## The press-or-buffer pop: 1.35x and a crisp white flash for 180 ms.
 func pulse() -> void:
 	_pulse_left = PULSE_TIME
 
@@ -122,6 +127,10 @@ func _draw() -> void:
 	if _ready_flash_left > 0.0:
 		_rounded(rect.grow(4.0), Color(GOLD, 0.55 * _ready_flash_left / READY_FLASH_TIME), false, 6)
 	_rounded(rect, GOLD if golden else sign_color, false, READY_BORDER if golden else BORDER)
+	if detonate_ready:
+		# A bright golden ring that breathes, so the combo can't be missed.
+		var breath: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.012)
+		_rounded(rect.grow(6.0 + 3.0 * breath), Color(GOLD.lightened(0.3), 0.75 + 0.25 * breath), false, 5)
 	if _pulse_left > 0.0:
 		_rounded(rect, Color(1.0, 1.0, 1.0, 0.55 * _pulse_left / PULSE_TIME), true, 0)
 	var pad: float = 8.0

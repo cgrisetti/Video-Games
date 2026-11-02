@@ -32,6 +32,9 @@ var primer: int = ScribeSignResource.Sign.NONE
 ## The striking action's own Sign (a detonation by a different Sign is a cross-harmony).
 var scribe_sign: int = ScribeSignResource.Sign.NONE
 var detonates: bool = false
+## The posture that threw the strike (CombatActionResource.Command): a Flank
+## Breach needs a directional Heavy, R or L+R. Read from the action, so it never travels.
+var command: int = -1
 var hit_stop_scale: float = 1.0
 ## Taunt lock or pull time, in seconds.
 var duration: float = 0.0
@@ -64,6 +67,7 @@ func fill_from_action(attacker: ActorBase, action: CombatActionResource) -> void
 	primer = action.primer
 	scribe_sign = action.scribe_sign
 	detonates = action.detonates
+	command = action.command
 	hit_stop_scale = action.hit_stop_scale
 	reach = action.reach_distance()
 

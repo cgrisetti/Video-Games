@@ -10,6 +10,7 @@ func state_name() -> StringName:
 
 func enter(_from_state: StringName) -> void:
 	actor.stats.begin_guard()
+	actor.action_queue.break_streak()
 
 
 func exit(_to_state: StringName) -> void:

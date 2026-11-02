@@ -111,6 +111,9 @@ enum Delivery { MELEE, PROJECTILE }
 @export var card_id: StringName = &""
 ## Which Grimoire slot it came from (-1 for weapon swings and the dodge).
 @export var grimoire_slot: int = -1
+## An Un-Inked Martial Flourish: what R or L+R does with no card slotted
+## (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §4.1), a raw physical swing.
+@export var uninked: bool = false
 
 @export_group("Flow")
 ## Action ids this one can flow-cancel into, each matched by its own `command`.
@@ -137,6 +140,11 @@ func reach_distance() -> float:
 	if is_projectile():
 		return projectile_range
 	return reach + hit_radius + maxf(0.0, lunge_distance)
+
+
+## R or L+R: a card's posture, inked or not (the weapon swells as it channels them).
+func is_skill() -> bool:
+	return command == Command.TRIGGER_R_SKILL or command == Command.TRIGGER_BOTH_ULT
 
 
 func is_heavy_family() -> bool:

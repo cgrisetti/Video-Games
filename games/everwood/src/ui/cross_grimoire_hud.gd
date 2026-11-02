@@ -11,6 +11,12 @@
 ## pips for them, pop gold when you do, and pulse when you press or buffer
 ## them (CrossSlot). Everything is drawn in code from the actor's loadout,
 ## so a Scribe Desk swap or a new Calling shows at once.
+##
+## What a power just did (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §4.2, Layer 4):
+## pressing R or L+R, or a card, floats a verb over the cross ("TIMBER-CROSS!",
+## "IRON-ROOT PRIMED!", "SHATTERPOINT!"); and while a teammate's seal waits on
+## an enemy within 12 m and you have a pip, the R slot rings gold under an
+## "R: DETONATE SIGN!" prompt.
 class_name CrossGrimoireHUD
 extends Control
 
@@ -38,6 +44,11 @@ const REWARD_FLASH_PIPS: float = 0.4
 const FLASH_TIME: float = 0.6
 const COMPASS_RADIUS: float = 30.0
 const COMPASS_DOT: float = 15.0
+## A teammate's seal this close (and a pip in hand) lights the R prompt.
+const DETONATE_PROMPT_RANGE: float = 12.0
+const VERB_TIME: float = 0.9
+const VERB_FONT_SIZE: int = 30
+const VERB_RISE: float = 26.0
 
 var actor: ActorBase
 ## Slots by the command that fires them (LIGHT also names the weapon hub).
@@ -52,6 +63,10 @@ var _seen_loadout: ClassLoadoutResource
 var _was_guarding: bool = false
 var _last_resonance: float = 0.0
 var _pips_flash_left: float = 0.0
+## The floating verb over the cross and how long it has left.
+var _verb: String = ""
+var _verb_color: Color = GOLD
+var _verb_left: float = 0.0
 
 
 func setup(target_actor: ActorBase) -> void:
@@ -87,8 +102,15 @@ func _ready() -> void:
 	if actor != null:
 		actor.action_queue.action_started.connect(_on_action_started)
 		actor.action_queue.buffer_changed.connect(_on_buffer_changed)
+		CombatDirector.current.synergy_detonated.connect(_on_synergy_detonated)
 		_last_resonance = actor.stats.resonance_charge
 		_refresh_loadout()
+
+
+func _exit_tree() -> void:
+	var director: CombatDirector = CombatDirector.current
+	if director != null and director.synergy_detonated.is_connected(_on_synergy_detonated):
+		director.synergy_detonated.disconnect(_on_synergy_detonated)
 
 
 func _make_slot(look: CrossSlot.Look, cell: Vector2i) -> CrossSlot:
@@ -148,8 +170,33 @@ func _process(delta: float) -> void:
 		_pips_flash_left = FLASH_TIME
 	_last_resonance = charge
 	_pips_flash_left = maxf(0.0, _pips_flash_left - delta)
+	_verb_left = maxf(0.0, _verb_left - delta)
+	slots[CombatActionResource.Command.TRIGGER_R_SKILL].detonate_ready = detonate_prompt()
 	status_text = _status()
 	_cross.queue_redraw()
+
+
+## The floating verb over the cross right now ("" when none is showing).
+func verb_text() -> String:
+	return _verb if _verb_left > 0.0 else ""
+
+
+## Whether R would detonate a teammate's seal now: R strikes and detonates,
+## you have the pip, and an enemy within 12 m carries a seal someone else stamped.
+func detonate_prompt() -> bool:
+	var action: CombatActionResource = actor.loadout.opener_for(CombatActionResource.Command.TRIGGER_R_SKILL)
+	if action == null or not action.detonates or action.effect != CombatActionResource.Effect.STRIKE:
+		return false
+	if actor.stats.resonance_pips() < action.resonance_cost or actor.stats.is_downed:
+		return false
+	var director: CombatDirector = CombatDirector.current
+	for enemy: ActorBase in director.enemies():
+		if not enemy.is_targetable() or enemy.global_position.distance_to(actor.global_position) > DETONATE_PROMPT_RANGE:
+			continue
+		var applier: StringName = director.primer_applier(enemy)
+		if applier != &"" and applier != actor.player_id:
+			return true
+	return false
 
 
 ## Reads every slot's name, keys, Sign colour, pip cost and Under-Card from the loadout.
@@ -243,6 +290,35 @@ func _on_action_started(action: CombatActionResource, _flowed: bool) -> void:
 	var slot: CrossSlot = slot_for_command(action.command)
 	if slot != null:
 		slot.pulse()
+	var verb: String = verb_for(action)
+	if verb != "":
+		var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(action.primer if action.primer != ScribeSignResource.Sign.NONE else action.scribe_sign)
+		_show_verb(verb, seal.color if action.scribe_sign != ScribeSignResource.Sign.NONE else CrossSlot.GOLD.lightened(0.3))
+
+
+## The word a power floats over the cross: an R or L+R flourish's first word
+## ("TIMBER-CROSS!"), a priming card's Sign ("IRON-ROOT PRIMED!"), any other
+## card's first word; nothing for a plain swing.
+static func verb_for(action: CombatActionResource) -> String:
+	if action == null or not (action.is_card() or action.uninked):
+		return ""
+	if action.primer != ScribeSignResource.Sign.NONE:
+		return "%s PRIMED!" % ArsenalCatalog.current.sign_seal(action.primer).display_name.to_upper()
+	return "%s!" % action.display_name.get_slice(" ", 0).to_upper()
+
+
+func _show_verb(text: String, color: Color) -> void:
+	_verb = text
+	_verb_color = color
+	_verb_left = VERB_TIME
+
+
+## A detonation near you calls out its name ("SHATTERPOINT!").
+func _on_synergy_detonated(target: ActorBase, primer: int, _cross: bool, _label: String) -> void:
+	if not is_instance_valid(actor) or not is_instance_valid(target) or target.global_position.distance_to(actor.global_position) > DETONATE_PROMPT_RANGE:
+		return
+	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(primer)
+	_show_verb("%s!" % seal.detonation_name, seal.color)
 
 
 func _on_buffer_changed(commands: Array[int]) -> void:
@@ -290,6 +366,14 @@ func _draw_status() -> void:
 	_text(font, coin_center + Vector2(15.0, 6.0), str(PartyProgress.current.chimes), FONT_SIZE, COIN_COLOR.lightened(0.3), 60.0, HORIZONTAL_ALIGNMENT_LEFT)
 	if status_text != "":
 		_text(font, Vector2(-title_width * 0.5, top - 34.0), status_text, TITLE_FONT_SIZE, Color(1.0, 0.55, 0.45), title_width, HORIZONTAL_ALIGNMENT_CENTER)
+	var r_slot: CrossSlot = slots[CombatActionResource.Command.TRIGGER_R_SKILL]
+	if r_slot.detonate_ready:
+		var prompt_at: Vector2 = Vector2(r_slot.position.x - 20.0, r_slot.position.y - 12.0)
+		_text(font, prompt_at, "%s: DETONATE SIGN!" % r_slot.key_text, FONT_SIZE + 3, GOLD.lightened(0.25), SLOT_SIZE.x + 80.0, HORIZONTAL_ALIGNMENT_LEFT)
+	if _verb_left > 0.0:
+		var fade: float = clampf(_verb_left / (VERB_TIME * 0.4), 0.0, 1.0)
+		var rise: float = (1.0 - _verb_left / VERB_TIME) * VERB_RISE
+		_text(font, Vector2(-title_width * 0.5, top - 64.0 - rise), _verb, VERB_FONT_SIZE, Color(_verb_color, fade), title_width, HORIZONTAL_ALIGNMENT_CENTER)
 	if actor.tether != null:
 		_draw_compass(font)
 

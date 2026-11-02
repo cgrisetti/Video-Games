@@ -11,6 +11,10 @@
 ## This class reads them: it turns a class and a column into a Calling, applies
 ## a Secondary to a class (ClassLoadouts calls it), and converts between the
 ## column code works with and the id the roster and save files carry.
+##
+## The Secondary Callings open at trail Level 10 (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md
+## §5.2). Until then a hero is Unsworn (UNSWORN, roster id UNSWORN_ID): just
+## their Fellowship, with no Secondary's numbers, carrying their Fellowship's gear.
 class_name Callings
 extends RefCounted
 
@@ -31,6 +35,11 @@ const Weight = EquipmentItemResource.ArmorWeight
 ## Gear anyone may use: the sword, and light or medium armor.
 const COMMON_WEAPONS: Array[int] = [Weapon.LIGHT_SWORD]
 const COMMON_ARMOR: Array[int] = [Weight.LIGHT, Weight.MEDIUM]
+## No Secondary Calling yet (before trail Level 10), as a column and as a roster id.
+const UNSWORN: int = -2
+const UNSWORN_ID: StringName = &"unsworn"
+## An Unsworn hero's tabard and trim: plain hemp.
+const UNSWORN_TRIM: Color = Color(0.85, 0.76, 0.6)
 
 
 ## The class's row in the matrix (an unknown class reads as a Wayfarer).
@@ -53,9 +62,9 @@ static func is_valid(column: int) -> bool:
 	return column >= 0 and column < count()
 
 
-## `column` if it's a registered Secondary, otherwise the class's default.
+## `column` if it's a registered Secondary (or UNSWORN), otherwise the class's default.
 static func resolve(class_id: StringName, column: int) -> int:
-	return column if is_valid(column) else default_secondary(class_id)
+	return column if is_valid(column) or column == UNSWORN else default_secondary(class_id)
 
 
 static func next_secondary(column: int) -> int:
@@ -64,12 +73,16 @@ static func next_secondary(column: int) -> int:
 
 ## The id the roster and save files carry for a column (&"" if there's none).
 static func id_of(column: int) -> StringName:
+	if column == UNSWORN:
+		return UNSWORN_ID
 	var found: SecondaryCallingResource = ArsenalCatalog.current.secondary_at(column)
 	return found.calling_id if found != null else &""
 
 
 ## The column for an id (-1 for an unknown or empty one).
 static func column_of(id: StringName) -> int:
+	if id == UNSWORN_ID:
+		return UNSWORN
 	var found: SecondaryCallingResource = ArsenalCatalog.current.secondary_calling(id)
 	return found.column if found != null else -1
 
@@ -121,6 +134,8 @@ static func summary(column: int) -> String:
 static func allowed_weapons(class_id: StringName, column: int) -> Array[int]:
 	var allowed: Array[int] = COMMON_WEAPONS.duplicate()
 	for from: int in [fellowship_row(class_id), resolve(class_id, column)]:
+		if not is_valid(from):
+			continue
 		for weapon_type: int in secondary(from).unlocked_weapon_types:
 			if not allowed.has(weapon_type):
 				allowed.append(weapon_type)
@@ -131,6 +146,8 @@ static func allowed_weapons(class_id: StringName, column: int) -> Array[int]:
 static func allowed_armor(class_id: StringName, column: int) -> Array[int]:
 	var allowed: Array[int] = COMMON_ARMOR.duplicate()
 	for from: int in [fellowship_row(class_id), resolve(class_id, column)]:
+		if not is_valid(from):
+			continue
 		for weight: int in secondary(from).unlocked_armor_weights:
 			if not allowed.has(weight):
 				allowed.append(weight)
@@ -158,6 +175,10 @@ static func apply(made: PlayerClassResource, column: int) -> void:
 	made.calling_subtitle = subtitle(made.class_id, resolved)
 	made.allowed_weapon_types = allowed_weapons(made.class_id, resolved)
 	made.allowed_armor_weights = allowed_armor(made.class_id, resolved)
+	if modifier == null:
+		# Unsworn: the Fellowship alone, with the class's own numbers.
+		made.calling_subtitle = "Unsworn until Level %d" % ArsenalCatalog.CALLING_LEVEL
+		return
 	made.base_stats.max_health += modifier.health_bonus
 	made.base_stats.resonance_gain_multiplier = modifier.resonance_gain_multiplier
 	made.stamina_regen_bonus = modifier.stamina_regen_bonus

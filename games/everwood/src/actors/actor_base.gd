@@ -47,6 +47,24 @@ const POSE_SHARPNESS: float = 18.0
 ## A flow-cancel makes the body glow blue-white for a moment (and plays a tick).
 const FLOW_GLOW_TIME: float = 0.18
 const FLOW_GLOW_COLOR: Color = Color(0.55, 0.8, 1.0)
+## The kinetic loop (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §3.1): every posture
+## steps the hero along its facing (LoadoutComposer gives a melee strike with no
+## lunge of its own these), so nobody stands still and clicks.
+const STEP_LIGHT_M: float = 0.6
+const STEP_HEAVY_M: float = 1.2
+const STEP_FORWARD_HEAVY_M: float = 2.8
+const STEP_BACK_HEAVY_M: float = -2.4
+## The Static Mash Penalty: a third Light in a row, with no heavy, card, guard
+## or dodge woven in, is winded for this long instead of its own recovery.
+const STATIC_MASH_RECOVERY_MS: int = 550
+## The Flow-Link window: the first 220 ms of a Light's recovery. Cancelling the
+## 2nd or 3rd Light there into Forward+Heavy, Back+Heavy, R, L+R, a guard or a
+## roll is a Flow-Link Pulse: stamina back and a little pip.
+const FLOW_LINK_WINDOW_MS: int = 220
+const FLOW_LINK_STAMINA_REFUND: float = 8.0
+const FLOW_LINK_BONUS_PIP: float = 0.15
+## The pulse's white-gold ring at the waist.
+const FLOW_LINK_COLOR: Color = Color(1.0, 0.93, 0.7)
 
 @export var loadout: ClassLoadoutResource
 
@@ -74,6 +92,8 @@ var is_companion: bool = false
 var tether: SoulTetherComponent
 ## Bosses only.
 var threat: ThreatComponent
+## Enemies only: the Braced Front Guard (11 GDD §3.2).
+var braced_guard: BracedGuardComponent
 ## Something this local player is standing at and can use with light (the Chime-Shrine).
 var interactable: Interactable
 
@@ -186,6 +206,9 @@ func _build_components() -> void:
 	action_queue.action_started.connect(_on_action_started)
 	action_queue.phase_changed.connect(_on_phase_changed)
 	action_queue.action_finished.connect(_on_action_finished)
+	# Heroes play by the kinetic loop's rules (11 GDD §3.1); enemies swing as they always have.
+	action_queue.kinetic_rules = not is_boss()
+	action_queue.flow_link_pulsed.connect(_on_flow_link_pulsed)
 
 	hitbox = HitboxComponent.new()
 	hitbox.setup(self, not is_boss())
@@ -199,6 +222,11 @@ func _build_components() -> void:
 	net_sync = NetworkSyncComponent.new()
 	net_sync.setup(self)
 	add_child(net_sync)
+
+	if is_boss():
+		braced_guard = BracedGuardComponent.new()
+		braced_guard.setup(self)
+		add_child(braced_guard)
 
 	if loadout.has_soul_tethers:
 		tether = SoulTetherComponent.new()
@@ -310,6 +338,8 @@ func _build_prop() -> Node3D:
 	if loadout.weapon != null:
 		_weapon_prop = PropBuilder.build(loadout.weapon.prop_parts, loadout.weapon.model, "Weapon", loadout.weapon.item_id)
 		prop.add_child(_weapon_prop)
+		if visuals != null:
+			visuals.set_weapon(_weapon_prop, loadout.weapon)
 	return prop
 
 
@@ -635,6 +665,20 @@ func _on_action_started(action: CombatActionResource, flowed: bool) -> void:
 		state_machine.transition(&"attack")
 
 
+## A Flow-Link Pulse (11 GDD §3.1): stamina back, a little pip, and a
+## white-gold ring at the waist on every screen.
+func _on_flow_link_pulsed(_from: CombatActionResource, _to_command: int) -> void:
+	stats.restore_stamina(FLOW_LINK_STAMINA_REFUND)
+	stats.add_resonance(FLOW_LINK_BONUS_PIP)
+	CombatDirector.current.show_flow_link(self)
+
+
+## The Wayfarer Pennant over this hero for a new trail level (11 GDD §6).
+func show_milestone_pennant(level: int, granted: String) -> void:
+	if visuals != null:
+		visuals.show_milestone_pennant(level, granted)
+
+
 func _on_phase_changed(phase: ActionQueueComponent.Phase) -> void:
 	var action: CombatActionResource = action_queue.current_action
 	if phase == ActionQueueComponent.Phase.ACTIVE and action != null:
@@ -657,6 +701,9 @@ func _begin_effect(action: CombatActionResource) -> void:
 				CombatDirector.current.launch_projectile(self, action, action_queue.flowed_into_current)
 			else:
 				hitbox.activate(action)
+			if action.heal_amount > 0.0:
+				# The Way-Staff's flourishes: a warm gust mends the most hurt ally near you.
+				CombatDirector.current.mend_most_hurt(self, action.heal_amount, action.effect_radius)
 		CombatActionResource.Effect.DODGE:
 			stats.grant_invulnerability(action.active_time / action_queue.speed_scale)
 		CombatActionResource.Effect.TAUNT:
@@ -683,6 +730,8 @@ func _on_hurtbox_hit(target_hurtbox: HurtboxComponent) -> void:
 
 ## Applies a strike on the peer that owns this actor. Returns a StatsComponent.StrikeOutcome.
 func receive_strike(event: CombatEvent) -> int:
+	if braced_guard != null:
+		braced_guard.filter_strike(event)
 	var multiplier: float = CombatDirector.current.damage_taken_multiplier(self)
 	var outcome: StatsComponent.StrikeOutcome = stats.mitigate_strike(
 		event.damage * multiplier, event.poise_damage, _faces_toward(event.origin), event.unavoidable)
@@ -800,6 +849,9 @@ func _update_pose(delta: float) -> void:
 	if _weapon_prop != null and trail != null:
 		# A rune-wreathed strike sweeps the weapon through the trail's arc.
 		_weapon_prop.rotation.y = trail.swing_angle
+	if visuals != null:
+		# R and L+R swell the weapon into its Sign's glowing silhouette (any peer: copies read the owner's action).
+		visuals.update_channel(delta, current_action())
 	if _flash_left > 0.0:
 		_set_glow(Color(1.0, 1.0, 1.0) * 0.9)
 	elif _flow_glow_left > 0.0:
