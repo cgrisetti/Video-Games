@@ -1,2 +1,7 @@
 # Godot rebuilds this cache; never commit it.
 .godot/
+# Third-party addons (Terrain3D's compiled binaries) stay out of git: each machine
+# fetches its own with tools/fetch_terrain3d.sh, and the game runs without them.
+addons/
+# Plugin demo projects: not ours, and they clash with the code-first rule.
+demo/
