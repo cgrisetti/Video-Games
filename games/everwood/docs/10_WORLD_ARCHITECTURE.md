@@ -1,0 +1,112 @@
+# 10_WORLD_ARCHITECTURE.md — The Everwood Landblock & Seamless World-Grid Architecture (Phase 11)
+
+## 1. Executive Summary & Architectural Mission
+As *Everwood* completes Phases 9 and 10 (**Walkable Bramblebridge**, **The 3x3 Matrix of Callings**, **Cross-Grimoire HUD**, **The Doverslap Expedition**, and **Storybook Cel-Shaded Puppets**), Phase 11 transitions our world representation from monolithic single-script scenes (`hub_town.gd` and `dungeon_dojo.gd`) to a **WoW (`.adt`) / Lord of the Rings Online ("Landblock") Deterministic World-Grid Architecture**.
+
+### Core Engineering Goals
+1. **Seamless Overworld-to-Expedition Continuity:** Unite **Bramblebridge**, **The Ariundle Moss-Oaks**, **The Sunken Holloway**, **Doverslap Gorge Bridge**, and **The Ring of the Cairnsman** (and future regions like **The Wadden-Green** and **Luka-Bay**) into a continuous, bounded 2D grid of `128m × 128m` Landblocks (`Vector2i(x, z)`).
+2. **Multi-Focus Split-Screen & Co-Op Union Streaming:** Unlike single-player open worlds that stream a single circle around one camera, *Everwood* supports up to **4 local split-screen players + 5-player LAN/online co-op**. Our `WorldGridManager` calculates the **Spatial Union of Active Party Radii** so every couch viewport and network peer renders a rock-solid, stutter-free surrounding world.
+3. **100% Code-First & Headless CI Safe (`CLAUDE.md` Compliant):**
+   - Zero fragile hand-edited `.tscn` megafiles.
+   - **Dual-Mode Terrain Backend:** Native support for the **Terrain3D GDExtension** when present in `addons/terrain_3d/`, paired with an automatic **Code-First Heightmap & Clipmap Mesh Generator (`LandblockTerrainBuilder`)** so `godot --headless --check-only` and `tools/smoke_test.gd` always pass out-of-the-box without requiring external binary compilation.
+4. **Musk Razor Applied to Open Worlds:**
+   - **What We Cut:** Monolithic level reloads between town and wilderness, per-node `MeshInstance3D` trees for thousands of grass blades/rocks, single giant `NavigationRegion3D` bakes, and storing persistent state inside transient visual nodes.
+   - **The 10% Added Back In:** A **4-Layer Landblock Anatomy**, a **2ms Frame-Budgeted Instantiation Queue**, a **Decoupled `WorldStateDB` Delta Dictionary** (that also solves the Phase 9 latecomer sync gap for `Wayfarer's Chest` and `Water-Shrine`), and **Per-Chunk `NavigationServer3D` Edge Stitching** (solving the Phase 9 companion AI pathfinding gap).
+
+---
+
+## 2. Deterministic Spatial Grid Specification (`WorldGridConfig`)
+
+All world coordinates map deterministically to two hierarchical grid levels in $O(1)$ time:
+
+- **Region (Zone / Archipelago Sector):** $1024\text{ m} \times 1024\text{ m}$ ($8 \times 8 = 64$ Landblocks per Region). Matches `Terrain3D` standard region dimensions.
+- **Landblock (Chunk / Cell):** $128\text{ m} \times 128\text{ m}$. Large enough to frame a complete combat encounter or village quarter (under our $4.8\text{ m}$ camera eye-line and $\le 3.2\text{ m}$ obstacle height rule), yet compact enough to instantiate in $< 1.5\text{ ms}$.
+
+### Coordinate Conversion Math
+$$\text{ChunkCoord}(x, z) = \left( \left\lfloor \frac{\text{WorldPos}.x}{128.0} \right\rfloor, \left\lfloor \frac{\text{WorldPos}.z}{128.0} \right\rfloor \right)$$
+
+$$\text{RegionCoord}(x, z) = \left( \left\lfloor \frac{\text{ChunkCoord}.x}{8} \right\rfloor, \left\lfloor \frac{\text{ChunkCoord}.y}{8} \right\rfloor \right)$$
+
+### Canonical Proof-of-Capability (PoC) Landblock Map: *The Bramble-to-Doverslap Corridor*
+To prove the stack while maintaining 100% backward compatibility with `hub_town` and `dungeon_dojo` network IDs, our initial seamless region (**Region `(0, 0)` — The Bramble-Reach**) spans a deterministic $2 \times 4$ Landblock corridor surrounded by bounded topographical ridge-lines:
+
+| Landblock `Vector2i` | World Bounds ($X, Z$) | Lore & Gameplay Contents |
+|---|---|---|
+| **`Chunk (0, 0)`** | $X \in [0, 128), Z \in [0, 128)$ | **Bramblebridge South & Village Square:** South Bank Spawn Green, low-angle ($13^\circ$) arched canal bridge, Armory & Scribe Desk, Chime-Shrine, smoking bakery, watermill wheel, and Northern Timber Gate. |
+| **`Chunk (0, -1)`** | $X \in [0, 128), Z \in [-128, 0)$ | **Ariundle Moss-Oaks & Sunken Holloway:** Northern forest threshold, Bramble Minion Camp (3 *Bramble-Scuttlers*), Hidden Side Alcove with **Wayfarer's Chest** ($+15\text{ Chimes}$ + Uncommon Card), swaying **Wind-Lanterns**, **Wayfarer's Water-Shrine**, and Holloway Minion Camp (3 *Holloway Imps* + 1 *Scuttler*). |
+| **`Chunk (0, -2)`** | $X \in [0, 128), Z \in [-256, -128)$ | **Doverslap Gorge Bridge & Sinaya Gatehouse:** Roaring waterfall chasm, Carpathian timber-and-stone trestle bridge, paper-mill waterwheel, **CoopGate** portcullis, twin **Rune-Plates**, **Gorge Gale-Jet**, and **Bronze Bridge-Bell Winch**. |
+| **`Chunk (0, -3)`** | $X \in [0, 128), Z \in [-384, -256)$ | **The Ring of the Cairnsman:** Sunlit moss-ringed stone causeway overlooking the gorge spray, housing **The Cairnsman of Doverslap** (Phase 1 & Phase 2 `BLUE_BEHIND_TANK` **Doverslap Gale-Beam**). |
+| **`Border Ring`** (`X=-1`, `X=1`, `Z=1`, `Z=-4`) | Perimeter around Corridor | **Bounded LOTRO Topography & HLOD Silhouettes:** Impassable mossy crags, dense Ariundle oak canopy walls, `OccluderInstance3D` volumes, and distant silhouettes of **Sinaya Mill-Castle** and **The Wadden-Green**. |
+
+---
+
+## 3. The 4-Layer Landblock Anatomy
+
+Every `128m × 128m` Landblock is decoupled into **four distinct runtime layers** with independent load/unload hysteresis radii around the party's occupied chunks:
+
+| Layer | Load / Unload Radius | Engine Implementation | Purpose in *Everwood* |
+|---|---|---|---|
+| **Layer 1: Terrain & Horizon (HLOD)** | Load $\le 3$ chunks ($384\text{ m}$)<br>Unload $> 4$ chunks | **Dual-Mode:** `Terrain3D` GDExtension *or* Code-First `ArrayMesh` + `HeightMapShape3D` + single-draw-call `HLODProxy` mesh | Seamless ground elevation, vertex-painted moss/cobble/heather transitions, and distant landmark silhouettes (waterwheels, gatehouse towers, mountain ridges) visible from across the valley. |
+| **Layer 2: Static Clutter & Foliage** | Load $\le 2$ chunks ($256\text{ m}$)<br>Unload $> 3$ chunks | `MultiMeshInstance3D` / `RenderingServer` direct RIDs (`LowScenery` camera-ignored collider layer where needed) | Mossy boulders, heather tufts, reed beds, stepping stones, and timber fence posts. **Zero per-object `Node3D` SceneTree overhead.** Shared `storybook_cel.gdshader`. |
+| **Layer 3: Interactive & Gameplay** | Load $\le 1$ chunk ($3 \times 3$ grid)<br>Unload $> 2$ chunks | Frame-budgeted node attachment via `WorldGridManager` ($\le 2.0\text{ ms/frame}$) | `MinionCamp`, `WayfarerChest`, `WaterShrine`, `WindLantern`, `CoopGate` (`RunePlate`, `BellWinch`, `GorgeGaleJet`), `ChimeShrine`, Scribe Desk, and `BossDummy`. |
+| **Layer 4: Chunked Navigation & AI** | Load $\le 1$ chunk ($3 \times 3$ grid)<br>Active Tick $= 0\text{–}1$ chunk | Per-chunk `NavigationRegion3D` / `NavigationServer3D` RIDs with `edge_connection_margin = 0.5m` | Enables Companion AI and `WoodlandMinion` packs to pathfind smoothly around obstacles and across `128m` chunk seams, with distance-scaled AI tick rates. |
+
+---
+
+## 4. Deep-Dive System Specifications
+
+### 4.1 Multi-Focus Split-Screen & Co-Op Union Streaming (`src/world/world_grid_manager.gd`)
+In a 4-player couch + LAN party, Player 1 might be browsing the **Scribe Desk** in `Chunk (0, 0)` while Player 2 and Player 3 walk ahead into the **Ariundle Moss-Oaks** in `Chunk (0, -1)`.
+1. **Focus Set Calculation:** Every `0.2s` (5 Hz streaming heartbeat), `WorldGridManager` gathers the `global_position` of all active human players (`FocusPoints`).
+2. **Union of Chebyshev Radii:**
+   - For any candidate chunk $C$:
+     $$d(C) = \min_{p \in \text{FocusPoints}} \max(|C.x - \text{chunk}(p).x|, |C.y - \text{chunk}(p).y|)$$
+   - **Hysteresis Ring (Prevents Boundary Thrashing):**
+     - `d(C) <= 1`: Upgrade to **FULL_GAMEPLAY** (Layers 1 + 2 + 3 + 4 active).
+     - `d(C) == 2`: Hold at **VISUAL_CLUTTER** (Layers 1 + 2 active; Layer 3 & 4 stays loaded if already loaded, or loads Layer 1+2 if approaching).
+     - `d(C) == 3`: Hold at **HORIZON_HLOD** (Layer 1 + `HLODProxy` visible; Layers 2, 3, 4 unloaded).
+     - `d(C) >= 4`: Unload completely (`UNLOADED`).
+3. **2ms Frame-Budgeted Instantiation Queue:**
+   - Instead of calling `add_child()` on an entire chunk's interactive props in a single frame, `WorldGridManager` pushes Layer 3 spawn tasks into `_instantiation_queue`.
+   - Inside `_process()`, it pops and attaches nodes until `Time.get_ticks_usec() - frame_start_usec >= 2000` ($2.0\text{ ms}$ budget), guaranteeing 60+ FPS even when sprinting across chunk borders in 4-way split-screen.
+
+### 4.2 Decoupled Persistence & Latecomer Sync (`src/world/world_state_db.gd`)
+When a chunk unloads (or when a 5th family member joins mid-expedition over LAN), world mutations must never be lost.
+- **`WorldStateDB` Structure:** Keyed by `Vector2i` chunk coordinate $\rightarrow$ `StringName` entity ID $\rightarrow$ `Dictionary` state delta:
+  ```gdscript
+  # Example runtime state in WorldStateDB
+  var chunk_deltas: Dictionary = {
+      Vector2i(0, -1): {
+          &"camp_bramble_01": { "cleared": true },
+          &"chest_alcove_01": { "opened": true, "opener_peer": 1 },
+          &"shrine_holloway_01": { "cooldown_until": 184.5 }
+      },
+      Vector2i(0, -2): {
+          &"gate_sinaya_01": { "opened": true, "method": &"bell_winch" }
+      }
+  }
+  ```
+- **Lifecycle Contract:**
+  1. When an interactive entity (`MinionCamp`, `WayfarerChest`, `WaterShrine`, `CoopGate`) mutates state, it calls `WorldStateDB.set_entity_state(chunk_coord, entity_id, state_dict)`.
+  2. When `WorldGridManager` streams `Chunk (0, -1)` back into the SceneTree, each stateful entity queries `WorldStateDB.get_entity_state(chunk_coord, entity_id)` inside `apply_persisted_state()` before its first visible frame—so cleared minion camps stay cleared and opened chests stay open.
+  3. **Fixes Phase 9 Latecomer Note:** `WorldStateDB.export_snapshot()` serializes the full delta dictionary in a single compact RPC payload when a latecomer joins mid-expedition, immediately syncing `WayfarerChest`, `WaterShrine`, `MinionCamp`, and `CoopGate` states!
+
+### 4.3 Seamless Chunked Navigation & AI Tick Scaling (`src/world/chunk_nav_builder.gd`)
+Fixes the Phase 9 build note (*"Companions steer in straight lines and skip ahead when stranded; there's no navigation mesh"*):
+- **Per-Chunk Baked/Procedural NavMesh:** Each `128m × 128m` Landblock generates a lightweight `NavigationRegion3D` with a `NavigationMesh` matching its walkable terrain surface and carved obstacle footprints (bridges, ramps, gatehouse piers, shrine basins).
+- **Automatic Seam Stitching:** On startup, `WorldGridManager` configures `NavigationServer3D.map_set_edge_connection_margin(world_nav_map, 0.5)` and `map_set_cell_size(world_nav_map, 0.25)`. When `Chunk (0, 0)` and `Chunk (0, -1)` are both active, `NavigationServer3D` stitches their border edges together automatically so Companion AI and `WoodlandMinion` actors pathfind smoothly across chunk seams and over the $13^\circ$ canal bridge.
+- **Distance-Based AI Tick Scaler:**
+  - Distance $\le 35\text{ m}$ to nearest player: **Full Tick ($60\text{ Hz}$)** — full hitbox/posture evaluation.
+  - Distance $35\text{–}90\text{ m}$: **Reduced Tick ($10\text{ Hz}$)** — coarse patrol/idle evaluation.
+  - Distance $> 90\text{ m}$: **Dormant ($0\text{ Hz}$)** — physics process disabled until a player approaches.
+
+### 4.4 Dual-Mode Terrain & Bounded LOTRO Horizon (`src/world/landblock_terrain.gd`)
+- **Mode A (Native C++ GDExtension Hook):** Checks `ClassDB.class_exists(&"Terrain3D")`. If you install the `Terrain3D` plugin into `addons/terrain_3d/`, `LandblockTerrain` automatically binds regions to `Terrain3DData` and feeds our deterministic elevation function into `Terrain3D`.
+- **Mode B (Code-First Heightmap & Clipmap Mesh — Default & Headless Safe):** Generates an optimized vertex-colored `ArrayMesh` (with `storybook_cel.gdshader` support) + exact `HeightMapShape3D` / ramped convex bridge colliders per `128m × 128m` chunk using a continuous analytical elevation field $h(x, z)$. Because $h(x, z)$ is continuous across chunk boundaries ($x = 128k, z = 128m$), normal vectors and vertex heights match with **zero seam gaps**.
+- **Bounded Topographical Framing & Occlusion:** Each outer border chunk places an `ArrayOccluder3D` inside an `OccluderInstance3D` along the ridge-line and holloway walls, plus a single merged `HLODProxy` mesh (e.g., the Sinaya Gatehouse silhouette and spinning waterwheel visible from Bramblebridge North Gate) that automatically hides the moment the real `Chunk (0, -2)` finishes streaming in.
+
+---
+
+## 5. Verification, Compatibility, & Telemetry HUD
+- **Zero-Regression Backward Compatibility:** `hub_town.gd` and `dungeon_dojo.gd` remain valid entry points for existing tests and network session IDs, while a new **Seamless World Mode (`everwood_world.gd`)**—and upgraded chunk-backed delegators inside the existing level scripts—allows walking directly from **Bramblebridge Spawn Green (`Chunk 0,0`)** through the **Northern Forest Gate** into **The Ariundle Moss-Oaks (`Chunk 0,-1`)**, across **Doverslap Gorge Bridge (`Chunk 0,-2`)**, and into **The Ring of the Cairnsman (`Chunk 0,-3`)** with **zero loading screens**.
+- **F4 Landblock Telemetry Overlay (Developer / Verification Toggle):** Pressing `F4` toggles a compact top-right corner diagnostic badge displaying current `Chunk (X, Z)`, Active Loaded Chunks, HLOD Proxy Count, Frame-Budget Queue Depth, and `WorldStateDB` Delta Count.
