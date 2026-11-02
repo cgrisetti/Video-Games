@@ -265,3 +265,5 @@ A Tier 1 Falchion's Timber-Cross Slash hits for 29, Gale Rush for 22: a flourish
 - Is Level 5 at the Gatehouse right, or should the Tier 3 weapon and the L+R card come before the second camp?
 - Is the winded third Light felt as "weave in a heavy" or just as lag? 550 ms may want to be 450.
 - In the seamless world, is the walk from the village to the Ring (about 350 m) a pleasant journey or a chore? The trails could be shorter, or a checkpoint could let the party skip back to the gorge.
+- In Oakshire Vale, do the neutral Meadow Vermin give small children a gentle first fight, or do the Weald Predators' 10 m aggro catch them on the roads?
+- With no navigation mesh in Oakshire yet, do creatures and companions snag on trees and boulders too often when they walk straight at you?

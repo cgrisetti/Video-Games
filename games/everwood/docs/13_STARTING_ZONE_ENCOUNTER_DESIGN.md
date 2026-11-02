@@ -15,3 +15,7 @@
 | **4. Blight-Thorn Briarlings** (Tier 4, Lvl 4–5) | • *Bramble-Lasher Vine*<br>• *Spore-Puff Shambler*<br>• *Bog-Hulk Tangler* | High Poise ($75.0$), Armor Bark. | Plant constructs requiring coordinated party focus to crack bark armor via heavy attacks. |
 | **5. Tarnished Chime-Wights** (Tier 5, Lvl 5) | • *Risen Shield-Sworn Husk*<br>• *Hollow Scribe-Acolyte*<br>• *Barrow-Warden Knell* | Undead elites with barrier shields. | Protects dungeon gates; tests interrupt timings and `SIGN_WARM_HEARTH` (*Dawnburst* $20.0$ HP heal) party sustain. |
 | **6. Ambient Wildlife & Roaming Boss** (Zone-wide) | • *Golden-Fleece Sheep*<br>• *Red Fox*<br>• *The Crag-Back Behemoth* | Boss Poise ($150.0$), Boss HP ($2,500$). | Ambient critters add life; the roaming Mini-Boss patrols outer roads with a heavy bell-stomp audio cue. |
+
+## 3. Build Notes
+
+The six families are built as `Bestiary` (16 fighting variants with the health and poise above), `WildMob` and `MobSpawner` (40 spawners in Oakshire Vale, 18 to 25 m leashes, 45 to 90 s respawns). The sheep and foxes are ambient critters that can't be fought. See `12_WORLD_OAKSHIRE_VALE_GDD.md` §6 for where they stand and what differs.
