@@ -14,6 +14,9 @@ enum Shape { BOX, CYLINDER, SPHERE }
 @export var color: Color = Color.WHITE
 ## Emission strength; 0 is a plain, unlit-looking material.
 @export var glow: float = 0.0
+## A metal part's glint (storybook_cel_light.gdshaderinc): 0 for wood and cloth.
+@export var metal: float = 0.0
+@export var sheen_roughness: float = 0.85
 
 
 static func make(part_shape: Shape, part_size: Vector3, part_offset: Vector3, part_color: Color,
@@ -26,3 +29,10 @@ static func make(part_shape: Shape, part_size: Vector3, part_offset: Vector3, pa
 	part.rotation_degrees = part_rotation
 	part.glow = part_glow
 	return part
+
+
+## This part, finished as metal (a weapon tier's blade or trim). Returns itself.
+func finished(part_metal: float, part_roughness: float) -> PropPartResource:
+	metal = part_metal
+	sheen_roughness = part_roughness
+	return self

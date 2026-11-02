@@ -47,7 +47,14 @@ static func build_part(part: PropPartResource) -> MeshInstance3D:
 			var box: BoxMesh = BoxMesh.new()
 			box.size = part.size
 			mesh = box
-	mesh.material = StorybookMaterial.glowing(part.color, part.glow) if part.glow > 0.0 else StorybookMaterial.make(part.color, PROP_RIM)
+	if part.glow > 0.0:
+		mesh.material = StorybookMaterial.glowing(part.color, part.glow)
+	else:
+		var material: ShaderMaterial = StorybookMaterial.make(part.color, PROP_RIM)
+		if part.metal > 0.0:
+			material.set_shader_parameter(&"metal", part.metal)
+			material.set_shader_parameter(&"sheen_roughness", part.sheen_roughness)
+		mesh.material = material
 	var instance: MeshInstance3D = MeshInstance3D.new()
 	instance.mesh = mesh
 	instance.position = part.offset

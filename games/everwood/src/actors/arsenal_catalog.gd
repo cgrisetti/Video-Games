@@ -6,6 +6,10 @@
 ##
 ## Adding a card or a weapon is one register call below, or a .tres card file
 ## dropped in CARD_FOLDER. Nothing that plays cards or weapons changes.
+##
+## It also holds the Trail of the Four Signs (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md
+## §5): four tiers of each weapon, the Level 1 kit each Fellowship starts in,
+## and what each milestone level grants.
 class_name ArsenalCatalog
 extends Node
 
@@ -21,11 +25,65 @@ const VARIANT_ODDS: Array[float] = [0.6, 0.3, 0.1]
 const HEARTH_LINEN: StringName = &"hearth_linen"
 const RANGER_LEATHER: StringName = &"ranger_leather"
 const IRONWOOD_PLATE: StringName = &"ironwood_plate"
-# Weapons
+## The trail's first coat: every Fellowship's Level 1 armor.
+const BRAMBLE_JERKIN: StringName = &"armor_bramble_jerkin"
+# The classic weapons (05 GDD §2.2): Bramblebridge steel, with the base numbers
+# every trail tier is a multiple of.
 const LIGHT_SWORD: StringName = &"light_sword"
 const HEAVY_AXE: StringName = &"heavy_axe"
 const SCRIBE_STAFF: StringName = &"scribe_staff"
 const HUNTER_BOW: StringName = &"hunter_bow"
+# The trail's weapons (11 GDD §5.1). Tier 1: Apprentice Timber.
+const HAZEL_FALCHION: StringName = &"weapon_hazel_falchion"
+const ASH_BROADAXE: StringName = &"weapon_ash_broadaxe"
+const REED_WAYSTAFF: StringName = &"weapon_reed_waystaff"
+const WILLOW_LONGBOW: StringName = &"weapon_willow_longbow"
+# Tier 2: Hedgerow Iron.
+const IRON_FALCHION: StringName = &"weapon_iron_falchion"
+const COPPICE_BROADAXE: StringName = &"weapon_coppice_broadaxe"
+const COPPER_WAYSTAFF: StringName = &"weapon_copper_waystaff"
+const HORN_LONGBOW: StringName = &"weapon_horn_longbow"
+# Tier 3: Bramblebridge Steel.
+const BRAMBLE_FALCHION: StringName = &"weapon_bramble_falchion"
+const MILL_BROADAXE: StringName = &"weapon_mill_broadaxe"
+const SCRIBE_WAYSTAFF: StringName = &"weapon_scribe_waystaff"
+const WEALD_LONGBOW: StringName = &"weapon_weald_longbow"
+# Tier 4: Doverslap Relic.
+const CAIRNSMAN_FALCHION: StringName = &"weapon_cairnsman_falchion"
+const DOVERSLAP_BROADAXE: StringName = &"weapon_doverslap_broadaxe"
+const CARILLON_WAYSTAFF: StringName = &"weapon_carillon_waystaff"
+const GORGE_LONGBOW: StringName = &"weapon_gorge_longbow"
+## The trail's weapons by tier (index 0 is Tier 1), each list in WeaponType
+## order: Falchion, Broad-Axe, Way-Staff, Longbow.
+const TIER_WEAPONS: Array[Array] = [
+	[HAZEL_FALCHION, ASH_BROADAXE, REED_WAYSTAFF, WILLOW_LONGBOW],
+	[IRON_FALCHION, COPPICE_BROADAXE, COPPER_WAYSTAFF, HORN_LONGBOW],
+	[BRAMBLE_FALCHION, MILL_BROADAXE, SCRIBE_WAYSTAFF, WEALD_LONGBOW],
+	[CAIRNSMAN_FALCHION, DOVERSLAP_BROADAXE, CARILLON_WAYSTAFF, GORGE_LONGBOW],
+]
+## The classic weapon of each WeaponType: the template its tiers scale.
+const CLASSIC_WEAPONS: Array[StringName] = [LIGHT_SWORD, HEAVY_AXE, SCRIBE_STAFF, HUNTER_BOW]
+## Each tier's name, opening level, damage and poise multiplier and palette (11 GDD §5.1), Tier 1 first.
+const TIER_NAMES: Array[String] = ["Apprentice Timber", "Hedgerow Iron", "Bramblebridge Steel", "Doverslap Relic"]
+const TIER_LEVELS: Array[int] = [1, 2, 5, 10]
+const TIER_MULTIPLIERS: Array[float] = [1.0, 1.2, 1.45, 1.75]
+## Unvarnished hazel, hammered dark iron, milled steel, gilded Carillon bronze.
+const TIER_BLADES: Array[Color] = [Color(0.651, 0.482, 0.357), Color(0.353, 0.384, 0.416), Color(0.769, 0.808, 0.831), Color(0.898, 0.757, 0.345)]
+## Hemp cord, brass rivets, a brass bell-guard, star-etched steel.
+const TIER_TRIMS: Array[Color] = [Color(0.851, 0.765, 0.604), Color(0.78, 0.6, 0.3), Color(0.831, 0.686, 0.216), Color(0.79, 0.83, 0.86)]
+## The grip: hemp-wrapped hazel, an oak grip, dyed leather, dark leather.
+const TIER_GRIPS: Array[Color] = [Color(0.851, 0.765, 0.604), Color(0.478, 0.322, 0.188), Color(0.2, 0.32, 0.36), Color(0.29, 0.2, 0.15)]
+const TIER_METALLIC: Array[float] = [0.0, 0.55, 0.8, 0.9]
+const TIER_ROUGHNESS: Array[float] = [0.85, 0.6, 0.35, 0.25]
+## The Doverslap relics' glowing Sign-stone.
+const SIGN_STONE_COLOR: Color = Color(1.0, 0.9, 0.62)
+## Each WeaponType's Un-Inked Martial Flourishes (11 GDD §4.1): R, then L+R.
+const UNINKED_NAMES: Array[Array] = [
+	["Timber-Cross Slash", "Bramble-Whirl Flurry"],
+	["Coppice-Splitter Slam", "Heartwood Sundering"],
+	["Reed-Sweep Gust", "Lantern-Keeper's Chime"],
+	["Vaulting Bough-Shot", "Hail of the Hedgerow"],
+]
 # Starter lead cards (three per Grimoire slot: one each from the tank, healer and DPS kits)
 const SHIELD_CHARGE: StringName = &"shield_charge"
 const RISING_DRIVE: StringName = &"rising_drive"
@@ -39,6 +97,8 @@ const GALE_RUSH: StringName = &"gale_rush"
 const BULWARK_QUAKE: StringName = &"bulwark_quake"
 const LIFELINE_PULL: StringName = &"lifeline_pull"
 const TEMPEST_FLOW: StringName = &"tempest_flow"
+## The Wayfarers' first Plain Vellum R card on the trail (Level 3).
+const RIME_LASH: StringName = &"rime_lash"
 # Boss-drop lead cards
 const MOONFALL_CLEAVE: StringName = &"moonfall_cleave"
 const EMBER_AEGIS: StringName = &"ember_aegis"
@@ -59,6 +119,25 @@ const STAR_TIDE_LINK: StringName = &"star_tide_link"
 const STOUT_HEART: StringName = &"stout_heart"
 const SWIFT_FOOT: StringName = &"swift_foot"
 const WISE_HAND: StringName = &"wise_hand"
+
+# The Trail of the Four Signs (11 GDD §5.2).
+const MAX_TRAIL_LEVEL: int = 10
+## The levels that grant something.
+const MILESTONE_LEVELS: Array[int] = [2, 3, 5, 7, 10]
+## The Under-Card link beneath R opens here; the Secondary Callings at CALLING_LEVEL.
+const UNDER_TUCK_LEVEL: int = 7
+const CALLING_LEVEL: int = 10
+## Each Fellowship's trail, by ClassLoadoutResource.Role (Tank, Mender, DPS):
+## the weapon type it starts with, its Forward and Back cards (in the grimoire
+## from Level 1), and the R card (Level 3), L+R card (Level 5) and Under-Card
+## (Level 7) the trail grants it.
+const ROLE_WEAPON_TYPES: Array[int] = [EquipmentItemResource.WeaponType.LIGHT_SWORD, EquipmentItemResource.WeaponType.STAFF,
+	EquipmentItemResource.WeaponType.BOW]
+const ROLE_FORWARD_CARDS: Array[StringName] = [SHIELD_CHARGE, SUNLIT_LANCE, RISING_DRIVE]
+const ROLE_BACK_CARDS: Array[StringName] = [SHADOW_SANCTUARY, GREEN_SANCTUARY, FROST_CRESCENT]
+const ROLE_R_CARDS: Array[StringName] = [TAUNT, HOMING_HEAL, RIME_LASH]
+const ROLE_ULT_CARDS: Array[StringName] = [BULWARK_QUAKE, LIFELINE_PULL, TEMPEST_FLOW]
+const ROLE_UNDER_CARDS: Array[StringName] = [IRON_ROOT_LINK, WARM_HEARTH_LINK, STAR_TIDE_LINK]
 
 const Cmd = CombatActionResource.Command
 const Fx = CombatActionResource.Effect
@@ -81,6 +160,7 @@ func _init() -> void:
 	_build_signs()
 	_build_armor()
 	_build_weapons()
+	_build_tier_weapons()
 	_build_lead_cards()
 	_build_under_cards()
 	_build_callings()
@@ -188,6 +268,99 @@ func copy_name(copy_key: StringName) -> String:
 	if variant != ScribeCardResource.CardVariant.STANDARD:
 		extras.append(ScribeCardResource.VARIANT_NAMES[variant])
 	return named.display_name if extras.is_empty() else "%s (%s)" % [named.display_name, ", ".join(extras)]
+
+
+## The trail weapon of a WeaponType at a tier (1-4).
+static func tier_weapon_id(weapon_type: int, tier: int) -> StringName:
+	return TIER_WEAPONS[clampi(tier, 1, TIER_WEAPONS.size()) - 1][weapon_type]
+
+
+# --- The Trail of the Four Signs (11 GDD §5) --------------------------------
+
+## The Level 1 kit for a Primary Fellowship's role (ClassLoadoutResource.Role):
+## its Tier 1 weapon, the Bramble-Spun Jerkin, its Forward and Back cards, and
+## an un-inked R, L+R and Under-Card link (R and L+R fire Un-Inked Martial Flourishes).
+func get_default_level_one_loadout_for_role(primary_role: int) -> Dictionary:
+	var row: int = _trail_row(primary_role)
+	return {
+		"weapon_id": tier_weapon_id(ROLE_WEAPON_TYPES[row], 1),
+		"armor_id": BRAMBLE_JERKIN,
+		"forward_card_id": ROLE_FORWARD_CARDS[row],
+		"back_card_id": ROLE_BACK_CARDS[row],
+		"r_card_id": &"",
+		"ult_card_id": &"",
+		"under_card_id": &"",
+	}
+
+
+## What reaching `level` grants a Fellowship's role ({} for a level with no milestone):
+##   2  its Tier 2 weapon           3  its first Plain Vellum R card
+##   5  its Tier 3 weapon and L+R card
+##   7  an Under-Card for the link beneath R
+##   10 its Tier 4 relic, and the Secondary Callings open
+func get_milestone_grant_for_level(level: int, primary_role: int) -> Dictionary:
+	var row: int = _trail_row(primary_role)
+	var weapon_type: int = ROLE_WEAPON_TYPES[row]
+	match level:
+		2:
+			return {"level": level, "weapon_id": tier_weapon_id(weapon_type, 2)}
+		3:
+			return {"level": level, "r_card_id": ROLE_R_CARDS[row]}
+		5:
+			return {"level": level, "weapon_id": tier_weapon_id(weapon_type, 3), "ult_card_id": ROLE_ULT_CARDS[row]}
+		7:
+			return {"level": level, "under_card_id": ROLE_UNDER_CARDS[row]}
+		10:
+			return {"level": level, "weapon_id": tier_weapon_id(weapon_type, 4), "unlocks_secondary_calling": true}
+	return {}
+
+
+## Smart auto-slot (11 GDD §6): puts a milestone's grant into a kit where the
+## slot is still at its starter state. A granted weapon replaces a lower tier
+## (of the weapon type already carried, so a Wayfarer with a Broad-Axe gets the
+## better Broad-Axe); a card fills R or L+R only while it's empty; an Under-Card
+## fills the link beneath R only while it's empty. Returns what went in, by name.
+func apply_milestone_grant(kit: EquipmentLoadoutResource, grant: Dictionary) -> PackedStringArray:
+	var slotted: PackedStringArray = PackedStringArray()
+	var granted: EquipmentItemResource = item(grant.get("weapon_id", &""))
+	if granted != null:
+		var worn: EquipmentItemResource = item(kit.weapon_id)
+		if worn == null or worn.equipment_tier < granted.equipment_tier:
+			kit.weapon_id = tier_weapon_id(worn.weapon_type if worn != null else granted.weapon_type, granted.equipment_tier)
+			slotted.append(item(kit.weapon_id).display_name)
+	for entry: Array in [["r_card_id", Slot.SIGNATURE], ["ult_card_id", Slot.ULTIMATE]]:
+		var lead: ScribeCardResource = card(grant.get(entry[0], &""))
+		if lead != null and kit.lead_ids[entry[1]] == &"":
+			kit.lead_ids[entry[1]] = lead.card_id
+			kit.lead_variants[entry[1]] = ScribeCardResource.CardVariant.STANDARD
+			slotted.append(lead.display_name)
+	var under: ScribeCardResource = card(grant.get("under_card_id", &""))
+	if under != null and kit.under_ids[Slot.SIGNATURE] == &"":
+		kit.under_ids[Slot.SIGNATURE] = under.card_id
+		slotted.append(under.display_name)
+	return slotted
+
+
+## The kit a Fellowship's role wears at a trail level: the Level 1 kit with
+## every milestone up to `level` auto-slotted in.
+func trail_kit_for_role(primary_role: int, level: int) -> EquipmentLoadoutResource:
+	var start: Dictionary = get_default_level_one_loadout_for_role(primary_role)
+	var kit: EquipmentLoadoutResource = EquipmentLoadoutResource.make(start["armor_id"], start["weapon_id"],
+		[start["forward_card_id"], start["back_card_id"], start["r_card_id"], start["ult_card_id"]])
+	for milestone: int in MILESTONE_LEVELS:
+		if milestone <= level:
+			apply_milestone_grant(kit, get_milestone_grant_for_level(milestone, primary_role))
+	return kit
+
+
+## A role's row in the trail tables (bosses read as Wayfarers).
+static func _trail_row(primary_role: int) -> int:
+	match primary_role:
+		ClassLoadoutResource.Role.TANK:
+			return 0
+		ClassLoadoutResource.Role.HEALER:
+			return 1
+	return 2
 
 
 ## A fresh dodge roll; the armor sets how far it carries (DodgeState).
@@ -356,6 +529,14 @@ func _build_armor() -> void:
 		PropPartResource.make(Part.BOX, Vector3(0.62, 0.5, 0.1), Vector3(0.0, 1.05, -0.44), iron.darkened(0.15)),
 	]
 	register_item(plate)
+	# The trail's first coat (11 GDD §5.2): woven bramble-fibre over hemp, worn by everyone at Level 1.
+	var jerkin: EquipmentItemResource = _armor(BRAMBLE_JERKIN, "Bramble-Spun Jerkin", EquipmentItemResource.ArmorWeight.MEDIUM, 0.15, 24.0, 4.8, 0.22,
+		"Woven bramble-fibre over hemp: the trail's first coat. Forgiving footwork for a first expedition.")
+	jerkin.prop_parts = [
+		PropPartResource.make(Part.CYLINDER, Vector3(0.49, 0.1, 0.49), Vector3(0.0, 0.95, 0.0), Color(0.55, 0.42, 0.24)),
+		PropPartResource.make(Part.BOX, Vector3(0.1, 0.55, 0.05), Vector3(-0.18, 1.2, -0.42), Color(0.36, 0.42, 0.22), Vector3(0.0, 0.0, 20.0)),
+	]
+	register_item(jerkin)
 
 
 func _armor(id: StringName, label: String, weight: EquipmentItemResource.ArmorWeight, mitigation: float, regen: float,
@@ -516,6 +697,158 @@ func _build_weapons() -> void:
 		PropPartResource.make(Part.CYLINDER, Vector3(0.008, 1.5, 0.008), Vector3(-0.5, 1.15, -0.27), Color(0.95, 0.95, 0.9)),
 	]
 	register_item(bow)
+	# The classics are Bramblebridge steel with the base numbers, open from Level 5.
+	for classic: EquipmentItemResource in [sword, axe, staff, bow]:
+		classic.equipment_tier = EquipmentItemResource.EquipmentTier.TIER_3_STEEL
+		classic.required_level = TIER_LEVELS[2]
+		classic.blade_albedo = TIER_BLADES[2]
+		classic.trim_albedo = TIER_TRIMS[2]
+		classic.metallic_factor = TIER_METALLIC[2]
+		classic.roughness_factor = TIER_ROUGHNESS[2]
+		classic.uninked_r_skill_name = UNINKED_NAMES[classic.weapon_type][0]
+		classic.uninked_ult_name = UNINKED_NAMES[classic.weapon_type][1]
+
+
+# --- The trail's weapons (11 GDD §5.1) --------------------------------------
+
+## Four tiers of each weapon type. Each takes its classic's moves, with damage
+## and poise scaled by the tier, and is drawn in the tier's palette: wood with
+## hemp cord, dark iron with brass rivets, milled steel with a brass bell-guard,
+## and gilded relic bronze with a glowing Sign-stone. Metal blades and trims
+## catch a glint band (storybook_cel_light.gdshaderinc).
+func _build_tier_weapons() -> void:
+	var names: Array[Array] = [
+		["Turned-Hazel Falchion", "Split-Ash Broad-Axe", "Reed-Light Way-Staff", "Willow-Coppice Longbow"],
+		["Hedgerow Iron Falchion", "Coppice-Forged Broad-Axe", "Copper-Shod Way-Staff", "Horn-Tipped Yew Longbow"],
+		["Bramble-Steel Falchion", "Mill-Forged Broad-Axe", "Scribe-Banded Way-Staff", "Weald-Ranger Yew Longbow"],
+		["Cairnsman's Span-Blade", "Doverslap Cleaver-Axe", "Arch-Scribe's Carillon Staff", "Gorge-Wind Greatbow"],
+	]
+	var blurbs: PackedStringArray = [
+		"Lathe-turned practice arms bound in hemp cord.",
+		"Hammered hedgerow iron on an oak grip, riveted in brass.",
+		"Bright milled steel from the Bramblebridge forge, with a brass bell-guard.",
+		"A Doverslap relic of gilded Carillon bronze and star-etched steel, a Sign-stone glowing in its pommel.",
+	]
+	for tier_index: int in TIER_WEAPONS.size():
+		for weapon_type: int in CLASSIC_WEAPONS.size():
+			var classic: EquipmentItemResource = item(CLASSIC_WEAPONS[weapon_type])
+			var weapon: EquipmentItemResource = _weapon(TIER_WEAPONS[tier_index][weapon_type], names[tier_index][weapon_type],
+				classic.weapon_type, classic.delivery, "%s %s" % [blurbs[tier_index], classic.description])
+			_scale_to_tier(weapon, classic, tier_index)
+			weapon.prop_parts = _tier_parts(weapon_type, tier_index)
+			register_item(weapon)
+
+
+## Copies the classic's moves and delivery, scaled to a tier, and sets the tier's data.
+func _scale_to_tier(weapon: EquipmentItemResource, classic: EquipmentItemResource, tier_index: int) -> void:
+	var multiplier: float = TIER_MULTIPLIERS[tier_index]
+	weapon.equipment_tier = (tier_index + 1) as EquipmentItemResource.EquipmentTier
+	weapon.required_level = TIER_LEVELS[tier_index]
+	weapon.damage_multiplier = multiplier
+	weapon.blade_albedo = TIER_BLADES[tier_index]
+	weapon.trim_albedo = TIER_TRIMS[tier_index]
+	weapon.metallic_factor = TIER_METALLIC[tier_index]
+	weapon.roughness_factor = TIER_ROUGHNESS[tier_index]
+	weapon.uninked_r_skill_name = UNINKED_NAMES[classic.weapon_type][0]
+	weapon.uninked_ult_name = UNINKED_NAMES[classic.weapon_type][1]
+	var chain: Array[CombatActionResource] = []
+	for template: CombatActionResource in classic.light_chain:
+		chain.append(_scaled_action(template, multiplier))
+	weapon.light_chain = chain
+	weapon.heavy = _scaled_action(classic.heavy, multiplier)
+	weapon.card_range = classic.card_range
+	weapon.projectile_speed = classic.projectile_speed
+	weapon.projectile_radius = classic.projectile_radius
+	weapon.projectile_parts = classic.projectile_parts
+	weapon.support_radius_multiplier = classic.support_radius_multiplier
+	weapon.trail_base = classic.trail_base
+	weapon.trail_tip = classic.trail_tip
+	weapon.trail_color = classic.trail_color.lerp(TIER_BLADES[tier_index].lightened(0.4), 0.5)
+
+
+static func _scaled_action(template: CombatActionResource, multiplier: float) -> CombatActionResource:
+	var action: CombatActionResource = template.duplicate() as CombatActionResource
+	action.damage *= multiplier
+	action.poise_damage *= multiplier
+	return action
+
+
+## A weapon type's parts in a tier's palette, with the tier's own touches.
+func _tier_parts(weapon_type: int, tier_index: int) -> Array[PropPartResource]:
+	var blade: Color = TIER_BLADES[tier_index]
+	var trim: Color = TIER_TRIMS[tier_index]
+	var grip: Color = TIER_GRIPS[tier_index]
+	var metal: float = TIER_METALLIC[tier_index]
+	var rough: float = TIER_ROUGHNESS[tier_index]
+	# Timber trims are hemp cord, not metal; every later tier's trim is.
+	var trim_metal: float = 0.0 if tier_index == 0 else maxf(metal, 0.6)
+	var wood: Color = Color(0.56, 0.4, 0.26) if tier_index == 0 else Color(0.45, 0.3, 0.18)
+	var parts: Array[PropPartResource] = []
+	match weapon_type:
+		EquipmentItemResource.WeaponType.LIGHT_SWORD:
+			var thick: float = 0.07 if tier_index == 0 else 0.05
+			parts.append(_metal(Part.BOX, Vector3(thick, 0.17, 0.86), Vector3(0.48, 1.0, -0.82), blade, metal, rough))
+			parts.append(_metal(Part.BOX, Vector3(thick, 0.13, 0.26), Vector3(0.48, 1.03, -1.31), blade, metal, rough, Vector3(22.0, 0.0, 0.0)))
+			parts.append(_metal(Part.BOX, Vector3(0.32 + 0.04 * tier_index, 0.06, 0.07), Vector3(0.48, 1.0, -0.36), trim, trim_metal, rough))
+			parts.append(PropPartResource.make(Part.CYLINDER, Vector3(0.035, 0.22, 0.035), Vector3(0.48, 1.0, -0.24), grip, Vector3(90.0, 0.0, 0.0)))
+			_add_tier_touches(parts, tier_index, Vector3(0.48, 1.0, -0.12), Vector3(0.48, 1.0, -0.36), Vector3(0.48, 1.0, -0.82), trim, trim_metal, rough)
+		EquipmentItemResource.WeaponType.HEAVY_AXE:
+			parts.append(PropPartResource.make(Part.CYLINDER, Vector3(0.05, 1.6, 0.05), Vector3(0.5, 1.0, -0.6), wood, Vector3(90.0, 0.0, 0.0)))
+			parts.append(PropPartResource.make(Part.CYLINDER, Vector3(0.062, 0.26, 0.062), Vector3(0.5, 1.0, -0.2), grip, Vector3(90.0, 0.0, 0.0)))
+			parts.append(_metal(Part.BOX, Vector3(0.09 if tier_index == 0 else 0.07, 0.62, 0.36), Vector3(0.5, 1.14, -1.24), blade, metal, rough))
+			parts.append(_metal(Part.BOX, Vector3(0.07, 0.26, 0.2), Vector3(0.5, 0.86, -1.17), blade, metal, rough, Vector3(-20.0, 0.0, 0.0)))
+			parts.append(_metal(Part.BOX, Vector3(0.06, 0.12, 0.2), Vector3(0.5, 1.1, -1.48), trim, trim_metal, rough))
+			_add_tier_touches(parts, tier_index, Vector3(0.5, 1.0, -0.06), Vector3(0.5, 1.0, -1.0), Vector3(0.5, 1.14, -1.24), trim, trim_metal, rough)
+		EquipmentItemResource.WeaponType.STAFF:
+			# The shaft stays wood at every tier; the tier shows in its fittings.
+			parts.append(PropPartResource.make(Part.CYLINDER, Vector3(0.045, 1.9, 0.04), Vector3(0.55, 1.0, -0.2), wood))
+			parts.append(_metal(Part.CYLINDER, Vector3(0.03, 0.34, 0.02), Vector3(0.48, 2.06, -0.2), blade if tier_index > 0 else wood, metal, rough, Vector3(0.0, 0.0, 28.0)))
+			parts.append(_metal(Part.CYLINDER, Vector3(0.03, 0.34, 0.02), Vector3(0.62, 2.06, -0.2), blade if tier_index > 0 else wood, metal, rough, Vector3(0.0, 0.0, -28.0)))
+			parts.append(PropPartResource.make(Part.SPHERE, Vector3(0.13, 0.13, 0.13), Vector3(0.55, 2.04, -0.2), Color(0.6, 1.0, 0.68), Vector3.ZERO, 1.0 + tier_index * 0.6))
+			parts.append(PropPartResource.make(Part.BOX, Vector3(0.02, 0.32, 0.07), Vector3(0.6, 1.72, -0.2), trim, Vector3(0.0, 0.0, -10.0)))
+			parts.append(PropPartResource.make(Part.CYLINDER, Vector3(0.05, 0.12, 0.05), Vector3(0.55, 0.9, -0.2), grip))
+			_add_tier_touches(parts, tier_index, Vector3(0.55, 0.08, -0.2), Vector3(0.55, 1.86, -0.2), Vector3(0.55, 2.28, -0.2), trim, trim_metal, rough)
+		EquipmentItemResource.WeaponType.BOW:
+			var reach: float = 1.0 + 0.06 * tier_index
+			parts.append(_metal(Part.BOX, Vector3(0.05, 0.86 * reach, 0.07), Vector3(-0.5, 1.15 + 0.38 * reach, -0.42), blade if tier_index == 3 else wood, metal if tier_index == 3 else 0.0, rough, Vector3(-16.0, 0.0, 0.0)))
+			parts.append(_metal(Part.BOX, Vector3(0.05, 0.86 * reach, 0.07), Vector3(-0.5, 1.15 - 0.38 * reach, -0.42), blade if tier_index == 3 else wood, metal if tier_index == 3 else 0.0, rough, Vector3(16.0, 0.0, 0.0)))
+			parts.append(PropPartResource.make(Part.BOX, Vector3(0.07, 0.2, 0.09), Vector3(-0.5, 1.15, -0.46), grip))
+			# Nocks: hemp-bound timber, then horn, steel and gilded tips.
+			var tip: Color = trim if tier_index != 1 else Color(0.85, 0.8, 0.68)
+			parts.append(_metal(Part.SPHERE, Vector3(0.035 + 0.008 * tier_index, 0.0, 0.0), Vector3(-0.5, 1.15 + 0.79 * reach, -0.3), tip, trim_metal, rough))
+			parts.append(_metal(Part.SPHERE, Vector3(0.035 + 0.008 * tier_index, 0.0, 0.0), Vector3(-0.5, 1.15 - 0.79 * reach, -0.3), tip, trim_metal, rough))
+			parts.append(PropPartResource.make(Part.CYLINDER, Vector3(0.008, 1.5 * reach, 0.008), Vector3(-0.5, 1.15, -0.27), Color(0.95, 0.95, 0.9)))
+			if tier_index >= 2:
+				# Steel-backed limbs, a strip down each.
+				for side: float in [1.0, -1.0]:
+					parts.append(_metal(Part.BOX, Vector3(0.02, 0.7 * reach, 0.02), Vector3(-0.5, 1.15 + side * 0.38 * reach, -0.47), blade, metal, rough, Vector3(-16.0 * side, 0.0, 0.0)))
+			if tier_index == 3:
+				parts.append(PropPartResource.make(Part.SPHERE, Vector3(0.05, 0.05, 0.05), Vector3(-0.5, 1.15, -0.52), SIGN_STONE_COLOR, Vector3.ZERO, 2.5))
+	return parts
+
+
+## Each tier's extra touch at the pommel, the guard and the blade: a hemp knot,
+## brass rivets, a brass bell-guard, or a glowing Sign-stone with a steel fuller.
+func _add_tier_touches(parts: Array[PropPartResource], tier_index: int, pommel: Vector3, guard: Vector3, blade_mid: Vector3,
+		trim: Color, trim_metal: float, rough: float) -> void:
+	match tier_index:
+		0:
+			parts.append(PropPartResource.make(Part.SPHERE, Vector3(0.05, 0.0, 0.0), pommel, TIER_TRIMS[0]))
+		1:
+			parts.append(_metal(Part.SPHERE, Vector3(0.05, 0.0, 0.0), pommel, TIER_BLADES[1], TIER_METALLIC[1], rough))
+			for side: float in [-1.0, 1.0]:
+				parts.append(_metal(Part.SPHERE, Vector3(0.025, 0.0, 0.0), guard + Vector3(0.04, side * 0.03, side * 0.1), trim, trim_metal, rough))
+		2:
+			parts.append(_metal(Part.SPHERE, Vector3(0.055, 0.0, 0.0), pommel, trim, trim_metal, rough))
+			parts.append(_metal(Part.CYLINDER, Vector3(0.11, 0.04, 0.11), guard, trim, trim_metal, rough, Vector3(90.0, 0.0, 0.0)))
+		3:
+			parts.append(PropPartResource.make(Part.SPHERE, Vector3(0.065, 0.0, 0.0), pommel, SIGN_STONE_COLOR, Vector3.ZERO, 2.5))
+			parts.append(_metal(Part.BOX, Vector3(0.075, 0.03, 0.6), blade_mid, trim, trim_metal, rough))
+
+
+static func _metal(shape: PropPartResource.Shape, size: Vector3, offset: Vector3, color: Color, metal: float, rough: float,
+		rotation: Vector3 = Vector3.ZERO) -> PropPartResource:
+	return PropPartResource.make(shape, size, offset, color, rotation).finished(metal, rough)
 
 
 func _weapon(id: StringName, label: String, type: EquipmentItemResource.WeaponType, delivery: EquipmentItemResource.DeliveryVector,
@@ -587,6 +920,17 @@ func _build_lead_cards() -> void:
 	rush.resonance_gain = 0.0
 	rush.primer = Sign.SIGN_STAR_TIDE
 	_lead(rush, Slot.SIGNATURE, Sign.SIGN_STAR_TIDE, "A moonlit dash that stamps the Sign of Star-Tide (1 pip).")
+	# The Wayfarers' first R card on the trail (11 GDD §5.2, Level 3). A trail
+	# grant, kept out of chest drops so the drop table stays as it was.
+	var lash: CombatActionResource = _strike(RIME_LASH, "Rime-Lash", Cmd.TRIGGER_R_SKILL, 0.2, 0.2, 0.24, 0.0, 20.0)
+	lash.resonance_cost = 1
+	lash.poise_damage = 10.0
+	lash.lunge_distance = 1.5
+	lash.reach = 2.2
+	lash.hit_radius = 1.6
+	lash.resonance_gain = 0.0
+	lash.primer = Sign.SIGN_RIME_GALE
+	_lead(lash, Slot.SIGNATURE, Sign.SIGN_RIME_GALE, "A whip of frost-wind that stamps the Sign of Rime-Gale (1 pip).").drop_weight = 0.0
 
 	# L + R: the ultimate.
 	var quake: CombatActionResource = _strike(BULWARK_QUAKE, "Bulwark Quake", Cmd.TRIGGER_BOTH_ULT, 0.6, 0.2, 0.8, 0.0, 30.0)
