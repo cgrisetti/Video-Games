@@ -88,6 +88,10 @@ func _run() -> void:
 	print("Everwood smoke test")
 	_remove_file(TEST_SAVE_PATH)
 	PartyProgress.current.use_save_file(TEST_SAVE_PATH)
+	# The older checks play the classic full kits at trail Level 10, against foes
+	# without their Braced Front Guard; the Phase 11 combat check sets up its own.
+	PartyProgress.current.apply_full_endgame_kit_for_testing()
+	BracedGuardComponent.enabled = false
 	change_scene_to_file(HUB_SCENE)
 	await _seconds(0.2)
 	_connect_global_signals()
@@ -126,6 +130,7 @@ func _run() -> void:
 	await _check_gale_beam()
 	await _check_squire_beam_assist()
 	await _check_companion_backfill()
+	await _check_phase_11_combat_onboarding_and_flanking()
 	await _check_victory_and_loot()
 	await _check_chime_shrine()
 	await _check_scribe_desk()
@@ -136,7 +141,9 @@ func _run() -> void:
 	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
-	if not _failures.is_empty():
+	if _failures.is_empty():
+		print("ALL SMOKE TESTS PASSED")
+	else:
 		print("FAILED: " + "; ".join(_failures))
 	quit(0 if _failures.is_empty() else 1)
 
@@ -182,8 +189,8 @@ func _check_arsenal_catalog() -> void:
 				starters += 1
 			else:
 				boss_cards += 1
-	_check(catalog.armors().size() == 3 and catalog.weapons().size() == 4 and starters == 12 and boss_cards >= 4 and catalog.under_cards().size() == 4,
-		"the Arsenal holds 3 armors, 4 weapons, 12 starter lead cards, %d boss cards and 4 under-cards" % boss_cards)
+	_check(catalog.armors().size() == 4 and catalog.weapons().size() == 20 and starters == 13 and boss_cards >= 4 and catalog.under_cards().size() == 4,
+		"the Arsenal holds 4 armors, 20 weapons (4 classic, 16 on the trail), 13 starter lead cards, %d boss cards and 4 under-cards" % boss_cards)
 	var choices: bool = true
 	for slot: int in EquipmentLoadoutResource.SLOT_COUNT:
 		choices = choices and catalog.lead_cards(slot).size() >= 3
@@ -1622,6 +1629,297 @@ func _check_companion_backfill() -> void:
 	dps = dojo.actors[&"1_2"]
 
 
+# --- Phase 11 combat track -----------------------------------------------
+
+## The kinetic loop, Martial Imbuement and the Trail of the Four Signs
+## (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md): the four weapon tiers, a Level 1
+## party in timber with an un-inked R and L+R, the winded third Light and the
+## Flow-Link Pulse, the Braced Front Guard and the Flank Breach, the trail's
+## milestones auto-slotting at Levels 2 to 10, and a card's Sign Ring, badge
+## and the teammate's detonation prompt. Puts the classic Level 10 kits back after.
+func _check_phase_11_combat_onboarding_and_flanking() -> void:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var progress: PartyProgress = PartyProgress.current
+	var network: NetworkManager = NetworkManager.current
+	var director: CombatDirector = CombatDirector.current
+
+	# The four tiers: their levels, multipliers and materials.
+	var tiers_ok: bool = true
+	var blades: Array[Color] = []
+	for tier: int in range(1, 5):
+		blades.append(catalog.item(ArsenalCatalog.tier_weapon_id(EquipmentItemResource.WeaponType.LIGHT_SWORD, tier)).blade_albedo)
+		for weapon_type: int in ArsenalCatalog.CLASSIC_WEAPONS.size():
+			var weapon: EquipmentItemResource = catalog.item(ArsenalCatalog.tier_weapon_id(weapon_type, tier))
+			var classic: EquipmentItemResource = catalog.item(ArsenalCatalog.CLASSIC_WEAPONS[weapon_type])
+			tiers_ok = tiers_ok and weapon != null and weapon.weapon_type == classic.weapon_type and int(weapon.equipment_tier) == tier \
+				and weapon.required_level == ArsenalCatalog.TIER_LEVELS[tier - 1] \
+				and is_equal_approx(weapon.heavy.damage, classic.heavy.damage * ArsenalCatalog.TIER_MULTIPLIERS[tier - 1]) \
+				and is_equal_approx(weapon.metallic_factor, ArsenalCatalog.TIER_METALLIC[tier - 1])
+	var distinct: bool = true
+	for index: int in blades.size():
+		for other: int in range(index + 1, blades.size()):
+			distinct = distinct and not blades[index].is_equal_approx(blades[other])
+	_check(tiers_ok and distinct, "16 trail weapons in four tiers (Level 1/2/5/10, 1.0/1.2/1.45/1.75x the classic's damage), each tier its own blade colour and metal")
+	var hazel: EquipmentItemResource = catalog.item(ArsenalCatalog.HAZEL_FALCHION)
+	var relic: EquipmentItemResource = catalog.item(ArsenalCatalog.CAIRNSMAN_FALCHION)
+	var wooden: bool = true
+	for part: PropPartResource in hazel.prop_parts:
+		wooden = wooden and is_zero_approx(part.metal) and is_zero_approx(part.glow)
+	var relic_metal: bool = false
+	var relic_stone: bool = false
+	for part: PropPartResource in relic.prop_parts:
+		relic_metal = relic_metal or part.metal >= 0.9
+		relic_stone = relic_stone or part.glow > 0.0
+	var probe: Node3D = PropBuilder.build(relic.prop_parts, null, "Probe")
+	var blade_material: ShaderMaterial = ((probe.get_child(0) as MeshInstance3D).mesh as PrimitiveMesh).material as ShaderMaterial
+	var glinting: bool = blade_material != null and is_equal_approx(float(blade_material.get_shader_parameter(&"metal")), 0.9)
+	probe.free()
+	_check(wooden and relic_metal and relic_stone and glinting and hazel.uninked_r_skill_name == "Timber-Cross Slash",
+		"the Turned-Hazel Falchion is plain wood; the Cairnsman's Span-Blade is 0.9-metal relic bronze with a glowing Sign-stone")
+	var start: Dictionary = catalog.get_default_level_one_loadout_for_role(ClassLoadoutResource.Role.TANK)
+	_check(start["weapon_id"] == ArsenalCatalog.HAZEL_FALCHION and start["armor_id"] == ArsenalCatalog.BRAMBLE_JERKIN and start["r_card_id"] == &""
+		and start["ult_card_id"] == &"" and start["under_card_id"] == &"", "a Level 1 Shield-Sworn starts with the Turned-Hazel Falchion, the Bramble-Spun Jerkin and an empty R and L+R")
+	var tank_role: int = ClassLoadoutResource.Role.TANK
+	_check(catalog.get_milestone_grant_for_level(2, tank_role)["weapon_id"] == ArsenalCatalog.IRON_FALCHION
+		and catalog.get_milestone_grant_for_level(3, ClassLoadoutResource.Role.DPS)["r_card_id"] == ArsenalCatalog.RIME_LASH
+		and catalog.get_milestone_grant_for_level(5, tank_role)["ult_card_id"] == ArsenalCatalog.BULWARK_QUAKE
+		and catalog.get_milestone_grant_for_level(7, tank_role)["under_card_id"] == ArsenalCatalog.IRON_ROOT_LINK
+		and catalog.get_milestone_grant_for_level(10, tank_role)["unlocks_secondary_calling"] and catalog.get_milestone_grant_for_level(4, tank_role).is_empty(),
+		"milestones: Tier 2 at Level 2, an R card at 3, Tier 3 and an L+R card at 5, an Under-Card at 7, Tier 4 and the Callings at 10")
+	_check(PartyProgress.level_for_xp(PartyProgress.XP_PER_MOB * 7 + PartyProgress.XP_PER_GATE) == 5
+		and PartyProgress.level_for_xp((PartyProgress.XP_PER_MOB * 7 + PartyProgress.XP_PER_GATE + PartyProgress.XP_PER_BOSS) * 2) == 10,
+		"one expedition (7 mobs at 35 XP and the gate at 80) reaches Level 5 at the Gatehouse; a second, with the Cairnsman at 200, reaches Level 10")
+
+	# Back to Level 1: the party in timber, Unsworn, with an un-inked R and L+R.
+	var callings_before: Dictionary[StringName, StringName] = {}
+	for actor: ActorBase in [tank, healer, dps]:
+		callings_before[actor.player_id] = network.member(actor.player_id).calling
+	var saved_kits: Dictionary = progress.kits.duplicate(true)
+	var saved_callings: Dictionary = progress.callings.duplicate()
+	progress.endgame_kits_for_testing = false
+	progress.xp = 0
+	BracedGuardComponent.enabled = true
+	boss.set_physics_process(false)
+	_reset_boss_poise()
+	for actor: ActorBase in [tank, healer, dps]:
+		await _until_idle(actor)
+		network.update_local_calling(actor.device_id, Callings.UNSWORN_ID)
+		network.update_local_kit(actor.device_id, progress.trail_kit(actor.loadout.class_id))
+	await _seconds(0.1)
+	var tank_r: CombatActionResource = tank.loadout.opener_for(Cmd.TRIGGER_R_SKILL)
+	var tank_ult: CombatActionResource = tank.loadout.opener_for(Cmd.TRIGGER_BOTH_ULT)
+	_check(tank.loadout.weapon.item_id == ArsenalCatalog.HAZEL_FALCHION and tank.loadout.armor.item_id == ArsenalCatalog.BRAMBLE_JERKIN
+		and healer.loadout.weapon.item_id == ArsenalCatalog.REED_WAYSTAFF and dps.loadout.weapon.item_id == ArsenalCatalog.WILLOW_LONGBOW
+		and tank.loadout.kit.lead_ids[2] == &"" and tank.loadout.kit.lead_ids[3] == &"" and tank.loadout.display_name == "Shield-Sworn",
+		"at Level 1 the party carries Tier 1 timber in the Bramble-Spun Jerkin, Unsworn, with R and L+R empty")
+	var hud_r: CrossSlot = dojo.huds[&"1_0"].cross_grimoire.slots[Cmd.TRIGGER_R_SKILL]
+	_check(tank_r.uninked and tank_r.display_name == "Timber-Cross Slash" and tank_r.resonance_cost == 1 and tank_ult.display_name == "Bramble-Whirl Flurry"
+		and tank_ult.resonance_cost == 3 and hud_r.title == "Timber-Cross Slash" and dps.loadout.opener_for(Cmd.TRIGGER_R_SKILL).pierces
+		and is_equal_approx(healer.loadout.opener_for(Cmd.TRIGGER_R_SKILL).heal_amount, LoadoutComposer.STAFF_FLOURISH_HEAL),
+		"an empty R is the weapon's Un-Inked Martial Flourish (1 pip; L+R 3 pips), shown on the Cross-Grimoire: a bow's pierces, a staff's mends")
+	var stops: Array[float] = []
+	var stop_hook: Callable = func(duration: float) -> void: stops.append(duration)
+	director.hit_stop_applied.connect(stop_hook)
+	_face_boss(tank, Vector3(0.0, 0.0, 3.6))
+	tank.stats.resonance_charge = 1.0
+	var boss_health: float = boss.stats.health
+	tank.input.inject_command(Cmd.TRIGGER_R_SKILL)
+	await _seconds(0.3)
+	var swelled: float = tank.visuals.weapon_scale()
+	await _seconds(0.5)
+	var heavy_stop: bool = false
+	for duration: float in stops:
+		heavy_stop = heavy_stop or is_equal_approx(duration, CombatDirector.HIT_STOP_HEAVY)
+	_check(tank.stats.resonance_charge < 0.01 and swelled > 1.8 and is_equal_approx(boss_health - boss.stats.health, 18.0 * 1.6) and heavy_stop,
+		"with 1 pip, R swings the Timber-Cross Slash: the falchion swells to %.1fx, hits for 1.6x the Heavy, and freezes 100 ms" % swelled)
+
+	# The kinetic loop: three Lights in place wind the third; weaving F+H in the window is a Flow-Link Pulse.
+	await _until_idle(tank)
+	tank.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(14.0, 0.0, 12.0)))
+	var pulses: Array[int] = []
+	var pulse_hook: Callable = func(_from: CombatActionResource, command: int) -> void: pulses.append(command)
+	tank.action_queue.flow_link_pulsed.connect(pulse_hook)
+	tank.stats.stamina = tank.stats.stats.max_stamina
+	tank.stats.resonance_charge = 0.0
+	var stepped_from: Vector3 = tank.global_position
+	tank.input.inject_command(Cmd.LIGHT)
+	await _until_recovery_of(tank, null)
+	var first: CombatActionResource = tank.action_queue.current_action
+	tank.input.inject_command(Cmd.LIGHT)
+	await _until_recovery_of(tank, first)
+	var second: CombatActionResource = tank.action_queue.current_action
+	tank.input.inject_command(Cmd.LIGHT)
+	await _until_recovery_of(tank, second)
+	var queue: ActionQueueComponent = tank.action_queue
+	_check(_flat(tank.global_position - stepped_from) > ActorBase.STEP_LIGHT_M * 2.5, "every Light steps the hero forward (%.1f m over three)" % _flat(tank.global_position - stepped_from))
+	_check(queue.winded and is_equal_approx(queue.recovery_time, ActorBase.STATIC_MASH_RECOVERY_MS / 1000.0),
+		"the third Light in place is winded: 550 ms of recovery")
+	var stamina_before: float = tank.stats.stamina
+	var charge_from: Vector3 = tank.global_position
+	tank.input.inject_command(Cmd.FORWARD_HEAVY)
+	await _seconds(1.0)
+	var charge_cost: float = tank.loadout.opener_for(Cmd.FORWARD_HEAVY).stamina_cost
+	_check(pulses.has(Cmd.FORWARD_HEAVY) and is_equal_approx(tank.stats.stamina, stamina_before - charge_cost + ActorBase.FLOW_LINK_STAMINA_REFUND)
+		and is_equal_approx(tank.stats.resonance_charge, ActorBase.FLOW_LINK_BONUS_PIP) and _flat(tank.global_position - charge_from) >= ActorBase.STEP_FORWARD_HEAVY_M,
+		"weaving Forward+Heavy into its first 220 ms is a Flow-Link Pulse: +8 stamina, +0.15 pip, and a %.1f m charge" % _flat(tank.global_position - charge_from))
+	tank.action_queue.flow_link_pulsed.disconnect(pulse_hook)
+
+	# The Braced Front Guard: three frontal hits raise it; the front takes 30%; a flank breaks it.
+	await _until_idle(tank)
+	boss.rotation = Vector3.ZERO
+	var guard: BracedGuardComponent = boss.braced_guard
+	guard._frontal_hits.clear()
+	_face_boss(tank, Vector3(0.0, 0.0, -2.6))
+	_face_boss(dps, Vector3(0.0, 0.0, 3.0))
+	for hit: int in BracedGuardComponent.BRACED_GUARD_HIT_THRESHOLD:
+		director.deliver(_strike(tank, boss, 10.0, 2.0))
+		await _seconds(0.05)
+	var buckler: Node3D = boss.get_node_or_null(^"BracedBuckler") as Node3D
+	_check(guard.is_braced and buckler != null and buckler.visible, "three frontal hits within 4 s raise the amber Braced Front Buckler")
+	_reset_boss_poise()
+	var health_before: float = boss.stats.health
+	var poise_before: float = boss.stats.poise
+	director.deliver(_strike(tank, boss, 20.0, 10.0))
+	_check(is_equal_approx(health_before - boss.stats.health, 20.0 * BracedGuardComponent.BRACED_FRONT_DAMAGE_MULT)
+		and is_equal_approx(poise_before - boss.stats.poise, 10.0 * BracedGuardComponent.BRACED_FRONT_POISE_MULT),
+		"braced, a frontal hit deals 30% damage and half poise")
+	poise_before = boss.stats.poise
+	var crack: CombatEvent = _strike(tank, boss, 0.0, 10.0)
+	crack.scribe_sign = Sign.SIGN_IRON_ROOT
+	director.deliver(crack)
+	_check(is_equal_approx(poise_before - boss.stats.poise, 10.0 * BracedGuardComponent.TANK_GUARD_POISE_MULT), "a Shield-Sworn's Iron-Root strike cracks it from the front at 2x poise")
+	health_before = boss.stats.health
+	poise_before = boss.stats.poise
+	var flank: CombatEvent = _strike(dps, boss, 20.0, 0.0)
+	flank.command = Cmd.FORWARD_HEAVY
+	director.deliver(flank)
+	_check(is_equal_approx(health_before - boss.stats.health, 20.0 * BracedGuardComponent.FLANK_BREACH_DAMAGE_MULT)
+		and is_equal_approx(poise_before - boss.stats.poise, BracedGuardComponent.FLANK_BREACH_BONUS_POISE) and not guard.is_braced,
+		"a Forward+Heavy on its rear is a Flank Breach: 1.35x damage, +20 poise, and the guard shatters")
+	_reset_boss_poise()
+	await _until_idle(tank)
+	_face_boss(tank, Vector3(0.0, 0.0, -2.6))
+	for hit: int in BracedGuardComponent.BRACED_GUARD_HIT_THRESHOLD:
+		director.deliver(_strike(tank, boss, 5.0, 0.0))
+	var shove_at: Vector3 = boss.global_position + boss.facing_vector() * (boss.body_radius() + BracedGuardComponent.SHOVE_RADIUS * 0.5)
+	var shove: RaidTelegraphDecal = null
+	var braced_wait: float = 0.0
+	while shove == null and braced_wait < BracedGuardComponent.SHOVE_DELAY_S + 0.5:
+		await physics_frame
+		braced_wait += 1.0 / 60.0
+		shove = director.hostile_telegraph_at(shove_at, 0.0)
+	# The circle frees itself once it has flashed, so note it now.
+	var shove_seen: bool = shove != null
+	var tank_spot: Vector3 = tank.global_position
+	await _seconds(BracedGuardComponent.SHOVE_WINDUP_S + 0.5)
+	var thrown: float = _flat(tank.global_position - tank_spot)
+	_check(guard.is_braced and shove_seen and absf(braced_wait - BracedGuardComponent.SHOVE_DELAY_S) < 0.1 and thrown >= BracedGuardComponent.SHOVE_DISTANCE * 0.8,
+		"after %.1f s braced it telegraphs a red 2.5 m shield-shove that throws the front-masher back %.1f m" % [braced_wait, thrown])
+	guard._lower()
+	_reset_boss_poise()
+
+	# The trail: each milestone auto-slots into the slot still at its starter state.
+	await _until_idle(healer)
+	var healer_kit: EquipmentLoadoutResource = healer.loadout.kit.copy()
+	healer_kit.lead_ids[2] = ArsenalCatalog.TAUNT
+	network.update_local_kit(healer.device_id, healer_kit.to_dict())
+	await _seconds(0.05)
+	progress.award_xp(PartyProgress.LEVEL_XP[1] - progress.xp)
+	await _seconds(0.1)
+	var pennant: Node3D = tank.visuals.milestone_pennant()
+	_check(progress.trail_level() == 2 and tank.loadout.weapon.item_id == ArsenalCatalog.IRON_FALCHION and dps.loadout.weapon.item_id == ArsenalCatalog.HORN_LONGBOW
+		and healer.loadout.weapon.item_id == ArsenalCatalog.COPPER_WAYSTAFF and pennant != null and dojo.huds[&"1_0"].banner_title() == "LEVEL 2!",
+		"Level 2: Hedgerow Iron goes straight into every hand, under a Wayfarer Pennant and a LEVEL 2! banner")
+	progress.award_xp(PartyProgress.LEVEL_XP[2] - progress.xp)
+	await _seconds(0.1)
+	_check(tank.loadout.kit.lead_ids[2] == ArsenalCatalog.TAUNT and dps.loadout.kit.lead_ids[2] == ArsenalCatalog.RIME_LASH
+		and healer.loadout.kit.lead_ids[2] == ArsenalCatalog.TAUNT and dps.loadout.opener_for(Cmd.TRIGGER_R_SKILL).scribe_sign == Sign.SIGN_RIME_GALE,
+		"Level 3: a Plain Vellum R card slots into every empty R (Taunt, Rime-Lash); the healer's own pick stays")
+	progress.award_xp(PartyProgress.LEVEL_XP[4] - progress.xp)
+	await _seconds(0.1)
+	_check(progress.trail_level() == 5 and tank.loadout.weapon.item_id == ArsenalCatalog.BRAMBLE_FALCHION and tank.loadout.kit.lead_ids[3] == ArsenalCatalog.BULWARK_QUAKE
+		and dps.loadout.kit.lead_ids[3] == ArsenalCatalog.TEMPEST_FLOW and healer.loadout.kit.lead_ids[3] == ArsenalCatalog.LIFELINE_PULL,
+		"Level 5: Bramblebridge Steel and an L+R card")
+	progress.award_xp(PartyProgress.LEVEL_XP[6] - progress.xp)
+	await _seconds(0.1)
+	_check(tank.loadout.kit.under_ids[2] == ArsenalCatalog.IRON_ROOT_LINK and dps.loadout.kit.under_ids[2] == ArsenalCatalog.STAR_TIDE_LINK
+		and healer.loadout.kit.under_ids[2] == ArsenalCatalog.WARM_HEARTH_LINK, "Level 7: an Under-Card tucks in beneath R")
+	_check(network.member(tank.player_id).calling == Callings.UNSWORN_ID, "below Level 10 the Secondary Callings stay locked")
+	progress.award_xp(PartyProgress.LEVEL_XP.back() - progress.xp)
+	await _seconds(0.1)
+	_check(progress.trail_level() == 10 and tank.loadout.weapon.item_id == ArsenalCatalog.CAIRNSMAN_FALCHION and dps.loadout.weapon.item_id == ArsenalCatalog.GORGE_LONGBOW
+		and Callings.is_valid(tank.loadout.calling) and tank.loadout.display_name != "Shield-Sworn",
+		"Level 10: a Doverslap relic, and the Secondary Calling opens (%s)" % tank.loadout.display_name)
+
+	# A card's Sign: the bow swells Sea-Azure, the Ring and badge mark the foe, the tank is prompted to detonate.
+	await _until_idle(dps)
+	await _until_idle(tank)
+	var tank_kit: EquipmentLoadoutResource = tank.loadout.kit.copy()
+	tank_kit.lead_ids[2] = &""
+	network.update_local_kit(tank.device_id, tank_kit.to_dict())
+	_face_boss(dps, Vector3(1.5, 0.0, 8.0))
+	_face_boss(tank, Vector3(0.0, 0.0, 3.6))
+	dps.stats.resonance_charge = 1.0
+	tank.stats.resonance_charge = 0.0
+	dps.input.inject_command(Cmd.TRIGGER_R_SKILL)
+	await _seconds(0.25)
+	var dps_swell: float = dps.visuals.weapon_scale()
+	# The Level 7 Star-Tide Link (Sign Infusion) makes Rime-Lash stamp Star-Tide.
+	var lash_sign: int = dps.loadout.opener_for(Cmd.TRIGGER_R_SKILL).scribe_sign
+	var lash_seal: ScribeSignResource = catalog.sign_seal(lash_sign)
+	var tinted: bool = dps.visuals._channel_color.is_equal_approx(lash_seal.color)
+	await _seconds(0.8)
+	var mark: SignMark = director.sign_mark_on(boss)
+	var badge_height: float = mark._badge.global_position.y - boss.global_position.y if mark != null else 0.0
+	_check(lash_sign == Sign.SIGN_STAR_TIDE and dps_swell > 1.8 and tinted and mark != null and mark.scribe_sign == lash_sign
+		and is_equal_approx(badge_height, boss.body_height() + SignMark.BADGE_HEIGHT) and is_equal_approx(SignMark.RING_RADIUS * 2.0, 2.5),
+		"Rime-Lash (infused by its Star-Tide Link) swells the bow to %.1fx in its Sign's colour and stamps a 2.5 m Sign Ring with a badge 2.2 m over the boss" % dps_swell)
+	var cross: CrossGrimoireHUD = dojo.huds[&"1_0"].cross_grimoire
+	await _seconds(0.05)
+	var no_pip: bool = not cross.detonate_prompt()
+	tank.stats.resonance_charge = 1.0
+	await _seconds(0.05)
+	_check(no_pip and cross.detonate_prompt() and cross.slots[Cmd.TRIGGER_R_SKILL].detonate_ready,
+		"with a pip in hand the tank's R slot rings gold: R: DETONATE SIGN!")
+	stops.clear()
+	tank.input.inject_command(Cmd.TRIGGER_R_SKILL)
+	await _seconds(0.6)
+	var detonation_stop: bool = false
+	for duration: float in stops:
+		detonation_stop = detonation_stop or duration >= CombatDirector.HIT_STOP_DETONATION - 0.001
+	_check(_synergies.back().begins_with(lash_seal.detonation_name) and director.sign_mark_on(boss) == null and detonation_stop
+		and cross.verb_text().begins_with(lash_seal.detonation_name),
+		"the tank's flourish detonates it: %s with a 180 ms freeze, the ring gone and the name over the cross" % lash_seal.detonation_name)
+	director.hit_stop_applied.disconnect(stop_hook)
+
+	# Back to the classic Level 10 kits for the checks that follow.
+	BracedGuardComponent.enabled = false
+	for actor: ActorBase in [tank, healer, dps]:
+		await _until_idle(actor)
+	progress.apply_full_endgame_kit_for_testing()
+	for actor: ActorBase in [tank, healer, dps]:
+		network.update_local_calling(actor.device_id, callings_before[actor.player_id])
+		network.update_local_kit(actor.device_id, ClassLoadouts.starter_kit(actor.loadout.class_id).to_dict())
+	await _seconds(0.1)
+	progress.kits.assign(saved_kits)
+	progress.callings.assign(saved_callings)
+	progress.save()
+	boss.set_physics_process(true)
+	_reset_boss_poise()
+
+
+## Waits until `actor` is in the recovery of an action other than `previous`.
+func _until_recovery_of(actor: ActorBase, previous: CombatActionResource) -> void:
+	var waited: float = 0.0
+	while waited < 2.0 and not (actor.action_queue.phase == ActionQueueComponent.Phase.RECOVERY and actor.action_queue.current_action != previous):
+		await physics_frame
+		waited += 1.0 / 60.0
+
+
+static func _flat(offset: Vector3) -> float:
+	return Vector2(offset.x, offset.z).length()
+
+
 func _companions() -> Array[ActorBase]:
 	var bots: Array[ActorBase] = []
 	for actor: ActorBase in dojo.actors.values():
@@ -2064,6 +2362,8 @@ func _reset_boss_poise() -> void:
 	boss.stats.knockdown_time_left = 0.0
 	boss.stats.poise = boss.stats.stats.max_poise
 	boss.stagger_time_left = 0.0
+	# A hit-stop banked while its physics was paused (a card's 140 ms) would otherwise freeze its timers.
+	boss._hit_stop_left = 0.0
 
 
 func _count_zones(shape: SanctuaryZone.Shape) -> int:
