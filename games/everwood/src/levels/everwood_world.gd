@@ -3,7 +3,13 @@
 ## round every player (WorldGridManager), with no loading screen between town
 ## and the Cairnsman.
 ##
-## You arrive on Bramblebridge's spawn green (Chunk (0, 0)). The Armory &
+## The party wakes round the Kindled Bivouac's campfire (Chunk (0, 1)), south
+## of the village; standing by the fire warms everyone to full, like the
+## Water-Shrine. The walled lane runs east, then north through Oakshire
+## Commons to Bramblebridge's south gate and over the canal bridge. Once anyone
+## reaches the village square, the square (by the Scribe Desk and Chime-Shrine)
+## is where the party gets back up and where a raid brings it home, for the
+## rest of this run of the game. The Armory &
 ## Scribe Desk and the Chime-Shrine work as in the hub, and the Raid Portal
 ## still warps the party into the instanced expedition (dungeon_dojo), whose
 ## exit brings them back here. Or walk north through the open Forest Gate,
@@ -15,8 +21,8 @@
 ## Cairnsman drops his chest, and opening it opens a gold portal that brings
 ## everyone home to the green and starts the expedition afresh.
 ##
-## Cleared camps, opened chests, the shrine's rest, the open gate and the
-## fallen Cairnsman live in the level's WorldStateDB, so they stay that way
+## Cleared camps, opened chests, the shrine's and the campfire's rest, the
+## open gate and the fallen Cairnsman live in the level's WorldStateDB, so they stay that way
 ## while their chunks stream out and back in, and latecomers are sent them.
 ##
 ## F4 (or --telemetry on the command line) shows the Landblock telemetry badge.
@@ -33,8 +39,14 @@ const RECALL_PORTAL_OFFSET: Vector3 = Vector3(0.0, 0.0, 7.0)
 const RING_CHUNK: Vector2i = Vector2i(0, -3)
 const GORGE_CHUNK: Vector2i = Vector2i(0, -2)
 ## Demo bots (--demo) walk north by these, after the zone's own business.
-const DEMO_WAYPOINTS: Array[Vector3] = [Vector3(64.0, 0.0, -20.0), Vector3(64.0, -1.8, -70.0), Vector3(64.0, 3.0, -140.0),
+const DEMO_WAYPOINTS: Array[Vector3] = [Vector3(48.0, 0.0, 177.0), Vector3(62.0, 0.0, 166.0), Vector3(64.0, 0.0, 100.0), Vector3(64.0, 0.0, 40.0),
+	Vector3(64.0, 0.0, 10.0), Vector3(64.0, 0.0, -20.0), Vector3(64.0, -1.8, -70.0), Vector3(64.0, 3.0, -140.0),
 	Vector3(64.0, 3.0, -170.0), Vector3(64.0, 6.0, -280.0)]
+
+## Whether the party has reached Bramblebridge's square since the game started:
+## from then on it gets back up there, and a raid brings it home there. It
+## outlives the level (a trip to the instanced raid reloads it).
+static var town_square_reached: bool = false
 
 @onready var grid_manager: WorldGridManager = $World
 
@@ -48,6 +60,7 @@ var recall_portal: RaidPortal
 var camps: Array[MinionCamp] = []
 var coop_gate: CoopGate
 var water_shrine: WaterShrine
+var campfire: HearthCampfire
 var raid_portal: RaidPortal
 var chime_shrine: ChimeShrine
 var scribe_desk: ScribeDesk
@@ -72,6 +85,8 @@ func level_hint() -> String:
 		return "Victory! Walk up to the reward chest"
 	match zone:
 		0:
+			if not town_square_reached:
+				return "The Kindled Bivouac: stand by the campfire to warm up, then follow the walled lane east and north through Oakshire Commons into Bramblebridge\n%s" % HubTown.CHANGE_KEYS
 			return "Walk north through the Forest Gate into the Ariundle Moss-Oaks, or take the Raid Portal to the instanced expedition · Chime-Shrine: %d Chimes · Scribe Desk: armor, weapons, cards and Calling\n%s" % [
 				PartyProgress.current.chimes, HubTown.CHANGE_KEYS]
 		1:
@@ -97,10 +112,7 @@ func _setup_level() -> void:
 	grid_manager.attach_badge($Screens)
 	if OS.get_cmdline_user_args().has("--telemetry"):
 		grid_manager.set_telemetry_visible(true)
-	var spawns: Array[Vector3] = []
-	for marker: Node in spawn_points.get_children():
-		spawns.append((marker as Node3D).global_position)
-	grid_manager.prime(spawns)
+	grid_manager.prime(_town_spots())
 
 
 func _process(delta: float) -> void:
@@ -116,6 +128,8 @@ func _physics_process(_delta: float) -> void:
 	if outside != _outside:
 		_outside = outside
 		_queue_companion_refresh()
+	if not town_square_reached and _square_reached():
+		_promote_town_checkpoint()
 	var reached: int = _furthest_zone()
 	if reached > zone:
 		zone = reached
@@ -177,7 +191,45 @@ func checkpoint_transform(reached: int, slot: int) -> Transform3D:
 
 ## Someone joining mid-expedition starts at the party's latest checkpoint.
 func _spawn_transform(slot: int) -> Transform3D:
-	return checkpoint_transform(zone, slot) if zone >= 1 else super._spawn_transform(slot)
+	return checkpoint_transform(zone, slot) if zone >= 1 else town_transform(slot)
+
+
+## Where party slot `slot` starts or gets back up in town: round the campfire
+## (the spawn points) until the square is reached, then in the square.
+func town_transform(slot: int) -> Transform3D:
+	if not town_square_reached:
+		return super._spawn_transform(slot)
+	@warning_ignore("integer_division")
+	var row: int = slot / 4
+	var column: float = float(slot % 4) - 1.5
+	return Transform3D(Basis.IDENTITY, LandblockManifest.TOWN_SQUARE_SPAWN + Vector3(column * DungeonDojo.CHECKPOINT_SPACING, 0.0, SPAWN_ROW_SPACING * row))
+
+
+func _town_spots() -> Array[Vector3]:
+	var spots: Array[Vector3] = []
+	for slot: int in 4:
+		spots.append(town_transform(slot).origin)
+	return spots
+
+
+## Anyone (not a companion) over the canal bridge into the square, or the record says so (a latecomer).
+func _square_reached() -> bool:
+	for actor: ActorBase in actors.values():
+		if not actor.is_companion and actor.global_position.z < LandblockManifest.SQUARE_Z:
+			return true
+	return world_state.has_entity_state(Vector2i(0, 0), LandblockManifest.TOWN_CHECKPOINT)
+
+
+## The square becomes where the party gets back up (and comes home to from a raid).
+func _promote_town_checkpoint() -> void:
+	town_square_reached = true
+	if NetworkManager.current.is_host():
+		world_state.set_entity_state(Vector2i(0, 0), LandblockManifest.TOWN_CHECKPOINT, {"reached": true})
+	if zone == 0:
+		for actor: ActorBase in actors.values():
+			actor.spawn_transform = town_transform(actor.party_slot)
+	for hud: PlayerHUD in huds.values():
+		hud.show_banner("BRAMBLEBRIDGE", "Checkpoint: you'll get back up here, by the Scribe Desk and the Chime-Shrine.", CHECKPOINT_COLOR, PASSING_BANNER_TIME)
 
 
 # --- Landblock entities ---------------------------------------------------------
@@ -199,6 +251,8 @@ func _on_entity_attached(entity: Node, chunk: Vector2i) -> void:
 		camp.spawn_minions()
 	elif entity is WaterShrine:
 		water_shrine = entity as WaterShrine
+	elif entity is HearthCampfire:
+		campfire = entity as HearthCampfire
 	elif entity is CoopGate:
 		coop_gate = entity as CoopGate
 		coop_gate.opened.connect(_on_gate_opened)
@@ -216,6 +270,8 @@ func _on_entity_detached(entity: Node, _chunk: Vector2i) -> void:
 		coop_gate = null
 	elif entity == water_shrine:
 		water_shrine = null
+	elif entity == campfire:
+		campfire = null
 	elif entity == chime_shrine:
 		chime_shrine = null
 	elif entity == scribe_desk:
@@ -379,7 +435,7 @@ func _on_chest_opened(opener_id: StringName, chimes: int, card_key: StringName) 
 	recall_portal.recall(DungeonDojo.RECALL_DELAY)
 
 
-## The gold portal: everyone back to the green, and the expedition starts afresh
+## The gold portal: everyone back to town (the square), and the expedition starts afresh
 ## (every peer rebuilds its own chunks and moves its own players).
 func _on_recall(_target: StringName) -> void:
 	victory = false
@@ -387,13 +443,10 @@ func _on_recall(_target: StringName) -> void:
 	chest = null
 	recall_portal = null
 	grid_manager.reset_expedition()
-	var spawns: Array[Vector3] = []
-	for marker: Node in spawn_points.get_children():
-		spawns.append((marker as Node3D).global_position)
-	grid_manager.prime(spawns)
+	grid_manager.prime(_town_spots())
 	for actor: ActorBase in actors.values():
 		if actor.is_multiplayer_authority():
-			actor.spawn_at(super._spawn_transform(actor.party_slot))
+			actor.spawn_at(town_transform(actor.party_slot))
 	for hud: PlayerHUD in huds.values():
 		hud.show_banner("BRAMBLEBRIDGE", "Home again. The expedition waits beyond the Forest Gate.", CHECKPOINT_COLOR, PASSING_BANNER_TIME)
 

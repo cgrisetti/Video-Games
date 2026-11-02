@@ -1,6 +1,10 @@
 ## The Bramble-to-Doverslap Corridor (10_WORLD_ARCHITECTURE.md §2): which
 ## Landblock holds what, and the shape of the land between them.
 ##
+##   Chunk (0, 1)   the Kindled Bivouac, where the party wakes round a campfire
+##                  on the woodland trailhead, and Oakshire Commons (a
+##                  stepped-gable homestead, bee-hives and pumpkin patches)
+##                  along the walled lane north to Bramblebridge's south gate
 ##   Chunk (0, 0)   Bramblebridge: the spawn green, the canal arch, the village
 ##                  square (Armory & Scribe Desk, Chime-Shrine, bakery,
 ##                  watermill) and the Northern Forest Gate, now open
@@ -17,9 +21,10 @@
 class_name LandblockManifest
 extends RefCounted
 
-enum Zone { BORDER = -1, BRAMBLEBRIDGE, MOSS_OAKS, GORGE, RING }
+enum Zone { BORDER = -1, BRAMBLEBRIDGE, MOSS_OAKS, GORGE, RING, OAKSHIRE_COMMONS }
 
-const ZONE_NAMES: Array[String] = ["Bramblebridge", "The Ariundle Moss-Oaks", "The Doverslap Gorge Bridge", "The Ring of the Cairnsman"]
+const ZONE_NAMES: Array[String] = ["Bramblebridge", "The Ariundle Moss-Oaks", "The Doverslap Gorge Bridge", "The Ring of the Cairnsman",
+	"Oakshire Commons"]
 const BORDER_NAME: String = "The Bramble-Reach crags"
 const LANDBLOCK_FOLDER: String = "res://data/landblocks/"
 ## The corridor runs north along this line, the middle of the chunk column x = 0.
@@ -32,9 +37,12 @@ const BRAMBLEBRIDGE_ORIGIN: Vector3 = Vector3(64.0, 0.0, 32.0)
 const MOSS_OAKS_ORIGIN: Vector3 = Vector3(64.0, 0.0, -100.0)
 const GORGE_ORIGIN: Vector3 = Vector3(64.0, 3.0, -150.0)
 const RING_ORIGIN: Vector3 = Vector3(64.0, 6.0, -240.0)
+## Oakshire Commons is new, not a classic level, so it's built in world coordinates.
+const COMMONS_ORIGIN: Vector3 = Vector3.ZERO
+const COMMONS_CHUNK: Vector2i = Vector2i(0, 1)
 
-## Chunks whose state survives a reset of the expedition (the village).
-const PERSISTENT_CHUNKS: Array[Vector2i] = [Vector2i(0, 0)]
+## Chunks whose state survives a reset of the expedition (the village and the commons).
+const PERSISTENT_CHUNKS: Array[Vector2i] = [Vector2i(0, 0), Vector2i(0, 1)]
 
 ## Ids of the stateful things WorldStateDB remembers (also used by the classic Dojo).
 const CAMP_BRAMBLE: StringName = &"camp_bramble"
@@ -44,6 +52,23 @@ const WAYFARER_CHEST: StringName = &"chest_wayfarer"
 const SINAYA_GATE: StringName = &"gate_sinaya"
 const CAIRNSMAN: StringName = &"boss_cairnsman"
 const CAIRNSMAN_CHEST: StringName = &"chest_cairnsman"
+const CAMPFIRE: StringName = &"campfire_bivouac"
+## Set once anyone has crossed the canal bridge into Bramblebridge's square.
+const TOWN_CHECKPOINT: StringName = &"checkpoint_bramblebridge"
+
+## The Kindled Bivouac's campfire, where the party wakes, round its south-west
+## of the commons. The lane leaves it eastward, bends north through the
+## commons and runs straight up to Bramblebridge's south gate (world x, z).
+const CAMPFIRE_POSITION: Vector3 = Vector3(30.0, 0.0, 178.0)
+const LANE: Array[Vector2] = [Vector2(36.0, 178.0), Vector2(48.0, 178.0), Vector2(56.5, 174.5), Vector2(62.0, 167.0), Vector2(64.0, 156.0),
+	Vector2(64.0, 62.5)]
+## The lane's dirt and cobbles reach this far either side of its middle.
+const LANE_HALF_WIDTH: float = 2.4
+## Over the bridge and this far north is Bramblebridge's square (the bridge's north foot).
+const SQUARE_Z: float = 26.5
+## Where the party gets back up once the square is reached: on the lane between
+## the Scribe Desk and the Chime-Shrine, facing the Forest Gate.
+const TOWN_SQUARE_SPAWN: Vector3 = Vector3(64.0, 0.0, 19.0)
 
 ## Respawn checkpoints in the world: just inside the Moss-Oaks' south gap, then
 ## as in the classic Dojo (gorge-local z 10 and ring-local z -28).
@@ -62,7 +87,8 @@ const BASE_HEIGHTS: Array[Vector2] = [Vector2(600.0, 0.0), Vector2(-86.0, 0.0), 
 ## (world z, west, east), north-going, linear between. It always encloses each
 ## zone's walls; beyond it the land rises into crags.
 const BAND: Array[Vector3] = [
-	Vector3(600.0, 0.0, 0.0), Vector3(130.0, 0.0, 0.0), Vector3(104.0, 26.0, 26.0),
+	Vector3(600.0, 0.0, 0.0), Vector3(212.0, 0.0, 0.0), Vector3(194.0, 46.0, 34.0), Vector3(134.0, 46.0, 34.0), Vector3(112.0, 26.0, 26.0),
+	Vector3(104.0, 26.0, 26.0),
 	Vector3(-38.0, 26.0, 26.0), Vector3(-41.0, 37.0, 26.0), Vector3(-53.0, 37.0, 26.0), Vector3(-54.6, 26.0, 26.0),
 	Vector3(-57.0, 9.0, 9.0), Vector3(-86.0, 9.0, 9.0), Vector3(-89.0, 6.0, 6.0),
 	Vector3(-133.0, 6.0, 6.0), Vector3(-135.4, 18.0, 18.0), Vector3(-174.6, 18.0, 18.0), Vector3(-177.0, 5.0, 5.0),
@@ -87,10 +113,15 @@ const CHASM_BOTTOM: float = -20.5
 const TRAILS: Array[Vector3] = [Vector3(1.5, -9.5, 26.0), Vector3(-86.0, -136.0, 6.0), Vector3(-174.0, -274.0, 5.0)]
 ## Each zone's footprint (world rects): no clutter is strewn inside.
 const FOOTPRINTS: Array[Rect2] = [Rect2(40.0, 0.5, 48.0, 63.0), Rect2(30.0, -56.0, 60.0, 47.0), Rect2(55.0, -87.0, 18.0, 33.0),
-	Rect2(44.0, -176.0, 40.0, 41.0), Rect2(41.0, -316.0, 46.0, 53.0)]
+	Rect2(44.0, -176.0, 40.0, 41.0), Rect2(41.0, -316.0, 46.0, 53.0),
+	# The commons: the campfire's clearing, the homestead's yard, the two pumpkin patches and the bee-hives.
+	Rect2(18.0, 167.0, 26.0, 22.0), Rect2(37.0, 137.0, 22.0, 20.0), Rect2(40.0, 156.0, 17.0, 11.0), Rect2(68.0, 136.0, 15.0, 14.0),
+	Rect2(75.0, 146.0, 22.0, 14.0)]
 
 
 static func zone_of(chunk: Vector2i) -> Zone:
+	if chunk == COMMONS_CHUNK:
+		return Zone.OAKSHIRE_COMMONS
 	if chunk.x == 0 and chunk.y <= 0 and chunk.y >= -3:
 		return (-chunk.y) as Zone
 	return Zone.BORDER
@@ -110,6 +141,8 @@ static func zone_origin(zone: Zone) -> Vector3:
 			return GORGE_ORIGIN
 		Zone.RING:
 			return RING_ORIGIN
+		Zone.OAKSHIRE_COMMONS:
+			return COMMONS_ORIGIN
 	return Vector3.ZERO
 
 
@@ -179,6 +212,15 @@ static func in_footprint(x: float, z: float) -> bool:
 		if rect.has_point(Vector2(x, z)):
 			return true
 	return false
+
+
+## How far (x, z) is from the middle of the commons' lane.
+static func lane_gap(x: float, z: float) -> float:
+	var at: Vector2 = Vector2(x, z)
+	var nearest: float = INF
+	for index: int in LANE.size() - 1:
+		nearest = minf(nearest, at.distance_to(Geometry2D.get_closest_point_to_segment(at, LANE[index], LANE[index + 1])))
+	return nearest
 
 
 ## The trail (south z, north z, half width) running through world z, or Vector3.ZERO.

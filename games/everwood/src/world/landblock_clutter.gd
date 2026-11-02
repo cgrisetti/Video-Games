@@ -138,7 +138,8 @@ static func _spot(x: float, z: float) -> Dictionary:
 	var edge: float = LandblockManifest.band_half_width(z, dx < 0.0)
 	var trail: Vector3 = LandblockManifest.trail_at(z)
 	return {"past": absf(dx) - edge, "zone": LandblockManifest.in_footprint(x, z),
-		"on_trail": trail != Vector3.ZERO and absf(dx) < trail.z + LandblockTerrain.TRAIL_WALL_OFFSET + 1.0,
+		"on_trail": (trail != Vector3.ZERO and absf(dx) < trail.z + LandblockTerrain.TRAIL_WALL_OFFSET + 1.0)
+			or LandblockManifest.lane_gap(x, z) < LandblockManifest.LANE_HALF_WIDTH + 2.0,
 		"carved": LandblockManifest.carve_bottom(x, z) < INF}
 
 

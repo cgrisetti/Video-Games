@@ -45,10 +45,12 @@ shader_parameter/albedo = Color(0.36, 0.5, 0.26, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_mxc0g"]
 material = SubResource("ShaderMaterial_fursu")
@@ -64,10 +66,12 @@ shader_parameter/albedo = Color(0.56, 0.55, 0.5, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_bi2p4"]
 material = SubResource("ShaderMaterial_xaoh8")
@@ -115,10 +119,12 @@ shader_parameter/albedo = Color(0.52, 0.43, 0.3, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_8k70a"]
 material = SubResource("ShaderMaterial_donid")
@@ -143,10 +149,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_mx8e7"]
 material = SubResource("ShaderMaterial_3avar")
@@ -162,10 +170,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_jhwpw"]
 material = SubResource("ShaderMaterial_wbjkj")
@@ -193,10 +203,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_u5xat"]
 material = SubResource("ShaderMaterial_1kfmw")
@@ -212,10 +224,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_wesn8"]
 material = SubResource("ShaderMaterial_24w2g")
@@ -243,10 +257,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_b0g0k"]
 material = SubResource("ShaderMaterial_mawhw")
@@ -262,10 +278,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_apouh"]
 material = SubResource("ShaderMaterial_1fl33")
@@ -293,10 +311,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_nphc1"]
 material = SubResource("ShaderMaterial_ma32o")
@@ -312,10 +332,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_pv6b5"]
 material = SubResource("ShaderMaterial_v5wj7")
@@ -343,10 +365,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_tkxjr"]
 material = SubResource("ShaderMaterial_fhmhf")
@@ -362,10 +386,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_k10dl"]
 material = SubResource("ShaderMaterial_n22o6")
@@ -393,10 +419,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_srbfq"]
 material = SubResource("ShaderMaterial_agt3h")
@@ -412,10 +440,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_v1kce"]
 material = SubResource("ShaderMaterial_m37vh")
@@ -443,10 +473,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_rfdfu"]
 material = SubResource("ShaderMaterial_e8c1c")
@@ -462,10 +494,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_heq63"]
 material = SubResource("ShaderMaterial_1bxk7")
@@ -493,10 +527,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_ffp5u"]
 material = SubResource("ShaderMaterial_soboy")
@@ -512,10 +548,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_blxqs"]
 material = SubResource("ShaderMaterial_csvuw")
@@ -543,10 +581,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_aid3t"]
 material = SubResource("ShaderMaterial_e4noc")
@@ -562,10 +602,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_8p6rj"]
 material = SubResource("ShaderMaterial_64krn")
@@ -593,10 +635,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_eqly5"]
 material = SubResource("ShaderMaterial_npukl")
@@ -612,10 +656,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_q25mj"]
 material = SubResource("ShaderMaterial_42co5")
@@ -643,10 +689,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_itowh"]
 material = SubResource("ShaderMaterial_synvy")
@@ -662,10 +710,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_f6blu"]
 material = SubResource("ShaderMaterial_lrniy")
@@ -693,10 +743,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_am327"]
 material = SubResource("ShaderMaterial_gm1th")
@@ -712,10 +764,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_wllw8"]
 material = SubResource("ShaderMaterial_e2d3u")
@@ -771,10 +825,12 @@ shader_parameter/albedo = Color(0.36, 0.26, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_78pd4"]
 material = SubResource("ShaderMaterial_8lmwy")
@@ -790,10 +846,12 @@ shader_parameter/albedo = Color(0.28, 0.46, 0.25, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="SphereMesh" id="SphereMesh_qt7gw"]
 material = SubResource("ShaderMaterial_11tg5")
@@ -820,10 +878,12 @@ shader_parameter/albedo = Color(0.42, 0.33, 0.24, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_r8ptr"]
 _surfaces = [{
@@ -845,10 +905,12 @@ shader_parameter/albedo = Color(0.42, 0.33, 0.24, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_xxlkn"]
 material = SubResource("ShaderMaterial_l0fwb")
@@ -864,10 +926,12 @@ shader_parameter/albedo = Color(0.42, 0.33, 0.24, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_j7gnl"]
 _surfaces = [{
@@ -893,10 +957,12 @@ shader_parameter/albedo = Color(0.36, 0.5, 0.26, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_gt3q6"]
 material = SubResource("ShaderMaterial_ojacg")
@@ -920,10 +986,12 @@ shader_parameter/albedo = Color(0.36, 0.27, 0.18, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_83ck0"]
 material = SubResource("ShaderMaterial_iaufa")
@@ -1104,10 +1172,12 @@ shader_parameter/albedo = Color(0.36, 0.5, 0.26, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_1d0rk"]
 material = SubResource("ShaderMaterial_nrryq")
@@ -1130,10 +1200,12 @@ shader_parameter/albedo = Color(0.56, 0.55, 0.5, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_a4cau"]
 material = SubResource("ShaderMaterial_lyn7s")
@@ -1170,10 +1242,12 @@ shader_parameter/albedo = Color(0.4, 0.28, 0.17, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_ub5o7"]
 material = SubResource("ShaderMaterial_tqbdl")
@@ -1366,10 +1440,12 @@ shader_parameter/albedo = Color(0.42, 0.39, 0.35, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_spjsf"]
 material = SubResource("ShaderMaterial_gyob1")
@@ -1421,10 +1497,12 @@ shader_parameter/albedo = Color(0.7, 0.62, 0.5, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_aplpi"]
 material = SubResource("ShaderMaterial_lsbl6")
@@ -1444,10 +1522,12 @@ shader_parameter/albedo = Color(0.55, 0.3, 0.26, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="PrismMesh" id="PrismMesh_axquk"]
 material = SubResource("ShaderMaterial_5g6kx")
@@ -1478,10 +1558,12 @@ shader_parameter/albedo = Color(0.55, 0.3, 0.26, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="PrismMesh" id="PrismMesh_eiyae"]
 material = SubResource("ShaderMaterial_3sejc")
@@ -1512,10 +1594,12 @@ shader_parameter/albedo = Color(0.58, 0.56, 0.53, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_74302"]
 material = SubResource("ShaderMaterial_qaae4")
@@ -1531,10 +1615,12 @@ shader_parameter/albedo = Color(0.56, 0.55, 0.5, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_f3dvk"]
 material = SubResource("ShaderMaterial_jvgj8")
@@ -1607,10 +1693,12 @@ shader_parameter/albedo = Color(0.58, 0.56, 0.53, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_0frnv"]
 material = SubResource("ShaderMaterial_p0il7")
@@ -1626,10 +1714,12 @@ shader_parameter/albedo = Color(0.36, 0.5, 0.26, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_20ef4"]
 material = SubResource("ShaderMaterial_3igvj")
@@ -1649,10 +1739,12 @@ shader_parameter/albedo = Color(0.58, 0.56, 0.53, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_ajb0y"]
 material = SubResource("ShaderMaterial_05isb")
@@ -1679,10 +1771,12 @@ shader_parameter/albedo = Color(0.58, 0.56, 0.53, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_gl4yg"]
 material = SubResource("ShaderMaterial_a0py1")
@@ -1709,10 +1803,12 @@ shader_parameter/albedo = Color(0.58, 0.56, 0.53, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_k44ce"]
 material = SubResource("ShaderMaterial_hnptg")
@@ -1739,10 +1835,12 @@ shader_parameter/albedo = Color(0.58, 0.56, 0.53, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_ofcu3"]
 material = SubResource("ShaderMaterial_mwfti")
@@ -1769,10 +1867,12 @@ shader_parameter/albedo = Color(0.58, 0.56, 0.53, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_e52uo"]
 material = SubResource("ShaderMaterial_4ncrx")
@@ -1803,10 +1903,12 @@ shader_parameter/albedo = Color(0.35, 0.18, 0.2, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_7jrce"]
 material = SubResource("ShaderMaterial_8e3pc")
@@ -1822,10 +1924,12 @@ shader_parameter/albedo = Color(0.32, 0.52, 0.9, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_bvbck"]
 material = SubResource("ShaderMaterial_mi1uw")
@@ -1841,10 +1945,12 @@ shader_parameter/albedo = Color(0.34, 0.76, 0.46, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_lgvg0"]
 material = SubResource("ShaderMaterial_agxp8")
@@ -1860,10 +1966,12 @@ shader_parameter/albedo = Color(0.92, 0.5, 0.22, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_j3jm1"]
 material = SubResource("ShaderMaterial_4yejj")
@@ -1879,10 +1987,12 @@ shader_parameter/albedo = Color(0.7, 0.45, 0.9, 1)
 shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
 shader_parameter/rim_strength = 0.18
 shader_parameter/rim_power = null
+shader_parameter/glow = null
 shader_parameter/shade_color = null
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
-shader_parameter/glow = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_rjksk"]
 material = SubResource("ShaderMaterial_pc86p")
@@ -1891,1012 +2001,1012 @@ bottom_radius = 0.8
 height = 0.04
 radial_segments = 32
 
-[node name="DungeonDojo" type="Node3D" unique_id=1045935058]
+[node name="DungeonDojo" type="Node3D" unique_id=1874507944]
 script = ExtResource("1_jocno")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1096498920]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1930828332]
 environment = SubResource("Environment_0tiuc")
 
-[node name="Sun" type="DirectionalLight3D" parent="." unique_id=525739220]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1188255007]
 transform = Transform3D(0.81915206, -0.46984634, 0.32898995, 0, 0.57357645, 0.81915206, -0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
 light_color = Color(1, 0.93, 0.8, 1)
 light_energy = 0.95
 shadow_enabled = true
 directional_shadow_max_distance = 60.0
 
-[node name="Expedition" type="Node3D" parent="." unique_id=1875455392]
+[node name="Expedition" type="Node3D" parent="." unique_id=1680156800]
 
-[node name="MossOaks" type="Node3D" parent="Expedition" unique_id=1792562413]
+[node name="MossOaks" type="Node3D" parent="Expedition" unique_id=764282904]
 
-[node name="Ground" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=795439927]
+[node name="Ground" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=1929706969]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 68)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Ground" unique_id=347108732]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Ground" unique_id=1340352804]
 shape = SubResource("BoxShape3D_mt86i")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/Ground" unique_id=132244884]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/Ground" unique_id=2104423812]
 mesh = SubResource("BoxMesh_mxc0g")
 
-[node name="WallSouth" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=1167335904]
+[node name="WallSouth" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=1229225833]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0.6, 90)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallSouth" unique_id=263158933]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallSouth" unique_id=1284721095]
 shape = SubResource("BoxShape3D_7xh3g")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallSouth" unique_id=207713262]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallSouth" unique_id=1764824303]
 mesh = SubResource("BoxMesh_bi2p4")
 
-[node name="WallEast" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=584150645]
+[node name="WallEast" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=2000623756]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0.6, 68)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallEast" unique_id=1236812880]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallEast" unique_id=1424381304]
 shape = SubResource("BoxShape3D_4poje")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallEast" unique_id=175999813]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallEast" unique_id=1204705958]
 mesh = SubResource("BoxMesh_40gxj")
 
-[node name="WallWestSouth" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=287346063]
+[node name="WallWestSouth" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=1419107394]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0.6, 73)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallWestSouth" unique_id=860202927]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallWestSouth" unique_id=1524019566]
 shape = SubResource("BoxShape3D_4g7p8")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallWestSouth" unique_id=1539439005]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallWestSouth" unique_id=131607303]
 mesh = SubResource("BoxMesh_if3uk")
 
-[node name="WallWestNorth" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=482310544]
+[node name="WallWestNorth" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=992758875]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0.6, 48)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallWestNorth" unique_id=1402390056]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallWestNorth" unique_id=1138294786]
 shape = SubResource("BoxShape3D_atlp5")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallWestNorth" unique_id=276982755]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallWestNorth" unique_id=53513841]
 mesh = SubResource("BoxMesh_iqkj2")
 
-[node name="WallNorthWest" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=1471412251]
+[node name="WallNorthWest" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=1200764291]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -14, 0.6, 46)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallNorthWest" unique_id=1192828659]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallNorthWest" unique_id=214988980]
 shape = SubResource("BoxShape3D_4rqyb")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallNorthWest" unique_id=1036110924]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallNorthWest" unique_id=775556667]
 mesh = SubResource("BoxMesh_12h00")
 
-[node name="WallNorthEast" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=767689444]
+[node name="WallNorthEast" type="StaticBody3D" parent="Expedition/MossOaks" unique_id=2023926390]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 14, 0.6, 46)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallNorthEast" unique_id=202280790]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/WallNorthEast" unique_id=255439593]
 shape = SubResource("BoxShape3D_rm2kp")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallNorthEast" unique_id=22578068]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/MossOaks/WallNorthEast" unique_id=1543911721]
 mesh = SubResource("BoxMesh_twnep")
 
-[node name="Trail0" type="MeshInstance3D" parent="Expedition/MossOaks" unique_id=1608026335]
+[node name="Trail0" type="MeshInstance3D" parent="Expedition/MossOaks" unique_id=2082900149]
 transform = Transform3D(-0.95782626, 0, -0.28734794, 0, 1, 0, 0.28734794, 0, -0.95782626, -1.5, 0.01, 80)
 mesh = SubResource("BoxMesh_8k70a")
 
-[node name="Trail1" type="MeshInstance3D" parent="Expedition/MossOaks" unique_id=2067138042]
+[node name="Trail1" type="MeshInstance3D" parent="Expedition/MossOaks" unique_id=748056854]
 transform = Transform3D(-0.89442724, 0, 0.4472135, 0, 1, 0, -0.4472135, 0, -0.89442724, -0.25, 0.01, 69.5)
 mesh = SubResource("BoxMesh_8obyq")
 
-[node name="Trail2" type="MeshInstance3D" parent="Expedition/MossOaks" unique_id=1194063220]
+[node name="Trail2" type="MeshInstance3D" parent="Expedition/MossOaks" unique_id=880388755]
 transform = Transform3D(-0.9438583, 0, -0.33035046, 0, 1, 0, 0.33035046, 0, -0.9438583, 0.75, 0.01, 59)
 mesh = SubResource("BoxMesh_nvox3")
 
-[node name="Trail3" type="MeshInstance3D" parent="Expedition/MossOaks" unique_id=905442217]
+[node name="Trail3" type="MeshInstance3D" parent="Expedition/MossOaks" unique_id=1110715629]
 transform = Transform3D(-0.99227786, 0, 0.12403473, 0, 1, 0, -0.12403473, 0, -0.99227786, -0.5, 0.01, 50)
 mesh = SubResource("BoxMesh_gxvdp")
 
-[node name="Oak1" type="Node3D" parent="Expedition/MossOaks" unique_id=920260897]
+[node name="Oak1" type="Node3D" parent="Expedition/MossOaks" unique_id=577967036]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 84)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak1" unique_id=1980657454]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak1" unique_id=2033262269]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0625, 0)
 mesh = SubResource("CylinderMesh_mx8e7")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak1" unique_id=1362914198]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak1" unique_id=1528329324]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.025, 0)
 mesh = SubResource("SphereMesh_jhwpw")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak1" unique_id=99201890]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak1" unique_id=1708547673]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.975, 6.225, 0.45)
 mesh = SubResource("SphereMesh_0wlng")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak1" unique_id=1056820699]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak1" unique_id=350116841]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.75, 6.375, -0.6)
 mesh = SubResource("SphereMesh_ana0g")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak1" unique_id=1745588530]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak1" unique_id=1786030996]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak1/TrunkBody" unique_id=450949131]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak1/TrunkBody" unique_id=87891639]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0625, 0)
 shape = SubResource("CylinderShape3D_tjkw2")
 
-[node name="Oak2" type="Node3D" parent="Expedition/MossOaks" unique_id=1774463240]
+[node name="Oak2" type="Node3D" parent="Expedition/MossOaks" unique_id=1483521128]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 85)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak2" unique_id=963648482]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak2" unique_id=188737083]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2825, 0)
 mesh = SubResource("CylinderMesh_u5xat")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak2" unique_id=812537604]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak2" unique_id=1715978807]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.561, 0)
 mesh = SubResource("SphereMesh_wesn8")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak2" unique_id=671643226]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak2" unique_id=1723698092]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.079, 6.889, 0.498)
 mesh = SubResource("SphereMesh_7o2qu")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak2" unique_id=49694678]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak2" unique_id=468751198]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.83, 7.055, -0.664)
 mesh = SubResource("SphereMesh_pexr5")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak2" unique_id=695255694]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak2" unique_id=703048074]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak2/TrunkBody" unique_id=1294574888]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak2/TrunkBody" unique_id=102759548]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2825, 0)
 shape = SubResource("CylinderShape3D_fhr36")
 
-[node name="Oak3" type="Node3D" parent="Expedition/MossOaks" unique_id=1790234759]
+[node name="Oak3" type="Node3D" parent="Expedition/MossOaks" unique_id=935128156]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 0, 72)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak3" unique_id=929793162]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak3" unique_id=1653389693]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5025, 0)
 mesh = SubResource("CylinderMesh_b0g0k")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak3" unique_id=1228254027]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak3" unique_id=317238520]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.097, 0)
 mesh = SubResource("SphereMesh_apouh")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak3" unique_id=617095633]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak3" unique_id=58938770]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.183, 7.553, 0.546)
 mesh = SubResource("SphereMesh_df2gw")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak3" unique_id=1002517330]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak3" unique_id=728545140]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.91, 7.735, -0.728)
 mesh = SubResource("SphereMesh_uquyn")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak3" unique_id=492390212]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak3" unique_id=765767401]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak3/TrunkBody" unique_id=1926430063]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak3/TrunkBody" unique_id=1901202938]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5025, 0)
 shape = SubResource("CylinderShape3D_o1bo0")
 
-[node name="Oak4" type="Node3D" parent="Expedition/MossOaks" unique_id=655159300]
+[node name="Oak4" type="Node3D" parent="Expedition/MossOaks" unique_id=1879688868]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 66)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak4" unique_id=917330300]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak4" unique_id=1412403435]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7225, 0)
 mesh = SubResource("CylinderMesh_nphc1")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak4" unique_id=387909054]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak4" unique_id=207306713]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.633, 0)
 mesh = SubResource("SphereMesh_pv6b5")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak4" unique_id=485490975]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak4" unique_id=1701366238]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.287, 8.217, 0.594)
 mesh = SubResource("SphereMesh_qhll1")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak4" unique_id=1790158123]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak4" unique_id=2081046855]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.99, 8.415, -0.792)
 mesh = SubResource("SphereMesh_va8gn")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak4" unique_id=401291932]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak4" unique_id=1792963631]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak4/TrunkBody" unique_id=188854458]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak4/TrunkBody" unique_id=1668740851]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7225, 0)
 shape = SubResource("CylinderShape3D_uhr8t")
 
-[node name="Oak5" type="Node3D" parent="Expedition/MossOaks" unique_id=4758226]
+[node name="Oak5" type="Node3D" parent="Expedition/MossOaks" unique_id=1342650653]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 74)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak5" unique_id=996068861]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak5" unique_id=55494182]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0625, 0)
 mesh = SubResource("CylinderMesh_tkxjr")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak5" unique_id=674054303]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak5" unique_id=1662483073]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.025, 0)
 mesh = SubResource("SphereMesh_k10dl")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak5" unique_id=1471633481]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak5" unique_id=813005234]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.975, 6.225, 0.45)
 mesh = SubResource("SphereMesh_a31mc")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak5" unique_id=435572172]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak5" unique_id=383295462]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.75, 6.375, -0.6)
 mesh = SubResource("SphereMesh_vlmna")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak5" unique_id=17382905]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak5" unique_id=462887096]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak5/TrunkBody" unique_id=1014381586]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak5/TrunkBody" unique_id=400884962]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0625, 0)
 shape = SubResource("CylinderShape3D_5oc6v")
 
-[node name="Oak6" type="Node3D" parent="Expedition/MossOaks" unique_id=1497304042]
+[node name="Oak6" type="Node3D" parent="Expedition/MossOaks" unique_id=220083122]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, 0, 57)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak6" unique_id=1139792683]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak6" unique_id=1152737975]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2825, 0)
 mesh = SubResource("CylinderMesh_srbfq")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak6" unique_id=1614207457]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak6" unique_id=599981777]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.561, 0)
 mesh = SubResource("SphereMesh_v1kce")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak6" unique_id=525500187]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak6" unique_id=900318596]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.079, 6.889, 0.498)
 mesh = SubResource("SphereMesh_gxmy3")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak6" unique_id=454296813]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak6" unique_id=1783896706]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.83, 7.055, -0.664)
 mesh = SubResource("SphereMesh_kcx1n")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak6" unique_id=2092657784]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak6" unique_id=196092393]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak6/TrunkBody" unique_id=284736711]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak6/TrunkBody" unique_id=443436070]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2825, 0)
 shape = SubResource("CylinderShape3D_w336w")
 
-[node name="Oak7" type="Node3D" parent="Expedition/MossOaks" unique_id=8761404]
+[node name="Oak7" type="Node3D" parent="Expedition/MossOaks" unique_id=1158814390]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, 60)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak7" unique_id=413578883]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak7" unique_id=78462554]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5025, 0)
 mesh = SubResource("CylinderMesh_rfdfu")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak7" unique_id=965987330]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak7" unique_id=1810888669]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.097, 0)
 mesh = SubResource("SphereMesh_heq63")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak7" unique_id=1201510569]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak7" unique_id=1664037089]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.183, 7.553, 0.546)
 mesh = SubResource("SphereMesh_ap2o0")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak7" unique_id=1391844588]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak7" unique_id=110628656]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.91, 7.735, -0.728)
 mesh = SubResource("SphereMesh_nqcfg")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak7" unique_id=4734933]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak7" unique_id=606179177]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak7/TrunkBody" unique_id=730951666]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak7/TrunkBody" unique_id=2142468999]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5025, 0)
 shape = SubResource("CylinderShape3D_0jq5q")
 
-[node name="Oak8" type="Node3D" parent="Expedition/MossOaks" unique_id=1553323799]
+[node name="Oak8" type="Node3D" parent="Expedition/MossOaks" unique_id=685473344]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 51)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak8" unique_id=302230847]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak8" unique_id=494639787]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7225, 0)
 mesh = SubResource("CylinderMesh_ffp5u")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak8" unique_id=1280603528]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak8" unique_id=486509395]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.633, 0)
 mesh = SubResource("SphereMesh_blxqs")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak8" unique_id=594649869]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak8" unique_id=1391502226]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.287, 8.217, 0.594)
 mesh = SubResource("SphereMesh_ege5w")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak8" unique_id=1587863917]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak8" unique_id=1447394577]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.99, 8.415, -0.792)
 mesh = SubResource("SphereMesh_20x1p")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak8" unique_id=1665139619]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak8" unique_id=1546896628]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak8/TrunkBody" unique_id=811313096]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak8/TrunkBody" unique_id=1353435773]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7225, 0)
 shape = SubResource("CylinderShape3D_1w38i")
 
-[node name="Oak9" type="Node3D" parent="Expedition/MossOaks" unique_id=1931525086]
+[node name="Oak9" type="Node3D" parent="Expedition/MossOaks" unique_id=1131382357]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0, 50)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak9" unique_id=1656153583]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak9" unique_id=1013605055]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0625, 0)
 mesh = SubResource("CylinderMesh_aid3t")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak9" unique_id=2088440026]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak9" unique_id=1075623]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.025, 0)
 mesh = SubResource("SphereMesh_8p6rj")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak9" unique_id=398805009]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak9" unique_id=1791667202]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.975, 6.225, 0.45)
 mesh = SubResource("SphereMesh_a856m")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak9" unique_id=1005580494]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak9" unique_id=357627885]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.75, 6.375, -0.6)
 mesh = SubResource("SphereMesh_16o38")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak9" unique_id=1298997195]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak9" unique_id=2017758282]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak9/TrunkBody" unique_id=452628788]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak9/TrunkBody" unique_id=472053691]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0625, 0)
 shape = SubResource("CylinderShape3D_xfbug")
 
-[node name="Oak10" type="Node3D" parent="Expedition/MossOaks" unique_id=1818299853]
+[node name="Oak10" type="Node3D" parent="Expedition/MossOaks" unique_id=1727038991]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 78)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak10" unique_id=1840245247]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak10" unique_id=1923575255]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2825, 0)
 mesh = SubResource("CylinderMesh_eqly5")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak10" unique_id=180063404]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak10" unique_id=1636294901]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.561, 0)
 mesh = SubResource("SphereMesh_q25mj")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak10" unique_id=2082988559]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak10" unique_id=1101538710]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.079, 6.889, 0.498)
 mesh = SubResource("SphereMesh_u80rv")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak10" unique_id=159530903]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak10" unique_id=663607064]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.83, 7.055, -0.664)
 mesh = SubResource("SphereMesh_te5ym")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak10" unique_id=308596080]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak10" unique_id=740372482]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak10/TrunkBody" unique_id=2092116368]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak10/TrunkBody" unique_id=274036956]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2825, 0)
 shape = SubResource("CylinderShape3D_u3wyq")
 
-[node name="Oak11" type="Node3D" parent="Expedition/MossOaks" unique_id=2095687709]
+[node name="Oak11" type="Node3D" parent="Expedition/MossOaks" unique_id=1814388329]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 79)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak11" unique_id=724041491]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak11" unique_id=1987326935]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5025, 0)
 mesh = SubResource("CylinderMesh_itowh")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak11" unique_id=821636397]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak11" unique_id=1026696355]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.097, 0)
 mesh = SubResource("SphereMesh_f6blu")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak11" unique_id=240832880]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak11" unique_id=586430932]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.183, 7.553, 0.546)
 mesh = SubResource("SphereMesh_8n0hh")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak11" unique_id=378471412]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak11" unique_id=1692921291]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.91, 7.735, -0.728)
 mesh = SubResource("SphereMesh_ry8ts")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak11" unique_id=10181951]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak11" unique_id=146185375]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak11/TrunkBody" unique_id=2144801736]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak11/TrunkBody" unique_id=285169956]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5025, 0)
 shape = SubResource("CylinderShape3D_onvpo")
 
-[node name="Oak12" type="Node3D" parent="Expedition/MossOaks" unique_id=537063724]
+[node name="Oak12" type="Node3D" parent="Expedition/MossOaks" unique_id=1319685594]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 64)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak12" unique_id=1737663275]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/MossOaks/Oak12" unique_id=1206228613]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7225, 0)
 mesh = SubResource("CylinderMesh_am327")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak12" unique_id=762554388]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/MossOaks/Oak12" unique_id=12946963]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.633, 0)
 mesh = SubResource("SphereMesh_wllw8")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak12" unique_id=864482383]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/MossOaks/Oak12" unique_id=4678691]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.287, 8.217, 0.594)
 mesh = SubResource("SphereMesh_6hpgh")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak12" unique_id=2094328092]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/MossOaks/Oak12" unique_id=267134567]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.99, 8.415, -0.792)
 mesh = SubResource("SphereMesh_dckue")
 
-[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak12" unique_id=1132592675]
+[node name="TrunkBody" type="StaticBody3D" parent="Expedition/MossOaks/Oak12" unique_id=1786560981]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak12/TrunkBody" unique_id=264418995]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/MossOaks/Oak12/TrunkBody" unique_id=2005515439]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7225, 0)
 shape = SubResource("CylinderShape3D_g3sik")
 
-[node name="Alcove" type="Node3D" parent="Expedition" unique_id=1011882324]
+[node name="Alcove" type="Node3D" parent="Expedition" unique_id=1465713730]
 
-[node name="Ground" type="StaticBody3D" parent="Expedition/Alcove" unique_id=2133859901]
+[node name="Ground" type="StaticBody3D" parent="Expedition/Alcove" unique_id=405122057]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, -0.5, 53)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Alcove/Ground" unique_id=30966276]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Alcove/Ground" unique_id=1688386276]
 shape = SubResource("BoxShape3D_5m88o")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Alcove/Ground" unique_id=40028028]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Alcove/Ground" unique_id=402009594]
 mesh = SubResource("BoxMesh_2j56s")
 
-[node name="WallNorth" type="StaticBody3D" parent="Expedition/Alcove" unique_id=1724015638]
+[node name="WallNorth" type="StaticBody3D" parent="Expedition/Alcove" unique_id=1158421996]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -28, 0.6, 50)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Alcove/WallNorth" unique_id=213164023]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Alcove/WallNorth" unique_id=1594848510]
 shape = SubResource("BoxShape3D_u8lsp")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Alcove/WallNorth" unique_id=1246171559]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Alcove/WallNorth" unique_id=2104791443]
 mesh = SubResource("BoxMesh_2ixnc")
 
-[node name="WallSouth" type="StaticBody3D" parent="Expedition/Alcove" unique_id=1840895210]
+[node name="WallSouth" type="StaticBody3D" parent="Expedition/Alcove" unique_id=2057530600]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -28, 0.6, 56)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Alcove/WallSouth" unique_id=1717674333]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Alcove/WallSouth" unique_id=337977004]
 shape = SubResource("BoxShape3D_gba3h")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Alcove/WallSouth" unique_id=861334712]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Alcove/WallSouth" unique_id=821051783]
 mesh = SubResource("BoxMesh_nf5dd")
 
-[node name="WallWest" type="StaticBody3D" parent="Expedition/Alcove" unique_id=793440286]
+[node name="WallWest" type="StaticBody3D" parent="Expedition/Alcove" unique_id=812241851]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32, 0.6, 53)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Alcove/WallWest" unique_id=112494407]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Alcove/WallWest" unique_id=1999163709]
 shape = SubResource("BoxShape3D_a0fpb")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Alcove/WallWest" unique_id=4752613]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Alcove/WallWest" unique_id=701767067]
 mesh = SubResource("BoxMesh_th7xn")
 
-[node name="Oak" type="Node3D" parent="Expedition/Alcove" unique_id=1776713542]
+[node name="Oak" type="Node3D" parent="Expedition/Alcove" unique_id=906128057]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 0, 53)
 
-[node name="Trunk" type="MeshInstance3D" parent="Expedition/Alcove/Oak" unique_id=543237610]
+[node name="Trunk" type="MeshInstance3D" parent="Expedition/Alcove/Oak" unique_id=1199157599]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
 mesh = SubResource("CylinderMesh_78pd4")
 
-[node name="Leaves0" type="MeshInstance3D" parent="Expedition/Alcove/Oak" unique_id=893305087]
+[node name="Leaves0" type="MeshInstance3D" parent="Expedition/Alcove/Oak" unique_id=2026176664]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.36, 0)
 mesh = SubResource("SphereMesh_qt7gw")
 
-[node name="Leaves1" type="MeshInstance3D" parent="Expedition/Alcove/Oak" unique_id=1787164571]
+[node name="Leaves1" type="MeshInstance3D" parent="Expedition/Alcove/Oak" unique_id=165271515]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 6.64, 0.48)
 mesh = SubResource("SphereMesh_guu06")
 
-[node name="Leaves2" type="MeshInstance3D" parent="Expedition/Alcove/Oak" unique_id=488565646]
+[node name="Leaves2" type="MeshInstance3D" parent="Expedition/Alcove/Oak" unique_id=1134117410]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 6.8, -0.64)
 mesh = SubResource("SphereMesh_lmrqc")
 
-[node name="Holloway" type="Node3D" parent="Expedition" unique_id=786343467]
+[node name="Holloway" type="Node3D" parent="Expedition" unique_id=186146421]
 
-[node name="RampDown" type="StaticBody3D" parent="Expedition/Holloway" unique_id=1025534798]
+[node name="RampDown" type="StaticBody3D" parent="Expedition/Holloway" unique_id=52397045]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Holloway/RampDown" unique_id=627711596]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Holloway/RampDown" unique_id=97463548]
 shape = SubResource("ConvexPolygonShape3D_kmlxw")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Holloway/RampDown" unique_id=125012632]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Holloway/RampDown" unique_id=452340995]
 material_override = SubResource("ShaderMaterial_molux")
 mesh = SubResource("ArrayMesh_r8ptr")
 
-[node name="Lane" type="StaticBody3D" parent="Expedition/Holloway" unique_id=1984404671]
+[node name="Lane" type="StaticBody3D" parent="Expedition/Holloway" unique_id=1638009245]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.3, 30)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Holloway/Lane" unique_id=1850739285]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Holloway/Lane" unique_id=512325599]
 shape = SubResource("BoxShape3D_3mth7")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Holloway/Lane" unique_id=811403684]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Holloway/Lane" unique_id=239368924]
 mesh = SubResource("BoxMesh_xxlkn")
 
-[node name="RampUp" type="StaticBody3D" parent="Expedition/Holloway" unique_id=540532851]
+[node name="RampUp" type="StaticBody3D" parent="Expedition/Holloway" unique_id=1005171299]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Holloway/RampUp" unique_id=1317476499]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Holloway/RampUp" unique_id=1196643163]
 shape = SubResource("ConvexPolygonShape3D_v0uw7")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Holloway/RampUp" unique_id=1454131957]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Holloway/RampUp" unique_id=2029664591]
 material_override = SubResource("ShaderMaterial_wsvhp")
 mesh = SubResource("ArrayMesh_j7gnl")
 
-[node name="BankWest" type="StaticBody3D" parent="Expedition/Holloway" unique_id=2085690419]
+[node name="BankWest" type="StaticBody3D" parent="Expedition/Holloway" unique_id=637898278]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, -0.8, 30)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Holloway/BankWest" unique_id=451041032]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Holloway/BankWest" unique_id=1209937228]
 shape = SubResource("BoxShape3D_7uoi5")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Holloway/BankWest" unique_id=1667016134]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Holloway/BankWest" unique_id=1922110266]
 mesh = SubResource("BoxMesh_rn010")
 
-[node name="Moss" type="MeshInstance3D" parent="Expedition/Holloway/BankWest" unique_id=851085910]
+[node name="Moss" type="MeshInstance3D" parent="Expedition/Holloway/BankWest" unique_id=836326655]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 mesh = SubResource("BoxMesh_gt3q6")
 
-[node name="BankEast" type="StaticBody3D" parent="Expedition/Holloway" unique_id=1704189301]
+[node name="BankEast" type="StaticBody3D" parent="Expedition/Holloway" unique_id=1461482729]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, -0.8, 30)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Holloway/BankEast" unique_id=1481944740]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Holloway/BankEast" unique_id=1608688700]
 shape = SubResource("BoxShape3D_w67o0")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Holloway/BankEast" unique_id=802336285]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Holloway/BankEast" unique_id=133959924]
 mesh = SubResource("BoxMesh_q4sot")
 
-[node name="Moss" type="MeshInstance3D" parent="Expedition/Holloway/BankEast" unique_id=1050766642]
+[node name="Moss" type="MeshInstance3D" parent="Expedition/Holloway/BankEast" unique_id=2118523541]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 mesh = SubResource("BoxMesh_ebgsw")
 
-[node name="Root0W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=964831781]
+[node name="Root0W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=168950050]
 transform = Transform3D(-0.8364611, 0.53718626, 0.1084604, 0.54802626, 0.8199159, 0.16554482, 0, 0.19791095, -0.98021996, -3.3500001, 2.25, 40.949997)
 mesh = SubResource("CylinderMesh_83ck0")
 
-[node name="Bough0W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1730924862]
+[node name="Bough0W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=263611171]
 transform = Transform3D(-0.20395416, 0.9717316, -0.11891297, 0.9789804, 0.20244399, -0.024773523, 0, -0.12146614, -0.9925955, -1.2, 3.9499998, 41.15)
 mesh = SubResource("CylinderMesh_uvlta")
 
-[node name="Root0E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1592599351]
+[node name="Root0E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=414319800]
 transform = Transform3D(-0.8364611, -0.53718626, 0.1084604, -0.54802626, 0.8199159, -0.16554482, 0, -0.19791095, -0.98021996, 3.3500001, 2.25, 41.050003)
 mesh = SubResource("CylinderMesh_hrn3c")
 
-[node name="Bough0E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1664253045]
+[node name="Bough0E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=108936272]
 transform = Transform3D(-0.20395416, -0.9717316, -0.11891297, -0.9789804, 0.20244399, 0.024773523, 0, 0.12146614, -0.9925955, 1.2, 3.9499998, 40.85)
 mesh = SubResource("CylinderMesh_seath")
 
-[node name="Root1W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=505144375]
+[node name="Root1W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=898258557]
 transform = Transform3D(-0.8364611, 0.53718626, 0.1084604, 0.54802626, 0.8199159, 0.16554482, 0, 0.19791095, -0.98021996, -3.3500001, 2.25, 33.949997)
 mesh = SubResource("CylinderMesh_jx5gr")
 
-[node name="Bough1W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=730276814]
+[node name="Bough1W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1645283864]
 transform = Transform3D(-0.20395416, 0.9717316, -0.11891297, 0.9789804, 0.20244399, -0.024773523, 0, -0.12146614, -0.9925955, -1.2, 3.9499998, 34.15)
 mesh = SubResource("CylinderMesh_8ddic")
 
-[node name="Root1E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1532258653]
+[node name="Root1E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1598346285]
 transform = Transform3D(-0.8364611, -0.53718626, 0.1084604, -0.54802626, 0.8199159, -0.16554482, 0, -0.19791095, -0.98021996, 3.3500001, 2.25, 34.050003)
 mesh = SubResource("CylinderMesh_7nyng")
 
-[node name="Bough1E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=571811501]
+[node name="Bough1E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=520112380]
 transform = Transform3D(-0.20395416, -0.9717316, -0.11891297, -0.9789804, 0.20244399, 0.024773523, 0, 0.12146614, -0.9925955, 1.2, 3.9499998, 33.85)
 mesh = SubResource("CylinderMesh_y1oqh")
 
-[node name="Root2W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=2006051337]
+[node name="Root2W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1881121256]
 transform = Transform3D(-0.8364611, 0.5371863, 0.108460106, 0.54802626, 0.81991595, 0.16554436, 0, 0.19791041, -0.98022, -3.3500001, 2.25, 28.45)
 mesh = SubResource("CylinderMesh_ojvgq")
 
-[node name="Bough2W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=651049864]
+[node name="Bough2W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=2135489821]
 transform = Transform3D(-0.20395416, 0.9717316, -0.11891297, 0.9789804, 0.20244399, -0.024773523, 0, -0.12146614, -0.9925955, -1.2, 3.9499998, 28.65)
 mesh = SubResource("CylinderMesh_vp7el")
 
-[node name="Root2E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=970642847]
+[node name="Root2E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1324062288]
 transform = Transform3D(-0.8364611, -0.5371863, 0.108460106, -0.54802626, 0.81991595, -0.16554436, 0, -0.19791041, -0.98022, 3.3500001, 2.25, 28.55)
 mesh = SubResource("CylinderMesh_5y5l2")
 
-[node name="Bough2E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=970200981]
+[node name="Bough2E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1692384471]
 transform = Transform3D(-0.20395416, -0.9717316, -0.11891297, -0.9789804, 0.20244399, 0.024773523, 0, 0.12146614, -0.9925955, 1.2, 3.9499998, 28.35)
 mesh = SubResource("CylinderMesh_ttgyj")
 
-[node name="Root3W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1050944819]
+[node name="Root3W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=618638577]
 transform = Transform3D(-0.8364611, 0.5371863, 0.108460106, 0.54802626, 0.81991595, 0.16554436, 0, 0.19791041, -0.98022, -3.3500001, 2.25, 23.45)
 mesh = SubResource("CylinderMesh_mu6yu")
 
-[node name="Bough3W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=744951617]
+[node name="Bough3W" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=302055552]
 transform = Transform3D(-0.20395416, 0.9717316, -0.11891297, 0.9789804, 0.20244399, -0.024773523, 0, -0.12146614, -0.9925955, -1.2, 3.9499998, 23.65)
 mesh = SubResource("CylinderMesh_qv4jx")
 
-[node name="Root3E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=2101462240]
+[node name="Root3E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1852811764]
 transform = Transform3D(-0.8364611, -0.5371863, 0.108460106, -0.54802626, 0.81991595, -0.16554436, 0, -0.19791041, -0.98022, 3.3500001, 2.25, 23.55)
 mesh = SubResource("CylinderMesh_74t1s")
 
-[node name="Bough3E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1870861949]
+[node name="Bough3E" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1767550017]
 transform = Transform3D(-0.20395416, -0.9717316, -0.11891297, -0.9789804, 0.20244399, 0.024773523, 0, 0.12146614, -0.9925955, 1.2, 3.9499998, 23.35)
 mesh = SubResource("CylinderMesh_0ae47")
 
-[node name="Mushroom0" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=540996767]
+[node name="Mushroom0" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1998027295]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.75, -1.7, 37)
 mesh = SubResource("SphereMesh_tqth3")
 
-[node name="Mushroom1" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=2114462085]
+[node name="Mushroom1" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=694005807]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.75, -1.7, 35.444443)
 mesh = SubResource("SphereMesh_6ue7j")
 
-[node name="Mushroom2" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=2116186960]
+[node name="Mushroom2" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1047575055]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.75, -1.7, 33.88889)
 mesh = SubResource("SphereMesh_lklex")
 
-[node name="Mushroom3" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=88004615]
+[node name="Mushroom3" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=599262926]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.75, -1.7, 32.333332)
 mesh = SubResource("SphereMesh_fn6li")
 
-[node name="Mushroom4" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1720359208]
+[node name="Mushroom4" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=272174456]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.75, -1.7, 30.777779)
 mesh = SubResource("SphereMesh_pqxi8")
 
-[node name="Mushroom5" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1956913035]
+[node name="Mushroom5" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1408508923]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.75, -1.7, 29.222221)
 mesh = SubResource("SphereMesh_sojup")
 
-[node name="Mushroom6" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1363568002]
+[node name="Mushroom6" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1769455199]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.75, -1.7, 27.666666)
 mesh = SubResource("SphereMesh_5p8v7")
 
-[node name="Mushroom7" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=158504268]
+[node name="Mushroom7" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=903417198]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.75, -1.7, 26.11111)
 mesh = SubResource("SphereMesh_22646")
 
-[node name="Mushroom8" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=29688325]
+[node name="Mushroom8" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1099816931]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.75, -1.7, 24.555555)
 mesh = SubResource("SphereMesh_l2q5v")
 
-[node name="Mushroom9" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=1131041092]
+[node name="Mushroom9" type="MeshInstance3D" parent="Expedition/Holloway" unique_id=22036884]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.75, -1.7, 23)
 mesh = SubResource("SphereMesh_23trr")
 
-[node name="Gorge" type="Node3D" parent="Expedition" unique_id=1530075447]
+[node name="Gorge" type="Node3D" parent="Expedition" unique_id=1947674584]
 
-[node name="SouthCliff" type="StaticBody3D" parent="Expedition/Gorge" unique_id=506501173]
+[node name="SouthCliff" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1889987951]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 10)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthCliff" unique_id=80934638]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthCliff" unique_id=146129544]
 shape = SubResource("BoxShape3D_v4njn")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthCliff" unique_id=362140417]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthCliff" unique_id=1158954649]
 mesh = SubResource("BoxMesh_1d0rk")
 
-[node name="NorthCliff" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1957936026]
+[node name="NorthCliff" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1409354571]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -18)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthCliff" unique_id=680705218]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthCliff" unique_id=1565899345]
 shape = SubResource("BoxShape3D_8hhiy")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthCliff" unique_id=1453377722]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthCliff" unique_id=9173980]
 mesh = SubResource("BoxMesh_bodm7")
 
-[node name="SouthWallWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=773827507]
+[node name="SouthWallWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=146179982]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -12, 0.6, 14)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthWallWest" unique_id=1507549311]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthWallWest" unique_id=1722265803]
 shape = SubResource("BoxShape3D_e2aev")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthWallWest" unique_id=298977155]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthWallWest" unique_id=8321034]
 mesh = SubResource("BoxMesh_a4cau")
 
-[node name="SouthWallEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1485746355]
+[node name="SouthWallEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=131041954]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 12, 0.6, 14)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthWallEast" unique_id=1353678604]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthWallEast" unique_id=1851226356]
 shape = SubResource("BoxShape3D_tj8bm")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthWallEast" unique_id=1734897571]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthWallEast" unique_id=29828988]
 mesh = SubResource("BoxMesh_4km8x")
 
-[node name="SouthSideWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=2060035825]
+[node name="SouthSideWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1831740669]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0.6, 10)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthSideWest" unique_id=1055704043]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthSideWest" unique_id=97426098]
 shape = SubResource("BoxShape3D_q4wwf")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthSideWest" unique_id=1141194560]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthSideWest" unique_id=1265241454]
 mesh = SubResource("BoxMesh_6u1oc")
 
-[node name="NorthSideWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=41061601]
+[node name="NorthSideWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1160294286]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0.6, -18)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthSideWest" unique_id=1361887160]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthSideWest" unique_id=305951008]
 shape = SubResource("BoxShape3D_gt75i")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthSideWest" unique_id=1147720240]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthSideWest" unique_id=2047531706]
 mesh = SubResource("BoxMesh_qkvf8")
 
-[node name="SouthEdgeWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=2077597769]
+[node name="SouthEdgeWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1370635904]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -9.6, 0.55, 6)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthEdgeWest" unique_id=514566840]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthEdgeWest" unique_id=1265400602]
 shape = SubResource("BoxShape3D_s46ax")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthEdgeWest" unique_id=1962148647]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthEdgeWest" unique_id=787699511]
 mesh = SubResource("BoxMesh_ub5o7")
 
-[node name="NorthEdgeWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1261026346]
+[node name="NorthEdgeWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1160866633]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -9.6, 0.55, -12)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthEdgeWest" unique_id=833184847]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthEdgeWest" unique_id=2083141978]
 shape = SubResource("BoxShape3D_cjluf")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthEdgeWest" unique_id=477130368]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthEdgeWest" unique_id=873041459]
 mesh = SubResource("BoxMesh_te1l2")
 
-[node name="NorthEndWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=989203821]
+[node name="NorthEndWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=410057796]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -9.5, 0.6, -24)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthEndWest" unique_id=592324942]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthEndWest" unique_id=1321591218]
 shape = SubResource("BoxShape3D_3phts")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthEndWest" unique_id=1890965942]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthEndWest" unique_id=1058533540]
 mesh = SubResource("BoxMesh_3gpmk")
 
-[node name="SouthSideEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1183616339]
+[node name="SouthSideEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1226687312]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0.6, 10)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthSideEast" unique_id=1572117952]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthSideEast" unique_id=990006769]
 shape = SubResource("BoxShape3D_acbix")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthSideEast" unique_id=1583736353]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthSideEast" unique_id=819286105]
 mesh = SubResource("BoxMesh_cep57")
 
-[node name="NorthSideEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1421099696]
+[node name="NorthSideEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1548230587]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0.6, -18)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthSideEast" unique_id=1413266382]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthSideEast" unique_id=72234191]
 shape = SubResource("BoxShape3D_5f4d8")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthSideEast" unique_id=162411113]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthSideEast" unique_id=911744462]
 mesh = SubResource("BoxMesh_y8woi")
 
-[node name="SouthEdgeEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1762345856]
+[node name="SouthEdgeEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1352647272]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 9.6, 0.55, 6)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthEdgeEast" unique_id=1247124966]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/SouthEdgeEast" unique_id=889073285]
 shape = SubResource("BoxShape3D_ndh5i")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthEdgeEast" unique_id=1964935361]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/SouthEdgeEast" unique_id=547435356]
 mesh = SubResource("BoxMesh_axq3o")
 
-[node name="NorthEdgeEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1380948070]
+[node name="NorthEdgeEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=732355306]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 9.6, 0.55, -12)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthEdgeEast" unique_id=283121638]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthEdgeEast" unique_id=1531330020]
 shape = SubResource("BoxShape3D_4qmlk")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthEdgeEast" unique_id=1376520937]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthEdgeEast" unique_id=1518292725]
 mesh = SubResource("BoxMesh_ryxnt")
 
-[node name="NorthEndEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=191141360]
+[node name="NorthEndEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1637388684]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 9.5, 0.6, -24)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthEndEast" unique_id=565707556]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/NorthEndEast" unique_id=640004896]
 shape = SubResource("BoxShape3D_48ryk")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthEndEast" unique_id=798545335]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/NorthEndEast" unique_id=1760040753]
 mesh = SubResource("BoxMesh_78ora")
 
-[node name="BridgeDeck" type="StaticBody3D" parent="Expedition/Gorge" unique_id=236201009]
+[node name="BridgeDeck" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1350566171]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, -3)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BridgeDeck" unique_id=583210864]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BridgeDeck" unique_id=1376433094]
 shape = SubResource("BoxShape3D_gb6ys")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BridgeDeck" unique_id=942955999]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BridgeDeck" unique_id=481265167]
 mesh = SubResource("BoxMesh_ywpvf")
 
-[node name="BayWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1784650809]
+[node name="BayWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=280485114]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.8, -0.2, -6)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayWest" unique_id=1347051831]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayWest" unique_id=2057992930]
 shape = SubResource("BoxShape3D_1efgv")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayWest" unique_id=1453389673]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayWest" unique_id=1262154052]
 mesh = SubResource("BoxMesh_gjowl")
 
-[node name="RailWestSouth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1911398865]
+[node name="RailWestSouth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=2121964370]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1, 0.55, 1.5)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/RailWestSouth" unique_id=328520356]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/RailWestSouth" unique_id=1031215062]
 shape = SubResource("BoxShape3D_6pgu5")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/RailWestSouth" unique_id=1444189349]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/RailWestSouth" unique_id=1169862285]
 mesh = SubResource("BoxMesh_hayi1")
 
-[node name="RailWestNorth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1530548848]
+[node name="RailWestNorth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=245662999]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1, 0.55, -10.5)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/RailWestNorth" unique_id=731113052]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/RailWestNorth" unique_id=1548286214]
 shape = SubResource("BoxShape3D_qflym")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/RailWestNorth" unique_id=584346164]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/RailWestNorth" unique_id=219634595]
 mesh = SubResource("BoxMesh_55jpp")
 
-[node name="BayRailWestOuter" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1082850404]
+[node name="BayRailWestOuter" type="StaticBody3D" parent="Expedition/Gorge" unique_id=467094323]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.6, 0.55, -6)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailWestOuter" unique_id=1004437538]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailWestOuter" unique_id=82911118]
 shape = SubResource("BoxShape3D_j54o2")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailWestOuter" unique_id=1697888122]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailWestOuter" unique_id=902992801]
 mesh = SubResource("BoxMesh_pqioy")
 
-[node name="BayRailWestSouth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=365014931]
+[node name="BayRailWestSouth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1395372404]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -4.85, 0.55, -3)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailWestSouth" unique_id=1936961712]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailWestSouth" unique_id=836360704]
 shape = SubResource("BoxShape3D_q0kn1")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailWestSouth" unique_id=626589526]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailWestSouth" unique_id=1076274050]
 mesh = SubResource("BoxMesh_j0nem")
 
-[node name="BayRailWestNorth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=311617577]
+[node name="BayRailWestNorth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=920610448]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -4.85, 0.55, -9)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailWestNorth" unique_id=730189722]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailWestNorth" unique_id=734895131]
 shape = SubResource("BoxShape3D_0b5bo")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailWestNorth" unique_id=959254162]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailWestNorth" unique_id=1278010835]
 mesh = SubResource("BoxMesh_5wlx6")
 
-[node name="TrestleWest3" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=61912935]
+[node name="TrestleWest3" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=170222959]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, -12.4, 3)
 mesh = SubResource("BoxMesh_8ip3v")
 
-[node name="TrestleWest-3" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=191328804]
+[node name="TrestleWest-3" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=500543711]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, -12.4, -3)
 mesh = SubResource("BoxMesh_8jtfi")
 
-[node name="TrestleWest-9" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=552923284]
+[node name="TrestleWest-9" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1017235820]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, -12.4, -9)
 mesh = SubResource("BoxMesh_qd1bc")
 
-[node name="BraceWest" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1134080424]
+[node name="BraceWest" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1925066586]
 transform = Transform3D(1, 0, 0, 0, 0.9393727, -0.3428978, 0, 0.3428978, 0.9393727, -2.6, -4, -3)
 mesh = SubResource("BoxMesh_718dm")
 
-[node name="BayEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1048924950]
+[node name="BayEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1921078123]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.8, -0.2, -6)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayEast" unique_id=818008791]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayEast" unique_id=1407541086]
 shape = SubResource("BoxShape3D_lmwdi")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayEast" unique_id=1615873721]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayEast" unique_id=2072674323]
 mesh = SubResource("BoxMesh_j617c")
 
-[node name="RailEastSouth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1965879987]
+[node name="RailEastSouth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=871130987]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.1, 0.55, 1.5)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/RailEastSouth" unique_id=885240997]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/RailEastSouth" unique_id=1364825575]
 shape = SubResource("BoxShape3D_0icdy")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/RailEastSouth" unique_id=835644204]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/RailEastSouth" unique_id=1147041083]
 mesh = SubResource("BoxMesh_ph5he")
 
-[node name="RailEastNorth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=278859836]
+[node name="RailEastNorth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=335370388]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.1, 0.55, -10.5)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/RailEastNorth" unique_id=125251725]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/RailEastNorth" unique_id=2071018511]
 shape = SubResource("BoxShape3D_8eatc")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/RailEastNorth" unique_id=319353776]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/RailEastNorth" unique_id=1082905473]
 mesh = SubResource("BoxMesh_sxuk5")
 
-[node name="BayRailEastOuter" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1369312697]
+[node name="BayRailEastOuter" type="StaticBody3D" parent="Expedition/Gorge" unique_id=929305198]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.6, 0.55, -6)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailEastOuter" unique_id=1264875452]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailEastOuter" unique_id=508712035]
 shape = SubResource("BoxShape3D_d8mnm")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailEastOuter" unique_id=379652296]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailEastOuter" unique_id=623396364]
 mesh = SubResource("BoxMesh_y1yjd")
 
-[node name="BayRailEastSouth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=899246259]
+[node name="BayRailEastSouth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1263315875]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.85, 0.55, -3)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailEastSouth" unique_id=946551274]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailEastSouth" unique_id=1615191612]
 shape = SubResource("BoxShape3D_kn8ng")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailEastSouth" unique_id=520301222]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailEastSouth" unique_id=378645336]
 mesh = SubResource("BoxMesh_2fvp1")
 
-[node name="BayRailEastNorth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1676003052]
+[node name="BayRailEastNorth" type="StaticBody3D" parent="Expedition/Gorge" unique_id=549063143]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.85, 0.55, -9)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailEastNorth" unique_id=1820484825]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/BayRailEastNorth" unique_id=1282740792]
 shape = SubResource("BoxShape3D_k5r5g")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailEastNorth" unique_id=1610345258]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/BayRailEastNorth" unique_id=1437813617]
 mesh = SubResource("BoxMesh_rjahd")
 
-[node name="TrestleEast3" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1576193840]
+[node name="TrestleEast3" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1697160929]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, -12.4, 3)
 mesh = SubResource("BoxMesh_nw2ge")
 
-[node name="TrestleEast-3" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1238469549]
+[node name="TrestleEast-3" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1534791160]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, -12.4, -3)
 mesh = SubResource("BoxMesh_nmv7f")
 
-[node name="TrestleEast-9" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=991000850]
+[node name="TrestleEast-9" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=92484263]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, -12.4, -9)
 mesh = SubResource("BoxMesh_c6t24")
 
-[node name="BraceEast" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=23373448]
+[node name="BraceEast" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=119923195]
 transform = Transform3D(1, 0, 0, 0, 0.9393727, -0.3428978, 0, 0.3428978, 0.9393727, 2.6, -4, -3)
 mesh = SubResource("BoxMesh_37exv")
 
-[node name="Pier6" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1636012996]
+[node name="Pier6" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=2121045565]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12.4, 6)
 mesh = SubResource("BoxMesh_pqcec")
 
-[node name="Pier-12" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=452858382]
+[node name="Pier-12" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1251804830]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12.4, -12)
 mesh = SubResource("BoxMesh_7nt1c")
 
-[node name="FaceSouth" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=873580016]
+[node name="FaceSouth" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=953915251]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12, 5.7)
 mesh = SubResource("BoxMesh_spjsf")
 
-[node name="FaceNorth" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=375667069]
+[node name="FaceNorth" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1670175546]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12, -11.7)
 mesh = SubResource("BoxMesh_dsbiv")
 
-[node name="FaceWest" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=784003421]
+[node name="FaceWest" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1221058733]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.3, -8, -3)
 mesh = SubResource("BoxMesh_knlqj")
 
-[node name="FaceEast" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=549125737]
+[node name="FaceEast" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1490171044]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.3, -8, -3)
 mesh = SubResource("BoxMesh_tg1f4")
 
-[node name="Waterfall" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=960051065]
+[node name="Waterfall" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1755758253]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, -9, -3)
 mesh = SubResource("BoxMesh_bb8h4")
 
-[node name="FallMist" type="CPUParticles3D" parent="Expedition/Gorge" unique_id=1482892496]
+[node name="FallMist" type="CPUParticles3D" parent="Expedition/Gorge" unique_id=288747818]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, -19.4, -2)
 amount = 24
 lifetime = 3.0
@@ -2910,7 +3020,7 @@ initial_velocity_min = 0.3
 initial_velocity_max = 0.9
 scale_amount_max = 2.2
 
-[node name="FallSpray" type="CPUParticles3D" parent="Expedition/Gorge" unique_id=324345737]
+[node name="FallSpray" type="CPUParticles3D" parent="Expedition/Gorge" unique_id=122795677]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.5, 2.6999998, -2.2)
 amount = 24
 lifetime = 3.0
@@ -2924,75 +3034,75 @@ initial_velocity_min = 0.3
 initial_velocity_max = 0.9
 scale_amount_max = 2.2
 
-[node name="PaperMillWheel" type="Node3D" parent="Expedition/Gorge" unique_id=1213106460]
+[node name="PaperMillWheel" type="Node3D" parent="Expedition/Gorge" unique_id=1743844371]
 transform = Transform3D(-1.0053619e-07, -2.3, 0, 2.3, -1.0053619e-07, 0, 0, 0, 2.3, -10.5, -2.6, -3)
 script = ExtResource("4_qi257")
 
-[node name="MillHouse" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=95958566]
+[node name="MillHouse" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=98774174]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, -2.1, -3)
 mesh = SubResource("BoxMesh_aplpi")
 
-[node name="TowerWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=896737108]
+[node name="TowerWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1508043689]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.2, 3.5, -16)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/TowerWest" unique_id=122598006]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/TowerWest" unique_id=1642782979]
 shape = SubResource("BoxShape3D_iv7er")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/TowerWest" unique_id=893438568]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/TowerWest" unique_id=1584108245]
 mesh = SubResource("BoxMesh_nyfda")
 
-[node name="Turret" type="MeshInstance3D" parent="Expedition/Gorge/TowerWest" unique_id=2067067789]
+[node name="Turret" type="MeshInstance3D" parent="Expedition/Gorge/TowerWest" unique_id=250731335]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.1, 0)
 mesh = SubResource("PrismMesh_axquk")
 
-[node name="Gallery" type="MeshInstance3D" parent="Expedition/Gorge/TowerWest" unique_id=649954471]
+[node name="Gallery" type="MeshInstance3D" parent="Expedition/Gorge/TowerWest" unique_id=1504414057]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
 mesh = SubResource("BoxMesh_lx6w6")
 
-[node name="GateWallWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1481848147]
+[node name="GateWallWest" type="StaticBody3D" parent="Expedition/Gorge" unique_id=80982537]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -11, 2.25, -16)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/GateWallWest" unique_id=350925864]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/GateWallWest" unique_id=1877612895]
 shape = SubResource("BoxShape3D_1geua")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/GateWallWest" unique_id=868177462]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/GateWallWest" unique_id=1689600175]
 mesh = SubResource("BoxMesh_ihff2")
 
-[node name="TowerEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1813058366]
+[node name="TowerEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=518368749]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.2, 3.5, -16)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/TowerEast" unique_id=1674738264]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/TowerEast" unique_id=1616414225]
 shape = SubResource("BoxShape3D_p5l63")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/TowerEast" unique_id=1848873887]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/TowerEast" unique_id=1235888727]
 mesh = SubResource("BoxMesh_se4r2")
 
-[node name="Turret" type="MeshInstance3D" parent="Expedition/Gorge/TowerEast" unique_id=1392059285]
+[node name="Turret" type="MeshInstance3D" parent="Expedition/Gorge/TowerEast" unique_id=1014440091]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.1, 0)
 mesh = SubResource("PrismMesh_eiyae")
 
-[node name="Gallery" type="MeshInstance3D" parent="Expedition/Gorge/TowerEast" unique_id=1897964322]
+[node name="Gallery" type="MeshInstance3D" parent="Expedition/Gorge/TowerEast" unique_id=598294914]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
 mesh = SubResource("BoxMesh_b8r82")
 
-[node name="GateWallEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1852003450]
+[node name="GateWallEast" type="StaticBody3D" parent="Expedition/Gorge" unique_id=1127075347]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 11, 2.25, -16)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/GateWallEast" unique_id=953119607]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Gorge/GateWallEast" unique_id=296349408]
 shape = SubResource("BoxShape3D_81hjv")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/GateWallEast" unique_id=1487685502]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Gorge/GateWallEast" unique_id=1032716152]
 mesh = SubResource("BoxMesh_x3406")
 
-[node name="GateLintel" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=1921820389]
+[node name="GateLintel" type="MeshInstance3D" parent="Expedition/Gorge" unique_id=724032186]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.7, -16)
 mesh = SubResource("BoxMesh_kwbda")
 
-[node name="GateSign" type="Label3D" parent="Expedition/Gorge" unique_id=1668379990]
+[node name="GateSign" type="Label3D" parent="Expedition/Gorge" unique_id=2122957580]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.5, -15.4)
 pixel_size = 0.01
 modulate = Color(1, 0.92, 0.75, 1)
@@ -3000,190 +3110,190 @@ text = "Sinaya Gatehouse"
 font_size = 52
 outline_size = 10
 
-[node name="Ring" type="Node3D" parent="Expedition" unique_id=133143543]
+[node name="Ring" type="Node3D" parent="Expedition" unique_id=1740822030]
 
-[node name="Causeway" type="StaticBody3D" parent="Expedition/Ring" unique_id=928196166]
+[node name="Causeway" type="StaticBody3D" parent="Expedition/Ring" unique_id=27835008]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -29)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Causeway" unique_id=1063235482]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Causeway" unique_id=709694539]
 shape = SubResource("BoxShape3D_13o2u")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Causeway" unique_id=1367480297]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Causeway" unique_id=1486892982]
 mesh = SubResource("BoxMesh_74302")
 
-[node name="CausewayWallWest" type="StaticBody3D" parent="Expedition/Ring" unique_id=521297021]
+[node name="CausewayWallWest" type="StaticBody3D" parent="Expedition/Ring" unique_id=332355419]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2, 0.45, -29)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/CausewayWallWest" unique_id=157760376]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/CausewayWallWest" unique_id=547255030]
 shape = SubResource("BoxShape3D_cox0y")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/CausewayWallWest" unique_id=909297212]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/CausewayWallWest" unique_id=1296945253]
 mesh = SubResource("BoxMesh_f3dvk")
 
-[node name="CausewayWallEast" type="StaticBody3D" parent="Expedition/Ring" unique_id=1966592531]
+[node name="CausewayWallEast" type="StaticBody3D" parent="Expedition/Ring" unique_id=286215424]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2, 0.45, -29)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/CausewayWallEast" unique_id=588223500]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/CausewayWallEast" unique_id=468223890]
 shape = SubResource("BoxShape3D_axh43")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/CausewayWallEast" unique_id=1350799637]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/CausewayWallEast" unique_id=1533616108]
 mesh = SubResource("BoxMesh_6gin3")
 
-[node name="Floor" type="StaticBody3D" parent="Expedition/Ring" unique_id=971497941]
+[node name="Floor" type="StaticBody3D" parent="Expedition/Ring" unique_id=1924159460]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -54)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Floor" unique_id=1589672172]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Floor" unique_id=408249566]
 shape = SubResource("BoxShape3D_e3vsk")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Floor" unique_id=1969801336]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Floor" unique_id=257425902]
 mesh = SubResource("BoxMesh_5pqw8")
 
-[node name="WallNorth" type="StaticBody3D" parent="Expedition/Ring" unique_id=961517789]
+[node name="WallNorth" type="StaticBody3D" parent="Expedition/Ring" unique_id=1658662083]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0.6, -74)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/WallNorth" unique_id=873920237]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/WallNorth" unique_id=1748645895]
 shape = SubResource("BoxShape3D_010mu")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/WallNorth" unique_id=233959421]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/WallNorth" unique_id=937175411]
 mesh = SubResource("BoxMesh_1piwn")
 
-[node name="WallWest" type="StaticBody3D" parent="Expedition/Ring" unique_id=108204283]
+[node name="WallWest" type="StaticBody3D" parent="Expedition/Ring" unique_id=1899204008]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0.6, -54)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/WallWest" unique_id=119229724]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/WallWest" unique_id=1483613307]
 shape = SubResource("BoxShape3D_lm3dn")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/WallWest" unique_id=185199111]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/WallWest" unique_id=1276129404]
 mesh = SubResource("BoxMesh_umtfo")
 
-[node name="WallEast" type="StaticBody3D" parent="Expedition/Ring" unique_id=1997758389]
+[node name="WallEast" type="StaticBody3D" parent="Expedition/Ring" unique_id=494526590]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0.6, -54)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/WallEast" unique_id=1999254951]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/WallEast" unique_id=1217635446]
 shape = SubResource("BoxShape3D_i1lgg")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/WallEast" unique_id=227197981]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/WallEast" unique_id=480217078]
 mesh = SubResource("BoxMesh_4pkit")
 
-[node name="WallSouthWest" type="StaticBody3D" parent="Expedition/Ring" unique_id=150161292]
+[node name="WallSouthWest" type="StaticBody3D" parent="Expedition/Ring" unique_id=302675833]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -11.5, 0.6, -34)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/WallSouthWest" unique_id=2029234358]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/WallSouthWest" unique_id=161083403]
 shape = SubResource("BoxShape3D_bbgtd")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/WallSouthWest" unique_id=1094151309]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/WallSouthWest" unique_id=2127782540]
 mesh = SubResource("BoxMesh_dgu5y")
 
-[node name="WallSouthEast" type="StaticBody3D" parent="Expedition/Ring" unique_id=1866710847]
+[node name="WallSouthEast" type="StaticBody3D" parent="Expedition/Ring" unique_id=428057761]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 11.5, 0.6, -34)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/WallSouthEast" unique_id=353869798]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/WallSouthEast" unique_id=1598139436]
 shape = SubResource("BoxShape3D_lcw0j")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/WallSouthEast" unique_id=882974257]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/WallSouthEast" unique_id=1721183538]
 mesh = SubResource("BoxMesh_du1pc")
 
-[node name="Pillar1" type="StaticBody3D" parent="Expedition/Ring" unique_id=1676000984]
+[node name="Pillar1" type="StaticBody3D" parent="Expedition/Ring" unique_id=157507421]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 1.6, -54)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar1" unique_id=1424588962]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar1" unique_id=1942545144]
 shape = SubResource("CylinderShape3D_y8sk0")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar1" unique_id=244862284]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar1" unique_id=963235401]
 mesh = SubResource("CylinderMesh_0frnv")
 
-[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar1" unique_id=1340009283]
+[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar1" unique_id=679376737]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 mesh = SubResource("CylinderMesh_20ef4")
 
-[node name="Pillar2" type="StaticBody3D" parent="Expedition/Ring" unique_id=1879850351]
+[node name="Pillar2" type="StaticBody3D" parent="Expedition/Ring" unique_id=503195544]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.6, -44.47372)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar2" unique_id=2033077109]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar2" unique_id=911333248]
 shape = SubResource("CylinderShape3D_r7vek")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar2" unique_id=174844627]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar2" unique_id=1377123061]
 mesh = SubResource("CylinderMesh_ajb0y")
 
-[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar2" unique_id=641356074]
+[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar2" unique_id=87978917]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 mesh = SubResource("CylinderMesh_a62gc")
 
-[node name="Pillar3" type="StaticBody3D" parent="Expedition/Ring" unique_id=1191701101]
+[node name="Pillar3" type="StaticBody3D" parent="Expedition/Ring" unique_id=1012986259]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1.6, -44.47372)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar3" unique_id=1972188802]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar3" unique_id=53072150]
 shape = SubResource("CylinderShape3D_fuw8e")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar3" unique_id=685821132]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar3" unique_id=405143360]
 mesh = SubResource("CylinderMesh_gl4yg")
 
-[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar3" unique_id=606429479]
+[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar3" unique_id=161540211]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 mesh = SubResource("CylinderMesh_0trys")
 
-[node name="Pillar4" type="StaticBody3D" parent="Expedition/Ring" unique_id=26874490]
+[node name="Pillar4" type="StaticBody3D" parent="Expedition/Ring" unique_id=1300038496]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 1.6, -54)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar4" unique_id=1379054873]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar4" unique_id=974753853]
 shape = SubResource("CylinderShape3D_kxfgj")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar4" unique_id=1118765319]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar4" unique_id=271194384]
 mesh = SubResource("CylinderMesh_k44ce")
 
-[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar4" unique_id=137097920]
+[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar4" unique_id=1208828693]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 mesh = SubResource("CylinderMesh_6qfhr")
 
-[node name="Pillar5" type="StaticBody3D" parent="Expedition/Ring" unique_id=1074698951]
+[node name="Pillar5" type="StaticBody3D" parent="Expedition/Ring" unique_id=1663598550]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1.6, -63.52628)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar5" unique_id=613781742]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar5" unique_id=120250899]
 shape = SubResource("CylinderShape3D_2lcuw")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar5" unique_id=1262967674]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar5" unique_id=243039665]
 mesh = SubResource("CylinderMesh_ofcu3")
 
-[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar5" unique_id=1367799144]
+[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar5" unique_id=2124862064]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 mesh = SubResource("CylinderMesh_17nxo")
 
-[node name="Pillar6" type="StaticBody3D" parent="Expedition/Ring" unique_id=337283093]
+[node name="Pillar6" type="StaticBody3D" parent="Expedition/Ring" unique_id=1911241418]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.6, -63.52628)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar6" unique_id=73917608]
+[node name="Collision" type="CollisionShape3D" parent="Expedition/Ring/Pillar6" unique_id=2074943615]
 shape = SubResource("CylinderShape3D_bf8ih")
 
-[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar6" unique_id=790840597]
+[node name="Mesh" type="MeshInstance3D" parent="Expedition/Ring/Pillar6" unique_id=1740840432]
 mesh = SubResource("CylinderMesh_e52uo")
 
-[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar6" unique_id=740839210]
+[node name="Moss" type="MeshInstance3D" parent="Expedition/Ring/Pillar6" unique_id=1196199444]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 mesh = SubResource("CylinderMesh_skj86")
 
-[node name="Spray" type="CPUParticles3D" parent="Expedition/Ring" unique_id=1366908662]
+[node name="Spray" type="CPUParticles3D" parent="Expedition/Ring" unique_id=1112583410]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -73)
 amount = 24
 lifetime = 3.0
@@ -3197,14 +3307,14 @@ initial_velocity_min = 0.3
 initial_velocity_max = 0.9
 scale_amount_max = 2.2
 
-[node name="BossSpawn" type="Marker3D" parent="." unique_id=53868426]
+[node name="BossSpawn" type="Marker3D" parent="." unique_id=806699763]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, -54)
 
-[node name="Ring" type="MeshInstance3D" parent="BossSpawn" unique_id=699909679]
+[node name="Ring" type="MeshInstance3D" parent="BossSpawn" unique_id=1057256746]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_7jrce")
 
-[node name="ExitPortal" type="Node3D" parent="." unique_id=889937767]
+[node name="ExitPortal" type="Node3D" parent="." unique_id=879378208]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 87)
 script = ExtResource("6_geb67")
 target_instance = &"hub_town"
@@ -3212,97 +3322,97 @@ goes_home = true
 title = "Exit: Bramblebridge"
 portal_color = Color(0.95, 0.8, 0.4, 1)
 
-[node name="CampOne" type="Node3D" parent="." unique_id=1068226953]
+[node name="CampOne" type="Node3D" parent="." unique_id=835366130]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 64)
 script = ExtResource("7_yjihc")
 kinds = Array[int]([0, 0, 0])
 persist_id = &"camp_bramble"
 
-[node name="CampTwo" type="Node3D" parent="." unique_id=1219070119]
+[node name="CampTwo" type="Node3D" parent="." unique_id=2059167770]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -1.8, 26)
 script = ExtResource("7_yjihc")
 camp_name = "Holloway Camp"
 kinds = Array[int]([1, 1, 0, 1])
 persist_id = &"camp_holloway"
 
-[node name="WaterShrine" type="Node3D" parent="." unique_id=729131175]
+[node name="WaterShrine" type="Node3D" parent="." unique_id=1927614581]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.7, -1.8, 35.5)
 script = ExtResource("8_vkr7d")
 persist_id = &"shrine_water"
 
-[node name="WindLanterns" type="Node3D" parent="." unique_id=60756649]
+[node name="WindLanterns" type="Node3D" parent="." unique_id=710294959]
 
-[node name="WindLantern1" type="Node3D" parent="WindLanterns" unique_id=1718354691]
+[node name="WindLantern1" type="Node3D" parent="WindLanterns" unique_id=761462451]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7, 3.3, 41)
 script = ExtResource("9_fd12v")
 
-[node name="WindLantern2" type="Node3D" parent="WindLanterns" unique_id=2144859349]
+[node name="WindLantern2" type="Node3D" parent="WindLanterns" unique_id=129749165]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7, 3.3, 34)
 script = ExtResource("9_fd12v")
 
-[node name="WindLantern3" type="Node3D" parent="WindLanterns" unique_id=1012258385]
+[node name="WindLantern3" type="Node3D" parent="WindLanterns" unique_id=2098892107]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7, 3.3, 28.5)
 script = ExtResource("9_fd12v")
 
-[node name="WindLantern4" type="Node3D" parent="WindLanterns" unique_id=1189523520]
+[node name="WindLantern4" type="Node3D" parent="WindLanterns" unique_id=2046220998]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7, 3.3, 23.5)
 script = ExtResource("9_fd12v")
 
-[node name="WayfarerChestSpot" type="Marker3D" parent="." unique_id=234894185]
+[node name="WayfarerChestSpot" type="Marker3D" parent="." unique_id=1122564315]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.5, 0, 53)
 
-[node name="CoopGate" type="Node3D" parent="." unique_id=995715992]
+[node name="CoopGate" type="Node3D" parent="." unique_id=711365776]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -16)
 script = ExtResource("10_kf38n")
 persist_id = &"gate_sinaya"
 
-[node name="Checkpoints" type="Node3D" parent="." unique_id=1064806448]
+[node name="Checkpoints" type="Node3D" parent="." unique_id=858883934]
 
-[node name="Zone2" type="Marker3D" parent="Checkpoints" unique_id=1855244209]
+[node name="Zone2" type="Marker3D" parent="Checkpoints" unique_id=1063465556]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
 
-[node name="Zone3" type="Marker3D" parent="Checkpoints" unique_id=253641350]
+[node name="Zone3" type="Marker3D" parent="Checkpoints" unique_id=646630423]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -28)
 
-[node name="SpawnPoints" type="Node3D" parent="." unique_id=1574245136]
+[node name="SpawnPoints" type="Node3D" parent="." unique_id=1350839480]
 
-[node name="Spawn1" type="Marker3D" parent="SpawnPoints" unique_id=1674685141]
+[node name="Spawn1" type="Marker3D" parent="SpawnPoints" unique_id=1532734767]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0, 82)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn1" unique_id=529437858]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn1" unique_id=894794495]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_bvbck")
 
-[node name="Spawn2" type="Marker3D" parent="SpawnPoints" unique_id=1907319602]
+[node name="Spawn2" type="Marker3D" parent="SpawnPoints" unique_id=1897337077]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 82)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn2" unique_id=579776079]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn2" unique_id=1037433284]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_lgvg0")
 
-[node name="Spawn3" type="Marker3D" parent="SpawnPoints" unique_id=1493671413]
+[node name="Spawn3" type="Marker3D" parent="SpawnPoints" unique_id=2099717097]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 82)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn3" unique_id=1876706686]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn3" unique_id=829305496]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_j3jm1")
 
-[node name="Spawn4" type="Marker3D" parent="SpawnPoints" unique_id=412971314]
+[node name="Spawn4" type="Marker3D" parent="SpawnPoints" unique_id=1761745011]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0, 82)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn4" unique_id=1532022736]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn4" unique_id=111588809]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_rjksk")
 
-[node name="Actors" type="Node3D" parent="." unique_id=374308939]
+[node name="Actors" type="Node3D" parent="." unique_id=1083144031]
 
-[node name="Telegraphs" type="Node3D" parent="." unique_id=1493423391]
+[node name="Telegraphs" type="Node3D" parent="." unique_id=1814278518]
 
-[node name="Effects" type="Node3D" parent="." unique_id=71049230]
+[node name="Effects" type="Node3D" parent="." unique_id=418984661]
 
-[node name="Screens" type="CanvasLayer" parent="." unique_id=1936812521]
+[node name="Screens" type="CanvasLayer" parent="." unique_id=131311072]
 
-[node name="Grid" type="Control" parent="Screens" unique_id=149879528]
+[node name="Grid" type="Control" parent="Screens" unique_id=1610102628]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -3310,7 +3420,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("11_8c1v2")
 
-[node name="Banner" type="Label" parent="Screens" unique_id=26558311]
+[node name="Banner" type="Label" parent="Screens" unique_id=530207702]
 modulate = Color(1, 1, 1, 0.85)
 anchors_preset = 5
 anchor_left = 0.5

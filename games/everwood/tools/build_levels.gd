@@ -17,7 +17,9 @@
 ##   the Ring of the Cairnsman, six pillars round the boss.
 ## - The seamless world (everwood_world.tscn, 10_WORLD_ARCHITECTURE.md): the
 ##   same village and zones as Landblocks, one scene per chunk in
-##   data/landblocks/ (landblock_0_0 Bramblebridge with its Forest Gate open,
+##   data/landblocks/ (landblock_0_1 the Kindled Bivouac, where the party
+##   wakes by a campfire, and Oakshire Commons along the walled lane north,
+##   landblock_0_0 Bramblebridge with its Forest Gate open and a south gate,
 ##   landblock_0_-1 the Moss-Oaks and holloway with a gap in the clearing's
 ##   south wall under the Moss-Oak Great Arch, landblock_0_-2 the gorge,
 ##   landblock_0_-3 the Ring), each moved to its world origin
@@ -36,7 +38,7 @@ const WORLD_PATH: String = "res://src/levels/everwood_world.tscn"
 const WORLD_SCRIPT: String = "res://src/levels/everwood_world.gd"
 const GRID_MANAGER_SCRIPT: String = "res://src/world/world_grid_manager.gd"
 ## The corridor's Landblocks, south to north.
-const CORRIDOR_CHUNKS: Array[Vector2i] = [Vector2i(0, 0), Vector2i(0, -1), Vector2i(0, -2), Vector2i(0, -3)]
+const CORRIDOR_CHUNKS: Array[Vector2i] = [Vector2i(0, 1), Vector2i(0, 0), Vector2i(0, -1), Vector2i(0, -2), Vector2i(0, -3)]
 ## HLOD proxies keep shapes at least this big (metres along their longest side).
 const HLOD_MIN_SIZE: float = 1.4
 const PORTAL_SCRIPT: String = "res://src/actors/raid_portal.gd"
@@ -47,6 +49,7 @@ const CAMP_SCRIPT: String = "res://src/actors/minion_camp.gd"
 const SHRINE_WATER_SCRIPT: String = "res://src/actors/water_shrine.gd"
 const LANTERN_SCRIPT: String = "res://src/actors/wind_lantern.gd"
 const GATE_SCRIPT: String = "res://src/actors/coop_gate.gd"
+const CAMPFIRE_SCRIPT: String = "res://src/actors/hearth_campfire.gd"
 const GRID_SCRIPT: String = "res://src/ui/split_screen_viewport_grid.gd"
 const GRID_SHADER: String = "res://src/levels/greybox_grid.gdshader"
 
@@ -224,6 +227,52 @@ const SHRINE_POSITION: Vector3 = Vector3(7.5, 0.0, -12.0)
 const OAK_TRUNK_COLOR: Color = Color(0.36, 0.26, 0.18)
 const OAK_LEAF_COLOR: Color = Color(0.28, 0.46, 0.25)
 const MOSS_COLOR: Color = Color(0.36, 0.5, 0.26)
+## Bramblebridge's south gate (seamless world only): the commons' lane comes in through it.
+const SOUTH_GATE_WIDTH: float = 5.0
+
+
+# The Kindled Bivouac and Oakshire Commons, Chunk (0, 1), built in world
+# coordinates round LandblockManifest.CAMPFIRE_POSITION and LANE. The party
+# wakes round the campfire facing the lane; knee-high dry-stone walls line
+# the lane all the way to Bramblebridge's south gate.
+## The four spawn spots round the fire, just outside its warmth (x, z from its middle).
+const BIVOUAC_SPAWNS: Array[Vector2] = [Vector2(2.6, -3.4), Vector2(4.0, -1.2), Vector2(4.0, 1.2), Vector2(2.6, 3.4)]
+## Everyone wakes facing up the lane, east-north-east (yaw: 0 faces north).
+const BIVOUAC_FACING: float = -1.24
+const LANE_WALL_HEIGHT: float = 0.6
+const LANE_WALL_THICKNESS: float = 0.45
+## Walls stand this far either side of the lane's middle, in pieces about this long.
+const LANE_WALL_OFFSET: float = 3.0
+const LANE_WALL_PIECE: float = 4.0
+## Openings in the lane walls (world x, z): the homestead's path, the two pumpkin patches, the bee-hives.
+const LANE_GAPS: Array[Vector2] = [Vector2(61.0, 146.0), Vector2(67.0, 143.0), Vector2(60.0, 161.0), Vector2(67.0, 156.0)]
+const LANE_GAP_HALF: float = 1.8
+const COBBLE_COLOR: Color = Color(0.6, 0.58, 0.54)
+## A cobble every so often along the lane, scattered across its middle.
+const COBBLE_STEP: float = 0.8
+## The bivouac's oak, whose low limb hangs a Wind-Lantern over the lane's start.
+const BIVOUAC_OAK: Vector3 = Vector3(41.0, 0.0, 170.5)
+const BIVOUAC_LANTERN: Vector3 = Vector3(41.0, 3.5, 176.4)
+## The stepped-gable timber homestead west of the lane, its door facing the lane:
+## x is its depth (toward the lane), y its height to the eaves, z its length.
+const HOMESTEAD_POSITION: Vector3 = Vector3(47.0, 0.0, 146.0)
+const HOMESTEAD_SIZE: Vector3 = Vector3(7.0, 3.4, 9.0)
+const HOMESTEAD_ROOF_HEIGHT: float = 2.6
+const PLASTER_COLOR: Color = Color(0.9, 0.84, 0.7)
+const THATCH_COLOR: Color = Color(0.58, 0.44, 0.26)
+## The bee-hives: a south-facing convex arc along the east woodline (bowed
+## north, each hive's entrance to the south), on stands.
+const HIVE_ARC_CENTER: Vector2 = Vector2(86.0, 159.0)
+const HIVE_ARC_RADIUS: float = 7.5
+const HIVE_COUNT: int = 7
+const CEDAR_COLOR: Color = Color(0.72, 0.44, 0.28)
+const HIVE_LID_COLOR: Color = Color(0.46, 0.52, 0.46)
+## The heirloom pumpkin patches (world rects): Cinderella orange, Jarrahdale
+## blue-grey, Lumina white and Rouge vif d'Etampes red.
+const PUMPKIN_PATCHES: Array[Rect2] = [Rect2(42.0, 158.0, 13.0, 7.0), Rect2(70.0, 138.0, 11.0, 10.0)]
+const PUMPKIN_COLORS: Array[Color] = [Color(0.95, 0.55, 0.15), Color(0.55, 0.62, 0.62), Color(0.93, 0.9, 0.82), Color(0.82, 0.3, 0.14)]
+const SOIL_COLOR: Color = Color(0.36, 0.26, 0.17)
+const VINE_COLOR: Color = Color(0.3, 0.5, 0.22)
 
 
 var _results: PackedStringArray = PackedStringArray()
@@ -279,8 +328,12 @@ func _build_town(root: Node3D, world_mode: bool) -> void:
 	cobbles.set_shader_parameter(&"minor_color", Color(0.5, 0.47, 0.42))
 	cobbles.set_shader_parameter(&"major_color", Color(0.45, 0.42, 0.38))
 	town.add_child(_box_body("Floor", Vector3(HUB_WIDTH, FLOOR_THICKNESS, HUB_DEPTH), Vector3(0.0, -FLOOR_THICKNESS * 0.5, 0.0), cobbles))
-	_add_hub_walls(town)
+	_add_hub_walls(town, world_mode)
 	_add_forest_gate(town, world_mode)
+	if world_mode:
+		# The commons' lane, from the south gate to the chunk's edge (the rest is the commons' own).
+		town.add_child(_lane_walls("LaneWalls", 0.0, WorldGridConfig.CHUNK_SIZE, LandblockManifest.BRAMBLEBRIDGE_ORIGIN))
+		town.add_child(_lane_cobbles("LaneCobbles", 0.0, WorldGridConfig.CHUNK_SIZE, LandblockManifest.BRAMBLEBRIDGE_ORIGIN))
 	for index: int in HOUSE_SPOTS.size():
 		town.add_child(_house("House%d" % (index + 1), HOUSE_SPOTS[index], HOUSE_COLORS[index], index == BAKERY_HOUSE))
 	town.add_child(_fountain())
@@ -309,12 +362,23 @@ func _build_town(root: Node3D, world_mode: bool) -> void:
 	root.add_child(_entity(desk) if world_mode else desk)
 
 
-## The village wall, with the forest gate's opening in the north side.
-func _add_hub_walls(parent: Node3D) -> void:
+## The village wall, with the forest gate's opening in the north side and, in
+## the seamless world, a south gate where the lane from Oakshire Commons comes in.
+func _add_hub_walls(parent: Node3D, world_mode: bool) -> void:
 	var half_width: float = HUB_WIDTH * 0.5
 	var half_depth: float = HUB_DEPTH * 0.5
 	var stone: Material = _material(WALL_COLOR)
-	parent.add_child(_low(_box_body("WallSouth", Vector3(HUB_WIDTH, WALL_HEIGHT, WALL_THICKNESS), Vector3(0.0, WALL_HEIGHT * 0.5, half_depth), stone)))
+	if world_mode:
+		var south_length: float = half_width - SOUTH_GATE_WIDTH * 0.5
+		var timber: Material = _material(GATE_COLOR)
+		for side: float in [-1.0, 1.0]:
+			var label: String = "West" if side < 0.0 else "East"
+			parent.add_child(_low(_box_body("WallSouth%s" % label, Vector3(south_length, WALL_HEIGHT, WALL_THICKNESS),
+				Vector3(side * (SOUTH_GATE_WIDTH * 0.5 + south_length * 0.5), WALL_HEIGHT * 0.5, half_depth), stone)))
+			parent.add_child(ShapeKit.box("SouthGatePost%s" % label, Vector3(0.45, 3.2, 0.45), Vector3(side * (SOUTH_GATE_WIDTH * 0.5 + 0.2), 1.6, half_depth), timber))
+		parent.add_child(ShapeKit.box("SouthGateBeam", Vector3(SOUTH_GATE_WIDTH + 0.9, 0.35, 0.5), Vector3(0.0, 3.3, half_depth), timber))
+	else:
+		parent.add_child(_low(_box_body("WallSouth", Vector3(HUB_WIDTH, WALL_HEIGHT, WALL_THICKNESS), Vector3(0.0, WALL_HEIGHT * 0.5, half_depth), stone)))
 	parent.add_child(_low(_box_body("WallWest", Vector3(WALL_THICKNESS, WALL_HEIGHT, HUB_DEPTH), Vector3(-half_width, WALL_HEIGHT * 0.5, 0.0), stone)))
 	parent.add_child(_low(_box_body("WallEast", Vector3(WALL_THICKNESS, WALL_HEIGHT, HUB_DEPTH), Vector3(half_width, WALL_HEIGHT * 0.5, 0.0), stone)))
 	var side_length: float = half_width - GATE_WIDTH * 0.5
@@ -1039,7 +1103,14 @@ func _build_world() -> Node3D:
 	grid.name = "World"
 	grid.set_script(load(GRID_MANAGER_SCRIPT))
 	root.add_child(grid)
-	_add_level_skeleton(root, HUB_SPAWN_Z, LandblockManifest.BRAMBLEBRIDGE_ORIGIN)
+	_add_level_skeleton(root, HUB_SPAWN_Z, LandblockManifest.BRAMBLEBRIDGE_ORIGIN, false)
+	# The party wakes round the Kindled Bivouac's campfire, facing up the lane.
+	var markers: Array[Node] = root.get_node("SpawnPoints").get_children()
+	for index: int in markers.size():
+		var marker: Marker3D = markers[index] as Marker3D
+		var spot: Vector2 = BIVOUAC_SPAWNS[index]
+		marker.position = LandblockManifest.CAMPFIRE_POSITION + Vector3(spot.x, 0.0, spot.y)
+		marker.rotation = Vector3(0.0, BIVOUAC_FACING, 0.0)
 	return root
 
 
@@ -1063,7 +1134,301 @@ func _build_landblock(chunk: Vector2i) -> Node3D:
 		LandblockManifest.Zone.RING:
 			_build_ring(root)
 			root.add_child(_entity(_boss_spawn()))
+		LandblockManifest.Zone.OAKSHIRE_COMMONS:
+			_build_oakshire_commons(root)
 	return root
+
+
+# --- The Kindled Bivouac and Oakshire Commons ---------------------------------------
+
+## Chunk (0, 1), in world coordinates: the campfire where the party wakes, the
+## oak and its Wind-Lantern, the walled lane east then north, the homestead,
+## the bee-hives and the pumpkin patches.
+func _build_oakshire_commons(root: Node3D) -> void:
+	var fire: Node3D = _scripted("Campfire", CAMPFIRE_SCRIPT, LandblockManifest.CAMPFIRE_POSITION, {&"persist_id": LandblockManifest.CAMPFIRE})
+	root.add_child(_entity(fire))
+	var oak: Node3D = _tree("BivouacOak", BIVOUAC_OAK, 9.0, true)
+	# Its low limb reaches out over the lane to hold the lantern.
+	var limb_start: Vector3 = Vector3(0.0, 3.3, 0.0)
+	var limb_end: Vector3 = BIVOUAC_LANTERN - BIVOUAC_OAK + Vector3(0.0, 0.05, 0.0)
+	var limb: MeshInstance3D = ShapeKit.cylinder("Limb", 0.1, 0.16, limb_start.distance_to(limb_end) + 0.3, (limb_start + limb_end) * 0.5, _material(OAK_TRUNK_COLOR), 10)
+	var along: Vector3 = (limb_end - limb_start).normalized()
+	var across: Vector3 = along.cross(Vector3.UP).normalized()
+	limb.basis = Basis(across, along, across.cross(along))
+	oak.add_child(limb)
+	root.add_child(oak)
+	root.add_child(_scripted("WindLantern", LANTERN_SCRIPT, BIVOUAC_LANTERN, {}))
+	root.add_child(_lane_walls("LaneWalls", WorldGridConfig.CHUNK_SIZE, INF, LandblockManifest.COMMONS_ORIGIN))
+	root.add_child(_lane_cobbles("LaneCobbles", WorldGridConfig.CHUNK_SIZE, INF, LandblockManifest.COMMONS_ORIGIN))
+	root.add_child(_homestead())
+	root.add_child(_bee_hives())
+	for index: int in PUMPKIN_PATCHES.size():
+		root.add_child(_pumpkin_patch("PumpkinPatch%d" % (index + 1), PUMPKIN_PATCHES[index], index))
+
+
+## The knee-high dry-stone walls either side of the lane, for the stretch of it
+## with world z in [z_min, z_max), placed relative to `origin`. They stand on
+## the LowScenery layer (bodies bump into them, cameras see past them), with
+## gaps into the yards and a stone post at each bend.
+func _lane_walls(walls_name: String, z_min: float, z_max: float, origin: Vector3) -> Node3D:
+	var walls: Node3D = _node3d(walls_name)
+	var stone: Material = _material(DRYSTONE_COLOR)
+	var coping: Material = _material(DRYSTONE_COLOR.darkened(0.15))
+	var lane: Array[Vector2] = LandblockManifest.LANE
+	var flat_origin: Vector2 = Vector2(origin.x, origin.z)
+	var piece_index: int = 0
+	for index: int in lane.size() - 1:
+		var start: Vector2 = lane[index]
+		var finish: Vector2 = lane[index + 1]
+		var length: float = start.distance_to(finish)
+		var direction: Vector2 = (finish - start) / length
+		var side_step: Vector2 = Vector2(-direction.y, direction.x) * LANE_WALL_OFFSET
+		var pieces: int = ceili(length / LANE_WALL_PIECE)
+		for piece: int in pieces:
+			var from: Vector2 = start + direction * length * piece / pieces
+			var to: Vector2 = start + direction * length * (piece + 1) / pieces
+			var middle_z: float = (from.y + to.y) * 0.5
+			if middle_z < z_min or middle_z >= z_max:
+				continue
+			for side: float in [-1.0, 1.0]:
+				var a: Vector2 = from + side_step * side
+				var b: Vector2 = to + side_step * side
+				var in_gap: bool = false
+				for gap: Vector2 in LANE_GAPS:
+					in_gap = in_gap or gap.distance_to(Geometry2D.get_closest_point_to_segment(gap, a, b)) < LANE_GAP_HALF
+				if in_gap:
+					continue
+				var wall: StaticBody3D = _wall("LaneWall%d" % piece_index, a - flat_origin, b - flat_origin, LANE_WALL_HEIGHT + 0.1, stone, -0.1, LANE_WALL_THICKNESS)
+				wall.add_child(ShapeKit.box("Coping", Vector3(LANE_WALL_THICKNESS + 0.12, 0.08, a.distance_to(b) + LANE_WALL_THICKNESS), Vector3(0.0, (LANE_WALL_HEIGHT + 0.1) * 0.5 + 0.03, 0.0), coping))
+				walls.add_child(wall)
+				piece_index += 1
+	# A stone post on each side of every bend hides the joint.
+	for index: int in range(1, lane.size() - 1):
+		if lane[index].y < z_min or lane[index].y >= z_max:
+			continue
+		var before: Vector2 = (lane[index] - lane[index - 1]).normalized()
+		var after: Vector2 = (lane[index + 1] - lane[index]).normalized()
+		var bend: Vector2 = (before + after).normalized()
+		var outward: Vector2 = Vector2(-bend.y, bend.x) * LANE_WALL_OFFSET / maxf(0.5, Vector2(-bend.y, bend.x).dot(Vector2(-before.y, before.x)))
+		for side: float in [-1.0, 1.0]:
+			var at: Vector2 = lane[index] + outward * side - flat_origin
+			walls.add_child(_low(_box_body("LanePost%d%s" % [index, "L" if side > 0.0 else "R"], Vector3(0.7, LANE_WALL_HEIGHT + 0.3, 0.7),
+				Vector3(at.x, (LANE_WALL_HEIGHT + 0.3) * 0.5 - 0.1, at.y), stone)))
+	return walls
+
+
+## The lane's cobbles for world z in [z_min, z_max), relative to `origin`:
+## flat stones set into the dirt with no colliders, so nothing catches a foot.
+func _lane_cobbles(cobbles_name: String, z_min: float, z_max: float, origin: Vector3) -> MultiMeshInstance3D:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 1701 + int(z_min)
+	var spots: Array[Transform3D] = []
+	var colors: PackedColorArray = PackedColorArray()
+	var lane: Array[Vector2] = LandblockManifest.LANE
+	for index: int in lane.size() - 1:
+		var start: Vector2 = lane[index]
+		var finish: Vector2 = lane[index + 1]
+		var length: float = start.distance_to(finish)
+		var direction: Vector2 = (finish - start) / length
+		var across: Vector2 = Vector2(-direction.y, direction.x)
+		var travelled: float = 0.0
+		while travelled < length:
+			var middle: Vector2 = start + direction * travelled
+			travelled += COBBLE_STEP
+			if middle.y < z_min or middle.y >= z_max:
+				continue
+			for stone: int in 4:
+				if rng.randf() > 0.7:
+					continue
+				var at: Vector2 = middle + across * rng.randf_range(-1.6, 1.6) + direction * rng.randf_range(-0.3, 0.3)
+				var size: float = rng.randf_range(0.8, 1.2)
+				var basis: Basis = Basis(Vector3.UP, atan2(direction.x, direction.y) + rng.randf_range(-0.4, 0.4)).scaled(Vector3(size, 1.0, size * 0.85))
+				spots.append(Transform3D(basis, Vector3(at.x, -0.03, at.y) - origin))
+				var shade: float = rng.randf_range(-0.1, 0.1)
+				colors.append(COBBLE_COLOR.lightened(shade) if shade > 0.0 else COBBLE_COLOR.darkened(-shade))
+	var stone_mesh: BoxMesh = BoxMesh.new()
+	stone_mesh.size = Vector3(0.46, 0.08, 0.38)
+	var multimesh: MultiMesh = MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_colors = true
+	multimesh.mesh = stone_mesh
+	multimesh.instance_count = spots.size()
+	for index: int in spots.size():
+		multimesh.set_instance_transform(index, spots[index])
+		multimesh.set_instance_color(index, colors[index])
+	var instances: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	instances.name = cobbles_name
+	instances.multimesh = multimesh
+	instances.material_override = LandblockTerrain.material()
+	instances.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return instances
+
+
+## The stepped-gable timber homestead: cream plaster between dark oak beams, a
+## steep thatch roof running along the lane between two stepped gables, its
+## door and warm windows facing the lane, and smoke from the chimney.
+func _homestead() -> StaticBody3D:
+	var size: Vector3 = HOMESTEAD_SIZE
+	var house: StaticBody3D = _box_body("Homestead", size, HOMESTEAD_POSITION + Vector3(0.0, size.y * 0.5, 0.0), _material(PLASTER_COLOR))
+	var timber: Material = _material(TIMBER_COLOR)
+	var eave: float = size.y * 0.5
+	# The frame: corner and middle posts, a sill and a beam round the walls.
+	for x_side: float in [-1.0, 1.0]:
+		for z_step: float in [-1.0, -0.33, 0.33, 1.0]:
+			house.add_child(ShapeKit.box("Post", Vector3(0.22, size.y, 0.22), Vector3(x_side * (size.x * 0.5 + 0.02), 0.0, z_step * (size.z * 0.5 - 0.05)), timber))
+		house.add_child(ShapeKit.box("Beam", Vector3(0.18, 0.2, size.z + 0.1), Vector3(x_side * (size.x * 0.5 + 0.03), 0.15, 0.0), timber))
+		house.add_child(ShapeKit.box("Sill", Vector3(0.2, 0.24, size.z + 0.1), Vector3(x_side * (size.x * 0.5 + 0.03), -eave + 0.12, 0.0), timber))
+	var roof_mesh: PrismMesh = PrismMesh.new()
+	roof_mesh.size = Vector3(size.x + 0.8, HOMESTEAD_ROOF_HEIGHT, size.z - GABLE_THICKNESS * 2.0)
+	roof_mesh.material = _material(THATCH_COLOR)
+	var roof: MeshInstance3D = MeshInstance3D.new()
+	roof.name = "Roof"
+	roof.mesh = roof_mesh
+	roof.position = Vector3(0.0, eave + HOMESTEAD_ROOF_HEIGHT * 0.5, 0.0)
+	house.add_child(roof)
+	# Stepped gables at the north and south ends, climbing above the thatch.
+	var gable: Material = _material(PLASTER_COLOR.darkened(0.06))
+	var steps: int = GABLE_STEPS + 1
+	for z_side: float in [-1.0, 1.0]:
+		for step: int in steps:
+			var width: float = (size.x + 0.4) * (1.0 - float(step) / steps)
+			house.add_child(ShapeKit.box("Gable%s%d" % ["South" if z_side > 0.0 else "North", step], Vector3(width, GABLE_STEP_HEIGHT * 1.15, GABLE_THICKNESS),
+				Vector3(0.0, eave + GABLE_STEP_HEIGHT * 1.15 * (step + 0.5), z_side * (size.z * 0.5 - GABLE_THICKNESS * 0.5)), gable))
+	# The door and windows on the east side, toward the lane.
+	var face_x: float = size.x * 0.5 + 0.06
+	house.add_child(ShapeKit.box("Door", Vector3(0.1, 2.1, 1.2), Vector3(face_x, -eave + 1.05, 0.0), _material(Color(0.32, 0.22, 0.14))))
+	var glass: StandardMaterial3D = _standard(WINDOW_COLOR)
+	glass.emission_enabled = true
+	glass.emission = WINDOW_COLOR
+	glass.emission_energy_multiplier = 0.8
+	for z: float in [-2.6, 2.6]:
+		house.add_child(ShapeKit.box("Window", WINDOW_SIZE, Vector3(face_x, 0.35, z), glass))
+	house.add_child(ShapeKit.box("Chimney", Vector3(0.7, 2.2, 0.7), Vector3(-1.4, eave + HOMESTEAD_ROOF_HEIGHT * 0.55, -size.z * 0.3), _material(Color(0.6, 0.36, 0.28))))
+	var smoke: CPUParticles3D = CPUParticles3D.new()
+	smoke.name = "Smoke"
+	smoke.position = Vector3(-1.4, eave + HOMESTEAD_ROOF_HEIGHT * 0.55 + 1.2, -size.z * 0.3)
+	smoke.amount = 8
+	smoke.lifetime = 3.2
+	smoke.direction = Vector3.UP
+	smoke.spread = 12.0
+	smoke.initial_velocity_min = 0.5
+	smoke.initial_velocity_max = 0.8
+	smoke.gravity = Vector3(0.25, 0.15, 0.0)
+	smoke.scale_amount_min = 0.6
+	smoke.scale_amount_max = 1.4
+	var puff: SphereMesh = SphereMesh.new()
+	puff.radius = 0.28
+	puff.height = 0.56
+	var puff_material: StandardMaterial3D = StandardMaterial3D.new()
+	puff_material.albedo_color = SMOKE_COLOR
+	puff_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	puff_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	puff.material = puff_material
+	smoke.mesh = puff
+	house.add_child(smoke)
+	# A cobbled path from the door to the lane.
+	for step: int in 7:
+		house.add_child(ShapeKit.box("PathStone%d" % step, Vector3(0.7, 0.06, 0.6), Vector3(face_x + 0.8 + step * 1.45, -eave - 0.02, sin(step * 1.3) * 0.25),
+			_material(COBBLE_COLOR.darkened(0.05 * (step % 2)))))
+	return house
+
+
+## Seven cedar hives on stands in an arc along the east woodline, bowed toward
+## the north with every entrance facing south, and bees about them.
+func _bee_hives() -> Node3D:
+	var hives: Node3D = _node3d("BeeHives")
+	var cedar: Material = _material(CEDAR_COLOR)
+	var dark_cedar: Material = _material(CEDAR_COLOR.darkened(0.18))
+	var lid: Material = _material(HIVE_LID_COLOR)
+	var body: StaticBody3D = StaticBody3D.new()
+	body.name = "HiveBodies"
+	body.collision_layer = ActorBase.LAYER_LOW_SCENERY
+	body.collision_mask = 0
+	hives.add_child(body)
+	for index: int in HIVE_COUNT:
+		var angle: float = lerpf(PI * 0.12, PI * 0.88, float(index) / (HIVE_COUNT - 1))
+		var at: Vector3 = Vector3(HIVE_ARC_CENTER.x + cos(angle) * HIVE_ARC_RADIUS, 0.0, HIVE_ARC_CENTER.y - sin(angle) * HIVE_ARC_RADIUS)
+		var hive: Node3D = _node3d("Hive%d" % (index + 1))
+		hive.position = at
+		for leg_x: float in [-0.25, 0.25]:
+			hive.add_child(ShapeKit.box("Leg", Vector3(0.08, 0.35, 0.5), Vector3(leg_x, 0.175, 0.0), dark_cedar))
+		var boxes: int = 2 + index % 2
+		for level: int in boxes:
+			hive.add_child(ShapeKit.box("Box%d" % level, Vector3(0.56, 0.3, 0.5), Vector3(0.0, 0.5 + level * 0.31, 0.0), cedar if level % 2 == 0 else dark_cedar))
+		var top: float = 0.35 + boxes * 0.31
+		hive.add_child(ShapeKit.box("Lid", Vector3(0.66, 0.08, 0.6), Vector3(0.0, top + 0.04, 0.0), lid))
+		hive.add_child(ShapeKit.box("Entrance", Vector3(0.3, 0.04, 0.02), Vector3(0.0, 0.4, 0.26), _material(Color(0.12, 0.09, 0.07))))
+		hives.add_child(hive)
+		var shape: CollisionShape3D = CollisionShape3D.new()
+		var box: BoxShape3D = BoxShape3D.new()
+		box.size = Vector3(0.66, top + 0.1, 0.6)
+		shape.shape = box
+		shape.position = at + Vector3(0.0, (top + 0.1) * 0.5, 0.0)
+		body.add_child(shape)
+	var bees: CPUParticles3D = CPUParticles3D.new()
+	bees.name = "Bees"
+	bees.position = Vector3(HIVE_ARC_CENTER.x, 1.0, HIVE_ARC_CENTER.y - HIVE_ARC_RADIUS * 0.6)
+	bees.amount = 24
+	bees.lifetime = 2.5
+	bees.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	bees.emission_box_extents = Vector3(HIVE_ARC_RADIUS, 0.5, HIVE_ARC_RADIUS * 0.5)
+	bees.direction = Vector3(0.0, 0.2, 1.0)
+	bees.spread = 180.0
+	bees.gravity = Vector3.ZERO
+	bees.initial_velocity_min = 0.3
+	bees.initial_velocity_max = 0.8
+	var bee: SphereMesh = SphereMesh.new()
+	bee.radius = 0.03
+	bee.height = 0.06
+	bee.radial_segments = 4
+	bee.rings = 2
+	bee.material = _material(Color(0.95, 0.78, 0.2))
+	bees.mesh = bee
+	hives.add_child(bees)
+	return hives
+
+
+## A patch of tilled soil with heirloom pumpkins on their vines (no colliders: you can wade through).
+func _pumpkin_patch(patch_name: String, area: Rect2, patch_seed: int) -> Node3D:
+	var patch: Node3D = _node3d(patch_name)
+	patch.position = Vector3(area.get_center().x, 0.0, area.get_center().y)
+	patch.add_child(ShapeKit.box("Soil", Vector3(area.size.x, 0.06, area.size.y), Vector3(0.0, -0.02, 0.0), _material(SOIL_COLOR)))
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 4242 + patch_seed
+	var vine: Material = _material(VINE_COLOR)
+	var rows: int = int(area.size.y / 2.2)
+	for row: int in rows:
+		var z: float = -area.size.y * 0.5 + 1.1 + row * 2.2
+		patch.add_child(ShapeKit.box("Vine%d" % row, Vector3(area.size.x - 1.0, 0.06, 0.12), Vector3(0.0, 0.05, z), vine))
+		var x: float = -area.size.x * 0.5 + 1.0
+		while x < area.size.x * 0.5 - 0.8:
+			var size: float = rng.randf_range(0.28, 0.5)
+			var color: Color = PUMPKIN_COLORS[rng.randi() % PUMPKIN_COLORS.size()]
+			var pumpkin_mesh: SphereMesh = SphereMesh.new()
+			pumpkin_mesh.radius = size
+			pumpkin_mesh.height = size * 1.3
+			pumpkin_mesh.radial_segments = 12
+			pumpkin_mesh.rings = 6
+			pumpkin_mesh.material = _material(color)
+			var pumpkin: MeshInstance3D = MeshInstance3D.new()
+			pumpkin.name = "Pumpkin"
+			pumpkin.mesh = pumpkin_mesh
+			pumpkin.position = Vector3(x, size * 0.6, z + rng.randf_range(-0.5, 0.5))
+			patch.add_child(pumpkin)
+			patch.add_child(ShapeKit.cylinder("Stem", 0.04, 0.06, 0.18, pumpkin.position + Vector3(0.0, size * 0.65 + 0.06, 0.0), vine, 6))
+			var leaf: MeshInstance3D = MeshInstance3D.new()
+			leaf.name = "Leaf"
+			var leaf_mesh: SphereMesh = SphereMesh.new()
+			leaf_mesh.radius = 0.32
+			leaf_mesh.height = 0.12
+			leaf_mesh.radial_segments = 8
+			leaf_mesh.rings = 3
+			leaf_mesh.material = vine
+			leaf.mesh = leaf_mesh
+			leaf.position = Vector3(x + rng.randf_range(0.4, 0.7), 0.08, z + rng.randf_range(-0.6, 0.6))
+			patch.add_child(leaf)
+			x += rng.randf_range(1.1, 1.7)
+	return patch
 
 
 ## Marks a node as a Landblock entity (bound to WorldStateDB and announced to the level when it streams in).
@@ -1245,14 +1610,15 @@ func _mist(mist_name: String, where: Vector3, extents: Vector3) -> CPUParticles3
 # --- Shared pieces --------------------------------------------------------
 
 ## Spawn pads, the runtime folders and the split-screen layer every level has.
-func _add_level_skeleton(root: Node3D, spawn_z: float, offset: Vector3 = Vector3.ZERO) -> void:
+func _add_level_skeleton(root: Node3D, spawn_z: float, offset: Vector3 = Vector3.ZERO, pads: bool = true) -> void:
 	var spawns: Node3D = _node3d("SpawnPoints")
 	root.add_child(spawns)
 	for index: int in 4:
 		var marker: Marker3D = Marker3D.new()
 		marker.name = "Spawn%d" % (index + 1)
 		marker.position = offset + Vector3((float(index) - 1.5) * SPAWN_SPACING, 0.0, spawn_z)
-		marker.add_child(_pad("Pad", 0.8, SPAWN_PAD_COLORS[index]))
+		if pads:
+			marker.add_child(_pad("Pad", 0.8, SPAWN_PAD_COLORS[index]))
 		spawns.add_child(marker)
 	root.add_child(_node3d("Actors"))
 	root.add_child(_node3d("Telegraphs"))

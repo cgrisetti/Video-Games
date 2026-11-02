@@ -128,6 +128,10 @@ static func corridor_surface_color(world_x: float, world_z: float, height: float
 		var trail: Vector3 = LandblockManifest.trail_at(world_z)
 		if trail != Vector3.ZERO:
 			ground = ground.lerp(TRAIL_COLOR, 1.0 - smoothstep(1.6, 2.8, absf(dx)))
+		# The commons' lane, dirt between its cobbles.
+		var lane: float = LandblockManifest.lane_gap(world_x, world_z)
+		if lane < LandblockManifest.LANE_HALF_WIDTH + 0.6:
+			ground = ground.lerp(TRAIL_COLOR, 1.0 - smoothstep(LandblockManifest.LANE_HALF_WIDTH - 0.6, LandblockManifest.LANE_HALF_WIDTH + 0.6, lane))
 		return ground
 	var t: float = clampf(past / RIDGE_RAMP, 0.0, 1.0)
 	var slope_color: Color = MOSS_COLOR.lerp(ROCK_COLOR, smoothstep(0.1, 0.55, t))
