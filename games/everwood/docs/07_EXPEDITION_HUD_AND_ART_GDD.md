@@ -157,8 +157,11 @@ What the game does today, where it differs from the spec above, and what's still
 - **The four telegraph presets.** 08 names RED_AVOID, GOLD_STACK, GREEN_HEAL and BLUE_BEHIND_TANK. The game has three, named `CRIMSON_DODGE_OUT`, `GOLD_PARTY_SOAK` and `BLUE_BEHIND_TANK`; a green heal-zone preset isn't built yet.
 - **Readability.** Words on screen no longer pile up: banners drop under the boss frame while it shows, and the Raid Portal ("Raid: The Doverslap Expedition") and the gate's "To the Ariundle Moss-Oaks" sign sit apart.
 
+**Built since, in Phase 11** (10_WORLD_ARCHITECTURE.md §6)
+- A latecomer joining mid-expedition now gets everything: `WorldStateDB` sends the cleared camps, the opened Wayfarer's Chest, the Water-Shrine's rest and the open gate in one snapshot.
+- Companions, minions and demo bots follow a navigation mesh round walls, banks and ledges (one for the Dojo, one per chunk in the seamless world). Companions still skip ahead if they're stranded far behind.
+- The whole expedition can also be walked from Bramblebridge in the seamless world, with no loading screen.
+
 **Not built yet**
-- A latecomer joining mid-expedition is told the gate's state but not whether the Wayfarer's Chest is open or the Water-Shrine resting.
 - No models ship in `assets/models/`; the hook is ready for CC0 packs.
-- Companions steer in straight lines and skip ahead when stranded; there's no navigation mesh.
 

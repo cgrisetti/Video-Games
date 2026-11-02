@@ -37,7 +37,7 @@ Every hero chooses a **Primary Fellowship** (locking in their Raid Trinity Seat:
 - **`+ MAGIC` Secondary:** `-5.0` Max HP, `+2.0/s` Stamina Regen, `+20%` Resonance Pip Gain & Heal/Shield Potency, `+1` Grimoire Memory Capacity, unlocks `STAFF` & `Sign of Warm-Hearth` / `Sign of Star-Tide` affinity.
 ---
 
-## 4. Build Notes (Phases 8 to 10)
+## 4. Build Notes (Phases 8 to 11)
 
 What the game uses today, and what is still design only.
 
@@ -51,8 +51,12 @@ What the game uses today, and what is still design only.
 - The 3x3 Callings, with the names in §3 and the Secondary modifiers above.
 - The expedition trail: the Ariundle Moss-Oaks, the Sunken Holloway, the Doverslap Gorge Bridge with its gatehouse and paper-mill wheel, and the Ring of the Cairnsman. Bramblebridge Green is the hub's spawn green.
 
+**Built in Phase 11** (see 10_WORLD_ARCHITECTURE.md §6)
+- **The Bramble-Reach**, the first seamless region: Bramblebridge and the expedition joined as 128 m Landblocks. Walk out of the village's open Forest Gate, under the Moss-Oak Great Arch, all the way to the Ring of the Cairnsman. The game now starts there; the Raid Portal still leads to the instanced expedition.
+- The Sinaya Mill-Castle and the Wadden-Green appear only as far silhouettes on the crags round the corridor.
+
 **Design only, not built yet**
-- The other regions (the Wadden-Green, Millwater Reach, Luka-Bay, Tizzi-Wed, the Saffron Cliffs, Sinaya Mill-Castle and Corvin Bridge-Keep).
+- The other regions (the Wadden-Green, Millwater Reach, Luka-Bay, Tizzi-Wed, the Saffron Cliffs, Sinaya Mill-Castle and Corvin Bridge-Keep) as places to walk.
 
 **Naming decisions**
 - **The Callings are named as in §3** (Creative Director, 2026-11-01). The Phase 7 & 8 brief used other names (Bastion-Ward, Iron-Gable, Cairn-Breaker, Edgerunner, Carillon Guard, Gale-Warden, High-Scribe); those are retired. Use the §3 names in code and copy.

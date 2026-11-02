@@ -210,6 +210,19 @@ In a headless run, one player with two companions clears both camps and reaches 
 | Exposed | 40 damage (before armor: 36 in linen, 26 in plate) and a 4 m knockback, never past 16 m from the boss | `boss_dummy.gd` | Hurts but never kills a full-health player on its own |
 | Squire shelter | A Squire tank the beam is aimed at turns to the boss and raises Shadow Sanctuary once the beam is 25% full (if it has the stamina); anyone else in the lane outside a shield rolls sideways at 85% | `input_component.gd` (`AUTO_SHELTER_FILL`, `AUTO_EVADE_FILL`) | 08 Gate 5: an assisted child survives every mechanic |
 
+## The seamless world (10_WORLD_ARCHITECTURE.md)
+
+| Number | Value | Where | Why |
+|---|---|---|---|
+| Landblock | 128 m square; the corridor is chunks (0, 0) to (0, -3) | `world_grid_config.gd` | A whole zone fits in one, and one attaches inside the frame budget |
+| Streaming | Gameplay within 1 chunk of any player (unloads past 2), clutter within 2 (past 3), terrain and HLOD within 3 (past 4) | `world_grid_config.gd` | Everything a player can reach in a few seconds is loaded; nobody on a seam makes chunks thrash |
+| Frame budget | 2 ms of attaching a frame | `world_grid_config.gd` | Sprinting across seams in four-way split-screen never stutters |
+| Trails | 0 to 3 m rise from the holloway to the gorge, 3 to 6 m from the gorge to the Ring, 10 to 12 m wide | `landblock_manifest.gd` | Gentler than the 13° bridge ramps; wide enough for the party and a fight |
+| Checkpoints | Inside the Moss-Oaks' south gap, the gorge's south cliff, the causeway | `landblock_manifest.gd` | Nobody walks back from the village after a wipe |
+| Companions | Join once anyone walks out of the Forest Gate, leave when everyone's back in the village | `everwood_world.gd` | The village stays the family's own space |
+| AI tick | Enemies think every tick within 35 m of a player, 10 times a second to 90 m, rest beyond; always full rate in a fight | `chunk_nav_builder.gd` | Far camps cost nothing until someone comes near |
+| Recall | 5 s after the Cairnsman's chest opens, everyone is back on the green and the expedition resets (the village's state stays) | `everwood_world.gd` | One run, then home, as in the instanced expedition |
+
 ## Open questions for playtest
 
 - Should taunt cost 1 pip, or should the tank's Perfect Guard pip already be enough?
@@ -220,3 +233,4 @@ In a headless run, one player with two companions clears both camps and reaches 
 - Does the Gale-Beam's 3.2 s give a child at tank, in Adventurer or Master mode, enough time to turn and raise Shadow Sanctuary? (Squire Gambit now does it for them.)
 - Is the Gale-Jet's push fun for younger players, or should it slow (not shove) them?
 - Do two minion camps feel like enough fighting before the boss, or should the holloway hold a third?
+- In the seamless world, is the walk from the village to the Ring (about 350 m) a pleasant journey or a chore? The trails could be shorter, or a checkpoint could let the party skip back to the gorge.
