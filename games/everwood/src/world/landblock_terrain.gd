@@ -52,6 +52,7 @@ const TRAIL_WALL_PIECE: float = 8.0
 const TRAIL_WALL_OFFSET: float = 0.6
 const TERRAIN3D_CLASS: StringName = &"Terrain3D"
 const TERRAIN3D_REGION_CLASS: StringName = &"Terrain3DRegion"
+const TERRAIN3D_TEXTURE_CLASS: StringName = &"Terrain3DTextureAsset"
 const TERRAIN3D_SHADER: Shader = preload("res://src/world/landblock_terrain3d.gdshader")
 ## Terrain3D's numbers this uses: one region per landblock, no collision of its own, no colour compression.
 const TERRAIN3D_REGION_SIZE: int = 128
@@ -398,14 +399,39 @@ static func make_terrain3d(target: Node3D) -> Node3D:
 	return terrain
 
 
+## One plain texture slot (a tiny white albedo and a flat normal), so Terrain3D
+## never counts itself untextured. With none it turns its checkerboard view on
+## at every region refresh, which rebuilds its shader, and a shader rebuilt
+## before the last one finished compiling is freed off the render thread (an
+## error and a leaked shader per variant, about 50 on the first load). Our own
+## images, because the placeholders Terrain3D makes for an empty slot leak at
+## exit. The storybook shader never samples them: it draws the colour map.
+static func _give_terrain3d_a_texture_slot(terrain: Node3D) -> void:
+	var assets: Resource = terrain.get(&"assets") as Resource
+	if assets == null or int(assets.call(&"get_texture_count")) > 0:
+		return
+	var slot: Resource = ClassDB.instantiate(TERRAIN3D_TEXTURE_CLASS) as Resource
+	slot.set(&"name", "Storybook colour map")
+	var albedo: Image = Image.create_empty(16, 16, true, Image.FORMAT_RGBA8)
+	albedo.fill(Color(1.0, 1.0, 1.0, 0.0))
+	albedo.generate_mipmaps()
+	var normal: Image = Image.create_empty(16, 16, true, Image.FORMAT_RGBA8)
+	normal.fill(Color(0.5, 0.5, 1.0, 1.0))
+	normal.generate_mipmaps()
+	slot.set(&"albedo_texture", ImageTexture.create_from_image(albedo))
+	slot.set(&"normal_texture", ImageTexture.create_from_image(normal))
+	assets.call(&"set_texture_asset", 0, slot)
+
+
 ## Settings that only take once the node is in the tree (Terrain3D resets them
 ## as it starts): one region per landblock at 1 m, no collision of its own, no
-## colour compression, and the storybook shader.
+## colour compression, a texture slot, and the storybook shader.
 static func configure_terrain3d(terrain: Node3D) -> void:
 	terrain.set(&"collision_mode", TERRAIN3D_COLLISION_DISABLED)
 	terrain.set(&"color_compress_mode", TERRAIN3D_COMPRESS_NONE)
 	terrain.set(&"vertex_spacing", float(WorldGridConfig.CHUNK_SIZE) / TERRAIN3D_REGION_SIZE)
 	terrain.set(&"region_size", TERRAIN3D_REGION_SIZE)
+	_give_terrain3d_a_texture_slot(terrain)
 	# The node's debug views pass down to its material, and its checkerboard is on by default.
 	terrain.set(&"show_checkered", false)
 	var look: Resource = terrain.get(&"material") as Resource
@@ -416,8 +442,9 @@ static func configure_terrain3d(terrain: Node3D) -> void:
 		look.set(&"shader_override_enabled", true)
 
 
-## Terrain3D turns its checkerboard back on while it has no textures of its
-## own; the storybook shader draws the colour map instead, so keep it off.
+## A safety net: Terrain3D turns its checkerboard on whenever it finds no
+## textures (the slot above prevents that); the storybook shader draws the
+## colour map instead, so keep it off.
 static func keep_terrain3d_untextured_view_off(terrain: Node3D) -> void:
 	if bool(terrain.get(&"show_checkered")):
 		terrain.set(&"show_checkered", false)
