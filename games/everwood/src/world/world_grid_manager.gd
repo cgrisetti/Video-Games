@@ -44,6 +44,8 @@ const PIECE_NODE_LIMIT: int = 24
 ## Instantiate landblock scenes on a worker thread (false: on the main thread, in one go).
 const THREADED_INSTANTIATION: bool = true
 
+## Which world this streams (WorldGridConfig.use_layout picks it before anything streams).
+@export var layout_id: StringName = DoverslapLayout.LAYOUT_ID
 ## The level's store of entity state (set before the first prime).
 var world_state: WorldStateDB
 ## Positions streamed around besides the party's (none in play).
@@ -133,12 +135,13 @@ class StreamJob:
 			Kind.TERRAIN:
 				result = WorldGridManager.terrain_data_for(chunk, terrain3d)
 			Kind.CLUTTER:
-				result = LandblockClutter.build_clutter_data(chunk)
+				result = WorldGridConfig.layout.build_clutter_data(chunk)
 			Kind.INSTANCE:
 				result = scene.instantiate()
 
 
 func _ready() -> void:
+	WorldGridConfig.use_layout(layout_id)
 	_chunks_root = Node3D.new()
 	_chunks_root.name = "Chunks"
 	add_child(_chunks_root)
@@ -265,7 +268,7 @@ func _start_terrain(chunk: Chunk) -> void:
 		if generation == chunk.terrain_generation:
 			chunk.hlod_mesh = resource as ArrayMesh
 			_instantiation_queue.append(func() -> void: _attach_hlod(chunk, generation))
-	_request(LandblockManifest.hlod_path(chunk.coord), on_hlod)
+	_request(WorldGridConfig.layout.hlod_path(chunk.coord), on_hlod)
 
 
 func _start_clutter(chunk: Chunk) -> void:
@@ -283,7 +286,7 @@ func _start_gameplay(chunk: Chunk) -> void:
 func _continue_gameplay(chunk: Chunk) -> void:
 	var generation: int = chunk.gameplay_generation
 	_instantiation_queue.append(func() -> void: _attach_ground(chunk, generation))
-	var path: String = LandblockManifest.landblock_path(chunk.coord)
+	var path: String = WorldGridConfig.layout.landblock_path(chunk.coord)
 	if path == "" or not ResourceLoader.exists(path):
 		_instantiation_queue.append(func() -> void: _finish_gameplay(chunk, generation))
 		return
@@ -384,12 +387,16 @@ func _on_job_done(job: StreamJob) -> void:
 
 
 ## The terrain data a chunk needs: the mesh (or with `terrain3d`, its Terrain3D
-## region), plus the collider and navigation source for the corridor (pure; worker-safe).
+## region), plus, where the world is walked, the collider, its solid props and
+## the navigation source (pure; worker-safe).
 static func terrain_data_for(chunk: Vector2i, terrain3d: bool = false) -> Dictionary:
-	var corridor: bool = LandblockManifest.is_corridor(chunk)
-	var data: Dictionary = LandblockTerrain.build_chunk_data(chunk, corridor, terrain3d)
-	if corridor:
-		data["nav_faces"] = LandblockTerrain.build_nav_faces(chunk)
+	var layout: WorldLayout = WorldGridConfig.layout
+	var walkable: bool = layout.has_collision(chunk)
+	var data: Dictionary = LandblockTerrain.build_chunk_data(chunk, walkable, terrain3d)
+	if walkable:
+		data["solids"] = layout.solid_pieces(chunk)
+	if layout.has_navigation(chunk):
+		data["nav_faces"] = layout.nav_faces(chunk)
 	return data
 
 
@@ -424,8 +431,10 @@ func _attach_terrain(chunk: Chunk, data: Dictionary, generation: int, with_horiz
 	var holder: Node3D = Node3D.new()
 	holder.name = "Horizon"
 	if use_terrain3d:
-		LandblockTerrain.bind_terrain3d_region(_terrain3d, data.get("terrain3d_region") as Resource)
-		data.erase("terrain3d_region")
+		var maps: Array[Image] = []
+		maps.assign(data.get("terrain3d_maps", []))
+		LandblockTerrain.bind_terrain3d_region(_terrain3d, LandblockTerrain.make_terrain3d_region(chunk.coord, maps))
+		data.erase("terrain3d_maps")
 		_mark_terrain3d_dirty()
 	else:
 		holder.add_child(LandblockTerrain.make_terrain_node(chunk.coord, data))
@@ -445,8 +454,10 @@ func _attach_terrain(chunk: Chunk, data: Dictionary, generation: int, with_horiz
 func _attach_horizon(chunk: Chunk, generation: int) -> void:
 	if generation != chunk.terrain_generation or chunk.terrain == null:
 		return
-	chunk.terrain.add_child(LandblockTerrain.make_occluders(chunk.coord))
-	var landmark: MeshInstance3D = LandblockTerrain.make_horizon_landmark(chunk.coord)
+	var occluders: OccluderInstance3D = WorldGridConfig.layout.make_occluders(chunk.coord)
+	if occluders != null:
+		chunk.terrain.add_child(occluders)
+	var landmark: Node3D = WorldGridConfig.layout.make_horizon_landmark(chunk.coord)
 	if landmark != null:
 		chunk.terrain.add_child(landmark)
 	_attach_hlod(chunk, generation)
@@ -464,7 +475,7 @@ func _attach_hlod(chunk: Chunk, generation: int) -> void:
 func _attach_clutter(chunk: Chunk, data: Dictionary, generation: int) -> void:
 	if generation != chunk.clutter_generation:
 		return
-	chunk.clutter = LandblockClutter.make_clutter_node(chunk.coord, data)
+	chunk.clutter = WorldGridConfig.layout.make_clutter_node(chunk.coord, data)
 	_chunk_root(chunk).add_child(chunk.clutter)
 	chunk.has_clutter = true
 	chunk.clutter_pending = false
@@ -550,7 +561,7 @@ func _finish_gameplay(chunk: Chunk, generation: int) -> void:
 
 
 func _bake_navigation(chunk: Chunk) -> void:
-	if not LandblockManifest.is_corridor(chunk.coord) or chunk.nav_region != null:
+	if not WorldGridConfig.layout.has_navigation(chunk.coord) or chunk.nav_region != null:
 		return
 	var region: NavigationRegion3D = NavigationRegion3D.new()
 	region.name = "Navigation"
@@ -691,14 +702,20 @@ func prime(points: Array[Vector3]) -> void:
 	update_streaming()
 
 
+## Whether the ground under `point` has streamed in (its chunk's collider is there).
+func has_ground_at(point: Vector3) -> bool:
+	var coord: Vector2i = WorldGridConfig.world_to_chunk(point)
+	return _chunks.has(coord) and _chunks[coord].ground != null
+
+
 func _load_now(chunk: Chunk) -> void:
 	if not chunk.has_terrain:
 		chunk.terrain_generation += 1
-		chunk.hlod_mesh = _load_cached(LandblockManifest.hlod_path(chunk.coord)) as ArrayMesh
+		chunk.hlod_mesh = _load_cached(WorldGridConfig.layout.hlod_path(chunk.coord)) as ArrayMesh
 		_attach_terrain(chunk, terrain_data_for(chunk.coord, use_terrain3d), chunk.terrain_generation, true)
 	if not chunk.has_clutter:
 		chunk.clutter_generation += 1
-		_attach_clutter(chunk, LandblockClutter.build_clutter_data(chunk.coord), chunk.clutter_generation)
+		_attach_clutter(chunk, WorldGridConfig.layout.build_clutter_data(chunk.coord), chunk.clutter_generation)
 	if chunk.has_gameplay:
 		return
 	if chunk.gameplay_pending:
@@ -707,7 +724,7 @@ func _load_now(chunk: Chunk) -> void:
 	var generation: int = chunk.gameplay_generation
 	chunk.gameplay_pending = true
 	_attach_ground(chunk, generation)
-	var path: String = LandblockManifest.landblock_path(chunk.coord)
+	var path: String = WorldGridConfig.layout.landblock_path(chunk.coord)
 	if path != "" and ResourceLoader.exists(path):
 		var landblock: Node3D = (_load_cached(path) as PackedScene).instantiate() as Node3D
 		landblock.add_to_group(ChunkNavBuilder.source_group(chunk.coord))
@@ -746,7 +763,7 @@ func reset_expedition() -> void:
 		world_state.clear_expedition_transient_state()
 	for coord: Vector2i in _chunks:
 		var chunk: Chunk = _chunks[coord]
-		if LandblockManifest.is_persistent(coord) or not (chunk.has_gameplay or chunk.gameplay_pending):
+		if WorldGridConfig.layout.is_persistent(coord) or not (chunk.has_gameplay or chunk.gameplay_pending):
 			continue
 		_unload_gameplay(chunk)
 	update_streaming()

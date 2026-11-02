@@ -27,10 +27,27 @@ const FRAME_BUDGET_USEC: int = 2000
 ## Seconds between streaming decisions (the 5 Hz heartbeat).
 const STREAM_HEARTBEAT: float = 0.2
 
-## The bounded world, inclusive: the Bramble-to-Doverslap corridor (x = 0,
-## z = 0 to -3) and the ring of crags around it (x = -1 and 1, z = 1 and -4).
+## The Doverslap world's bounds, inclusive: the Bramble-to-Doverslap corridor
+## (x = 0, z = 0 to -3) and the ring of crags around it (x = -1 and 1, z = 1 and -4).
 const BOUNDS_MIN: Vector2i = Vector2i(-1, -4)
 const BOUNDS_MAX: Vector2i = Vector2i(1, 1)
+
+## The world being streamed. Its WorldGridManager picks it (use_layout) before
+## anything streams; until then it's the Doverslap corridor, which the level
+## builder and the tests use. Read from worker threads, never changed while
+## a world is streaming.
+static var layout: WorldLayout = DoverslapLayout.new()
+
+
+## Switches to the layout named `id` (DoverslapLayout.LAYOUT_ID, OakshireValeLayout.LAYOUT_ID).
+static func use_layout(id: StringName) -> void:
+	if layout != null and layout.layout_id() == id:
+		return
+	match id:
+		OakshireValeLayout.LAYOUT_ID:
+			layout = OakshireValeLayout.new()
+		_:
+			layout = DoverslapLayout.new()
 
 
 static func world_to_chunk(pos: Vector3) -> Vector2i:
@@ -65,14 +82,18 @@ static func min_chebyshev_to_focuses(chunk: Vector2i, focus_chunks: Array[Vector
 
 
 static func in_bounds(chunk: Vector2i) -> bool:
-	return chunk.x >= BOUNDS_MIN.x and chunk.x <= BOUNDS_MAX.x and chunk.y >= BOUNDS_MIN.y and chunk.y <= BOUNDS_MAX.y
+	var low: Vector2i = layout.bounds_min()
+	var high: Vector2i = layout.bounds_max()
+	return chunk.x >= low.x and chunk.x <= high.x and chunk.y >= low.y and chunk.y <= high.y
 
 
-## Every chunk of the bounded world, row by row from the north.
+## Every chunk of the current world, row by row from the north.
 static func all_chunks() -> Array[Vector2i]:
 	var chunks: Array[Vector2i] = []
-	for z: int in range(BOUNDS_MIN.y, BOUNDS_MAX.y + 1):
-		for x: int in range(BOUNDS_MIN.x, BOUNDS_MAX.x + 1):
+	var low: Vector2i = layout.bounds_min()
+	var high: Vector2i = layout.bounds_max()
+	for z: int in range(low.y, high.y + 1):
+		for x: int in range(low.x, high.x + 1):
 			chunks.append(Vector2i(x, z))
 	return chunks
 

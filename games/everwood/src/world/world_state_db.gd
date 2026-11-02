@@ -145,7 +145,7 @@ func _store(chunk: Vector2i, entity_id: StringName, state: Dictionary, announce:
 
 func _clear_transient() -> void:
 	for entry: Array in _entries():
-		if not LandblockManifest.is_persistent(entry[0]):
+		if not WorldGridConfig.layout.is_persistent(entry[0]):
 			_store(entry[0], entry[1], {})
 
 

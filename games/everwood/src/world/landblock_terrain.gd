@@ -27,6 +27,11 @@
 ##
 ## Data is built by pure static functions, safe on a worker thread; nodes are
 ## made on the main thread from that data.
+##
+## The field itself belongs to the world being streamed (WorldGridConfig.layout):
+## sample_height and the colours ask it. The corridor's own field, nav faces,
+## trail walls, occluders and landmarks below are the Doverslap world's
+## (DoverslapLayout hands them over).
 class_name LandblockTerrain
 extends RefCounted
 
@@ -83,8 +88,13 @@ const NOISE: FastNoiseLite = preload("res://src/world/landblock_noise.tres")
 
 # --- The field ------------------------------------------------------------
 
-## The ground's height at world (x, z): continuous everywhere.
+## The current world's ground height at world (x, z): continuous everywhere.
 static func sample_height(world_x: float, world_z: float) -> float:
+	return WorldGridConfig.layout.sample_height(world_x, world_z)
+
+
+## The Doverslap corridor's ground height at world (x, z).
+static func corridor_height(world_x: float, world_z: float) -> float:
 	var height: float = LandblockManifest.base_height(world_z) - FLAT_SINK
 	var dx: float = world_x - LandblockManifest.CORRIDOR_X
 	var past: float = absf(dx) - _floor_edge(world_x, world_z)
@@ -97,13 +107,14 @@ static func sample_height(world_x: float, world_z: float) -> float:
 	return minf(height, LandblockManifest.carve_bottom(world_x, world_z))
 
 
-## The ground's colour at world (x, z): moss and meadow on the floor, a dirt
-## line down the trails, heather and rock on the crags, a river in the chasm.
+## The current world's ground colour at world (x, z).
 static func sample_surface_color(world_x: float, world_z: float) -> Color:
-	return _surface_color(world_x, world_z, sample_height(world_x, world_z))
+	return WorldGridConfig.layout.surface_color(world_x, world_z, sample_height(world_x, world_z))
 
 
-static func _surface_color(world_x: float, world_z: float, height: float) -> Color:
+## The corridor's colour at (x, z): moss and meadow on the floor, a dirt line
+## down the trails, heather and rock on the crags, a river in the chasm.
+static func corridor_surface_color(world_x: float, world_z: float, height: float) -> Color:
 	var base: float = LandblockManifest.base_height(world_z)
 	var patch: float = NOISE.get_noise_2d(world_x * 0.6 + 300.0, world_z * 0.6) * 0.5 + 0.5
 	if height < base - 4.0:
@@ -141,7 +152,7 @@ static func _floor_edge(world_x: float, world_z: float) -> float:
 static func build_chunk_data(chunk: Vector2i, with_collision: bool, terrain3d: bool = false) -> Dictionary:
 	if terrain3d:
 		var metre_heights: PackedFloat32Array = collision_heights(chunk, PackedFloat32Array())
-		var regional: Dictionary = {"terrain3d_region": make_terrain3d_region(chunk, metre_heights)}
+		var regional: Dictionary = {"terrain3d_maps": make_terrain3d_maps(chunk, metre_heights)}
 		if with_collision:
 			regional["collision_heights"] = metre_heights
 		return regional
@@ -170,7 +181,7 @@ static func build_chunk_data(chunk: Vector2i, with_collision: bool, terrain3d: b
 			var slope_x: float = (heights[at + 1] - heights[at - 1]) / (2.0 * STEP)
 			var slope_z: float = (heights[at + apron] - heights[at - apron]) / (2.0 * STEP)
 			normals[index] = Vector3(-slope_x, 1.0, -slope_z).normalized()
-			colors[index] = _surface_color(x, z, heights[at])
+			colors[index] = WorldGridConfig.layout.surface_color(x, z, heights[at])
 	var indices: PackedInt32Array = PackedInt32Array()
 	indices.resize(QUADS * QUADS * 6)
 	var cursor: int = 0
@@ -206,7 +217,7 @@ static func collision_heights(chunk: Vector2i, mesh_heights: PackedFloat32Array)
 
 ## Navigation source triangles for a corridor chunk: the floor and the crag
 ## foot only, spilling past the chunk's edges so baked tiles meet at the seams.
-static func build_nav_faces(chunk: Vector2i) -> PackedVector3Array:
+static func corridor_nav_faces(chunk: Vector2i) -> PackedVector3Array:
 	var faces: PackedVector3Array = PackedVector3Array()
 	var origin: Vector3 = WorldGridConfig.chunk_to_world_origin(chunk)
 	var start_x: float = origin.x - NAV_CHUNK_MARGIN
@@ -254,8 +265,11 @@ static func make_terrain_node(chunk: Vector2i, data: Dictionary) -> MeshInstance
 	return ground
 
 
-## The chunk's ground collider (the same triangles) and the trail walls in it,
-## on the low-scenery layer: bodies stand on it, cameras look through it.
+## The chunk's ground collider (the same field as a height map) and its solid
+## props (WorldLayout.solid_pieces, in data["solids"]): the ground and low
+## pieces on the low-scenery layer (bodies stand on them, cameras look
+## through them), tall ones (boulders, trunks) on the world layer, where they
+## block cameras and shots too.
 static func make_collision_node(chunk: Vector2i, data: Dictionary) -> StaticBody3D:
 	var body: StaticBody3D = StaticBody3D.new()
 	body.name = "Ground"
@@ -271,15 +285,33 @@ static func make_collision_node(chunk: Vector2i, data: Dictionary) -> StaticBody
 	# A height map is centred on its node.
 	collision.position = WorldGridConfig.chunk_to_world_center(chunk)
 	body.add_child(collision)
+	var solids: StaticBody3D = null
 	var piece_index: int = 0
-	for piece: Transform3D in trail_wall_pieces(chunk):
-		var box: BoxShape3D = BoxShape3D.new()
-		box.size = Vector3(0.6, TRAIL_WALL_HEIGHT, TRAIL_WALL_PIECE)
-		var wall: CollisionShape3D = CollisionShape3D.new()
-		wall.name = "TrailWall%d" % piece_index
-		wall.shape = box
-		wall.transform = piece
-		body.add_child(wall)
+	for piece: Dictionary in data.get("solids", []) as Array:
+		var shape_node: CollisionShape3D = CollisionShape3D.new()
+		if piece.has("box"):
+			var box: BoxShape3D = BoxShape3D.new()
+			box.size = piece["box"]
+			shape_node.shape = box
+		else:
+			var size: Vector2 = piece["cylinder"]
+			var cylinder: CylinderShape3D = CylinderShape3D.new()
+			cylinder.radius = size.x
+			cylinder.height = size.y
+			shape_node.shape = cylinder
+		shape_node.transform = piece["transform"]
+		if bool(piece.get("low", false)):
+			shape_node.name = "TrailWall%d" % piece_index
+			body.add_child(shape_node)
+		else:
+			if solids == null:
+				solids = StaticBody3D.new()
+				solids.name = "Solids"
+				solids.collision_layer = ActorBase.LAYER_WORLD
+				solids.collision_mask = 0
+				body.add_child(solids)
+			shape_node.name = "Solid%d" % piece_index
+			solids.add_child(shape_node)
 		piece_index += 1
 	return body
 
@@ -453,11 +485,9 @@ static func keep_terrain3d_untextured_view_off(terrain: Node3D) -> void:
 		look.set(&"show_checkered", false)
 
 
-## A landblock's Terrain3D region from its metre heights (129 to a side): the
+## A landblock's Terrain3D maps from its metre heights (129 to a side): the
 ## height map and the colour map (pure; worker-thread safe).
-static func make_terrain3d_region(chunk: Vector2i, metre_heights: PackedFloat32Array) -> Resource:
-	if not ClassDB.class_exists(TERRAIN3D_REGION_CLASS):
-		return null
+static func make_terrain3d_maps(chunk: Vector2i, metre_heights: PackedFloat32Array) -> Array[Image]:
 	var origin: Vector3 = WorldGridConfig.chunk_to_world_origin(chunk)
 	var height_map: Image = Image.create_empty(TERRAIN3D_REGION_SIZE, TERRAIN3D_REGION_SIZE, false, Image.FORMAT_RF)
 	var color_map: Image = Image.create_empty(TERRAIN3D_REGION_SIZE, TERRAIN3D_REGION_SIZE, false, Image.FORMAT_RGBA8)
@@ -465,7 +495,19 @@ static func make_terrain3d_region(chunk: Vector2i, metre_heights: PackedFloat32A
 		for column: int in TERRAIN3D_REGION_SIZE:
 			var height: float = metre_heights[row * COLLISION_SIDE + column]
 			height_map.set_pixel(column, row, Color(height, 0.0, 0.0))
-			color_map.set_pixel(column, row, _surface_color(origin.x + column, origin.z + row, height))
+			color_map.set_pixel(column, row, WorldGridConfig.layout.surface_color(origin.x + column, origin.z + row, height))
+	var maps: Array[Image] = [height_map, color_map]
+	return maps
+
+
+## Main thread: the Terrain3D region for a landblock from its maps. Terrain3D's
+## objects are made here, not on a worker: making many at once on workers races
+## inside the extension (a crash once a whole vale streams in).
+static func make_terrain3d_region(chunk: Vector2i, maps: Array[Image]) -> Resource:
+	if not ClassDB.class_exists(TERRAIN3D_REGION_CLASS) or maps.size() < 2:
+		return null
+	var height_map: Image = maps[0]
+	var color_map: Image = maps[1]
 	var region: Resource = ClassDB.instantiate(TERRAIN3D_REGION_CLASS) as Resource
 	region.set(&"region_size", TERRAIN3D_REGION_SIZE)
 	region.set(&"vertex_spacing", float(WorldGridConfig.CHUNK_SIZE) / TERRAIN3D_REGION_SIZE)
