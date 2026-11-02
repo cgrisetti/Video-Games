@@ -21,6 +21,9 @@
 ##   - the Armory & Scribe Desk: weapon, armor and card swaps in place, the
 ##     chest's card, under-card links and the Grimoire's memory and levels,
 ##     saved kits; card drops; no orphaned nodes after the round trip
+##   - then the seamless Landblock world (tools/test_world_grid.gd): grid
+##     maths, streaming layers and HLOD swaps up the corridor, the 2 ms queue,
+##     WorldStateDB persistence and snapshots, navigation across a seam
 ## Run from games/everwood:
 ##   godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd
 ## Exits 0 when every check passes, 1 otherwise.
@@ -73,6 +76,8 @@ var _invocations: Array[int] = []
 ## The card copy the seeded boss chest dropped (the desk test equips it).
 var _dropped_card: StringName = &""
 var _orphans_before: int = 0
+## The seamless world's checks (tools/test_world_grid.gd), run last.
+const WORLD_GRID_CHECKS: GDScript = preload("res://tools/test_world_grid.gd")
 
 
 func _initialize() -> void:
@@ -127,6 +132,7 @@ func _run() -> void:
 	await _check_calling_shortcut_and_fellowship()
 	_check_audio_cues()
 	NetworkManager.current.leave_game()
+	await WORLD_GRID_CHECKS.new().run(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
@@ -139,7 +145,9 @@ func _run() -> void:
 
 func _check_hub_and_input_map() -> void:
 	_check(current_scene is HubTown, "the game starts in Bramblebridge (Hub Town)")
-	_check(ProjectSettings.get_setting("application/run/main_scene") == HUB_SCENE, "Hub Town is the main scene")
+	_check(ProjectSettings.get_setting("application/run/main_scene") == InstanceManager.scene_path(InstanceManager.EVERWOOD_WORLD)
+		and InstanceManager.scene_path(InstanceManager.HUB_TOWN) == HUB_SCENE,
+		"the game starts in the seamless world, and Hub Town is still an instance of its own (the tests start there)")
 	_check(InstanceManager.current.instance_id == InstanceManager.HUB_TOWN and InstanceManager.current.is_live(), "Hub Town is the live instance")
 	var hub: HubTown = current_scene as HubTown
 	_check(hub.level_title() == "Bramblebridge" and hub.raid_portal.title.contains("Doverslap Expedition"),
