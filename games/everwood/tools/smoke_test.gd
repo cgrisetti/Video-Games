@@ -24,6 +24,10 @@
 ##   - then the seamless Landblock world (tools/test_world_grid.gd): grid
 ##     maths, streaming layers and HLOD swaps up the corridor, the 2 ms queue,
 ##     WorldStateDB persistence and snapshots, navigation across a seam
+##   - and last Oakshire Vale (tools/test_oakshire_vale.gd): its rings, roads,
+##     trees and boulders, townsfolk, portal aprons and spawners, then walking
+##     it from Wayfarer's Glade into the village, through the ford and up to a
+##     sealed portal
 ## Run from games/everwood:
 ##   godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd
 ## Exits 0 when every check passes, 1 otherwise.
@@ -78,6 +82,8 @@ var _dropped_card: StringName = &""
 var _orphans_before: int = 0
 ## The seamless world's checks (tools/test_world_grid.gd), run last.
 const WORLD_GRID_CHECKS: GDScript = preload("res://tools/test_world_grid.gd")
+## Oakshire Vale's checks (tools/test_oakshire_vale.gd), after the seamless world's.
+const OAKSHIRE_VALE_CHECKS: GDScript = preload("res://tools/test_oakshire_vale.gd")
 
 
 func _initialize() -> void:
@@ -138,6 +144,7 @@ func _run() -> void:
 	_check_audio_cues()
 	NetworkManager.current.leave_game()
 	await WORLD_GRID_CHECKS.new().run(self, _check)
+	await OAKSHIRE_VALE_CHECKS.new().run(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
