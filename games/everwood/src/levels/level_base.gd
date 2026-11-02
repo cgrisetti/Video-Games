@@ -54,6 +54,8 @@ var _cards_seen: int = 0
 var _shots_seen: int = 0
 var _detonations_seen: int = 0
 var _demo_clock: float = 0.0
+## Each --demo bot finds its way by the navigation map, like a companion.
+var _demo_steering: Dictionary[StringName, NavSteering] = {}
 var _companion_refresh_queued: bool = false
 
 # The command line is read once per run; these survive instance changes.
@@ -615,14 +617,18 @@ func _drive_demo_bots(delta: float) -> void:
 	for actor: ActorBase in actors.values():
 		if actor.input == null:
 			continue
-		var to_post: Vector3 = _demo_post_for(actor) - actor.global_position
+		var post: Vector3 = _demo_post_for(actor)
+		var to_post: Vector3 = post - actor.global_position
 		to_post.y = 0.0
 		var stick: Vector2 = Vector2.ZERO
 		if to_post.length() > 0.5:
+			if not _demo_steering.has(actor.player_id):
+				_demo_steering[actor.player_id] = NavSteering.new()
+			var heading: Vector3 = _demo_steering[actor.player_id].direction(actor, post, delta)
 			var yaw: float = actor.camera_yaw
 			var forward: Vector3 = Vector3(-sin(yaw), 0.0, -cos(yaw))
 			var right: Vector3 = Vector3(cos(yaw), 0.0, -sin(yaw))
-			stick = Vector2(to_post.dot(right), to_post.dot(forward)).normalized()
+			stick = Vector2(heading.dot(right), heading.dot(forward)).normalized()
 		actor.input.inject_move(stick)
 		if beat and _demo_attacks() and to_post.length() < 1.5:
 			var options: Array[int] = [CombatActionResource.Command.LIGHT, CombatActionResource.Command.LIGHT, CombatActionResource.Command.HEAVY]

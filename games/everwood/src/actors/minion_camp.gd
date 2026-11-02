@@ -7,7 +7,8 @@
 ## Every peer builds the camp and its minions from the same list, so their node
 ## paths match for the network; the host runs them and the others see copies.
 ## Waking and clearing are worked out on every peer from synced positions and
-## health, so all agree.
+## health, so all agree. A cleared camp is remembered (WorldStateDB): when its
+## Landblock streams back in, or a latecomer joins, it stays cleared and empty.
 class_name MinionCamp
 extends Node3D
 
@@ -27,10 +28,13 @@ const NEST_COLOR: Color = Color(0.3, 0.33, 0.18)
 @export var camp_name: String = "Bramble Camp"
 ## WoodlandMinion.Kind of each minion, in spawn order.
 @export var kinds: Array[int] = []
+## Its WorldStateDB id (10_WORLD_ARCHITECTURE.md §4.2); empty: not remembered.
+@export var persist_id: StringName = &""
 
 var minions: Array[WoodlandMinion] = []
 var alert: bool = false
 var is_cleared: bool = false
+var persistence: WorldStateBinding
 
 
 func _ready() -> void:
@@ -41,7 +45,7 @@ func _ready() -> void:
 ## CombatDirector is reset for the new instance (a child's _ready runs first,
 ## and the reset would forget anything registered before it).
 func spawn_minions() -> void:
-	if not minions.is_empty():
+	if not minions.is_empty() or is_cleared:
 		return
 	for index: int in kinds.size():
 		var minion: WoodlandMinion = WoodlandMinion.new()
@@ -86,7 +90,22 @@ func _physics_process(_delta: float) -> void:
 	if standing_count() == 0:
 		is_cleared = true
 		alert = false
+		if persistence != null:
+			persistence.save({"cleared": true})
 		cleared.emit(self)
+
+
+## WorldStateDB hands over its line to the store, and the state on record applies at once.
+func bind_persistence(binding: WorldStateBinding) -> void:
+	persistence = binding
+	apply_persisted_state(binding.current_state())
+
+
+## A camp on record as cleared is cleared: no minions spawn and nothing pays out again.
+func apply_persisted_state(state: Dictionary) -> void:
+	if bool(state.get("cleared", false)) and not is_cleared:
+		is_cleared = true
+		alert = false
 
 
 ## Stones in a ring and a mound of brambles in the middle, built in code.

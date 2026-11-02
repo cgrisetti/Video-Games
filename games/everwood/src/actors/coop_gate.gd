@@ -11,7 +11,8 @@
 ## The gate builds its moving parts in code (portcullis, plates, winch, gale);
 ## the level builder raises the stone towers around it. Its frame: the
 ## portcullis at the origin, the bridge running out along +Z. The host decides
-## when it opens and tells every peer; a peer arriving later asks.
+## when it opens and tells every peer; a peer arriving later asks. An open gate
+## is remembered (WorldStateDB): it's still open when its Landblock streams back.
 class_name CoopGate
 extends Node3D
 
@@ -34,6 +35,9 @@ const WINCH_SPOT: Vector3 = Vector3(0.0, 0.0, 3.4)
 ## Metres of lag forgiveness when the host checks a ringer's reach.
 const RING_SLACK: float = 1.5
 
+## Its WorldStateDB id (10_WORLD_ARCHITECTURE.md §4.2); empty: not remembered.
+@export var persist_id: StringName = &""
+
 var is_open: bool = false
 var opened_by: Method = Method.NONE
 var plates: Array[RunePlate] = []
@@ -41,6 +45,7 @@ var winch: BellWinch
 var gale: GorgeGaleJet
 ## Seconds the plates have been held (the host's count).
 var hold_time: float = 0.0
+var persistence: WorldStateBinding
 
 var _portcullis: StaticBody3D
 var _portcullis_collision: CollisionShape3D
@@ -171,6 +176,8 @@ func _open(method: int) -> void:
 	AudioCues.play(&"gate")
 	for plate: RunePlate in plates:
 		plate.show_state(true, 1.0)
+	if persistence != null:
+		persistence.save({"opened": true, "method": method})
 	opened.emit(method)
 
 
@@ -193,6 +200,28 @@ func _close() -> void:
 	_portcullis.position.y = 0.0
 	_portcullis_collision.set_deferred(&"disabled", false)
 	gale.active = true
+	if persistence != null:
+		persistence.save({})
+
+
+## WorldStateDB hands over its line to the store, and the state on record applies at once.
+func bind_persistence(binding: WorldStateBinding) -> void:
+	persistence = binding
+	apply_persisted_state(binding.current_state())
+
+
+## A gate on record as open stands open, quietly: portcullis down, gale calm,
+## plates lit, no bell and no "the gate opens" for anyone.
+func apply_persisted_state(state: Dictionary) -> void:
+	if not bool(state.get("opened", false)) or is_open:
+		return
+	is_open = true
+	opened_by = int(state.get("method", Method.BELL_WINCH)) as Method
+	gale.calm()
+	_portcullis_collision.set_deferred(&"disabled", true)
+	_portcullis.position.y = -PORTCULLIS_HEIGHT - 0.2
+	for plate: RunePlate in plates:
+		plate.show_state(true, 1.0)
 
 
 ## A peer that loads in after the gate opened asks the host how it stands.

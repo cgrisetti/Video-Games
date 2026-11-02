@@ -6,6 +6,8 @@
 ##
 ## The host decides when someone's in the mist and refreshes everyone through
 ## CombatDirector (each owner restores its own); every peer sees the blessing.
+## Its rest is remembered (WorldStateDB, by the store's shared clock), so it's
+## still resting when its Landblock streams back in or a latecomer arrives.
 class_name WaterShrine
 extends Node3D
 
@@ -25,7 +27,11 @@ const SHINGLE_COLOR: Color = Color(0.3, 0.36, 0.3)
 const WATER_COLOR: Color = Color(0.35, 0.75, 0.95)
 const MIST_COLOR: Color = Color(0.8, 0.95, 1.0, 0.35)
 
+## Its WorldStateDB id (10_WORLD_ARCHITECTURE.md §4.2); empty: not remembered.
+@export var persist_id: StringName = &""
+
 var resting_left: float = 0.0
+var persistence: WorldStateBinding
 
 var _water: StandardMaterial3D
 var _mist: CPUParticles3D
@@ -118,6 +124,8 @@ func _physics_process(delta: float) -> void:
 @rpc("authority", "call_local", "reliable")
 func _bless(by_player_id: String) -> void:
 	resting_left = REST_TIME
+	if persistence != null:
+		persistence.save({"rest_until": persistence.db.world_time + REST_TIME})
 	AudioCues.play(&"shrine")
 	CombatDirector.current.show_float_text(global_position + Vector3.UP * (ROOF_HEIGHT + 0.6), "The party is refreshed!", WATER_COLOR.lightened(0.3), 46)
 	var burst: CueBurst = CueBurst.new()
@@ -125,6 +133,17 @@ func _bless(by_player_id: String) -> void:
 	add_child(burst)
 	burst.position = Vector3(0.0, BASIN_HEIGHT + 0.3, 0.0)
 	blessed.emit(StringName(by_player_id))
+
+
+## WorldStateDB hands over its line to the store, and the state on record applies at once.
+func bind_persistence(binding: WorldStateBinding) -> void:
+	persistence = binding
+	apply_persisted_state(binding.current_state())
+
+
+## Rests until the time on record (none on record: ready).
+func apply_persisted_state(state: Dictionary) -> void:
+	resting_left = maxf(0.0, float(state.get("rest_until", 0.0)) - persistence.db.world_time) if persistence != null else 0.0
 
 
 ## The storybook cel look, or a glowing material when `glow` is above zero.

@@ -79,6 +79,9 @@ var interactable: Interactable
 
 ## Where this actor wants to go this tick (world space, length 0..1).
 var move_intent: Vector3 = Vector3.ZERO
+## Seconds between this actor's AI thoughts (0: every physics tick). The world's
+## AI tick scaler slows far-off enemies (ChunkNavBuilder); the body still moves every tick.
+var ai_tick_interval: float = 0.0
 var wants_guard: bool = false
 ## Set by this player's camera; movement is relative to it.
 var camera_yaw: float = 0.0
@@ -106,6 +109,7 @@ var _pull_from: Vector3 = Vector3.ZERO
 var _pull_to: Vector3 = Vector3.ZERO
 var _pull_time: float = 0.0
 var _pull_duration: float = 0.0
+var _ai_clock: float = 0.0
 
 
 # --- Construction ---------------------------------------------------------
@@ -417,7 +421,13 @@ func _physics_process(delta: float) -> void:
 		# Hit-stop: this actor alone freezes for a few frames.
 		_hit_stop_left -= delta
 		return
-	_gather_intent(delta)
+	if ai_tick_interval <= 0.0:
+		_gather_intent(delta)
+	else:
+		_ai_clock += delta
+		if _ai_clock >= ai_tick_interval:
+			_gather_intent(_ai_clock)
+			_ai_clock = 0.0
 	if not is_inside_tree():
 		return # Something this tick's input did removed the actor (leaving the party).
 	stats.tick(delta, _can_regen_stamina())

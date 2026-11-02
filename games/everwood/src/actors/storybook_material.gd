@@ -6,6 +6,7 @@ extends RefCounted
 
 const SHADER: Shader = preload("res://src/actors/storybook_cel.gdshader")
 const DOUBLE_SIDED_SHADER: Shader = preload("res://src/actors/storybook_cel_double.gdshader")
+const VERTEX_COLOR_SHADER: Shader = preload("res://src/actors/storybook_cel_vertex.gdshader")
 ## Scenery gets a faint warm rim; heroes and foes a stronger one in their colour.
 const SCENERY_RIM: float = 0.18
 const ACTOR_RIM: float = 0.7
@@ -33,6 +34,13 @@ static func double_sided(material: Material) -> Material:
 	if standard != null:
 		standard.cull_mode = BaseMaterial3D.CULL_DISABLED
 		return standard
+	return material
+
+
+## The look tinted by each vertex's colour (Landblock terrain, HLOD proxies, clutter).
+static func vertex_colored() -> ShaderMaterial:
+	var material: ShaderMaterial = make(Color.WHITE)
+	material.shader = VERTEX_COLOR_SHADER
 	return material
 
 

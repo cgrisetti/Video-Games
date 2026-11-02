@@ -2,7 +2,8 @@
 // §4.2): two crisp bands of sunlight (lit, or a warm shade that is never muddy),
 // a Fresnel rim light round the silhouette, tinted per material (by role on a
 // hero, a soft warm light on scenery), and a glow for hit flashes and tells.
-// storybook_cel.gdshader and storybook_cel_double.gdshader include this.
+// storybook_cel.gdshader, storybook_cel_double.gdshader and storybook_cel_vertex.gdshader
+// (vertex-coloured: terrain, HLOD proxies, clutter) include this.
 
 uniform vec4 albedo : source_color = vec4(1.0);
 uniform vec4 rim_color : source_color = vec4(1.0, 0.94, 0.8, 1.0);
@@ -16,7 +17,11 @@ uniform float band_softness : hint_range(0.001, 0.5) = 0.04;
 uniform vec4 glow : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 
 void fragment() {
+#ifdef USE_VERTEX_COLOR
+	ALBEDO = albedo.rgb * COLOR.rgb;
+#else
 	ALBEDO = albedo.rgb;
+#endif
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
 	float facing = clamp(dot(NORMAL, VIEW), 0.0, 1.0);

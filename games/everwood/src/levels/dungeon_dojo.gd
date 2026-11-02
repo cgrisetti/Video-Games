@@ -11,6 +11,13 @@
 ## Reaching a zone moves everyone's respawn to its checkpoint. Seating,
 ## hot-join and the split-screen grid come from LevelBase.
 ##
+## Its camps, Water-Shrine, Wayfarer's Chest and gate are bound to a
+## WorldStateDB (filed under the seamless world's chunks), so someone joining
+## mid-expedition is sent all of it: cleared camps, an opened chest, a resting
+## shrine, an open gate. One navigation mesh, baked off the main thread when
+## it loads (and again once the gate's portcullis has sunk), lets companions
+## and minions find their way round the walls (ChunkNavBuilder).
+##
 ## Beating the Cairnsman plays 2 s of slow motion, puts a victory banner on every
 ## player's screen, raises the Grimoire a level and drops a reward chest.
 ## Opening the chest pays the party its Chimes and a collectible Scribe
@@ -47,6 +54,8 @@ const ZONE_THREE_Z: float = -17.0
 const ZONE_NAMES: Array[String] = ["", "The Ariundle Moss-Oaks", "The Doverslap Gorge Bridge", "The Ring of the Cairnsman"]
 ## Checkpoint pads sit this far apart across the path.
 const CHECKPOINT_SPACING: float = 1.5
+## The whole expedition, for its navigation bake.
+const NAV_AREA: AABB = AABB(Vector3(-40.0, -30.0, -80.0), Vector3(80.0, 70.0, 175.0))
 
 @onready var boss_spawn: Marker3D = $BossSpawn
 @onready var exit_portal: RaidPortal = $ExitPortal
@@ -59,6 +68,9 @@ var boss: BossDummy
 var chest: RewardChest
 var wayfarer_chest: RewardChest
 var victory: bool = false
+var world_state: WorldStateDB
+var navigation: NavigationRegion3D
+var _navigation_bake: ChunkNavBuilder.BakeJob
 ## The furthest zone the party has reached (1 to 3).
 var zone: int = 1
 
@@ -120,11 +132,30 @@ func _setup_level() -> void:
 	wayfarer_chest.title = "Wayfarer's Chest"
 	wayfarer_chest.drop_in = false
 	wayfarer_chest.chimes = WAYFARER_CHEST_CHIMES
-	wayfarer_chest.card_roller = _roll_wayfarer_card
+	wayfarer_chest.card_roller = roll_wayfarer_card
 	effects_root.add_child(wayfarer_chest)
 	wayfarer_chest.global_transform = ($WayfarerChestSpot as Marker3D).global_transform
 	wayfarer_chest.opened.connect(_on_wayfarer_chest_opened)
 	coop_gate.opened.connect(_on_gate_opened)
+	world_state = WorldStateDB.new()
+	add_child(world_state)
+	for stateful: Node in [camps[0], camps[1], water_shrine, coop_gate]:
+		world_state.bind(stateful, LandblockManifest.dojo_chunk(stateful.get(&"persist_id") as StringName))
+	world_state.bind(wayfarer_chest, LandblockManifest.dojo_chunk(LandblockManifest.WAYFARER_CHEST), LandblockManifest.WAYFARER_CHEST)
+	_bake_navigation()
+
+
+## One navigation mesh for the whole expedition, baked on a worker thread.
+func _bake_navigation() -> void:
+	ChunkNavBuilder.configure_map(get_world_3d().navigation_map)
+	if navigation != null:
+		navigation.queue_free()
+	navigation = NavigationRegion3D.new()
+	navigation.name = "Navigation"
+	add_child(navigation)
+	if _navigation_bake != null:
+		_navigation_bake.wait()
+	_navigation_bake = ChunkNavBuilder.bake_region(navigation, self, PackedVector3Array(), NAV_AREA, Callable())
 
 
 ## --zone and --boss-health, read once per run.
@@ -143,6 +174,9 @@ func _exit_tree() -> void:
 	super._exit_tree()
 	# Leaving mid-slow-motion must not leave the next instance slowed down.
 	Engine.time_scale = 1.0
+	if _navigation_bake != null:
+		_navigation_bake.wait()
+		_navigation_bake = null
 
 
 func _on_player_unregistered(player_id: StringName) -> void:
@@ -166,6 +200,8 @@ func _physics_process(_delta: float) -> void:
 		_boss_health_applied = true
 		boss.stats.health = boss.stats.stats.max_health * _start_boss_health
 	_steer_companions_to_plates()
+	if _navigation_bake != null and _navigation_bake.finish_if_done():
+		_navigation_bake = null
 
 
 # --- Zones and checkpoints ------------------------------------------------
@@ -214,6 +250,11 @@ func _jump_to_zone(target: int) -> void:
 
 ## Every peer sees the Chimes scatter; the host pays them into the pouch.
 func _on_camp_cleared(camp: MinionCamp) -> void:
+	celebrate_camp(camp, effects_root)
+
+
+## A cleared camp's payout and its Chimes bursting out to the party (the seamless world uses it too).
+static func celebrate_camp(camp: MinionCamp, effects: Node3D) -> void:
 	if NetworkManager.current.is_host():
 		PartyProgress.current.award_chimes(CAMP_CHIMES)
 	var coins: ChimeBurst = ChimeBurst.new()
@@ -221,7 +262,7 @@ func _on_camp_cleared(camp: MinionCamp) -> void:
 	for member: ActorBase in CombatDirector.current.alive_party():
 		catchers.append(member)
 	coins.configure(CAMP_CHIMES, catchers)
-	effects_root.add_child(coins)
+	effects.add_child(coins)
 	coins.global_position = camp.global_position + Vector3.UP * 0.8
 	AudioCues.play(&"camp_cleared")
 	CombatDirector.current.show_float_text(camp.global_position + Vector3.UP * 2.5, "%s cleared!  +%d Chimes" % [camp.camp_name, CAMP_CHIMES],
@@ -230,7 +271,7 @@ func _on_camp_cleared(camp: MinionCamp) -> void:
 
 ## Host: the alcove chest's card, an Uncommon one, rolled when it opens (with
 ## its own dice, so it never changes what the boss's chest drops).
-func _roll_wayfarer_card() -> StringName:
+static func roll_wayfarer_card() -> StringName:
 	return ArsenalCatalog.current.roll_card_of_rarity(PartyProgress.current.trail_rng, ScribeCardResource.CardRarity.UNCOMMON)
 
 
@@ -254,6 +295,13 @@ func _on_gate_opened(method: int) -> void:
 	for actor: ActorBase in actors.values():
 		if actor.companion != null:
 			actor.companion.has_assigned_post = false
+	# Once the portcullis has sunk, the way through is baked into the navigation.
+	get_tree().create_timer(CoopGate.PORTCULLIS_SINK_TIME + 0.3).timeout.connect(_rebake_after_gate)
+
+
+func _rebake_after_gate() -> void:
+	if is_inside_tree():
+		_bake_navigation()
 
 
 ## Host: while someone holds one Rune-Plate and the other needs a body, the
@@ -261,6 +309,10 @@ func _on_gate_opened(method: int) -> void:
 func _steer_companions_to_plates() -> void:
 	if not NetworkManager.current.is_host() or zone != 2:
 		return
+	steer_companions_to_plates(coop_gate, actors)
+
+
+static func steer_companions_to_plates(coop_gate: CoopGate, actors: Dictionary[StringName, ActorBase]) -> void:
 	var free: RunePlate = coop_gate.plate_needing_help()
 	var helper: ActorBase = null
 	if free != null:

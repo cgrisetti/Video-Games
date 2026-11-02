@@ -3,7 +3,8 @@
 ## Chest waiting in the Moss-Oaks' side alcove. The first person (not an AI
 ## companion) to walk up to it opens it: the lid swings up, brass Chimes burst
 ## out and fly to the party, and the level pays out the Chimes and the card.
-## Every peer shows the chest; the host decides when it opens.
+## Every peer shows the chest; the host decides when it opens. An opened chest
+## is remembered (WorldStateDB): it comes back open, with nothing more inside.
 class_name RewardChest
 extends Node3D
 
@@ -39,12 +40,15 @@ var drop_in: bool = true
 ## Host: rolls the card copy the moment the chest opens, if `card_key` is still empty.
 var card_roller: Callable
 var is_open: bool = false
+var persistence: WorldStateBinding
 
 var _age: float = 0.0
 var _model: Node3D
 var _lid: Node3D
 var _coin: MeshInstance3D
 var _label: Label3D
+var _drop: Tween
+var _pending_state: Dictionary = {}
 
 
 func _ready() -> void:
@@ -86,8 +90,10 @@ func _ready() -> void:
 	if drop_in:
 		# Drop in from above with a bounce.
 		_model.position = Vector3(0.0, DROP_HEIGHT, 0.0)
-		var drop: Tween = create_tween()
-		drop.tween_property(_model, "position:y", 0.0, DROP_TIME).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+		_drop = create_tween()
+		_drop.tween_property(_model, "position:y", 0.0, DROP_TIME).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	if not _pending_state.is_empty():
+		apply_persisted_state(_pending_state)
 
 
 func _physics_process(delta: float) -> void:
@@ -132,7 +138,34 @@ func _open(opener_id: String, amount: int, card: String) -> void:
 	add_child(coins)
 	coins.position = Vector3(0.0, BODY_SIZE.y, 0.0)
 	AudioCues.play(&"chest")
+	if persistence != null:
+		persistence.save({"opened": true, "opener": opener_id, "chimes": amount, "card": card})
 	opened.emit(StringName(opener_id), amount, card_key)
+
+
+## WorldStateDB hands over its line to the store, and the state on record applies at once.
+func bind_persistence(binding: WorldStateBinding) -> void:
+	persistence = binding
+	apply_persisted_state(binding.current_state())
+
+
+## A chest on record as opened shows open (lid up, its Chimes and card named)
+## without paying out, bursting or chiming again.
+func apply_persisted_state(state: Dictionary) -> void:
+	if not bool(state.get("opened", false)) or is_open:
+		return
+	if not is_node_ready():
+		_pending_state = state
+		return
+	is_open = true
+	chimes = int(state.get("chimes", chimes))
+	card_key = StringName(str(state.get("card", String(card_key))))
+	if _drop != null:
+		_drop.kill()
+	_model.position = Vector3.ZERO
+	_lid.rotation.x = LID_OPEN_ANGLE
+	_coin.visible = false
+	_label.text = "+%d Chimes\n%s" % [chimes, ArsenalCatalog.current.copy_name(card_key)] if card_key != &"" else "Opened"
 
 
 ## The storybook cel look, or a glowing material when `glow` is above zero.

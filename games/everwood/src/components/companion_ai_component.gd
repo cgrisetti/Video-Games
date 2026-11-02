@@ -19,7 +19,9 @@
 ## Woken minion camps are fought the same way (the guard and taunt gambits
 ## stay for the boss). Outside a fight the level can send a companion to a
 ## spot (a Rune-Plate on the Doverslap Gorge Bridge), and a companion left far
-## behind on the trail skips ahead to the party.
+## behind on the trail skips ahead to the party. Going anywhere further than a
+## few steps, it follows the navigation map round walls, banks and ledges
+## (NavSteering; per-chunk meshes in the seamless world, one for the Dojo).
 ## Companions belong to the host, so this runs only there.
 class_name CompanionAIComponent
 extends Node
@@ -102,6 +104,7 @@ var _primer_turn: int = 0
 var _stuck_time: float = 0.0
 var _sidestep_left: float = 0.0
 var _sidestep: Vector3 = Vector3.ZERO
+var _nav: NavSteering = NavSteering.new()
 
 
 func setup(owner_actor: ActorBase) -> void:
@@ -503,7 +506,7 @@ func _steer(delta: float) -> Vector3:
 	if to_post.length() <= ARRIVE_RADIUS or not actor.can_act():
 		_stuck_time = 0.0
 		return Vector3.ZERO
-	var wish: Vector3 = to_post.normalized() * clampf(to_post.length() / 1.5, 0.35, 1.0)
+	var wish: Vector3 = _nav.direction(actor, post, delta) * clampf(to_post.length() / 1.5, 0.35, 1.0)
 	var speed: float = Vector2(actor.velocity.x, actor.velocity.z).length()
 	_stuck_time = _stuck_time + delta if speed < 0.5 and actor.state_machine.is_in(&"locomotion") else 0.0
 	if _stuck_time > STUCK_TIME:

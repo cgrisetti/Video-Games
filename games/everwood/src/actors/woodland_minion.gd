@@ -42,6 +42,8 @@ var _attack_cooldown: float = 0.0
 var _fade_left: float = -1.0
 var _bar: Label3D
 var _legs: Array[Node3D] = []
+## Finds the way round banks and walls (the navigation map), straight in the open.
+var _nav: NavSteering = NavSteering.new()
 
 
 func body_radius() -> float:
@@ -165,14 +167,14 @@ func _gather_intent(delta: float) -> void:
 		return
 	var target: ActorBase = _pick_target() if camp.alert else null
 	if target == null:
-		_go_home()
+		_go_home(delta)
 		return
 	if action_queue.is_busy():
 		return
 	var to_target: Vector3 = target.global_position - global_position
 	to_target.y = 0.0
 	if to_target.length() > ATTACK_RANGE - 0.3:
-		move_intent = to_target.normalized()
+		move_intent = _nav.direction(self, target.global_position, delta)
 		return
 	turn_toward(to_target, loadout.stats.turn_speed * delta)
 	if _attack_cooldown <= 0.0 and facing_vector().dot(to_target.normalized()) >= FACING_DOT:
@@ -199,11 +201,11 @@ func _pick_target() -> ActorBase:
 
 
 ## Nobody to chase: walk back to its spot in camp, and mend there.
-func _go_home() -> void:
+func _go_home(delta: float) -> void:
 	var to_home: Vector3 = spawn_transform.origin - global_position
 	to_home.y = 0.0
 	if to_home.length() > HOME_RADIUS:
-		move_intent = to_home.normalized() * clampf(to_home.length(), 0.4, 1.0)
+		move_intent = _nav.direction(self, spawn_transform.origin, delta) * clampf(to_home.length(), 0.4, 1.0)
 		return
 	if stats.health < stats.stats.max_health:
 		stats.heal(stats.stats.max_health)
