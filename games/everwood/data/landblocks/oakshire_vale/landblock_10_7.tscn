@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/portal_apron.gd" id="1_4owku"]
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="2_7t0bv"]
+
+[node name="Landblock_10_7" type="Node3D" unique_id=1777672343]
+metadata/chunk = Vector2i(10, 7)
+metadata/buildings = true
+
+[node name="PortalApron_D1" type="Node3D" parent="." unique_id=131406252 groups=["landblock_entities"]]
+transform = Transform3D(0.37460658, 0, 0.92718387, 0, 1, 0, -0.92718387, 0, 0.37460658, 1372.413, 28, 1012.19867)
+script = ExtResource("1_4owku")
+code = "[D1]"
+title = "The Gloom-Vein Iron Mine"
+blurb = "Lvl 4–5 5-Player Story Dungeon"
+required_level = 4
+dungeon_id = &"d1_gloom_vein_mine"
+
+[node name="Spawner_GateWights_1" type="Node3D" parent="." unique_id=1341454123 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1383.5392, 58.442387, 1016.694)
+script = ExtResource("2_7t0bv")
+territory = "The East Quarry"
+variant_ids = Array[StringName]([&"risen_shield_sworn_husk", &"hollow_scribe_acolyte"])
+leash = 18.0
+patrol = PackedVector3Array()

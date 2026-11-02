@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="1_hw7eg"]
+
+[node name="Landblock_10_5" type="Node3D" unique_id=675983272]
+metadata/chunk = Vector2i(10, 5)
+
+[node name="Spawner_Toads_1290" type="Node3D" parent="." unique_id=1962879156 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1290, 0.9611519, 739.2944)
+script = ExtResource("1_hw7eg")
+territory = "The River Basin"
+variant_ids = Array[StringName]([&"river_snapper_toad", &"river_snapper_toad"])
+leash = 22.425486
+patrol = PackedVector3Array()

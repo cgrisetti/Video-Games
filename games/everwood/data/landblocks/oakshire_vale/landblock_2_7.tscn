@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="1_jxvj3"]
+
+[node name="Landblock_2_7" type="Node3D" unique_id=291312875]
+metadata/chunk = Vector2i(2, 7)
+
+[node name="Spawner_Wights_00" type="Node3D" parent="." unique_id=1996849045 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 359.80164, 14.24716, 1018.275)
+script = ExtResource("1_jxvj3")
+territory = "The Barrow Hills"
+variant_ids = Array[StringName]([&"risen_shield_sworn_husk"])
+leash = 19.95593
+patrol = PackedVector3Array()

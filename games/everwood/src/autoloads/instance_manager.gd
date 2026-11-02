@@ -20,6 +20,8 @@ const DUNGEON_DOJO: StringName = &"dungeon_dojo"
 ## The seamless Landblock world (10_WORLD_ARCHITECTURE.md): Bramblebridge and the
 ## expedition in one streamed world, the game's start.
 const EVERWOOD_WORLD: StringName = &"everwood_world"
+## Oakshire Vale (12_WORLD_OAKSHIRE_VALE_GDD.md): the 12 x 12 Landblock starting zone.
+const OAKSHIRE_VALE: StringName = &"oakshire_vale"
 const FADE_TIME: float = 0.35
 const FADE_LAYER: int = 100
 
@@ -47,6 +49,8 @@ static func scene_path(id: StringName) -> String:
 			return "res://src/levels/dungeon_dojo.tscn"
 		EVERWOOD_WORLD:
 			return "res://src/levels/everwood_world.tscn"
+		OAKSHIRE_VALE:
+			return "res://scenes/worlds/oakshire_vale.tscn"
 	return ""
 
 

@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/ambient_flock.gd" id="1_as3wl"]
+
+[node name="Landblock_4_3" type="Node3D" unique_id=1215057172]
+metadata/chunk = Vector2i(4, 3)
+
+[node name="Foxes1" type="Node3D" parent="." unique_id=639221118]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 566.2114, 13.061042, 435.92474)
+script = ExtResource("1_as3wl")
+kind = 1
+count = 2
+roam_radius = 14.0
+flock_seed = 42

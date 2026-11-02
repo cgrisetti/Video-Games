@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="1_vlm2w"]
+[ext_resource type="Script" path="res://src/actors/ambient_flock.gd" id="2_n0jbk"]
+
+[node name="Landblock_7_5" type="Node3D" unique_id=2058007612]
+metadata/chunk = Vector2i(7, 5)
+
+[node name="Spawner_Vermin_01" type="Node3D" parent="." unique_id=636150274 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 948.4818, 7.7619686, 668.6253)
+script = ExtResource("1_vlm2w")
+territory = "The Settled Meadow"
+variant_ids = Array[StringName]([&"thorn_tail_scuttler", &"thorn_tail_scuttler", &"cider_thief_bristleboar"])
+leash = 22.673986
+patrol = PackedVector3Array()
+
+[node name="Spawner_Vermin_02" type="Node3D" parent="." unique_id=1234742420 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 962.7957, 6.9739227, 754.38916)
+script = ExtResource("1_vlm2w")
+territory = "The Settled Meadow"
+variant_ids = Array[StringName]([&"cider_thief_bristleboar"])
+leash = 21.60433
+patrol = PackedVector3Array()
+
+[node name="SheepFlock0" type="Node3D" parent="." unique_id=845160253]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 984.4735, 8.306406, 719.79663)
+script = ExtResource("2_n0jbk")
+count = 5
+flock_seed = 11

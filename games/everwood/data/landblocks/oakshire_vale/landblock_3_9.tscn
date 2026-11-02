@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="1_8dccl"]
+
+[node name="Landblock_3_9" type="Node3D" unique_id=1895756180]
+metadata/chunk = Vector2i(3, 9)
+
+[node name="Spawner_Prowlers_05" type="Node3D" parent="." unique_id=152451744 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 493.03745, 19.666666, 1252.4789)
+script = ExtResource("1_8dccl")
+territory = "The Weald"
+variant_ids = Array[StringName]([&"grey_pelt_prowler"])
+leash = 23.881535
+patrol = PackedVector3Array()

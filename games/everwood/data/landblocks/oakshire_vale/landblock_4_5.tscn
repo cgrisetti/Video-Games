@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/ambient_flock.gd" id="1_0otc6"]
+
+[node name="Landblock_4_5" type="Node3D" unique_id=1215591329]
+metadata/chunk = Vector2i(4, 5)
+
+[node name="SheepFlock3" type="Node3D" parent="." unique_id=2032387335]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 620.9098, 7.209836, 698.51746)
+script = ExtResource("1_0otc6")
+count = 5
+flock_seed = 14

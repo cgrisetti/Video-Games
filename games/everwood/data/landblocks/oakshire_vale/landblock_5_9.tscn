@@ -1,0 +1,371 @@
+[gd_scene format=3]
+
+[ext_resource type="Shader" path="res://src/actors/storybook_cel.gdshader" id="1_2jpw1"]
+[ext_resource type="Script" path="res://src/actors/townsfolk_npc.gd" id="2_2qtrv"]
+[ext_resource type="Script" path="res://src/actors/raid_portal.gd" id="3_lbdns"]
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="4_b6p7l"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1r736"]
+albedo_color = Color(1, 0.62, 0.22, 1)
+emission_enabled = true
+emission = Color(1, 0.62, 0.22, 1)
+emission_energy_multiplier = 2.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_ep8fd"]
+material = SubResource("StandardMaterial3D_1r736")
+radius = 0.55
+height = 1.1
+radial_segments = 16
+rings = 8
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fu1nd"]
+render_priority = 0
+shader = ExtResource("1_2jpw1")
+shader_parameter/albedo = Color(0.36, 0.24, 0.14, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_11xfw"]
+material = SubResource("ShaderMaterial_fu1nd")
+top_radius = 0.12
+bottom_radius = 0.12
+height = 1.4
+radial_segments = 6
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_m7v1q"]
+render_priority = 0
+shader = ExtResource("1_2jpw1")
+shader_parameter/albedo = Color(0.36, 0.24, 0.14, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_mctl5"]
+material = SubResource("ShaderMaterial_m7v1q")
+top_radius = 0.12
+bottom_radius = 0.12
+height = 1.4
+radial_segments = 6
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_8mx0p"]
+render_priority = 0
+shader = ExtResource("1_2jpw1")
+shader_parameter/albedo = Color(0.36, 0.24, 0.14, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_32b1l"]
+material = SubResource("ShaderMaterial_8mx0p")
+top_radius = 0.12
+bottom_radius = 0.12
+height = 1.4
+radial_segments = 6
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xp7lc"]
+render_priority = 0
+shader = ExtResource("1_2jpw1")
+shader_parameter/albedo = Color(0.36, 0.24, 0.14, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_iafvm"]
+material = SubResource("ShaderMaterial_xp7lc")
+top_radius = 0.12
+bottom_radius = 0.12
+height = 1.4
+radial_segments = 6
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5yf8s"]
+size = Vector3(3, 2, 3.4)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_yfayk"]
+render_priority = 0
+shader = ExtResource("1_2jpw1")
+shader_parameter/albedo = Color(0.82, 0.74, 0.58, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="BoxMesh" id="BoxMesh_tqs8t"]
+material = SubResource("ShaderMaterial_yfayk")
+size = Vector3(3.2, 0.2, 3.6)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fxudi"]
+render_priority = 0
+shader = ExtResource("1_2jpw1")
+shader_parameter/albedo = Color(0.844, 0.734, 0.496, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="PrismMesh" id="PrismMesh_3ym1i"]
+material = SubResource("ShaderMaterial_fxudi")
+size = Vector3(3.2, 2.4, 3.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5mhk8"]
+size = Vector3(3, 2, 3.4)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_26xa1"]
+render_priority = 0
+shader = ExtResource("1_2jpw1")
+shader_parameter/albedo = Color(0.82, 0.74, 0.58, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="BoxMesh" id="BoxMesh_i7n2p"]
+material = SubResource("ShaderMaterial_26xa1")
+size = Vector3(3.2, 0.2, 3.6)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_msgu0"]
+render_priority = 0
+shader = ExtResource("1_2jpw1")
+shader_parameter/albedo = Color(0.844, 0.734, 0.496, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="PrismMesh" id="PrismMesh_shk06"]
+material = SubResource("ShaderMaterial_msgu0")
+size = Vector3(3.2, 2.4, 3.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_my7x8"]
+size = Vector3(3, 2, 3.4)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_o5crb"]
+render_priority = 0
+shader = ExtResource("1_2jpw1")
+shader_parameter/albedo = Color(0.82, 0.74, 0.58, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="BoxMesh" id="BoxMesh_612f2"]
+material = SubResource("ShaderMaterial_o5crb")
+size = Vector3(3.2, 0.2, 3.6)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5t7rb"]
+render_priority = 0
+shader = ExtResource("1_2jpw1")
+shader_parameter/albedo = Color(0.844, 0.734, 0.496, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="PrismMesh" id="PrismMesh_tnpa4"]
+material = SubResource("ShaderMaterial_5t7rb")
+size = Vector3(3.2, 2.4, 3.6)
+
+[node name="Landblock_5_9" type="Node3D" unique_id=1631177333]
+metadata/chunk = Vector2i(5, 9)
+metadata/buildings = true
+
+[node name="Campfire" type="Node3D" parent="." unique_id=1057829525]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 736.53314, 19.76923, 1217.9973)
+
+[node name="Flames" type="MeshInstance3D" parent="Campfire" unique_id=1371637271]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+cast_shadow = 0
+mesh = SubResource("SphereMesh_ep8fd")
+
+[node name="Log0" type="MeshInstance3D" parent="Campfire" unique_id=1916605238]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.12, 0)
+mesh = SubResource("CylinderMesh_11xfw")
+
+[node name="Log1" type="MeshInstance3D" parent="Campfire" unique_id=2042001427]
+transform = Transform3D(0.70710677, 0.70710677, -3.090862e-08, 0, -4.371139e-08, -1, -0.70710677, 0.70710677, -3.090862e-08, 0, 0.12, 0)
+mesh = SubResource("CylinderMesh_mctl5")
+
+[node name="Log2" type="MeshInstance3D" parent="Campfire" unique_id=66995350]
+transform = Transform3D(-4.371139e-08, 1, -4.371139e-08, 0, -4.371139e-08, -1, -1, -4.371139e-08, 1.9106855e-15, 0, 0.12, 0)
+mesh = SubResource("CylinderMesh_32b1l")
+
+[node name="Log3" type="MeshInstance3D" parent="Campfire" unique_id=1846608449]
+transform = Transform3D(-0.70710677, 0.70710677, -3.090862e-08, 0, -4.371139e-08, -1, -0.70710677, -0.70710677, 3.090862e-08, 0, 0.12, 0)
+mesh = SubResource("CylinderMesh_iafvm")
+
+[node name="Tent0" type="StaticBody3D" parent="." unique_id=1635608953]
+transform = Transform3D(0.82903767, 0, -0.5591927, 0, 1, 0, 0.5591927, 0, 0.82903767, 728.14526, 19.76923, 1230.4329)
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Tent0" unique_id=1636773474]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("BoxShape3D_5yf8s")
+
+[node name="Mesh" type="MeshInstance3D" parent="Tent0" unique_id=1208398681]
+mesh = SubResource("BoxMesh_tqs8t")
+
+[node name="Canvas" type="MeshInstance3D" parent="Tent0" unique_id=1376820259]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("PrismMesh_3ym1i")
+
+[node name="Tent1" type="StaticBody3D" parent="." unique_id=533487725]
+transform = Transform3D(-0.8987945, 0, -0.43837026, 0, 1, 0, 0.43837026, 0, -0.8987945, 729.9576, 19.76923, 1204.5154)
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Tent1" unique_id=1667257995]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("BoxShape3D_5mhk8")
+
+[node name="Mesh" type="MeshInstance3D" parent="Tent1" unique_id=1961300115]
+mesh = SubResource("BoxMesh_i7n2p")
+
+[node name="Canvas" type="MeshInstance3D" parent="Tent1" unique_id=290912788]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("PrismMesh_shk06")
+
+[node name="Tent2" type="StaticBody3D" parent="." unique_id=1381600876]
+transform = Transform3D(0.06975925, 0, 0.99756384, 0, 1, 0, -0.99756384, 0, 0.06975925, 751.4966, 19.76923, 1219.0437)
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Tent2" unique_id=781664960]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("BoxShape3D_my7x8")
+
+[node name="Mesh" type="MeshInstance3D" parent="Tent2" unique_id=860516071]
+mesh = SubResource("BoxMesh_612f2")
+
+[node name="Canvas" type="MeshInstance3D" parent="Tent2" unique_id=732149541]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("PrismMesh_tnpa4")
+
+[node name="QuestGiver_TamsinHale" type="Node3D" parent="." unique_id=1256880252 groups=["landblock_entities"]]
+transform = Transform3D(0.997564, 0, -0.06975678, 0, 1, 0, 0.06975678, 0, 0.997564, 736.84705, 19.76923, 1213.5083)
+script = ExtResource("2_2qtrv")
+role = 0
+npc_name = "Tamsin Hale"
+title = "Glade Warden"
+hub = "Wayfarer's Glade"
+quests = PackedStringArray("Lanterns on the High Road")
+route = PackedVector3Array()
+body_color = Color(0.42, 0.32, 0.56, 1)
+accent_color = Color(0.86, 0.7, 0.32, 1)
+npc_seed = 723
+
+[node name="QuestGiver_JossBrindle" type="Node3D" parent="." unique_id=286370344 groups=["landblock_entities"]]
+transform = Transform3D(0.71934164, 0, -0.6946565, 0, 1, 0, 0.6946565, 0, 0.71934164, 739.6591, 19.76923, 1214.7603)
+script = ExtResource("2_2qtrv")
+role = 0
+npc_name = "Joss Brindle"
+title = "Pedlar"
+hub = "Wayfarer's Glade"
+quests = PackedStringArray("Strays in the Meadow")
+route = PackedVector3Array()
+body_color = Color(0.42, 0.32, 0.56, 1)
+accent_color = Color(0.86, 0.7, 0.32, 1)
+npc_seed = 259
+
+[node name="QuestGiver_WrenAshby" type="Node3D" parent="." unique_id=1359266450 groups=["landblock_entities"]]
+transform = Transform3D(0.10451953, 0, -0.9945228, 0, 1, 0, 0.9945228, 0, 0.10451953, 741.0085, 19.76923, 1217.527)
+script = ExtResource("2_2qtrv")
+role = 0
+npc_name = "Wren Ashby"
+title = "Wayfarer Scout"
+hub = "Wayfarer's Glade"
+quests = PackedStringArray("First Steps on the Trail")
+route = PackedVector3Array()
+body_color = Color(0.42, 0.32, 0.56, 1)
+accent_color = Color(0.86, 0.7, 0.32, 1)
+npc_seed = 393
+
+[node name="Guard_Mildred" type="Node3D" parent="." unique_id=1610075406 groups=["landblock_entities"]]
+transform = Transform3D(0.06975449, 0, 0.9975642, 0, 1, 0, -0.9975642, 0, 0.06975449, 715.5843, 19.76923, 1216.5325)
+script = ExtResource("2_2qtrv")
+role = 2
+npc_name = "Mildred"
+title = "Bridge-Warden"
+quests = PackedStringArray()
+route = PackedVector3Array()
+body_color = Color(0.32, 0.46, 0.72, 1)
+accent_color = Color(0.86, 0.66, 0.3, 1)
+npc_seed = 40
+
+[node name="Guard_Norbert" type="Node3D" parent="." unique_id=410223908 groups=["landblock_entities"]]
+transform = Transform3D(-0.06975446, 0, -0.9975642, 0, 1, 0, 0.9975642, 0, -0.06975446, 757.482, 19.76923, 1219.4622)
+script = ExtResource("2_2qtrv")
+role = 2
+npc_name = "Norbert"
+title = "Bridge-Warden"
+quests = PackedStringArray()
+route = PackedVector3Array()
+body_color = Color(0.32, 0.46, 0.72, 1)
+accent_color = Color(0.86, 0.66, 0.3, 1)
+npc_seed = 79
+
+[node name="WayfarersArch" type="Node3D" parent="." unique_id=552946244 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 735.5566, 19.76923, 1231.9633)
+script = ExtResource("3_lbdns")
+goes_home = true
+title = "Wayfarer's Arch: home to Bramblebridge"
+portal_color = Color(0.95, 0.8, 0.4, 1)
+
+[node name="Spawner_Prowlers_03" type="Node3D" parent="." unique_id=1805049887 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 712.6495, 14, 1179.4131)
+script = ExtResource("4_b6p7l")
+territory = "The Weald"
+variant_ids = Array[StringName]([&"grey_pelt_prowler"])
+leash = 23.432377
+patrol = PackedVector3Array()

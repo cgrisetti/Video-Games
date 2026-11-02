@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/portal_apron.gd" id="1_siv1g"]
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="2_ymgos"]
+
+[node name="Landblock_9_1" type="Node3D" unique_id=587172980]
+metadata/chunk = Vector2i(9, 1)
+metadata/buildings = true
+
+[node name="PortalApron_R1" type="Node3D" parent="." unique_id=270733435 groups=["landblock_entities"]]
+transform = Transform3D(-0.76604444, 0, 0.64278764, 0, 1, 0, -0.64278764, 0, -0.76604444, 1229.0359, 28, 218.55878)
+script = ExtResource("1_siv1g")
+code = "[R1]"
+title = "The Tangled Root-Sanctum"
+blurb = "Lvl 6 Capstone 5-Player Family Raid"
+required_level = 6
+scribe_sign = 2
+dungeon_id = &"r1_root_sanctum"
+
+[node name="Spawner_GateWights_0" type="Node3D" parent="." unique_id=1416839457 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1236.7494, 58.407425, 209.36624)
+script = ExtResource("2_ymgos")
+territory = "The Bramble Weald"
+variant_ids = Array[StringName]([&"risen_shield_sworn_husk", &"hollow_scribe_acolyte"])
+leash = 18.0
+patrol = PackedVector3Array()

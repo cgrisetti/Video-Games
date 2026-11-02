@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="1_0j55m"]
+
+[node name="Landblock_7_6" type="Node3D" unique_id=699869758]
+metadata/chunk = Vector2i(7, 6)
+
+[node name="Spawner_Vermin_03" type="Node3D" parent="." unique_id=1230831566 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 971.7061, 1.3423015, 889.158)
+script = ExtResource("1_0j55m")
+territory = "The Settled Meadow"
+variant_ids = Array[StringName]([&"thorn_tail_scuttler", &"thorn_tail_scuttler"])
+leash = 19.068192
+patrol = PackedVector3Array()

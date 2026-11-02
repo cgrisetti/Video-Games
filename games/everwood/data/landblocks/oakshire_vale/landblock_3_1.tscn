@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/portal_apron.gd" id="1_gsbdv"]
+[ext_resource type="Shader" path="res://src/actors/storybook_cel.gdshader" id="2_wcle3"]
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="3_7q28f"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pfre8"]
+render_priority = 0
+shader = ExtResource("2_wcle3")
+shader_parameter/albedo = Color(0.42, 0.3, 0.18, 1)
+shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
+shader_parameter/rim_strength = 0.18
+shader_parameter/rim_power = null
+shader_parameter/glow = null
+shader_parameter/shade_color = null
+shader_parameter/band_edge = null
+shader_parameter/band_softness = null
+shader_parameter/metal = null
+shader_parameter/sheen_roughness = null
+
+[sub_resource type="BoxMesh" id="BoxMesh_yfgts"]
+material = SubResource("ShaderMaterial_pfre8")
+size = Vector3(2.4, 0.15, 2)
+
+[node name="Landblock_3_1" type="Node3D" unique_id=1978407847]
+metadata/chunk = Vector2i(3, 1)
+metadata/buildings = true
+
+[node name="PortalApron_D3" type="Node3D" parent="." unique_id=1394236757 groups=["landblock_entities"]]
+transform = Transform3D(-0.8480481, 0, -0.52991927, 0, 1, 0, 0.52991927, 0, -0.8480481, 401.37625, 28, 181.27936)
+script = ExtResource("1_gsbdv")
+code = "[D3]"
+title = "The Smuggler's Root-Cellar"
+blurb = "Lvl 3 Solo/Co-op Delve"
+required_level = 3
+scribe_sign = 3
+dungeon_id = &"d3_root_cellar"
+
+[node name="Trapdoor" type="MeshInstance3D" parent="." unique_id=1967801232]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 398.19675, 28.08, 176.19107)
+mesh = SubResource("BoxMesh_yfgts")
+
+[node name="Spawner_Smugglers" type="Node3D" parent="." unique_id=1580467456 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 395.0172, 58.35598, 171.10278)
+script = ExtResource("3_7q28f")
+territory = "The Orchard Reach"
+variant_ids = Array[StringName]([&"soot_paw_cutthroat", &"quarry_sling_shotter"])
+leash = 18.0
+patrol = PackedVector3Array()

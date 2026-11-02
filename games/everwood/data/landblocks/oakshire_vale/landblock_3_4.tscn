@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="1_7q6ef"]
+
+[node name="Landblock_3_4" type="Node3D" unique_id=96944280]
+metadata/chunk = Vector2i(3, 4)
+
+[node name="Spawner_Vermin_08" type="Node3D" parent="." unique_id=199556729 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 456.1045, 14.392516, 607.8021)
+script = ExtResource("1_7q6ef")
+territory = "The Settled Meadow"
+variant_ids = Array[StringName]([&"cider_thief_bristleboar", &"cider_thief_bristleboar"])
+leash = 21.924236
+patrol = PackedVector3Array()

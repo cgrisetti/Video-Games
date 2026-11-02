@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/townsfolk_npc.gd" id="1_vb4sw"]
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="2_w5xj4"]
+
+[node name="Landblock_9_8" type="Node3D" unique_id=1773964957]
+metadata/chunk = Vector2i(9, 8)
+
+[node name="Guard_Leofric" type="Node3D" parent="." unique_id=935619834 groups=["landblock_entities"]]
+transform = Transform3D(-0.9271836, 0, 0.37460715, 0, 1, 0, -0.37460715, 0, -0.9271836, 1179.0447, 19.76923, 1025.0743)
+script = ExtResource("1_vb4sw")
+role = 2
+npc_name = "Leofric"
+title = "Bridge-Warden"
+quests = PackedStringArray()
+route = PackedVector3Array()
+body_color = Color(0.32, 0.46, 0.72, 1)
+accent_color = Color(0.86, 0.66, 0.3, 1)
+npc_seed = 58
+
+[node name="Spawner_Outlaws_01" type="Node3D" parent="." unique_id=1022689909 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1177.6625, 19.666666, 1078.5154)
+script = ExtResource("2_w5xj4")
+territory = "The East Quarry"
+variant_ids = Array[StringName]([&"foreman_iron_gavel", &"soot_paw_cutthroat", &"quarry_sling_shotter"])
+leash = 18.278086
+patrol = PackedVector3Array()

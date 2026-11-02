@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="1_2xfqn"]
+[ext_resource type="Script" path="res://src/actors/ambient_flock.gd" id="2_d2xii"]
+
+[node name="Landblock_6_7" type="Node3D" unique_id=1387419601]
+metadata/chunk = Vector2i(6, 7)
+
+[node name="Spawner_Vermin_04" type="Node3D" parent="." unique_id=144724587 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 872.66693, 9.245812, 990.62537)
+script = ExtResource("1_2xfqn")
+territory = "The Settled Meadow"
+variant_ids = Array[StringName]([&"cider_thief_bristleboar", &"cider_thief_bristleboar"])
+leash = 20.630352
+patrol = PackedVector3Array()
+
+[node name="SheepFlock1" type="Node3D" parent="." unique_id=1086853800]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 886.53094, 7.5433726, 967.82056)
+script = ExtResource("2_d2xii")
+count = 5
+flock_seed = 12

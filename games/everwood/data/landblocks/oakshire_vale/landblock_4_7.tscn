@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="1_sy2cv"]
+
+[node name="Landblock_4_7" type="Node3D" unique_id=293742038]
+metadata/chunk = Vector2i(4, 7)
+
+[node name="Spawner_OldTuskCrag" type="Node3D" parent="." unique_id=1342011775 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 616.8244, 9.57547, 992.127)
+script = ExtResource("1_sy2cv")
+territory = "The Settled Meadow"
+variant_ids = Array[StringName]([&"old_tusk_crag"])
+leash = 25.0
+patrol = PackedVector3Array()
