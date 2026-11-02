@@ -18,6 +18,8 @@ const FLOOR_OFFSET: float = 0.03
 
 ## The InstanceManager id this portal leads to.
 @export var target_instance: StringName = &""
+## Leads home instead: whichever Bramblebridge the party came from (InstanceManager.home_instance).
+@export var goes_home: bool = false
 @export var title: String = "Raid Portal"
 @export var portal_color: Color = Color(0.45, 0.62, 1.0)
 
@@ -155,8 +157,8 @@ func _physics_process(delta: float) -> void:
 	_status_label.text = "Entering in %d…" % maxi(1, ceili(countdown_left))
 	if countdown_left <= 0.0:
 		countdown_left = -1.0
-		party_entered.emit(target_instance)
-		InstanceManager.current.change_instance(target_instance)
+		party_entered.emit(destination())
+		InstanceManager.current.change_instance(destination())
 
 
 func _update_recall(delta: float) -> void:
@@ -165,5 +167,10 @@ func _update_recall(delta: float) -> void:
 	_status_label.text = "Going home in %d…" % maxi(1, ceili(_recall_left))
 	if _recall_left <= 0.0:
 		_recall_left = -1.0
-		party_entered.emit(target_instance)
-		InstanceManager.current.change_instance(target_instance)
+		party_entered.emit(destination())
+		InstanceManager.current.change_instance(destination())
+
+
+## Where stepping through goes (an empty id: nowhere, the level handles party_entered itself).
+func destination() -> StringName:
+	return InstanceManager.current.home_instance if goes_home else target_instance

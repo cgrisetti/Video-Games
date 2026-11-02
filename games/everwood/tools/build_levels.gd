@@ -15,7 +15,16 @@
 ##   Zone 2, the Doverslap Gorge Bridge with its waterfall and paper-mill wheel,
 ##   and the Sinaya Gatehouse with its Co-Op Threshold; Zone 3, a causeway into
 ##   the Ring of the Cairnsman, six pillars round the boss.
-## Both share the same skeleton (Actors, Telegraphs, Effects, SpawnPoints and
+## - The seamless world (everwood_world.tscn, 10_WORLD_ARCHITECTURE.md): the
+##   same village and zones as Landblocks, one scene per chunk in
+##   data/landblocks/ (landblock_0_0 Bramblebridge with its Forest Gate open,
+##   landblock_0_-1 the Moss-Oaks and holloway with a gap in the clearing's
+##   south wall under the Moss-Oak Great Arch, landblock_0_-2 the gorge,
+##   landblock_0_-3 the Ring), each moved to its world origin
+##   (LandblockManifest), plus each one's HLOD proxy (hlod_*.res: its big shapes
+##   merged into one vertex-coloured mesh). The world scene itself is only the
+##   skeleton and the WorldGridManager, which streams the rest.
+## All share the same skeleton (Actors, Telegraphs, Effects, SpawnPoints and
 ## the split-screen Screens), which LevelBase expects.
 extends SceneTree
 
@@ -23,6 +32,13 @@ const HUB_PATH: String = "res://src/levels/hub_town.tscn"
 const DOJO_PATH: String = "res://src/levels/dungeon_dojo.tscn"
 const HUB_SCRIPT: String = "res://src/levels/hub_town.gd"
 const DOJO_SCRIPT: String = "res://src/levels/dungeon_dojo.gd"
+const WORLD_PATH: String = "res://src/levels/everwood_world.tscn"
+const WORLD_SCRIPT: String = "res://src/levels/everwood_world.gd"
+const GRID_MANAGER_SCRIPT: String = "res://src/world/world_grid_manager.gd"
+## The corridor's Landblocks, south to north.
+const CORRIDOR_CHUNKS: Array[Vector2i] = [Vector2i(0, 0), Vector2i(0, -1), Vector2i(0, -2), Vector2i(0, -3)]
+## HLOD proxies keep shapes at least this big (metres along their longest side).
+const HLOD_MIN_SIZE: float = 1.4
 const PORTAL_SCRIPT: String = "res://src/actors/raid_portal.gd"
 const SHRINE_SCRIPT: String = "res://src/actors/chime_shrine.gd"
 const WHEEL_SCRIPT: String = "res://src/actors/watermill_wheel.gd"
@@ -73,6 +89,12 @@ const OAK_SPOTS: Array[Vector3] = [Vector3(-15.0, 0.0, 84.0), Vector3(14.0, 0.0,
 	Vector3(-7.0, 0.0, 78.0), Vector3(9.0, 0.0, 79.0), Vector3(16.0, 0.0, 64.0)]
 const CAMP_ONE_POSITION: Vector3 = Vector3(8.0, 0.0, 64.0)
 const CAMP_ONE_KINDS: Array[int] = [0, 0, 0]
+## In the seamless world the trail from Bramblebridge comes in through a gap
+## this wide in the clearing's south wall, under the Moss-Oak Great Arch.
+const OAKS_SOUTH_GAP: float = 6.0
+const GREAT_ARCH_Z: float = 93.0
+const GREAT_ARCH_SPAN: float = 5.5
+const GREAT_ARCH_HEIGHT: float = 12.0
 ## The deer-run alcove beyond a gap in the west wall, behind dry-stone walls.
 const ALCOVE_MIN: Vector2 = Vector2(-32.0, 50.0)
 const ALCOVE_MAX: Vector2 = Vector2(-24.0, 56.0)
@@ -135,6 +157,8 @@ const HUB_DEPTH: float = 60.0
 const HUB_SPAWN_Z: float = 22.0
 ## In front of the forest gate, well past the square, so nobody wanders into it.
 const RAID_PORTAL_POSITION: Vector3 = Vector3(0.0, 0.0, -25.0)
+## In the seamless world the gate is the way on foot, so the portal steps aside.
+const WORLD_RAID_PORTAL_POSITION: Vector3 = Vector3(8.5, 0.0, -24.5)
 const RAID_PORTAL_COLOR: Color = Color(0.55, 0.5, 1.0)
 ## The forest gate: an opening in the north wall, framed in timber.
 const GATE_WIDTH: float = 6.0
@@ -202,12 +226,32 @@ const OAK_LEAF_COLOR: Color = Color(0.28, 0.46, 0.25)
 const MOSS_COLOR: Color = Color(0.36, 0.5, 0.26)
 
 
+var _results: PackedStringArray = PackedStringArray()
+var _baked: bool = false
+
+
 func _initialize() -> void:
-	var results: PackedStringArray = PackedStringArray()
-	results.append("%s -> %s" % [HUB_PATH, error_string(_save(_build_hub(), HUB_PATH))])
-	results.append("%s -> %s" % [DOJO_PATH, error_string(_save(_build_dojo(), DOJO_PATH))])
-	print("build_levels: " + ", ".join(results))
-	quit(0 if not ", ".join(results).contains("rror") else 1)
+	_results.append("%s -> %s" % [HUB_PATH, error_string(_save(_build_hub(), HUB_PATH))])
+	_results.append("%s -> %s" % [DOJO_PATH, error_string(_save(_build_dojo(), DOJO_PATH))])
+	_results.append("%s -> %s" % [WORLD_PATH, error_string(_save(_build_world(), WORLD_PATH))])
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(LandblockManifest.LANDBLOCK_FOLDER))
+	for chunk: Vector2i in CORRIDOR_CHUNKS:
+		var path: String = LandblockManifest.landblock_path(chunk)
+		_results.append("%s -> %s" % [path, error_string(_save(_build_landblock(chunk), path))])
+
+
+## The HLOD proxies are baked on the first frame, once the tree is running, so
+## each Landblock's scripts can build their looks first.
+func _process(_delta: float) -> bool:
+	if _baked:
+		return false
+	_baked = true
+	for chunk: Vector2i in CORRIDOR_CHUNKS:
+		var hlod_path: String = LandblockManifest.hlod_path(chunk)
+		_results.append("%s -> %s" % [hlod_path, error_string(_bake_hlod(_build_landblock(chunk), hlod_path))])
+	print("build_levels: " + ", ".join(_results))
+	quit(0 if not ", ".join(_results).contains("rror") else 1)
+	return false
 
 
 # --- Bramblebridge --------------------------------------------------------
@@ -218,6 +262,15 @@ func _build_hub() -> Node3D:
 	root.set_script(load(HUB_SCRIPT))
 	root.add_child(_environment(true))
 	root.add_child(_sun())
+	_build_town(root, false)
+	_add_level_skeleton(root, HUB_SPAWN_Z)
+	return root
+
+
+## The village, its portal, shrine and desk, under `root` in the hub's frame.
+## In the seamless world the Forest Gate is open (the way out on foot), the
+## portal stands aside, and the portal, shrine and desk are Landblock entities.
+func _build_town(root: Node3D, world_mode: bool) -> void:
 	var town: Node3D = _node3d("Town")
 	root.add_child(town)
 	var cobbles: ShaderMaterial = ShaderMaterial.new()
@@ -227,7 +280,7 @@ func _build_hub() -> Node3D:
 	cobbles.set_shader_parameter(&"major_color", Color(0.45, 0.42, 0.38))
 	town.add_child(_box_body("Floor", Vector3(HUB_WIDTH, FLOOR_THICKNESS, HUB_DEPTH), Vector3(0.0, -FLOOR_THICKNESS * 0.5, 0.0), cobbles))
 	_add_hub_walls(town)
-	_add_forest_gate(town)
+	_add_forest_gate(town, world_mode)
 	for index: int in HOUSE_SPOTS.size():
 		town.add_child(_house("House%d" % (index + 1), HOUSE_SPOTS[index], HOUSE_COLORS[index], index == BAKERY_HOUSE))
 	town.add_child(_fountain())
@@ -237,23 +290,23 @@ func _build_hub() -> Node3D:
 	_add_bridge(town)
 	_add_watermill(town)
 	_add_pigment_rack(town)
-	root.add_child(_portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Doverslap Expedition", RAID_PORTAL_COLOR, RAID_PORTAL_POSITION))
+	var portal: Node3D = _portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Doverslap Expedition", RAID_PORTAL_COLOR,
+		WORLD_RAID_PORTAL_POSITION if world_mode else RAID_PORTAL_POSITION)
+	root.add_child(_entity(portal) if world_mode else portal)
 	var shrine: Node3D = Node3D.new()
 	shrine.name = "ChimeShrine"
 	shrine.set_script(load(SHRINE_SCRIPT))
 	shrine.position = SHRINE_POSITION
 	# Its front (local -Z) turned to face west, toward the lane.
 	shrine.rotation = Vector3(0.0, PI * 0.5, 0.0)
-	root.add_child(shrine)
+	root.add_child(_entity(shrine) if world_mode else shrine)
 	var desk: Node3D = Node3D.new()
 	desk.name = "ScribeDesk"
 	desk.set_script(load(DESK_SCRIPT))
 	desk.position = DESK_POSITION
 	# Its front (local -Z) turned to face east, toward the lane.
 	desk.rotation = Vector3(0.0, -PI * 0.5, 0.0)
-	root.add_child(desk)
-	_add_level_skeleton(root, HUB_SPAWN_Z)
-	return root
+	root.add_child(_entity(desk) if world_mode else desk)
 
 
 ## The village wall, with the forest gate's opening in the north side.
@@ -271,8 +324,9 @@ func _add_hub_walls(parent: Node3D) -> void:
 
 
 ## The timber gate out to the Ariundle Moss-Oaks, behind the Raid Portal: you
-## see the oaks through it, but the way out is the portal.
-func _add_forest_gate(parent: Node3D) -> void:
+## see the oaks through it, but the way out is the portal. In the seamless
+## world it stands open and the trail runs on into the Moss-Oaks' Landblock.
+func _add_forest_gate(parent: Node3D, world_mode: bool) -> void:
 	var half_depth: float = HUB_DEPTH * 0.5
 	var gate: Node3D = _node3d("ForestGate")
 	gate.position = Vector3(0.0, 0.0, -half_depth)
@@ -293,19 +347,20 @@ func _add_forest_gate(parent: Node3D) -> void:
 	roof.mesh = roof_mesh
 	roof.position = Vector3(0.0, GATE_HEIGHT + 0.85, 0.0)
 	gate.add_child(roof)
-	# Nobody walks out through the gate: the portal is the way.
-	var blocker: StaticBody3D = StaticBody3D.new()
-	blocker.name = "GateBlocker"
-	blocker.collision_layer = ActorBase.LAYER_WORLD
-	blocker.collision_mask = 0
-	var shape: BoxShape3D = BoxShape3D.new()
-	shape.size = Vector3(GATE_WIDTH, GATE_HEIGHT, WALL_THICKNESS)
-	var collision: CollisionShape3D = CollisionShape3D.new()
-	collision.name = "Collision"
-	collision.shape = shape
-	collision.position = Vector3(0.0, GATE_HEIGHT * 0.5, 0.0)
-	blocker.add_child(collision)
-	gate.add_child(blocker)
+	if not world_mode:
+		# Nobody walks out through the gate: the portal is the way.
+		var blocker: StaticBody3D = StaticBody3D.new()
+		blocker.name = "GateBlocker"
+		blocker.collision_layer = ActorBase.LAYER_WORLD
+		blocker.collision_mask = 0
+		var shape: BoxShape3D = BoxShape3D.new()
+		shape.size = Vector3(GATE_WIDTH, GATE_HEIGHT, WALL_THICKNESS)
+		var collision: CollisionShape3D = CollisionShape3D.new()
+		collision.name = "Collision"
+		collision.shape = shape
+		collision.position = Vector3(0.0, GATE_HEIGHT * 0.5, 0.0)
+		blocker.add_child(collision)
+		gate.add_child(blocker)
 	var sign_label: Label3D = Label3D.new()
 	sign_label.name = "GateSign"
 	sign_label.text = "To the Ariundle Moss-Oaks"
@@ -316,6 +371,8 @@ func _add_forest_gate(parent: Node3D) -> void:
 	# On the roof's gable, well above the Raid Portal's title in front, so the two never overlap on screen.
 	sign_label.position = Vector3(0.0, GATE_HEIGHT + 0.6, 0.85)
 	gate.add_child(sign_label)
+	if world_mode:
+		return
 	# The edge of the forest beyond the wall.
 	var forest: Node3D = _node3d("ForestEdge")
 	parent.add_child(forest)
@@ -668,30 +725,17 @@ func _build_dojo() -> Node3D:
 	root.add_child(_sun())
 	var world: Node3D = _node3d("Expedition")
 	root.add_child(world)
-	_build_moss_oaks(world)
+	_build_moss_oaks(world, false)
 	_build_holloway(world)
 	_build_gorge(world)
 	_build_ring(world)
-	var boss_spawn: Marker3D = Marker3D.new()
-	boss_spawn.name = "BossSpawn"
-	boss_spawn.position = BOSS_POSITION
-	# Face south, toward the causeway the party comes in by.
-	boss_spawn.rotation = Vector3(0.0, PI, 0.0)
-	boss_spawn.add_child(_pad("Ring", 2.2, Color(0.35, 0.18, 0.2)))
-	root.add_child(boss_spawn)
-	root.add_child(_portal("ExitPortal", InstanceManager.HUB_TOWN, "Exit: Bramblebridge", EXIT_PORTAL_COLOR, EXIT_PORTAL_POSITION))
-	root.add_child(_scripted("CampOne", CAMP_SCRIPT, CAMP_ONE_POSITION, {&"camp_name": "Bramble Camp", &"kinds": CAMP_ONE_KINDS}))
-	root.add_child(_scripted("CampTwo", CAMP_SCRIPT, CAMP_TWO_POSITION, {&"camp_name": "Holloway Camp", &"kinds": CAMP_TWO_KINDS}))
-	root.add_child(_scripted("WaterShrine", SHRINE_WATER_SCRIPT, WATER_SHRINE_POSITION, {}))
-	var lanterns: Node3D = _node3d("WindLanterns")
-	root.add_child(lanterns)
-	for index: int in WIND_LANTERN_SPOTS.size():
-		lanterns.add_child(_scripted("WindLantern%d" % (index + 1), LANTERN_SCRIPT, WIND_LANTERN_SPOTS[index], {}))
-	var chest_spot: Marker3D = Marker3D.new()
-	chest_spot.name = "WayfarerChestSpot"
-	chest_spot.position = WAYFARER_CHEST_POSITION
-	root.add_child(chest_spot)
-	root.add_child(_scripted("CoopGate", GATE_SCRIPT, GATE_POSITION, {}))
+	root.add_child(_boss_spawn())
+	var exit: Node3D = _portal("ExitPortal", InstanceManager.HUB_TOWN, "Exit: Bramblebridge", EXIT_PORTAL_COLOR, EXIT_PORTAL_POSITION)
+	# Home is whichever Bramblebridge the party came from (the hub, or the seamless world).
+	exit.set(&"goes_home", true)
+	root.add_child(exit)
+	_add_zone_one_entities(root, false)
+	root.add_child(_scripted("CoopGate", GATE_SCRIPT, GATE_POSITION, {&"persist_id": LandblockManifest.SINAYA_GATE}))
 	var checkpoints: Node3D = _node3d("Checkpoints")
 	root.add_child(checkpoints)
 	for checkpoint: Array in [["Zone2", CHECKPOINT_TWO_Z], ["Zone3", CHECKPOINT_THREE_Z]]:
@@ -703,15 +747,52 @@ func _build_dojo() -> Node3D:
 	return root
 
 
+## The Cairnsman's spot, facing south toward the causeway the party comes in by.
+func _boss_spawn() -> Marker3D:
+	var boss_spawn: Marker3D = Marker3D.new()
+	boss_spawn.name = "BossSpawn"
+	boss_spawn.position = BOSS_POSITION
+	boss_spawn.rotation = Vector3(0.0, PI, 0.0)
+	boss_spawn.add_child(_pad("Ring", 2.2, Color(0.35, 0.18, 0.2)))
+	return boss_spawn
+
+
+## Zone 1's camps, Water-Shrine, Wind-Lanterns and the Wayfarer's Chest's spot,
+## each with its WorldStateDB id (Landblock entities in the seamless world).
+func _add_zone_one_entities(root: Node3D, world_mode: bool) -> void:
+	var stateful: Array[Node3D] = [
+		_scripted("CampOne", CAMP_SCRIPT, CAMP_ONE_POSITION, {&"camp_name": "Bramble Camp", &"kinds": CAMP_ONE_KINDS, &"persist_id": LandblockManifest.CAMP_BRAMBLE}),
+		_scripted("CampTwo", CAMP_SCRIPT, CAMP_TWO_POSITION, {&"camp_name": "Holloway Camp", &"kinds": CAMP_TWO_KINDS, &"persist_id": LandblockManifest.CAMP_HOLLOWAY}),
+		_scripted("WaterShrine", SHRINE_WATER_SCRIPT, WATER_SHRINE_POSITION, {&"persist_id": LandblockManifest.WATER_SHRINE}),
+	]
+	for node: Node3D in stateful:
+		root.add_child(_entity(node) if world_mode else node)
+	var lanterns: Node3D = _node3d("WindLanterns")
+	root.add_child(lanterns)
+	for index: int in WIND_LANTERN_SPOTS.size():
+		lanterns.add_child(_scripted("WindLantern%d" % (index + 1), LANTERN_SCRIPT, WIND_LANTERN_SPOTS[index], {}))
+	var chest_spot: Marker3D = Marker3D.new()
+	chest_spot.name = "WayfarerChestSpot"
+	chest_spot.position = WAYFARER_CHEST_POSITION
+	root.add_child(_entity(chest_spot) if world_mode else chest_spot)
+
+
 ## Zone 1: a walled clearing of moss-oaks, the first bramble camp, a winding
-## trail to the holloway, and the deer-run alcove through the west wall.
-func _build_moss_oaks(parent: Node3D) -> void:
+## trail to the holloway, and the deer-run alcove through the west wall. In the
+## seamless world its south wall has a gap for the trail from Bramblebridge,
+## under the Moss-Oak Great Arch.
+func _build_moss_oaks(parent: Node3D, world_mode: bool) -> void:
 	var oaks: Node3D = _node3d("MossOaks")
 	parent.add_child(oaks)
 	var moss: Material = _material(MOSS_COLOR)
 	oaks.add_child(_ground("Ground", OAKS_MIN, OAKS_MAX, 0.0, moss))
 	var stone: Material = _material(DRYSTONE_COLOR)
-	oaks.add_child(_wall("WallSouth", Vector2(OAKS_MIN.x, OAKS_MAX.y), Vector2(OAKS_MAX.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
+	if world_mode:
+		var gap: float = OAKS_SOUTH_GAP * 0.5
+		oaks.add_child(_wall("WallSouthWest", Vector2(OAKS_MIN.x, OAKS_MAX.y), Vector2(-gap, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
+		oaks.add_child(_wall("WallSouthEast", Vector2(gap, OAKS_MAX.y), Vector2(OAKS_MAX.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
+	else:
+		oaks.add_child(_wall("WallSouth", Vector2(OAKS_MIN.x, OAKS_MAX.y), Vector2(OAKS_MAX.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
 	oaks.add_child(_wall("WallEast", Vector2(OAKS_MAX.x, OAKS_MIN.y), Vector2(OAKS_MAX.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
 	oaks.add_child(_wall("WallWestSouth", Vector2(OAKS_MIN.x, ALCOVE_MAX.y), Vector2(OAKS_MIN.x, OAKS_MAX.y), DRYSTONE_HEIGHT, stone))
 	oaks.add_child(_wall("WallWestNorth", Vector2(OAKS_MIN.x, OAKS_MIN.y), Vector2(OAKS_MIN.x, ALCOVE_MIN.y), DRYSTONE_HEIGHT, stone))
@@ -726,6 +807,11 @@ func _build_moss_oaks(parent: Node3D) -> void:
 		oaks.add_child(strip)
 	for index: int in OAK_SPOTS.size():
 		oaks.add_child(_tree("Oak%d" % (index + 1), OAK_SPOTS[index], 7.5 + float(index % 4) * 0.8, true))
+	if world_mode:
+		var lead_in: MeshInstance3D = ShapeKit.box("TrailIn", Vector3(3.0, 0.02, OAKS_MAX.y - TRAIL_POINTS[0].z + 1.0),
+			Vector3(0.0, 0.01, (OAKS_MAX.y + TRAIL_POINTS[0].z) * 0.5), dirt)
+		oaks.add_child(lead_in)
+		_add_great_arch(oaks)
 	# The alcove: a short deer-run behind dry-stone walls, where the Wayfarer's Chest waits.
 	var alcove: Node3D = _node3d("Alcove")
 	parent.add_child(alcove)
@@ -734,6 +820,30 @@ func _build_moss_oaks(parent: Node3D) -> void:
 	alcove.add_child(_wall("WallSouth", Vector2(ALCOVE_MIN.x, ALCOVE_MAX.y), Vector2(ALCOVE_MAX.x, ALCOVE_MAX.y), DRYSTONE_HEIGHT, stone))
 	alcove.add_child(_wall("WallWest", Vector2(ALCOVE_MIN.x, ALCOVE_MIN.y), Vector2(ALCOVE_MIN.x, ALCOVE_MAX.y), DRYSTONE_HEIGHT, stone))
 	alcove.add_child(_tree("Oak", Vector3(ALCOVE_MIN.x - 3.0, 0.0, (ALCOVE_MIN.y + ALCOVE_MAX.y) * 0.5), 8.0, false))
+
+
+## The Moss-Oak Great Arch over the trail into the clearing: two old oaks
+## leaning together, their boughs meeting high overhead. Seen from
+## Bramblebridge's gate, and the Moss-Oaks' HLOD landmark.
+func _add_great_arch(parent: Node3D) -> void:
+	var arch: Node3D = _node3d("GreatArch")
+	parent.add_child(arch)
+	var bark: Material = _material(OAK_TRUNK_COLOR)
+	var leaves: Material = _material(OAK_LEAF_COLOR)
+	for side: float in [-1.0, 1.0]:
+		var foot: Vector3 = Vector3(side * GREAT_ARCH_SPAN, 0.0, GREAT_ARCH_Z)
+		var knee: Vector3 = Vector3(side * (GREAT_ARCH_SPAN - 0.8), GREAT_ARCH_HEIGHT * 0.55, GREAT_ARCH_Z + 0.4)
+		var crown: Vector3 = Vector3(side * 0.6, GREAT_ARCH_HEIGHT, GREAT_ARCH_Z)
+		arch.add_child(_beam("Trunk%s" % ("West" if side < 0.0 else "East"), foot, knee, 0.75, bark))
+		arch.add_child(_beam("Bough%s" % ("West" if side < 0.0 else "East"), knee, crown, 0.5, bark))
+		var body: StaticBody3D = _box_body("Root%s" % ("West" if side < 0.0 else "East"), Vector3(1.4, 3.0, 1.4), foot + Vector3(0.0, 1.5, 0.0), bark)
+		arch.add_child(body)
+	for index: int in 5:
+		var spread: float = (float(index) - 2.0) * 2.4
+		var heap: MeshInstance3D = ShapeKit.sphere("Canopy%d" % index, 2.6 - absf(spread) * 0.12, Vector3(spread, GREAT_ARCH_HEIGHT + 0.8 - absf(spread) * 0.3,
+			GREAT_ARCH_Z + (0.6 if index % 2 == 0 else -0.6)), leaves)
+		heap.scale = Vector3(1.3, 0.8, 1.1)
+		arch.add_child(heap)
 
 
 ## The Sunken Holloway: a ramp down into a lane between high earthen banks,
@@ -915,6 +1025,123 @@ func _build_ring(parent: Node3D) -> void:
 	ring.add_child(_mist("Spray", Vector3(0.0, 2.5, north + 1.0), Vector3(half, 1.5, 1.0)))
 
 
+# --- The seamless world ---------------------------------------------------
+
+## The world scene: just the skeleton (spawning on Bramblebridge's green, now
+## in Landblock (0, 0)) and the WorldGridManager that streams everything else.
+func _build_world() -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.name = "EverwoodWorld"
+	root.set_script(load(WORLD_SCRIPT))
+	root.add_child(_environment(true))
+	root.add_child(_sun())
+	var grid: Node3D = Node3D.new()
+	grid.name = "World"
+	grid.set_script(load(GRID_MANAGER_SCRIPT))
+	root.add_child(grid)
+	_add_level_skeleton(root, HUB_SPAWN_Z, LandblockManifest.BRAMBLEBRIDGE_ORIGIN)
+	return root
+
+
+## One corridor Landblock's gameplay layer: its zone's content from the classic
+## builders, moved to the zone's world origin.
+func _build_landblock(chunk: Vector2i) -> Node3D:
+	var zone: LandblockManifest.Zone = LandblockManifest.zone_of(chunk)
+	var root: Node3D = _node3d("Landblock_%s" % WorldGridConfig.chunk_key(chunk))
+	root.position = LandblockManifest.zone_origin(zone)
+	root.set_meta(&"chunk", chunk)
+	match zone:
+		LandblockManifest.Zone.BRAMBLEBRIDGE:
+			_build_town(root, true)
+		LandblockManifest.Zone.MOSS_OAKS:
+			_build_moss_oaks(root, true)
+			_build_holloway(root)
+			_add_zone_one_entities(root, true)
+		LandblockManifest.Zone.GORGE:
+			_build_gorge(root)
+			root.add_child(_entity(_scripted("CoopGate", GATE_SCRIPT, GATE_POSITION, {&"persist_id": LandblockManifest.SINAYA_GATE})))
+		LandblockManifest.Zone.RING:
+			_build_ring(root)
+			root.add_child(_entity(_boss_spawn()))
+	return root
+
+
+## Marks a node as a Landblock entity (bound to WorldStateDB and announced to the level when it streams in).
+func _entity(node: Node3D) -> Node3D:
+	node.add_to_group(WorldGridManager.ENTITY_GROUP, true)
+	return node
+
+
+## Bakes a Landblock's HLOD proxy: every shape at least HLOD_MIN_SIZE long
+## (walls, roofs, towers, trees, the wheel; scripted things built in their
+## _ready too) merged into one vertex-coloured mesh in world space. The
+## Landblock is put in the tree for a moment so its scripts build their looks.
+func _bake_hlod(landblock: Node3D, path: String) -> Error:
+	get_root().add_child(landblock)
+	var merge: LandblockTerrain.MeshMerge = LandblockTerrain.MeshMerge.new()
+	for node: Node in landblock.find_children("*", "MeshInstance3D", true, false):
+		var shape: MeshInstance3D = node as MeshInstance3D
+		if shape.mesh == null or not shape.is_visible_in_tree():
+			continue
+		var box: AABB = shape.global_transform * shape.mesh.get_aabb()
+		if box.get_longest_axis_size() < HLOD_MIN_SIZE:
+			continue
+		var arrays: Array = []
+		var primitive: PrimitiveMesh = _low_poly(shape.mesh as PrimitiveMesh)
+		if primitive != null:
+			arrays = primitive.get_mesh_arrays()
+		elif shape.mesh.get_surface_count() > 0:
+			arrays = shape.mesh.surface_get_arrays(0)
+		if arrays.is_empty():
+			continue
+		merge.add_arrays(arrays, shape.global_transform, _hlod_color(shape))
+	get_root().remove_child(landblock)
+	landblock.free()
+	return ResourceSaver.save(merge.commit(), path)
+
+
+## A far-off copy of a round shape: a few sides is plenty at HLOD distance.
+func _low_poly(primitive: PrimitiveMesh) -> PrimitiveMesh:
+	if primitive == null:
+		return null
+	var copy: PrimitiveMesh = primitive.duplicate() as PrimitiveMesh
+	var sphere: SphereMesh = copy as SphereMesh
+	if sphere != null:
+		sphere.radial_segments = 8
+		sphere.rings = 4
+	var cylinder: CylinderMesh = copy as CylinderMesh
+	if cylinder != null:
+		cylinder.radial_segments = 8
+		cylinder.rings = 0
+	var capsule: CapsuleMesh = copy as CapsuleMesh
+	if capsule != null:
+		capsule.radial_segments = 8
+		capsule.rings = 2
+	var torus: TorusMesh = copy as TorusMesh
+	if torus != null:
+		torus.rings = 8
+		torus.ring_segments = 6
+	return copy
+
+
+## A shape's colour for the HLOD: its storybook albedo, a plain material's colour, or stone.
+func _hlod_color(shape: MeshInstance3D) -> Color:
+	var material: Material = shape.material_override
+	if material == null:
+		var primitive: PrimitiveMesh = shape.mesh as PrimitiveMesh
+		material = primitive.material if primitive != null else shape.mesh.surface_get_material(0)
+	var cel: ShaderMaterial = material as ShaderMaterial
+	if cel != null:
+		for parameter: StringName in [&"albedo", &"base_color"]:
+			var value: Variant = cel.get_shader_parameter(parameter)
+			if value is Color:
+				return value
+	var standard: BaseMaterial3D = material as BaseMaterial3D
+	if standard != null:
+		return Color(standard.albedo_color, 1.0)
+	return STONE_COLOR
+
+
 # --- Expedition helpers ---------------------------------------------------
 
 ## A level's scripted node, its exported values set (camps, the shrine, lanterns, the gate).
@@ -1018,13 +1245,13 @@ func _mist(mist_name: String, where: Vector3, extents: Vector3) -> CPUParticles3
 # --- Shared pieces --------------------------------------------------------
 
 ## Spawn pads, the runtime folders and the split-screen layer every level has.
-func _add_level_skeleton(root: Node3D, spawn_z: float) -> void:
+func _add_level_skeleton(root: Node3D, spawn_z: float, offset: Vector3 = Vector3.ZERO) -> void:
 	var spawns: Node3D = _node3d("SpawnPoints")
 	root.add_child(spawns)
 	for index: int in 4:
 		var marker: Marker3D = Marker3D.new()
 		marker.name = "Spawn%d" % (index + 1)
-		marker.position = Vector3((float(index) - 1.5) * SPAWN_SPACING, 0.0, spawn_z)
+		marker.position = offset + Vector3((float(index) - 1.5) * SPAWN_SPACING, 0.0, spawn_z)
 		marker.add_child(_pad("Pad", 0.8, SPAWN_PAD_COLORS[index]))
 		spawns.add_child(marker)
 	root.add_child(_node3d("Actors"))

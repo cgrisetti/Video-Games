@@ -1,5 +1,7 @@
-## The Instance Manager (autoload): which instance (Hub Town or a raid) the
-## party is in, and moving everyone between them without dropping ENet.
+## The Instance Manager (autoload): which instance (the seamless world, Hub
+## Town or a raid) the party is in, and moving everyone between them without
+## dropping ENet. It remembers which Bramblebridge the party last stood in
+## (the world's or the classic hub's), so a raid's exit portal takes them home.
 ##
 ## The host decides. It tells every peer to load the new instance; each peer
 ## fades out, swaps its scene (the autoloads, and with them the ENet peer and
@@ -15,6 +17,9 @@ signal instance_live(instance_id: StringName)
 
 const HUB_TOWN: StringName = &"hub_town"
 const DUNGEON_DOJO: StringName = &"dungeon_dojo"
+## The seamless Landblock world (10_WORLD_ARCHITECTURE.md): Bramblebridge and the
+## expedition in one streamed world, the game's start.
+const EVERWOOD_WORLD: StringName = &"everwood_world"
 const FADE_TIME: float = 0.35
 const FADE_LAYER: int = 100
 
@@ -22,6 +27,8 @@ const FADE_LAYER: int = 100
 static var current: InstanceManager
 
 var instance_id: StringName = &""
+## Where "home" is: the last Bramblebridge loaded (hub_town or everwood_world).
+var home_instance: StringName = EVERWOOD_WORLD
 ## Peers known to have the current instance loaded (the host shares this list).
 var live_peers: PackedInt32Array = PackedInt32Array()
 
@@ -38,6 +45,8 @@ static func scene_path(id: StringName) -> String:
 			return "res://src/levels/hub_town.tscn"
 		DUNGEON_DOJO:
 			return "res://src/levels/dungeon_dojo.tscn"
+		EVERWOOD_WORLD:
+			return "res://src/levels/everwood_world.tscn"
 	return ""
 
 
@@ -134,6 +143,8 @@ func _begin_change(id: StringName) -> void:
 func level_ready(id: StringName) -> void:
 	instance_id = id
 	_changing = false
+	if id == HUB_TOWN or id == EVERWOOD_WORLD:
+		home_instance = id
 	var fade_in: Tween = create_tween()
 	fade_in.tween_property(_fade, "color:a", 0.0, FADE_TIME)
 	if NetworkManager.current.is_host():
