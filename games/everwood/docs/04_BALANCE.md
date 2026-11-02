@@ -1,4 +1,4 @@
-# 04_BALANCE.md — Balance (Phases 5 to 10)
+# 04_BALANCE.md — Balance (Phases 5 to 11)
 
 Phase 8 renamed things (06_WORLD_AND_CALLINGS.md): the Aspects are the Four Scribe Signs, the Dojo Warden is The Cairnsman of Doverslap, and card variants are finishes. The numbers didn't change. Phases 9 and 10 (07_EXPEDITION_HUD_AND_ART_GDD.md) renamed Dojo Shards to Chimes and added the Callings, the Doverslap Expedition and the Phase 2 Gale-Beam: see the sections from "The 3x3 Callings" down.
 
@@ -223,6 +223,34 @@ In a headless run, one player with two companions clears both camps and reaches 
 | AI tick | Enemies think every tick within 35 m of a player, 10 times a second to 90 m, rest beyond; always full rate in a fight | `chunk_nav_builder.gd` | Far camps cost nothing until someone comes near |
 | Recall | 5 s after the Cairnsman's chest opens, everyone is back on the green and the expedition resets (the village's state stays) | `everwood_world.gd` | One run, then home, as in the instanced expedition |
 
+## The Trail of the Four Signs (11 GDD §5)
+
+| Tier | Opens at | Damage and poise | Blade | Metal |
+|---|---|---|---|---|
+| 1 Apprentice Timber | Level 1 | 1.0x | hazel `#A67B5B`, hemp cord | 0 |
+| 2 Hedgerow Iron | Level 2 | 1.2x | dark iron `#5A626A`, brass rivets | 0.55 |
+| 3 Bramblebridge Steel | Level 5 | 1.45x | milled steel `#C4CED4`, brass bell-guard | 0.80 |
+| 4 Doverslap Relic | Level 10 | 1.75x | gilded bronze `#E5C158`, glowing Sign-stone | 0.90 |
+
+Each tier multiplies its classic weapon's numbers above (the classics are Tier 3 looks with 1.0x numbers, open from Level 5). The Bramble-Spun Jerkin, everyone's Level 1 armor, is medium: 15% mitigation, 24 stamina a second, 4.8 m rolls, 220 ms Perfect Guard.
+
+**XP:** a mob 35, the Gorge gate 80, a boss 200. Levels at 0, 70, 105, 230, 320, 560, 700, 800, 850 and 1050 XP: one expedition (525 XP) reaches Level 5 at the Gatehouse, the second reaches Level 10 at the Cairnsman.
+
+**Un-Inked Martial Flourishes** (R 1 pip, L+R 3 pips, no card): damage as a multiple of the weapon's Heavy and flat poise (times the tier):
+
+| Weapon | R | L+R |
+|---|---|---|
+| Falchion | Timber-Cross Slash: 1.6x, 15 poise, 1.8 m lunge | Bramble-Whirl Flurry: 2.8x, 30 poise, 3.2 m around you |
+| Broad-Axe | Coppice-Splitter Slam: 1.8x, 28 poise, 2.2 m ring | Heartwood Sundering: 3.15x, 56 poise, 3.5 m around you |
+| Way-Staff | Reed-Sweep Gust: 1.4x, 10 poise, 3 m arc, mends the most hurt ally in 8 m for 10 | Lantern-Keeper's Chime: 2.45x, 20 poise, 4 m, mends 25 |
+| Longbow | Vaulting Bough-Shot: 1.7x, 20 poise, piercing, steps back 1.5 m | Hail of the Hedgerow: 2.98x, 40 poise, a wide piercing shot |
+
+A Tier 1 Falchion's Timber-Cross Slash hits for 29, Gale Rush for 22: a flourish is a strong first R, and a card adds a Sign rather than raw damage.
+
+**The kinetic loop:** steps of 0.6 m (Light), 1.2 m (Heavy) and 2.8 m (Forward+Heavy) for melee swings without a lunge of their own; Back+Heavy hops back at least 2.4 m. The third Light in a row is winded for 550 ms; the Flow-Link window is the first 220 ms of a Light's recovery, and a pulse refunds 8 stamina and 0.15 pip. Hit-stop: 50 ms Light, 100 ms Heavy or flourish, 140 ms inked card, 180 ms detonation.
+
+**Braced Front Guard:** 3 frontal hits in 4 s; 5 s braced; front hits 30% damage and half poise (a Shield-Sworn's Iron-Root strike, or a +Tank's, 2x poise); a Flank Breach 1.35x and +20 poise; a 2.5 m shield-shove at 1.8 s, 8 damage and 3 m back.
+
 ## Open questions for playtest
 
 - Should taunt cost 1 pip, or should the tank's Perfect Guard pip already be enough?
@@ -233,4 +261,7 @@ In a headless run, one player with two companions clears both camps and reaches 
 - Does the Gale-Beam's 3.2 s give a child at tank, in Adventurer or Master mode, enough time to turn and raise Shadow Sanctuary? (Squire Gambit now does it for them.)
 - Is the Gale-Jet's push fun for younger players, or should it slow (not shove) them?
 - Do two minion camps feel like enough fighting before the boss, or should the holloway hold a third?
+- Do minions bracing after three frontal hits slow the trail down too much for a party of small children? `BRACED_GUARD_HIT_THRESHOLD` could rise for minions only.
+- Is Level 5 at the Gatehouse right, or should the Tier 3 weapon and the L+R card come before the second camp?
+- Is the winded third Light felt as "weave in a heavy" or just as lag? 550 ms may want to be 450.
 - In the seamless world, is the walk from the village to the Ring (about 350 m) a pleasant journey or a chore? The trails could be shorter, or a checkpoint could let the party skip back to the gorge.
