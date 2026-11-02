@@ -151,9 +151,9 @@ func unregister_actor(actor: ActorBase) -> void:
 	_clear_mark(actor.get_instance_id())
 
 
-## The trail's XP for a fallen foe (11 GDD §5.2): +35 a mob, +200 a boss. The host awards it.
+## The trail's XP for a fallen foe (ActorBase.trail_xp: +35 a mob, +200 a boss). The host awards it.
 func _on_enemy_down(enemy: ActorBase) -> void:
-	PartyProgress.current.award_xp(PartyProgress.XP_PER_BOSS if enemy.is_raid_boss() else PartyProgress.XP_PER_MOB)
+	PartyProgress.current.award_xp(enemy.trail_xp())
 
 
 func get_actor(player_id: StringName) -> ActorBase:

@@ -17,7 +17,7 @@ const ATTACK: float = 0.004
 const CUES: Array[StringName] = [&"hit", &"flow", &"perfect_guard", &"seal_iron_root", &"seal_rime_gale",
 	&"seal_warm_hearth", &"seal_star_tide", &"shot", &"equip", &"card_chime", &"card_chime_foil", &"card_chime_astral", &"reward", &"knockdown", &"telegraph", &"soak_ok", &"soak_fail", &"heal", &"join",
 	&"portal_charge", &"portal", &"victory", &"chest", &"purchase", &"refuse", &"menu_move", &"chime", &"lantern", &"shrine",
-	&"gale", &"bell", &"gate", &"camp_cleared", &"beam"]
+	&"gale", &"bell", &"gate", &"camp_cleared", &"beam", &"wade"]
 ## How fast each note fades: amplitude reaches e^-DECAY at the note's end.
 const DECAY: float = 3.5
 
@@ -188,6 +188,9 @@ func _notes_for(cue: StringName) -> Array[Note]:
 			return _arpeggio([523.0, 659.0, 784.0], 0.08, Wave.SQUARE, 0.2)
 		&"beam":
 			return [Note.new(0.0, 1.1, 0.0, 0.0, Wave.NOISE, 0.45), Note.new(0.0, 1.1, 110.0, 220.0, Wave.SAW, 0.3)]
+		&"wade":
+			# A wet footstep in the ford: a soft splash with a little gurgle under it.
+			return [Note.new(0.0, 0.16, 0.0, 0.0, Wave.NOISE, 0.32), Note.new(0.02, 0.12, 320.0, 160.0, Wave.SINE, 0.18)]
 	return [Note.new(0.0, 0.03, 0.0, 0.0, Wave.NOISE, 0.2)]
 
 

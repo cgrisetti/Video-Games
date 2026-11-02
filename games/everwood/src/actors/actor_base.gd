@@ -401,6 +401,11 @@ func is_raid_boss() -> bool:
 	return false
 
 
+## Enemies: the trail XP it pays when it falls (11 GDD §5.2): a mob 35, the raid boss 200.
+func trail_xp() -> int:
+	return PartyProgress.XP_PER_BOSS if is_raid_boss() else PartyProgress.XP_PER_MOB
+
+
 ## Enemies: in the fight right now (a woken camp, an engaged boss). Players always are.
 func is_engaged() -> bool:
 	return true
