@@ -50,6 +50,9 @@ var world_state: WorldStateDB
 var extra_focus: Array[Vector3] = []
 ## True when the Terrain3D GDExtension draws the ground (Mode A).
 var use_terrain3d: bool = false
+## Draw the ground with the built-in meshes even when Terrain3D is installed
+## (tests, comparisons; `--terrain=builtin` on the command line sets it too).
+static var force_builtin_terrain: bool = false
 ## The most main-thread time one frame's queue took (microseconds), and the last frame's.
 var peak_frame_usec: int = 0
 var last_frame_usec: int = 0
@@ -69,6 +72,8 @@ var _heartbeat_left: float = 0.0
 var _chunks_root: Node3D
 var _badge: WorldTelemetryBadge
 var _terrain3d: Node3D
+## Terrain3D regions changed and its textures need one refresh (queued once).
+var _terrain3d_dirty: bool = false
 
 
 ## One Landblock's runtime record.
@@ -114,6 +119,8 @@ class StreamJob:
 	var generation: int
 	var task_id: int = -1
 	var scene: PackedScene
+	## A terrain job builds a Terrain3D region instead of a mesh.
+	var terrain3d: bool = false
 	var result: Variant
 
 	func _init(job_kind: Kind, at: Vector2i, layer_generation: int) -> void:
@@ -124,7 +131,7 @@ class StreamJob:
 	func run() -> void:
 		match kind:
 			Kind.TERRAIN:
-				result = WorldGridManager.terrain_data_for(chunk)
+				result = WorldGridManager.terrain_data_for(chunk, terrain3d)
 			Kind.CLUTTER:
 				result = LandblockClutter.build_clutter_data(chunk)
 			Kind.INSTANCE:
@@ -138,11 +145,13 @@ func _ready() -> void:
 	for coord: Vector2i in WorldGridConfig.all_chunks():
 		_chunks[coord] = Chunk.new(coord)
 	ChunkNavBuilder.configure_map(get_world_3d().navigation_map)
-	if LandblockTerrain.terrain3d_available():
-		_terrain3d = LandblockTerrain.make_terrain3d(LandblockTerrain.STEP)
-		if _terrain3d != null:
-			add_child(_terrain3d)
-			use_terrain3d = true
+	if OS.get_cmdline_user_args().has("--terrain=builtin"):
+		force_builtin_terrain = true
+	if LandblockTerrain.terrain3d_available() and not force_builtin_terrain:
+		_terrain3d = LandblockTerrain.make_terrain3d(self)
+		add_child(_terrain3d)
+		LandblockTerrain.configure_terrain3d(_terrain3d)
+		use_terrain3d = true
 
 
 func _exit_tree() -> void:
@@ -169,8 +178,23 @@ func _process(delta: float) -> void:
 		_heartbeat_left = WorldGridConfig.STREAM_HEARTBEAT
 		update_streaming()
 		_scale_ai_ticks()
+		_follow_with_clipmap()
 	_poll_jobs()
 	_drain_queue()
+
+
+## Terrain3D's detailed LODs centre on Player 1 (one clipmap; other split-screen views see its coarser rings).
+func _follow_with_clipmap() -> void:
+	if _terrain3d == null:
+		return
+	LandblockTerrain.keep_terrain3d_untextured_view_off(_terrain3d)
+	var target: Node3D = self
+	for member: ActorBase in CombatDirector.current.party_actors():
+		if member.is_local_player() and not member.is_companion:
+			target = member
+			break
+	if _terrain3d.get(&"clipmap_target") != target:
+		_terrain3d.set(&"clipmap_target", target)
 
 
 # --- Deciding ---------------------------------------------------------------
@@ -234,7 +258,9 @@ func _advance(chunk: Chunk, distance: int) -> void:
 func _start_terrain(chunk: Chunk) -> void:
 	chunk.terrain_pending = true
 	var generation: int = chunk.terrain_generation
-	_run_job(StreamJob.new(StreamJob.Kind.TERRAIN, chunk.coord, generation))
+	var job: StreamJob = StreamJob.new(StreamJob.Kind.TERRAIN, chunk.coord, generation)
+	job.terrain3d = use_terrain3d
+	_run_job(job)
 	var on_hlod: Callable = func(resource: Resource) -> void:
 		if generation == chunk.terrain_generation:
 			chunk.hlod_mesh = resource as ArrayMesh
@@ -357,10 +383,11 @@ func _on_job_done(job: StreamJob) -> void:
 			_queue_landblock(chunk, landblock)
 
 
-## The terrain data a chunk needs: the mesh, plus the collider and navigation source for the corridor (pure; worker-safe).
-static func terrain_data_for(chunk: Vector2i) -> Dictionary:
+## The terrain data a chunk needs: the mesh (or with `terrain3d`, its Terrain3D
+## region), plus the collider and navigation source for the corridor (pure; worker-safe).
+static func terrain_data_for(chunk: Vector2i, terrain3d: bool = false) -> Dictionary:
 	var corridor: bool = LandblockManifest.is_corridor(chunk)
-	var data: Dictionary = LandblockTerrain.build_chunk_data(chunk, corridor)
+	var data: Dictionary = LandblockTerrain.build_chunk_data(chunk, corridor, terrain3d)
 	if corridor:
 		data["nav_faces"] = LandblockTerrain.build_nav_faces(chunk)
 	return data
@@ -389,13 +416,18 @@ func _chunk_root(chunk: Chunk) -> Node3D:
 	return chunk.root
 
 
-## Layer 1: the ground mesh (and, with `with_horizon`, the HLOD proxy, occluders and landmark in the same step).
+## Layer 1: the ground (the chunk's mesh, or its Terrain3D region), and with
+## `with_horizon` the HLOD proxy, occluders and landmark in the same step.
 func _attach_terrain(chunk: Chunk, data: Dictionary, generation: int, with_horizon: bool) -> void:
 	if generation != chunk.terrain_generation:
 		return
 	var holder: Node3D = Node3D.new()
 	holder.name = "Horizon"
-	if not use_terrain3d:
+	if use_terrain3d:
+		LandblockTerrain.bind_terrain3d_region(_terrain3d, data.get("terrain3d_region") as Resource)
+		data.erase("terrain3d_region")
+		_mark_terrain3d_dirty()
+	else:
 		holder.add_child(LandblockTerrain.make_terrain_node(chunk.coord, data))
 	_chunk_root(chunk).add_child(holder)
 	chunk.terrain = holder
@@ -440,7 +472,7 @@ func _attach_clutter(chunk: Chunk, data: Dictionary, generation: int) -> void:
 
 
 func _attach_ground(chunk: Chunk, generation: int) -> void:
-	if generation != chunk.gameplay_generation or not chunk.terrain_data.has("collision_heights") or use_terrain3d:
+	if generation != chunk.gameplay_generation or not chunk.terrain_data.has("collision_heights"):
 		return
 	chunk.ground = LandblockTerrain.make_collision_node(chunk.coord, chunk.terrain_data)
 	_chunk_root(chunk).add_child(chunk.ground)
@@ -606,7 +638,24 @@ func _unload_terrain(chunk: Chunk) -> void:
 	chunk.terrain = null
 	if terrain != null:
 		_instantiation_queue.append(func() -> void: terrain.queue_free())
+	if use_terrain3d:
+		var coord: Vector2i = chunk.coord
+		var unbind: Callable = func() -> void:
+			LandblockTerrain.unbind_terrain3d_region(_terrain3d, coord)
+			_mark_terrain3d_dirty()
+		_instantiation_queue.append(unbind)
 	_update_state(chunk)
+
+
+## Queues one Terrain3D texture refresh for however many regions change before it runs.
+func _mark_terrain3d_dirty() -> void:
+	if _terrain3d_dirty:
+		return
+	_terrain3d_dirty = true
+	var refresh: Callable = func() -> void:
+		_terrain3d_dirty = false
+		LandblockTerrain.refresh_terrain3d(_terrain3d)
+	_instantiation_queue.append(refresh)
 
 
 func _update_state(chunk: Chunk) -> void:
@@ -635,6 +684,9 @@ func prime(points: Array[Vector3]) -> void:
 	for coord: Vector2i in _chunks:
 		if WorldGridConfig.min_chebyshev_to_focuses(coord, focus) <= WorldGridConfig.LOAD_GAMEPLAY_RADIUS:
 			_load_now(_chunks[coord])
+	if _terrain3d_dirty:
+		_terrain3d_dirty = false
+		LandblockTerrain.refresh_terrain3d(_terrain3d)
 	_focus_chunks = focus
 	update_streaming()
 
@@ -643,7 +695,7 @@ func _load_now(chunk: Chunk) -> void:
 	if not chunk.has_terrain:
 		chunk.terrain_generation += 1
 		chunk.hlod_mesh = _load_cached(LandblockManifest.hlod_path(chunk.coord)) as ArrayMesh
-		_attach_terrain(chunk, terrain_data_for(chunk.coord), chunk.terrain_generation, true)
+		_attach_terrain(chunk, terrain_data_for(chunk.coord, use_terrain3d), chunk.terrain_generation, true)
 	if not chunk.has_clutter:
 		chunk.clutter_generation += 1
 		_attach_clutter(chunk, LandblockClutter.build_clutter_data(chunk.coord), chunk.clutter_generation)
@@ -775,7 +827,12 @@ func get_streaming_metrics() -> Dictionary:
 	return {"focus_chunk": focus_chunk, "active": active, "clutter": clutter, "terrain": terrain, "hlod": hlod,
 		"queue": _instantiation_queue.size(), "jobs": _jobs.size() + _resource_waiters.size(),
 		"deltas": world_state.delta_count() if world_state != null else 0, "peak_frame_usec": peak_frame_usec, "peak_step_usec": peak_step_usec,
-		"focus_count": _focus_chunks.size(), "states": states}
+		"focus_count": _focus_chunks.size(), "states": states, "terrain_mode": "Terrain3D" if use_terrain3d else "built-in"}
+
+
+## Terrain3D's node in Mode A (null with the built-in meshes).
+func terrain3d_node() -> Node3D:
+	return _terrain3d
 
 
 # --- Telemetry and AI --------------------------------------------------------------

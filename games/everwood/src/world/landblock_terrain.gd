@@ -12,7 +12,12 @@
 ## colliders) line the trails.
 ##
 ## Mode A: with the Terrain3D GDExtension installed in addons/terrain_3d/, the
-## same field is handed to one Terrain3D node instead (see make_terrain3d).
+## ground is drawn by one Terrain3D node instead, its clipmap LODs round Player
+## 1. Each landblock is one Terrain3D region (128 vertices at 1 m), built from
+## the same field (heights and the colour map) on a worker thread and added
+## or removed as the chunk's Layer 1 streams. It wears a storybook shader
+## (landblock_terrain3d.gdshader). The colliders stay this script's height maps
+## in both modes, so the world plays identically with or without the addon.
 ##
 ## It also gives each corridor chunk its HLOD proxy, one merged mesh baked from
 ## its landblock by tools/build_levels.gd (the village rooftops and mill, the
@@ -46,6 +51,17 @@ const TRAIL_WALL_HEIGHT: float = 1.8
 const TRAIL_WALL_PIECE: float = 8.0
 const TRAIL_WALL_OFFSET: float = 0.6
 const TERRAIN3D_CLASS: StringName = &"Terrain3D"
+const TERRAIN3D_REGION_CLASS: StringName = &"Terrain3DRegion"
+const TERRAIN3D_SHADER: Shader = preload("res://src/world/landblock_terrain3d.gdshader")
+## Terrain3D's numbers this uses: one region per landblock, no collision of its own, no colour compression.
+const TERRAIN3D_REGION_SIZE: int = 128
+const TERRAIN3D_COLLISION_DISABLED: int = 0
+const TERRAIN3D_COMPRESS_NONE: int = 5
+const TERRAIN3D_MAP_HEIGHT: int = 0
+const TERRAIN3D_MAP_COLOR: int = 2
+const TERRAIN3D_MAP_MAX: int = 3
+## Nothing is drawn outside the streamed regions (as in Mode B), rather than Terrain3D's flat background.
+const TERRAIN3D_BACKGROUND_NONE: int = 0
 
 const MOSS_COLOR: Color = Color(0.36, 0.5, 0.26)
 const MEADOW_COLOR: Color = Color(0.44, 0.56, 0.3)
@@ -118,8 +134,16 @@ static func _floor_edge(world_x: float, world_z: float) -> float:
 
 # --- Chunk data (pure, worker-thread safe) ----------------------------------
 
-## The chunk's mesh arrays (and the collider's height map when `with_collision`), all in world space.
-static func build_chunk_data(chunk: Vector2i, with_collision: bool) -> Dictionary:
+## The chunk's data, all in world space: the mesh arrays (unless Terrain3D
+## draws the ground), the collider's height map when `with_collision`, and with
+## `terrain3d` its Terrain3D region.
+static func build_chunk_data(chunk: Vector2i, with_collision: bool, terrain3d: bool = false) -> Dictionary:
+	if terrain3d:
+		var metre_heights: PackedFloat32Array = collision_heights(chunk, PackedFloat32Array())
+		var regional: Dictionary = {"terrain3d_region": make_terrain3d_region(chunk, metre_heights)}
+		if with_collision:
+			regional["collision_heights"] = metre_heights
+		return regional
 	var origin: Vector3 = WorldGridConfig.chunk_to_world_origin(chunk)
 	var side: int = QUADS + 1
 	# Heights with a one-sample apron, so edge normals match the neighbour's exactly.
@@ -158,16 +182,25 @@ static func build_chunk_data(chunk: Vector2i, with_collision: bool) -> Dictionar
 				cursor += 1
 	var data: Dictionary = {"vertices": vertices, "normals": normals, "colors": colors, "indices": indices}
 	if with_collision:
-		var collision: PackedFloat32Array = PackedFloat32Array()
-		collision.resize(COLLISION_SIDE * COLLISION_SIDE)
-		for row: int in COLLISION_SIDE:
-			for column: int in COLLISION_SIDE:
-				# Every other sample is already a mesh vertex.
-				var height: float = heights[(row / 2 + 1) * apron + column / 2 + 1] if row % 2 == 0 and column % 2 == 0 \
-					else sample_height(origin.x + column, origin.z + row)
-				collision[row * COLLISION_SIDE + column] = height
-		data["collision_heights"] = collision
+		data["collision_heights"] = collision_heights(chunk, heights)
 	return data
+
+
+## The field every metre over the chunk, 129 to a side (its last row and column
+## are the next chunk's first). `mesh_heights` (the 2 m grid with its apron) saves
+## re-sampling every other point when it's there.
+static func collision_heights(chunk: Vector2i, mesh_heights: PackedFloat32Array) -> PackedFloat32Array:
+	var origin: Vector3 = WorldGridConfig.chunk_to_world_origin(chunk)
+	var apron: int = QUADS + 3
+	var collision: PackedFloat32Array = PackedFloat32Array()
+	collision.resize(COLLISION_SIDE * COLLISION_SIDE)
+	for row: int in COLLISION_SIDE:
+		for column: int in COLLISION_SIDE:
+			@warning_ignore("integer_division")
+			var height: float = mesh_heights[(row / 2 + 1) * apron + column / 2 + 1] if not mesh_heights.is_empty() and row % 2 == 0 and column % 2 == 0 \
+				else sample_height(origin.x + column, origin.z + row)
+			collision[row * COLLISION_SIDE + column] = height
+	return collision
 
 
 ## Navigation source triangles for a corridor chunk: the floor and the crag
@@ -351,32 +384,96 @@ static func terrain3d_available() -> bool:
 	return ClassDB.class_exists(TERRAIN3D_CLASS)
 
 
-## Mode A: one Terrain3D node fed with our height field over Region (0, 0), so
-## the world looks and plays the same with the GDExtension installed. It's
-## driven by name (the class only exists with the addon), and returns null if
-## the addon's API doesn't answer as expected. Untested without the addon.
-static func make_terrain3d(spacing: float) -> Node3D:
+## Mode A: an empty Terrain3D node, ready for landblock regions (call
+## configure_terrain3d once it's in the tree). Its clipmap follows `target`
+## until a player is set; it makes no collision of its own. Driven by name: the
+## class only exists with the addon.
+static func make_terrain3d(target: Node3D) -> Node3D:
 	if not terrain3d_available():
 		return null
 	var terrain: Node3D = ClassDB.instantiate(TERRAIN3D_CLASS) as Node3D
-	if terrain == null:
-		return null
 	terrain.name = "Terrain3D"
-	if &"vertex_spacing" in terrain:
-		terrain.set(&"vertex_spacing", spacing)
-	var low: Vector3 = WorldGridConfig.chunk_to_world_origin(WorldGridConfig.BOUNDS_MIN)
-	var size: int = int((WorldGridConfig.BOUNDS_MAX.x - WorldGridConfig.BOUNDS_MIN.x + 1) * WorldGridConfig.CHUNK_SIZE / spacing)
-	var depth: int = int((WorldGridConfig.BOUNDS_MAX.y - WorldGridConfig.BOUNDS_MIN.y + 1) * WorldGridConfig.CHUNK_SIZE / spacing)
-	var height_map: Image = Image.create_empty(size, depth, false, Image.FORMAT_RF)
-	for row: int in depth:
-		for column: int in size:
-			height_map.set_pixel(column, row, Color(sample_height(low.x + column * spacing, low.z + row * spacing), 0.0, 0.0))
-	var data: Object = terrain.get(&"data") as Object if &"data" in terrain else null
-	if data == null or not data.has_method(&"import_images"):
-		terrain.free()
-		return null
-	data.call(&"import_images", [height_map, null, null], low, 0.0, 1.0)
+	terrain.set(&"clipmap_target", target)
+	terrain.set(&"free_editor_textures", false)
 	return terrain
+
+
+## Settings that only take once the node is in the tree (Terrain3D resets them
+## as it starts): one region per landblock at 1 m, no collision of its own, no
+## colour compression, and the storybook shader.
+static func configure_terrain3d(terrain: Node3D) -> void:
+	terrain.set(&"collision_mode", TERRAIN3D_COLLISION_DISABLED)
+	terrain.set(&"color_compress_mode", TERRAIN3D_COMPRESS_NONE)
+	terrain.set(&"vertex_spacing", float(WorldGridConfig.CHUNK_SIZE) / TERRAIN3D_REGION_SIZE)
+	terrain.set(&"region_size", TERRAIN3D_REGION_SIZE)
+	# The node's debug views pass down to its material, and its checkerboard is on by default.
+	terrain.set(&"show_checkered", false)
+	var look: Resource = terrain.get(&"material") as Resource
+	if look != null:
+		look.set(&"world_background", TERRAIN3D_BACKGROUND_NONE)
+		look.set(&"show_checkered", false)
+		look.set(&"shader_override", TERRAIN3D_SHADER)
+		look.set(&"shader_override_enabled", true)
+
+
+## Terrain3D turns its checkerboard back on while it has no textures of its
+## own; the storybook shader draws the colour map instead, so keep it off.
+static func keep_terrain3d_untextured_view_off(terrain: Node3D) -> void:
+	if bool(terrain.get(&"show_checkered")):
+		terrain.set(&"show_checkered", false)
+	var look: Resource = terrain.get(&"material") as Resource
+	if look != null and bool(look.get(&"show_checkered")):
+		look.set(&"show_checkered", false)
+
+
+## A landblock's Terrain3D region from its metre heights (129 to a side): the
+## height map and the colour map (pure; worker-thread safe).
+static func make_terrain3d_region(chunk: Vector2i, metre_heights: PackedFloat32Array) -> Resource:
+	if not ClassDB.class_exists(TERRAIN3D_REGION_CLASS):
+		return null
+	var origin: Vector3 = WorldGridConfig.chunk_to_world_origin(chunk)
+	var height_map: Image = Image.create_empty(TERRAIN3D_REGION_SIZE, TERRAIN3D_REGION_SIZE, false, Image.FORMAT_RF)
+	var color_map: Image = Image.create_empty(TERRAIN3D_REGION_SIZE, TERRAIN3D_REGION_SIZE, false, Image.FORMAT_RGBA8)
+	for row: int in TERRAIN3D_REGION_SIZE:
+		for column: int in TERRAIN3D_REGION_SIZE:
+			var height: float = metre_heights[row * COLLISION_SIDE + column]
+			height_map.set_pixel(column, row, Color(height, 0.0, 0.0))
+			color_map.set_pixel(column, row, _surface_color(origin.x + column, origin.z + row, height))
+	var region: Resource = ClassDB.instantiate(TERRAIN3D_REGION_CLASS) as Resource
+	region.set(&"region_size", TERRAIN3D_REGION_SIZE)
+	region.set(&"vertex_spacing", float(WorldGridConfig.CHUNK_SIZE) / TERRAIN3D_REGION_SIZE)
+	region.set(&"location", chunk)
+	region.call(&"set_map", TERRAIN3D_MAP_HEIGHT, height_map)
+	region.call(&"set_map", TERRAIN3D_MAP_COLOR, color_map)
+	region.call(&"calc_height_range")
+	return region
+
+
+## Main thread: the landblock's region joins the terrain. It shows after the
+## next refresh_terrain3d (Terrain3D rebuilds every region's textures at once,
+## so the grid batches region changes into one refresh).
+static func bind_terrain3d_region(terrain: Node3D, region: Resource) -> void:
+	var data: Object = terrain.get(&"data") as Object
+	if data != null and region != null:
+		data.call(&"add_region", region, false)
+
+
+static func unbind_terrain3d_region(terrain: Node3D, chunk: Vector2i) -> void:
+	var data: Object = terrain.get(&"data") as Object
+	if data != null and bool(data.call(&"has_region", chunk)):
+		data.call(&"remove_regionl", chunk, false)
+
+
+## Uploads every region's maps after regions were added or removed (about 12 ms with a dozen regions).
+static func refresh_terrain3d(terrain: Node3D) -> void:
+	var data: Object = terrain.get(&"data") as Object
+	if data != null:
+		data.call(&"update_maps", TERRAIN3D_MAP_MAX, true, false)
+
+
+static func has_terrain3d_region(terrain: Node3D, chunk: Vector2i) -> bool:
+	var data: Object = terrain.get(&"data") as Object
+	return data != null and bool(data.call(&"has_region", chunk))
 
 
 # --- A merged mesh for HLOD and landmarks -------------------------------------

@@ -12,6 +12,9 @@
 ##      and a latecomer's snapshot carries all of it
 ##   5  a navigation path from Bramblebridge's square across the seam at
 ##      z = 0 into the Moss-Oaks, through the Forest Gate
+## With Terrain3D installed the world draws its ground with it (Mode A): the
+## checks also follow its regions in and out, then reload the world on the
+## built-in meshes (Mode B) to see that still works.
 extends RefCounted
 
 const TOWN_SQUARE: Vector3 = Vector3(64.0, 0.0, 20.0)
@@ -47,6 +50,7 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	await _check_navigation_across_seam()
 	await _check_layers_up_the_corridor()
 	await _check_world_state_persistence()
+	await _check_builtin_terrain()
 
 
 # --- 1: the maths --------------------------------------------------------------
@@ -80,6 +84,16 @@ func _check_world_start() -> void:
 	check.call(town != null and town.find_child("ForestGate", true, false) != null and town.find_child("GateBlocker", true, false) == null
 		and world.raid_portal != null and world.raid_portal.target_instance == InstanceManager.DUNGEON_DOJO and world.chime_shrine != null and world.scribe_desk != null,
 		"the Forest Gate stands open, and the Raid Portal (to the instanced expedition), Chime-Shrine and Scribe Desk are all there")
+	if LandblockTerrain.terrain3d_available():
+		var terrain: Node3D = grid.terrain3d_node()
+		var mismatched: Array[Vector2i] = []
+		for chunk: Vector2i in WorldGridConfig.all_chunks():
+			if terrain == null or LandblockTerrain.has_terrain3d_region(terrain, chunk) != (grid.get_chunk_state(chunk) != WorldGridManager.ChunkState.UNLOADED):
+				mismatched.append(chunk)
+		check.call(grid.use_terrain3d and terrain != null and mismatched.is_empty() and int(terrain.get(&"region_size")) == LandblockTerrain.TERRAIN3D_REGION_SIZE
+			and int(terrain.get(&"collision_mode")) == LandblockTerrain.TERRAIN3D_COLLISION_DISABLED,
+			"Terrain3D draws the ground (Mode A): one 128 m region for each streamed chunk, its own collision off%s" % (
+				"" if mismatched.is_empty() else " (regions out of step: %s, region size %s, collision %s)" % [mismatched, terrain.get(&"region_size"), terrain.get(&"collision_mode")]))
 	var first: ActorBase = _people()[0]
 	check.call(WorldGridConfig.world_to_chunk(first.global_position) == Vector2i(0, 0) and first.is_on_floor(), "the party stands on the village green in Chunk (0, 0)")
 	grid.set_telemetry_visible(true)
@@ -203,6 +217,9 @@ func _check_world_state_persistence() -> void:
 	await _settle([])
 	check.call(grid.gameplay_root(oaks) == null and grid.gameplay_root(Vector2i(0, -2)) == null and world.camps.is_empty() and world.coop_gate == null
 		and world.wayfarer_chest == null, "with the party parked in Chunk (0, 2), the Moss-Oaks' and the gorge's gameplay is gone")
+	if grid.use_terrain3d:
+		check.call(not LandblockTerrain.has_terrain3d_region(grid.terrain3d_node(), Vector2i(0, -3)) and LandblockTerrain.has_terrain3d_region(grid.terrain3d_node(), Vector2i(0, 1)),
+			"the Ring's Terrain3D region left with its chunk; the meadow's, near the party, is there")
 	# Back again: a teleport primes the chunks first, as a recall does.
 	grid.prime([MOSS_OAKS, GORGE])
 	for actor: ActorBase in world.actors.values():
@@ -231,6 +248,25 @@ func _check_world_state_persistence() -> void:
 	latecomer.clear_expedition_transient_state()
 	check.call(latecomer.delta_count() == 1 and latecomer.has_entity_state(Vector2i(0, 0), &"town_banner"), "a fresh run forgets the expedition but keeps the village's state")
 	latecomer.free()
+
+
+# --- Mode B -------------------------------------------------------------------
+
+## The world on its built-in meshes, as on a machine without Terrain3D.
+func _check_builtin_terrain() -> void:
+	WorldGridManager.force_builtin_terrain = true
+	InstanceManager.current.change_instance(InstanceManager.EVERWOOD_WORLD)
+	for frame: int in 600:
+		await tree.process_frame
+		if tree.current_scene is EverwoodWorld and tree.current_scene != world and InstanceManager.current.is_live():
+			break
+	world = tree.current_scene as EverwoodWorld
+	grid = world.grid_manager
+	await _settle([Vector2i(0, 0)])
+	var village: Node3D = grid.chunk_node(Vector2i(0, 0))
+	check.call(not grid.use_terrain3d and grid.terrain3d_node() == null and village != null and village.find_child("Terrain_0_0", true, false) is MeshInstance3D
+		and _people()[0].is_on_floor(), "without Terrain3D (or with --terrain=builtin) each chunk draws its own ground mesh, and the party still stands on the green")
+	WorldGridManager.force_builtin_terrain = false
 
 
 # --- Helpers ----------------------------------------------------------------
