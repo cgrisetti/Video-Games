@@ -2,6 +2,11 @@
 ## tools/smoke_test.gd once the classic tests are done: it moves the seated
 ## party into the Landblock world and walks it up the corridor.
 ##   1  the grid's coordinate maths and the split-screen union
+##   0  the start: the party wakes round the Kindled Bivouac's campfire in
+##      Chunk (0, 1) facing the lane, the fire warms everyone to full, and one
+##      player walks the walled lane through Oakshire Commons, in at
+##      Bramblebridge's south gate and over the canal bridge, which makes the
+##      square the party's checkpoint
 ##   2  the four layers and their hysteresis as the party goes from Chunk
 ##      (0, 0) to (0, -3), and the HLOD proxies swapping out and back in
 ##   3  the 2 ms attach queue spreading work over frames and draining, and no
@@ -18,6 +23,11 @@
 extends RefCounted
 
 const TOWN_SQUARE: Vector3 = Vector3(64.0, 0.0, 20.0)
+## The walk from the campfire to the square: along the lane, through the south gate, over the bridge (world x, z).
+const LANE_WALK: Array[Vector2] = [Vector2(40.0, 178.0), Vector2(48.0, 178.0), Vector2(56.5, 174.5), Vector2(62.0, 167.0), Vector2(64.0, 156.0),
+	Vector2(64.0, 62.0), Vector2(64.0, 40.0), Vector2(64.0, 20.0)]
+## Simulated seconds the walk may take (about 200 m at a run).
+const WALK_FRAMES: int = 3600
 const MOSS_OAKS: Vector3 = Vector3(64.0, 0.0, -30.0)
 const GORGE: Vector3 = Vector3(64.0, 3.0, -140.0)
 const RING: Vector3 = Vector3(64.0, 6.0, -280.0)
@@ -45,6 +55,11 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	if world == null:
 		return
 	grid = world.grid_manager
+	await _settle([Vector2i(0, 1), Vector2i(0, 0)])
+	_check_bivouac_start()
+	await _check_campfire_warmth()
+	await _check_lane_walk()
+	_move_party(TOWN_SQUARE)
 	await _settle([Vector2i(0, 0), Vector2i(0, -1)])
 	_check_world_start()
 	await _check_navigation_across_seam()
@@ -72,12 +87,129 @@ func _check_grid_math() -> void:
 		"split-screen players in the village and on the gorge share one union: 15 of the 18 bounded chunks within 1 of either")
 
 
+# --- 0: waking at the Kindled Bivouac --------------------------------------------
+
+func _check_bivouac_start() -> void:
+	var fire: Vector3 = LandblockManifest.CAMPFIRE_POSITION
+	var lane_start: Vector3 = Vector3(LandblockManifest.LANE[1].x, 0.0, LandblockManifest.LANE[1].y)
+	var round_fire: bool = true
+	for person: ActorBase in _people():
+		var gap: float = Vector2(person.global_position.x - fire.x, person.global_position.z - fire.z).length()
+		var toward_lane: Vector3 = (lane_start - person.global_position) * Vector3(1.0, 0.0, 1.0)
+		round_fire = round_fire and gap > HearthCampfire.WARM_RADIUS and gap < 6.0 and person.is_on_floor() and person.facing_vector().dot(toward_lane.normalized()) > 0.6
+	check.call(not EverwoodWorld.town_square_reached and round_fire and WorldGridConfig.world_to_chunk(_people()[0].global_position) == LandblockManifest.COMMONS_CHUNK,
+		"the party wakes round the Kindled Bivouac's campfire in Chunk (0, 1), on its feet and facing up the lane")
+	check.call(grid.get_chunk_state(Vector2i(0, 1)) == FULL and grid.get_chunk_state(Vector2i(0, 0)) == FULL
+		and grid.get_chunk_state(Vector2i(0, -1)) == WorldGridManager.ChunkState.VISUAL_CLUTTER and grid.get_chunk_state(Vector2i(0, -2)) == WorldGridManager.ChunkState.HORIZON_HLOD,
+		"from the campfire: the commons and Bramblebridge fully in, the Moss-Oaks as clutter, the gorge as horizon")
+	var commons: Node3D = grid.gameplay_root(LandblockManifest.COMMONS_CHUNK)
+	var town: Node3D = grid.gameplay_root(Vector2i(0, 0))
+	var hives: int = 0
+	var patches: int = 0
+	var low_walls: bool = true
+	var walls: int = 0
+	if commons != null:
+		hives = commons.find_children("Hive?", "Node3D", true, false).size()
+		patches = commons.find_children("PumpkinPatch*", "Node3D", true, false).size()
+	for root: Node3D in [commons, town]:
+		if root == null:
+			continue
+		for node: Node in root.find_children("LaneWall*", "StaticBody3D", true, false):
+			var wall: StaticBody3D = node as StaticBody3D
+			walls += 1
+			var box: BoxShape3D = (wall.get_node("Collision") as CollisionShape3D).shape as BoxShape3D
+			low_walls = low_walls and wall.collision_layer == ActorBase.LAYER_LOW_SCENERY and wall.global_position.y + box.size.y * 0.5 < 0.75
+	var lantern: WindLantern = commons.find_child("WindLantern", true, false) as WindLantern if commons != null else null
+	check.call(world.campfire != null and world.campfire.persist_id == LandblockManifest.CAMPFIRE and commons.find_child("Homestead", true, false) != null
+		and hives == 7 and patches == 2 and lantern != null, "Oakshire Commons is there: the campfire, the stepped-gable homestead, 7 bee-hives, 2 pumpkin patches and a Wind-Lantern on the oak's limb")
+	check.call(walls > 40 and low_walls and town != null and town.find_child("SouthGateBeam", true, false) != null and town.find_child("WallSouth", true, false) == null,
+		"%d pieces of knee-high dry-stone wall line the lane (LowScenery, so cameras see past them), into Bramblebridge's new south gate" % walls)
+	var steepest: float = 0.0
+	for index: int in LandblockManifest.LANE.size() - 1:
+		var from: Vector2 = LandblockManifest.LANE[index]
+		var to: Vector2 = LandblockManifest.LANE[index + 1]
+		var steps: int = ceili(from.distance_to(to))
+		for step: int in steps:
+			var a: Vector2 = from.lerp(to, float(step) / steps)
+			var b: Vector2 = from.lerp(to, float(step + 1) / steps)
+			var rise: float = absf(LandblockTerrain.sample_height(b.x, b.y) - LandblockTerrain.sample_height(a.x, a.y))
+			steepest = maxf(steepest, rad_to_deg(atan2(rise, a.distance_to(b))))
+	check.call(steepest <= 15.0, "the lane's grade is %.1f° at most (15° allowed)" % steepest)
+	var badge: String = WorldTelemetryBadge.text_for(grid.get_streaming_metrics())
+	check.call(badge.begins_with("Landblock (0, 1) · Active: 6 · Clutter: 9 · HLOD: 2"), "the F4 badge at the campfire: %s" % badge)
+
+
+## Standing by the fire warms the whole party to full, then it burns low (the Water-Shrine's rule).
+func _check_campfire_warmth() -> void:
+	var fire: HearthCampfire = world.campfire
+	if fire == null:
+		check.call(false, "the campfire streamed in")
+		return
+	var people: Array[ActorBase] = _people()
+	var start: Transform3D = people[0].global_transform
+	for person: ActorBase in people:
+		person.stats.take_damage(30.0)
+		person.stats.stamina = 10.0
+	await tree.physics_frame
+	var hurt: bool = people[0].stats.health < people[0].stats.stats.max_health and not fire.is_resting()
+	people[0].place_at(Transform3D(start.basis, fire.global_position + Vector3(2.2, 0.3, 0.0)))
+	for frame: int in 30:
+		await tree.physics_frame
+		if fire.is_resting():
+			break
+	for frame: int in 3:
+		await tree.physics_frame
+	var full: bool = true
+	for person: ActorBase in people:
+		full = full and is_equal_approx(person.stats.health, person.stats.stats.max_health) and is_equal_approx(person.stats.stamina, person.stats.stats.max_stamina)
+	check.call(hurt and fire.is_resting() and full, "standing by the campfire warms the whole party to full health and stamina, then it burns low for %d s" % roundi(HearthCampfire.REST_TIME))
+	people[0].place_at(start)
+	await tree.physics_frame
+
+
+## One player runs the lane from the campfire into the square: never held up
+## (no lips or snags), brushing the Wind-Lantern, and the square becomes the checkpoint.
+func _check_lane_walk() -> void:
+	var walker: ActorBase = _people()[0]
+	var lantern: WindLantern = grid.gameplay_root(LandblockManifest.COMMONS_CHUNK).find_child("WindLantern", true, false) as WindLantern
+	var chimes_before: int = lantern.chimes if lantern != null else 0
+	var target: int = 0
+	var slowest: float = INF
+	var frames: int = 0
+	while target < LANE_WALK.size() and frames < WALK_FRAMES:
+		var flat: Vector2 = Vector2(walker.global_position.x, walker.global_position.z)
+		var to: Vector2 = LANE_WALK[target] - flat
+		if to.length() < 1.2:
+			target += 1
+			continue
+		walker.stats.grant_invulnerability(0.5)
+		walker.camera_yaw = atan2(-to.x, -to.y)
+		walker.input.inject_move(Vector2(0.0, 1.0))
+		await tree.physics_frame
+		frames += 1
+		# Once up to speed, a run along a straight stretch should never slow.
+		if frames > 30 and to.length() > 4.0:
+			slowest = minf(slowest, Vector2(walker.velocity.x, walker.velocity.z).length())
+	walker.input.inject_move(Vector2.ZERO)
+	await tree.physics_frame
+	var arrived: bool = target >= LANE_WALK.size()
+	check.call(arrived and slowest >= walker.loadout.stats.move_speed * 0.8,
+		"one player runs the lane from the campfire through the commons, in at the south gate and over the canal bridge into the square in %.0f s (never below %.1f m/s)" % [
+			frames / 60.0, slowest])
+	check.call(lantern != null and lantern.chimes > chimes_before, "passing under the oak's limb rings its Wind-Lantern")
+	var spot: Vector3 = walker.spawn_transform.origin
+	check.call(EverwoodWorld.town_square_reached and world.world_state.has_entity_state(Vector2i(0, 0), LandblockManifest.TOWN_CHECKPOINT)
+		and spot.distance_to(LandblockManifest.TOWN_SQUARE_SPAWN) < 6.0 and spot.distance_to(world.scribe_desk.global_position) < 10.0
+		and spot.distance_to(world.chime_shrine.global_position) < 10.0,
+		"crossing into the square makes it the party's checkpoint, between the Scribe Desk and the Chime-Shrine")
+
+
 # --- The world as it starts ---------------------------------------------------
 
 func _check_world_start() -> void:
 	check.call(grid.get_chunk_state(Vector2i(0, 0)) == FULL and grid.get_chunk_state(Vector2i(0, -1)) == FULL
 		and grid.get_chunk_state(Vector2i(0, -2)) == WorldGridManager.ChunkState.VISUAL_CLUTTER and grid.get_chunk_state(Vector2i(0, -3)) == WorldGridManager.ChunkState.HORIZON_HLOD,
-		"from Bramblebridge's green: the village and the Moss-Oaks fully in, the gorge as clutter, the Ring as horizon")
+		"from Bramblebridge's square: the village and the Moss-Oaks fully in, the gorge as clutter, the Ring as horizon")
 	check.call(not grid.is_hlod_visible(Vector2i(0, -1)) and grid.is_hlod_visible(Vector2i(0, -2)) and grid.is_hlod_visible(Vector2i(0, -3)),
 		"the Sinaya Gatehouse's and the standing stones' HLOD proxies stand on the horizon; the loaded Moss-Oaks' is hidden")
 	var town: Node3D = grid.gameplay_root(Vector2i(0, 0))
@@ -95,7 +227,7 @@ func _check_world_start() -> void:
 			"Terrain3D draws the ground (Mode A): one 128 m region for each streamed chunk, its own collision off%s" % (
 				"" if mismatched.is_empty() else " (regions out of step: %s, region size %s, collision %s)" % [mismatched, terrain.get(&"region_size"), terrain.get(&"collision_mode")]))
 	var first: ActorBase = _people()[0]
-	check.call(WorldGridConfig.world_to_chunk(first.global_position) == Vector2i(0, 0) and first.is_on_floor(), "the party stands on the village green in Chunk (0, 0)")
+	check.call(WorldGridConfig.world_to_chunk(first.global_position) == Vector2i(0, 0) and first.is_on_floor(), "the party stands in the village square in Chunk (0, 0)")
 	grid.set_telemetry_visible(true)
 	var badge: String = WorldTelemetryBadge.text_for(grid.get_streaming_metrics())
 	check.call(grid.is_telemetry_visible() and badge.begins_with("Landblock (0, 0) · Active: 9 · Clutter: 12 · HLOD: 2") and badge.contains("· Queue: ") and badge.contains("· Deltas: "),
@@ -246,7 +378,10 @@ func _check_world_state_persistence() -> void:
 		"a latecomer's snapshot (export, JSON, import) carries every delta and the shared clock, and tells each bound entity")
 	latecomer.set_entity_state(Vector2i(0, 0), &"town_banner", {"raised": true})
 	latecomer.clear_expedition_transient_state()
-	check.call(latecomer.delta_count() == 1 and latecomer.has_entity_state(Vector2i(0, 0), &"town_banner"), "a fresh run forgets the expedition but keeps the village's state")
+	check.call(latecomer.delta_count() == 3 and latecomer.has_entity_state(Vector2i(0, 0), &"town_banner")
+		and latecomer.has_entity_state(Vector2i(0, 0), LandblockManifest.TOWN_CHECKPOINT) and latecomer.has_entity_state(LandblockManifest.COMMONS_CHUNK, LandblockManifest.CAMPFIRE)
+		and not latecomer.has_entity_state(oaks, LandblockManifest.WAYFARER_CHEST),
+		"a fresh run forgets the expedition but keeps the village's and the commons' state (the square checkpoint, the campfire's rest)")
 	latecomer.free()
 
 
@@ -265,7 +400,8 @@ func _check_builtin_terrain() -> void:
 	await _settle([Vector2i(0, 0)])
 	var village: Node3D = grid.chunk_node(Vector2i(0, 0))
 	check.call(not grid.use_terrain3d and grid.terrain3d_node() == null and village != null and village.find_child("Terrain_0_0", true, false) is MeshInstance3D
-		and _people()[0].is_on_floor(), "without Terrain3D (or with --terrain=builtin) each chunk draws its own ground mesh, and the party still stands on the green")
+		and _people()[0].is_on_floor() and _people()[0].global_position.distance_to(LandblockManifest.TOWN_SQUARE_SPAWN) < 6.0,
+		"without Terrain3D (or with --terrain=builtin) each chunk draws its own ground mesh, and the party, back in the world, starts in the square it reached")
 	WorldGridManager.force_builtin_terrain = false
 
 
