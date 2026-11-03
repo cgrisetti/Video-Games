@@ -14,7 +14,7 @@ games/everwood/
 │   ├── build_oakshire_vale.gd          # Bakes Oakshire Vale's field, horizon and Landblocks
 │   ├── build_input_map.gd              # Writes the Input Map
 │   ├── smoke_test.gd                   # Headless functional checks (runs the three below last)
-│   ├── test_world_grid.gd · test_oakshire_vale.gd · test_mythopoetic_lens.gd
+│   ├── test_world_grid.gd · test_oakshire_vale.gd · test_mythopoetic_lens.gd · test_adaptive_audio.gd
 │   └── fetch_terrain3d.sh              # Optional Terrain3D addon
 └── src/
     ├── autoloads/
@@ -22,9 +22,14 @@ games/everwood/
     │   ├── instance_manager.gd         # SubViewport World3D switcher (Oakshire Vale, Bramble-Bridge, the expedition)
     │   ├── combat_director.gd          # Strikes, hit-stop, seals and Four-Sign detonations, telegraphs
     │   ├── party_progress.gd           # The family save: Chimes, cards, kits, trail level, sightings
-    │   └── audio_cues.gd               # Synthesized cues
+    │   └── audio_cues.gd               # Synthesized cues (positional ones through AudioDirector's pool)
+    ├── core/
+    │   ├── audio_director.gd           # Autoload "Score": buses, Deck A/B, combat stages, 32-voice 3D pool, stingers
+    │   ├── audio_catalog.gd            # Zone, Sign, Calling and boss sound profiles by id
+    │   └── procedural_chamber_synth.gd # Code-built stems, stingers and station ambience
     ├── resources/                      # Typed data: actions, stats, kits, cards, Signs, encounters,
-    │   │                               # Callings, MobVariantResource, StewardshipZoneResource
+    │   │                               # Callings, MobVariantResource, StewardshipZoneResource,
+    │   │                               # Zone/Sign/Calling/Boss audio profiles
     │   └── …
     ├── components/
     │   ├── input_component.gd          # Master, Adventurer and Squire Gambit assist tiers
@@ -80,5 +85,8 @@ Every foe carries one. Its states are plain enums, so saves and RPCs never need 
 ### 2.3 The Mythopoetic Atlas and the Chime-Post ribbon
 `MythopoeticAtlas` registers six `StewardshipZoneResource`s (name, Cooper Sign, harmony Signs, crack, kin, a four-line rhyme and the phrases each Sign tints) and maps every built place to its zone. Each level names its arrival place (`LevelBase.home_place()`); crossing a threshold calls `PlayerHUD.enter_place()`, and a new zone unfurls a couplet on `CrossGrimoireHUD`'s ribbon. `SignFlowComponent.hearth_rite_prepared` sings it again, and `CrossGrimoireHUD` draws the Saffron-Gold ember border while the Tuck is held.
 
-### 2.4 Verification
+### 2.4 The adaptive score ([16_ADAPTIVE_AUDIO_ARCHITECTURE.md](16_ADAPTIVE_AUDIO_ARCHITECTURE.md) §8)
+`AudioDirector` (autoload `Score`) builds the five buses in code and plays two decks, each one zone's four phase-locked stems in an `AudioStreamSynchronized`, driven only by `set_sync_stream_volume()`. Every 0.4 s it resolves one party state from the local players: the zone most of them stand in (`LevelBase.music_profile_at()`), the depth blend, and the threat round them (Exploration, Pre-Warm, Skirmish, Boss, Exhale). Profiles are data in `AudioCatalog`; until curated stems exist, `ProceduralChamberSynth` renders each zone's stems on worker threads. Positional sounds share a 32-voice `AudioStreamPlayer3D` pool made once at start (45 m cull, 50 ms per kind, `area_mask = 1`).
+
+### 2.5 Verification
 `godot --headless --check-only -s <script>` on every changed script, a headless boot, and `tools/smoke_test.gd` (see the README). `tools/test_mythopoetic_lens.gd` lints every name the game shows against the four Linter Rules.
