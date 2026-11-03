@@ -11,6 +11,11 @@
 ##
 ## While a menu is open on this player's screen (the Chime-Shrine), the same
 ## controller drives the menu instead of the character (menu_input).
+##
+## Sign-Flow (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §5) reuses the same buttons:
+## out of combat, R and L+R wait to see if they're held; held 90 frames they're
+## the Hearth-Rite (hearth_rite_held), let go sooner they fire as usual. A tap
+## of Tab / View (whose hold changes Fellowship) opens the Grimoire Binder.
 class_name InputComponent
 extends Node
 
@@ -19,6 +24,10 @@ signal tether_slot_pressed(slot: int)
 signal class_cycle_requested
 signal mode_cycle_requested
 signal calling_cycle_requested
+## R or L+R held out of combat for the Hearth-Rite's time (the command names which).
+signal hearth_rite_held(command: int)
+## A tap of the Fellowship button: the Grimoire Binder opens (or closes).
+signal binder_requested
 ## Up / down / accept / back for an open menu (MENU_* below).
 signal menu_input(action: StringName)
 
@@ -144,6 +153,15 @@ var _scripted: bool = false
 var _scripted_commands: Array[int] = []
 var _scripted_move: Vector2 = Vector2.ZERO
 var _scripted_guard: bool = false
+## Buttons a test holds down (inject_hold), read as if pressed on the device.
+var _scripted_held: Dictionary[StringName, bool] = {}
+## The trigger press waiting out the chord window has been held this long.
+var _pending_elapsed: float = 0.0
+## An R or L+R held out of combat, on its way to the Hearth-Rite (-1 when none).
+var _rite_command: int = -1
+var _rite_buttons: Array[StringName] = []
+var _rite_time: float = 0.0
+var _rite_fired: bool = false
 
 
 func setup(owner_actor: ActorBase, for_device: int, mode: AssistMode) -> void:
@@ -332,12 +350,41 @@ func inject_guard(held: bool) -> void:
 	_scripted_guard = held
 
 
+## Holds a button down (or lets it go) as if on the device, so timed holds play
+## through the real trigger logic (the smoke test's Hearth-Rite).
+func inject_hold(action: StringName, held: bool) -> void:
+	_scripted = true
+	_scripted_held[action] = held
+
+
 ## Hands the player back to their real controller.
 func release_script() -> void:
 	_scripted = false
 	_scripted_commands.clear()
 	_scripted_move = Vector2.ZERO
 	_scripted_guard = false
+	_scripted_held.clear()
+
+
+## How far an R or L+R hold has come toward the Hearth-Rite, 0 to 1 (0 when none is held).
+func hearth_rite_progress() -> float:
+	if _rite_command < 0 or _rite_fired or actor.sign_flow == null:
+		return 0.0
+	return clampf(_rite_time / actor.sign_flow.hearth_rite_hold_seconds(_rite_socket()), 0.0, 1.0)
+
+
+## The socket an R or L+R hold prepares (-1 when none is held).
+func hearth_rite_socket() -> int:
+	return _rite_socket() if _rite_command >= 0 and not _rite_fired else -1
+
+
+## A Squire's buffered counter fires on the Glimmer-Spot's first frame: R, cast at once as Sign-Flow.
+func fire_buffered_counter() -> void:
+	if actor.action_queue.is_busy() and actor.action_queue.phase != ActionQueueComponent.Phase.ACTIVE:
+		actor.cancel_action()
+	if actor.sign_flow != null:
+		actor.sign_flow.arm(CombatActionResource.Command.TRIGGER_R_SKILL)
+	command_issued.emit(CombatActionResource.Command.TRIGGER_R_SKILL)
 
 
 # --- Polling --------------------------------------------------------------
@@ -371,6 +418,8 @@ func poll(dt: float) -> void:
 	_menu_armed = false
 	_update_auto_guard()
 
+	if _tapped(ACTION_CHANGE_CLASS):
+		binder_requested.emit()
 	if _held_for(ACTION_CHANGE_CLASS, dt):
 		class_cycle_requested.emit()
 	if _held_for(ACTION_CHANGE_MODE, dt):
@@ -386,8 +435,12 @@ func poll(dt: float) -> void:
 		_issue_attack(CombatActionResource.Command.HEAVY)
 	if _pressed(ACTION_DODGE):
 		_issue(CombatActionResource.Command.DODGE)
+	_update_hearth_rite(dt)
 	if _pressed(ACTION_ULT):
-		_issue(CombatActionResource.Command.TRIGGER_BOTH_ULT)
+		if _can_prepare():
+			_start_rite(CombatActionResource.Command.TRIGGER_BOTH_ULT, [ACTION_ULT], dt)
+		else:
+			_issue(CombatActionResource.Command.TRIGGER_BOTH_ULT)
 	_update_triggers(dt)
 	_update_auto_evade(dt)
 
@@ -435,6 +488,8 @@ func _poll_menu() -> void:
 		menu_input.emit(MENU_ACCEPT)
 	if _pressed(ACTION_DODGE):
 		menu_input.emit(MENU_BACK)
+	if _tapped(ACTION_CHANGE_CLASS):
+		binder_requested.emit()
 
 
 func _issue(command: int) -> void:
@@ -450,6 +505,8 @@ func _issue_attack(base: int) -> void:
 		actor.interactable.interact(actor)
 		return
 	if assist_mode == AssistMode.SQUIRE_GAMBIT:
+		if _squire_buffer_counter():
+			return
 		_issue(_squire_pick())
 		return
 	var command: int = base
@@ -504,20 +561,27 @@ func _update_triggers(dt: float) -> void:
 	var chord: bool = (l_pressed and (r_pressed or _pending_trigger == ACTION_TRIGGER_R)) \
 		or (r_pressed and _pending_trigger == ACTION_TRIGGER_L)
 	if chord:
+		var held_for: float = _pending_elapsed + dt if _pending_trigger != &"" else dt
 		_pending_trigger = &""
 		_r_tracking = false
 		_chord_lock = true
-		_issue(CombatActionResource.Command.TRIGGER_BOTH_ULT)
+		if _can_prepare():
+			_start_rite(CombatActionResource.Command.TRIGGER_BOTH_ULT, [ACTION_TRIGGER_L, ACTION_TRIGGER_R], held_for)
+		else:
+			_issue(CombatActionResource.Command.TRIGGER_BOTH_ULT)
 		return
 	if l_pressed:
 		_pending_trigger = ACTION_TRIGGER_L
 		_pending_time = CHORD_WINDOW
+		_pending_elapsed = 0.0
 	elif r_pressed:
 		_pending_trigger = ACTION_TRIGGER_R
 		_pending_time = CHORD_WINDOW
+		_pending_elapsed = 0.0
 
 	if _pending_trigger != &"":
 		_pending_time -= dt
+		_pending_elapsed += dt
 		if _pending_time <= 0.0:
 			var which: StringName = _pending_trigger
 			_pending_trigger = &""
@@ -525,6 +589,8 @@ func _update_triggers(dt: float) -> void:
 				# A guard class holds L as a posture instead (see is_guard_held).
 				if not actor.loadout.guard_on_trigger_l:
 					_issue(CombatActionResource.Command.TRIGGER_L_SKILL)
+			elif _can_prepare() and r_held:
+				_start_rite(CombatActionResource.Command.TRIGGER_R_SKILL, [ACTION_TRIGGER_R], _pending_elapsed)
 			elif actor.loadout.has_opener(CombatActionResource.Command.TRIGGER_R_HOLD):
 				_r_tracking = true
 				_r_held_time = CHORD_WINDOW
@@ -542,6 +608,65 @@ func _update_triggers(dt: float) -> void:
 			if not _r_hold_fired:
 				_issue(CombatActionResource.Command.TRIGGER_R_SKILL)
 			_r_tracking = false
+
+
+## Out of combat, R and L+R can become the Hearth-Rite (SignFlowComponent).
+func _can_prepare() -> bool:
+	return SignFlowComponent.enabled and actor.sign_flow != null and actor.sign_flow.can_prepare()
+
+
+func _rite_socket() -> int:
+	return ScribeCardResource.DioramaSocket.ULT if _rite_command == CombatActionResource.Command.TRIGGER_BOTH_ULT \
+		else ScribeCardResource.DioramaSocket.SKILL
+
+
+## An R or L+R out of combat waits while it's held: `held_for` is how long it already has been.
+func _start_rite(command: int, buttons: Array[StringName], held_for: float) -> void:
+	_rite_command = command
+	_rite_buttons = buttons
+	_rite_time = held_for
+	_rite_fired = false
+
+
+## Held the Hearth-Rite's time (90 frames, 60 on Star-Inked Vellum): the rite.
+## Let go sooner, or a fight starts, and it's the move as usual.
+func _update_hearth_rite(dt: float) -> void:
+	if _rite_command < 0:
+		return
+	var still_held: bool = true
+	for button: StringName in _rite_buttons:
+		still_held = still_held and _held.get(button, false)
+	if _rite_fired:
+		if not still_held:
+			_rite_command = -1
+		return
+	if not still_held or not _can_prepare():
+		var command: int = _rite_command
+		_rite_command = -1
+		_issue(command)
+		return
+	_rite_time += dt
+	if _rite_time >= actor.sign_flow.hearth_rite_hold_seconds(_rite_socket()) - 0.001:
+		_rite_fired = true
+		hearth_rite_held.emit(_rite_command)
+
+
+## Squire Gambit (14 GDD §3): a press within 90 frames before a boss's
+## Glimmer-Spot opens is held for it, if the R card's Sign cracks that boss;
+## the R then fires on the opening's first frame. True when the press was taken.
+func _squire_buffer_counter() -> bool:
+	var target: ActorBase = actor.soft_target()
+	if target == null or target.glimmer == null:
+		return false
+	if target.glimmer.is_buffered(actor.player_id):
+		return true
+	var counter: CombatActionResource = actor.loadout.opener_for(CombatActionResource.Command.TRIGGER_R_SKILL)
+	if counter == null or counter.effect != CombatActionResource.Effect.STRIKE or not actor.stats.can_afford(counter):
+		return false
+	var sign_id: int = counter.primer if counter.primer != ScribeSignResource.Sign.NONE else counter.scribe_sign
+	if not target.glimmer.encounter.is_countered_by(sign_id):
+		return false
+	return target.glimmer.buffer_squire_counter(actor)
 
 
 ## Squire Gambit safety net: roll out of a red telegraph that's nearly full.
@@ -671,6 +796,11 @@ func _pressed(action: StringName) -> bool:
 	return _held.get(action, false) and not _was_held.get(action, false)
 
 
+## Let go this tick after a press shorter than a hold (the Fellowship button's tap).
+func _tapped(action: StringName) -> bool:
+	return _was_held.get(action, false) and not _held.get(action, false) and _hold_time.get(action, 0.0) < MENU_HOLD_TIME
+
+
 ## True once, the moment `action` has been held for MENU_HOLD_TIME.
 func _held_for(action: StringName, dt: float) -> bool:
 	if not _held.get(action, false):
@@ -685,6 +815,7 @@ func _held_for(action: StringName, dt: float) -> bool:
 func _read_buttons() -> Dictionary[StringName, bool]:
 	var held: Dictionary[StringName, bool] = {}
 	if _scripted:
+		held.assign(_scripted_held)
 		return held
 	for action: StringName in BUTTON_ACTIONS:
 		var threshold: float = RELEASE_THRESHOLD if _held.get(action, false) else PRESS_THRESHOLD

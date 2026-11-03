@@ -23,6 +23,8 @@ const GLOW: float = 2.2
 ## The shockwave grows to this radius over this long.
 const SHOCKWAVE_RADIUS: float = 1.5
 const SHOCKWAVE_TIME: float = 0.3
+## A Sign-Flow ground ring fades over this long.
+const GROUND_RING_TIME: float = 0.9
 
 var target: ActorBase
 var scribe_sign: int = ScribeSignResource.Sign.NONE
@@ -195,3 +197,30 @@ static func shockwave(parent: Node3D, at: Vector3, color: Color) -> void:
 	var tween: Tween = wave.create_tween()
 	tween.tween_property(wave, "scale", Vector3(SHOCKWAVE_RADIUS, 0.5, SHOCKWAVE_RADIUS), SHOCKWAVE_TIME).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
 	tween.tween_callback(wave.queue_free)
+
+
+## A Sign-Flow cast's 2.5 m Sign ring (14 GDD §2): stamped flat on the ground
+## under the hero in the Sign's colour, turning once as it fades.
+static func ground_ring(parent: Node3D, at: Vector3, color: Color, radius: float) -> void:
+	if parent == null or not parent.is_inside_tree():
+		return
+	var ring: MeshInstance3D = MeshInstance3D.new()
+	ring.name = "SignFlowRing"
+	var torus: TorusMesh = TorusMesh.new()
+	torus.inner_radius = radius - RING_WIDTH * 1.4
+	torus.outer_radius = radius
+	torus.rings = 48
+	torus.ring_segments = 6
+	var material: StandardMaterial3D = _glowing_material(color)
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	torus.material = material
+	ring.mesh = torus
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(ring)
+	ring.global_position = at + Vector3.UP * RING_LIFT
+	ring.scale = Vector3(1.0, 0.25, 1.0)
+	var tween: Tween = ring.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(ring, "rotation:y", PI, GROUND_RING_TIME)
+	tween.tween_property(material, "albedo_color:a", 0.0, GROUND_RING_TIME).set_ease(Tween.EASE_IN)
+	tween.chain().tween_callback(ring.queue_free)

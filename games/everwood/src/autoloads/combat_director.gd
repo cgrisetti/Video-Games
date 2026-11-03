@@ -15,6 +15,11 @@
 ## - One rule for networked combat: the peer that owns the target applies the
 ##   effect. Every strike, heal, threat and pull goes through deliver(), which
 ##   applies it here or sends it to the owner as a validation RPC.
+## - Sign-Flow (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md): a hero's coat lends its
+##   Sign and Place-Card poise to each strike (SignFlowComponent fills them in
+##   as the hit lands); a foe's Glimmer-Spot judges them and a counter Sign on
+##   an open spot is a Bravery Counter. The coats, Sign rings and glints show on
+##   every peer from here.
 class_name CombatDirector
 extends Node
 
@@ -40,6 +45,12 @@ signal projectile_fired(attacker: ActorBase, action: CombatActionResource)
 signal card_invoked(caster: ActorBase, action: CombatActionResource, variant: int)
 ## A Flow-Link Pulse rang round a hero (on every peer).
 signal flow_link_shown(actor: ActorBase)
+## A foe's Glimmer-Spot opened for `seconds`, with its HUD rhyme ("" once the party knows it), on every peer.
+signal glimmer_opened(enemy: ActorBase, seconds: float, rhyme: String)
+## A Bravery Counter cracked a foe's Glimmer-Spot (on every peer).
+signal bravery_countered(target: ActorBase, scribe_sign: int, label: String)
+## A hero's Sign-Flow look changed (SignFlowComponent.CoatLook), on every peer.
+signal sign_coat_shown(actor: ActorBase, look: int)
 
 ## Phase B impact freeze (02_COMBAT_GDD.md §2); each action scales it.
 const BASE_HIT_STOP: float = 0.06
@@ -300,7 +311,10 @@ func report_hit(attacker: ActorBase, target: ActorBase, action: CombatActionReso
 		AudioCues.play(&"hit", 1.15 / maxf(0.7, action.hit_stop_scale), -4.0)
 	if action.damage > 0.0:
 		show_float_text(_above(target), str(roundi(action.damage)), Color(1.0, 0.94, 0.78))
-	deliver(CombatEvent.strike_from(attacker, target, action))
+	var event: CombatEvent = CombatEvent.strike_from(attacker, target, action)
+	if attacker.sign_flow != null:
+		attacker.sign_flow.on_strike_landed(action, event)
+	deliver(event)
 
 
 func deliver(event: CombatEvent) -> void:
@@ -339,8 +353,22 @@ func _is_plausible(event: CombatEvent, target: ActorBase, sender: int) -> bool:
 		return false
 	if event.unavoidable:
 		return attacker.is_boss()
+	if event.coat_sign != ScribeSignResource.Sign.NONE and not _diorama_carries(attacker, event.coat_sign):
+		return false
 	var limit: float = event.reach + target.body_radius() + VALIDATION_SLACK
 	return attacker.global_position.distance_to(target.global_position) <= limit
+
+
+## Whether one of the attacker's diorama leaves is of this Sign (a coat can only lend a Sign its hero carries).
+static func _diorama_carries(attacker: ActorBase, scribe_sign: int) -> bool:
+	var kit: EquipmentLoadoutResource = attacker.loadout.kit if attacker.loadout != null else null
+	if kit == null:
+		return false
+	for socket: int in EquipmentLoadoutResource.SOCKET_COUNT:
+		var leaf: ScribeCardResource = ArsenalCatalog.current.card(kit.socket_leaf_id(socket))
+		if leaf != null and leaf.scribe_sign == scribe_sign:
+			return true
+	return false
 
 
 func _apply(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
@@ -376,6 +404,12 @@ func _apply(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
 
 
 func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
+	if event.coat_sign != ScribeSignResource.Sign.NONE:
+		# A coat's Place-Card poise (never more than any Place-Card lends), and a Hearth-Rite opening strike's seal.
+		event.coat_poise = clampf(event.coat_poise, 0.0, ArsenalCatalog.current.max_place_poise())
+		event.poise_damage += event.coat_poise
+		if event.coat_primes and event.primer == ScribeSignResource.Sign.NONE:
+			event.primer = event.coat_sign
 	if target.is_boss():
 		if event.detonates:
 			_try_detonate(target, event)
@@ -601,6 +635,130 @@ func primer_on(target: ActorBase) -> int:
 	if not _primers.has(key) or game_time() > _primers[key].expires_at:
 		return ScribeSignResource.Sign.NONE
 	return _primers[key].primer
+
+
+# --- Sign-Flow and Glimmer-Spots (14 GDD §2–3) --------------------------------
+
+## A hero's coat look on every peer (SignFlowComponent.CoatLook): the Hearth-Rite's
+## 1.35x glow, the 600 ms 2.0x flare, the coat's glow for `seconds`, or none.
+func show_sign_coat(actor: ActorBase, look: int, scribe_sign: int, mode: int, place_id: StringName, seconds: float) -> void:
+	if NetworkManager.current.is_online():
+		_show_sign_coat.rpc(actor.get_path(), look, scribe_sign, mode, place_id, seconds)
+	else:
+		_show_sign_coat(actor.get_path(), look, scribe_sign, mode, place_id, seconds)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _show_sign_coat(actor_path: NodePath, look: int, scribe_sign: int, mode: int, place_id: StringName, seconds: float) -> void:
+	var actor: ActorBase = _actor_at(actor_path)
+	if actor == null:
+		return
+	var synergy: Dictionary = ArsenalCatalog.current.compute_diorama_synergy(&"", place_id)
+	var ink: Color = ArsenalCatalog.current.sign_seal(scribe_sign).color if scribe_sign != ScribeSignResource.Sign.NONE else ArsenalCatalog.UNINKED_INK
+	var ambient: Color = synergy["ambient_color"] if place_id != &"" else ink
+	if actor.visuals != null:
+		actor.visuals.show_sign_coat(look, ink, ambient, mode, seconds)
+	sign_coat_shown.emit(actor, look)
+
+
+## A coat look on this peer only: the Scribery's preview on the shopper's own puppet, and putting it back.
+func show_sign_coat_here(actor: ActorBase, look: int, scribe_sign: int, mode: int, place_id: StringName, seconds: float) -> void:
+	_show_sign_coat(actor.get_path(), look, scribe_sign, mode, place_id, seconds)
+
+
+## The 2.5 m Sign ring stamped on the ground under a Sign-Flow cast, on every peer.
+func stamp_sign_ring(actor: ActorBase, scribe_sign: int, radius: float) -> void:
+	if NetworkManager.current.is_online():
+		_stamp_sign_ring.rpc(actor.global_position, scribe_sign, radius)
+	else:
+		_stamp_sign_ring(actor.global_position, scribe_sign, radius)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _stamp_sign_ring(at: Vector3, scribe_sign: int, radius: float) -> void:
+	var color: Color = ArsenalCatalog.current.sign_seal(scribe_sign).color if scribe_sign != ScribeSignResource.Sign.NONE else ArsenalCatalog.UNINKED_INK
+	SignMark.ground_ring(effects_root, at, color, radius)
+
+
+## A Ward-Mantle's shelter: a Shadow Sanctuary cone (BLUE_BEHIND_TANK) behind the hero.
+func spawn_shelter(owner: ActorBase, radius: float, seconds: float) -> void:
+	if NetworkManager.current.is_online():
+		_spawn_zone.rpc(owner.player_id, SanctuaryZone.Shape.CONE, owner.global_transform, radius, seconds, 0.0, 0.0)
+	else:
+		_spawn_zone(owner.player_id, SanctuaryZone.Shape.CONE, owner.global_transform, radius, seconds, 0.0, 0.0)
+
+
+## The foe's owner opened its Glimmer-Spot: every peer shows the glint (and the rhyme, while it's new).
+func show_glimmer(enemy: ActorBase, seconds: float, rhyme: String) -> void:
+	if NetworkManager.current.is_online():
+		_show_glimmer.rpc(enemy.get_path(), seconds, rhyme)
+	else:
+		_show_glimmer(enemy.get_path(), seconds, rhyme)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _show_glimmer(enemy_path: NodePath, seconds: float, rhyme: String) -> void:
+	var enemy: ActorBase = _actor_at(enemy_path)
+	if enemy == null or enemy.glimmer == null:
+		return
+	enemy.glimmer.show_open(seconds)
+	if rhyme == "":
+		show_cue(enemy, GlimmerSpotComponent.GLINT_COLOR, &"")
+	glimmer_opened.emit(enemy, seconds, rhyme)
+
+
+## The foe's owner: its next Glimmer-Spot opens in `seconds` (Squires may buffer a counter), on every peer.
+func expect_glimmer(enemy: ActorBase, seconds: float) -> void:
+	if NetworkManager.current.is_online():
+		_expect_glimmer.rpc(enemy.get_path(), seconds)
+	else:
+		_expect_glimmer(enemy.get_path(), seconds)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _expect_glimmer(enemy_path: NodePath, seconds: float) -> void:
+	var enemy: ActorBase = _actor_at(enemy_path)
+	if enemy != null and enemy.glimmer != null:
+		enemy.glimmer.expect_opening(seconds)
+
+
+## A Bravery Counter (on the foe's owner; GlimmerSpotComponent set its poise):
+## the Sign's detonation rides on it (Glacial Rupture's burst, Dawnburst's heal,
+## Astral Chorus's stamina and pips; Shatterpoint's poise is already in the
+## counter), with a detonation's freeze, and every peer sees it.
+func bravery_counter(target: ActorBase, event: CombatEvent, scribe_sign: int, encounter: BossEncounterResource) -> void:
+	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(scribe_sign)
+	event.damage += seal.bonus_damage
+	if seal.bonus_damage > 0.0 and seal.burst_radius > 0.0:
+		_burst(target, event, seal.bonus_damage, seal.burst_radius)
+	if seal.has_party_effect():
+		_bless_party(target, event, seal, 1.0)
+	event.hit_stop_scale = maxf(event.hit_stop_scale, HIT_STOP_DETONATION / BASE_HIT_STOP) + seal.bonus_hit_stop
+	var frozen: Array[ActorBase] = [target]
+	var counterer: ActorBase = _actor_at(event.attacker_path)
+	if counterer != null and counterer.is_multiplayer_authority():
+		frozen.append(counterer)
+	request_hit_stop(frozen, event.hit_stop_scale)
+	var label: String = "BRAVERY COUNTER!  %s x%.2f" % [seal.detonation_name, encounter.get_impact_multiplier()]
+	if NetworkManager.current.is_online():
+		_show_bravery.rpc(target.get_path(), scribe_sign, label)
+	else:
+		_show_bravery(target.get_path(), scribe_sign, label)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _show_bravery(target_path: NodePath, scribe_sign: int, label: String) -> void:
+	var target: ActorBase = _actor_at(target_path)
+	if target == null:
+		return
+	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(scribe_sign)
+	if target.glimmer != null:
+		target.glimmer.close()
+	show_float_text(_above(target) + Vector3.UP * 0.9, label, seal.color, ANNOUNCE_TEXT_SIZE)
+	if seal.sound != &"":
+		AudioCues.play(seal.sound)
+	SignMark.shockwave(effects_root, target.global_position, seal.color)
+	bravery_countered.emit(target, scribe_sign, label)
 
 
 # --- Support effects ------------------------------------------------------

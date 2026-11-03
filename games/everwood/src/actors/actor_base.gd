@@ -94,6 +94,10 @@ var tether: SoulTetherComponent
 var threat: ThreatComponent
 ## Enemies only: the Braced Front Guard (11 GDD §3.2).
 var braced_guard: BracedGuardComponent
+## Heroes: Sign-Flow, the Hearth-Rite and coats (14 GDD §2, §5).
+var sign_flow: SignFlowComponent
+## Foes with an encounter: the Glimmer-Spot a Bravery Counter cracks (14 GDD §2–3).
+var glimmer: GlimmerSpotComponent
 ## Something this local player is standing at and can use with light (the Chime-Shrine).
 var interactable: Interactable
 
@@ -227,6 +231,11 @@ func _build_components() -> void:
 		braced_guard = BracedGuardComponent.new()
 		braced_guard.setup(self)
 		add_child(braced_guard)
+		var encounter: BossEncounterResource = ArsenalCatalog.current.encounter(glimmer_encounter_id())
+		if encounter != null:
+			glimmer = GlimmerSpotComponent.new()
+			glimmer.setup(self, encounter)
+			add_child(glimmer)
 
 	if loadout.has_soul_tethers:
 		tether = SoulTetherComponent.new()
@@ -238,6 +247,11 @@ func _build_components() -> void:
 		input.command_issued.connect(_on_command)
 		input.tether_slot_pressed.connect(_on_tether_slot)
 		apply_assist_mode()
+
+	if not is_boss():
+		sign_flow = SignFlowComponent.new()
+		sign_flow.setup(self)
+		add_child(sign_flow)
 
 	if companion != null:
 		add_child(companion)
@@ -406,6 +420,11 @@ func trail_xp() -> int:
 	return PartyProgress.XP_PER_BOSS if is_raid_boss() else PartyProgress.XP_PER_MOB
 
 
+## Enemies: the BossEncounterResource id its Glimmer-Spot plays (&"" for none).
+func glimmer_encounter_id() -> StringName:
+	return &""
+
+
 ## Enemies: in the fight right now (a woken camp, an engaged boss). Players always are.
 func is_engaged() -> bool:
 	return true
@@ -466,6 +485,8 @@ func _physics_process(delta: float) -> void:
 	if not is_inside_tree():
 		return # Something this tick's input did removed the actor (leaving the party).
 	stats.tick(delta, _can_regen_stamina())
+	if sign_flow != null:
+		sign_flow.tick(delta)
 	if _pull_duration > 0.0:
 		_update_pull(delta)
 	else:
@@ -634,6 +655,8 @@ func most_hurt_ally(below: float) -> ActorBase:
 
 func _on_command(command: int) -> void:
 	if can_act():
+		if sign_flow != null:
+			sign_flow.note_command(command)
 		action_queue.request(command)
 
 
@@ -737,6 +760,8 @@ func _on_hurtbox_hit(target_hurtbox: HurtboxComponent) -> void:
 func receive_strike(event: CombatEvent) -> int:
 	if braced_guard != null:
 		braced_guard.filter_strike(event)
+	if glimmer != null:
+		glimmer.filter_strike(event)
 	var multiplier: float = CombatDirector.current.damage_taken_multiplier(self)
 	var outcome: StatsComponent.StrikeOutcome = stats.mitigate_strike(
 		event.damage * multiplier, event.poise_damage, _faces_toward(event.origin), event.unavoidable)

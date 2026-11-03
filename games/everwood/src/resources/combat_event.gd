@@ -44,6 +44,21 @@ var origin: Vector3 = Vector3.ZERO
 var reach: float = 0.0
 ## Ground telegraphs: only position matters, so guards and i-frames don't help.
 var unavoidable: bool = false
+## Sign-Flow (14 GDD §2, §5): the Sign a coat (or a Hearth-Rite opening strike)
+## lends this strike, so even a plain Light can crack a Glimmer-Spot. These
+## travel with an action-id strike: they belong to the attacker's coat, not the action.
+var coat_sign: int = ScribeSignResource.Sign.NONE
+## The framing Place-Card's bonus poise (capped by the target's owner).
+var coat_poise: float = 0.0
+## A Hearth-Rite opening strike: it also stamps its Sign's seal.
+var coat_primes: bool = false
+
+
+## The Sign this strike counters a Glimmer-Spot with: a coat's, else its own seal or Sign.
+func counter_sign() -> int:
+	if coat_sign != ScribeSignResource.Sign.NONE:
+		return coat_sign
+	return primer if primer != ScribeSignResource.Sign.NONE else scribe_sign
 
 
 static func strike_from(attacker: ActorBase, target: ActorBase, action: CombatActionResource) -> CombatEvent:
@@ -94,6 +109,8 @@ func to_dict() -> Dictionary:
 		"attacker_player_id": attacker_player_id,
 		"origin": origin,
 	}
+	if coat_sign != ScribeSignResource.Sign.NONE:
+		data.merge({"coat_sign": coat_sign, "coat_poise": coat_poise, "coat_primes": coat_primes})
 	if kind == Kind.STRIKE and action_id != &"":
 		data["action_id"] = action_id
 		return data
@@ -140,4 +157,7 @@ static func from_dict(data: Dictionary) -> CombatEvent:
 	event.duration = float(data.get("duration", 0.0))
 	event.reach = float(data.get("reach", 0.0))
 	event.unavoidable = bool(data.get("unavoidable", false))
+	event.coat_sign = clampi(int(data.get("coat_sign", ScribeSignResource.Sign.NONE)), 0, ScribeSignResource.Sign.size() - 1)
+	event.coat_poise = maxf(0.0, float(data.get("coat_poise", 0.0)))
+	event.coat_primes = bool(data.get("coat_primes", false))
 	return event

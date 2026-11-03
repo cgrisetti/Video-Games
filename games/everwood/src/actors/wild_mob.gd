@@ -27,6 +27,8 @@ const RANGED_KEEP: float = 0.7
 ## The Behemoth's stomp: every this many seconds while it walks, heard within this many metres.
 const STOMP_EVERY: float = 1.1
 const STOMP_HEARD: float = 45.0
+## Creatures up to this level are roadside kin (Tier 1 to Iron-Root).
+const ROADSIDE_KIN_MAX_LEVEL: int = 4
 
 var variant: MobVariantResource
 ## The spawner it belongs to (set before it enters the tree).
@@ -67,6 +69,13 @@ func display_name() -> String:
 
 func is_engaged() -> bool:
 	return engaged and not stats.is_downed
+
+
+## Normal and Rare creatures up to Level 4 are Tier 1 kin (14 GDD §3): an Iron-Root strike cracks them.
+func glimmer_encounter_id() -> StringName:
+	var minor: bool = variant.level <= ROADSIDE_KIN_MAX_LEVEL and variant.rank != MobVariantResource.Rank.BOSS \
+		and variant.rank != MobVariantResource.Rank.ELITE
+	return ArsenalCatalog.ROADSIDE_KIN if minor else &""
 
 
 ## Fallen creatures stay down; their spawner grows a fresh one.

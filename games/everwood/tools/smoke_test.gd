@@ -50,6 +50,8 @@ const TEST_SAVE_PATH: String = "user://smoke_test_progress.cfg"
 
 const Cmd = CombatActionResource.Command
 const Sign = ScribeSignResource.Sign
+const Diorama = ScribeCardResource.DioramaSocket
+const Manifest = ScribeCardResource.ManifestationMode
 
 var dojo: DungeonDojo
 var boss: BossDummy
@@ -98,6 +100,9 @@ func _run() -> void:
 	# without their Braced Front Guard; the Phase 11 combat check sets up its own.
 	PartyProgress.current.apply_full_endgame_kit_for_testing()
 	BracedGuardComponent.enabled = false
+	# Sign-Flow and Glimmer-Spots too: the Phase 12 check switches them on for itself.
+	SignFlowComponent.enabled = false
+	GlimmerSpotComponent.enabled = false
 	change_scene_to_file(HUB_SCENE)
 	await _seconds(0.2)
 	_connect_global_signals()
@@ -137,10 +142,12 @@ func _run() -> void:
 	await _check_squire_beam_assist()
 	await _check_companion_backfill()
 	await _check_phase_11_combat_onboarding_and_flanking()
+	await test_phase_12_sign_flow_and_grimoire_ux()
 	await _check_victory_and_loot()
 	await _check_chime_shrine()
 	await _check_scribe_desk()
 	await _check_calling_shortcut_and_fellowship()
+	await _check_reed_light_scribery()
 	_check_audio_cues()
 	NetworkManager.current.leave_game()
 	await WORLD_GRID_CHECKS.new().run(self, _check)
@@ -550,7 +557,13 @@ func _check_hot_join_and_pad_mapping() -> void:
 	await _seconds(0.2)
 	_pad_button(pad_dps, JOY_BUTTON_BACK, false)
 	await _seconds(0.05)
-	_check(network.member(_pad_id(1)).class_id == ClassLoadouts.DIRECTIONAL_FLOW_DPS, "a quick tap of View / Create doesn't change class")
+	var tapped_binder: bool = (hub.huds[_pad_id(1)] as PlayerHUD).binder_panel() != null
+	_check(network.member(_pad_id(1)).class_id == ClassLoadouts.DIRECTIONAL_FLOW_DPS and tapped_binder,
+		"a quick tap of View / Create doesn't change class: it opens the Grimoire Binder")
+	_pad_button(pad_dps, JOY_BUTTON_BACK, true)
+	await _seconds(0.1)
+	_pad_button(pad_dps, JOY_BUTTON_BACK, false)
+	await _seconds(0.05)
 	_pad_button(pad_dps, JOY_BUTTON_BACK, true)
 	await _seconds(InputComponent.MENU_HOLD_TIME + 0.15)
 	_pad_button(pad_dps, JOY_BUTTON_BACK, false)
@@ -1913,6 +1926,462 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 	progress.save()
 	boss.set_physics_process(true)
 	_reset_boss_poise()
+
+
+# --- Phase 12: Sign-Flow, dioramas, Glimmer-Spots and the Scribery (14 GDD) -----
+
+## Sign-Flow ("Coat, Break, Turn!"), the Action-Leaf + Place-Card dioramas, the
+## 0-pip Hearth-Rite, threat-tiered Glimmer-Spots and Bravery Counters, the
+## Squire's buffered counter, and the shared diamond widget in the HUD, the
+## Grimoire Binder and the Scribery's counter. Played in the Cairnsman's ring.
+func test_phase_12_sign_flow_and_grimoire_ux() -> void:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var progress: PartyProgress = PartyProgress.current
+	var network: NetworkManager = NetworkManager.current
+	var director: CombatDirector = CombatDirector.current
+	var chimes_before: int = progress.chimes
+	var collection_before: Dictionary = progress.collection.duplicate()
+	SignFlowComponent.enabled = true
+	GlimmerSpotComponent.enabled = true
+	boss.set_physics_process(false)
+	boss.engaged = true
+	_reset_boss_poise()
+	for actor: ActorBase in [tank, healer, dps]:
+		await _until_idle(actor)
+		actor.stats.heal(actor.stats.stats.max_health)
+
+	# Schema: every Sign has all three manifestations; the four Place-Cards; old finish keys still read.
+	var coverage: bool = true
+	for scribe_sign: int in [Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE]:
+		for mode: int in [Manifest.WEAPON_COAT, Manifest.WARD_MANTLE, Manifest.LANTERN_TETHER]:
+			var found: bool = false
+			for leaf: ScribeCardResource in catalog.action_leaves():
+				found = found or (leaf.scribe_sign == scribe_sign and leaf.manifestation_mode == mode and leaf.card_kind == ScribeCardResource.CardKind.ACTION_LEAF)
+			coverage = coverage and found
+	var oaks: ScribeCardResource = catalog.card(ArsenalCatalog.ARIUNDLE_MOSS_OAKS)
+	var gorge: ScribeCardResource = catalog.card(ArsenalCatalog.DOVERSLAP_GORGE)
+	var mill: ScribeCardResource = catalog.card(ArsenalCatalog.BRAMBLEBRIDGE_MILL)
+	var tor: ScribeCardResource = catalog.card(ArsenalCatalog.BARROW_CRAG_TOR)
+	_check(coverage and catalog.place_cards().size() == 4 and oaks.card_kind == ScribeCardResource.CardKind.LOCATION_PLACE
+		and oaks.scribe_sign == Sign.SIGN_IRON_ROOT and is_equal_approx(oaks.location_bonus_poise, 15.0)
+		and gorge.scribe_sign == Sign.SIGN_RIME_GALE and is_equal_approx(gorge.location_bonus_reach_m, 0.8)
+		and mill.scribe_sign == Sign.SIGN_WARM_HEARTH and is_equal_approx(mill.location_bonus_heal, 10.0)
+		and tor.scribe_sign == Sign.SIGN_STAR_TIDE and is_equal_approx(tor.location_stamina_refund, 8.0) and oaks.chime_cost == 25
+		and not oaks.is_lead() and not oaks.is_under() and catalog.under_cards().size() == 4,
+		"every Sign has a Weapon-Coat, Ward-Mantle and Lantern-Tether Action-Leaf; the four Place-Cards carry their Signs and bonuses")
+	var old_kit: Dictionary = {"armor": "ironwood_plate", "weapon": "light_sword", "leads": ["shield_charge", "shadow_sanctuary", "taunt", "bulwark_quake"],
+		"variants": [1, 0, 0, 0], "unders": ["", "", "", ""]}
+	var read_back: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(old_kit)
+	_check(ScribeCardResource.variant_for_key("shiny_foil") == ScribeCardResource.CardVariant.SHINY_FOIL
+		and ScribeCardResource.copy_variant(&"taunt:astral_prism") == ScribeCardResource.CardVariant.ASTRAL_PRISM
+		and ScribeCardResource.VARIANT_NAMES == ["Plain Vellum", "Gilded Leaf", "Star-Inked Vellum"]
+		and read_back.lead_variants[0] == 1 and read_back.guard_leaf_id == &"" and read_back.place_ids == [&"", &"", &""],
+		"old saves still read: standard / shiny_foil / astral_prism are Plain Vellum, Gilded Leaf and Star-Inked Vellum, and old kits get empty dioramas")
+
+	# Diorama synergy: Iron-Root on Iron-Root ground is Home-Ground Harmony.
+	var harmony: Dictionary = catalog.compute_diorama_synergy(ArsenalCatalog.RISING_DRIVE, ArsenalCatalog.ARIUNDLE_MOSS_OAKS)
+	var stranger: Dictionary = catalog.compute_diorama_synergy(ArsenalCatalog.RISING_DRIVE, ArsenalCatalog.DOVERSLAP_GORGE)
+	_check(harmony["is_home_ground_harmony"] and is_equal_approx(harmony["coat_duration_sec"], 10.0) and is_equal_approx(harmony["bonus_poise"], 15.0)
+		and harmony["scribe_sign"] == Sign.SIGN_IRON_ROOT and not stranger["is_home_ground_harmony"] and is_equal_approx(stranger["coat_duration_sec"], 8.0)
+		and is_equal_approx(stranger["bonus_reach_m"], 0.8),
+		"Rising Drive framed by the Ariundle Moss-Oaks is Home-Ground Harmony: a 10.0 s coat (1.25x) and +15 poise; on the Gorge Bridge it's 8.0 s with +0.8 m reach")
+
+	# The scaling formulas, at 60 frames a second.
+	var worm: BossEncounterResource = catalog.encounter(ArsenalCatalog.SCREE_WORM)
+	var bucca: BossEncounterResource = catalog.encounter(ArsenalCatalog.GALE_BUCCA)
+	var hob: BossEncounterResource = catalog.encounter(ArsenalCatalog.OLD_HOB)
+	_check(worm.encounter_level == 2 and worm.get_scaled_glimmer_frames(0) == BossEncounterResource.ALWAYS_OPEN_FRAMES
+		and bucca.encounter_level == 10 and bucca.get_scaled_glimmer_frames(0) == 180 and bucca.get_scaled_glimmer_frames(5) == 120
+		and bucca.get_scaled_glimmer_frames(9) == 120 and hob.encounter_level == 60 and hob.get_scaled_glimmer_frames(5) == 45
+		and is_equal_approx(hob.get_impact_multiplier(), 5.0) and is_equal_approx(hob.bravery_counter_poise(), 525.0)
+		and is_equal_approx(catalog.encounter(ArsenalCatalog.ROADSIDE_KIN).get_impact_multiplier(), 1.25 + 3.75 * pow(1.0 / 60.0, 1.6)),
+		"windows: a Scree-Worm is always open; the Gale-Bucca (Lv 10) opens 180 frames, 120 by its fifth sighting; Old Hob (Lv 60) 45, with a 5.0x impact")
+
+	# Give the tank a diorama: Taunt (Iron-Root, Ward-Mantle) in R framed by the Moss-Oaks, Shadow Sanctuary (Star-Tide) in L.
+	progress.collection[ArsenalCatalog.ARIUNDLE_MOSS_OAKS] = 1
+	var diorama_kit: EquipmentLoadoutResource = tank.loadout.kit.copy()
+	diorama_kit.set_socket_place(Diorama.SKILL, ArsenalCatalog.ARIUNDLE_MOSS_OAKS, 0)
+	diorama_kit.set_socket_leaf(Diorama.GUARD, ArsenalCatalog.SHADOW_SANCTUARY, 0)
+	network.update_local_kit(tank.device_id, diorama_kit.to_dict())
+	await _seconds(0.05)
+	var flow: SignFlowComponent = tank.sign_flow
+	var hud: PlayerHUD = dojo.huds[tank.player_id]
+	_check(tank.loadout.kit.place_ids[Diorama.SKILL] == ArsenalCatalog.ARIUNDLE_MOSS_OAKS and tank.loadout.kit.guard_leaf_id == ArsenalCatalog.SHADOW_SANCTUARY
+		and flow.socket_synergy(Diorama.SKILL)["is_home_ground_harmony"] and hud.cross_grimoire.diorama.socket_view(Diorama.SKILL)["place"] == ArsenalCatalog.ARIUNDLE_MOSS_OAKS,
+		"the tank's R diamond frames Taunt (Iron-Root) with the Ariundle Moss-Oaks, shown on the HUD's diamonds; L holds Shadow Sanctuary")
+
+	# 0-pip Hearth-Rite: hold R out of combat for 90 frames.
+	var issued: Array[int] = []
+	var issued_hook: Callable = func(command: int) -> void: issued.append(command)
+	tank.input.command_issued.connect(issued_hook)
+	healer.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(10.0, 0.0, 10.0)))
+	tank.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(0.0, 0.0, 26.0)))
+	tank.input.inject_move(Vector2.ZERO)
+	await _seconds(0.1)
+	tank.stats.resonance_charge = 0.4
+	# The hold starts in this physics step: after 89 more steps it has been held 89 frames, after 90 it's done.
+	tank.input.inject_hold(InputComponent.ACTION_TRIGGER_R, true)
+	for frame: int in SignFlowComponent.HEARTH_RITE_HOLD_FRAMES - 1:
+		await physics_frame
+	var early: bool = flow.has_hearth_rite_tuck
+	var holding: float = tank.input.hearth_rite_progress()
+	await physics_frame
+	_check(not flow.is_in_combat and not early and holding > 0.95 and flow.has_hearth_rite_tuck and flow.opening_strike_empowered
+		and is_equal_approx(tank.stats.resonance_charge, 1.0) and not issued.has(Cmd.TRIGGER_R_SKILL),
+		"out of combat, holding R for 90 frames is the Hearth-Rite: it costs no pip, tops the tank up to 1.0 and empowers the opening strike")
+	_check(is_equal_approx(tank.visuals.weapon_scale(), SignFlowComponent.TRAIL_COAT_SCALE) and flow.active_trail_coat_sign == Sign.SIGN_IRON_ROOT
+		and flow.active_location_card_id == ArsenalCatalog.ARIUNDLE_MOSS_OAKS and tank.visuals.sign_coat_look() == SignFlowComponent.CoatLook.TRAIL_TUCK,
+		"the falchion glows at %.2fx in the Moss-Oaks' tint, carrying Iron-Root into the next fight" % tank.visuals.weapon_scale())
+	tank.input.inject_hold(InputComponent.ACTION_TRIGGER_R, false)
+	await _seconds(0.1)
+	tank.input.inject_hold(InputComponent.ACTION_TRIGGER_R, true)
+	await _seconds(0.3)
+	tank.input.inject_hold(InputComponent.ACTION_TRIGGER_R, false)
+	await _seconds(0.1)
+	_check(issued.count(Cmd.TRIGGER_R_SKILL) == 1, "a short press of R out of combat still fires R, on letting go")
+	tank.stats.resonance_charge = 2.0
+	flow.begin_hearth_rite(Diorama.SKILL)
+	var astral_kit: EquipmentLoadoutResource = tank.loadout.kit.copy()
+	astral_kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] = ScribeCardResource.CardVariant.ASTRAL_PRISM
+	var astral_frames: int = 0
+	var real_kit: EquipmentLoadoutResource = tank.loadout.kit
+	tank.loadout.kit = astral_kit
+	astral_frames = flow.hearth_rite_hold_frames(Diorama.SKILL)
+	tank.loadout.kit = real_kit
+	_check(is_equal_approx(tank.stats.resonance_charge, 2.0) and astral_frames == SignFlowComponent.STAR_INKED_HOLD_FRAMES,
+		"with 2 pips the rite keeps both (it never costs one), and a Star-Inked Vellum leaf needs only 60 frames")
+
+	# The opening strike in the fight discharges the blessing: Iron-Root, its seal, and the Moss-Oaks' poise.
+	var resolved: Array[CombatEvent] = []
+	var resolved_hook: Callable = func(event: CombatEvent, _outcome: int) -> void: resolved.append(event)
+	director.hit_resolved.connect(resolved_hook)
+	var stops: Array[float] = []
+	var stop_hook: Callable = func(duration: float) -> void: stops.append(duration)
+	director.hit_stop_applied.connect(stop_hook)
+	await _until_idle(tank)
+	_face_boss(tank, Vector3(0.0, 0.0, 2.6))
+	tank.input.inject_move(Vector2.ZERO)
+	await _seconds(0.1)
+	var in_fight: bool = flow.is_in_combat and absf(flow.trail_coat_timer - (SignFlowComponent.TRAIL_COAT_COMBAT_GRACE - 0.1)) < 0.05
+	tank.stats.resonance_charge = 1.0
+	resolved.clear()
+	tank.input.inject_command(Cmd.LIGHT)
+	var waited: float = 0.0
+	while flow.flow_window_left <= 0.0 and waited < 1.0:
+		await physics_frame
+		waited += 1.0 / 60.0
+	var opening: CombatEvent = resolved.back() if not resolved.is_empty() else null
+	_check(in_fight and opening != null and opening.coat_sign == Sign.SIGN_IRON_ROOT and is_equal_approx(opening.coat_poise, 15.0)
+		and opening.primer == Sign.SIGN_IRON_ROOT and director.primer_on(boss) == Sign.SIGN_IRON_ROOT and not flow.has_hearth_rite_tuck,
+		"in the fight the opening Light discharges it: Iron-Root's seal on the Cairnsman and the Moss-Oaks' +15 poise, and the glow is spent")
+
+	# In-combat Sign-Flow: R tapped in the Flow-Link Window casts at once and coats the hero.
+	_check(flow.flow_window_left > 0.0 and flow.flow_window_frames() == SignFlowComponent.FLOW_WINDOW_FRAMES,
+		"landing the Light opens a 14-frame Flow-Link Window")
+	# Lambdas copy plain locals, so the frames go in a dictionary.
+	var r_frames: Dictionary = {"started": -1, "active": -1}
+	var start_hook: Callable = func(action: CombatActionResource, _flowed: bool) -> void:
+		if action.command == Cmd.TRIGGER_R_SKILL:
+			r_frames["started"] = Engine.get_physics_frames()
+	var phase_hook: Callable = func(phase: ActionQueueComponent.Phase) -> void:
+		if phase == ActionQueueComponent.Phase.ACTIVE and tank.action_queue.current_action != null \
+				and tank.action_queue.current_action.command == Cmd.TRIGGER_R_SKILL and int(r_frames["active"]) < 0:
+			r_frames["active"] = Engine.get_physics_frames()
+	tank.action_queue.action_started.connect(start_hook)
+	tank.action_queue.phase_changed.connect(phase_hook)
+	var cones_before: int = _count_zones(SanctuaryZone.Shape.CONE)
+	var casts_before: int = flow.sign_flow_casts()
+	stops.clear()
+	tank.input.inject_command(Cmd.TRIGGER_R_SKILL)
+	var biggest: float = 1.0
+	for frame: int in 40:
+		await physics_frame
+		biggest = maxf(biggest, tank.visuals.weapon_scale())
+	var ring: bool = false
+	for child: Node in dojo.effects_root.get_children():
+		ring = ring or String(child.name).begins_with("SignFlowRing")
+	var freeze: bool = false
+	for duration: float in stops:
+		freeze = freeze or is_equal_approx(duration, SignFlowComponent.SIGN_FLOW_HIT_STOP)
+	var r_lag: int = int(r_frames["active"]) - int(r_frames["started"])
+	_check(flow.sign_flow_casts() == casts_before + 1 and int(r_frames["started"]) >= 0 and int(r_frames["active"]) >= 0 and r_lag <= 1,
+		"R tapped in the window casts Taunt with no wind-up (active %d frame after it starts)" % r_lag)
+	_check(biggest >= SignFlowComponent.SIGN_FLOW_SCALE - 0.05 and freeze and ring and flow.coat_sign == Sign.SIGN_IRON_ROOT
+		and flow.coat_mode == Manifest.WARD_MANTLE and flow.coat_time_left > 9.0 and _count_zones(SanctuaryZone.Shape.CONE) == cones_before + 1,
+		"the cast flares the falchion to %.1fx, freezes the foe 110 ms, stamps a 2.5 m Sign ring, and Taunt's Ward-Mantle coats the tank for 10 s with a shelter cone" % biggest)
+	tank.action_queue.action_started.disconnect(start_hook)
+	tank.action_queue.phase_changed.disconnect(phase_hook)
+	await _until_idle(tank)
+	resolved.clear()
+	tank.input.inject_command(Cmd.LIGHT)
+	await _seconds(0.4)
+	var coated: CombatEvent = resolved.back() if not resolved.is_empty() else null
+	_check(coated != null and coated.coat_sign == Sign.SIGN_IRON_ROOT and is_equal_approx(coated.coat_poise, 15.0),
+		"while coated even a plain Light carries Iron-Root and the Moss-Oaks' poise")
+	# L tapped in the window: a Counter-Brace from the L diamond.
+	await _until_idle(tank)
+	tank.stats.resonance_charge = 1.5
+	tank.input.inject_command(Cmd.LIGHT)
+	waited = 0.0
+	while flow.flow_window_left <= 0.0 and waited < 1.0:
+		await physics_frame
+		waited += 1.0 / 60.0
+	var braces: int = flow.sign_flow_casts()
+	var pips_before_brace: float = tank.stats.resonance_charge
+	tank.input.inject_guard(true)
+	await _seconds(0.1)
+	tank.input.inject_guard(false)
+	_check(flow.sign_flow_casts() == braces + 1 and flow.coat_sign == Sign.SIGN_STAR_TIDE and pips_before_brace - tank.stats.resonance_charge > 0.9,
+		"L tapped in the window is a 1-pip Counter-Brace: Shadow Sanctuary's Star-Tide coats the tank")
+	# A coat framed by the Gorge Bridge reaches 0.8 m further.
+	await _until_idle(tank)
+	flow.coat_synergy = catalog.compute_diorama_synergy(ArsenalCatalog.RISING_DRIVE, ArsenalCatalog.DOVERSLAP_GORGE)
+	var light: CombatActionResource = tank.loadout.opener_for(Cmd.LIGHT)
+	tank.hitbox.activate(light)
+	var gorge_reach: float = -tank.hitbox.position.z
+	tank.hitbox.deactivate()
+	flow.coat_time_left = 0.01
+	_check(is_equal_approx(gorge_reach, light.reach + 0.8), "a coat framed by the Doverslap Gorge Bridge reaches 0.8 m further (Gorge-Draft)")
+	# The window's length: 18 frames near a Lantern-Bearer, 9 alone in Dread-Chill.
+	healer.place_at(Transform3D(Basis.IDENTITY, tank.global_position + Vector3(2.0, 0.0, 0.0)))
+	var promise: int = flow.flow_window_frames()
+	healer.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(10.0, 0.0, 10.0)))
+	healer.stats.is_downed = true
+	dps.stats.is_downed = true
+	var dread: int = flow.flow_window_frames()
+	healer.stats.is_downed = false
+	dps.stats.is_downed = false
+	_check(promise == SignFlowComponent.LANTERNS_PROMISE_WINDOW_FRAMES and dread == SignFlowComponent.DREAD_CHILL_WINDOW_FRAMES,
+		"the window is 18 frames within 5.5 m of a Lantern-Bearer (The Lantern's Promise) and 9 alone (Dread-Chill)")
+
+	# Tier 1 kin: any Iron-Root strike cracks them for 1.25x poise, with no text.
+	var minion: WoodlandMinion = dojo.camps[0].minions[0] if not dojo.camps.is_empty() and not dojo.camps[0].minions.is_empty() else null
+	await _until_idle(tank)
+	_reset_boss_poise()
+	var glimmer: GlimmerSpotComponent = boss.glimmer
+	glimmer.encounter = worm
+	resolved.clear()
+	var iron: CombatEvent = _strike(dps, boss, 5.0, 20.0)
+	iron.scribe_sign = Sign.SIGN_IRON_ROOT
+	director.deliver(iron)
+	var star: CombatEvent = _strike(dps, boss, 5.0, 20.0)
+	star.scribe_sign = Sign.SIGN_STAR_TIDE
+	director.deliver(star)
+	_check(minion != null and minion.glimmer != null and minion.glimmer.encounter.encounter_id == ArsenalCatalog.ROADSIDE_KIN and glimmer.is_open()
+		and resolved.size() == 2 and is_equal_approx(resolved[0].poise_damage, 25.0) and is_equal_approx(resolved[1].poise_damage, 20.0)
+		and hud.rhyme_text() == "",
+		"a Tier 1 Scree-Worm (Lv 2) is always open: an Iron-Root strike's 20 poise lands as 25 (1.25x), Star-Tide's as 20, and no rhyme shows")
+
+	# Tier 3: the Gale-Bucca (Lv 10) opens 180 frames, tightens with each sighting, and hides its rhyme from the third.
+	_reset_boss_poise()
+	glimmer.encounter = bucca
+	progress.pattern_seen.erase(ArsenalCatalog.GALE_BUCCA)
+	var first_frames: int = glimmer.open_window()
+	await physics_frame
+	var first_rhyme: String = hud.rhyme_text()
+	var first_left: float = glimmer.time_left()
+	resolved.clear()
+	var countered: Array[String] = []
+	var counter_hook: Callable = func(_target: ActorBase, _sign: int, label: String) -> void: countered.append(label)
+	director.bravery_countered.connect(counter_hook)
+	var tide: CombatEvent = _strike(dps, boss, 5.0, 10.0)
+	tide.scribe_sign = Sign.SIGN_STAR_TIDE
+	director.deliver(tide)
+	var saved: ConfigFile = ConfigFile.new()
+	saved.load(TEST_SAVE_PATH)
+	var saved_seen: int = int((saved.get_value("glimmer", "seen", {}) as Dictionary).get("gale_bucca", 0))
+	_check(first_frames == 180 and absf(first_left - 3.0) < 0.05 and first_rhyme == bucca.hud_rhyme_couplet and progress.pattern_seen_count(ArsenalCatalog.GALE_BUCCA) == 1
+		and saved_seen == 1, "the Gale-Bucca's first wing-spread opens a 180-frame (3.0 s) Star-Tide Glimmer-Spot, the rhyme on the HUD, the sighting saved")
+	_check(not countered.is_empty() and countered.back().begins_with("BRAVERY COUNTER") and countered.back().contains("ASTRAL CHORUS") and not glimmer.is_open()
+		and not resolved.is_empty() and is_equal_approx(resolved.back().poise_damage, 105.0 * bucca.get_impact_multiplier()),
+		"a Star-Tide strike in it is a Bravery Counter: (60 + 45) x %.2f = %.0f poise, Astral Chorus, and the spot shuts" % [bucca.get_impact_multiplier(),
+			resolved.back().poise_damage if not resolved.is_empty() else 0.0])
+	var tightening: Array[int] = [first_frames]
+	var rhymes: Array[String] = [first_rhyme]
+	for sighting: int in 2:
+		tightening.append(glimmer.open_window())
+		await physics_frame
+		rhymes.append(hud.rhyme_text())
+		glimmer.close()
+	progress.pattern_seen[ArsenalCatalog.GALE_BUCCA] = 5
+	var fifth: int = glimmer.open_window()
+	_check(tightening == [180, 168, 156] and rhymes[1] != "" and rhymes[2] == "" and fifth == 120,
+		"each sighting tightens it by 12 frames (180, 168, 156), the rhyme goes quiet from the third, and from the fifth it holds at 120 (2.0 s)")
+	resolved.clear()
+	var wrong: CombatEvent = _strike(dps, boss, 5.0, 10.0)
+	wrong.scribe_sign = Sign.SIGN_RIME_GALE
+	director.deliver(wrong)
+	_check(glimmer.is_open() and is_equal_approx(resolved.back().poise_damage, 10.0), "a Sign that doesn't counter it (Rime-Gale) is just a hit")
+	glimmer.close()
+	# Lv 60: 45 frames and a 5.0x impact.
+	_reset_boss_poise()
+	glimmer.encounter = hob
+	progress.pattern_seen[ArsenalCatalog.OLD_HOB] = 5
+	var hob_frames: int = glimmer.open_window()
+	resolved.clear()
+	var root_strike: CombatEvent = _strike(tank, boss, 5.0, 10.0)
+	root_strike.scribe_sign = Sign.SIGN_IRON_ROOT
+	director.deliver(root_strike)
+	_check(hob_frames == 45 and not resolved.is_empty() and is_equal_approx(resolved.back().poise_damage, 525.0),
+		"Old Hob (Lv 60), seen five times, opens only 45 frames (0.75 s), and an Iron-Root Bravery Counter lands 105 x 5.0 = 525 poise")
+	await _seconds(0.1)
+
+	# The Cairnsman's own roar opens his spot (Tier 3, Lv 5, Iron-Root or Star-Tide).
+	_reset_boss_poise()
+	glimmer.encounter = catalog.encounter(ArsenalCatalog.CAIRNSMAN)
+	glimmer.close()
+	progress.pattern_seen.erase(ArsenalCatalog.CAIRNSMAN)
+	boss._cast_timer = 0.05
+	boss.set_physics_process(true)
+	waited = 0.0
+	while not glimmer.is_open() and waited < 2.0:
+		await physics_frame
+		waited += 1.0 / 60.0
+	boss.set_physics_process(false)
+	_check(glimmer.is_open() and absf(glimmer.time_left() - 3.0) < 0.1 and progress.pattern_seen_count(ArsenalCatalog.CAIRNSMAN) == 1
+		and hud.rhyme_text().contains("Iron-Root"), "the Cairnsman roars into his cast and his amber core opens for 180 frames, with his rhyme on the HUD")
+	glimmer.close()
+
+	# Squire Gambit: a press up to 90 frames before the roar is buffered and fires on its first frame.
+	await _until_idle(dps)
+	var dps_mode: InputComponent.AssistMode = dps.input.assist_mode
+	dps.input.assist_mode = InputComponent.AssistMode.SQUIRE_GAMBIT
+	dps.apply_assist_mode()
+	_face_boss(dps, Vector3(-1.5, 0.0, 3.5))
+	dps.stats.resonance_charge = 2.0
+	var dps_commands: Array[int] = []
+	var dps_hook: Callable = func(command: int) -> void: dps_commands.append(command)
+	dps.input.command_issued.connect(dps_hook)
+	director.expect_glimmer(boss, 1.0)
+	var accepting: bool = boss.glimmer.accepts_buffer()
+	dps.input._issue_attack(Cmd.LIGHT)
+	var buffered: bool = glimmer.is_buffered(dps.player_id) and dps_commands.is_empty()
+	await _seconds(0.5)
+	countered.clear()
+	glimmer.open_window()
+	var fired_at_once: bool = dps_commands.has(Cmd.TRIGGER_R_SKILL)
+	await _seconds(0.8)
+	_check(accepting and buffered and fired_at_once and not countered.is_empty(),
+		"a Squire's press 1.0 s before the roar is buffered; their Gale Rush (Star-Tide) fires on the opening's first frame and lands a Bravery Counter")
+	dps.input.command_issued.disconnect(dps_hook)
+	dps.input.assist_mode = dps_mode
+	dps.apply_assist_mode()
+	director.bravery_countered.disconnect(counter_hook)
+
+	# The Scribery's counter (opened here from the HUD) and the shared diamonds.
+	await _until_idle(tank)
+	hud.open_scribery_shop()
+	var shop: ScriberyShopPanel = hud.scribery_panel()
+	progress.chimes = 200
+	progress.save()
+	shop.select_tab(ScriberyShopPanel.Tab.CHART)
+	shop.widget.selected_socket = Diorama.ULT
+	shop.select_option(ArsenalCatalog.BARROW_CRAG_TOR)
+	await physics_frame
+	await physics_frame
+	var previewing: bool = tank.visuals.sign_coat_look() == SignFlowComponent.CoatLook.TRAIL_TUCK and tank.visuals.weapon_scale() > 1.3
+	var charted: bool = shop.buy()
+	await _seconds(0.1)
+	saved.load(TEST_SAVE_PATH)
+	var hud_widget: CrossGrimoireDiamondWidget = hud.cross_grimoire.diorama
+	_check(shop.widget.display_scale == CrossGrimoireDiamondWidget.BINDER_SCALE and shop.widget.interactive
+		and hud_widget.display_scale == CrossGrimoireDiamondWidget.HUD_SCALE and not hud_widget.interactive and previewing,
+		"the Scribery shows the HUD's own CrossGrimoireDiamondWidget at 2.2x (interactive; the HUD's is 1.0x), and a highlighted card coats the puppet as a preview")
+	_check(charted and progress.chimes == 175 and progress.owns_card(ArsenalCatalog.BARROW_CRAG_TOR)
+		and int((saved.get_value("cards", "collection", {}) as Dictionary).get("loc_barrow_crag_tor", 0)) == 1 and int(saved.get_value("party", "chimes", 0)) == 175
+		and tank.loadout.kit.place_ids[Diorama.ULT] == ArsenalCatalog.BARROW_CRAG_TOR
+		and shop.widget.socket_view(Diorama.ULT)["place"] == ArsenalCatalog.BARROW_CRAG_TOR and hud_widget.socket_view(Diorama.ULT)["place"] == ArsenalCatalog.BARROW_CRAG_TOR,
+		"charting the Barrow-Crag Star-Tor takes 25 Chimes, saves it, and frames L+R in both the shop's diamonds and the HUD's")
+	shop.select_tab(ScriberyShopPanel.Tab.GILD)
+	var on_press: bool = shop.select_option(ArsenalCatalog.TAUNT)
+	var gilded: bool = shop.buy()
+	await _seconds(0.1)
+	saved.load(TEST_SAVE_PATH)
+	_check(on_press and gilded and progress.chimes == 125 and progress.owns_card(ArsenalCatalog.TAUNT, ScribeCardResource.CardVariant.SHINY_FOIL)
+		and int((saved.get_value("cards", "collection", {}) as Dictionary).get("taunt:shiny_foil", 0)) == 1
+		and tank.loadout.kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] == ScribeCardResource.CardVariant.SHINY_FOIL
+		and shop.widget.kit.socket_leaf_variant(Diorama.SKILL) == ScribeCardResource.CardVariant.SHINY_FOIL
+		and hud_widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.SHINY_FOIL
+		and shop.widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.ASTRAL_PRISM
+		and PartyProgress.gilding_cost(&"taunt:shiny_foil") == 120,
+		"the Gilding Press turns the worn Taunt from Plain Vellum to Gilded Leaf for 50 Chimes: saved, worn, gold-trimmed on the HUD, and the press now previews Star-Inked (120)")
+	shop.close()
+	await _seconds(0.05)
+	_check(hud.scribery_panel() == null and not tank.input.menu_open, "closing the counter hands the controller back")
+
+	# The Grimoire Binder: not mid-fight; out of it, the same diamonds at 2.2x between the two pages.
+	var refused: bool = not hud.open_binder()
+	tank.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(0.0, 0.0, 26.0)))
+	await _seconds(0.1)
+	hud.toggle_binder()
+	var binder: GrimoireBinderPanel = hud.binder_panel()
+	_check(refused and binder != null and binder.widget is CrossGrimoireDiamondWidget and binder.widget.display_scale == CrossGrimoireDiamondWidget.BINDER_SCALE
+		and binder.widget.interactive, "the Grimoire Binder won't open mid-fight; out of it, it grows the same diamonds to 2.2x")
+	binder.widget.selected_socket = Diorama.GUARD
+	var placed: bool = binder.slot_place(ArsenalCatalog.BARROW_CRAG_TOR)
+	await _seconds(0.05)
+	var guard_view: Dictionary = binder.widget.socket_view(Diorama.GUARD)
+	_check(placed and binder.place_options().has(ArsenalCatalog.BARROW_CRAG_TOR) and binder.leaf_options().has(ArsenalCatalog.SHADOW_SANCTUARY)
+		and guard_view["place"] == ArsenalCatalog.BARROW_CRAG_TOR and guard_view["synergy"]["is_home_ground_harmony"]
+		and hud_widget.socket_view(Diorama.GUARD)["synergy"]["is_home_ground_harmony"] and GrimoireBinderPanel._folio_text().begins_with("COLLECTION FOLIO"),
+		"from the Place-Cards page the Star-Tor frames L behind Shadow Sanctuary: Star-Tide on Star-Tide, Home-Ground Harmony in the Binder and on the HUD")
+	hud.toggle_binder()
+	await _seconds(0.05)
+	_check(hud.binder_panel() == null and not tank.input.menu_open, "toggling again closes the Binder")
+
+	# Back as we were, Sign-Flow and Glimmer-Spots off again for the checks that follow.
+	tank.input.command_issued.disconnect(issued_hook)
+	director.hit_resolved.disconnect(resolved_hook)
+	director.hit_stop_applied.disconnect(stop_hook)
+	SignFlowComponent.enabled = false
+	GlimmerSpotComponent.enabled = false
+	glimmer.encounter = catalog.encounter(ArsenalCatalog.CAIRNSMAN)
+	glimmer.close()
+	progress.pattern_seen.clear()
+	progress.chimes = chimes_before
+	progress.collection.assign(collection_before)
+	for actor: ActorBase in [tank, healer, dps]:
+		await _until_idle(actor)
+		network.update_local_kit(actor.device_id, ClassLoadouts.starter_kit(actor.loadout.class_id).to_dict())
+		actor.stats.heal(actor.stats.stats.max_health)
+	progress.save()
+	await _seconds(0.1)
+	_stage_party()
+	_reset_boss_poise()
+	boss.set_physics_process(true)
+
+
+## The Reed-Light Scribery on Bramblebridge's square: under the 3.2 m sightline
+## cap, its prompt, and light at the counter opens the shop on your own screen.
+func _check_reed_light_scribery() -> void:
+	var hub: HubTown = current_scene as HubTown
+	var keyboard: ActorBase = hub.actors[&"1_0"]
+	var hud: PlayerHUD = hub.huds[&"1_0"]
+	var station: ScriberyStation = hub.get_node_or_null(^"ReedLightScribery") as ScriberyStation
+	keyboard.input.release_script()
+	var lights: int = 0
+	if station != null:
+		for child: Node in station.find_children("*", "OmniLight3D", true, false):
+			lights += 1
+	_check(station != null and station.tallest_point() <= 3.0 and station.tallest_point() > 2.5 and lights == 4
+		and station.get_node_or_null(^"VellumPressWheel") != null,
+		"the Reed-Light Scribery stands on the square: a stepped-gable pavilion %.2f m tall (under the 3.2 m cap), a Vellum Press-Wheel and four Deep-Ink Vat Lanterns"
+		% (station.tallest_point() if station != null else 0.0))
+	if station == null:
+		return
+	var front: Vector3 = -station.global_basis.z
+	keyboard.place_at(Transform3D(Basis.IDENTITY, station.global_position + front * 2.4))
+	await _seconds(0.1)
+	_check(keyboard.interactable == station and hud.prompt_text().contains("Reed-Light Scribery"), "at its counter the prompt names the Reed-Light Scribery")
+	await _tap_key(KEY_J)
+	_check(hud.scribery_panel() != null and keyboard.input.menu_open and not keyboard.action_queue.is_busy(), "J at the counter opens the Scribery's three tabs")
+	await _tap_key(KEY_SPACE)
+	_check(hud.scribery_panel() == null, "Space closes it")
+	await _tap_key(KEY_TAB)
+	var opened: bool = hud.binder_panel() != null
+	await _tap_key(KEY_TAB)
+	_check(opened and hud.binder_panel() == null and hub.actors[&"1_0"] == keyboard and keyboard.loadout.class_id == ClassLoadouts.SHIELD_TANK,
+		"a tap of Tab opens the Grimoire Binder and another closes it (holding Tab still changes Fellowship)")
 
 
 ## Waits until `actor` is in the recovery of an action other than `previous`.

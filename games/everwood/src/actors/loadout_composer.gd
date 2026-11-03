@@ -129,7 +129,22 @@ static func sanitized(player_class: PlayerClassResource, requested: EquipmentLoa
 		var under: ScribeCardResource = catalog.card(kit.under_ids[slot])
 		if under == null or not under.is_under():
 			kit.under_ids[slot] = &""
+	# The diorama layer (14 GDD §4): L's leaf must suit the class, frames must be Place-Cards.
+	var guard_leaf: ScribeCardResource = catalog.card(kit.guard_leaf_id)
+	if guard_leaf == null or not fits_diorama(player_class, guard_leaf):
+		kit.guard_leaf_id = &""
+		kit.guard_leaf_variant = ScribeCardResource.CardVariant.STANDARD
+	for socket: int in EquipmentLoadoutResource.SOCKET_COUNT:
+		var place: ScribeCardResource = catalog.card(kit.place_ids[socket])
+		if place == null or not place.is_place_card():
+			kit.place_ids[socket] = &""
+			kit.place_variants[socket] = ScribeCardResource.CardVariant.STANDARD
 	return kit
+
+
+## Whether an Action-Leaf can stand in a diorama socket for this class (any slot's leaf will do in L).
+static func fits_diorama(player_class: PlayerClassResource, leaf: ScribeCardResource) -> bool:
+	return leaf != null and leaf.is_action_leaf() and (player_class.has_soul_tethers or not leaf.needs_soul_tether)
 
 
 ## R and L+R may be left empty: they fire the weapon's Un-Inked Martial Flourish.
@@ -235,6 +250,14 @@ static func kit_problem(player_class: PlayerClassResource, kit: EquipmentLoadout
 			if not under_link_open(slot, level, trail_level):
 				return "Under-Card link %d opens at Grimoire Lv %d" % [slot + 1, slot + 2]
 			uses[kit.under_ids[slot]] = uses.get(kit.under_ids[slot], 0) + 1
+	# The diorama's own copies (they take no Grimoire Memory): L's leaf needs a
+	# copy of its own; one charted Place-Card can frame every socket.
+	if kit.guard_leaf_id != &"":
+		var guard_key: StringName = ScribeCardResource.copy_key(kit.guard_leaf_id, kit.socket_leaf_variant(ScribeCardResource.DioramaSocket.GUARD))
+		uses[guard_key] = uses.get(guard_key, 0) + 1
+	for socket: int in EquipmentLoadoutResource.SOCKET_COUNT:
+		if kit.place_ids[socket] != &"":
+			uses[ScribeCardResource.copy_key(kit.place_ids[socket], kit.socket_place_variant(socket))] = 1
 	for key: StringName in uses:
 		if not owns(key, uses[key], collection):
 			var missing: ScribeCardResource = catalog.card(ScribeCardResource.copy_card_id(key))

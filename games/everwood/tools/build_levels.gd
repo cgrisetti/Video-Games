@@ -45,6 +45,7 @@ const PORTAL_SCRIPT: String = "res://src/actors/raid_portal.gd"
 const SHRINE_SCRIPT: String = "res://src/actors/chime_shrine.gd"
 const WHEEL_SCRIPT: String = "res://src/actors/watermill_wheel.gd"
 const DESK_SCRIPT: String = "res://src/actors/scribe_desk.gd"
+const SCRIBERY_SCRIPT: String = "res://src/actors/scribery_station.gd"
 const CAMP_SCRIPT: String = "res://src/actors/minion_camp.gd"
 const SHRINE_WATER_SCRIPT: String = "res://src/actors/water_shrine.gd"
 const LANTERN_SCRIPT: String = "res://src/actors/wind_lantern.gd"
@@ -224,6 +225,8 @@ const LANTERN_COLOR: Color = Color(1.0, 0.8, 0.45)
 ## On the village square: the desk west of the lane, the shrine east of it, both facing the lane.
 const DESK_POSITION: Vector3 = Vector3(-7.5, 0.0, -12.0)
 const SHRINE_POSITION: Vector3 = Vector3(7.5, 0.0, -12.0)
+## The Reed-Light Scribery (14 GDD §6): the square's west side, north of the desk, its counter facing the lane.
+const SCRIBERY_POSITION: Vector3 = Vector3(-9.0, 0.0, -19.5)
 const OAK_TRUNK_COLOR: Color = Color(0.36, 0.26, 0.18)
 const OAK_LEAF_COLOR: Color = Color(0.28, 0.46, 0.25)
 const MOSS_COLOR: Color = Color(0.36, 0.5, 0.26)
@@ -316,7 +319,7 @@ func _build_hub() -> Node3D:
 	return root
 
 
-## The village, its portal, shrine and desk, under `root` in the hub's frame.
+## The village, its portal, shrine, desk and Scribery, under `root` in the hub's frame.
 ## In the seamless world the Forest Gate is open (the way out on foot), the
 ## portal stands aside, and the portal, shrine and desk are Landblock entities.
 func _build_town(root: Node3D, world_mode: bool) -> void:
@@ -360,6 +363,10 @@ func _build_town(root: Node3D, world_mode: bool) -> void:
 	# Its front (local -Z) turned to face east, toward the lane.
 	desk.rotation = Vector3(0.0, -PI * 0.5, 0.0)
 	root.add_child(_entity(desk) if world_mode else desk)
+	var scribery: Node3D = _scripted("ReedLightScribery", SCRIBERY_SCRIPT, SCRIBERY_POSITION, {})
+	# Its counter (local -Z) turned to face east, toward the lane, like the desk.
+	scribery.rotation = Vector3(0.0, -PI * 0.5, 0.0)
+	root.add_child(_entity(scribery) if world_mode else scribery)
 
 
 ## The village wall, with the forest gate's opening in the north side and, in

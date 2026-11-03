@@ -9,6 +9,12 @@
 ## 11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §5.2): mobs, co-op gates and bosses pay
 ## XP, and each milestone level grants every Fellowship new gear and cards.
 ##
+## Sign-Flow (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md) keeps two things here too: how
+## often the party has seen each boss's Glimmer-Spot open (the windows tighten
+## and the HUD rhyme goes quiet as the family learns them), and what the
+## Reed-Light Scribery sells: Action-Leaves and Place-Cards for Chimes, and the
+## Gilding Press's finer finishes.
+##
 ## The whole party shares one pouch and one set of upgrades, like a family
 ## purse: every player's base stats grow together. The host owns it: other
 ## peers are shown the host's copy while they're connected and never save it,
@@ -63,6 +69,8 @@ var endgame_kits_for_testing: bool = false
 var kits: Dictionary[StringName, Dictionary] = {}
 ## Class id -> the Secondary Calling id its players last chose (&"swift_foot").
 var callings: Dictionary[StringName, StringName] = {}
+## Encounter id -> Glimmer-Spot openings the party has seen (14 GDD §3, N_seen).
+var pattern_seen: Dictionary[StringName, int] = {}
 ## The host rolls chest cards with this (the smoke test seeds it).
 var drop_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## The host rolls the expedition's finds (the Wayfarer's Chest) with this, so they never shift the boss's drops.
@@ -215,6 +223,123 @@ func award_card(copy_key: StringName) -> void:
 	_commit()
 
 
+# --- Glimmer-Spots (14 GDD §3) ----------------------------------------------
+
+func pattern_seen_count(encounter_id: StringName) -> int:
+	return pattern_seen.get(encounter_id, 0)
+
+
+## Host only: one more sighting of a boss's Glimmer-Spot. Returns the count now.
+func record_pattern_seen(encounter_id: StringName) -> int:
+	if not NetworkManager.current.is_host() or encounter_id == &"":
+		return pattern_seen_count(encounter_id)
+	pattern_seen[encounter_id] = pattern_seen_count(encounter_id) + 1
+	_commit()
+	return pattern_seen[encounter_id]
+
+
+# --- The Reed-Light Scribery (14 GDD §6) -------------------------------------
+
+## Whether the party has a copy of a card in this finish (starters are free in Plain Vellum).
+func owns_card(card_id: StringName, variant: int = ScribeCardResource.CardVariant.STANDARD) -> bool:
+	return LoadoutComposer.owns(ScribeCardResource.copy_key(card_id, variant as ScribeCardResource.CardVariant), 1, collection)
+
+
+## The finest finish the party owns of a card (-1 if it owns none).
+func best_finish(card_id: StringName) -> int:
+	for variant: int in range(ScribeCardResource.CardVariant.size() - 1, -1, -1):
+		if owns_card(card_id, variant):
+			return variant
+	return -1
+
+
+## Whether the Scribery sells this card: its Common Action-Leaves and the Place-Cards.
+static func is_scribery_card(card_id: StringName) -> bool:
+	var listed: ScribeCardResource = ArsenalCatalog.current.card(card_id)
+	if listed == null:
+		return false
+	return listed.is_place_card() or ArsenalCatalog.current.scribery_leaves().has(listed)
+
+
+## Chimes for a fresh Plain Vellum copy (an Action-Leaf inscribed, a Place-Card charted).
+func scribery_cost(card_id: StringName) -> int:
+	var listed: ScribeCardResource = ArsenalCatalog.current.card(card_id)
+	return listed.chime_cost if listed != null else 0
+
+
+## A leaf can be inscribed again (a second copy for another socket); a place is charted once and frames every socket.
+func can_inscribe(card_id: StringName) -> bool:
+	if not is_scribery_card(card_id) or chimes < scribery_cost(card_id):
+		return false
+	return not (ArsenalCatalog.current.card(card_id).is_place_card() and owns_card(card_id))
+
+
+## Buys a Plain Vellum copy at the Scribery. The host checks the price and applies it.
+func request_inscribe(card_id: StringName) -> void:
+	if NetworkManager.current.is_host():
+		_server_inscribe(card_id)
+	elif NetworkManager.current.is_online():
+		_request_inscribe.rpc_id(1, card_id)
+
+
+func _server_inscribe(card_id: StringName) -> bool:
+	if not can_inscribe(card_id):
+		return false
+	chimes -= scribery_cost(card_id)
+	var key: StringName = ScribeCardResource.copy_key(card_id, ScribeCardResource.CardVariant.STANDARD)
+	collection[key] = copies_of(key) + 1
+	card_awarded.emit(key)
+	_commit()
+	return true
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_inscribe(card_id: StringName) -> void:
+	if multiplayer.is_server():
+		_server_inscribe(card_id)
+
+
+## The Gilding Press's price to raise a copy one finish (0 when it's already Star-Inked Vellum).
+static func gilding_cost(copy_key: StringName) -> int:
+	var next: int = ScribeCardResource.copy_variant(copy_key) + 1
+	return ScribeCardResource.GILDING_COSTS[next] if next < ScribeCardResource.GILDING_COSTS.size() else 0
+
+
+## The press gilds an owned Action-Leaf or Place-Card: Plain Vellum to Gilded Leaf, Gilded Leaf to Star-Inked Vellum.
+func can_gild(copy_key: StringName) -> bool:
+	var listed: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key))
+	if listed == null or not (listed.is_action_leaf() or listed.is_place_card()):
+		return false
+	var cost: int = gilding_cost(copy_key)
+	return cost > 0 and chimes >= cost and LoadoutComposer.owns(copy_key, 1, collection)
+
+
+## Presses a finer copy of `copy_key` into the binder (the old copy stays). Host checks and applies.
+func request_gild(copy_key: StringName) -> void:
+	if NetworkManager.current.is_host():
+		_server_gild(copy_key)
+	elif NetworkManager.current.is_online():
+		_request_gild.rpc_id(1, copy_key)
+
+
+func _server_gild(copy_key: StringName) -> bool:
+	if not can_gild(copy_key):
+		return false
+	chimes -= gilding_cost(copy_key)
+	var finer: StringName = ScribeCardResource.copy_key(ScribeCardResource.copy_card_id(copy_key),
+		(ScribeCardResource.copy_variant(copy_key) + 1) as ScribeCardResource.CardVariant)
+	collection[finer] = copies_of(finer) + 1
+	card_awarded.emit(finer)
+	_commit()
+	return true
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_gild(copy_key: StringName) -> void:
+	if multiplayer.is_server():
+		_server_gild(copy_key)
+
+
 # --- The trail (11 GDD §5) -------------------------------------------------
 
 ## The party's trail level, 1 to 10.
@@ -301,6 +426,7 @@ func load_save() -> void:
 	collection.clear()
 	kits.clear()
 	callings.clear()
+	pattern_seen.clear()
 	var file: ConfigFile = ConfigFile.new()
 	if file.load(save_path) == OK:
 		# Saves from before the Chimes were called Dojo Shards keep their pouch.
@@ -321,6 +447,7 @@ func load_save() -> void:
 			var saved: Variant = saved_callings[class_id]
 			# A column number from the first Callings build reads back as its id.
 			callings[StringName(str(class_id))] = Callings.id_of(int(saved)) if saved is int else StringName(str(saved))
+		_read_pattern_seen(file.get_value("glimmer", "seen", {}) as Dictionary)
 	progress_changed.emit()
 
 
@@ -340,7 +467,21 @@ func save() -> Error:
 	for class_id: StringName in callings:
 		plain_callings[String(class_id)] = String(callings[class_id])
 	file.set_value("callings", "by_class", plain_callings)
+	file.set_value("glimmer", "seen", _plain_pattern_seen())
 	return file.save(save_path)
+
+
+func _plain_pattern_seen() -> Dictionary:
+	var plain: Dictionary = {}
+	for id: StringName in pattern_seen:
+		plain[String(id)] = pattern_seen[id]
+	return plain
+
+
+func _read_pattern_seen(plain: Dictionary) -> void:
+	pattern_seen.clear()
+	for id: Variant in plain:
+		pattern_seen[StringName(str(id))] = maxi(0, int(plain[id]))
 
 
 ## The binder with plain String keys (for save files and RPCs).
@@ -375,7 +516,8 @@ func _snapshot() -> Dictionary:
 	var bought: Dictionary = {}
 	for id: StringName in UPGRADES:
 		bought[String(id)] = level_of(id)
-	return {"chimes": chimes, "levels": bought, "victories": victories, "xp": xp, "collection": _plain_collection()}
+	return {"chimes": chimes, "levels": bought, "victories": victories, "xp": xp, "collection": _plain_collection(),
+		"glimmer_seen": _plain_pattern_seen()}
 
 
 # --- Network --------------------------------------------------------------
@@ -397,6 +539,7 @@ func _receive_progress(data: Dictionary) -> void:
 	victories = maxi(0, int(data.get("victories", 0)))
 	xp = clampi(int(data.get("xp", 0)), 0, LEVEL_XP.back())
 	_read_collection(data.get("collection", {}) as Dictionary)
+	_read_pattern_seen(data.get("glimmer_seen", {}) as Dictionary)
 	progress_changed.emit()
 	for level: int in range(level_before + 1, trail_level() + 1):
 		trail_level_reached.emit(level)

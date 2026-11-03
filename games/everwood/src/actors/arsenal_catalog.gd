@@ -10,6 +10,12 @@
 ## It also holds the Trail of the Four Signs (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md
 ## §5): four tiers of each weapon, the Level 1 kit each Fellowship starts in,
 ## and what each milestone level grants.
+##
+## And Sign-Flow (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md): every lead card is an
+## Action-Leaf with a manifestation (Weapon-Coat, Ward-Mantle, Lantern-Tether),
+## the four Place-Cards that frame them, the dioramas they make together
+## (compute_diorama_synergy), and every foe's BossEncounterResource: its threat
+## tier, level, counter Signs and Glimmer-Spot window.
 class_name ArsenalCatalog
 extends Node
 
@@ -114,6 +120,39 @@ const IRON_ROOT_LINK: StringName = &"iron_root_link"
 const RIME_GALE_LINK: StringName = &"rime_gale_link"
 const WARM_HEARTH_LINK: StringName = &"warm_hearth_link"
 const STAR_TIDE_LINK: StringName = &"star_tide_link"
+# Action-Leaves the Reed-Light Scribery inscribes (14 GDD §4.1): with the cards
+# above, every Sign has a Weapon-Coat, a Ward-Mantle and a Lantern-Tether leaf.
+const OAK_KNOT_TETHER: StringName = &"leaf_oak_knot_tether"
+const RIME_MANTLE_BASH: StringName = &"leaf_rime_mantle_bash"
+const MIST_LANTERN_MEND: StringName = &"leaf_mist_lantern_mend"
+const EMBER_COAT_CUT: StringName = &"leaf_ember_coat_cut"
+const HEARTH_MANTLE_BRACE: StringName = &"leaf_hearth_mantle_brace"
+const STAR_THREAD_MEND: StringName = &"leaf_star_thread_mend"
+## The lead cards that manifest as a Ward-Mantle or a Lantern-Tether; every other lead card is a Weapon-Coat.
+const WARD_MANTLE_LEAVES: Array[StringName] = [SHIELD_CHARGE, SHADOW_SANCTUARY, TAUNT, BULWARK_QUAKE, EMBER_AEGIS,
+	RIME_MANTLE_BASH, HEARTH_MANTLE_BRACE]
+const LANTERN_TETHER_LEAVES: Array[StringName] = [SUNLIT_LANCE, GREEN_SANCTUARY, HOMING_HEAL, LIFELINE_PULL, DAWNBREAKER,
+	LANTERN_MOTE, OAK_KNOT_TETHER, MIST_LANTERN_MEND, STAR_THREAD_MEND]
+# The four Place-Cards (14 GDD §4.2), one per Sign, each charted from a landmark.
+const ARIUNDLE_MOSS_OAKS: StringName = &"loc_ariundle_moss_oaks"
+const DOVERSLAP_GORGE: StringName = &"loc_doverslap_gorge"
+const BRAMBLEBRIDGE_MILL: StringName = &"loc_bramblebridge_mill"
+const BARROW_CRAG_TOR: StringName = &"loc_barrow_crag_tor"
+const PLACE_CARDS: Array[StringName] = [ARIUNDLE_MOSS_OAKS, DOVERSLAP_GORGE, BRAMBLEBRIDGE_MILL, BARROW_CRAG_TOR]
+## A Sign-Flow coat with no Action-Leaf (an un-inked socket) lasts this long.
+const UNINKED_COAT_DURATION: float = 8.0
+## The un-inked colour (warm ivory-gold), as ActorVisuals channels it.
+const UNINKED_INK: Color = Color(1.0, 0.9, 0.62)
+# Encounters (14 GDD §3), by threat tier.
+const ROADSIDE_KIN: StringName = &"roadside_kin"
+const SCREE_WORM: StringName = &"scree_worm"
+const SHINGLE_SCRAY: StringName = &"shingle_scray"
+const CAIRNSMAN: StringName = &"cairnsman"
+const GALE_BUCCA: StringName = &"gale_bucca"
+const FURROW_IRON_MAN: StringName = &"furrow_iron_man"
+const CAIRN_DRAKE: StringName = &"cairn_drake"
+const TOR_SLEEPER: StringName = &"tor_sleeper"
+const OLD_HOB: StringName = &"old_hob"
 
 # The Secondary Callings (06 §3, 07 GDD §1.3), in column order.
 const STOUT_HEART: StringName = &"stout_heart"
@@ -151,6 +190,7 @@ var _callings: Dictionary[StringName, CallingResource] = {}
 var _secondary_order: Array[StringName] = []
 var _items: Dictionary[StringName, EquipmentItemResource] = {}
 var _cards: Dictionary[StringName, ScribeCardResource] = {}
+var _encounters: Dictionary[StringName, BossEncounterResource] = {}
 # Registration order, so menus and drop rolls are the same on every peer.
 var _item_order: Array[StringName] = []
 var _card_order: Array[StringName] = []
@@ -163,7 +203,10 @@ func _init() -> void:
 	_build_tier_weapons()
 	_build_lead_cards()
 	_build_under_cards()
+	_build_action_leaves()
+	_build_place_cards()
 	_build_callings()
+	_build_encounters()
 	_load_card_folder()
 
 
@@ -253,6 +296,89 @@ func under_cards() -> Array[ScribeCardResource]:
 	for listed: ScribeCardResource in cards():
 		if listed.is_under():
 			list.append(listed)
+	return list
+
+
+## Every Action-Leaf (every lead card), in registration order.
+func action_leaves() -> Array[ScribeCardResource]:
+	var list: Array[ScribeCardResource] = []
+	for listed: ScribeCardResource in cards():
+		if listed.is_action_leaf():
+			list.append(listed)
+	return list
+
+
+## The Place-Cards, in registration order.
+func place_cards() -> Array[ScribeCardResource]:
+	var list: Array[ScribeCardResource] = []
+	for listed: ScribeCardResource in cards():
+		if listed.is_place_card():
+			list.append(listed)
+	return list
+
+
+## What the Reed-Light Scribery inscribes: the Common Action-Leaves nobody
+## starts with. Uncommon trail finds and boss drops stay earned on the raid.
+func scribery_leaves() -> Array[ScribeCardResource]:
+	var list: Array[ScribeCardResource] = []
+	for listed: ScribeCardResource in action_leaves():
+		if not listed.starter and listed.rarity == ScribeCardResource.CardRarity.COMMON and listed.chime_cost > 0:
+			list.append(listed)
+	return list
+
+
+## The most poise any Place-Card lends a strike (the cap on what another peer may claim).
+func max_place_poise() -> float:
+	var most: float = 0.0
+	for place: ScribeCardResource in place_cards():
+		most = maxf(most, place.location_bonus_poise)
+	return most
+
+
+## A diorama pair (14 GDD §4): an Action-Leaf framed by a Place-Card, either
+## of which may be empty (&""). Returns what a Sign-Flow coat of it does:
+##   scribe_sign, manifestation_mode   from the leaf (Sign.NONE and Weapon-Coat when un-inked)
+##   place_sign, is_home_ground_harmony   true when leaf and place share a Sign
+##   coat_duration_sec                 the leaf's, x the place's home-ground multiplier on harmony
+##   bonus_reach_m, bonus_poise, bonus_heal, stamina_refund   what the place lends
+##   ink_color, ambient_color          the leaf's Sign colour and the place's tint
+func compute_diorama_synergy(action_card_id: StringName, location_card_id: StringName) -> Dictionary:
+	var action: ScribeCardResource = card(action_card_id)
+	var place: ScribeCardResource = card(location_card_id)
+	var inked: bool = action != null and action.is_action_leaf()
+	var framed: bool = place != null and place.is_place_card()
+	var leaf_sign: int = action.scribe_sign if inked else Sign.NONE
+	var place_sign: int = place.scribe_sign if framed else Sign.NONE
+	var harmony: bool = inked and framed and leaf_sign != Sign.NONE and leaf_sign == place_sign
+	var duration: float = action.coat_duration_sec if inked else UNINKED_COAT_DURATION
+	if harmony:
+		duration *= place.home_ground_duration_mult
+	var ink: Color = sign_seal(leaf_sign).color if leaf_sign != Sign.NONE else UNINKED_INK
+	return {
+		"action_card_id": action.card_id if inked else &"",
+		"location_card_id": place.card_id if framed else &"",
+		"scribe_sign": leaf_sign,
+		"manifestation_mode": action.manifestation_mode if inked else ScribeCardResource.ManifestationMode.WEAPON_COAT,
+		"place_sign": place_sign,
+		"is_home_ground_harmony": harmony,
+		"coat_duration_sec": duration,
+		"bonus_reach_m": place.location_bonus_reach_m if framed else 0.0,
+		"bonus_poise": place.location_bonus_poise if framed else 0.0,
+		"bonus_heal": place.location_bonus_heal if framed else 0.0,
+		"stamina_refund": place.location_stamina_refund if framed else 0.0,
+		"ink_color": ink,
+		"ambient_color": sign_seal(place_sign).color if framed else ink,
+	}
+
+
+## A foe's encounter by id (&"cairnsman"), or null.
+func encounter(id: StringName) -> BossEncounterResource:
+	return _encounters.get(id, null)
+
+
+func encounters() -> Array[BossEncounterResource]:
+	var list: Array[BossEncounterResource] = []
+	list.assign(_encounters.values())
 	return list
 
 
@@ -435,6 +561,11 @@ func register_secondary_calling(added: SecondaryCallingResource) -> void:
 
 func register_calling(added: CallingResource) -> void:
 	_callings[added.calling_id] = added
+
+
+func register_encounter(added: BossEncounterResource) -> void:
+	assert(added.encounter_id != &"", "ArsenalCatalog: an encounter needs an id")
+	_encounters[added.encounter_id] = added
 
 
 func register_card(added: ScribeCardResource) -> void:
@@ -1028,7 +1159,7 @@ func _lead(template: CombatActionResource, slot: Slot, scribe_sign: Sign, blurb:
 	lead.card_id = template.action_id
 	lead.display_name = template.display_name
 	lead.description = blurb
-	lead.kind = ScribeCardResource.CardKind.LEAD
+	lead.kind = ScribeCardResource.LinkRole.LEAD
 	lead.slot = slot
 	lead.scribe_sign = scribe_sign
 	lead.delivery = delivery
@@ -1127,12 +1258,146 @@ func _under(id: StringName, label: String, scribe_sign: Sign, verb: ScribeCardRe
 	under.card_id = id
 	under.display_name = label
 	under.description = blurb
-	under.kind = ScribeCardResource.CardKind.UNDER
+	under.kind = ScribeCardResource.LinkRole.UNDER
 	under.scribe_sign = scribe_sign
 	under.verb = verb
 	under.rarity = ScribeCardResource.CardRarity.COMMON
 	under.starter = true
 	register_card(under)
+
+
+# --- Sign-Flow: Action-Leaves and Place-Cards (14 GDD §4) -------------------
+
+## Every lead card is an Action-Leaf; the tank's and the healer's cards
+## manifest as Ward-Mantles and Lantern-Tethers, the rest as Weapon-Coats. Six
+## Common leaves the Scribery inscribes give every Sign all three manifestations.
+## They are R cards (1 pip), registered last so the desk's older choices keep their order.
+func _build_action_leaves() -> void:
+	var oak: CombatActionResource = _support(OAK_KNOT_TETHER, "Oak-Knot Tether", Cmd.TRIGGER_R_SKILL, Fx.HOMING_HEAL, 0.12, 0.05, 0.3)
+	oak.stamina_cost = 12.0
+	oak.heal_amount = 18.0
+	_scribery_leaf(_lead(oak, Slot.SIGNATURE, Sign.SIGN_IRON_ROOT, "A heal that runs down your Soul Tether, knotted with oak-strength.",
+		ScribeCardResource.Delivery.AT_CASTER)).needs_soul_tether = true
+	var bash: CombatActionResource = _strike(RIME_MANTLE_BASH, "Rime-Mantle Bash", Cmd.TRIGGER_R_SKILL, 0.18, 0.18, 0.3, 0.0, 18.0)
+	bash.resonance_cost = 1
+	bash.poise_damage = 18.0
+	bash.lunge_distance = 1.5
+	bash.reach = 1.8
+	bash.resonance_gain = 0.0
+	bash.primer = Sign.SIGN_RIME_GALE
+	_scribery_leaf(_lead(bash, Slot.SIGNATURE, Sign.SIGN_RIME_GALE, "A frost-crusted shield bash that stamps the Sign of Rime-Gale (1 pip)."))
+	var mist: CombatActionResource = _support(MIST_LANTERN_MEND, "Mist-Lantern Mend", Cmd.TRIGGER_R_SKILL, Fx.HOMING_HEAL, 0.12, 0.05, 0.3)
+	mist.stamina_cost = 12.0
+	mist.heal_amount = 20.0
+	_scribery_leaf(_lead(mist, Slot.SIGNATURE, Sign.SIGN_RIME_GALE, "A cool river-mist heal that drifts down your Soul Tether.",
+		ScribeCardResource.Delivery.AT_CASTER)).needs_soul_tether = true
+	var ember: CombatActionResource = _strike(EMBER_COAT_CUT, "Ember-Coat Cut", Cmd.TRIGGER_R_SKILL, 0.18, 0.18, 0.28, 0.0, 22.0)
+	ember.resonance_cost = 1
+	ember.poise_damage = 8.0
+	ember.lunge_distance = 1.5
+	ember.reach = 2.0
+	ember.hit_radius = 1.6
+	ember.resonance_gain = 0.0
+	ember.primer = Sign.SIGN_WARM_HEARTH
+	_scribery_leaf(_lead(ember, Slot.SIGNATURE, Sign.SIGN_WARM_HEARTH, "An ember-glowing cut that stamps the Sign of Warm-Hearth (1 pip)."))
+	var brace: CombatActionResource = _strike(HEARTH_MANTLE_BRACE, "Hearth-Mantle Brace", Cmd.TRIGGER_R_SKILL, 0.2, 0.18, 0.3, 0.0, 14.0)
+	brace.resonance_cost = 1
+	brace.poise_damage = 20.0
+	brace.reach = 1.6
+	brace.hit_radius = 2.0
+	brace.resonance_gain = 0.0
+	brace.primer = Sign.SIGN_WARM_HEARTH
+	_scribery_leaf(_lead(brace, Slot.SIGNATURE, Sign.SIGN_WARM_HEARTH, "Plant your shield in a ring of hearth-warmth, stamping the Sign of Warm-Hearth (1 pip)."))
+	var thread: CombatActionResource = _support(STAR_THREAD_MEND, "Star-Thread Mend", Cmd.TRIGGER_R_SKILL, Fx.HOMING_HEAL, 0.12, 0.05, 0.3)
+	thread.stamina_cost = 12.0
+	thread.heal_amount = 18.0
+	_scribery_leaf(_lead(thread, Slot.SIGNATURE, Sign.SIGN_STAR_TIDE, "A twilight heal that spins down your Soul Tether like a thread of stars.",
+		ScribeCardResource.Delivery.AT_CASTER)).needs_soul_tether = true
+	for id: StringName in WARD_MANTLE_LEAVES:
+		card(id).manifestation_mode = ScribeCardResource.ManifestationMode.WARD_MANTLE
+	for id: StringName in LANTERN_TETHER_LEAVES:
+		card(id).manifestation_mode = ScribeCardResource.ManifestationMode.LANTERN_TETHER
+
+
+## A Common leaf the Scribery inscribes: not a starter, never in a chest.
+func _scribery_leaf(leaf: ScribeCardResource) -> ScribeCardResource:
+	leaf.rarity = ScribeCardResource.CardRarity.COMMON
+	leaf.starter = false
+	leaf.drop_weight = 0.0
+	return leaf
+
+
+## The four Place-Cards (14 GDD §4.2), charted at the Reed-Light Scribery.
+func _build_place_cards() -> void:
+	var oaks: ScribeCardResource = _place(ARIUNDLE_MOSS_OAKS, "Ariundle Moss-Oaks", Sign.SIGN_IRON_ROOT, &"ariundle_trail_chime_post",
+		"Root-Bind: mossy oak bark sprouts on the blade; every coated strike lands 15 more poise.")
+	oaks.location_bonus_poise = 15.0
+	var gorge: ScribeCardResource = _place(DOVERSLAP_GORGE, "Doverslap Gorge Bridge", Sign.SIGN_RIME_GALE, &"doverslap_gatehouse",
+		"Gorge-Draft: a sweeping river-mist arc reaches 0.8 m further.")
+	gorge.location_bonus_reach_m = 0.8
+	var mill: ScribeCardResource = _place(BRAMBLEBRIDGE_MILL, "Bramblebridge Hearth-Mill", Sign.SIGN_WARM_HEARTH, &"bramblebridge_green",
+		"Mill-Warmth: casting pulses a warm ember ring that mends friends within 4 m for 10.")
+	mill.location_bonus_heal = 10.0
+	var tor: ScribeCardResource = _place(BARROW_CRAG_TOR, "Barrow-Crag Star-Tor", Sign.SIGN_STAR_TIDE, &"ring_of_the_cairnsman",
+		"Star-Spark: violet starlight on the weapon gives back 8 stamina on every Flow-Link cancel.")
+	tor.location_stamina_refund = 8.0
+
+
+func _place(id: StringName, label: String, scribe_sign: Sign, landmark: StringName, blurb: String) -> ScribeCardResource:
+	var place: ScribeCardResource = ScribeCardResource.new()
+	place.card_id = id
+	place.display_name = label
+	place.description = blurb
+	place.card_kind = ScribeCardResource.CardKind.LOCATION_PLACE
+	place.scribe_sign = scribe_sign
+	place.location_landmark_id = landmark
+	place.rarity = ScribeCardResource.CardRarity.COMMON
+	register_card(place)
+	return place
+
+
+# --- Encounters: threat tiers and Glimmer-Spots (14 GDD §3) --------------------
+
+## Every foe's encounter. Tier 1 kin are always open to Iron-Root; the bosses
+## open a Glimmer-Spot during their pattern, tightening from the base window to
+## the floor as the family sees it (12 frames a sighting, five sightings).
+func _build_encounters() -> void:
+	_encounter(ROADSIDE_KIN, "Roadside Pebbles & Minor Kin", BossEncounterResource.ThreatTier.TIER_1_MINOR_PEBBLE, 1, [Sign.SIGN_IRON_ROOT], 0, 0, "", "")
+	_encounter(SCREE_WORM, "Scree-Worm", BossEncounterResource.ThreatTier.TIER_1_MINOR_PEBBLE, 2, [Sign.SIGN_IRON_ROOT], 0, 0, "", "")
+	_encounter(SHINGLE_SCRAY, "Shingle-Scray", BossEncounterResource.ThreatTier.TIER_2_TRAIL_WARDEN, 7, [Sign.SIGN_RIME_GALE], 210, 150, "",
+		"dive")
+	_encounter(CAIRNSMAN, "The Cairnsman of Doverslap", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 5,
+		[Sign.SIGN_IRON_ROOT, Sign.SIGN_STAR_TIDE], 180, 120,
+		"When the cairn-core glows and the old stones roar,\nring Iron-Root or Star-Tide and he'll stand no more!", "roar")
+	_encounter(GALE_BUCCA, "The Gale-Bucca", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 10, [Sign.SIGN_STAR_TIDE], 180, 120,
+		"When the Bucca spreads wide its storm-feathered wings,\nsing Star-Tide inside where the wild weather sings!", "wing-spread")
+	_encounter(FURROW_IRON_MAN, "The Furrow Iron-Man", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 15,
+		[Sign.SIGN_WARM_HEARTH, Sign.SIGN_IRON_ROOT], 120, 75,
+		"Warm the rust with Hearth-light, then turn him round with Root:\nthe ploughman's iron giant will stand down at your boot!", "plough-stamp")
+	_encounter(CAIRN_DRAKE, "The Cairn-Drake", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 25,
+		[Sign.SIGN_WARM_HEARTH, Sign.SIGN_IRON_ROOT], 120, 75,
+		"When the drake curls tight round its hoard of grey stone,\nsing Hearth to the heart and it sleeps on its own.", "coil")
+	_encounter(TOR_SLEEPER, "The Tor-Sleeper", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 50,
+		[Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE], 75, 45,
+		"Mantle, then tether, then strike with your Sign:\nthe Tor-Sleeper wakes when the three fall in line.", "yawn")
+	_encounter(OLD_HOB, "Old Hob of the Barrow", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 60,
+		[Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE], 75, 45,
+		"Old Hob hums low in his barrow of moss:\nmantle, tether and Sign, or the whole trail is lost.", "hum")
+
+
+func _encounter(id: StringName, label: String, tier: BossEncounterResource.ThreatTier, level: int, counters: Array[int],
+		base_frames: int, floor_frames: int, couplet: String, pattern: String) -> void:
+	var added: BossEncounterResource = BossEncounterResource.new()
+	added.encounter_id = id
+	added.display_name = label
+	added.threat_tier = tier
+	added.encounter_level = level
+	added.weakness_counter_signs = counters
+	added.base_glimmer_window_frames = base_frames
+	added.floor_glimmer_window_frames = floor_frames
+	added.hud_rhyme_couplet = couplet
+	added.opening_pattern = pattern
+	register_encounter(added)
 
 
 # --- Action builders ------------------------------------------------------

@@ -20,6 +20,12 @@
 ## §4.2, §6): R and L+R swell the weapon to 2x (2.4x) in its Sign's colour, or
 ## warm ivory-gold un-inked; a Flow-Link Pulse rings the waist white-gold; and
 ## a new trail level unfurls a Saffron-Gold Wayfarer Pennant overhead.
+##
+## And Sign-Flow's looks (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §2, §5): the
+## Hearth-Rite holds the weapon at 1.35x, glowing in its Place-Card's tint; a
+## Sign-Flow cast flares it to 2.0x for 600 ms; a coat keeps a soft rim of its
+## Sign. A Ward-Mantle wraps the shoulders in a ring of the Sign's crest, and a
+## Lantern-Tether circles the hero with three glowing motes.
 class_name ActorVisuals
 extends Node3D
 
@@ -66,6 +72,21 @@ const PENNANT_TIME: float = 3.0
 const PENNANT_HEIGHT: float = 2.4
 const PENNANT_UNFURL: float = 0.4
 const PENNANT_COLOR: Color = Color(0.98, 0.72, 0.18)
+## Sign-Flow (SignFlowComponent.CoatLook): the tuck's steady size and glow, the flare's peak, the coat's soft rim.
+const TRAIL_TUCK_SCALE: float = 1.35
+const TRAIL_TUCK_GLOW: float = 0.6
+const SIGN_FLOW_FLARE_SCALE: float = 2.0
+const SIGN_FLOW_FLARE_TIME: float = 0.6
+const COAT_GLOW: float = 0.35
+## The flare rises over this share of its time and falls over the last share.
+const FLARE_RISE: float = 0.1
+const FLARE_FALL: float = 0.85
+const MANTLE_HEIGHT: float = 1.42
+const MANTLE_RADIUS: float = 0.62
+const MOTE_HEIGHT: float = 1.0
+const MOTE_RADIUS: float = 0.72
+const MOTE_SIZE: float = 0.08
+const MOTE_SPIN: float = 2.2
 
 var actor: ActorBase
 ## Every cel material on the puppet, lit together by a hit flash.
@@ -85,6 +106,15 @@ var _channel_left: float = 0.0
 var _channel_peak: float = 1.0
 var _channel_color: Color = UNINKED_CHANNEL_COLOR
 var _pennant: Node3D
+var _coat_look: int = SignFlowComponent.CoatLook.CLEAR
+var _coat_ink: Color = UNINKED_CHANNEL_COLOR
+var _coat_ambient: Color = UNINKED_CHANNEL_COLOR
+var _coat_mode: int = ScribeCardResource.ManifestationMode.WEAPON_COAT
+var _coat_left: float = 0.0
+var _flare_left: float = 0.0
+var _flare_ink: Color = UNINKED_CHANNEL_COLOR
+var _mantle: Node3D
+var _motes: Node3D
 
 
 static func model_path(id: StringName) -> String:
@@ -176,16 +206,110 @@ func update_channel(delta: float, action: CombatActionResource) -> void:
 		var t: float = 1.0 - _channel_left / CHANNEL_TIME
 		swell = smoothstep(0.0, CHANNEL_RISE, t) * (1.0 - smoothstep(CHANNEL_FALL, 1.0, t))
 	var size: float = lerpf(1.0, _channel_peak, swell)
+	var tint: Color = _channel_color
+	var lit: float = swell
+	# Sign-Flow: the Hearth-Rite's steady 1.35x in its Place-Card's tint, a cast's 2.0x flare, a coat's soft rim.
+	var coat_size: float = 1.0
+	var coat_tint: Color = _coat_ink
+	var coat_lit: float = 0.0
+	if _coat_look == SignFlowComponent.CoatLook.TRAIL_TUCK:
+		coat_size = TRAIL_TUCK_SCALE
+		coat_tint = _coat_ambient
+		coat_lit = TRAIL_TUCK_GLOW
+	elif _coat_left > 0.0:
+		_coat_left = maxf(0.0, _coat_left - delta)
+		coat_lit = COAT_GLOW
+	if _flare_left > 0.0:
+		_flare_left = maxf(0.0, _flare_left - delta)
+		var t: float = 1.0 - _flare_left / SIGN_FLOW_FLARE_TIME
+		var flare: float = smoothstep(0.0, FLARE_RISE, t) * (1.0 - smoothstep(FLARE_FALL, 1.0, t))
+		coat_size = maxf(coat_size, lerpf(1.0, SIGN_FLOW_FLARE_SCALE, flare))
+		if flare > coat_lit:
+			coat_tint = _flare_ink
+			coat_lit = flare
+	size = maxf(size, coat_size)
+	if coat_lit > lit:
+		tint = coat_tint
+		lit = coat_lit
 	_weapon.scale = Vector3.ONE * size
 	# Swell about the grip, wherever the swing has turned the weapon.
 	_weapon.position = Basis.from_euler(_weapon.rotation) * (_weapon_pivot * (1.0 - size))
-	var glow: Color = _channel_color * CHANNEL_GLOW * swell
+	var glow: Color = tint * CHANNEL_GLOW * lit
 	for material: Material in _weapon_materials:
 		StorybookMaterial.set_glow(material, glow)
 		var cel: ShaderMaterial = material as ShaderMaterial
 		if cel != null:
-			cel.set_shader_parameter(&"rim_color", _channel_color if swell > 0.0 else StorybookMaterial.WARM_RIM)
-			cel.set_shader_parameter(&"rim_strength", lerpf(PropBuilder.PROP_RIM, 2.5, swell))
+			cel.set_shader_parameter(&"rim_color", tint if lit > 0.0 else StorybookMaterial.WARM_RIM)
+			cel.set_shader_parameter(&"rim_strength", lerpf(PropBuilder.PROP_RIM, 2.5, lit))
+	_update_manifestation(delta)
+
+
+## Sign-Flow's look on this hero, on every peer (CombatDirector.show_sign_coat):
+## SignFlowComponent.CoatLook TRAIL_TUCK (until cleared), FLARE or COAT (for
+## `seconds`), or CLEAR. `ink` is the leaf's Sign colour, `ambient` its Place-Card's tint.
+func show_sign_coat(look: int, ink: Color, ambient: Color, mode: int, seconds: float) -> void:
+	match look:
+		SignFlowComponent.CoatLook.FLARE:
+			_flare_left = maxf(seconds, 0.0)
+			_flare_ink = ink
+			return
+		SignFlowComponent.CoatLook.COAT:
+			_coat_left = maxf(seconds, 0.0)
+		SignFlowComponent.CoatLook.CLEAR:
+			_coat_left = 0.0
+	_coat_look = look
+	_coat_ink = ink
+	_coat_ambient = ambient
+	_coat_mode = mode
+
+
+## The Sign-Flow look on now (SignFlowComponent.CoatLook): a tuck, a live coat, or CLEAR.
+func sign_coat_look() -> int:
+	if _coat_look == SignFlowComponent.CoatLook.COAT and _coat_left <= 0.0:
+		return SignFlowComponent.CoatLook.CLEAR
+	return _coat_look
+
+
+## A Ward-Mantle's shoulder crest and a Lantern-Tether's motes, while a tuck or coat is on.
+func _update_manifestation(delta: float) -> void:
+	var on: int = sign_coat_look()
+	var showing: bool = on == SignFlowComponent.CoatLook.TRAIL_TUCK or on == SignFlowComponent.CoatLook.COAT
+	var color: Color = _coat_ambient if on == SignFlowComponent.CoatLook.TRAIL_TUCK else _coat_ink
+	var mantle: bool = showing and _coat_mode == ScribeCardResource.ManifestationMode.WARD_MANTLE
+	var tether: bool = showing and _coat_mode == ScribeCardResource.ManifestationMode.LANTERN_TETHER
+	if mantle and not is_instance_valid(_mantle):
+		_mantle = Node3D.new()
+		_mantle.name = "WardMantle"
+		_mantle.add_child(ShapeKit.no_shadow(ShapeKit.torus("Crest", MANTLE_RADIUS - 0.07, MANTLE_RADIUS, Vector3(0.0, MANTLE_HEIGHT, 0.0),
+			StorybookMaterial.glowing(color, 2.5))))
+		add_child(_mantle)
+	if tether and not is_instance_valid(_motes):
+		_motes = Node3D.new()
+		_motes.name = "LanternMotes"
+		_motes.position = Vector3(0.0, MOTE_HEIGHT, 0.0)
+		for index: int in 3:
+			var angle: float = TAU * index / 3.0
+			_motes.add_child(ShapeKit.no_shadow(ShapeKit.sphere("Mote%d" % index, MOTE_SIZE, Vector3(cos(angle), 0.0, sin(angle)) * MOTE_RADIUS,
+				StorybookMaterial.glowing(color, 3.0))))
+		add_child(_motes)
+	if is_instance_valid(_mantle):
+		_mantle.visible = mantle
+		if mantle:
+			_tint_children(_mantle, color)
+	if is_instance_valid(_motes):
+		_motes.visible = tether
+		if tether:
+			_motes.rotate_y(MOTE_SPIN * delta)
+			_tint_children(_motes, color)
+
+
+static func _tint_children(root: Node3D, color: Color) -> void:
+	for mesh: Node in root.get_children():
+		var shape: MeshInstance3D = mesh as MeshInstance3D
+		var material: StandardMaterial3D = (shape.mesh as PrimitiveMesh).material as StandardMaterial3D if shape != null else null
+		if material != null:
+			material.albedo_color = color
+			material.emission = color
 
 
 ## The Flow-Link Pulse: a crisp white-gold ring that bursts out from the waist.

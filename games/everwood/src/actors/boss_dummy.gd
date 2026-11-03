@@ -139,6 +139,12 @@ func is_engaged() -> bool:
 	return engaged and not vanquished
 
 
+## His Glimmer-Spot (14 GDD §3, Tier 3): the amber core opens as he roars into
+## each raid cast, cracked by Iron-Root or Star-Tide.
+func glimmer_encounter_id() -> StringName:
+	return ArsenalCatalog.CAIRNSMAN
+
+
 func is_targetable() -> bool:
 	return not vanquished and not stats.is_downed
 
@@ -402,8 +408,13 @@ func _gather_intent(delta: float) -> void:
 	if is_casting():
 		turn_toward(to_target, loadout.stats.turn_speed * 0.5 * delta)
 		return
+	var cast_was: float = _cast_timer
 	_cast_timer -= delta
 	_swipe_cooldown -= delta
+	var buffer_lead: float = GlimmerSpotComponent.SQUIRE_PREBUFFER_FRAMES / GlimmerSpotComponent.FRAMES_PER_SECOND
+	if glimmer != null and GlimmerSpotComponent.enabled and cast_was > buffer_lead and _cast_timer <= buffer_lead:
+		# The roar is coming: Squires may buffer their counter from here.
+		CombatDirector.current.expect_glimmer(self, maxf(0.0, _cast_timer))
 	if action_queue.is_busy():
 		return
 	if _cast_timer <= 0.0:
@@ -473,6 +484,8 @@ func _begin_cast() -> void:
 	var alive: Array[ActorBase] = CombatDirector.current.alive_party()
 	if alive.is_empty():
 		return
+	if glimmer != null:
+		glimmer.open_window()
 	var centers: PackedVector3Array = PackedVector3Array()
 	var follow_id: String = ""
 	if kind == RaidTelegraphDecal.Kind.CRIMSON_DODGE_OUT:
@@ -618,6 +631,8 @@ func _reset_fight() -> void:
 	_set_phase_two(false)
 	for peer_id: int in InstanceManager.current.live_remote_peers():
 		_set_phase_two.rpc_id(peer_id, false)
+	if glimmer != null:
+		glimmer.close()
 	stats.heal(stats.stats.max_health)
 	stats.poise = stats.stats.max_poise
 	stats.poise_changed.emit(stats.poise, stats.stats.max_poise)

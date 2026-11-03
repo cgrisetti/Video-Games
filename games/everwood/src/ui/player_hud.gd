@@ -5,8 +5,17 @@
 ## moments the whole party shares (a victory, the loot). Next to the
 ## Chime-Shrine or the Scribe Desk a prompt says what light does, and their
 ## menus open over this view.
+##
+## Sign-Flow (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md) adds the Grimoire Binder (a
+## tap of Tab / View, out of combat) and the Reed-Light Scribery's counter,
+## both over this view, and a boss's Glimmer-Spot rhyme under its frame while
+## the party is still learning it.
 class_name PlayerHUD
 extends Control
+
+## Every PlayerHUD joins this group, so a station can find the one for its player.
+const GROUP: StringName = &"player_huds"
+const RHYME_COLOR: Color = Color(1.0, 0.86, 0.45)
 
 const MARGIN: float = 14.0
 const BOSS_BAR_WIDTH: float = 0.56
@@ -53,6 +62,8 @@ var _prompt_label: Label
 ## The menu open over this view (the Chime-Shrine's or the Scribe Desk's).
 var _menu: Control
 var _flow_flash_left: float = 0.0
+var _rhyme_label: Label
+var _rhyme_left: float = 0.0
 
 
 func setup(target_actor: ActorBase) -> void:
@@ -94,6 +105,12 @@ func _ready() -> void:
 	_callout_label.modulate = CALLOUT_COLOR
 	_callout_label.visible = false
 	top.add_child(_callout_label)
+	# A Glimmer-Spot's rhyme (14 GDD §3), on the first sightings only.
+	_rhyme_label = _label(CALLOUT_SIZE - 4)
+	_rhyme_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_rhyme_label.modulate = RHYME_COLOR
+	_rhyme_label.visible = false
+	top.add_child(_rhyme_label)
 
 	cross_grimoire = CrossGrimoireHUD.new()
 	cross_grimoire.setup(actor)
@@ -142,11 +159,34 @@ func _ready() -> void:
 	if actor != null:
 		actor.action_queue.flow_cancelled.connect(_on_flow_cancelled)
 		actor.action_queue.flow_link_pulsed.connect(_on_flow_link_pulsed)
+		if actor.input != null:
+			actor.input.binder_requested.connect(toggle_binder)
+	add_to_group(GROUP)
+	CombatDirector.current.glimmer_opened.connect(_on_glimmer_opened)
+	CombatDirector.current.bravery_countered.connect(_on_bravery_countered)
 
 
-func _process(_delta: float) -> void:
+func _exit_tree() -> void:
+	var director: CombatDirector = CombatDirector.current
+	if director != null and director.glimmer_opened.is_connected(_on_glimmer_opened):
+		director.glimmer_opened.disconnect(_on_glimmer_opened)
+		director.bravery_countered.disconnect(_on_bravery_countered)
+
+
+## The HUD drawn for `target` (a local player), or null.
+static func for_actor(tree: SceneTree, target: ActorBase) -> PlayerHUD:
+	for node: Node in tree.get_nodes_in_group(GROUP):
+		var hud: PlayerHUD = node as PlayerHUD
+		if hud != null and hud.actor == target:
+			return hud
+	return null
+
+
+func _process(delta: float) -> void:
 	if not is_instance_valid(actor) or actor.stats == null:
 		return
+	_rhyme_left = maxf(0.0, _rhyme_left - delta)
+	_rhyme_label.visible = _rhyme_left > 0.0
 	_top_panel.offset_top = MARGIN + (BANNER_CLEARANCE if get_global_rect().position.y < 1.0 else 0.0)
 	_refresh_boss()
 	_place_banner()
@@ -171,6 +211,66 @@ func open_scribe_desk(row: int = -1) -> void:
 	menu.setup(actor, row)
 	_menu = menu
 	add_child(menu)
+
+
+## The Grimoire Binder: a tap of Tab / View opens it out of combat and closes it again.
+func toggle_binder() -> void:
+	if binder_panel() != null:
+		binder_panel().close()
+	else:
+		open_binder()
+
+
+## Opens the Grimoire Binder over this player's view (never mid-fight). Returns whether it opened.
+func open_binder() -> bool:
+	if _live_menu() != null:
+		return false
+	if actor.sign_flow != null and actor.sign_flow.is_in_combat:
+		AudioCues.play(&"refuse")
+		show_banner("NOT MID-FIGHT", "The Grimoire Binder opens once the fight is over.", Color(1.0, 0.6, 0.45), 1.5)
+		return false
+	var binder: GrimoireBinderPanel = GrimoireBinderPanel.new()
+	binder.setup(actor)
+	_menu = binder
+	add_child(binder)
+	return true
+
+
+## Opens the Reed-Light Scribery's counter over this player's view.
+func open_scribery_shop() -> void:
+	if _live_menu() != null:
+		return
+	var shop: ScriberyShopPanel = ScriberyShopPanel.new()
+	shop.setup(actor)
+	_menu = shop
+	add_child(shop)
+
+
+func binder_panel() -> GrimoireBinderPanel:
+	return _live_menu() as GrimoireBinderPanel
+
+
+func scribery_panel() -> ScriberyShopPanel:
+	return _live_menu() as ScriberyShopPanel
+
+
+## The Glimmer-Spot rhyme under the boss frame ("" when none is showing).
+func rhyme_text() -> String:
+	return _rhyme_label.text if _rhyme_left > 0.0 else ""
+
+
+## A foe near this player opened its Glimmer-Spot: its rhyme shows while it's
+## open, if the party still needs it (a new opening replaces the last one's).
+func _on_glimmer_opened(enemy: ActorBase, seconds: float, rhyme: String) -> void:
+	if not is_instance_valid(actor) or enemy.global_position.distance_to(actor.global_position) > BOSS_BAR_RANGE:
+		return
+	_rhyme_label.text = rhyme
+	_rhyme_left = seconds if rhyme != "" else 0.0
+
+
+## A Bravery Counter cracked the spot: the coaching is done.
+func _on_bravery_countered(_target: ActorBase, _scribe_sign: int, _label: String) -> void:
+	_rhyme_left = 0.0
 
 
 ## The boss's bars are up (it's in the fight, or near).

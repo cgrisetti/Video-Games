@@ -17,6 +17,12 @@
 ## "IRON-ROOT PRIMED!", "SHATTERPOINT!"); and while a teammate's seal waits on
 ## an enemy within 12 m and you have a pip, the R slot rings gold under an
 ## "R: DETONATE SIGN!" prompt.
+##
+## Beside the R wing sit the Sign-Flow diamonds (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md
+## §6): the same CrossGrimoireDiamondWidget the Grimoire Binder and the
+## Reed-Light Scribery show at 2.2x, here at 1.0x, with each socket's
+## Place-Card framing its Action-Leaf, the Hearth-Rite filling and glowing, the
+## Flow-Link Window flashing and a gold beat when a Glimmer-Spot is yours to crack.
 class_name CrossGrimoireHUD
 extends Control
 
@@ -55,6 +61,8 @@ var actor: ActorBase
 var slots: Dictionary[int, CrossSlot] = {}
 var guard_slot: CrossSlot
 var roll_slot: CrossSlot
+## The Sign-Flow diamonds beside the R wing.
+var diorama: CrossGrimoireDiamondWidget
 ## Shown above the cross when something's wrong (downed, staggered).
 var status_text: String = ""
 
@@ -99,6 +107,12 @@ func _ready() -> void:
 	roll_slot.icon = CrossSlot.Icon.ROLL
 	roll_slot.sign_color = Color(0.75, 0.9, 1.0)
 	roll_slot.title = "Roll"
+	diorama = CrossGrimoireDiamondWidget.new()
+	diorama.name = "Diorama"
+	diorama.follow = actor
+	diorama.set_display_scale(CrossGrimoireDiamondWidget.HUD_SCALE, false)
+	diorama.position = Vector2(_cell_rect(Vector2i(1, 0)).end.x + GAP * 1.5, -CrossGrimoireDiamondWidget.BASE_SIZE.y * 0.5)
+	_cross.add_child(diorama)
 	if actor != null:
 		actor.action_queue.action_started.connect(_on_action_started)
 		actor.action_queue.buffer_changed.connect(_on_buffer_changed)

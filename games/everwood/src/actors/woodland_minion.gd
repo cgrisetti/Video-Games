@@ -62,6 +62,11 @@ func is_engaged() -> bool:
 	return camp != null and camp.alert and not stats.is_downed
 
 
+## The expedition's minions are Tier 1 kin (14 GDD §3): an Iron-Root strike cracks them for 1.25x poise.
+func glimmer_encounter_id() -> StringName:
+	return ArsenalCatalog.ROADSIDE_KIN
+
+
 ## Beaten minions stay beaten.
 func downed_duration() -> float:
 	return INF
