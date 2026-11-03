@@ -23,6 +23,7 @@ Instance="*res://src/autoloads/instance_manager.gd"
 Combat="*res://src/autoloads/combat_director.gd"
 Audio="*res://src/autoloads/audio_cues.gd"
 Score="*res://src/core/audio_director.gd"
+Atmosphere="*res://src/world/world_atmosphere_director.gd"
 Progress="*res://src/autoloads/party_progress.gd"
 
 [debug]
@@ -181,6 +182,77 @@ world/region_use_async_iterations=false
 
 3d/physics_engine="Jolt Physics"
 common/physics_interpolation=true
+
+[shader_globals]
+
+atelier_albedo={
+"type": "sampler2DArray",
+"value": ""
+}
+atelier_normal={
+"type": "sampler2DArray",
+"value": ""
+}
+atelier_roughness={
+"type": "sampler2DArray",
+"value": ""
+}
+hero_pos_0={
+"type": "vec4",
+"value": Vector4(0, -1000, 0, 0)
+}
+hero_pos_1={
+"type": "vec4",
+"value": Vector4(0, -1000, 0, 0)
+}
+hero_pos_2={
+"type": "vec4",
+"value": Vector4(0, -1000, 0, 0)
+}
+hero_pos_3={
+"type": "vec4",
+"value": Vector4(0, -1000, 0, 0)
+}
+hush_crack_0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+hush_crack_1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+hush_crack_2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+hush_crack_3={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+bloom_0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+bloom_1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+bloom_2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+bloom_3={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+world_wind={
+"type": "vec4",
+"value": Vector4(0.8, 0, 0.6, 0.35)
+}
+atelier_ready={
+"type": "float",
+"value": 0.0
+}
 
 [rendering]
 

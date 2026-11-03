@@ -154,6 +154,14 @@ const POLE_COLOR: Color = Color(0.38, 0.28, 0.18)
 const LANTERN_GLOW: Color = Color(1.0, 0.72, 0.3)
 const RUNESTONE_COLOR: Color = Color(0.55, 0.56, 0.6)
 const PETRIFIED_COLOR: Color = Color(0.62, 0.6, 0.58)
+## The petals' ground (17 GDD §5.1): Pippin-Green's golden pasture and plough-furrow
+## soil, Wayfarer-Green's chalk Bale-Way flagstones and Quarry-Wick's rusty gravel.
+const PASTURE_COLOR: Color = Color(0.56, 0.6, 0.32)
+const FURROW_COLOR: Color = Color(0.6, 0.45, 0.28)
+const FURROW_PERIOD: float = 8.0
+const FURROW_WIDTH: float = 3.2
+const CHALK_ROAD_COLOR: Color = Color(0.8, 0.77, 0.68)
+const GRAVEL_ROAD_COLOR: Color = Color(0.66, 0.5, 0.34)
 
 const NOISE: FastNoiseLite = preload("res://src/world/landblock_noise.tres")
 
@@ -284,6 +292,11 @@ func field_color(world_x: float, world_z: float, height: float) -> Color:
 	if r < VILLAGE_RADIUS + 2.0:
 		return COBBLE_COLOR.lerp(VILLAGE_GREEN, smoothstep(14.0, 30.0, r) * (1.0 - smoothstep(44.0, 58.0, r)))
 	if road_lateral(world_x, world_z) < ROAD_HALF_WIDTH:
+		var road_degrees: float = rad_to_deg(theta)
+		if d > BASIN_RADIUS and road_degrees > 160.0 and road_degrees < 208.0:
+			return CHALK_ROAD_COLOR.lerp(COBBLE_COLOR, 0.3 * patch)
+		if d > BASIN_RADIUS and road_degrees > 88.0 and road_degrees < 136.0:
+			return GRAVEL_ROAD_COLOR.lerp(ROAD_COLOR, 0.3 * patch)
 		return ROAD_COLOR.lerp(COBBLE_COLOR, 0.25 * patch)
 	if d > CLIFF_TOP_RADIUS + 4.0:
 		return SKIRT_COLOR.lerp(HEATHER_COLOR, 0.35 * patch)
@@ -299,7 +312,13 @@ func field_color(world_x: float, world_z: float, height: float) -> Color:
 	if degrees > 85.0 and degrees < 140.0:
 		return QUARRY_COLOR.lerp(ROCK_COLOR, patch * 0.5)
 	if degrees > 230.0 and degrees < 285.0:
-		return BARROW_GRASS.lerp(MEADOW_COLOR, patch * 0.4)
+		return BARROW_GRASS.lerp(MEADOW_COLOR, patch * 0.4).lerp(HEATHER_COLOR, smoothstep(0.62, 0.8, patch) * 0.45)
+	if degrees > 300.0 and degrees < 356.0 and d < CLIFF_FOOT - 20.0:
+		# Furrows run with the road out to Pippin-Green: strips across it.
+		var petal_theta: float = deg_to_rad(PETAL_BEARINGS[Petal.ORCHARD])
+		var lateral: float = offset.x * cos(petal_theta) + offset.y * sin(petal_theta)
+		var furrow: bool = fposmod(lateral, FURROW_PERIOD) < FURROW_WIDTH
+		return FURROW_COLOR.lerp(PASTURE_COLOR, patch * 0.25) if furrow else PASTURE_COLOR.lerp(MEADOW_COLOR, patch * 0.3)
 	if degrees > 12.0 and degrees < 72.0:
 		return BRAMBLE_COLOR.lerp(WEALD_COLOR, patch)
 	return WEALD_COLOR.lerp(MEADOW_COLOR, patch * 0.35)
@@ -734,7 +753,7 @@ enum Prop { TRUNK, CANOPY, PINE, BOULDER, POLE, LANTERN, RUNESTONE, REED, FLOWER
 
 const PROP_NAMES: Array[String] = ["Trunks", "Canopies", "Pines", "Boulders", "LanternPoles", "Lanterns", "Runestones", "Reeds", "Flowers", "Brambles"]
 const PROP_COLORS: Array[Color] = [TRUNK_COLOR, CANOPY_COLOR, PINE_COLOR, BOULDER_COLOR, POLE_COLOR, LANTERN_GLOW, RUNESTONE_COLOR,
-	Color(0.55, 0.6, 0.36), Color(0.92, 0.82, 0.5), Color(0.34, 0.36, 0.2)]
+	Color(0.55, 0.6, 0.36), Color(0.97, 0.96, 0.94), Color(0.34, 0.36, 0.2)]
 const COLOR_JITTER: float = 0.1
 
 
@@ -744,7 +763,33 @@ func build_clutter_data(chunk: Vector2i) -> Dictionary:
 	for kind: int in Prop.size():
 		packed[kind] = LandblockClutter._pack(props[kind])
 	packed["trees"] = props["trees"]
+	# The ground's small life (17 GDD §4.3), in the biome of the part of the vale the chunk's middle is in.
+	var middle: Vector3 = WorldGridConfig.chunk_to_world_origin(chunk) + Vector3.ONE * WorldGridConfig.CHUNK_SIZE * 0.5
+	packed["baked"] = ChunkClutterBaker.bake(chunk, WorldVisualCatalog.biome_for_place(region_name_at(middle.x, middle.z)), _grows_at)
 	return packed
+
+
+## Where grass, flowers and pebbles may grow: off the roads, river, clearings and cliffs.
+func _grows_at(x: float, z: float) -> float:
+	var d: float = ring_distance(Vector2(x, z) - CENTER)
+	if is_kept_clear(x, z, -1.5) or (d > CLIFF_FOOT - 4.0 and d < CLIFF_TOP_RADIUS + 4.0):
+		return NAN
+	return sample_height(x, z)
+
+
+## The part of the vale a spot is in: the village, the meadow round it, or one of the five petals.
+static func region_name_at(world_x: float, world_z: float) -> String:
+	var offset: Vector2 = Vector2(world_x, world_z) - CENTER
+	if offset.length() < VILLAGE_RADIUS + 14.0:
+		return "Oakshire-Wick"
+	if ring_distance(offset) < MEADOW_OUTER - 30.0:
+		return "The Settled Meadow"
+	var theta: float = bearing(offset)
+	var best: int = 0
+	for petal: int in PETAL_BEARINGS.size():
+		if absf(angle_difference(theta, deg_to_rad(PETAL_BEARINGS[petal]))) < absf(angle_difference(theta, deg_to_rad(PETAL_BEARINGS[best]))):
+			best = petal
+	return PETAL_NAMES[best]
 
 
 func make_clutter_node(chunk: Vector2i, data: Dictionary) -> Node3D:
@@ -764,11 +809,29 @@ func make_clutter_node(chunk: Vector2i, data: Dictionary) -> Node3D:
 		var instances: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		instances.name = PROP_NAMES[kind]
 		instances.multimesh = multimesh
-		instances.material_override = StorybookMaterial.glowing(LANTERN_GLOW, 2.4) if kind == Prop.LANTERN else LandblockTerrain.material()
+		var look: Material = _prop_material(kind)
+		if look != null:
+			instances.material_override = look
 		if kind == Prop.REED or kind == Prop.FLOWERS or kind == Prop.BRAMBLE or kind == Prop.LANTERN:
 			instances.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(instances)
+	for batch: MultiMeshInstance3D in ChunkClutterBaker.make_nodes(data.get("baked", {})):
+		root.add_child(batch)
 	return root
+
+
+## A prop's world material (17 GDD §3): crafted stone and timber, glowing lanterns, swaying leaves (null: the mesh's own).
+static func _prop_material(kind: int) -> Material:
+	match kind:
+		Prop.BOULDER:
+			return WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.CRAG_GRANITE, WorldVisualCatalog.GRANITE, false, 0.6)
+		Prop.POLE:
+			return WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.HEWN_TIMBER, WorldVisualCatalog.TIMBER)
+		Prop.LANTERN:
+			return WorldVisualCatalog.glowing(LANTERN_GLOW, 2.4)
+		Prop.RUNESTONE:
+			return WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.CRAG_GRANITE, RUNESTONE_COLOR, false, 0.5)
+	return null
 
 
 ## How many canopy trees a chunk's clutter holds (tests and telemetry).
@@ -912,6 +975,18 @@ func _add_prop(placed: Dictionary, kind: int, where: Transform3D, rng: RandomNum
 
 static func _prop_mesh(kind: int) -> Mesh:
 	match kind:
+		Prop.TRUNK:
+			return WorldAssetCatalog.clutter_trunk_mesh()
+		Prop.CANOPY:
+			return WorldAssetCatalog.clutter_crown_mesh()
+		Prop.PINE:
+			return WorldAssetCatalog.clutter_pine_mesh()
+		Prop.REED:
+			return WorldAssetCatalog.clutter_reed_mesh()
+		Prop.FLOWERS:
+			return ChunkClutterBaker.mesh_for(ChunkClutterBaker.FLOWERS, WorldVisualCatalog.OAKSHIRE_WICK)
+		Prop.BRAMBLE:
+			return WorldAssetCatalog.clutter_mound_mesh()
 		Prop.TRUNK:
 			var trunk: CylinderMesh = CylinderMesh.new()
 			trunk.top_radius = 0.32
@@ -1117,14 +1192,9 @@ func _water_for(chunk: Vector2i) -> MeshInstance3D:
 	return water
 
 
-static func water_material() -> StandardMaterial3D:
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = WATER_COLOR
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.roughness = 0.15
-	material.metallic_specular = 0.7
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	return material
+## The river's water (17 GDD §3.4): sunlit aqua deepening to teal, running east.
+static func water_material() -> Material:
+	return WorldVisualCatalog.water(&"canal", Vector2(1.1, 0.0))
 
 
 ## The waterfall pouring off the west escarpment, and the cave the river runs into in the east.
@@ -1139,8 +1209,7 @@ func _river_ends_for(chunk: Vector2i) -> Node3D:
 		var sheet: BoxMesh = BoxMesh.new()
 		sheet.size = Vector3(1.2, CLIFF_TOP_HEIGHT, 11.0)
 		falls.mesh = sheet
-		falls.material_override = water_material()
-		(falls.material_override as StandardMaterial3D).albedo_color = WATERFALL_COLOR
+		falls.material_override = WorldVisualCatalog.water(&"falls", Vector2(0.0, 1.4))
 		falls.position = Vector3(west.x - 4.0, CLIFF_TOP_HEIGHT * 0.5, west.y)
 		falls.rotation.y = atan2(river_at(west.x).y, 1.0)
 		merge.add_cylinder(Vector3(west.x + 2.0, 0.5, west.y), 5.0, 6.0, 1.0, Color(0.92, 0.96, 1.0), 12)

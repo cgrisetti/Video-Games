@@ -262,7 +262,7 @@ static func make_terrain_node(chunk: Vector2i, data: Dictionary) -> MeshInstance
 	arrays[Mesh.ARRAY_INDEX] = data["indices"]
 	var mesh: ArrayMesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	mesh.surface_set_material(0, material())
+	mesh.surface_set_material(0, WorldVisualCatalog.terrain())
 	var ground: MeshInstance3D = MeshInstance3D.new()
 	ground.name = "Terrain_%s" % WorldGridConfig.chunk_key(chunk)
 	ground.mesh = mesh

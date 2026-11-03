@@ -3,11 +3,11 @@
 [ext_resource type="Script" path="res://src/actors/portal_apron.gd" id="1_iv3c3"]
 [ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="2_uypxf"]
 
-[node name="Landblock_1_7" type="Node3D" unique_id=553287950]
+[node name="Landblock_1_7" type="Node3D" unique_id=526078378]
 metadata/chunk = Vector2i(1, 7)
 metadata/buildings = true
 
-[node name="PortalApron_D2" type="Node3D" parent="." unique_id=1745816745 groups=["landblock_entities"]]
+[node name="PortalApron_D2" type="Node3D" parent="." unique_id=261434671 groups=["landblock_entities"]]
 transform = Transform3D(0.2419219, 0, -0.9702957, 0, 1, 0, 0.9702957, 0, 0.2419219, 159.84558, 28, 919.62994)
 script = ExtResource("1_iv3c3")
 code = "[D2]"
@@ -17,15 +17,16 @@ required_level = 5
 scribe_sign = 4
 dungeon_id = &"d2_hollow_kings_barrow"
 
-[node name="Spawner_Wights_01" type="Node3D" parent="." unique_id=1601118726 groups=["landblock_entities"]]
+[node name="Spawner_Wights_01" type="Node3D" parent="." unique_id=747431968 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 231.18384, 25.333334, 943.9751)
 script = ExtResource("2_uypxf")
 territory = "Nine-Stones-Crossing"
 variant_ids = Array[StringName]([&"hollow_scribe_acolyte", &"risen_shield_sworn_husk"])
 leash = 20.752445
 patrol = PackedVector3Array()
+has_hush_crack = true
 
-[node name="Spawner_GateWights_3" type="Node3D" parent="." unique_id=231978118 groups=["landblock_entities"]]
+[node name="Spawner_GateWights_3" type="Node3D" parent="." unique_id=1150063446 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 148.20203, 58.508766, 922.533)
 script = ExtResource("2_uypxf")
 territory = "Nine-Stones-Crossing"

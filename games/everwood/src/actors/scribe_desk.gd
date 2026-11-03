@@ -1,5 +1,7 @@
 ## The Armory & Scribe Desk in Hub Town: a writing desk with an open Grimoire,
-## a card stand of floating Scribe Cards and a rune circle on the floor. Walk
+## a card stand of floating Scribe Cards and a seal circle on the floor, under
+## an open-sided timber pavilion with the Scribe Press, four glowing inkwells
+## and a weapon rack (17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md §4.2). Walk
 ## up and press light to open ScribeDeskMenu on your own screen and change
 ## your armor, weapon, lead cards and under-card links. The desk builds itself
 ## in code; players stand on its front side, local -Z.
@@ -42,7 +44,7 @@ func _ready() -> void:
 	collision.name = "Collision"
 	collision.shape = shape
 	desk.add_child(collision)
-	var wood: Material = _material(WOOD_COLOR, 0.0)
+	var wood: Material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.HEWN_TIMBER, WOOD_COLOR)
 	var top_size: Vector3 = Vector3(DESK_SIZE.x, 0.08, DESK_SIZE.z)
 	desk.add_child(ShapeKit.box("Top", top_size, Vector3(0.0, DESK_SIZE.y * 0.5 - 0.04, 0.0), wood))
 	var leg_x: float = DESK_SIZE.x * 0.5 - 0.1
@@ -53,6 +55,10 @@ func _ready() -> void:
 			legs += 1
 			desk.add_child(ShapeKit.box("Leg%d" % legs, LEG_SIZE, Vector3(side * leg_x, -0.04, depth * leg_z), wood))
 	add_child(desk)
+	# The pavilion over it: posts, shingled roof, the Scribe Press, inkwells and the weapon rack.
+	var pavilion: Node3D = WorldAssetCatalog.build(WorldVisualCatalog.KIT_SCRIBE_DESK_PAVILION, {"size": Vector3(4.4, 2.9, 3.0)})
+	pavilion.position = Vector3(0.0, 0.0, DESK_Z - 0.35)
+	add_child(pavilion)
 	# An open Grimoire on the desk.
 	var page: Material = _material(PAGE_COLOR, 0.0)
 	for side: float in [-1.0, 1.0]:
@@ -106,7 +112,7 @@ func _ready() -> void:
 	_sign.outline_size = 10
 	_sign.pixel_size = 0.01
 	_sign.modulate = Color(0.85, 0.75, 1.0)
-	_sign.position = Vector3(0.0, STAND_HEIGHT + 1.0, DESK_Z)
+	_sign.position = Vector3(0.0, 4.6, DESK_Z)
 	add_child(_sign)
 	_refresh_sign()
 

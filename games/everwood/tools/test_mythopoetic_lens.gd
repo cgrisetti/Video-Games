@@ -92,6 +92,13 @@ func _check_linter() -> void:
 	for zone: StewardshipZoneResource in MythopoeticAtlas.all():
 		shown.append_array([zone.display_name, zone.kin, zone.crack, zone.payoff])
 		shown.append_array(Array(zone.rhyme_lines))
+	# The world's biomes, kits and succession looks (17 GDD §7.2 check 4).
+	for look: ZoneBiomeResource in WorldVisualCatalog.biomes():
+		shown.append_array([look.display_name, look.cooper_sign_title])
+	for kit: WorldPropKitResource in WorldVisualCatalog.kits():
+		shown.append(kit.display_name)
+	for state: int in 3:
+		shown.append(WorldVisualCatalog.succession(state).display_name)
 	var vale: OakshireVale = tree.current_scene as OakshireVale
 	if vale != null:
 		for npc: TownsfolkNPC in vale.townsfolk:
@@ -115,6 +122,8 @@ func _check_linter() -> void:
 	places.append_array(OakshireValeLayout.PETAL_NAMES)
 	places.append_array(MythopoeticAtlas.PLACE_ZONES.keys())
 	places.append_array(LandblockManifest.ZONE_NAMES)
+	for look: ZoneBiomeResource in WorldVisualCatalog.biomes():
+		places.append(look.display_name)
 	for card: ScribeCardResource in catalog.cards():
 		if card.card_kind == ScribeCardResource.CardKind.LOCATION_PLACE:
 			places.append(card.display_name)

@@ -1,14 +1,87 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/actors/townsfolk_npc.gd" id="1_vb4sw"]
-[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="2_w5xj4"]
+[ext_resource type="Script" path="res://src/actors/chime_post.gd" id="1_lasbj"]
+[ext_resource type="Script" path="res://src/world/world_kit_instance.gd" id="2_kcaej"]
+[ext_resource type="Script" path="res://src/actors/townsfolk_npc.gd" id="3_i72fo"]
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="4_r2fnf"]
 
-[node name="Landblock_9_8" type="Node3D" unique_id=1773964957]
+[sub_resource type="BoxShape3D" id="BoxShape3D_bgnuq"]
+size = Vector3(3.4, 5.6, 0.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tb1ho"]
+size = Vector3(3, 1.7, 1.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_eyfqa"]
+size = Vector3(3, 1.7, 1.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hj6fd"]
+size = Vector3(3, 1.7, 1.5)
+
+[node name="Landblock_9_8" type="Node3D" unique_id=1551680471]
 metadata/chunk = Vector2i(9, 8)
+metadata/buildings = true
 
-[node name="Guard_Leofric" type="Node3D" parent="." unique_id=935619834 groups=["landblock_entities"]]
+[node name="ChimePost" type="Node3D" parent="." unique_id=1799929381]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1186.3073, 19.76923, 1026.4526)
+script = ExtResource("1_lasbj")
+place = "Quarry-Wick"
+
+[node name="Crane0" type="StaticBody3D" parent="." unique_id=1189649055]
+transform = Transform3D(0.93921095, 0, -0.3433407, 0, 1, 0, 0.3433407, 0, 0.93921095, 1172.7732, 16.98007, 1043.5958)
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Crane0" unique_id=1188396861]
+shape = SubResource("BoxShape3D_bgnuq")
+
+[node name="Kit" type="Node3D" parent="Crane0" unique_id=1804309245]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.8, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_quarry_crane"
+
+[node name="Ashlar0" type="StaticBody3D" parent="." unique_id=1403353908]
+transform = Transform3D(0.74226767, 0, -0.6701035, 0, 1, 0, 0.6701035, 0, 0.74226767, 1164.4446, 15.750521, 1034.0754)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Ashlar0" unique_id=594894631]
+shape = SubResource("BoxShape3D_tb1ho")
+
+[node name="Kit" type="Node3D" parent="Ashlar0" unique_id=2130207113]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.85, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_ashlar_stack"
+
+[node name="Ashlar1" type="StaticBody3D" parent="." unique_id=1474324447]
+transform = Transform3D(0.8785013, 0, -0.47773993, 0, 1, 0, 0.47773993, 0, 0.8785013, 1169.4716, 15.496775, 1039.3414)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Ashlar1" unique_id=130787645]
+shape = SubResource("BoxShape3D_eyfqa")
+
+[node name="Kit" type="Node3D" parent="Ashlar1" unique_id=2083661943]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.85, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_ashlar_stack"
+seed_value = 1
+
+[node name="Ashlar2" type="StaticBody3D" parent="." unique_id=1679602516]
+transform = Transform3D(0.95752853, 0, -0.28833848, 0, 1, 0, 0.28833848, 0, 0.95752853, 1174.4984, 15.083615, 1044.6074)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Ashlar2" unique_id=369002897]
+shape = SubResource("BoxShape3D_hj6fd")
+
+[node name="Kit" type="Node3D" parent="Ashlar2" unique_id=1203061428]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.85, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_ashlar_stack"
+seed_value = 2
+
+[node name="Guard_Leofric" type="Node3D" parent="." unique_id=825852592 groups=["landblock_entities"]]
 transform = Transform3D(-0.9271836, 0, 0.37460715, 0, 1, 0, -0.37460715, 0, -0.9271836, 1179.0447, 19.76923, 1025.0743)
-script = ExtResource("1_vb4sw")
+script = ExtResource("3_i72fo")
 role = 2
 npc_name = "Leofric"
 title = "Bridge-Warden"
@@ -18,9 +91,9 @@ body_color = Color(0.32, 0.46, 0.72, 1)
 accent_color = Color(0.86, 0.66, 0.3, 1)
 npc_seed = 58
 
-[node name="Spawner_Outlaws_01" type="Node3D" parent="." unique_id=1022689909 groups=["landblock_entities"]]
+[node name="Spawner_Outlaws_01" type="Node3D" parent="." unique_id=434475876 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1177.6625, 19.666666, 1078.5154)
-script = ExtResource("2_w5xj4")
+script = ExtResource("4_r2fnf")
 territory = "Quarry-Wick"
 variant_ids = Array[StringName]([&"foreman_iron_gavel", &"soot_paw_cutthroat", &"quarry_sling_shotter"])
 leash = 18.278086

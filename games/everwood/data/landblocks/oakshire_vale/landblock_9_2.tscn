@@ -2,13 +2,14 @@
 
 [ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="1_0h8rp"]
 
-[node name="Landblock_9_2" type="Node3D" unique_id=1877325762]
+[node name="Landblock_9_2" type="Node3D" unique_id=519743068]
 metadata/chunk = Vector2i(9, 2)
 
-[node name="Spawner_Briars_02" type="Node3D" parent="." unique_id=1996584128 groups=["landblock_entities"]]
+[node name="Spawner_Briars_02" type="Node3D" parent="." unique_id=1440197398 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1231.9828, 25.333334, 302.2908)
 script = ExtResource("1_0h8rp")
 territory = "Bramble-Hollow"
 variant_ids = Array[StringName]([&"bog_hulk_tangler"])
 leash = 19.64658
 patrol = PackedVector3Array()
+has_hush_crack = true

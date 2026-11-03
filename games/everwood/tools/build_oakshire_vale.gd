@@ -22,6 +22,18 @@
 ##   the six families' spawners in their territories, the sheep and foxes, and
 ##     the Crag-Back Cairn-Drake's round of the High Road
 ## 68 friendly folk: 18 quest givers, 14 vendors, 16 guards and 20 villagers.
+##
+## Phase 17 (17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md §5.1): the village's
+## houses are stepped-gable kits round the Oakshire Homestead Hall, with the
+## Kindle-Fire ring, the Armory & Scribe Desk pavilion, the Chime-Shrine
+## pagoda, seven cedar bee-hives along the east woodline and two walled
+## pumpkin patches; every camp has a Chime-Post; and each petal has its
+## landmarks: Wayfarer-Green's hillside windmill and sheep-stiles,
+## Pippin-Green's cider mill and walled orchard, Quarry-Wick's pulley-cranes,
+## ashlar stacks and cairns, Bramble-Hollow's willow pools, Wind-Lanterns and
+## Water-Shrine, and Nine-Stones-Crossing's ring of nine standing stones, its
+## flagged causeway and the Threshold Bell-Frame. Bramble-Hollow's briars, the
+## outlaws' camp and the barrow wights sit on Hush-Cracks.
 extends "res://tools/build_levels.gd"
 
 const OAKSHIRE_PATH: String = "res://scenes/worlds/oakshire_vale.tscn"
@@ -51,6 +63,15 @@ const SPAN_MIDDLE: float = 7.0
 const SPAN_RAMP: float = 8.0
 const SPAN_DECK: float = 2.6
 const SPAN_WIDTH: float = 6.0
+## Oakshire-Wick's landmarks round the green (bearing in degrees, distance in metres).
+const KINDLE_FIRE_AT: Vector2 = Vector2(300.0, 15.0)
+const PAVILION_AT: Vector2 = Vector2(76.0, 37.0)
+const PAGODA_AT: Vector2 = Vector2(220.0, 37.0)
+const HIVE_ARC_AT: Vector2 = Vector2(88.0, 74.0)
+const PUMPKIN_PATCH_AT: Array[Vector2] = [Vector2(150.0, 74.0), Vector2(290.0, 74.0)]
+const VILLAGE_POST_AT: Vector2 = Vector2(193.0, 58.0)
+## Spawners that sit on a Hush-Crack (17 GDD §5.1).
+const HUSH_CRACK_SPAWNERS: Array[String] = ["Spawner_Briars_", "Spawner_OutlawCamp_0", "Spawner_Wights_"]
 const TOWNSFOLK_TOTALS: Dictionary = {"quest_givers": 18, "vendors": 14, "guards": 16, "villagers": 20}
 
 ## Each hub's three quest givers: name, title, their quest.
@@ -91,6 +112,8 @@ var _villager_index: int = 0
 
 
 func _initialize() -> void:
+	# The HLOD bakes read every kit the moment its landblock is in the tree.
+	WorldKitInstance.immediate = true
 	var folder: String = ProjectSettings.globalize_path(OakshireValeLayout.LANDBLOCK_FOLDER)
 	DirAccess.make_dir_recursive_absolute(folder)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://scenes/worlds/"))
@@ -304,7 +327,8 @@ func _add_village() -> void:
 		for third: float in [1.0 / 3.0, 2.0 / 3.0]:
 			var bearing_degrees: float = start + 72.0 * third
 			var spot: Vector3 = _around(center, bearing_degrees, HOUSE_RADIUS)
-			var house: StaticBody3D = _house("House%d" % house_index, Vector3.ZERO, VALE_HOUSE_COLORS[house_index % VALE_HOUSE_COLORS.size()], false)
+			var variant: StringName = &"OAKSHIRE_HOMESTEAD_HALL" if house_index == 0 else &"VILLAGE_COTTAGE"
+			var house: StaticBody3D = _house("House%d" % house_index, Vector3.ZERO, VALE_HOUSE_COLORS[house_index % VALE_HOUSE_COLORS.size()], variant, PI * 0.5)
 			_put(house, spot, true)
 			house.position.y += HOUSE_SIZE.y * 0.5
 			house.rotation.y = _facing(spot, center)
@@ -323,6 +347,7 @@ func _add_village() -> void:
 				PackedVector3Array(), STALL_COLORS[vendor_index % STALL_COLORS.size()].darkened(0.2), Color(0.86, 0.8, 0.66))
 			vendor_index += 1
 	_add_quest_hub("Oakshire-Wick", center, 7.0, 150.0)
+	_add_village_landmarks(center)
 	# Hearth-Guard sentries at each road's end and three round the green.
 	for index: int in exits.size():
 		var post: Vector3 = _around(center, exits[index] + 6.0, OakshireValeLayout.VILLAGE_RADIUS - 3.0)
@@ -351,7 +376,7 @@ func _stall(stall_name: String, color: Color, yaw: float) -> StaticBody3D:
 	stall.add_child(ShapeKit.box("Counter", Vector3(2.6, 1.0, 0.9), Vector3(0.0, 0.5, 0.0), wood))
 	for corner: Vector2 in [Vector2(-1.25, -0.4), Vector2(1.25, -0.4), Vector2(-1.25, 0.9), Vector2(1.25, 0.9)]:
 		stall.add_child(ShapeKit.cylinder("Post", 0.06, 0.06, 2.6, Vector3(corner.x, 1.3, corner.y), wood, 6))
-	var canopy: MeshInstance3D = ShapeKit.box("Canopy", Vector3(2.9, 0.12, 1.8), Vector3(0.0, 2.6, 0.25), _material(color))
+	var canopy: MeshInstance3D = ShapeKit.box("Canopy", Vector3(2.9, 0.12, 1.8), Vector3(0.0, 2.6, 0.25), WorldVisualCatalog.painted(color))
 	canopy.rotation.x = 0.18
 	stall.add_child(canopy)
 	var shape: CollisionShape3D = CollisionShape3D.new()
@@ -429,6 +454,11 @@ func _add_bridge_span() -> void:
 		_material(BRIDGE_STONE.darkened(0.15)), 16))
 	(span.get_child(span.get_child_count() - 1) as Node3D).rotation.z = PI * 0.5
 	_put(span, frame.origin, true)
+	# Wind-Lanterns at its four corners.
+	for side: float in [-1.0, 1.0]:
+		for rail: float in [-1.0, 1.0]:
+			var corner: Vector3 = frame.origin + frame.basis.z * side * (SPAN_MIDDLE + SPAN_RAMP + 1.0) + frame.basis.x * rail * (SPAN_WIDTH * 0.5 + 0.8)
+			_put(_lantern("BridgeLantern", Vector3.ZERO), _ground_at(corner), true)
 	# Two Bridge-Wardens keep it, one at each end.
 	for side: float in [-1.0, 1.0]:
 		var post: Vector3 = frame.origin + frame.basis.z * side * (SPAN_MIDDLE + SPAN_RAMP + 3.0) + frame.basis.x * 4.0
@@ -451,22 +481,18 @@ func _deck_piece(deck: StaticBody3D, piece_name: String, where: Vector3, size: V
 
 func _add_mill() -> void:
 	var at: Vector3 = _vale.mill_position()
-	var mill: StaticBody3D = _box_body("Watermill", Vector3(6.0, 5.0, 6.0), Vector3.ZERO, _material(MILL_COLOR))
+	var mill: StaticBody3D = _collider("Watermill", Vector3(6.0, 5.0, 6.0), Vector3.ZERO)
 	_put(mill, at, true)
 	mill.position.y += 2.5
-	var roof: MeshInstance3D = MeshInstance3D.new()
-	roof.name = "Roof"
-	var roof_mesh: PrismMesh = PrismMesh.new()
-	roof_mesh.size = Vector3(6.4, 2.0, 6.4)
-	roof_mesh.material = _material(ROOF_COLOR)
-	roof.mesh = roof_mesh
-	roof.position = Vector3(0.0, 3.5, 0.0)
-	mill.add_child(roof)
+	mill.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_HOUSE_STEPPED_GABLE, Vector3(0.0, -2.5, 0.0), PI * 0.5,
+		{&"size": Vector3(6.0, 4.4, 6.0), &"tint": MILL_COLOR, &"accent": ROOF_TINTS[1]}))
 	var river: Vector2 = OakshireValeLayout.river_at(at.x)
 	var wheel: Node3D = _node3d("WaterWheel")
 	wheel.set_script(load(WHEEL_SCRIPT))
 	wheel.rotation = Vector3(PI * 0.5, 0.0, 0.0)
-	_put(wheel, Vector3(at.x, 2.4, lerpf(at.z, river.x, 0.55)), true)
+	var wheel_at: Vector3 = Vector3(at.x, 2.4, lerpf(at.z, river.x, 0.55))
+	_put(wheel, wheel_at, true)
+	_put(WorldKitInstance.make("MillRace", WorldVisualCatalog.KIT_WATERMILL_WHEEL, Vector3.ZERO, 0.0, {&"height": WatermillWheel.RADIUS}), wheel_at, true)
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 908
 	for index: int in 4:
@@ -495,7 +521,7 @@ func _add_camp(petal: int) -> void:
 		cloth.name = "Canvas"
 		var prism: PrismMesh = PrismMesh.new()
 		prism.size = Vector3(3.2, 2.4, 3.6)
-		prism.material = _material(TENT_COLOR.lerp(STALL_COLORS[petal], 0.3))
+		prism.material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.LIME_PLASTER, TENT_COLOR.lerp(STALL_COLORS[petal], 0.3))
 		cloth.mesh = prism
 		cloth.position = Vector3(0.0, 1.2, 0.0)
 		tent.add_child(cloth)
@@ -504,6 +530,10 @@ func _add_camp(petal: int) -> void:
 		_put(tent, spot, true)
 		tent.rotation.y = _facing(spot, center)
 	_add_quest_hub(hub, center, 4.5, OakshireValeLayout.PETAL_BEARINGS[petal] + 180.0)
+	var post_radius: float = (OakshireValeLayout.GLADE_RADIUS if glade else OakshireValeLayout.CAMP_RADIUS) - 2.5
+	_put(_chime_post("ChimePost", _around(center, OakshireValeLayout.PETAL_BEARINGS[petal] + 60.0, post_radius), hub),
+		_around(center, OakshireValeLayout.PETAL_BEARINGS[petal] + 60.0, post_radius), true)
+	_add_petal_landmarks(petal, center)
 	var post: Vector3 = _around(center, OakshireValeLayout.PETAL_BEARINGS[petal] + 90.0, (OakshireValeLayout.GLADE_RADIUS if glade else OakshireValeLayout.CAMP_RADIUS) - 3.0)
 	_guard("Bridge-Warden", post, _facing(center, post))
 	if glade:
@@ -541,13 +571,241 @@ func _add_orchard() -> void:
 		_villager(home, PackedVector3Array([_ground_at(camp + toward_village * rng.randf_range(24.0, 40.0) + across * rng.randf_range(-12.0, 12.0))]))
 
 
+## An orchard tree hung with fruit (17 GDD kit_tree_orchard_apple).
 func _fruit_tree(tree_name: String) -> Node3D:
-	var tree: Node3D = _tree(tree_name, Vector3.ZERO, 4.2, true)
-	var fruit: Material = _material(FRUIT_COLOR)
-	for index: int in 6:
-		var angle: float = TAU * index / 6.0
-		tree.add_child(ShapeKit.sphere("Pear%d" % index, 0.12, Vector3(cos(angle) * 0.9, 3.0 + sin(index * 1.7) * 0.4, sin(angle) * 0.9), fruit))
-	return tree
+	return _tree(tree_name, Vector3.ZERO, 4.8, true, WorldVisualCatalog.KIT_TREE_ORCHARD_APPLE)
+
+
+# --- Phase 17 landmarks (17 GDD §5.1) ---------------------------------------------------
+
+## Oakshire-Wick's Kindle-Fire ring, Armory & Scribe Desk pavilion, Chime-Shrine
+## pagoda, bee-hives, walled pumpkin patches and its Chime-Post.
+func _add_village_landmarks(center: Vector3) -> void:
+	var fire_at: Vector3 = _around(center, KINDLE_FIRE_AT.x, KINDLE_FIRE_AT.y)
+	_put(_kindle_fire(), fire_at, true)
+	var pavilion_at: Vector3 = _around(center, PAVILION_AT.x, PAVILION_AT.y)
+	var pavilion: StaticBody3D = _collider("ScribeDeskPavilion", Vector3(2.4, 0.9, 1.0), Vector3.ZERO)
+	pavilion.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_SCRIBE_DESK_PAVILION, Vector3(0.0, -0.45, -0.35)))
+	pavilion.add_child(ShapeKit.box("Desk", Vector3(2.4, 0.9, 1.0), Vector3.ZERO, WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.HEWN_TIMBER, WorldVisualCatalog.TIMBER)))
+	_put(pavilion, pavilion_at + Vector3(0.0, 0.45, 0.0), true)
+	pavilion.rotation.y = _facing(pavilion_at, center)
+	var pagoda_at: Vector3 = _around(center, PAGODA_AT.x, PAGODA_AT.y)
+	var pagoda: StaticBody3D = _low(_collider("ChimeShrinePagoda", Vector3(2.8, 0.6, 2.8), Vector3.ZERO, ActorBase.LAYER_LOW_SCENERY))
+	pagoda.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_CHIME_SHRINE_PAGODA, Vector3(0.0, -0.3, -0.4)))
+	for index: int in 5:
+		var chime: MeshInstance3D = MeshInstance3D.new()
+		chime.name = "Chime%d" % (index + 1)
+		chime.mesh = WorldAssetCatalog.chime_mesh([0.9, 0.8, 0.7, 0.6, 0.52][index])
+		chime.position = Vector3((float(index) - 2.0) * 0.42, 2.95, 0.0)
+		pagoda.add_child(chime)
+	_put(pagoda, pagoda_at + Vector3(0.0, 0.3, 0.0), true)
+	pagoda.rotation.y = _facing(pagoda_at, center)
+	# Seven cedar hives in a south-facing convex arc along the east woodline, and their bees.
+	var arc_center: Vector3 = _around(center, HIVE_ARC_AT.x, HIVE_ARC_AT.y)
+	for index: int in HIVE_COUNT:
+		var angle: float = lerpf(PI * 0.12, PI * 0.88, float(index) / (HIVE_COUNT - 1))
+		var at: Vector3 = _ground_at(arc_center + Vector3(cos(angle) * HIVE_ARC_RADIUS, 0.0, -sin(angle) * HIVE_ARC_RADIUS))
+		var hive: StaticBody3D = _low(_collider("Hive%d" % (index + 1), Vector3(0.66, 1.2, 0.6), Vector3(0.0, 0.6, 0.0), ActorBase.LAYER_LOW_SCENERY))
+		hive.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_BEE_HIVE, Vector3(0.0, -0.6, 0.0), 0.0, {&"height": float(2 + index % 2)}))
+		_put(hive, at + Vector3(0.0, 0.6, 0.0), true)
+	_put(_bees("Bees", Vector3.ZERO, Vector3(HIVE_ARC_RADIUS, 0.5, HIVE_ARC_RADIUS * 0.5)), arc_center + Vector3(0.0, 1.0, -HIVE_ARC_RADIUS * 0.6), true)
+	# Two heirloom pumpkin patches inside knee-high dry-stone walls, open toward the green.
+	for index: int in PUMPKIN_PATCH_AT.size():
+		var at: Vector3 = _around(center, PUMPKIN_PATCH_AT[index].x, PUMPKIN_PATCH_AT[index].y)
+		var patch: Node3D = _pumpkin_patch("PumpkinPatch%d" % (index + 1), Rect2(-5.0, -3.5, 10.0, 7.0), index, 1.0)
+		_put(patch, at, true)
+		patch.rotation.y = _facing(at, center) + PI * 0.5
+	var post_at: Vector3 = _around(center, VILLAGE_POST_AT.x, VILLAGE_POST_AT.y)
+	_put(_chime_post("VillageChimePost", Vector3.ZERO, "Oakshire-Wick"), post_at, true)
+
+
+## The Kindle-Fire ring: river stones round a crackling fire, an iron tripod and kettle, and quilted travel packs.
+func _kindle_fire() -> Node3D:
+	var fire: Node3D = _node3d("KindleFire")
+	var stone: Material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.CRAG_GRANITE, Color(0.6, 0.6, 0.58), false, 0.4)
+	for index: int in 12:
+		var angle: float = TAU * float(index) / 12.0
+		fire.add_child(ShapeKit.stretched(ShapeKit.sphere("RingStone%d" % index, 0.28, Vector3(cos(angle) * 1.4, 0.1, sin(angle) * 1.4), stone), Vector3(1.2, 0.6, 1.0)))
+	for log_index: int in 4:
+		var log_mesh: MeshInstance3D = ShapeKit.cylinder("Log%d" % log_index, 0.12, 0.12, 1.4, Vector3(0.0, 0.14, 0.0),
+			WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.HEWN_TIMBER, Color(0.36, 0.24, 0.14)), 6)
+		log_mesh.rotation = Vector3(PI * 0.5, log_index * PI * 0.25, 0.0)
+		fire.add_child(log_mesh)
+	fire.add_child(ShapeKit.no_shadow(ShapeKit.sphere("Flames", 0.5, Vector3(0.0, 0.45, 0.0), WorldVisualCatalog.glowing(FIRE_COLOR, 2.5))))
+	var iron: Material = WorldVisualCatalog.painted(WorldAssetCatalog.IRON)
+	for leg: int in 3:
+		var angle: float = TAU * float(leg) / 3.0
+		fire.add_child(_beam("TripodLeg%d" % leg, Vector3(cos(angle) * 1.1, 0.0, sin(angle) * 1.1), Vector3(0.0, 1.7, 0.0), 0.04, iron))
+	fire.add_child(ShapeKit.sphere("Kettle", 0.22, Vector3(0.0, 1.05, 0.0), iron))
+	var steam: CPUParticles3D = _mist("Steam", Vector3(0.0, 1.35, 0.0), Vector3(0.1, 0.05, 0.1))
+	steam.amount = 8
+	steam.scale_amount_min = 0.2
+	steam.scale_amount_max = 0.5
+	fire.add_child(steam)
+	for pack: int in 3:
+		var angle: float = 0.6 + pack * 1.9
+		var quilt: Color = [Color(0.72, 0.34, 0.3), Color(0.32, 0.46, 0.66), Color(0.82, 0.68, 0.36)][pack]
+		fire.add_child(ShapeKit.stretched(ShapeKit.sphere("Pack%d" % pack, 0.35, Vector3(cos(angle) * 2.4, 0.25, sin(angle) * 2.4), WorldVisualCatalog.painted(quilt)),
+			Vector3(1.3, 0.8, 1.0)))
+	fire.add_child(WorldAssetCatalog.light("FireGlow", FIRE_COLOR, 1.4, 6.0))
+	(fire.get_node("FireGlow") as OmniLight3D).position = Vector3(0.0, 1.0, 0.0)
+	return fire
+
+
+## A petal's landmarks (17 GDD §5.1), set round its camp clear of roads, the river and the aprons.
+func _add_petal_landmarks(petal: int, center: Vector3) -> void:
+	var village: Vector3 = Vector3(OakshireValeLayout.CENTER.x, center.y, OakshireValeLayout.CENTER.y)
+	var outward: Vector3 = (center - village).normalized()
+	outward.y = 0.0
+	var across: Vector3 = outward.cross(Vector3.UP).normalized()
+	var radius: float = OakshireValeLayout.GLADE_RADIUS if petal == OakshireValeLayout.Petal.GLADE else OakshireValeLayout.CAMP_RADIUS
+	match petal:
+		OakshireValeLayout.Petal.GLADE:
+			var mill_at: Vector3 = _clear_spot(center, outward, across, -4.0, radius + 12.0, 3.0)
+			if mill_at != Vector3.INF:
+				var windmill: StaticBody3D = _collider("Windmill", Vector3(4.2, 8.0, 4.2), Vector3(0.0, 4.0, 0.0))
+				windmill.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_WINDMILL, Vector3(0.0, -4.0, 0.0), 0.0, {&"spin_speed": 0.45}))
+				_put(windmill, mill_at + Vector3(0.0, 4.0, 0.0), true)
+				windmill.rotation.y = _facing(mill_at, mill_at - across)
+				for stile: int in 2:
+					var stile_at: Vector3 = _clear_spot(center, outward, across, 6.0 + stile * 8.0, radius + 6.0 + stile * 3.0, 1.0)
+					if stile_at != Vector3.INF:
+						_put(_sheep_stile("SheepStile%d" % stile), stile_at, true)
+		OakshireValeLayout.Petal.ORCHARD:
+			var cider_at: Vector3 = _clear_spot(center, -outward, across, 30.0, -26.0, 4.0)
+			if cider_at != Vector3.INF:
+				var cider: StaticBody3D = _collider("CiderMill", Vector3(5.0, 3.4, 5.0), Vector3(0.0, 1.7, 0.0))
+				cider.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_HOUSE_STEPPED_GABLE, Vector3(0.0, -1.7, 0.0), PI * 0.5,
+					{&"size": Vector3(5.0, 3.4, 5.0), &"tint": Color(0.86, 0.78, 0.6), &"accent": ROOF_TINTS[0]}))
+				_put(cider, cider_at + Vector3(0.0, 1.7, 0.0), true)
+				cider.rotation.y = _facing(cider_at, center)
+				var barrels: Node3D = _node3d("CiderBarrels")
+				for barrel: int in 4:
+					barrels.add_child(ShapeKit.cylinder("Barrel%d" % barrel, 0.36, 0.32, 0.8, Vector3((barrel % 2) * 0.8, 0.4, floorf(barrel * 0.5) * 0.8),
+						WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.HEWN_TIMBER, Color(0.5, 0.34, 0.2)), 10))
+				_put(barrels, _ground_at(cider_at + across * 4.5), true)
+			for side: float in [-1.0, 1.0]:
+				var from: Vector3 = center - outward * 22.0 + across * side * 16.0
+				_put(_drystone_run("OrchardWall", 20.0), _ground_at(from - outward * 10.0), true).rotation.y = _facing(from, from - outward) + PI * 0.5
+		OakshireValeLayout.Petal.QUARRY:
+			for crane: int in 2:
+				var at: Vector3 = _clear_spot(center, outward, across, 6.0 + crane * 6.0, (radius + 8.0) * (1.0 if crane == 0 else -1.0), 2.5)
+				if at != Vector3.INF:
+					var body: StaticBody3D = _collider("Crane%d" % crane, Vector3(3.4, 5.6, 0.6), Vector3(0.0, 2.8, 0.0))
+					body.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_QUARRY_CRANE, Vector3(0.0, -2.8, 0.0)))
+					_put(body, at + Vector3(0.0, 2.8, 0.0), true)
+					body.rotation.y = _facing(at, center)
+			for stack: int in 3:
+				var at: Vector3 = _clear_spot(center, outward, across, -6.0 + stack * 7.0, radius + 4.0 + stack * 2.0, 2.0)
+				if at != Vector3.INF:
+					var body: StaticBody3D = _low(_collider("Ashlar%d" % stack, Vector3(3.0, 1.7, 1.5), Vector3(0.0, 0.85, 0.0), ActorBase.LAYER_LOW_SCENERY))
+					body.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_ASHLAR_STACK, Vector3(0.0, -0.85, 0.0), 0.0, {&"seed_value": stack}))
+					_put(body, at + Vector3(0.0, 0.85, 0.0), true)
+					body.rotation.y = _facing(at, center)
+			for cairn: int in 3:
+				var at: Vector3 = _clear_spot(center, outward, across, 14.0 + cairn * 5.0, -(radius + 3.0 + cairn * 4.0), 1.5)
+				if at != Vector3.INF:
+					_put(WorldKitInstance.make("Cairn%d" % cairn, WorldVisualCatalog.KIT_HUSH_CRACK_AND_CAIRN, Vector3.ZERO, cairn * 1.3, {&"variant": &"CAIRN"}), at, true)
+		OakshireValeLayout.Petal.WEALD:
+			for pool: int in 3:
+				var at: Vector3 = _clear_spot(center, outward, across, -4.0 + pool * 9.0, (radius + 9.0) * (1.0 if pool != 1 else -1.0), 4.0)
+				if at != Vector3.INF:
+					_put(_willow_pool("WillowPool%d" % pool, pool), at, true)
+			for lantern: int in 3:
+				var at: Vector3 = _clear_spot(center, outward, across, -10.0 + lantern * 8.0, -(radius + 2.5), 0.8)
+				if at != Vector3.INF:
+					_put(_hanging_lantern("HollowLantern%d" % lantern), at, true).rotation.y = _facing(at, center)
+			var shrine_at: Vector3 = _clear_spot(center, -outward, across, 8.0, radius + 5.0, 2.0)
+			if shrine_at != Vector3.INF:
+				_put(_scripted("WaterShrine", SHRINE_WATER_SCRIPT, Vector3.ZERO, {}), shrine_at, true)
+		OakshireValeLayout.Petal.BARROWS:
+			var ring_at: Vector3 = _clear_spot(center, outward, across, 2.0, radius + 16.0, 10.0)
+			if ring_at == Vector3.INF:
+				return
+			for stone: int in 9:
+				var angle: float = TAU * float(stone) / 9.0
+				var at: Vector3 = _ground_at(ring_at + Vector3(cos(angle), 0.0, sin(angle)) * 8.0)
+				var body: StaticBody3D = _collider("NineStone%d" % (stone + 1), Vector3(1.2, 3.6, 0.8), Vector3(0.0, 1.8, 0.0))
+				body.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_STANDING_STONE, Vector3(0.0, -1.8, 0.0), 0.0,
+					{&"size": Vector3(1.2, 3.6 + float(stone % 3) * 0.4, 0.8), &"tint": Color(0.56, 0.58, 0.6)}))
+				_put(body, at + Vector3(0.0, 1.8, 0.0), true)
+				body.rotation.y = _facing(at, ring_at)
+			# The Threshold Bell-Frame in the middle, and an old flagged causeway back to the camp.
+			var frame: Node3D = WorldKitInstance.make("ThresholdBellFrame", WorldVisualCatalog.KIT_CHIME_SHRINE_PAGODA, Vector3.ZERO, 0.0, {&"size": Vector3(2.6, 3.0, 2.0)})
+			var bell: MeshInstance3D = MeshInstance3D.new()
+			bell.name = "Bell"
+			bell.mesh = WorldAssetCatalog.chime_mesh(0.9)
+			bell.scale = Vector3(1.8, 0.8, 1.8)
+			bell.position = Vector3(0.0, 3.0, 0.4)
+			frame.add_child(bell)
+			_put(frame, ring_at, true)
+			var steps: int = int(center.distance_to(ring_at) / 1.6)
+			for step: int in steps:
+				var t: float = float(step) / maxf(1.0, steps)
+				var at: Vector3 = _ground_at(center.lerp(ring_at, t))
+				var flag: MeshInstance3D = ShapeKit.box("Flagstone", Vector3(1.6, 0.12, 1.2), Vector3.ZERO,
+					WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.COBBLED_FLAGSTONE, Color(0.74, 0.72, 0.66), false, 0.4))
+				flag.rotation.y = _facing(center, ring_at) + sin(step * 2.3) * 0.15
+				_put(flag, at + Vector3(0.0, 0.0, 0.0), false)
+
+
+## A spot `ahead` metres along `outward` and `side` along `across` from `center`,
+## nudged further out until it's clear of roads, the river and the aprons by `margin` (INF if none is).
+func _clear_spot(center: Vector3, outward: Vector3, across: Vector3, ahead: float, side: float, margin: float) -> Vector3:
+	for nudge: int in 6:
+		var at: Vector3 = center + outward * ahead + across * (side + signf(side) * nudge * 4.0)
+		var flat: Vector2 = Vector2(at.x, at.z)
+		var river: float = OakshireValeLayout.river_distance(at.x, at.z)
+		if _vale.road_lateral(at.x, at.z) < OakshireValeLayout.ROAD_HALF_WIDTH + 2.5 + margin or river < OakshireValeLayout.RIVER_HALF_WIDTH + 6.0 + margin:
+			continue
+		var on_apron: bool = false
+		for apron: int in OakshireValeLayout.APRON_PETALS:
+			var local: Vector2 = _vale.apron_local(apron, flat)
+			on_apron = on_apron or (local.x > -OakshireValeLayout.APRON_INSIDE - 10.0 and absf(local.y) < OakshireValeLayout.APRON_HALF_WIDTH + 2.0 + margin)
+		if on_apron:
+			continue
+		return _ground_at(at)
+	return Vector3.INF
+
+
+## A clay Wind-Lantern hanging from a timber post and bracket (it sways and chimes as players pass).
+func _hanging_lantern(lantern_name: String) -> Node3D:
+	var post: Node3D = _node3d(lantern_name)
+	var timber: Material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.HEWN_TIMBER, WorldVisualCatalog.TIMBER, false, 0.3)
+	post.add_child(ShapeKit.box("Post", Vector3(0.18, 3.5, 0.18), Vector3(0.0, 1.75, 0.0), timber))
+	post.add_child(_beam("Bracket", Vector3(0.0, 3.3, 0.0), Vector3(0.75, 3.4, 0.0), 0.06, timber))
+	post.add_child(_scripted("WindLantern", LANTERN_SCRIPT, Vector3(0.7, 3.35, 0.0), {}))
+	return post
+
+
+## A sheep-stile: three timber steps over a short stretch of dry-stone wall.
+func _sheep_stile(stile_name: String) -> Node3D:
+	var stile: Node3D = _node3d(stile_name)
+	stile.add_child(WorldKitInstance.make("Wall", WorldVisualCatalog.KIT_DRYSTONE_WALL, Vector3.ZERO, 0.0, {&"size": Vector3(4.0, 0.8, 0.6)}))
+	var timber: Material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.HEWN_TIMBER, WorldVisualCatalog.TIMBER)
+	for step: int in 3:
+		for side: float in [-1.0, 1.0]:
+			stile.add_child(ShapeKit.box("Step%d" % step, Vector3(0.9, 0.08, 0.35), Vector3(0.0, 0.3 + step * 0.28, side * (0.75 - step * 0.22)), timber))
+	return stile
+
+
+## A run of knee-high dry-stone wall `length` long (along local X), on the LowScenery layer.
+func _drystone_run(wall_name: String, length: float) -> StaticBody3D:
+	var wall: StaticBody3D = _low(_collider(wall_name, Vector3(length, 0.8, 0.6), Vector3.ZERO, ActorBase.LAYER_LOW_SCENERY))
+	(wall.get_node("Collision") as CollisionShape3D).position = Vector3(0.0, 0.4, 0.0)
+	wall.add_child(WorldKitInstance.make("Stones", WorldVisualCatalog.KIT_DRYSTONE_WALL, Vector3.ZERO, 0.0, {&"size": Vector3(length, 0.8, 0.6), &"seed_value": int(length)}))
+	return wall
+
+
+## A weeping willow trailing over a reed-fringed pool.
+func _willow_pool(pool_name: String, index: int) -> Node3D:
+	var pool: Node3D = _node3d(pool_name)
+	var water: MeshInstance3D = ShapeKit.no_shadow(ShapeKit.cylinder("Water", 2.6, 2.6, 0.05, Vector3(0.0, 0.06, 0.0), WorldVisualCatalog.water(&"flat", Vector2(0.05, 0.08)), 20))
+	pool.add_child(water)
+	var bank: Material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.MEADOW_TURF, WorldVisualCatalog.MOSS)
+	pool.add_child(ShapeKit.torus("Bank", 2.5, 3.1, Vector3(0.0, 0.04, 0.0), bank))
+	pool.add_child(_tree("Willow", Vector3(3.6, 0.0, 0.8), 8.0 + index * 0.6, true, WorldVisualCatalog.KIT_TREE_WEEPING_WILLOW))
+	return pool
 
 
 # --- The portal aprons ------------------------------------------------------------------
@@ -635,8 +893,11 @@ func _spawner(spawner_name: String, territory: String, ids: Array, at: Vector3, 
 	var variant_ids: Array[StringName] = []
 	for id: Variant in ids:
 		variant_ids.append(id as StringName)
+	var cracked: bool = false
+	for prefix: String in HUSH_CRACK_SPAWNERS:
+		cracked = cracked or spawner_name.begins_with(prefix)
 	var node: Node3D = _scripted(spawner_name, SPAWNER_SCRIPT, Vector3.ZERO, {&"territory": territory, &"variant_ids": variant_ids, &"leash": leash,
-		&"respawn_time": Vector2(45.0, 90.0), &"patrol": patrol})
+		&"respawn_time": Vector2(45.0, 90.0), &"patrol": patrol, &"has_hush_crack": cracked})
 	_put(_entity(node), at)
 
 

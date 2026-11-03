@@ -37,7 +37,8 @@ func _ready() -> void:
 	name = "PlayerCamera"
 	fov = FIELD_OF_VIEW
 	near = 0.1
-	far = 300.0
+	# Ring 3's horizon stands out to 2.3 km (17 GDD §6.1).
+	far = WorldAtmosphereDirector.CAMERA_FAR
 	# Moved every rendered frame from the actor's interpolated position.
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	current = true

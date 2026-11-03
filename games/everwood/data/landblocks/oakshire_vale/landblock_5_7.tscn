@@ -1,140 +1,169 @@
 [gd_scene format=3]
 
-[ext_resource type="Shader" path="res://src/actors/storybook_cel.gdshader" id="1_isd5e"]
-[ext_resource type="Script" path="res://src/actors/townsfolk_npc.gd" id="2_h4xxe"]
-[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="3_vf2jv"]
-[ext_resource type="Script" path="res://src/actors/ambient_flock.gd" id="4_w6s6h"]
+[ext_resource type="Shader" path="res://src/world/shaders/storybook_world_triplanar.gdshader" id="1_h4xxe"]
+[ext_resource type="Script" path="res://src/world/world_kit_instance.gd" id="2_vf2jv"]
+[ext_resource type="Script" path="res://src/actors/townsfolk_npc.gd" id="3_w6s6h"]
+[ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="4_igv5y"]
+[ext_resource type="Script" path="res://src/actors/ambient_flock.gd" id="5_ujxkh"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_igv5y"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_urn3y"]
 render_priority = 0
-shader = ExtResource("1_isd5e")
+shader = ExtResource("1_h4xxe")
 shader_parameter/albedo = Color(0.6, 0.58, 0.54, 1)
-shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
-shader_parameter/rim_strength = 0.18
+shader_parameter/craft_layer = 7.0
+shader_parameter/triplanar_scale = 0.2
+shader_parameter/normal_strength = 0.55
+shader_parameter/keep_tint_value = null
+shader_parameter/moss_amount = 0.25
+shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
+shader_parameter/use_object_space = false
+shader_parameter/sightline_fade = false
+shader_parameter/succession_strength = null
+shader_parameter/rim_color = null
+shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
-shader_parameter/shade_color = null
+shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
 shader_parameter/metal = null
 shader_parameter/sheen_roughness = null
 
-[sub_resource type="BoxMesh" id="BoxMesh_ujxkh"]
-material = SubResource("ShaderMaterial_igv5y")
-size = Vector3(6, 0.5, 14)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_urn3y"]
-size = Vector3(6, 0.5, 14)
-
 [sub_resource type="BoxMesh" id="BoxMesh_ipjoh"]
-material = SubResource("ShaderMaterial_igv5y")
-size = Vector3(6, 0.5, 8.68349)
+material = SubResource("ShaderMaterial_urn3y")
+size = Vector3(6, 0.5, 14)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0c5e7"]
-size = Vector3(6, 0.5, 8.68349)
+size = Vector3(6, 0.5, 14)
 
 [sub_resource type="BoxMesh" id="BoxMesh_j0xqk"]
-material = SubResource("ShaderMaterial_igv5y")
-size = Vector3(6, 0.5, 8.682696)
+material = SubResource("ShaderMaterial_urn3y")
+size = Vector3(6, 0.5, 8.68349)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_uivym"]
-size = Vector3(6, 0.5, 8.682696)
+size = Vector3(6, 0.5, 8.68349)
 
 [sub_resource type="BoxMesh" id="BoxMesh_hxjem"]
-material = SubResource("ShaderMaterial_igv5y")
-size = Vector3(0.4, 0.8, 14)
+material = SubResource("ShaderMaterial_urn3y")
+size = Vector3(6, 0.5, 8.682696)
 
-[sub_resource type="BoxMesh" id="BoxMesh_bgm80"]
-material = SubResource("ShaderMaterial_igv5y")
-size = Vector3(0.4, 0.8, 14)
+[sub_resource type="BoxShape3D" id="BoxShape3D_bgm80"]
+size = Vector3(6, 0.5, 8.682696)
 
 [sub_resource type="BoxMesh" id="BoxMesh_1t74u"]
-material = SubResource("ShaderMaterial_igv5y")
+material = SubResource("ShaderMaterial_urn3y")
 size = Vector3(0.4, 0.8, 14)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ixlu0"]
-material = SubResource("ShaderMaterial_igv5y")
+material = SubResource("ShaderMaterial_urn3y")
 size = Vector3(0.4, 0.8, 14)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_3qj5t"]
+[sub_resource type="BoxMesh" id="BoxMesh_3qj5t"]
+material = SubResource("ShaderMaterial_urn3y")
+size = Vector3(0.4, 0.8, 14)
+
+[sub_resource type="BoxMesh" id="BoxMesh_4v5wp"]
+material = SubResource("ShaderMaterial_urn3y")
+size = Vector3(0.4, 0.8, 14)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ox7qy"]
 render_priority = 0
-shader = ExtResource("1_isd5e")
+shader = ExtResource("1_h4xxe")
 shader_parameter/albedo = Color(0.51000005, 0.493, 0.45900002, 1)
-shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
-shader_parameter/rim_strength = 0.18
+shader_parameter/craft_layer = 7.0
+shader_parameter/triplanar_scale = 0.2
+shader_parameter/normal_strength = 0.55
+shader_parameter/keep_tint_value = null
+shader_parameter/moss_amount = 0.25
+shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
+shader_parameter/use_object_space = false
+shader_parameter/sightline_fade = false
+shader_parameter/succession_strength = null
+shader_parameter/rim_color = null
+shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
-shader_parameter/shade_color = null
+shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
 shader_parameter/metal = null
 shader_parameter/sheen_roughness = null
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_4v5wp"]
-material = SubResource("ShaderMaterial_3qj5t")
+[sub_resource type="CylinderMesh" id="CylinderMesh_lf1pv"]
+material = SubResource("ShaderMaterial_ox7qy")
 top_radius = 5.6
 bottom_radius = 5.6
 height = 5.4
 radial_segments = 16
 
-[node name="Landblock_5_7" type="Node3D" unique_id=83662667]
+[node name="Landblock_5_7" type="Node3D" unique_id=1903493906]
 metadata/chunk = Vector2i(5, 7)
 metadata/buildings = true
 
-[node name="BridgeWardenSpan" type="Node3D" parent="." unique_id=1308990781]
+[node name="BridgeWardenSpan" type="Node3D" parent="." unique_id=537648960]
 transform = Transform3D(-0.9412542, 0, 0.33769912, 0, 1.0000001, 0, -0.33769912, 0, -0.9412542, 735.51685, 0.4, 905.2073)
 
-[node name="Deck" type="StaticBody3D" parent="BridgeWardenSpan" unique_id=1025639974]
+[node name="Deck" type="StaticBody3D" parent="BridgeWardenSpan" unique_id=1857834686]
 collision_layer = 32
 collision_mask = 0
 
-[node name="Middle" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=1328792629]
+[node name="Middle" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=926148890]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
-mesh = SubResource("BoxMesh_ujxkh")
-
-[node name="MiddleCollision" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=751927750]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
-shape = SubResource("BoxShape3D_urn3y")
-
-[node name="Ramp" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=1775068506]
-transform = Transform3D(1, 0, 0, 0, 0.96577656, 0.2593755, 0, -0.2593755, 0.96577656, 0, 1.2757328, -11)
 mesh = SubResource("BoxMesh_ipjoh")
 
-[node name="RampCollision" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=1049053010]
-transform = Transform3D(1, 0, 0, 0, 0.96577656, 0.2593755, 0, -0.2593755, 0.96577656, 0, 1.2757328, -11)
+[node name="MiddleCollision" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=747474126]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
 shape = SubResource("BoxShape3D_0c5e7")
 
-[node name="@MeshInstance3D@45" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=1920189044]
-transform = Transform3D(1, 0, 0, 0, 0.96586907, -0.25903073, 0, 0.25903073, 0.96586907, 0, 1.2772635, 11)
+[node name="Ramp" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=1239602384]
+transform = Transform3D(1, 0, 0, 0, 0.96577656, 0.2593755, 0, -0.2593755, 0.96577656, 0, 1.2757328, -11)
 mesh = SubResource("BoxMesh_j0xqk")
 
-[node name="@CollisionShape3D@46" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=436848041]
-transform = Transform3D(1, 0, 0, 0, 0.96586907, -0.25903073, 0, 0.25903073, 0.96586907, 0, 1.2772635, 11)
+[node name="RampCollision" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=232050552]
+transform = Transform3D(1, 0, 0, 0, 0.96577656, 0.2593755, 0, -0.2593755, 0.96577656, 0, 1.2757328, -11)
 shape = SubResource("BoxShape3D_uivym")
 
-[node name="Parapet" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=1942897643]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 3, 0)
+[node name="@MeshInstance3D@45" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=834866413]
+transform = Transform3D(1, 0, 0, 0, 0.96586907, -0.25903073, 0, 0.25903073, 0.96586907, 0, 1.2772635, 11)
 mesh = SubResource("BoxMesh_hxjem")
 
-[node name="@MeshInstance3D@44" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=1546766668]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, 3, 0)
-mesh = SubResource("BoxMesh_bgm80")
+[node name="@CollisionShape3D@46" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=1745596616]
+transform = Transform3D(1, 0, 0, 0, 0.96586907, -0.25903073, 0, 0.25903073, 0.96586907, 0, 1.2772635, 11)
+shape = SubResource("BoxShape3D_bgm80")
 
-[node name="@MeshInstance3D@47" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=1877927559]
+[node name="Parapet" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=1481077381]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 3, 0)
 mesh = SubResource("BoxMesh_1t74u")
 
-[node name="@MeshInstance3D@48" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=152552718]
+[node name="@MeshInstance3D@44" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=673698189]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, 3, 0)
 mesh = SubResource("BoxMesh_ixlu0")
 
-[node name="Arch" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=1360583426]
-transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, -3.3, 0)
-mesh = SubResource("CylinderMesh_4v5wp")
+[node name="@MeshInstance3D@47" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=850168165]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 3, 0)
+mesh = SubResource("BoxMesh_3qj5t")
 
-[node name="Guard_Ivo" type="Node3D" parent="." unique_id=2044091084 groups=["landblock_entities"]]
+[node name="@MeshInstance3D@48" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=1859823153]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, 3, 0)
+mesh = SubResource("BoxMesh_4v5wp")
+
+[node name="Arch" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=645097050]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, -3.3, 0)
+mesh = SubResource("CylinderMesh_lf1pv")
+
+[node name="BridgeLantern" type="Node3D" parent="." unique_id=1163031064]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 733.6904, 0.9492129, 921.5506)
+script = ExtResource("2_vf2jv")
+kit_id = &"kit_wind_lantern_post"
+
+[node name="@Node3D@49" type="Node3D" parent="." unique_id=797948275]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 726.53687, 0.83975255, 918.9841)
+script = ExtResource("2_vf2jv")
+kit_id = &"kit_wind_lantern_post"
+
+[node name="Guard_Ivo" type="Node3D" parent="." unique_id=1807542672 groups=["landblock_entities"]]
 transform = Transform3D(0.94125414, 0, -0.33769906, 0, 1, 0, 0.33769906, 0, 0.94125414, 725.6732, 0.9223326, 920.7991)
-script = ExtResource("2_h4xxe")
+script = ExtResource("3_w6s6h")
 role = 2
 npc_name = "Ivo"
 title = "Bridge-Warden"
@@ -144,16 +173,16 @@ body_color = Color(0.32, 0.46, 0.72, 1)
 accent_color = Color(0.86, 0.66, 0.3, 1)
 npc_seed = 625
 
-[node name="Spawner_Vermin_05" type="Node3D" parent="." unique_id=1070349979 groups=["landblock_entities"]]
+[node name="Spawner_Vermin_05" type="Node3D" parent="." unique_id=1241790596 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 678.1777, 4.4869804, 950.5228)
-script = ExtResource("3_vf2jv")
+script = ExtResource("4_igv5y")
 territory = "The Settled Meadow"
 variant_ids = Array[StringName]([&"thorn_tail_scuttler", &"thorn_tail_scuttler", &"cider_thief_bristleboar"])
 leash = 23.93716
 patrol = PackedVector3Array()
 
-[node name="SheepFlock2" type="Node3D" parent="." unique_id=482817126]
+[node name="SheepFlock2" type="Node3D" parent="." unique_id=2137517389]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 674.05817, 3.228448, 942.1831)
-script = ExtResource("4_w6s6h")
+script = ExtResource("5_ujxkh")
 count = 5
 flock_seed = 13

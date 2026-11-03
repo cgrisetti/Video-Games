@@ -9,6 +9,10 @@
 ## Waking and clearing are worked out on every peer from synced positions and
 ## health, so all agree. A cleared camp is remembered (WorldStateDB): when its
 ## Landblock streams back in, or a latecomer joins, it stays cleared and empty.
+## In the middle of the ring is the camp's Hush-Crack (HushCrackLandmark): it
+## greys the turf round it while the camp sleeps or fights, and when the camp
+## is cleared it's sealed with a Reclamation Bloom into a Lulled Cairn
+## (17 GDD §2.2), which is how a cleared camp streams back in.
 class_name MinionCamp
 extends Node3D
 
@@ -35,6 +39,7 @@ var minions: Array[WoodlandMinion] = []
 var alert: bool = false
 var is_cleared: bool = false
 var persistence: WorldStateBinding
+var hush_crack: HushCrackLandmark
 
 
 func _ready() -> void:
@@ -92,6 +97,8 @@ func _physics_process(_delta: float) -> void:
 		alert = false
 		if persistence != null:
 			persistence.save({"cleared": true})
+		if hush_crack != null:
+			hush_crack.set_state(ZoneSuccessionVisualResource.SuccessionState.ZONE_RECLAIMED, true)
 		cleared.emit(self)
 
 
@@ -106,11 +113,13 @@ func apply_persisted_state(state: Dictionary) -> void:
 	if bool(state.get("cleared", false)) and not is_cleared:
 		is_cleared = true
 		alert = false
+		if hush_crack != null:
+			hush_crack.set_state(ZoneSuccessionVisualResource.SuccessionState.ZONE_RECLAIMED, false)
 
 
-## Stones in a ring and a mound of brambles in the middle, built in code.
+## Stones in a ring round the Hush-Crack, with a few brambles at its lip, built in code.
 func _build_nest() -> void:
-	var stone: Material = StorybookMaterial.make(STONE_COLOR)
+	var stone: Material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.CRAG_GRANITE, STONE_COLOR, false, 0.6)
 	for index: int in STONES:
 		var angle: float = TAU * float(index) / STONES + 0.2
 		var mesh: SphereMesh = SphereMesh.new()
@@ -122,14 +131,22 @@ func _build_nest() -> void:
 		node.mesh = mesh
 		node.position = Vector3(cos(angle), 0.12, sin(angle)) * STONE_RING_RADIUS
 		add_child(node)
-	var nest: Material = StorybookMaterial.make(NEST_COLOR)
+	var nest: Material = WorldVisualCatalog.foliage(NEST_COLOR, 1.0, 0.1, 0.6)
 	for index: int in 4:
 		var mesh: SphereMesh = SphereMesh.new()
-		mesh.radius = 0.55 - 0.08 * index
-		mesh.height = mesh.radius * 1.2
+		mesh.radius = 0.4 - 0.06 * index
+		mesh.height = mesh.radius * 1.1
 		mesh.material = nest
 		var node: MeshInstance3D = MeshInstance3D.new()
 		node.name = "Bramble%d" % index
 		node.mesh = mesh
-		node.position = Vector3(cos(index * 1.7) * 0.4, 0.2 + 0.1 * index, sin(index * 1.7) * 0.4)
+		var angle: float = index * 1.7 + 0.6
+		node.position = Vector3(cos(angle) * 2.3, 0.15, sin(angle) * 2.3)
 		add_child(node)
+	hush_crack = HushCrackLandmark.new()
+	hush_crack.name = "HushCrack"
+	hush_crack.crack_id = persist_id if persist_id != &"" else StringName(String(name).to_snake_case())
+	if is_cleared:
+		hush_crack.state = ZoneSuccessionVisualResource.SuccessionState.ZONE_RECLAIMED
+		hush_crack.hush_radius = 0.0
+	add_child(hush_crack)

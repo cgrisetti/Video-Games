@@ -22,6 +22,7 @@ const MOTE_COLOR: Color = Color(1.0, 0.85, 0.4)
 var chimes: int = 0
 
 var _pivot: Node3D
+var _light: OmniLight3D
 var _motes: CPUParticles3D
 var _cooldown: float = 0.0
 var _swing: float = 0.0
@@ -30,6 +31,7 @@ var _age: float = 0.0
 
 func _ready() -> void:
 	add_to_group(AudioDirector.OASIS_GROUP)
+	add_to_group(WorldAtmosphereDirector.LANTERN_GROUP)
 	_age = position.x * 1.7 + position.z * 0.9
 	_pivot = Node3D.new()
 	_pivot.name = "Pivot"
@@ -51,6 +53,7 @@ func _ready() -> void:
 	light.omni_range = 3.5
 	light.position = Vector3(0.0, -CORD_LENGTH - 0.3, 0.0)
 	_pivot.add_child(light)
+	_light = light
 	_motes = CPUParticles3D.new()
 	_motes.name = "Motes"
 	_motes.position = Vector3(0.0, -CORD_LENGTH - 0.2, 0.0)
@@ -100,6 +103,13 @@ func _process(delta: float) -> void:
 
 
 ## Swing, ring and shed motes.
+## Ecological Succession's warmth (17 GDD §2.2): dim or snuffed in an open
+## Hush-Crack's hush, a steady glow at 1, a flare in a weathering event.
+func set_warmth(warmth: float) -> void:
+	if _light != null:
+		_light.light_energy = 0.9 * warmth
+
+
 func chime() -> void:
 	if _cooldown > 0.0:
 		return

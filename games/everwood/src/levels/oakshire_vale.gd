@@ -62,6 +62,11 @@ func music_profile_at(_position: Vector3) -> StringName:
 	return MUSIC_PROFILE
 
 
+## Each part of the vale wears its own biome: the village, or the petal a spot is in.
+func visual_biome_at(position: Vector3) -> StringName:
+	return WorldVisualCatalog.biome_for_place(region_at(position))
+
+
 func level_hint() -> String:
 	return "%s · trail Level %d · follow the lantern-lit roads · talk to anyone under a gold ! · the four portals wait in the rim crags\n%s" % [
 		TITLE, PartyProgress.current.trail_level(), HubTown.CHANGE_KEYS]
@@ -158,18 +163,7 @@ func _move_respawn(actor: ActorBase, region: String) -> void:
 
 ## The part of the vale a spot is in: the village, the meadow round it, or one of the five petals.
 func region_at(at: Vector3) -> String:
-	var offset: Vector2 = Vector2(at.x, at.z) - OakshireValeLayout.CENTER
-	if offset.length() < OakshireValeLayout.VILLAGE_RADIUS + 14.0:
-		return "Oakshire-Wick"
-	if OakshireValeLayout.ring_distance(offset) < OakshireValeLayout.MEADOW_OUTER - 30.0:
-		return "The Settled Meadow"
-	var theta: float = rad_to_deg(OakshireValeLayout.bearing(offset))
-	var best: int = 0
-	for petal: int in OakshireValeLayout.PETAL_BEARINGS.size():
-		if absf(angle_difference(deg_to_rad(theta), deg_to_rad(OakshireValeLayout.PETAL_BEARINGS[petal]))) \
-				< absf(angle_difference(deg_to_rad(theta), deg_to_rad(OakshireValeLayout.PETAL_BEARINGS[best]))):
-			best = petal
-	return OakshireValeLayout.PETAL_NAMES[best]
+	return OakshireValeLayout.region_name_at(at.x, at.z)
 
 
 # --- Landblock entities ---------------------------------------------------------

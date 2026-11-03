@@ -14,7 +14,8 @@ uniform vec4 glow : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 
 void fragment() {
 #ifdef USE_VERTEX_COLOR
-	ALBEDO = albedo.rgb * COLOR.rgb;
+	// Vertex and instance colours are authored in sRGB (17 GDD §2.3), like Terrain3D's colour maps.
+	ALBEDO = albedo.rgb * pow(COLOR.rgb, vec3(2.2));
 #else
 	ALBEDO = albedo.rgb;
 #endif

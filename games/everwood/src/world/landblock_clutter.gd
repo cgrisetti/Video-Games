@@ -71,7 +71,17 @@ static func build_clutter_data(chunk: Vector2i) -> Dictionary:
 	var packed: Dictionary = {}
 	for kind: int in Kind.size():
 		packed[kind] = _pack(placed[kind])
+	# The ground's small life (17 GDD §4.3), in the biome of the zone this row belongs to.
+	var middle: Vector3 = origin + Vector3(size * 0.5, 0.0, size * 0.5)
+	packed["baked"] = ChunkClutterBaker.bake(chunk, WorldVisualCatalog.biome_for_music(LandblockManifest.music_profile_at(middle)), _grows_at)
 	return packed
+
+
+## Where grass, flowers and pebbles may grow: anywhere a heather tuft could (not in a zone, a carving or on a trail).
+static func _grows_at(x: float, z: float) -> float:
+	if not _fits(Kind.HEATHER, _spot(x, z)):
+		return NAN
+	return LandblockTerrain.sample_height(x, z)
 
 
 static func chunk_seed(chunk: Vector2i) -> int:
@@ -96,19 +106,35 @@ static func make_clutter_node(chunk: Vector2i, data: Dictionary) -> Node3D:
 		var instances: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		instances.name = KIND_NAMES[kind]
 		instances.multimesh = multimesh
-		instances.material_override = LandblockTerrain.material()
+		var look: Material = _material_for(kind)
+		if look != null:
+			instances.material_override = look
 		if kind == Kind.HEATHER or kind == Kind.REED or kind == Kind.STEPPING_STONE:
 			instances.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(instances)
+	for batch: MultiMeshInstance3D in ChunkClutterBaker.make_nodes(data.get("baked", {})):
+		root.add_child(batch)
 	return root
 
 
-## How many instances of each kind the data holds (tests and telemetry).
+## A kind's world material (17 GDD §3): crafted stone, or foliage that sways (null: the mesh's own).
+static func _material_for(kind: int) -> Material:
+	match kind:
+		Kind.BOULDER:
+			return WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.CRAG_GRANITE, WorldVisualCatalog.GRANITE, false, 0.6)
+		Kind.STEPPING_STONE:
+			return WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.COBBLED_FLAGSTONE, WorldVisualCatalog.FLAGSTONE, false, 0.3)
+		Kind.WALL:
+			return WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.CRAG_GRANITE, Color(0.68, 0.64, 0.57), false, 0.5)
+	return null
+
+
+## How many instances of each kind the data holds, the baked ground life too (tests and telemetry).
 static func instance_count(data: Dictionary) -> int:
 	var count: int = 0
 	for kind: int in Kind.size():
 		count += int(data[kind]["count"])
-	return count
+	return count + ChunkClutterBaker.instance_count(data.get("baked", {}))
 
 
 ## A kind's instances as a MultiMesh buffer: 12 floats of transform (basis
@@ -194,6 +220,14 @@ static func _add(placed: Dictionary, kind: int, where: Transform3D, rng: RandomN
 
 static func _mesh_for(kind: int) -> Mesh:
 	match kind:
+		Kind.HEATHER:
+			return WorldAssetCatalog.clutter_mound_mesh(0.3)
+		Kind.REED:
+			return WorldAssetCatalog.clutter_reed_mesh()
+		Kind.TRUNK:
+			return WorldAssetCatalog.clutter_trunk_mesh()
+		Kind.CANOPY:
+			return WorldAssetCatalog.clutter_crown_mesh()
 		Kind.BOULDER:
 			var boulder: SphereMesh = SphereMesh.new()
 			boulder.radius = 0.6

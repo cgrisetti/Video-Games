@@ -7,6 +7,9 @@
 ##
 ## Every peer grows the same pack in the same order, so node paths match for
 ## the network; the host runs them and tells the others when one regrows.
+## A spawner with `has_hush_crack` sits on a Hush-Crack (HushCrackLandmark,
+## 17 GDD §2.2): sealed into a Lulled Cairn while its whole pack is beaten,
+## quietly open again when the first of them regrows.
 class_name MobSpawner
 extends Node3D
 
@@ -22,13 +25,25 @@ const PACK_SPREAD: float = 2.6
 @export var respawn_time: Vector2 = Vector2(45.0, 90.0)
 ## A patroller's round (world positions).
 @export var patrol: PackedVector3Array = PackedVector3Array()
+## Whether the pack's spot is a Hush-Crack.
+@export var has_hush_crack: bool = false
 
 var mobs: Array[WildMob] = []
 ## One of the pack is fighting.
 var alert: bool = false
 
+var hush_crack: HushCrackLandmark
+
 var _respawn_left: Array[float] = []
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
+
+func _ready() -> void:
+	if has_hush_crack:
+		hush_crack = HushCrackLandmark.new()
+		hush_crack.name = "HushCrack"
+		hush_crack.crack_id = StringName(String(name).to_snake_case())
+		add_child(hush_crack)
 
 
 ## Grows the pack. The level calls this when the landblock streams in (after
@@ -79,6 +94,12 @@ func _physics_process(delta: float) -> void:
 	for mob: WildMob in mobs:
 		fighting = fighting or (is_instance_valid(mob) and mob.is_engaged())
 	alert = fighting
+	if hush_crack != null:
+		var beaten: bool = standing_count() == 0
+		if beaten and hush_crack.is_hushed():
+			hush_crack.set_state(ZoneSuccessionVisualResource.SuccessionState.ZONE_RECLAIMED, true)
+		elif not beaten and not hush_crack.is_hushed():
+			hush_crack.set_state(ZoneSuccessionVisualResource.SuccessionState.ZONE_HUSHED, false)
 	if not NetworkManager.current.is_host():
 		return
 	for index: int in mobs.size():

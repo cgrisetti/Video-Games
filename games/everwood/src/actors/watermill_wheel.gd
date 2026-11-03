@@ -1,67 +1,59 @@
-## Bramble-Bridge's watermill wheel (06_WORLD_AND_CALLINGS.md §1): a timber
-## wheel with paddles, turning slowly in the canal. It builds itself in code
-## and spins around its local Y axis; the level builder stands it on its side.
+## Bramble-Bridge's watermill wheel (06_WORLD_AND_CALLINGS.md §1; kit_watermill_wheel of
+## 17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md §4.1): a 4.4 m oak wheel of 12
+## spokes and 24 angled bucket-paddles bound in iron, turning in the canal
+## with a ring of splashes where its paddles strike the water. It builds itself
+## in code (one shared mesh) and spins around its local Y axis; the level
+## builder stands it on its side and sets the mill-race flume beside it.
 class_name WatermillWheel
 extends Node3D
 
-const RADIUS: float = 1.5
-const THICKNESS: float = 0.45
-const PADDLES: int = 10
-const PADDLE_SIZE: Vector3 = Vector3(0.5, 0.55, 0.12)
-const AXLE_RADIUS: float = 0.12
-const AXLE_LENGTH: float = 1.4
-const RIM_TUBE: float = 0.08
-const WOOD_COLOR: Color = Color(0.4, 0.27, 0.16)
-const IRON_COLOR: Color = Color(0.3, 0.3, 0.32)
+const RADIUS: float = 2.2
+const THICKNESS: float = 0.8
 ## Radians per second.
 const SPIN_SPEED: float = 0.55
+const SPLASH_COLOR: Color = Color(0.92, 0.97, 1.0, 0.7)
+
+var _wheel: MeshInstance3D
 
 
 func _ready() -> void:
-	var wood: Material = _material(WOOD_COLOR)
-	for side: float in [-1.0, 1.0]:
-		var rim: TorusMesh = TorusMesh.new()
-		rim.inner_radius = RADIUS - RIM_TUBE
-		rim.outer_radius = RADIUS
-		rim.material = wood
-		var rim_node: MeshInstance3D = _mesh("Rim", rim)
-		rim_node.position = Vector3(0.0, side * THICKNESS * 0.5, 0.0)
-		add_child(rim_node)
-	var axle: CylinderMesh = CylinderMesh.new()
-	axle.top_radius = AXLE_RADIUS
-	axle.bottom_radius = AXLE_RADIUS
-	axle.height = AXLE_LENGTH
-	axle.material = _material(IRON_COLOR)
-	add_child(_mesh("Axle", axle))
-	for index: int in PADDLES:
-		var angle: float = TAU * float(index) / PADDLES
-		var paddle: BoxMesh = BoxMesh.new()
-		paddle.size = PADDLE_SIZE
-		paddle.material = wood
-		var paddle_node: MeshInstance3D = _mesh("Paddle%d" % index, paddle)
-		# Paddles stand out from the rim like the spokes of a wheel.
-		paddle_node.position = Vector3(cos(angle), 0.0, sin(angle)) * (RADIUS - PADDLE_SIZE.x * 0.3)
-		paddle_node.rotation = Vector3(0.0, -angle, 0.0)
-		add_child(paddle_node)
-		var spoke: BoxMesh = BoxMesh.new()
-		spoke.size = Vector3(RADIUS, 0.08, 0.08)
-		spoke.material = wood
-		var spoke_node: MeshInstance3D = _mesh("Spoke%d" % index, spoke)
-		spoke_node.position = Vector3(cos(angle), 0.0, sin(angle)) * RADIUS * 0.5
-		spoke_node.rotation = Vector3(0.0, -angle, 0.0)
-		add_child(spoke_node)
+	_wheel = MeshInstance3D.new()
+	_wheel.name = "Wheel"
+	_wheel.mesh = WorldAssetCatalog.watermill_wheel_mesh(RADIUS, THICKNESS)
+	add_child(_wheel)
+	add_child(_splashes())
 
 
 func _process(delta: float) -> void:
-	rotate_object_local(Vector3.UP, SPIN_SPEED * delta)
+	_wheel.rotate_object_local(Vector3.UP, SPIN_SPEED * delta)
 
 
-func _mesh(node_name: String, mesh: Mesh) -> MeshInstance3D:
-	var node: MeshInstance3D = MeshInstance3D.new()
-	node.name = node_name
-	node.mesh = mesh
-	return node
-
-
-func _material(color: Color) -> Material:
-	return StorybookMaterial.make(color)
+## White water thrown up where the paddles bite (it sits at the wheel's foot, so it's not spun).
+func _splashes() -> CPUParticles3D:
+	var splash: CPUParticles3D = CPUParticles3D.new()
+	splash.name = "Splash"
+	# The builder stands the wheel on its side, so its local +Z points straight down to its foot.
+	splash.position = Vector3(0.0, 0.0, RADIUS * 0.85)
+	splash.amount = 16
+	splash.lifetime = 0.9
+	splash.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	splash.emission_box_extents = Vector3(0.6, THICKNESS * 0.5, 0.1)
+	splash.direction = Vector3(0.0, 0.0, -1.0)
+	splash.spread = 40.0
+	splash.initial_velocity_min = 0.8
+	splash.initial_velocity_max = 1.6
+	splash.gravity = Vector3(0.0, -6.0, 0.0)
+	splash.local_coords = false
+	var drop: SphereMesh = SphereMesh.new()
+	drop.radius = 0.06
+	drop.height = 0.12
+	drop.radial_segments = 6
+	drop.rings = 3
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = SPLASH_COLOR
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	drop.material = material
+	splash.mesh = drop
+	splash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return splash

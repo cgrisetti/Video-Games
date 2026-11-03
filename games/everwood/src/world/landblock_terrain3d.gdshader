@@ -6,7 +6,9 @@
 // Based on Terrain3D's extras/shaders/minimum.gdshader (MIT licence):
 // Copyright © 2023-2026 Cory Petkovsek, Roope Palmroos, and Contributors.
 // Changes: the colour map is read for ALBEDO, the lighting is the storybook
-// cel bands, and roughness and specular are off.
+// cel bands, and roughness and specular are off. Phase 17: the atelier's turf,
+// flagstone, loam and granite add their detail over the colour map, and the
+// Hush-Cracks and Reclamation Blooms of Ecological Succession show on it.
 
 shader_type spatial;
 render_mode blend_mix,depth_draw_opaque,cull_back,skip_vertex_transform;
@@ -54,6 +56,8 @@ group_uniforms;
 group_uniforms general_uniforms;
 uniform bool flat_terrain_normals = false;
 group_uniforms;
+
+#include "res://src/world/shaders/storybook_world_common.gdshaderinc"
 
 // Varyings & Types
 // Some are required for editor functions
@@ -276,7 +280,20 @@ void fragment() {
 			found += weights[corner];
 		}
 	}
-	ALBEDO = found > 0.0 ? color / found : vec3(0.4, 0.5, 0.3);
+	vec3 painted = found > 0.0 ? color / found : vec3(0.4, 0.5, 0.3);
+	vec3 ground = painted;
+	// The atelier's crafts over the painted colour (17 GDD §3.3, shared with Mode B's splat shader).
+	if (atelier_ready > 0.5) {
+		vec3 bent;
+		vec4 classes = terrain_class_weights(pow(painted, vec3(1.0 / 2.2)), w_normal);
+		vec3 detail = terrain_detail(v_vertex, w_normal, classes, 0.5, bent);
+		ground = painted * mix(vec3(1.0), detail, 0.85);
+		NORMAL = mat3(VIEW_MATRIX) * bent;
+	}
+	vec3 emission = vec3(0.0);
+	apply_succession(v_vertex, ground, emission, 1.0);
+	ALBEDO = ground;
+	EMISSION = emission;
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
 }

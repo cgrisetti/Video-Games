@@ -2,13 +2,14 @@
 
 [ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="1_nnq68"]
 
-[node name="Landblock_1_5" type="Node3D" unique_id=1378399889]
+[node name="Landblock_1_5" type="Node3D" unique_id=673709161]
 metadata/chunk = Vector2i(1, 5)
 
-[node name="Spawner_Wights_03" type="Node3D" parent="." unique_id=520684559 groups=["landblock_entities"]]
+[node name="Spawner_Wights_03" type="Node3D" parent="." unique_id=2101445917 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 223.04926, 13.157796, 727.70483)
 script = ExtResource("1_nnq68")
 territory = "Nine-Stones-Crossing"
 variant_ids = Array[StringName]([&"risen_shield_sworn_husk", &"hollow_scribe_acolyte"])
 leash = 21.943745
 patrol = PackedVector3Array()
+has_hush_crack = true

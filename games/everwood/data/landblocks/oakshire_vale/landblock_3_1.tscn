@@ -1,18 +1,27 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/actors/portal_apron.gd" id="1_gsbdv"]
-[ext_resource type="Shader" path="res://src/actors/storybook_cel.gdshader" id="2_wcle3"]
+[ext_resource type="Shader" path="res://src/world/shaders/storybook_world_triplanar.gdshader" id="2_wcle3"]
 [ext_resource type="Script" path="res://src/actors/mob_spawner.gd" id="3_7q28f"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_pfre8"]
 render_priority = 0
 shader = ExtResource("2_wcle3")
 shader_parameter/albedo = Color(0.42, 0.3, 0.18, 1)
-shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
-shader_parameter/rim_strength = 0.18
+shader_parameter/craft_layer = 3.0
+shader_parameter/triplanar_scale = 0.5
+shader_parameter/normal_strength = 0.55
+shader_parameter/keep_tint_value = null
+shader_parameter/moss_amount = 0.0
+shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
+shader_parameter/use_object_space = false
+shader_parameter/sightline_fade = false
+shader_parameter/succession_strength = null
+shader_parameter/rim_color = null
+shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
-shader_parameter/shade_color = null
+shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
 shader_parameter/metal = null
@@ -22,11 +31,11 @@ shader_parameter/sheen_roughness = null
 material = SubResource("ShaderMaterial_pfre8")
 size = Vector3(2.4, 0.15, 2)
 
-[node name="Landblock_3_1" type="Node3D" unique_id=1978407847]
+[node name="Landblock_3_1" type="Node3D" unique_id=491160713]
 metadata/chunk = Vector2i(3, 1)
 metadata/buildings = true
 
-[node name="PortalApron_D3" type="Node3D" parent="." unique_id=1394236757 groups=["landblock_entities"]]
+[node name="PortalApron_D3" type="Node3D" parent="." unique_id=954199045 groups=["landblock_entities"]]
 transform = Transform3D(-0.8480481, 0, -0.52991927, 0, 1, 0, 0.52991927, 0, -0.8480481, 401.37625, 28, 181.27936)
 script = ExtResource("1_gsbdv")
 code = "[D3]"
@@ -36,11 +45,11 @@ required_level = 3
 scribe_sign = 3
 dungeon_id = &"d3_root_cellar"
 
-[node name="Trapdoor" type="MeshInstance3D" parent="." unique_id=1967801232]
+[node name="Trapdoor" type="MeshInstance3D" parent="." unique_id=286820492]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 398.19675, 28.08, 176.19107)
 mesh = SubResource("BoxMesh_yfgts")
 
-[node name="Spawner_Smugglers" type="Node3D" parent="." unique_id=1580467456 groups=["landblock_entities"]]
+[node name="Spawner_Smugglers" type="Node3D" parent="." unique_id=656915974 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 395.0172, 58.35598, 171.10278)
 script = ExtResource("3_7q28f")
 territory = "Pippin-Green"

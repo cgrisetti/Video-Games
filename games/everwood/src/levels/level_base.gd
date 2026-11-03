@@ -102,6 +102,16 @@ func music_profile_at(_position: Vector3) -> StringName:
 	return &""
 
 
+## The ZoneBiomeResource id whose sky, sun, fog and ground a spot wears
+## (17 GDD §6.2): by default the biome under its score, and past the sunken
+## lane's turn, Rush-Light-Hollow's (&"" for none).
+func visual_biome_at(position: Vector3) -> StringName:
+	var profile: StringName = music_profile_at(position)
+	if profile == &"moss_oak_hollow" and music_world_z(position) < WorldVisualCatalog.SUNKEN_LANE_Z:
+		return WorldVisualCatalog.RUSH_LIGHT_HOLLOW
+	return WorldVisualCatalog.biome_for_music(profile)
+
+
 ## A spot's z on the Bramble-Bridge trail, for a profile's depth blend (the expedition shifts its own).
 func music_world_z(position: Vector3) -> float:
 	return position.z

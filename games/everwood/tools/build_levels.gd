@@ -28,6 +28,13 @@
 ##   skeleton and the WorldGridManager, which streams the rest.
 ## All share the same skeleton (Actors, Telegraphs, Effects, SpawnPoints and
 ## the split-screen Screens), which LevelBase expects.
+##
+## Phase 17 (17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md): every surface is
+## painted in the atelier's crafts (WorldVisualCatalog.craft_for_color), the
+## buildings, bridges, trees, lanterns and stations are WorldAssetCatalog kits
+## (placed as WorldKitInstance, so the scenes stay small), the water runs in
+## storybook_water_stream, Chime-Posts stand at the thresholds and the camps
+## carry their Hush-Cracks. Colliders and positions are unchanged.
 extends SceneTree
 
 const HUB_PATH: String = "res://src/levels/hub_town.tscn"
@@ -41,6 +48,8 @@ const GRID_MANAGER_SCRIPT: String = "res://src/world/world_grid_manager.gd"
 const CORRIDOR_CHUNKS: Array[Vector2i] = [Vector2i(0, 1), Vector2i(0, 0), Vector2i(0, -1), Vector2i(0, -2), Vector2i(0, -3)]
 ## HLOD proxies keep shapes at least this big (metres along their longest side).
 const HLOD_MIN_SIZE: float = 1.4
+## A mesh surface with more vertices than this goes into an HLOD as its bounding box.
+const HLOD_DETAILED_VERTICES: int = 400
 const PORTAL_SCRIPT: String = "res://src/actors/raid_portal.gd"
 const SHRINE_SCRIPT: String = "res://src/actors/chime_shrine.gd"
 const WHEEL_SCRIPT: String = "res://src/actors/watermill_wheel.gd"
@@ -136,7 +145,7 @@ const WATERFALL_POSITION: Vector3 = Vector3(12.5, -9.0, -3.0)
 const WATERFALL_SIZE: Vector3 = Vector3(5.0, 26.0, 0.5)
 const WATERFALL_COLOR: Color = Color(0.72, 0.9, 1.0, 0.6)
 const MILLWHEEL_POSITION: Vector3 = Vector3(-10.5, -2.6, -3.0)
-const MILLWHEEL_SCALE: float = 2.3
+const MILLWHEEL_SCALE: float = 1.5
 const CHECKPOINT_TWO_Z: float = 10.0
 # Zone 3: the Ring of the Cairnsman.
 const CAUSEWAY_Z: Vector2 = Vector2(-34.0, -24.0)
@@ -251,6 +260,22 @@ const LANE_WALL_PIECE: float = 4.0
 const LANE_GAPS: Array[Vector2] = [Vector2(61.0, 146.0), Vector2(67.0, 143.0), Vector2(60.0, 161.0), Vector2(67.0, 156.0)]
 const LANE_GAP_HALF: float = 1.8
 const COBBLE_COLOR: Color = Color(0.6, 0.58, 0.54)
+## The village square's flower planters (hub frame).
+const PLANTER_SPOTS: Array[Vector3] = [Vector3(-4.5, 0.0, -6.0), Vector3(4.5, 0.0, -6.0), Vector3(-4.5, 0.0, -22.0), Vector3(4.5, 0.0, -22.0)]
+## Chime-Posts (17 GDD §4.2): at the Forest Gate (hub frame), Rush-Light-Hollow's
+## trailhead and the bramble camp's (expedition frame), and Dover-Slap-Bridge's south approach.
+const GATE_POST: Vector3 = Vector3(4.6, 0.0, -27.0)
+const HOLLOW_POST: Vector3 = Vector3(5.6, 0.0, 48.5)
+const CAMP_POST: Vector3 = Vector3(13.0, 0.0, 69.0)
+const BRIDGE_POST: Vector3 = Vector3(5.0, 0.0, 9.5)
+const COMMONS_POST: Vector3 = Vector3(49.0, 0.0, 176.0)
+## Roof shingles by house, round the village (clay, slate, moss).
+const ROOF_TINTS: Array[Color] = [Color(0.62, 0.36, 0.27), Color(0.43, 0.49, 0.55), Color(0.62, 0.36, 0.27), Color(0.4, 0.5, 0.36),
+	Color(0.62, 0.36, 0.27), Color(0.43, 0.49, 0.55)]
+## The Ring of the Cairnsman's flagstones (§5.2: mid-value so every telegraph pops) and its outer standing stones.
+const ARENA_FLOOR_COLOR: Color = Color("#8A8E91")
+const OUTER_STONE_RADIUS: float = 17.0
+const CHIME_POST_SCRIPT: String = "res://src/actors/chime_post.gd"
 ## A cobble every so often along the lane, scattered across its middle.
 const COBBLE_STEP: float = 0.8
 ## The bivouac's oak, whose low limb hangs a Wind-Lantern over the lane's start.
@@ -273,6 +298,8 @@ const HIVE_LID_COLOR: Color = Color(0.46, 0.52, 0.46)
 ## The heirloom pumpkin patches (world rects): Cinderella orange, Jarrahdale
 ## blue-grey, Lumina white and Rouge vif d'Etampes red.
 const PUMPKIN_PATCHES: Array[Rect2] = [Rect2(42.0, 158.0, 13.0, 7.0), Rect2(70.0, 138.0, 11.0, 10.0)]
+## Which side of each patch is open to the lane (-1 west, 1 east).
+const PUMPKIN_OPEN_SIDES: Array[float] = [1.0, -1.0]
 const PUMPKIN_COLORS: Array[Color] = [Color(0.95, 0.55, 0.15), Color(0.55, 0.62, 0.62), Color(0.93, 0.9, 0.82), Color(0.82, 0.3, 0.14)]
 const SOIL_COLOR: Color = Color(0.36, 0.26, 0.17)
 const VINE_COLOR: Color = Color(0.3, 0.5, 0.22)
@@ -283,6 +310,8 @@ var _baked: bool = false
 
 
 func _initialize() -> void:
+	# The HLOD bakes read every kit the moment its landblock is in the tree.
+	WorldKitInstance.immediate = true
 	_results.append("%s -> %s" % [HUB_PATH, error_string(_save(_build_hub(), HUB_PATH))])
 	_results.append("%s -> %s" % [DOJO_PATH, error_string(_save(_build_dojo(), DOJO_PATH))])
 	_results.append("%s -> %s" % [WORLD_PATH, error_string(_save(_build_world(), WORLD_PATH))])
@@ -325,11 +354,8 @@ func _build_hub() -> Node3D:
 func _build_town(root: Node3D, world_mode: bool) -> void:
 	var town: Node3D = _node3d("Town")
 	root.add_child(town)
-	var cobbles: ShaderMaterial = ShaderMaterial.new()
-	cobbles.shader = load(GRID_SHADER)
-	cobbles.set_shader_parameter(&"base_color", Color(0.55, 0.52, 0.47))
-	cobbles.set_shader_parameter(&"minor_color", Color(0.5, 0.47, 0.42))
-	cobbles.set_shader_parameter(&"major_color", Color(0.45, 0.42, 0.38))
+	# Bevel-edged limestone cobbles (17 GDD §5.2).
+	var cobbles: Material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.COBBLED_FLAGSTONE, Color(0.74, 0.7, 0.62), false, 0.15)
 	town.add_child(_box_body("Floor", Vector3(HUB_WIDTH, FLOOR_THICKNESS, HUB_DEPTH), Vector3(0.0, -FLOOR_THICKNESS * 0.5, 0.0), cobbles))
 	_add_hub_walls(town, world_mode)
 	_add_forest_gate(town, world_mode)
@@ -338,8 +364,12 @@ func _build_town(root: Node3D, world_mode: bool) -> void:
 		town.add_child(_lane_walls("LaneWalls", 0.0, WorldGridConfig.CHUNK_SIZE, LandblockManifest.BRAMBLEBRIDGE_ORIGIN))
 		town.add_child(_lane_cobbles("LaneCobbles", 0.0, WorldGridConfig.CHUNK_SIZE, LandblockManifest.BRAMBLEBRIDGE_ORIGIN))
 	for index: int in HOUSE_SPOTS.size():
-		town.add_child(_house("House%d" % (index + 1), HOUSE_SPOTS[index], HOUSE_COLORS[index], index == BAKERY_HOUSE))
+		var variant: StringName = &"SMOKING_BAKERY" if index == BAKERY_HOUSE else (&"REED_LIGHT_SCRIBERY" if index == 0 else &"VILLAGE_COTTAGE")
+		town.add_child(_house("House%d" % (index + 1), HOUSE_SPOTS[index], HOUSE_COLORS[index], variant))
 	town.add_child(_fountain())
+	for index: int in PLANTER_SPOTS.size():
+		town.add_child(_planter("Planter%d" % (index + 1), PLANTER_SPOTS[index], index))
+	town.add_child(_chime_post("GateChimePost", GATE_POST, "Moss-Oak-Hollow"))
 	for index: int in LANTERN_SPOTS.size():
 		town.add_child(_lantern("Lantern%d" % (index + 1), LANTERN_SPOTS[index]))
 	_add_canal(town)
@@ -412,7 +442,7 @@ func _add_forest_gate(parent: Node3D, world_mode: bool) -> void:
 	gate.add_child(ShapeKit.box("Lintel", Vector3(GATE_WIDTH + 1.8, 0.7, 0.8), Vector3(0.0, GATE_HEIGHT, 0.0), timber))
 	var roof_mesh: PrismMesh = PrismMesh.new()
 	roof_mesh.size = Vector3(GATE_WIDTH + 2.4, 1.0, 1.6)
-	roof_mesh.material = _material(ROOF_COLOR)
+	roof_mesh.material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.SCALLOP_SHINGLE, WorldAssetCatalog.SHINGLE_MOSS, true, 0.3)
 	var roof: MeshInstance3D = MeshInstance3D.new()
 	roof.name = "Roof"
 	roof.mesh = roof_mesh
@@ -452,98 +482,50 @@ func _add_forest_gate(parent: Node3D, world_mode: bool) -> void:
 		forest.add_child(_tree("Oak%d" % (index + 1), GATE_TREES[index], 7.0 + float(index % 3), false))
 
 
-func _house(house_name: String, where: Vector3, color: Color, bakery: bool) -> StaticBody3D:
-	var house: StaticBody3D = _box_body(house_name, HOUSE_SIZE, where + Vector3(0.0, HOUSE_SIZE.y * 0.5, 0.0), _material(color))
-	var eave: float = HOUSE_SIZE.y * 0.5
-	# A steep roof whose ridge runs toward the lane...
-	var roof_mesh: PrismMesh = PrismMesh.new()
-	roof_mesh.size = Vector3(HOUSE_SIZE.z + 0.4, ROOF_HEIGHT, HOUSE_SIZE.x - GABLE_THICKNESS * 2.0)
-	roof_mesh.material = _material(ROOF_COLOR)
-	var roof: MeshInstance3D = MeshInstance3D.new()
-	roof.name = "Roof"
-	roof.mesh = roof_mesh
-	roof.position = Vector3(0.0, eave + ROOF_HEIGHT * 0.5, 0.0)
-	roof.rotation = Vector3(0.0, PI * 0.5, 0.0)
-	house.add_child(roof)
-	# ...between two stepped gables.
-	var gable: Material = _material(color.darkened(0.08))
-	for side: float in [-1.0, 1.0]:
-		for step: int in GABLE_STEPS:
-			var width: float = HOUSE_SIZE.z * (1.0 - float(step) / GABLE_STEPS)
-			var block: MeshInstance3D = MeshInstance3D.new()
-			block.name = "Gable%s%d" % ["East" if side > 0.0 else "West", step]
-			var block_mesh: BoxMesh = BoxMesh.new()
-			block_mesh.size = Vector3(GABLE_THICKNESS, GABLE_STEP_HEIGHT, width)
-			block_mesh.material = gable
-			block.mesh = block_mesh
-			block.position = Vector3(side * (HOUSE_SIZE.x * 0.5 - GABLE_THICKNESS * 0.5), eave + GABLE_STEP_HEIGHT * (step + 0.5), 0.0)
-			house.add_child(block)
-	var door_mesh: BoxMesh = BoxMesh.new()
-	door_mesh.size = Vector3(1.1, 2.0, 0.1)
-	door_mesh.material = _material(Color(0.35, 0.24, 0.16))
-	var door: MeshInstance3D = MeshInstance3D.new()
-	door.name = "Door"
-	door.mesh = door_mesh
-	# Doors face the lane down the middle of the village.
-	var toward_middle: float = -signf(where.x)
-	door.position = Vector3(toward_middle * (HOUSE_SIZE.x * 0.5 + 0.05), -HOUSE_SIZE.y * 0.5 + 1.0, 0.0)
-	door.rotation = Vector3(0.0, PI * 0.5, 0.0)
-	house.add_child(door)
-	# Warm windows either side of the door and one up in the gable.
-	var glass: StandardMaterial3D = _standard(WINDOW_COLOR)
-	glass.emission_enabled = true
-	glass.emission = WINDOW_COLOR
-	glass.emission_energy_multiplier = 0.8
-	var face_x: float = toward_middle * (HOUSE_SIZE.x * 0.5 + 0.05)
-	var window_spots: Array[Vector3] = [Vector3(face_x, 0.4, -1.5), Vector3(face_x, 0.4, 1.5), Vector3(face_x, eave + 0.75, 0.0)]
-	for index: int in window_spots.size():
-		var window_mesh: BoxMesh = BoxMesh.new()
-		window_mesh.size = WINDOW_SIZE
-		window_mesh.material = glass
-		var window: MeshInstance3D = MeshInstance3D.new()
-		window.name = "Window%d" % index
-		window.mesh = window_mesh
-		window.position = window_spots[index]
-		house.add_child(window)
-	if bakery:
-		_add_bakery(house, toward_middle)
+## A stepped-gable house (17 GDD §4.1 kit_house_stepped_gable): its body collides
+## as one box; its looks are the kit, with its gable and door toward the lane
+## down the village's middle (or turned `door_yaw` from the body's +X).
+func _house(house_name: String, where: Vector3, color: Color, variant: StringName = &"VILLAGE_COTTAGE", door_yaw: float = NAN) -> StaticBody3D:
+	var house: StaticBody3D = _collider(house_name, HOUSE_SIZE, where + Vector3(0.0, HOUSE_SIZE.y * 0.5, 0.0))
+	var yaw: float = door_yaw if not is_nan(door_yaw) else (0.0 if where.x <= 0.0 else PI)
+	var roof: Color = ROOF_TINTS[absi(hash(house_name)) % ROOF_TINTS.size()]
+	house.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_HOUSE_STEPPED_GABLE, Vector3(0.0, -HOUSE_SIZE.y * 0.5, 0.0), yaw,
+		{&"variant": variant, &"size": HOUSE_SIZE, &"tint": color, &"accent": roof}))
 	return house
 
 
-## The bakery's brick oven against its lane side, and smoke puffing from the chimney.
-func _add_bakery(house: StaticBody3D, toward_middle: float) -> void:
-	var brick: Material = _material(Color(0.62, 0.34, 0.26))
-	var oven_x: float = toward_middle * (HOUSE_SIZE.x * 0.5 + 0.55)
-	house.add_child(ShapeKit.box("Oven", Vector3(1.0, 1.1, 1.4), Vector3(oven_x, -HOUSE_SIZE.y * 0.5 + 0.55, -HOUSE_SIZE.z * 0.25), brick))
-	var mouth: StandardMaterial3D = _standard(Color(1.0, 0.55, 0.2))
-	mouth.emission_enabled = true
-	mouth.emission = Color(1.0, 0.5, 0.15)
-	mouth.emission_energy_multiplier = 2.0
-	house.add_child(ShapeKit.box("OvenFire", Vector3(0.06, 0.4, 0.6), Vector3(oven_x + toward_middle * 0.5, -HOUSE_SIZE.y * 0.5 + 0.45, -HOUSE_SIZE.z * 0.25), mouth))
-	var chimney_top: float = HOUSE_SIZE.y * 0.5 + ROOF_HEIGHT + 0.4
-	house.add_child(ShapeKit.box("Chimney", Vector3(0.6, 1.6, 0.6), Vector3(-toward_middle * 1.2, chimney_top - 0.8, -HOUSE_SIZE.z * 0.25), brick))
-	var smoke: CPUParticles3D = CPUParticles3D.new()
-	smoke.name = "Smoke"
-	smoke.position = Vector3(-toward_middle * 1.2, chimney_top + 0.1, -HOUSE_SIZE.z * 0.25)
-	smoke.amount = 10
-	smoke.lifetime = 3.2
-	smoke.direction = Vector3.UP
-	smoke.spread = 12.0
-	smoke.initial_velocity_min = 0.5
-	smoke.initial_velocity_max = 0.8
-	smoke.gravity = Vector3(0.25, 0.15, 0.0)
-	smoke.scale_amount_min = 0.6
-	smoke.scale_amount_max = 1.4
-	var puff: SphereMesh = SphereMesh.new()
-	puff.radius = 0.28
-	puff.height = 0.56
-	var puff_material: StandardMaterial3D = StandardMaterial3D.new()
-	puff_material.albedo_color = SMOKE_COLOR
-	puff_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	puff_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	puff.material = puff_material
-	smoke.mesh = puff
-	house.add_child(smoke)
+## A box that only collides (its looks are a kit beside it).
+func _collider(body_name: String, size: Vector3, where: Vector3, layer: int = ActorBase.LAYER_WORLD) -> StaticBody3D:
+	var body: StaticBody3D = StaticBody3D.new()
+	body.name = body_name
+	body.position = where
+	body.collision_layer = layer
+	body.collision_mask = 0
+	var shape: BoxShape3D = BoxShape3D.new()
+	shape.size = size
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	collision.name = "Collision"
+	collision.shape = shape
+	body.add_child(collision)
+	return body
+
+
+## A Nursery-Rhyme Chime-Post (17 GDD §4.2) singing `place`'s rhyme.
+func _chime_post(post_name: String, where: Vector3, place: String) -> Node3D:
+	return _scripted(post_name, CHIME_POST_SCRIPT, where, {&"place": place})
+
+
+## A cobblestone flower planter on the square (knee-high: cameras see past it).
+func _planter(planter_name: String, where: Vector3, index: int) -> StaticBody3D:
+	var planter: StaticBody3D = _low(_collider(planter_name, Vector3(1.6, 0.6, 1.6), where + Vector3(0.0, 0.3, 0.0)))
+	planter.add_child(ShapeKit.box("Stone", Vector3(1.6, 0.6, 1.6), Vector3.ZERO, WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.COBBLED_FLAGSTONE,
+		WorldVisualCatalog.FLAGSTONE, false, 0.3)))
+	planter.add_child(ShapeKit.box("Soil", Vector3(1.3, 0.06, 1.3), Vector3(0.0, 0.3, 0.0), _material(SOIL_COLOR)))
+	for bloom: int in 6:
+		var angle: float = TAU * float(bloom) / 6.0 + index
+		var color: Color = WorldAssetCatalog.FLOWER_BOX_COLORS[(bloom + index) % WorldAssetCatalog.FLOWER_BOX_COLORS.size()]
+		planter.add_child(ShapeKit.sphere("Bloom%d" % bloom, 0.16, Vector3(cos(angle) * 0.38, 0.42, sin(angle) * 0.38), WorldVisualCatalog.painted(color)))
+	return planter
 
 
 ## Pigment bundles drying on a timber rack: saffron, madder, woad, weld and violet.
@@ -558,17 +540,25 @@ func _add_pigment_rack(parent: Node3D) -> void:
 	rack.add_child(ShapeKit.box("Bar", Vector3(span + 0.3, 0.12, 0.12), Vector3(0.0, 2.35, 0.0), timber))
 	for index: int in PIGMENT_COLORS.size():
 		var x: float = lerpf(-span * 0.4, span * 0.4, float(index) / (PIGMENT_COLORS.size() - 1))
-		rack.add_child(ShapeKit.box("Bundle%d" % index, Vector3(0.32, 0.8, 0.32), Vector3(x, 1.85, 0.0), _material(PIGMENT_COLORS[index])))
+		rack.add_child(ShapeKit.box("Bundle%d" % index, Vector3(0.32, 0.8, 0.32), Vector3(x, 1.85, 0.0), WorldVisualCatalog.painted(PIGMENT_COLORS[index])))
 
 
 ## The canal across the village and its stone banks, open only where the bridge crosses.
 func _add_canal(parent: Node3D) -> void:
 	var length: float = HUB_WIDTH - WALL_THICKNESS
-	var water_material: StandardMaterial3D = _standard(WATER_COLOR)
-	water_material.roughness = 0.15
-	water_material.emission_enabled = true
-	water_material.emission = WATER_COLOR.darkened(0.5)
-	parent.add_child(ShapeKit.box("CanalWater", Vector3(length, 0.04, CANAL_WIDTH), Vector3(0.0, 0.03, CANAL_Z), water_material))
+	# A lively, foam-streaked canal (17 GDD §3.4), flowing east under the arch.
+	parent.add_child(ShapeKit.box("CanalWater", Vector3(length, 0.04, CANAL_WIDTH), Vector3(0.0, 0.03, CANAL_Z), WorldVisualCatalog.water(&"flat", Vector2(0.9, 0.0))))
+	# Two wooden skiffs moored against the quay.
+	for skiff: Array in [[-12.5, 0.6], [11.0, -0.7]]:
+		var hull: Node3D = _node3d("Skiff")
+		hull.position = Vector3(skiff[0], 0.08, CANAL_Z + float(skiff[1]))
+		hull.rotation = Vector3(0.0, 0.05 * float(skiff[1]), 0.04)
+		var plank: Material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.HEWN_TIMBER, Color(0.5, 0.34, 0.2))
+		hull.add_child(ShapeKit.box("Hull", Vector3(2.6, 0.3, 0.9), Vector3(0.0, 0.15, 0.0), plank))
+		for side: float in [-1.0, 1.0]:
+			hull.add_child(ShapeKit.box("Gunwale", Vector3(2.7, 0.22, 0.08), Vector3(0.0, 0.38, side * 0.45), plank))
+		hull.add_child(ShapeKit.box("Thwart", Vector3(0.18, 0.06, 0.9), Vector3(0.2, 0.32, 0.0), plank))
+		parent.add_child(hull)
 	var stone: Material = _material(STONE_COLOR)
 	var gap: float = BRIDGE_WIDTH * 0.5 + BRIDGE_PARAPET_THICKNESS
 	var bank_length: float = length * 0.5 - gap
@@ -607,7 +597,7 @@ func _add_bridge(parent: Node3D) -> void:
 	collision.name = "Walkway"
 	collision.shape = shape
 	bridge.add_child(collision)
-	var stone: Material = StorybookMaterial.make(BRIDGE_COLOR, StorybookMaterial.SCENERY_RIM, StorybookMaterial.WARM_RIM, true)
+	var stone: Material = WorldVisualCatalog.double_sided(WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.COBBLED_FLAGSTONE, BRIDGE_COLOR, false, 0.3))
 	var deck: MeshInstance3D = MeshInstance3D.new()
 	deck.name = "Deck"
 	deck.mesh = _prism_mesh(profile, BRIDGE_WIDTH)
@@ -663,6 +653,9 @@ func _add_bridge(parent: Node3D) -> void:
 	village_sign.modulate = Color(1.0, 0.92, 0.75)
 	village_sign.position = Vector3(0.0, BRIDGE_RISE + 2.6, 0.0)
 	bridge.add_child(village_sign)
+	# Its dressing (17 GDD §4.1): radiating voussoirs, the Maker-Seal keystone and Wind-Lantern posts at the corners.
+	bridge.add_child(WorldKitInstance.make("Dressing", WorldVisualCatalog.KIT_BRIDGE_STONE_ARCH, Vector3.ZERO, 0.0,
+		{&"size": Vector3(BRIDGE_WIDTH, 1.25, foot)}))
 
 
 ## A closed prism: a side profile of (z, y) points extruded `width` along X.
@@ -687,16 +680,14 @@ func _prism_mesh(profile: PackedVector2Array, width: float) -> ArrayMesh:
 
 ## The watermill: a shed on the north bank and its wheel turning in the canal.
 func _add_watermill(parent: Node3D) -> void:
-	var shed: StaticBody3D = _box_body("Watermill", MILL_SIZE, MILL_POSITION + Vector3(0.0, MILL_SIZE.y * 0.5, 0.0), _material(MILL_COLOR))
-	var roof_mesh: PrismMesh = PrismMesh.new()
-	roof_mesh.size = Vector3(MILL_SIZE.x + 0.4, 1.4, MILL_SIZE.z + 0.4)
-	roof_mesh.material = _material(ROOF_COLOR)
-	var roof: MeshInstance3D = MeshInstance3D.new()
-	roof.name = "Roof"
-	roof.mesh = roof_mesh
-	roof.position = Vector3(0.0, MILL_SIZE.y * 0.5 + 0.7, 0.0)
-	shed.add_child(roof)
+	var shed: StaticBody3D = _collider("Watermill", MILL_SIZE, MILL_POSITION + Vector3(0.0, MILL_SIZE.y * 0.5, 0.0))
+	# A little stepped-gable mill house, its gable toward the canal.
+	shed.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_HOUSE_STEPPED_GABLE, Vector3(0.0, -MILL_SIZE.y * 0.5, 0.0), -PI * 0.5,
+		{&"size": Vector3(MILL_SIZE.z, MILL_SIZE.y, MILL_SIZE.x), &"tint": MILL_COLOR, &"accent": ROOF_TINTS[1]}))
 	parent.add_child(shed)
+	# The piers and the mill-race flume pouring over the wheel.
+	parent.add_child(WorldKitInstance.make("MillRace", WorldVisualCatalog.KIT_WATERMILL_WHEEL, Vector3(MILL_POSITION.x, WHEEL_HEIGHT, CANAL_Z - CANAL_WIDTH * 0.25), 0.0,
+		{&"height": WatermillWheel.RADIUS}))
 	var wheel: Node3D = Node3D.new()
 	wheel.name = "WaterWheel"
 	wheel.set_script(load(WHEEL_SCRIPT))
@@ -706,27 +697,15 @@ func _add_watermill(parent: Node3D) -> void:
 	parent.add_child(wheel)
 
 
-## A moss-oak: a stout trunk under three heaps of leaves. Only the trunk collides.
-func _tree(tree_name: String, where: Vector3, height: float, collides: bool) -> Node3D:
-	var tree: Node3D = _node3d(tree_name)
-	tree.position = where
-	var trunk_height: float = height * 0.55
-	var trunk_radius: float = 0.22 + height * 0.025
-	tree.add_child(ShapeKit.cylinder("Trunk", trunk_radius * 0.75, trunk_radius, trunk_height, Vector3(0.0, trunk_height * 0.5, 0.0), _material(OAK_TRUNK_COLOR), 24))
-	var leaves: Material = _material(OAK_LEAF_COLOR)
-	var heaps: Array[Vector3] = [Vector3(0.0, trunk_height + height * 0.12, 0.0), Vector3(height * 0.13, trunk_height + height * 0.28, height * 0.06),
-		Vector3(-height * 0.1, trunk_height + height * 0.3, -height * 0.08)]
-	for index: int in heaps.size():
-		var heap_mesh: SphereMesh = SphereMesh.new()
-		heap_mesh.radius = height * (0.27 - 0.04 * index)
-		heap_mesh.height = heap_mesh.radius * 1.6
-		heap_mesh.material = leaves
-		var heap: MeshInstance3D = MeshInstance3D.new()
-		heap.name = "Leaves%d" % index
-		heap.mesh = heap_mesh
-		heap.position = heaps[index]
-		tree.add_child(heap)
+## A hero tree (17 GDD §4.3 kit, a moss-oak unless told otherwise): roots, a
+## trunk forking above 3.2 m and leaf-clouds that sway and fade from sightlines.
+## Only the trunk collides.
+func _tree(tree_name: String, where: Vector3, height: float, collides: bool, kind: StringName = WorldVisualCatalog.KIT_TREE_MOSS_OAK) -> Node3D:
+	var variety: int = absi(hash(tree_name)) % 3
+	var tree: Node3D = WorldKitInstance.make(tree_name, kind, where, float(absi(hash(tree_name)) % 628) * 0.01, {&"height": height, &"seed_value": variety})
 	if collides:
+		var trunk_height: float = height * 0.55
+		var trunk_radius: float = 0.22 + height * 0.025
 		var body: StaticBody3D = StaticBody3D.new()
 		body.name = "TrunkBody"
 		body.collision_layer = ActorBase.LAYER_WORLD
@@ -758,32 +737,14 @@ func _fountain() -> StaticBody3D:
 	collision.position = Vector3(0.0, 0.35, 0.0)
 	fountain.add_child(collision)
 	fountain.add_child(ShapeKit.cylinder("Basin", FOUNTAIN_RADIUS, FOUNTAIN_RADIUS, 0.7, Vector3(0.0, 0.35, 0.0), _material(STONE_COLOR), 24))
-	var water: StandardMaterial3D = _standard(Color(0.35, 0.6, 0.9))
-	water.emission_enabled = true
-	water.emission = Color(0.2, 0.4, 0.7)
-	fountain.add_child(ShapeKit.cylinder("Water", FOUNTAIN_RADIUS - 0.25, FOUNTAIN_RADIUS - 0.25, 0.05, Vector3(0.0, 0.68, 0.0), water, 24))
+	fountain.add_child(ShapeKit.cylinder("Water", FOUNTAIN_RADIUS - 0.25, FOUNTAIN_RADIUS - 0.25, 0.05, Vector3(0.0, 0.7, 0.0), WorldVisualCatalog.water(&"shrine"), 24))
 	fountain.add_child(ShapeKit.cylinder("Spout", 0.25, 0.45, 1.8, Vector3(0.0, 0.9, 0.0), _material(STONE_COLOR), 24))
 	return fountain
 
 
+## A Wind-Lantern on its post (17 GDD kit_wind_lantern_post).
 func _lantern(lantern_name: String, where: Vector3) -> Node3D:
-	var post: Node3D = _node3d(lantern_name)
-	post.position = where
-	post.add_child(ShapeKit.cylinder("Post", 0.08, 0.1, 2.4, Vector3(0.0, 1.2, 0.0), _material(Color(0.25, 0.22, 0.2)), 24))
-	var glow: StandardMaterial3D = _standard(LANTERN_COLOR)
-	glow.emission_enabled = true
-	glow.emission = LANTERN_COLOR
-	glow.emission_energy_multiplier = 2.5
-	var lamp_mesh: SphereMesh = SphereMesh.new()
-	lamp_mesh.radius = 0.22
-	lamp_mesh.height = 0.44
-	lamp_mesh.material = glow
-	var lamp: MeshInstance3D = MeshInstance3D.new()
-	lamp.name = "Lamp"
-	lamp.mesh = lamp_mesh
-	lamp.position = Vector3(0.0, 2.5, 0.0)
-	post.add_child(lamp)
-	return post
+	return WorldKitInstance.make(lantern_name, WorldVisualCatalog.KIT_WIND_LANTERN_POST, where, float(absi(hash(lantern_name)) % 4) * PI * 0.5)
 
 
 # --- The Dover-Slap-Falls Expedition ---------------------------------------------
@@ -842,6 +803,8 @@ func _add_zone_one_entities(root: Node3D, world_mode: bool) -> void:
 	root.add_child(lanterns)
 	for index: int in WIND_LANTERN_SPOTS.size():
 		lanterns.add_child(_scripted("WindLantern%d" % (index + 1), LANTERN_SCRIPT, WIND_LANTERN_SPOTS[index], {}))
+	root.add_child(_chime_post("CampChimePost", CAMP_POST, "Moss-Oak-Hollow"))
+	root.add_child(_chime_post("HollowChimePost", HOLLOW_POST, "Rush-Light-Hollow"))
 	var chest_spot: Marker3D = Marker3D.new()
 	chest_spot.name = "WayfarerChestSpot"
 	chest_spot.position = WAYFARER_CHEST_POSITION
@@ -899,8 +862,8 @@ func _build_moss_oaks(parent: Node3D, world_mode: bool) -> void:
 func _add_great_arch(parent: Node3D) -> void:
 	var arch: Node3D = _node3d("GreatArch")
 	parent.add_child(arch)
-	var bark: Material = _material(OAK_TRUNK_COLOR)
-	var leaves: Material = _material(OAK_LEAF_COLOR)
+	var bark: Material = WorldVisualCatalog.craft_for_color(OAK_TRUNK_COLOR, true)
+	var leaves: Material = WorldVisualCatalog.foliage(OAK_LEAF_COLOR, GREAT_ARCH_HEIGHT, 0.08, 0.0, true)
 	for side: float in [-1.0, 1.0]:
 		var foot: Vector3 = Vector3(side * GREAT_ARCH_SPAN, 0.0, GREAT_ARCH_Z)
 		var knee: Vector3 = Vector3(side * (GREAT_ARCH_SPAN - 0.8), GREAT_ARCH_HEIGHT * 0.55, GREAT_ARCH_Z + 0.4)
@@ -915,6 +878,19 @@ func _add_great_arch(parent: Node3D) -> void:
 			GREAT_ARCH_Z + (0.6 if index % 2 == 0 else -0.6)), leaves)
 		heap.scale = Vector3(1.3, 0.8, 1.1)
 		arch.add_child(heap)
+	# Dappled light-shafts slanting down through the canopy (17 GDD §6.2).
+	var shaft: StandardMaterial3D = StandardMaterial3D.new()
+	shaft.albedo_color = Color(1.0, 0.9, 0.62, 0.12)
+	shaft.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	shaft.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	shaft.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	shaft.cull_mode = BaseMaterial3D.CULL_DISABLED
+	shaft.disable_receive_shadows = true
+	for index: int in 3:
+		var beam: MeshInstance3D = ShapeKit.no_shadow(ShapeKit.box("LightShaft%d" % index, Vector3(1.2, GREAT_ARCH_HEIGHT, 0.02),
+			Vector3((float(index) - 1.0) * 1.8, GREAT_ARCH_HEIGHT * 0.45, GREAT_ARCH_Z - 2.0 - index * 1.5), shaft))
+		beam.rotation = Vector3(0.0, 0.6, -0.42)
+		arch.add_child(beam)
 
 
 ## Rush-Light-Hollow: a ramp down into a lane between high earthen banks,
@@ -935,7 +911,7 @@ func _build_holloway(parent: Node3D) -> void:
 		var bank: StaticBody3D = _low(_box_body("Bank%s" % ("West" if side < 0.0 else "East"), Vector3(BANK_WIDTH, bank_height, bank_length), center, earth))
 		bank.add_child(ShapeKit.box("Moss", Vector3(BANK_WIDTH + 0.1, 0.12, bank_length), Vector3(0.0, bank_height * 0.5, 0.0), moss))
 		holloway.add_child(bank)
-	var roots: Material = _material(ROOT_COLOR)
+	var roots: Material = WorldVisualCatalog.craft_for_color(ROOT_COLOR, true)
 	for index: int in ROOT_ARCH_ZS.size():
 		var z: float = ROOT_ARCH_ZS[index]
 		var apex: Vector3 = Vector3(0.0, ROOT_ARCH_APEX, z)
@@ -1015,13 +991,11 @@ func _build_gorge(parent: Node3D) -> void:
 	for side: float in [-1.0, 1.0]:
 		gorge.add_child(ShapeKit.box("Face%s" % ("West" if side < 0.0 else "East"), Vector3(0.6, GORGE_DEPTH + 8.0, span), Vector3(side * (w + 0.3), -GORGE_DEPTH * 0.5 + 4.0, middle_z), cliff))
 	# The Dover-Slap-Falls: a roaring fall of water down the east side, misting at its foot.
-	var fall: StandardMaterial3D = StandardMaterial3D.new()
-	fall.albedo_color = WATERFALL_COLOR
-	fall.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	fall.emission_enabled = true
-	fall.emission = Color(0.55, 0.75, 0.9)
-	fall.emission_energy_multiplier = 0.6
-	gorge.add_child(ShapeKit.box("Waterfall", WATERFALL_SIZE, WATERFALL_POSITION, fall))
+	gorge.add_child(ShapeKit.no_shadow(ShapeKit.box("Waterfall", WATERFALL_SIZE, WATERFALL_POSITION, WorldVisualCatalog.water(&"falls", Vector2(0.0, 1.6)))))
+	# The trestle's granite piers and criss-cross timber trusses (17 GDD §4.1).
+	gorge.add_child(WorldKitInstance.make("TrestleDressing", WorldVisualCatalog.KIT_BRIDGE_CARPATHIAN_TRESTLE, Vector3(0.0, 0.0, middle_z), 0.0,
+		{&"size": Vector3(GORGE_BRIDGE_HALF_WIDTH * 2.0, GORGE_DEPTH, span)}))
+	gorge.add_child(_chime_post("BridgeChimePost", BRIDGE_POST, "Dover-Slap-Bridge"))
 	gorge.add_child(_mist("FallMist", WATERFALL_POSITION + Vector3(0.0, -WATERFALL_SIZE.y * 0.4, 1.0), Vector3(3.0, 1.0, 2.0)))
 	gorge.add_child(_mist("FallSpray", WATERFALL_POSITION + Vector3(-1.0, WATERFALL_SIZE.y * 0.45, 0.8), Vector3(2.5, 0.5, 1.0)))
 	var wheel: Node3D = Node3D.new()
@@ -1031,21 +1005,22 @@ func _build_gorge(parent: Node3D) -> void:
 	wheel.rotation = Vector3(0.0, 0.0, PI * 0.5)
 	wheel.scale = Vector3.ONE * MILLWHEEL_SCALE
 	gorge.add_child(wheel)
-	gorge.add_child(ShapeKit.box("MillHouse", Vector3(4.0, 5.0, 5.0), MILLWHEEL_POSITION + Vector3(-3.5, 0.5, 0.0), _material(MILL_COLOR)))
+	gorge.add_child(WorldKitInstance.make("MillHouse", WorldVisualCatalog.KIT_HOUSE_STEPPED_GABLE, MILLWHEEL_POSITION + Vector3(-3.5, -2.0, 0.0), 0.0,
+		{&"size": Vector3(4.0, 4.2, 5.0), &"tint": MILL_COLOR, &"accent": ROOF_TINTS[1]}))
+	gorge.add_child(WorldKitInstance.make("MillRace", WorldVisualCatalog.KIT_WATERMILL_WHEEL, MILLWHEEL_POSITION, PI * 0.5,
+		{&"height": WatermillWheel.RADIUS * MILLWHEEL_SCALE}))
 	# The Dover-Slap Gatehouse: two stone towers with carved timber turrets, walls out to the cliff sides.
 	var half_gate: float = CoopGate.PORTCULLIS_WIDTH * 0.5
 	for side: float in [-1.0, 1.0]:
 		var label: String = "West" if side < 0.0 else "East"
 		var tower_x: float = side * (half_gate + GATE_TOWER_SIZE.x * 0.5)
 		var tower: StaticBody3D = _box_body("Tower%s" % label, GATE_TOWER_SIZE, Vector3(tower_x, GATE_TOWER_SIZE.y * 0.5, GATE_POSITION.z), stone)
-		var turret: PrismMesh = PrismMesh.new()
-		turret.size = Vector3(GATE_TOWER_SIZE.x + 0.8, 2.2, GATE_TOWER_SIZE.z + 0.8)
-		turret.material = _material(ROOF_COLOR)
-		var roof: MeshInstance3D = MeshInstance3D.new()
-		roof.name = "Turret"
-		roof.mesh = turret
-		roof.position = Vector3(0.0, GATE_TOWER_SIZE.y * 0.5 + 1.6, 0.0)
+		# A carved, shingled spire on each turret (17 GDD §4.1).
+		var roof: MeshInstance3D = ShapeKit.cylinder("Turret", 0.0, GATE_TOWER_SIZE.x * 0.62, 4.2, Vector3(0.0, GATE_TOWER_SIZE.y * 0.5 + 2.6, 0.0),
+			WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.SCALLOP_SHINGLE, WorldAssetCatalog.SHINGLE_SLATE, true, 0.2), 8)
 		tower.add_child(roof)
+		tower.add_child(ShapeKit.cylinder("Finial", 0.0, 0.12, 0.8, Vector3(0.0, GATE_TOWER_SIZE.y * 0.5 + 5.0, 0.0),
+			WorldVisualCatalog.glowing(WorldVisualCatalog.RIME_GALE, 1.0), 6))
 		tower.add_child(ShapeKit.box("Gallery", Vector3(GATE_TOWER_SIZE.x + 0.6, 0.5, GATE_TOWER_SIZE.z + 0.6), Vector3(0.0, GATE_TOWER_SIZE.y * 0.5 + 0.25, 0.0), timber))
 		gorge.add_child(tower)
 		var wall_from: float = side * (half_gate + GATE_TOWER_SIZE.x)
@@ -1067,17 +1042,13 @@ func _build_gorge(parent: Node3D) -> void:
 func _build_ring(parent: Node3D) -> void:
 	var ring: Node3D = _node3d("Ring")
 	parent.add_child(ring)
-	var moss: Material = _material(MOSS_COLOR)
 	var stone: Material = _material(DRYSTONE_COLOR)
 	ring.add_child(_ground("Causeway", Vector2(-CAUSEWAY_HALF_WIDTH, CAUSEWAY_Z.x), Vector2(CAUSEWAY_HALF_WIDTH, CAUSEWAY_Z.y), 0.0, _material(STONE_COLOR)))
 	for side: float in [-1.0, 1.0]:
 		ring.add_child(_wall("CausewayWall%s" % ("West" if side < 0.0 else "East"), Vector2(side * (CAUSEWAY_HALF_WIDTH + 0.2), CAUSEWAY_Z.x),
 			Vector2(side * (CAUSEWAY_HALF_WIDTH + 0.2), CAUSEWAY_Z.y), 0.9, stone, 0.0, 0.4))
-	var floor_material: ShaderMaterial = ShaderMaterial.new()
-	floor_material.shader = load(GRID_SHADER)
-	floor_material.set_shader_parameter(&"base_color", Color(0.5, 0.53, 0.45))
-	floor_material.set_shader_parameter(&"minor_color", Color(0.46, 0.49, 0.41))
-	floor_material.set_shader_parameter(&"major_color", Color(0.4, 0.44, 0.36))
+	# Weathered flagstones at a mid-value grey (#8A8E91) so every telegraph pops, clear of clutter (17 GDD §5.2).
+	var floor_material: Material = WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.COBBLED_FLAGSTONE, ARENA_FLOOR_COLOR)
 	var half: float = RING_SIZE * 0.5
 	var south: float = BOSS_POSITION.z + half
 	var north: float = BOSS_POSITION.z - half
@@ -1091,8 +1062,27 @@ func _build_ring(parent: Node3D) -> void:
 		var angle: float = TAU * float(index) / PILLAR_COUNT
 		var where: Vector3 = BOSS_POSITION + Vector3(cos(angle), 0.0, sin(angle)) * PILLAR_RING_RADIUS
 		var pillar: StaticBody3D = _pillar("Pillar%d" % (index + 1), where, _material(STONE_COLOR))
-		pillar.add_child(ShapeKit.cylinder("Moss", PILLAR_RADIUS * 0.95, PILLAR_RADIUS * 1.02, 0.4, Vector3(0.0, PILLAR_HEIGHT * 0.5 - 0.15, 0.0), moss, 24))
+		# Each pillar is a mossy standing stone carved with a spiral Maker-Seal.
+		(pillar.get_node("Mesh") as MeshInstance3D).visible = false
+		pillar.add_child(WorldKitInstance.make("Stone", WorldVisualCatalog.KIT_STANDING_STONE, Vector3(0.0, -PILLAR_HEIGHT * 0.5, 0.0), -angle + PI * 0.5,
+			{&"size": Vector3(PILLAR_RADIUS * 2.0, PILLAR_HEIGHT + 0.6, PILLAR_RADIUS * 1.6)}))
 		ring.add_child(pillar)
+		# Six more round the outside, between the pillars (twelve in all).
+		var outer_angle: float = angle + PI / PILLAR_COUNT
+		var outer: Vector3 = BOSS_POSITION + Vector3(cos(outer_angle), 0.0, sin(outer_angle)) * OUTER_STONE_RADIUS
+		if absf(outer.x) > CAUSEWAY_HALF_WIDTH + 2.0 or outer.z < BOSS_POSITION.z:
+			var standing: StaticBody3D = _collider("StandingStone%d" % (index + 1), Vector3(1.4, 4.2, 0.9), outer + Vector3(0.0, 2.1, 0.0))
+			standing.rotation.y = -outer_angle + PI * 0.5
+			standing.add_child(WorldKitInstance.make("Stone", WorldVisualCatalog.KIT_STANDING_STONE, Vector3(0.0, -2.1, 0.0)))
+			ring.add_child(standing)
+	# Wind-bent highland pines in the corners, and heather banked along the north wall.
+	for corner: Vector2 in [Vector2(-1.0, -1.0), Vector2(1.0, -1.0), Vector2(-1.0, 1.0), Vector2(1.0, 1.0)]:
+		var spot: Vector3 = BOSS_POSITION + Vector3(corner.x * (half - 2.2), 0.0, corner.y * (half - 2.2))
+		ring.add_child(_tree("Pine%s%s" % ["W" if corner.x < 0.0 else "E", "N" if corner.y < 0.0 else "S"], spot, 9.0, true, WorldVisualCatalog.KIT_TREE_HIGHLAND_PINE))
+	var heather: Material = WorldVisualCatalog.foliage(Color(0.6, 0.42, 0.64), 1.0, 0.2, 1.0)
+	for index: int in 9:
+		var x: float = lerpf(-half + 4.0, half - 4.0, float(index) / 8.0)
+		ring.add_child(ShapeKit.no_shadow(ShapeKit.stretched(ShapeKit.sphere("Heather%d" % index, 0.7, Vector3(x, 0.15, north + 1.2), heather), Vector3(1.6, 0.5, 1.0))))
 	ring.add_child(_mist("Spray", Vector3(0.0, 2.5, north + 1.0), Vector3(half, 1.5, 1.0)))
 
 
@@ -1170,7 +1160,8 @@ func _build_oakshire_commons(root: Node3D) -> void:
 	root.add_child(_homestead())
 	root.add_child(_bee_hives())
 	for index: int in PUMPKIN_PATCHES.size():
-		root.add_child(_pumpkin_patch("PumpkinPatch%d" % (index + 1), PUMPKIN_PATCHES[index], index))
+		root.add_child(_pumpkin_patch("PumpkinPatch%d" % (index + 1), PUMPKIN_PATCHES[index], index, PUMPKIN_OPEN_SIDES[index]))
+	root.add_child(_chime_post("CommonsChimePost", COMMONS_POST, "Honey-Wick"))
 
 
 ## The knee-high dry-stone walls either side of the lane, for the stretch of it
@@ -1271,82 +1262,27 @@ func _lane_cobbles(cobbles_name: String, z_min: float, z_max: float, origin: Vec
 	return instances
 
 
-## The stepped-gable timber homestead: cream plaster between dark oak beams, a
-## steep thatch roof running along the lane between two stepped gables, its
-## door and warm windows facing the lane, and smoke from the chimney.
+## Honey-Wick's stepped-gable timber homestead (17 GDD §5.2 kit): lime-wash between
+## oak beams, brick stepped gables, a scalloped roof and smoke from its chimney,
+## its broad gable and door facing the lane; one box collides.
 func _homestead() -> StaticBody3D:
 	var size: Vector3 = HOMESTEAD_SIZE
-	var house: StaticBody3D = _box_body("Homestead", size, HOMESTEAD_POSITION + Vector3(0.0, size.y * 0.5, 0.0), _material(PLASTER_COLOR))
-	var timber: Material = _material(TIMBER_COLOR)
-	var eave: float = size.y * 0.5
-	# The frame: corner and middle posts, a sill and a beam round the walls.
-	for x_side: float in [-1.0, 1.0]:
-		for z_step: float in [-1.0, -0.33, 0.33, 1.0]:
-			house.add_child(ShapeKit.box("Post", Vector3(0.22, size.y, 0.22), Vector3(x_side * (size.x * 0.5 + 0.02), 0.0, z_step * (size.z * 0.5 - 0.05)), timber))
-		house.add_child(ShapeKit.box("Beam", Vector3(0.18, 0.2, size.z + 0.1), Vector3(x_side * (size.x * 0.5 + 0.03), 0.15, 0.0), timber))
-		house.add_child(ShapeKit.box("Sill", Vector3(0.2, 0.24, size.z + 0.1), Vector3(x_side * (size.x * 0.5 + 0.03), -eave + 0.12, 0.0), timber))
-	var roof_mesh: PrismMesh = PrismMesh.new()
-	roof_mesh.size = Vector3(size.x + 0.8, HOMESTEAD_ROOF_HEIGHT, size.z - GABLE_THICKNESS * 2.0)
-	roof_mesh.material = _material(THATCH_COLOR)
-	var roof: MeshInstance3D = MeshInstance3D.new()
-	roof.name = "Roof"
-	roof.mesh = roof_mesh
-	roof.position = Vector3(0.0, eave + HOMESTEAD_ROOF_HEIGHT * 0.5, 0.0)
-	house.add_child(roof)
-	# Stepped gables at the north and south ends, climbing above the thatch.
-	var gable: Material = _material(PLASTER_COLOR.darkened(0.06))
-	var steps: int = GABLE_STEPS + 1
-	for z_side: float in [-1.0, 1.0]:
-		for step: int in steps:
-			var width: float = (size.x + 0.4) * (1.0 - float(step) / steps)
-			house.add_child(ShapeKit.box("Gable%s%d" % ["South" if z_side > 0.0 else "North", step], Vector3(width, GABLE_STEP_HEIGHT * 1.15, GABLE_THICKNESS),
-				Vector3(0.0, eave + GABLE_STEP_HEIGHT * 1.15 * (step + 0.5), z_side * (size.z * 0.5 - GABLE_THICKNESS * 0.5)), gable))
-	# The door and windows on the east side, toward the lane.
-	var face_x: float = size.x * 0.5 + 0.06
-	house.add_child(ShapeKit.box("Door", Vector3(0.1, 2.1, 1.2), Vector3(face_x, -eave + 1.05, 0.0), _material(Color(0.32, 0.22, 0.14))))
-	var glass: StandardMaterial3D = _standard(WINDOW_COLOR)
-	glass.emission_enabled = true
-	glass.emission = WINDOW_COLOR
-	glass.emission_energy_multiplier = 0.8
-	for z: float in [-2.6, 2.6]:
-		house.add_child(ShapeKit.box("Window", WINDOW_SIZE, Vector3(face_x, 0.35, z), glass))
-	house.add_child(ShapeKit.box("Chimney", Vector3(0.7, 2.2, 0.7), Vector3(-1.4, eave + HOMESTEAD_ROOF_HEIGHT * 0.55, -size.z * 0.3), _material(Color(0.6, 0.36, 0.28))))
-	var smoke: CPUParticles3D = CPUParticles3D.new()
-	smoke.name = "Smoke"
-	smoke.position = Vector3(-1.4, eave + HOMESTEAD_ROOF_HEIGHT * 0.55 + 1.2, -size.z * 0.3)
-	smoke.amount = 8
-	smoke.lifetime = 3.2
-	smoke.direction = Vector3.UP
-	smoke.spread = 12.0
-	smoke.initial_velocity_min = 0.5
-	smoke.initial_velocity_max = 0.8
-	smoke.gravity = Vector3(0.25, 0.15, 0.0)
-	smoke.scale_amount_min = 0.6
-	smoke.scale_amount_max = 1.4
-	var puff: SphereMesh = SphereMesh.new()
-	puff.radius = 0.28
-	puff.height = 0.56
-	var puff_material: StandardMaterial3D = StandardMaterial3D.new()
-	puff_material.albedo_color = SMOKE_COLOR
-	puff_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	puff_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	puff.material = puff_material
-	smoke.mesh = puff
-	house.add_child(smoke)
+	var house: StaticBody3D = _collider("Homestead", size, HOMESTEAD_POSITION + Vector3(0.0, size.y * 0.5, 0.0))
+	house.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_HOUSE_STEPPED_GABLE, Vector3(0.0, -size.y * 0.5, 0.0), 0.0,
+		{&"size": size, &"tint": PLASTER_COLOR, &"accent": ROOF_TINTS[3]}))
 	# A cobbled path from the door to the lane.
+	var face_x: float = size.x * 0.5 + 0.06
+	var eave: float = size.y * 0.5
 	for step: int in 7:
 		house.add_child(ShapeKit.box("PathStone%d" % step, Vector3(0.7, 0.06, 0.6), Vector3(face_x + 0.8 + step * 1.45, -eave - 0.02, sin(step * 1.3) * 0.25),
 			_material(COBBLE_COLOR.darkened(0.05 * (step % 2)))))
 	return house
 
 
-## Seven cedar hives on stands in an arc along the east woodline, bowed toward
-## the north with every entrance facing south, and bees about them.
+## Seven cedar hives (17 GDD kit_bee_hive) on stands in an arc along the east
+## woodline, bowed toward the north with every entrance facing south, and bees about them.
 func _bee_hives() -> Node3D:
 	var hives: Node3D = _node3d("BeeHives")
-	var cedar: Material = _material(CEDAR_COLOR)
-	var dark_cedar: Material = _material(CEDAR_COLOR.darkened(0.18))
-	var lid: Material = _material(HIVE_LID_COLOR)
 	var body: StaticBody3D = StaticBody3D.new()
 	body.name = "HiveBodies"
 	body.collision_layer = ActorBase.LAYER_LOW_SCENERY
@@ -1355,30 +1291,28 @@ func _bee_hives() -> Node3D:
 	for index: int in HIVE_COUNT:
 		var angle: float = lerpf(PI * 0.12, PI * 0.88, float(index) / (HIVE_COUNT - 1))
 		var at: Vector3 = Vector3(HIVE_ARC_CENTER.x + cos(angle) * HIVE_ARC_RADIUS, 0.0, HIVE_ARC_CENTER.y - sin(angle) * HIVE_ARC_RADIUS)
-		var hive: Node3D = _node3d("Hive%d" % (index + 1))
-		hive.position = at
-		for leg_x: float in [-0.25, 0.25]:
-			hive.add_child(ShapeKit.box("Leg", Vector3(0.08, 0.35, 0.5), Vector3(leg_x, 0.175, 0.0), dark_cedar))
 		var boxes: int = 2 + index % 2
-		for level: int in boxes:
-			hive.add_child(ShapeKit.box("Box%d" % level, Vector3(0.56, 0.3, 0.5), Vector3(0.0, 0.5 + level * 0.31, 0.0), cedar if level % 2 == 0 else dark_cedar))
+		hives.add_child(WorldKitInstance.make("Hive%d" % (index + 1), WorldVisualCatalog.KIT_BEE_HIVE, at, 0.0, {&"height": float(boxes)}))
 		var top: float = 0.35 + boxes * 0.31
-		hive.add_child(ShapeKit.box("Lid", Vector3(0.66, 0.08, 0.6), Vector3(0.0, top + 0.04, 0.0), lid))
-		hive.add_child(ShapeKit.box("Entrance", Vector3(0.3, 0.04, 0.02), Vector3(0.0, 0.4, 0.26), _material(Color(0.12, 0.09, 0.07))))
-		hives.add_child(hive)
 		var shape: CollisionShape3D = CollisionShape3D.new()
 		var box: BoxShape3D = BoxShape3D.new()
 		box.size = Vector3(0.66, top + 0.1, 0.6)
 		shape.shape = box
 		shape.position = at + Vector3(0.0, (top + 0.1) * 0.5, 0.0)
 		body.add_child(shape)
+	hives.add_child(_bees("Bees", Vector3(HIVE_ARC_CENTER.x, 1.0, HIVE_ARC_CENTER.y - HIVE_ARC_RADIUS * 0.6), Vector3(HIVE_ARC_RADIUS, 0.5, HIVE_ARC_RADIUS * 0.5)))
+	return hives
+
+
+## Golden bees looping round their hives.
+func _bees(bees_name: String, where: Vector3, extents: Vector3) -> CPUParticles3D:
 	var bees: CPUParticles3D = CPUParticles3D.new()
-	bees.name = "Bees"
-	bees.position = Vector3(HIVE_ARC_CENTER.x, 1.0, HIVE_ARC_CENTER.y - HIVE_ARC_RADIUS * 0.6)
+	bees.name = bees_name
+	bees.position = where
 	bees.amount = 24
 	bees.lifetime = 2.5
 	bees.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-	bees.emission_box_extents = Vector3(HIVE_ARC_RADIUS, 0.5, HIVE_ARC_RADIUS * 0.5)
+	bees.emission_box_extents = extents
 	bees.direction = Vector3(0.0, 0.2, 1.0)
 	bees.spread = 180.0
 	bees.gravity = Vector3.ZERO
@@ -1389,52 +1323,35 @@ func _bee_hives() -> Node3D:
 	bee.height = 0.06
 	bee.radial_segments = 4
 	bee.rings = 2
-	bee.material = _material(Color(0.95, 0.78, 0.2))
+	bee.material = WorldVisualCatalog.glowing(Color(0.95, 0.78, 0.2), 0.6)
 	bees.mesh = bee
-	hives.add_child(bees)
-	return hives
+	bees.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return bees
 
 
-## A patch of tilled soil with heirloom pumpkins on their vines (no colliders: you can wade through).
-func _pumpkin_patch(patch_name: String, area: Rect2, patch_seed: int) -> Node3D:
+## A patch of tilled soil with ribbed heirloom pumpkins on their vines (17 GDD
+## kit_pumpkin_patch), inside knee-high mortared dry-stone walls on the
+## LowScenery layer, open on the side toward the lane (`open_side` -1 west, 1 east).
+func _pumpkin_patch(patch_name: String, area: Rect2, patch_seed: int, open_side: float = 0.0) -> Node3D:
 	var patch: Node3D = _node3d(patch_name)
 	patch.position = Vector3(area.get_center().x, 0.0, area.get_center().y)
-	patch.add_child(ShapeKit.box("Soil", Vector3(area.size.x, 0.06, area.size.y), Vector3(0.0, -0.02, 0.0), _material(SOIL_COLOR)))
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = 4242 + patch_seed
-	var vine: Material = _material(VINE_COLOR)
-	var rows: int = int(area.size.y / 2.2)
-	for row: int in rows:
-		var z: float = -area.size.y * 0.5 + 1.1 + row * 2.2
-		patch.add_child(ShapeKit.box("Vine%d" % row, Vector3(area.size.x - 1.0, 0.06, 0.12), Vector3(0.0, 0.05, z), vine))
-		var x: float = -area.size.x * 0.5 + 1.0
-		while x < area.size.x * 0.5 - 0.8:
-			var size: float = rng.randf_range(0.28, 0.5)
-			var color: Color = PUMPKIN_COLORS[rng.randi() % PUMPKIN_COLORS.size()]
-			var pumpkin_mesh: SphereMesh = SphereMesh.new()
-			pumpkin_mesh.radius = size
-			pumpkin_mesh.height = size * 1.3
-			pumpkin_mesh.radial_segments = 12
-			pumpkin_mesh.rings = 6
-			pumpkin_mesh.material = _material(color)
-			var pumpkin: MeshInstance3D = MeshInstance3D.new()
-			pumpkin.name = "Pumpkin"
-			pumpkin.mesh = pumpkin_mesh
-			pumpkin.position = Vector3(x, size * 0.6, z + rng.randf_range(-0.5, 0.5))
-			patch.add_child(pumpkin)
-			patch.add_child(ShapeKit.cylinder("Stem", 0.04, 0.06, 0.18, pumpkin.position + Vector3(0.0, size * 0.65 + 0.06, 0.0), vine, 6))
-			var leaf: MeshInstance3D = MeshInstance3D.new()
-			leaf.name = "Leaf"
-			var leaf_mesh: SphereMesh = SphereMesh.new()
-			leaf_mesh.radius = 0.32
-			leaf_mesh.height = 0.12
-			leaf_mesh.radial_segments = 8
-			leaf_mesh.rings = 3
-			leaf_mesh.material = vine
-			leaf.mesh = leaf_mesh
-			leaf.position = Vector3(x + rng.randf_range(0.4, 0.7), 0.08, z + rng.randf_range(-0.6, 0.6))
-			patch.add_child(leaf)
-			x += rng.randf_range(1.1, 1.7)
+	patch.add_child(WorldKitInstance.make("Pumpkins", WorldVisualCatalog.KIT_PUMPKIN_PATCH, Vector3.ZERO, 0.0,
+		{&"size": Vector3(area.size.x, 0.8, area.size.y), &"seed_value": patch_seed}))
+	if open_side == 0.0:
+		return patch
+	var half: Vector2 = area.size * 0.5 + Vector2(0.5, 0.5)
+	var sides: Array[Array] = [[Vector2(-half.x, -half.y), Vector2(half.x, -half.y)], [Vector2(-half.x, half.y), Vector2(half.x, half.y)],
+		[Vector2(-open_side * half.x, -half.y), Vector2(-open_side * half.x, half.y)]]
+	for index: int in sides.size():
+		var from: Vector2 = sides[index][0]
+		var to: Vector2 = sides[index][1]
+		var length: float = from.distance_to(to)
+		var wall: StaticBody3D = _low(_collider("Wall%d" % index, Vector3(0.5, 0.8, length), Vector3((from.x + to.x) * 0.5, 0.4, (from.y + to.y) * 0.5),
+			ActorBase.LAYER_LOW_SCENERY))
+		wall.rotation.y = atan2(to.x - from.x, to.y - from.y)
+		wall.add_child(WorldKitInstance.make("Stones", WorldVisualCatalog.KIT_DRYSTONE_WALL, Vector3(0.0, -0.4, 0.0), PI * 0.5,
+			{&"size": Vector3(length, 0.8, 0.5), &"seed_value": index + patch_seed * 3}))
+		patch.add_child(wall)
 	return patch
 
 
@@ -1451,25 +1368,61 @@ func _entity(node: Node3D) -> Node3D:
 func _bake_hlod(landblock: Node3D, path: String) -> Error:
 	get_root().add_child(landblock)
 	var merge: LandblockTerrain.MeshMerge = LandblockTerrain.MeshMerge.new()
+	# Kits stand in as their low-poly silhouettes (17 GDD §6.1 Ring 2: merged rooflines, simple crowns).
+	var stand_ins: Array[Node] = []
+	for node: Node in landblock.find_children("*", "Node3D", true, false):
+		var placed: WorldKitInstance = node as WorldKitInstance
+		if placed == null or not placed.is_visible_in_tree():
+			continue
+		var parts: WorldAssetCatalog.Parts = WorldAssetCatalog.Parts.new()
+		if not WorldAssetCatalog.hlod_parts(placed.kit_id, placed.options(), parts):
+			continue
+		stand_ins.append(placed)
+		_merge_surfaces(merge, parts.commit(), placed.global_transform)
 	for node: Node in landblock.find_children("*", "MeshInstance3D", true, false):
 		var shape: MeshInstance3D = node as MeshInstance3D
-		if shape.mesh == null or not shape.is_visible_in_tree():
+		if shape.mesh == null or not shape.is_visible_in_tree() or _inside_any(shape, stand_ins):
 			continue
 		var box: AABB = shape.global_transform * shape.mesh.get_aabb()
 		if box.get_longest_axis_size() < HLOD_MIN_SIZE:
 			continue
-		var arrays: Array = []
 		var primitive: PrimitiveMesh = _low_poly(shape.mesh as PrimitiveMesh)
 		if primitive != null:
-			arrays = primitive.get_mesh_arrays()
-		elif shape.mesh.get_surface_count() > 0:
-			arrays = shape.mesh.surface_get_arrays(0)
-		if arrays.is_empty():
+			merge.add_arrays(primitive.get_mesh_arrays(), shape.global_transform, _hlod_color(shape))
 			continue
-		merge.add_arrays(arrays, shape.global_transform, _hlod_color(shape))
+		# Any other detailed mesh (a station's kit, a wheel): each surface as its bounding box.
+		for surface: int in shape.mesh.get_surface_count():
+			var arrays: Array = shape.mesh.surface_get_arrays(surface)
+			if arrays.is_empty():
+				continue
+			var points: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			if points.size() <= HLOD_DETAILED_VERTICES:
+				merge.add_arrays(arrays, shape.global_transform, _hlod_color(shape, surface, arrays))
+				continue
+			var bounds: AABB = AABB(points[0], Vector3.ZERO)
+			for point: Vector3 in points:
+				bounds = bounds.expand(point)
+			var cube: BoxMesh = BoxMesh.new()
+			cube.size = bounds.size
+			merge.add_arrays(cube.get_mesh_arrays(), shape.global_transform * Transform3D(Basis.IDENTITY, bounds.get_center()), _hlod_color(shape, surface, arrays))
 	get_root().remove_child(landblock)
 	landblock.free()
 	return ResourceSaver.save(merge.commit(), path)
+
+
+## A stand-in's surfaces into the merge, each in its painted colour.
+func _merge_surfaces(merge: LandblockTerrain.MeshMerge, mesh: ArrayMesh, where: Transform3D) -> void:
+	for surface: int in mesh.get_surface_count():
+		var material: ShaderMaterial = mesh.surface_get_material(surface) as ShaderMaterial
+		var tint: Color = material.get_shader_parameter(&"albedo") if material != null else STONE_COLOR
+		merge.add_arrays(mesh.surface_get_arrays(surface), where, Color(tint, 1.0))
+
+
+func _inside_any(node: Node, roots: Array[Node]) -> bool:
+	for root: Node in roots:
+		if root == node or root.is_ancestor_of(node):
+			return true
+	return false
 
 
 ## A far-off copy of a round shape: a few sides is plenty at HLOD distance.
@@ -1496,22 +1449,32 @@ func _low_poly(primitive: PrimitiveMesh) -> PrimitiveMesh:
 	return copy
 
 
-## A shape's colour for the HLOD: its storybook albedo, a plain material's colour, or stone.
-func _hlod_color(shape: MeshInstance3D) -> Color:
+## A shape's colour for the HLOD: its material's albedo (times its vertex
+## colours, on leaves), a plain material's colour, or stone.
+func _hlod_color(shape: MeshInstance3D, surface: int = 0, arrays: Array = []) -> Color:
 	var material: Material = shape.material_override
 	if material == null:
 		var primitive: PrimitiveMesh = shape.mesh as PrimitiveMesh
-		material = primitive.material if primitive != null else shape.mesh.surface_get_material(0)
+		material = primitive.material if primitive != null else shape.mesh.surface_get_material(surface)
+	var tint: Color = STONE_COLOR
 	var cel: ShaderMaterial = material as ShaderMaterial
+	var standard: BaseMaterial3D = material as BaseMaterial3D
 	if cel != null:
-		for parameter: StringName in [&"albedo", &"base_color"]:
+		for parameter: StringName in [&"albedo", &"base_color", &"shallow_color"]:
 			var value: Variant = cel.get_shader_parameter(parameter)
 			if value is Color:
-				return value
-	var standard: BaseMaterial3D = material as BaseMaterial3D
-	if standard != null:
-		return Color(standard.albedo_color, 1.0)
-	return STONE_COLOR
+				tint = Color(value as Color, 1.0)
+				break
+	elif standard != null:
+		tint = Color(standard.albedo_color, 1.0)
+	if cel != null and cel.shader == WorldVisualCatalog.FOLIAGE_SHADER and arrays.size() > Mesh.ARRAY_COLOR and arrays[Mesh.ARRAY_COLOR] != null:
+		var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+		var sum: Color = Color(0.0, 0.0, 0.0)
+		for color: Color in colors:
+			sum += color
+		if not colors.is_empty():
+			tint *= sum / float(colors.size())
+	return tint
 
 
 # --- Expedition helpers ---------------------------------------------------
@@ -1572,7 +1535,7 @@ func _ramp(ramp_name: String, half_width: float, from_z: float, from_y: float, t
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.name = "Mesh"
 	mesh.mesh = _prism_mesh(profile, half_width * 2.0)
-	mesh.material_override = StorybookMaterial.double_sided(material)
+	mesh.material_override = WorldVisualCatalog.double_sided(material)
 	body.add_child(mesh)
 	return body
 
@@ -1686,9 +1649,10 @@ func _node3d(node_name: String) -> Node3D:
 	return node
 
 
-## Scenery in the storybook cel look (07 GDD §4.2).
+## Scenery in the storybook look (07 GDD §4.2), crafted by the atelier (17 GDD §3.2):
+## the colour says which craft it is (limestone, brick, lime-wash, timber, granite, loam or turf).
 func _material(color: Color) -> Material:
-	return StorybookMaterial.make(color)
+	return WorldVisualCatalog.craft_for_color(color)
 
 
 ## For what glows or shines (windows, lanterns, water): a plain material to light up.
@@ -1745,7 +1709,7 @@ func _pad(pad_name: String, radius: float, color: Color) -> MeshInstance3D:
 	disc.bottom_radius = radius
 	disc.height = 0.04
 	disc.radial_segments = 32
-	disc.material = _material(color)
+	disc.material = WorldVisualCatalog.painted(color)
 	var pad: MeshInstance3D = MeshInstance3D.new()
 	pad.name = pad_name
 	pad.mesh = disc

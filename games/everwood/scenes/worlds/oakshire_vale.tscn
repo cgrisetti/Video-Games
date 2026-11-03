@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://src/world/world_grid_manager.gd" id="2_gm6rm"]
 [ext_resource type="Shader" path="res://src/actors/storybook_cel_vertex.gdshader" id="3_mp2yd"]
 [ext_resource type="ArrayMesh" path="res://data/landblocks/oakshire_vale/horizon.res" id="4_4cpp1"]
-[ext_resource type="Shader" path="res://src/actors/storybook_cel.gdshader" id="5_qpfqk"]
+[ext_resource type="Shader" path="res://src/world/shaders/storybook_world_triplanar.gdshader" id="5_qpfqk"]
 [ext_resource type="Script" path="res://src/ui/split_screen_viewport_grid.gd" id="6_7vl6m"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sqier"]
@@ -48,11 +48,20 @@ shader_parameter/sheen_roughness = null
 render_priority = 0
 shader = ExtResource("5_qpfqk")
 shader_parameter/albedo = Color(0.32, 0.52, 0.9, 1)
-shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
-shader_parameter/rim_strength = 0.18
+shader_parameter/craft_layer = -1.0
+shader_parameter/triplanar_scale = 0.5
+shader_parameter/normal_strength = 0.55
+shader_parameter/keep_tint_value = null
+shader_parameter/moss_amount = 0.0
+shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
+shader_parameter/use_object_space = false
+shader_parameter/sightline_fade = false
+shader_parameter/succession_strength = null
+shader_parameter/rim_color = null
+shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
-shader_parameter/shade_color = null
+shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
 shader_parameter/metal = null
@@ -69,11 +78,20 @@ radial_segments = 32
 render_priority = 0
 shader = ExtResource("5_qpfqk")
 shader_parameter/albedo = Color(0.34, 0.76, 0.46, 1)
-shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
-shader_parameter/rim_strength = 0.18
+shader_parameter/craft_layer = -1.0
+shader_parameter/triplanar_scale = 0.5
+shader_parameter/normal_strength = 0.55
+shader_parameter/keep_tint_value = null
+shader_parameter/moss_amount = 0.0
+shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
+shader_parameter/use_object_space = false
+shader_parameter/sightline_fade = false
+shader_parameter/succession_strength = null
+shader_parameter/rim_color = null
+shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
-shader_parameter/shade_color = null
+shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
 shader_parameter/metal = null
@@ -90,11 +108,20 @@ radial_segments = 32
 render_priority = 0
 shader = ExtResource("5_qpfqk")
 shader_parameter/albedo = Color(0.92, 0.5, 0.22, 1)
-shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
-shader_parameter/rim_strength = 0.18
+shader_parameter/craft_layer = -1.0
+shader_parameter/triplanar_scale = 0.5
+shader_parameter/normal_strength = 0.55
+shader_parameter/keep_tint_value = null
+shader_parameter/moss_amount = 0.0
+shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
+shader_parameter/use_object_space = false
+shader_parameter/sightline_fade = false
+shader_parameter/succession_strength = null
+shader_parameter/rim_color = null
+shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
-shader_parameter/shade_color = null
+shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
 shader_parameter/metal = null
@@ -111,11 +138,20 @@ radial_segments = 32
 render_priority = 0
 shader = ExtResource("5_qpfqk")
 shader_parameter/albedo = Color(0.7, 0.45, 0.9, 1)
-shader_parameter/rim_color = Color(1, 0.92, 0.78, 1)
-shader_parameter/rim_strength = 0.18
+shader_parameter/craft_layer = -1.0
+shader_parameter/triplanar_scale = 0.5
+shader_parameter/normal_strength = 0.55
+shader_parameter/keep_tint_value = null
+shader_parameter/moss_amount = 0.0
+shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
+shader_parameter/use_object_space = false
+shader_parameter/sightline_fade = false
+shader_parameter/succession_strength = null
+shader_parameter/rim_color = null
+shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
-shader_parameter/shade_color = null
+shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
 shader_parameter/metal = null
@@ -128,67 +164,67 @@ bottom_radius = 0.8
 height = 0.04
 radial_segments = 32
 
-[node name="OakshireVale" type="Node3D" unique_id=1518488568]
+[node name="OakshireVale" type="Node3D" unique_id=606436550]
 script = ExtResource("1_b2ddv")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1108358122]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=678283054]
 environment = SubResource("Environment_60ia3")
 
-[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1484497802]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=776894922]
 transform = Transform3D(0.81915206, -0.46984634, 0.32898995, 0, 0.57357645, 0.81915206, -0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
 light_color = Color(1, 0.93, 0.8, 1)
 light_energy = 0.95
 shadow_enabled = true
 directional_shadow_max_distance = 60.0
 
-[node name="World" type="Node3D" parent="." unique_id=591504531]
+[node name="World" type="Node3D" parent="." unique_id=1548891425]
 script = ExtResource("2_gm6rm")
 layout_id = &"oakshire_vale"
 
-[node name="Horizon" type="MeshInstance3D" parent="." unique_id=671222444]
+[node name="Horizon" type="MeshInstance3D" parent="." unique_id=794647680]
 material_override = SubResource("ShaderMaterial_134dq")
 cast_shadow = 0
 mesh = ExtResource("4_4cpp1")
 
-[node name="SpawnPoints" type="Node3D" parent="." unique_id=1313067530]
+[node name="SpawnPoints" type="Node3D" parent="." unique_id=759245933]
 
-[node name="Spawn1" type="Marker3D" parent="SpawnPoints" unique_id=1993623043]
+[node name="Spawn1" type="Marker3D" parent="SpawnPoints" unique_id=672619506]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 732.03314, 19.81923, 1213.9973)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn1" unique_id=528891319]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn1" unique_id=82321180]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_ul7oq")
 
-[node name="Spawn2" type="Marker3D" parent="SpawnPoints" unique_id=1807770285]
+[node name="Spawn2" type="Marker3D" parent="SpawnPoints" unique_id=1788813582]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 735.03314, 19.81923, 1213.9973)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn2" unique_id=180929244]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn2" unique_id=1607187182]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_ys8o5")
 
-[node name="Spawn3" type="Marker3D" parent="SpawnPoints" unique_id=2017278048]
+[node name="Spawn3" type="Marker3D" parent="SpawnPoints" unique_id=1111367152]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 738.03314, 19.81923, 1213.9973)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn3" unique_id=1311041863]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn3" unique_id=1124707649]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_vpllu")
 
-[node name="Spawn4" type="Marker3D" parent="SpawnPoints" unique_id=517047325]
+[node name="Spawn4" type="Marker3D" parent="SpawnPoints" unique_id=1243589588]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 741.03314, 19.81923, 1213.9973)
 
-[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn4" unique_id=269750810]
+[node name="Pad" type="MeshInstance3D" parent="SpawnPoints/Spawn4" unique_id=371214009]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 mesh = SubResource("CylinderMesh_ko1oj")
 
-[node name="Actors" type="Node3D" parent="." unique_id=891461359]
+[node name="Actors" type="Node3D" parent="." unique_id=1566745884]
 
-[node name="Telegraphs" type="Node3D" parent="." unique_id=447420879]
+[node name="Telegraphs" type="Node3D" parent="." unique_id=1130422082]
 
-[node name="Effects" type="Node3D" parent="." unique_id=997323485]
+[node name="Effects" type="Node3D" parent="." unique_id=916882250]
 
-[node name="Screens" type="CanvasLayer" parent="." unique_id=990251592]
+[node name="Screens" type="CanvasLayer" parent="." unique_id=159274418]
 
-[node name="Grid" type="Control" parent="Screens" unique_id=567764265]
+[node name="Grid" type="Control" parent="Screens" unique_id=1071159850]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -196,7 +232,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("6_7vl6m")
 
-[node name="Banner" type="Label" parent="Screens" unique_id=8456850]
+[node name="Banner" type="Label" parent="Screens" unique_id=860099960]
 modulate = Color(1, 1, 1, 0.85)
 anchors_preset = 5
 anchor_left = 0.5

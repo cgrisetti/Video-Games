@@ -33,6 +33,12 @@
 ##     ambience, then in Oakshire Vale the 32-voice pool, the four combat
 ##     stages and the Sign stingers (the Cairnsman's stagger window and the
 ##     gate's plate harmonies are checked in the expedition)
+##   - the Living Storybook Atelier (tools/test_world_visuals.gd): the
+##     biome, kit and succession catalog, the atelier's texture arrays, the
+##     world shaders, crafted ground and clutter, low walls, gentle ramps and
+##     sightline fades, the 3 km camera and horizon ring, a Hush-Crack sealed
+##     into a cairn, the kit build queue; then in Oakshire Vale each part's
+##     biome, the village's and petals' landmarks and Pippin-Green's furrows
 ##   - and the Mythopoetic Lens (tools/test_mythopoetic_lens.gd): the four
 ##     Linter Rules over every name the game shows, the six-zone atlas, the
 ##     Hob-to-Boggart Spectrum (parley, turning boggart, the three
@@ -102,6 +108,8 @@ const OAKSHIRE_VALE_CHECKS: GDScript = preload("res://tools/test_oakshire_vale.g
 const MYTHOPOETIC_LENS_CHECKS: GDScript = preload("res://tools/test_mythopoetic_lens.gd")
 ## The adaptive score's checks (tools/test_adaptive_audio.gd): the trail's in the seamless world, the rest in Oakshire Vale.
 const ADAPTIVE_AUDIO_CHECKS: GDScript = preload("res://tools/test_adaptive_audio.gd")
+## The Living Storybook Atelier's checks (tools/test_world_visuals.gd): the world's in the seamless world, the vale's in Oakshire Vale.
+const WORLD_VISUALS_CHECKS: GDScript = preload("res://tools/test_world_visuals.gd")
 
 
 func _initialize() -> void:
@@ -171,7 +179,10 @@ func _run() -> void:
 	await WORLD_GRID_CHECKS.new().run(self, _check)
 	var audio: RefCounted = ADAPTIVE_AUDIO_CHECKS.new()
 	await audio.run_corridor(self, _check)
+	var visuals: RefCounted = WORLD_VISUALS_CHECKS.new()
+	await visuals.run_world(self, _check)
 	await OAKSHIRE_VALE_CHECKS.new().run(self, _check)
+	await visuals.run_vale(self, _check)
 	await MYTHOPOETIC_LENS_CHECKS.new().run(self, _check)
 	await audio.run_vale(self, _check)
 	_remove_file(TEST_SAVE_PATH)
@@ -211,8 +222,13 @@ func _check_hub_and_input_map() -> void:
 	_check(InputComponent.binding_label(InputComponent.ACTION_LIGHT, 0) == "J", "keyboard light reads as J")
 	_check(InputComponent.binding_label(InputComponent.ACTION_LIGHT, FAKE_PADS[0] + 1) == "X"
 		and InputComponent.binding_label(InputComponent.ACTION_TRIGGER_L, FAKE_PADS[0] + 1) == "LT", "a generic pad reads as Xbox letters")
-	var house: MeshInstance3D = hub.get_node(^"Town/House1/Mesh") as MeshInstance3D
-	_check(house != null and (house.mesh as PrimitiveMesh).material is ShaderMaterial, "Bramble-Bridge's houses wear the storybook cel shader")
+	var house: WorldKitInstance = hub.get_node(^"Town/House1/Kit") as WorldKitInstance
+	if house != null:
+		house.build()
+	var walls: MeshInstance3D = house.kit.get_node_or_null(^"Static") as MeshInstance3D if house != null and house.kit != null else null
+	var crafted: ShaderMaterial = walls.mesh.surface_get_material(0) as ShaderMaterial if walls != null else null
+	_check(crafted != null and crafted.shader == WorldVisualCatalog.TRIPLANAR_SHADER and house.kit_id == WorldVisualCatalog.KIT_HOUSE_STEPPED_GABLE,
+		"Bramble-Bridge's houses are stepped-gable kits in the storybook world shader (crafted, cel-lit)")
 	_check(InputComponent._pad_button_name(JOY_BUTTON_X, InputComponent.PadFamily.PLAYSTATION) == "□"
 		and InputComponent._pad_button_name(JOY_BUTTON_A, InputComponent.PadFamily.PLAYSTATION) == "✕", "a PlayStation pad reads as shapes")
 
