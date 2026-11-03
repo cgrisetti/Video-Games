@@ -83,6 +83,12 @@ func _check_linter() -> void:
 	shown.append_array(DungeonDojo.ZONE_NAMES)
 	shown.append_array(OakshireValeLayout.PETAL_NAMES)
 	shown.append_array(OakshireVale.PETAL_LINES)
+	for music: ZoneMusicProfileResource in AudioCatalog.zones():
+		shown.append(music.display_title)
+	for suite: BossAudioProfileResource in AudioCatalog.bosses():
+		shown.append(suite.display_title)
+	for voice: CallingAudioProfileResource in AudioCatalog.callings():
+		shown.append(voice.display_name)
 	for zone: StewardshipZoneResource in MythopoeticAtlas.all():
 		shown.append_array([zone.display_name, zone.kin, zone.crack, zone.payoff])
 		shown.append_array(Array(zone.rhyme_lines))

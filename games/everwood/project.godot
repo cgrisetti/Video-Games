@@ -22,6 +22,7 @@ Network="*res://src/autoloads/network_manager.gd"
 Instance="*res://src/autoloads/instance_manager.gd"
 Combat="*res://src/autoloads/combat_director.gd"
 Audio="*res://src/autoloads/audio_cues.gd"
+Score="*res://src/core/audio_director.gd"
 Progress="*res://src/autoloads/party_progress.gd"
 
 [debug]

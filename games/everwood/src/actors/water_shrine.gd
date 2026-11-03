@@ -15,6 +15,8 @@ signal blessed(by_player_id: StringName)
 
 ## Standing this close (in the mist) is touching it.
 const TOUCH_RADIUS: float = 1.9
+## The spring trickles quieter while it rests.
+const RESTING_TRICKLE_DB: float = -6.0
 ## Seconds before it can bless again.
 const REST_TIME: float = 40.0
 const BASIN_RADIUS: float = 0.9
@@ -36,9 +38,13 @@ var persistence: WorldStateBinding
 var _water: StandardMaterial3D
 var _mist: CPUParticles3D
 var _glow: OmniLight3D
+var _trickle: AudioStreamPlayer3D
 
 
 func _ready() -> void:
+	# Standing by the spring lifts the Holloway's hush into a harp oasis (16 GDD §4.3).
+	add_to_group(AudioDirector.OASIS_GROUP)
+	_trickle = AudioDirector.attach_ambience(self, &"water_trickle", Vector3(0.0, BASIN_HEIGHT, 0.0))
 	var stone: Material = _material(STONE_COLOR, 0.0)
 	add_child(ShapeKit.cylinder("Basin", BASIN_RADIUS, BASIN_RADIUS, BASIN_HEIGHT, Vector3(0.0, BASIN_HEIGHT * 0.5, 0.0), stone, 20))
 	add_child(ShapeKit.cylinder("Moss", BASIN_RADIUS + 0.06, BASIN_RADIUS + 0.06, 0.12, Vector3(0.0, BASIN_HEIGHT - 0.04, 0.0), _material(MOSS_COLOR, 0.0), 20))
@@ -108,6 +114,7 @@ func _physics_process(delta: float) -> void:
 	_water.emission_energy_multiplier = 1.2 * ready_glow
 	_glow.light_energy = 1.4 * ready_glow
 	_mist.emitting = not is_resting()
+	_trickle.volume_db = RESTING_TRICKLE_DB if is_resting() else 0.0
 	if is_resting() or not NetworkManager.current.is_host() or not InstanceManager.current.is_live():
 		return
 	for member: ActorBase in CombatDirector.current.party_actors():

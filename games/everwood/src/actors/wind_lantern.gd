@@ -29,6 +29,7 @@ var _age: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group(AudioDirector.OASIS_GROUP)
 	_age = position.x * 1.7 + position.z * 0.9
 	_pivot = Node3D.new()
 	_pivot.name = "Pivot"

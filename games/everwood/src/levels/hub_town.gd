@@ -30,6 +30,10 @@ func home_place() -> String:
 	return "Bramble-Bridge"
 
 
+func music_profile_at(_position: Vector3) -> StringName:
+	return LandblockManifest.ZONE_MUSIC[LandblockManifest.Zone.BRAMBLEBRIDGE]
+
+
 func level_hint() -> String:
 	return "Raid Portal: set out for the Cairnsman · Chime-Shrine: %d Chimes · Scribe Desk: armor, weapons, cards and Calling\n%s" % [
 		PartyProgress.current.chimes, CHANGE_KEYS]

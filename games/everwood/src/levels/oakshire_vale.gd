@@ -14,6 +14,8 @@ class_name OakshireVale
 extends LevelBase
 
 const TITLE: String = "Oakshire Vale"
+## The vale's score (16_ADAPTIVE_AUDIO_ARCHITECTURE.md §4.6).
+const MUSIC_PROFILE: StringName = &"oakshire_vale"
 const QUEST_COLOR: Color = Color(1.0, 0.82, 0.25)
 const REGION_COLOR: Color = Color(0.86, 0.94, 0.7)
 const QUEST_BANNER_TIME: float = 6.0
@@ -54,6 +56,10 @@ func level_title() -> String:
 
 func home_place() -> String:
 	return "Wayfarer-Green"
+
+
+func music_profile_at(_position: Vector3) -> StringName:
+	return MUSIC_PROFILE
 
 
 func level_hint() -> String:

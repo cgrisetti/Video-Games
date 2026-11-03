@@ -28,7 +28,12 @@
 ##     trees and boulders, townsfolk, portal aprons and spawners, then walking
 ##     it from Wayfarer-Green into the village, through the ford and up to a
 ##     sealed portal
-##   - and last the Mythopoetic Lens (tools/test_mythopoetic_lens.gd): the four
+##   - the adaptive score (tools/test_adaptive_audio.gd): buses, the catalog
+##     and code-built stems, each zone's score up the trail, the station
+##     ambience, then in Oakshire Vale the 32-voice pool, the four combat
+##     stages and the Sign stingers (the Cairnsman's stagger window and the
+##     gate's plate harmonies are checked in the expedition)
+##   - and the Mythopoetic Lens (tools/test_mythopoetic_lens.gd): the four
 ##     Linter Rules over every name the game shows, the six-zone atlas, the
 ##     Hob-to-Boggart Spectrum (parley, turning boggart, the three
 ##     un-boggartings, the Maker-Seal, the Challenge-Roar) and the Chime-Post
@@ -81,6 +86,8 @@ var _refusals: PackedStringArray = PackedStringArray()
 var _healer_states: Array[StringName] = []
 var _cue_sounds: Array[StringName] = []
 var _audio_cues: Array[StringName] = []
+## Stingers the AudioDirector played (cadences, fanfares, Sign chords).
+var _stingers_heard: Array[StringName] = []
 var _portal_countdowns: int = 0
 var _projectiles: Array[StringName] = []
 var _invocations: Array[int] = []
@@ -93,6 +100,8 @@ const WORLD_GRID_CHECKS: GDScript = preload("res://tools/test_world_grid.gd")
 const OAKSHIRE_VALE_CHECKS: GDScript = preload("res://tools/test_oakshire_vale.gd")
 ## The Mythopoetic Lens's checks (tools/test_mythopoetic_lens.gd), last, in Oakshire Vale.
 const MYTHOPOETIC_LENS_CHECKS: GDScript = preload("res://tools/test_mythopoetic_lens.gd")
+## The adaptive score's checks (tools/test_adaptive_audio.gd): the trail's in the seamless world, the rest in Oakshire Vale.
+const ADAPTIVE_AUDIO_CHECKS: GDScript = preload("res://tools/test_adaptive_audio.gd")
 
 
 func _initialize() -> void:
@@ -160,8 +169,11 @@ func _run() -> void:
 	_check_audio_cues()
 	NetworkManager.current.leave_game()
 	await WORLD_GRID_CHECKS.new().run(self, _check)
+	var audio: RefCounted = ADAPTIVE_AUDIO_CHECKS.new()
+	await audio.run_corridor(self, _check)
 	await OAKSHIRE_VALE_CHECKS.new().run(self, _check)
 	await MYTHOPOETIC_LENS_CHECKS.new().run(self, _check)
+	await audio.run_vale(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
@@ -750,6 +762,10 @@ func _check_doverslap_expedition() -> void:
 	dps.place_at(Transform3D(Basis.IDENTITY, Vector3(6.0, 0.0, 11.0)))
 	await _seconds(CoopGate.PLATE_HOLD_TIME + 0.5)
 	_check(not gate.is_open, "one plate alone doesn't open it for a party of three")
+	var drone: AudioStreamPlayer3D = gate.get_node(^"Ambience_gate_drone") as AudioStreamPlayer3D
+	var counter: AudioStreamPlayer3D = gate.get_node(^"Ambience_gate_counter") as AudioStreamPlayer3D
+	_check(is_zero_approx(drone.volume_db) and counter.volume_db <= -79.0 and _stingers_heard.has(&"gate_fanfare"),
+		"one Maker-Seal Plate held hums the A2-E3 drone (the counter-line waits for the second), and the open gate rang its A Lydian fanfare")
 	# Way two: a Shield-Sworn shelters the bell-ringer from the gale.
 	await _until_idle(tank)
 	tank.place_at(Transform3D(Basis.IDENTITY, gate.to_global(Vector3(0.0, 0.0, 2.2))))
@@ -1231,6 +1247,13 @@ func _check_poise_and_knockdown() -> void:
 	CombatDirector.current.deliver(_strike(tank, boss, 40.0, 0.0))
 	await _seconds(0.05)
 	_check(boss.stats.is_knocked_down() and is_equal_approx(before - boss.stats.health, 50.0), "a knocked-down boss takes x1.25 damage")
+	# The Cairnsman's suite and its Poise-Stagger Lydian window (16 GDD §5.3, Stage C).
+	var score: AudioDirector = AudioDirector.current
+	score.wait_for_renders()
+	score.evaluate_now()
+	_check(score.state == AudioDirector.AcousticState.BOSS and score.stagger_window and score.get_active_profile_id() == &"cairnsmans_vigil"
+		and is_zero_approx(score.get_stem_target_db(1)) and is_equal_approx(score.get_stem_target_db(3), -14.0) and _stingers_heard.has(&"poise_stagger_flourish"),
+		"knocked down, the Cairnsman's Vigil opens its Poise-Stagger window: the D Lydian harp flourish swells to 0 dB and the percussion drops 14 dB (boss engaged: %s)" % boss.engaged)
 	_reset_boss_poise()
 
 
@@ -2709,6 +2732,7 @@ func _orphan_count() -> int:
 
 func _connect_global_signals() -> void:
 	var director: CombatDirector = CombatDirector.current
+	AudioDirector.current.stinger_played.connect(func(id: StringName, _notes: PackedInt32Array) -> void: _stingers_heard.append(id))
 	director.hit_stop_applied.connect(func(_duration: float) -> void: _hit_stops += 1)
 	director.primer_applied.connect(func(_target: ActorBase, primer: int) -> void: _primers.append(primer))
 	director.synergy_detonated.connect(func(_target: ActorBase, _primer: int, cross_class: bool, label: String) -> void:

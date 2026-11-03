@@ -97,6 +97,16 @@ func home_place() -> String:
 	return ""
 
 
+## The ZoneMusicProfileResource id that plays at a spot (16 GDD §5.2; &"" for none).
+func music_profile_at(_position: Vector3) -> StringName:
+	return &""
+
+
+## A spot's z on the Bramble-Bridge trail, for a profile's depth blend (the expedition shifts its own).
+func music_world_z(position: Vector3) -> float:
+	return position.z
+
+
 ## Whether AI companions fill missing roles here (raids yes, Hub Town no).
 func wants_companions() -> bool:
 	return false
@@ -439,7 +449,12 @@ func _on_calling_cycle(device_id: int) -> void:
 		return
 	if seat != null:
 		var column: int = Callings.resolve(seat.class_id, Callings.column_of(seat.calling))
-		NetworkManager.current.update_local_calling(device_id, Callings.id_of(Callings.next_secondary(column)))
+		var secondary: StringName = Callings.id_of(Callings.next_secondary(column))
+		NetworkManager.current.update_local_calling(device_id, secondary)
+		# The new Calling's posture motif over the zone's tonic (16 GDD §3.2).
+		for calling: CallingResource in ArsenalCatalog.current.callings():
+			if calling.fellowship_class_id == seat.class_id and calling.secondary_id == secondary and AudioDirector.current != null:
+				AudioDirector.current.play_calling_motif(calling.calling_id)
 
 
 func _on_mode_cycle(device_id: int) -> void:

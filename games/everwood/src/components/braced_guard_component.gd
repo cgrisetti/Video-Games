@@ -107,7 +107,7 @@ func filter_strike(event: CombatEvent) -> void:
 	if front:
 		event.damage *= BRACED_FRONT_DAMAGE_MULT
 		event.poise_damage *= TANK_GUARD_POISE_MULT if _cracks_guard(event) else BRACED_FRONT_POISE_MULT
-		AudioCues.play(&"hit", 0.55, -2.0)
+		AudioCues.play_at(&"hit", actor.global_position, 0.55, -2.0)
 		CombatDirector.current.show_float_text(_above(), "CLUNK", DEFLECT_COLOR, 30)
 	elif breaks_flank(event):
 		event.damage *= FLANK_BREACH_DAMAGE_MULT

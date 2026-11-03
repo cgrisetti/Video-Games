@@ -36,6 +36,8 @@ const LIGHT_RANGE: float = 10.0
 const FLICKER: float = 0.28
 ## Burning low (resting), the fire glows this much of its full.
 const LOW_BURN: float = 0.35
+## The fire's crackle drops this far while it burns low (16 GDD §4.1).
+const LOW_CRACKLE_DB: float = -6.0
 const TRIPOD_HEIGHT: float = 1.9
 
 ## Its WorldStateDB id (10_WORLD_ARCHITECTURE.md §4.2); empty: not remembered.
@@ -47,12 +49,15 @@ var persistence: WorldStateBinding
 var _light: OmniLight3D
 var _flames: CPUParticles3D
 var _embers: CPUParticles3D
+## The crackle and kettle bubble (Ambience3D).
+var _crackle: AudioStreamPlayer3D
 var _core: MeshInstance3D
 var _core_material: StandardMaterial3D
 var _age: float = 0.0
 
 
 func _ready() -> void:
+	_crackle = AudioDirector.attach_ambience(self, &"hearth_fire", Vector3(0.0, 0.5, 0.0))
 	_build_ring()
 	_build_fire()
 	_build_kettle()
@@ -97,6 +102,7 @@ func _process(delta: float) -> void:
 	_flames.scale_amount_min = 0.6 * burn
 	_flames.scale_amount_max = 1.2 * burn
 	_embers.emitting = not is_resting()
+	_crackle.volume_db = LOW_CRACKLE_DB if is_resting() else 0.0
 
 
 func _physics_process(delta: float) -> void:

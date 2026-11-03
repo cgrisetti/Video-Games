@@ -308,7 +308,7 @@ func report_hit(attacker: ActorBase, target: ActorBase, action: CombatActionReso
 	attacker.stats.add_resonance(action.resonance_gain * (FLOW_RESONANCE_MULTIPLIER if flowed else 1.0))
 	attacker.stats.restore_stamina(action.echo_stamina_on_hit)
 	if attacker.is_local_player():
-		AudioCues.play(&"hit", 1.15 / maxf(0.7, action.hit_stop_scale), -4.0)
+		AudioCues.play_at(&"hit", target.global_position, 1.15 / maxf(0.7, action.hit_stop_scale), -4.0)
 	if action.damage > 0.0:
 		show_float_text(_above(target), str(roundi(action.damage)), Color(1.0, 0.94, 0.78))
 	var event: CombatEvent = CombatEvent.strike_from(attacker, target, action)
@@ -964,7 +964,7 @@ func _fire(attacker: ActorBase, action: CombatActionResource, origin: Vector3, d
 		return
 	var shot: RuneProjectile = fx_pool.take(StringName("shot:%s" % action.projectile_look), _make_projectile.bind(action.projectile_look)) as RuneProjectile
 	shot.launch(attacker, action, origin, direction, real, flowed)
-	AudioCues.play(&"shot", 1.0 if action.is_card() else SHOT_PITCH_PLAIN, SHOT_VOLUME_DB)
+	AudioCues.play_at(&"shot", origin, 1.0 if action.is_card() else SHOT_PITCH_PLAIN, SHOT_VOLUME_DB)
 	projectile_fired.emit(attacker, action)
 
 

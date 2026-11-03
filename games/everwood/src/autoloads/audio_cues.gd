@@ -1,7 +1,11 @@
 ## Audio cues (autoload "Audio"): short sounds synthesized in code the first
-## time each is played, so the game ships no audio files. Cues are
-## non-positional, so every couch player hears the big moments equally.
+## time each is played, so the game ships no audio files. Most cues are
+## non-positional, so every couch player hears the big moments equally; Sign
+## and telegraph cues go out on the SignTelegraphs bus, the rest on CombatSFX
+## (AudioDirector builds the buses). Hits and shots play where they happen,
+## through AudioDirector's 32-voice 3D pool (play_at).
 ##   AudioCues.play(&"synergy_frost")
+##   AudioCues.play_at(&"hit", target.global_position)
 class_name AudioCues
 extends Node
 
@@ -18,6 +22,9 @@ const CUES: Array[StringName] = [&"hit", &"flow", &"perfect_guard", &"seal_iron_
 	&"seal_warm_hearth", &"seal_star_tide", &"shot", &"equip", &"card_chime", &"card_chime_foil", &"card_chime_astral", &"reward", &"knockdown", &"telegraph", &"soak_ok", &"soak_fail", &"heal", &"join",
 	&"portal_charge", &"portal", &"victory", &"chest", &"purchase", &"refuse", &"menu_move", &"chime", &"lantern", &"shrine",
 	&"gale", &"bell", &"gate", &"camp_cleared", &"beam", &"wade"]
+## Cues that carry a Sign or a telegraph: they key the Music bus's sidechain duck.
+const SIGN_CUES: Array[StringName] = [&"seal_iron_root", &"seal_rime_gale", &"seal_warm_hearth", &"seal_star_tide", &"telegraph", &"beam",
+	&"soak_ok", &"soak_fail"]
 ## How fast each note fades: amplitude reaches e^-DECAY at the note's end.
 const DECAY: float = 3.5
 
@@ -78,6 +85,18 @@ static func play(cue: StringName, pitch: float = 1.0, volume_db: float = 0.0) ->
 		current.play_cue(cue, pitch, volume_db)
 
 
+## Plays a cue at a spot in the world through AudioDirector's 3D voice pool
+## (culled beyond 45 m of every local player, 50 ms apart per cue).
+static func play_at(cue: StringName, at: Vector3, pitch: float = 1.0, volume_db: float = 0.0) -> void:
+	if current == null:
+		return
+	if AudioDirector.current == null:
+		current.play_cue(cue, pitch, volume_db)
+		return
+	AudioDirector.current.play_sfx_3d(cue, at, current.stream_for(cue), VOLUME_DB + volume_db, pitch)
+	current.cue_played.emit(cue)
+
+
 func play_cue(cue: StringName, pitch: float = 1.0, volume_db: float = 0.0) -> void:
 	if _silent:
 		cue_played.emit(cue)
@@ -85,6 +104,7 @@ func play_cue(cue: StringName, pitch: float = 1.0, volume_db: float = 0.0) -> vo
 	var voice: AudioStreamPlayer = _voices[_next_voice]
 	_next_voice = (_next_voice + 1) % _voices.size()
 	voice.stream = stream_for(cue)
+	voice.bus = &"SignTelegraphs" if SIGN_CUES.has(cue) else &"CombatSFX"
 	voice.pitch_scale = clampf(pitch, 0.25, 4.0)
 	voice.volume_db = VOLUME_DB + volume_db
 	voice.play()

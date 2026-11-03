@@ -21,6 +21,8 @@ const BOWL_COLOR: Color = Color(0.5, 0.38, 0.26)
 const GLOW_COLOR: Color = Color(1.0, 0.82, 0.45)
 const COIN_SIZE: float = 0.5
 const COIN_HEIGHT: float = 1.75
+## The shrine's pentatonic carillon harmonics, kept soft under the square (16 GDD §4.2).
+const CARILLON_DB: float = -8.0
 const COIN_SPIN: float = 1.4
 const COIN_BOB: float = 2.0
 const BELL_SWAY: float = 0.12
@@ -32,6 +34,7 @@ var _age: float = 0.0
 
 
 func _ready() -> void:
+	AudioDirector.attach_ambience(self, &"carillon", Vector3(0.0, COIN_HEIGHT, PLINTH_Z), CARILLON_DB)
 	var plinth: StaticBody3D = StaticBody3D.new()
 	plinth.name = "Plinth"
 	plinth.position = Vector3(0.0, PLINTH_SIZE.y * 0.5, PLINTH_Z)

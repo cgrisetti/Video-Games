@@ -97,6 +97,23 @@ func home_place() -> String:
 	return ZONE_NAMES[1]
 
 
+## Each zone plays the score of its place on the seamless trail.
+func music_profile_at(position: Vector3) -> StringName:
+	return LandblockManifest.ZONE_MUSIC[_zone_at(position.z)]
+
+
+## Zone 1 is the trail's Moss-Oak-Hollow moved to the origin, so its sunken lane blends at the same depth.
+func music_world_z(position: Vector3) -> float:
+	return position.z + LandblockManifest.MOSS_OAKS_ORIGIN.z if _zone_at(position.z) == 1 else position.z
+
+
+## The zone a spot is in, by how far north it is.
+func _zone_at(z: float) -> int:
+	if z < ZONE_THREE_Z:
+		return 3
+	return 2 if z < ZONE_TWO_Z else 1
+
+
 func level_hint() -> String:
 	if chest != null and chest.is_open:
 		return "Victory! The gold portal is taking you home"

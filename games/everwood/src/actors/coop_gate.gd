@@ -28,6 +28,12 @@ const TIMBER_COLOR: Color = Color(0.36, 0.25, 0.15)
 const IRON_COLOR: Color = Color(0.3, 0.3, 0.33)
 ## Seconds the plates must be held together.
 const PLATE_HOLD_TIME: float = 2.0
+## The plates' harmonies (16 GDD §4.4): one plate held brings in an A2-E3 drone,
+## two an A Dorian counter-line; they swell and fade at this many dB a second.
+const HARMONY_FADE_DB_PER_SEC: float = 120.0
+const HARMONY_MUTED_DB: float = -80.0
+## The gate's A Lydian fanfare when it opens.
+const FANFARE_NOTES: Array[int] = [69, 73, 75, 76, 81]
 const MAX_PLATES_NEEDED: int = 2
 ## The plates on the bridge's side bays and the winch before the portcullis (in the gate's frame).
 const PLATE_SPOTS: Array[Vector3] = [Vector3(-4.8, 0.0, 10.0), Vector3(4.8, 0.0, 10.0)]
@@ -50,9 +56,13 @@ var persistence: WorldStateBinding
 var _portcullis: StaticBody3D
 var _portcullis_collision: CollisionShape3D
 var _sink: Tween
+var _drone: AudioStreamPlayer3D
+var _counter: AudioStreamPlayer3D
 
 
 func _ready() -> void:
+	_drone = AudioDirector.attach_ambience(self, &"gate_drone", Vector3(0.0, 1.5, 0.0), HARMONY_MUTED_DB)
+	_counter = AudioDirector.attach_ambience(self, &"gate_counter", Vector3(0.0, 1.5, 0.0), HARMONY_MUTED_DB)
 	_build_portcullis()
 	for index: int in PLATE_SPOTS.size():
 		var plate: RunePlate = RunePlate.new()
@@ -84,6 +94,7 @@ static func plates_needed(standing: int) -> int:
 
 func _physics_process(delta: float) -> void:
 	if is_open:
+		_score_plates(0, delta)
 		return
 	var party: Array[ActorBase] = CombatDirector.current.alive_party()
 	var occupied: int = 0
@@ -94,6 +105,7 @@ func _physics_process(delta: float) -> void:
 		if stood_on:
 			occupied += 1
 		plate.show_state(stood_on, hold_time / PLATE_HOLD_TIME)
+	_score_plates(occupied, delta)
 	if not NetworkManager.current.is_host() or not InstanceManager.current.is_live():
 		return
 	hold_time = hold_time + delta if occupied >= plates_needed(party.size()) and not party.is_empty() else 0.0
@@ -176,11 +188,20 @@ func _open(method: int) -> void:
 	else:
 		AudioCues.play(&"bell")
 	AudioCues.play(&"gate")
+	if AudioDirector.current != null:
+		AudioDirector.current.play_chord_stinger(&"gate_fanfare", PackedInt32Array(FANFARE_NOTES), 0.08, &"HARP")
 	for plate: RunePlate in plates:
 		plate.show_state(true, 1.0)
 	if persistence != null:
 		persistence.save({"opened": true, "method": method})
 	opened.emit(method)
+
+
+## The plates' harmonies follow how many are held (none once the gate is open).
+func _score_plates(occupied: int, delta: float) -> void:
+	var step: float = HARMONY_FADE_DB_PER_SEC * delta
+	_drone.volume_db = move_toward(_drone.volume_db, 0.0 if occupied >= 1 else HARMONY_MUTED_DB, step)
+	_counter.volume_db = move_toward(_counter.volume_db, 0.0 if occupied >= 2 else HARMONY_MUTED_DB, step)
 
 
 ## Host: seals the gate again (the smoke test tries both ways to open it).

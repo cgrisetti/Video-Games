@@ -82,6 +82,10 @@ func home_place() -> String:
 	return "Honey-Wick"
 
 
+func music_profile_at(position: Vector3) -> StringName:
+	return LandblockManifest.music_profile_at(position)
+
+
 func level_hint() -> String:
 	if chest != null and is_instance_valid(chest) and chest.is_open:
 		return "Victory! The gold portal is taking you home to Bramble-Bridge"

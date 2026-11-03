@@ -119,6 +119,17 @@ const FOOTPRINTS: Array[Rect2] = [Rect2(40.0, 0.5, 48.0, 63.0), Rect2(30.0, -56.
 	Rect2(75.0, 146.0, 22.0, 14.0)]
 
 
+## Each zone's score (16_ADAPTIVE_AUDIO_ARCHITECTURE.md §4), by Zone.
+const ZONE_MUSIC: Array[StringName] = [&"bramble_bridge_square", &"moss_oak_hollow", &"dover_slap_falls", &"ring_of_the_cairnsman",
+	&"honey_wick"]
+
+
+## The score at a world spot: its corridor chunk's, or (out in the crags) its row's.
+static func music_profile_at(position: Vector3) -> StringName:
+	var row: int = clampi(WorldGridConfig.world_to_chunk(position).y, -3, COMMONS_CHUNK.y)
+	return ZONE_MUSIC[zone_of(Vector2i(0, row)) if row != COMMONS_CHUNK.y else Zone.OAKSHIRE_COMMONS]
+
+
 static func zone_of(chunk: Vector2i) -> Zone:
 	if chunk == COMMONS_CHUNK:
 		return Zone.OAKSHIRE_COMMONS
