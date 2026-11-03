@@ -23,6 +23,14 @@
 ## Reed-Light Scribery show at 2.2x, here at 1.0x, with each socket's
 ## Place-Card framing its Action-Leaf, the Hearth-Rite filling and glowing, the
 ## Flow-Link Window flashing and a gold beat when a Glimmer-Spot is yours to crack.
+##
+## The Mythopoetic Lens (15_THE_MYTHOPOETIC_LENS.md §6.2) adds two things:
+## - the Chime-Post ribbon: crossing into a zone, or finishing a Hearth-Rite
+##   Tuck there, unfurls a couplet of the zone's nursery rhyme above the cross
+##   for 7 s, its coaching words tinted by the Sign they mean ("feed him a
+##   coal" in Saffron-Gold), so a parent can read it aloud from the couch;
+## - the Hearth-Rite border: while the hero carries a Hearth-Rite Tuck, a
+##   Saffron-Gold ember border glows round their cell.
 class_name CrossGrimoireHUD
 extends Control
 
@@ -55,6 +63,19 @@ const DETONATE_PROMPT_RANGE: float = 12.0
 const VERB_TIME: float = 0.9
 const VERB_FONT_SIZE: int = 30
 const VERB_RISE: float = 26.0
+## The Chime-Post ribbon: how long a couplet shows, its fade, and where it sits
+## (its bottom this far above the cross's centre, in cross units).
+const RIBBON_TIME: float = 7.0
+const RIBBON_FADE: float = 0.6
+const RIBBON_RISE: float = 236.0
+const RIBBON_FONT_SIZE: int = 21
+const RIBBON_TITLE_SIZE: int = 14
+const RIBBON_BACK: Color = Color(0.1, 0.07, 0.04, 0.74)
+const RIBBON_EDGE: Color = Color(0.86, 0.68, 0.36, 0.9)
+## The Hearth-Rite border's Saffron-Gold and width.
+const EMBER_COLOR: Color = Color(1.0, 0.76, 0.28)
+const EMBER_WIDTH: float = 5.0
+const EMBER_SPARKS: int = 9
 
 var actor: ActorBase
 ## Slots by the command that fires them (LIGHT also names the weapon hub).
@@ -75,6 +96,16 @@ var _pips_flash_left: float = 0.0
 var _verb: String = ""
 var _verb_color: Color = GOLD
 var _verb_left: float = 0.0
+## The zone this hero is in, for the Chime-Post ribbon (MythopoeticAtlas id).
+var ribbon_zone_id: StringName = &""
+var _ribbon: PanelContainer
+var _ribbon_label: RichTextLabel
+var _ribbon_left: float = 0.0
+var _ribbon_plain: String = ""
+## Which couplet each zone sings next.
+var _couplet_turn: Dictionary[StringName, int] = {}
+var _ember: Control
+var _ember_age: float = 0.0
 
 
 func setup(target_actor: ActorBase) -> void:
@@ -113,10 +144,19 @@ func _ready() -> void:
 	diorama.set_display_scale(CrossGrimoireDiamondWidget.HUD_SCALE, false)
 	diorama.position = Vector2(_cell_rect(Vector2i(1, 0)).end.x + GAP * 1.5, -CrossGrimoireDiamondWidget.BASE_SIZE.y * 0.5)
 	_cross.add_child(diorama)
+	_build_ribbon()
+	_ember = Control.new()
+	_ember.name = "HearthRiteBorder"
+	_ember.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ember.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_ember.draw.connect(_draw_ember)
+	add_child(_ember)
 	if actor != null:
 		actor.action_queue.action_started.connect(_on_action_started)
 		actor.action_queue.buffer_changed.connect(_on_buffer_changed)
 		CombatDirector.current.synergy_detonated.connect(_on_synergy_detonated)
+		if actor.sign_flow != null:
+			actor.sign_flow.hearth_rite_prepared.connect(_on_hearth_rite_prepared)
 		_last_resonance = actor.stats.resonance_charge
 		_refresh_loadout()
 
@@ -188,6 +228,113 @@ func _process(delta: float) -> void:
 	slots[CombatActionResource.Command.TRIGGER_R_SKILL].detonate_ready = detonate_prompt()
 	status_text = _status()
 	_cross.queue_redraw()
+	_place_ribbon(delta, cross_scale)
+	_ember_age += delta
+	_ember.queue_redraw()
+
+
+# --- The Chime-Post ribbon and the Hearth-Rite border (15 GDD §6.2) ------------------
+
+## Sets the zone this hero is in; with `unfurl`, its next couplet shows now.
+func show_rhyme_ribbon(zone_id: StringName, unfurl: bool = true) -> void:
+	ribbon_zone_id = zone_id
+	if unfurl:
+		_unfurl()
+
+
+## The couplet showing on the ribbon, as plain text ("" when none is).
+func ribbon_text() -> String:
+	return _ribbon_plain if _ribbon_left > 0.0 else ""
+
+
+## The couplet showing, with its Sign tints (BBCode).
+func ribbon_bbcode() -> String:
+	return _ribbon_label.text if _ribbon_left > 0.0 else ""
+
+
+## Whether the Saffron-Gold Hearth-Rite border is glowing.
+func hearth_rite_border_lit() -> bool:
+	return is_instance_valid(actor) and actor.sign_flow != null and actor.sign_flow.has_hearth_rite_tuck
+
+
+func _unfurl() -> void:
+	var zone: StewardshipZoneResource = MythopoeticAtlas.zone(ribbon_zone_id)
+	if zone == null or zone.couplet_count() == 0:
+		return
+	var turn: int = _couplet_turn.get(ribbon_zone_id, 0)
+	_couplet_turn[ribbon_zone_id] = turn + 1
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var colors: Dictionary[int, Color] = {}
+	for sign_id: int in [ScribeSignResource.Sign.SIGN_IRON_ROOT, ScribeSignResource.Sign.SIGN_RIME_GALE,
+			ScribeSignResource.Sign.SIGN_WARM_HEARTH, ScribeSignResource.Sign.SIGN_STAR_TIDE]:
+		colors[sign_id] = catalog.sign_seal(sign_id).color.lightened(0.15)
+	_ribbon_plain = zone.couplet(turn)
+	_ribbon_label.text = "[center][font_size=%d]%s · %s[/font_size]\n%s[/center]" % [RIBBON_TITLE_SIZE,
+		zone.display_name.to_upper(), zone.cooper_sign.to_upper(), zone.couplet_bbcode(turn, colors)]
+	_ribbon_left = RIBBON_TIME
+	AudioCues.play(&"chime", 1.2, -10.0)
+
+
+func _on_hearth_rite_prepared(_socket: int) -> void:
+	if ribbon_zone_id != &"":
+		_unfurl()
+
+
+func _build_ribbon() -> void:
+	_ribbon = PanelContainer.new()
+	_ribbon.name = "ChimePostRibbon"
+	_ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var back: StyleBoxFlat = StyleBoxFlat.new()
+	back.bg_color = RIBBON_BACK
+	back.border_color = RIBBON_EDGE
+	back.set_border_width_all(2)
+	back.set_corner_radius_all(10)
+	back.content_margin_left = 18.0
+	back.content_margin_right = 18.0
+	back.content_margin_top = 6.0
+	back.content_margin_bottom = 8.0
+	_ribbon.add_theme_stylebox_override("panel", back)
+	_ribbon_label = RichTextLabel.new()
+	_ribbon_label.name = "Couplet"
+	_ribbon_label.bbcode_enabled = true
+	_ribbon_label.fit_content = true
+	_ribbon_label.scroll_active = false
+	_ribbon_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_ribbon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ribbon_label.add_theme_font_size_override("normal_font_size", RIBBON_FONT_SIZE)
+	_ribbon_label.add_theme_constant_override("outline_size", 6)
+	_ribbon_label.add_theme_color_override("font_outline_color", OUTLINE)
+	_ribbon_label.add_theme_color_override("default_color", Color(0.98, 0.94, 0.84))
+	_ribbon.add_child(_ribbon_label)
+	_ribbon.visible = false
+	add_child(_ribbon)
+
+
+func _place_ribbon(delta: float, cross_scale: float) -> void:
+	_ribbon_left = maxf(0.0, _ribbon_left - delta)
+	_ribbon.visible = _ribbon_left > 0.0
+	if not _ribbon.visible:
+		return
+	_ribbon.reset_size()
+	_ribbon.scale = Vector2.ONE * cross_scale
+	var shown: Vector2 = _ribbon.size * cross_scale
+	_ribbon.position = Vector2(size.x * 0.5 - shown.x * 0.5, _cross.position.y - RIBBON_RISE * cross_scale - shown.y)
+	var fade: float = minf(1.0, minf(_ribbon_left, RIBBON_TIME - _ribbon_left) / RIBBON_FADE)
+	_ribbon.modulate = Color(1.0, 1.0, 1.0, fade)
+
+
+## A pulsing Saffron-Gold border with embers drifting up from its foot.
+func _draw_ember() -> void:
+	if not hearth_rite_border_lit():
+		return
+	var pulse: float = 0.6 + 0.3 * sin(_ember_age * 3.2)
+	var rect: Rect2 = Rect2(Vector2.ZERO, _ember.size).grow(-EMBER_WIDTH * 0.5)
+	_ember.draw_rect(rect, Color(EMBER_COLOR, pulse), false, EMBER_WIDTH)
+	for index: int in EMBER_SPARKS:
+		var rise: float = fmod(_ember_age * 0.35 + index * 0.37, 1.0)
+		var x: float = _ember.size.x * (index + 0.5) / EMBER_SPARKS + sin(_ember_age * 2.0 + index) * 8.0
+		var y: float = _ember.size.y - EMBER_WIDTH - rise * _ember.size.y * 0.12
+		_ember.draw_circle(Vector2(x, y), 3.0 * (1.0 - rise), Color(EMBER_COLOR.lightened(0.2), (1.0 - rise) * pulse))
 
 
 ## The floating verb over the cross right now ("" when none is showing).

@@ -2,20 +2,20 @@
 ## tools/smoke_test.gd once the classic tests are done: it moves the seated
 ## party into the Landblock world and walks it up the corridor.
 ##   1  the grid's coordinate maths and the split-screen union
-##   0  the start: the party wakes round the Kindled Bivouac's campfire in
+##   0  the start: the party wakes round the Kindle-Fire's campfire in
 ##      Chunk (0, 1) facing the lane, the fire warms everyone to full, and one
-##      player walks the walled lane through Oakshire Commons, in at
-##      Bramblebridge's south gate and over the canal bridge, which makes the
+##      player walks the walled lane through Honey-Wick, in at
+##      Bramble-Bridge's south gate and over the canal bridge, which makes the
 ##      square the party's checkpoint
 ##   2  the four layers and their hysteresis as the party goes from Chunk
 ##      (0, 0) to (0, -3), and the HLOD proxies swapping out and back in
 ##   3  the 2 ms attach queue spreading work over frames and draining, and no
 ##      orphaned nodes after chunks stream out and back
 ##   4  WorldStateDB: a cleared camp, an opened Wayfarer's Chest, a resting
-##      Water-Shrine and an open Sinaya Gatehouse survive their chunks
+##      Water-Shrine and an open Dover-Slap Gatehouse survive their chunks
 ##      unloading (the party parked in Chunk (0, 2)) and streaming back in,
 ##      and a latecomer's snapshot carries all of it
-##   5  a navigation path from Bramblebridge's square across the seam at
+##   5  a navigation path from Bramble-Bridge's square across the seam at
 ##      z = 0 into the Moss-Oaks, through the Forest Gate
 ## With Terrain3D installed the world draws its ground with it (Mode A): the
 ## checks also follow its regions in and out, then reload the world on the
@@ -87,7 +87,7 @@ func _check_grid_math() -> void:
 		"split-screen players in the village and on the gorge share one union: 15 of the 18 bounded chunks within 1 of either")
 
 
-# --- 0: waking at the Kindled Bivouac --------------------------------------------
+# --- 0: waking at the Kindle-Fire --------------------------------------------
 
 func _check_bivouac_start() -> void:
 	var fire: Vector3 = LandblockManifest.CAMPFIRE_POSITION
@@ -98,10 +98,10 @@ func _check_bivouac_start() -> void:
 		var toward_lane: Vector3 = (lane_start - person.global_position) * Vector3(1.0, 0.0, 1.0)
 		round_fire = round_fire and gap > HearthCampfire.WARM_RADIUS and gap < 6.0 and person.is_on_floor() and person.facing_vector().dot(toward_lane.normalized()) > 0.6
 	check.call(not EverwoodWorld.town_square_reached and round_fire and WorldGridConfig.world_to_chunk(_people()[0].global_position) == LandblockManifest.COMMONS_CHUNK,
-		"the party wakes round the Kindled Bivouac's campfire in Chunk (0, 1), on its feet and facing up the lane")
+		"the party wakes round the Kindle-Fire's campfire in Chunk (0, 1), on its feet and facing up the lane")
 	check.call(grid.get_chunk_state(Vector2i(0, 1)) == FULL and grid.get_chunk_state(Vector2i(0, 0)) == FULL
 		and grid.get_chunk_state(Vector2i(0, -1)) == WorldGridManager.ChunkState.VISUAL_CLUTTER and grid.get_chunk_state(Vector2i(0, -2)) == WorldGridManager.ChunkState.HORIZON_HLOD,
-		"from the campfire: the commons and Bramblebridge fully in, the Moss-Oaks as clutter, the gorge as horizon")
+		"from the campfire: the commons and Bramble-Bridge fully in, the Moss-Oaks as clutter, the gorge as horizon")
 	var commons: Node3D = grid.gameplay_root(LandblockManifest.COMMONS_CHUNK)
 	var town: Node3D = grid.gameplay_root(Vector2i(0, 0))
 	var hives: int = 0
@@ -121,9 +121,9 @@ func _check_bivouac_start() -> void:
 			low_walls = low_walls and wall.collision_layer == ActorBase.LAYER_LOW_SCENERY and wall.global_position.y + box.size.y * 0.5 < 0.75
 	var lantern: WindLantern = commons.find_child("WindLantern", true, false) as WindLantern if commons != null else null
 	check.call(world.campfire != null and world.campfire.persist_id == LandblockManifest.CAMPFIRE and commons.find_child("Homestead", true, false) != null
-		and hives == 7 and patches == 2 and lantern != null, "Oakshire Commons is there: the campfire, the stepped-gable homestead, 7 bee-hives, 2 pumpkin patches and a Wind-Lantern on the oak's limb")
+		and hives == 7 and patches == 2 and lantern != null, "Honey-Wick is there: the campfire, the stepped-gable homestead, 7 bee-hives, 2 pumpkin patches and a Wind-Lantern on the oak's limb")
 	check.call(walls > 40 and low_walls and town != null and town.find_child("SouthGateBeam", true, false) != null and town.find_child("WallSouth", true, false) == null,
-		"%d pieces of knee-high dry-stone wall line the lane (LowScenery, so cameras see past them), into Bramblebridge's new south gate" % walls)
+		"%d pieces of knee-high dry-stone wall line the lane (LowScenery, so cameras see past them), into Bramble-Bridge's new south gate" % walls)
 	var steepest: float = 0.0
 	for index: int in LandblockManifest.LANE.size() - 1:
 		var from: Vector2 = LandblockManifest.LANE[index]
@@ -209,9 +209,9 @@ func _check_lane_walk() -> void:
 func _check_world_start() -> void:
 	check.call(grid.get_chunk_state(Vector2i(0, 0)) == FULL and grid.get_chunk_state(Vector2i(0, -1)) == FULL
 		and grid.get_chunk_state(Vector2i(0, -2)) == WorldGridManager.ChunkState.VISUAL_CLUTTER and grid.get_chunk_state(Vector2i(0, -3)) == WorldGridManager.ChunkState.HORIZON_HLOD,
-		"from Bramblebridge's square: the village and the Moss-Oaks fully in, the gorge as clutter, the Ring as horizon")
+		"from Bramble-Bridge's square: the village and the Moss-Oaks fully in, the gorge as clutter, the Ring as horizon")
 	check.call(not grid.is_hlod_visible(Vector2i(0, -1)) and grid.is_hlod_visible(Vector2i(0, -2)) and grid.is_hlod_visible(Vector2i(0, -3)),
-		"the Sinaya Gatehouse's and the standing stones' HLOD proxies stand on the horizon; the loaded Moss-Oaks' is hidden")
+		"the Dover-Slap Gatehouse's and the standing stones' HLOD proxies stand on the horizon; the loaded Moss-Oaks' is hidden")
 	var town: Node3D = grid.gameplay_root(Vector2i(0, 0))
 	check.call(town != null and town.find_child("ForestGate", true, false) != null and town.find_child("GateBlocker", true, false) == null
 		and world.raid_portal != null and world.raid_portal.target_instance == InstanceManager.DUNGEON_DOJO and world.chime_shrine != null and world.scribe_desk != null,
@@ -319,7 +319,7 @@ func _check_world_state_persistence() -> void:
 	var chest: RewardChest = world.wayfarer_chest
 	var shrine: WaterShrine = world.water_shrine
 	var gate: CoopGate = world.coop_gate
-	check.call(camp != null and chest != null and shrine != null and gate != null and camp.minions.size() == 3, "the Bramble Camp, the Wayfarer's Chest, the Water-Shrine and the Sinaya Gatehouse are streamed in")
+	check.call(camp != null and chest != null and shrine != null and gate != null and camp.minions.size() == 3, "the Bramble Hush-Crack, the Wayfarer's Chest, the Water-Shrine and the Dover-Slap Gatehouse are streamed in")
 	if camp == null or chest == null or shrine == null or gate == null:
 		return
 	var ids: Array[int] = [camp.get_instance_id(), chest.get_instance_id(), shrine.get_instance_id(), gate.get_instance_id()]

@@ -1,11 +1,13 @@
-## One kind of wild creature in a starting zone (13_STARTING_ZONE_ENCOUNTER_DESIGN.md §2):
-## its family, numbers, how it fights and how it's drawn. Pure data; the
-## Bestiary registers them and WildMob plays them.
+## One kind of creature in a starting zone (13_STARTING_ZONE_ENCOUNTER_DESIGN.md §2):
+## its family, numbers, how it fights, where it stands on the Hob-to-Boggart
+## Spectrum and how it's un-boggarted (15_THE_MYTHOPOETIC_LENS.md §6.1), and how
+## it's drawn. Pure data; the Bestiary registers them and WildMob plays them.
 class_name MobVariantResource
 extends Resource
 
-## The six starting-zone families.
-enum Family { MEADOW_VERMIN, WEALD_PREDATORS, SOOT_PAW_OUTLAWS, BLIGHT_THORN, CHIME_WIGHTS, WILDLIFE }
+## The six starting-zone families: five kin of the First-Quiet, and the wildlife
+## (sheep, foxes and the roaming Crag-Back Cairn-Drake).
+enum Family { CURIOUS_WEALD_WIGHTS, PADFOOT_BOGGARTS, FURROW_IRON_MEN, BRAMBLE_HOBS, CRAG_SPRIGGANS, WILDLIFE }
 ## How it's ranked: a common mob, a rare, an elite, or the roaming mini-boss.
 enum Rank { COMMON, RARE, ELITE, BOSS }
 ## Which code-built body it wears (WildMob).
@@ -13,7 +15,7 @@ enum Body { BOAR, SCUTTLER, WOLF, TOAD, HUMANOID, VINE, SHAMBLER, HULK, WIGHT, B
 
 @export var variant_id: StringName = &""
 @export var display_name: String = ""
-@export var family: Family = Family.MEADOW_VERMIN
+@export var family: Family = Family.CURIOUS_WEALD_WIGHTS
 @export var rank: Rank = Rank.COMMON
 @export var level: int = 1
 
@@ -44,14 +46,26 @@ enum Body { BOAR, SCUTTLER, WOLF, TOAD, HUMANOID, VINE, SHAMBLER, HULK, WIGHT, B
 @export var projectile_range: float = 16.0
 
 @export_group("Temper")
-## Turns on a player this close (0: neutral, it only fights back once hurt).
+## Turns on a player this close (0: a curious hob, it only fights back once wronged).
 @export var aggro_radius: float = 0.0
-## Roams its spawner's patrol path when it isn't fighting (the Crag-Back Behemoth).
+## Roams its spawner's patrol path when it isn't fighting (the Crag-Back Cairn-Drake).
 @export var patrols: bool = false
 ## Rooted to its spot (a lasher vine).
 @export var rooted: bool = false
 ## A heavy bell-stomp heard as it walks.
 @export var stomps: bool = false
+
+@export_group("Spirit")
+## Where it stands on the Hob-to-Boggart Spectrum when it appears.
+@export var equilibrium: HobSpectrumComponent.EquilibriumState = HobSpectrumComponent.EquilibriumState.BOGGART_AWOKEN
+## How it's un-boggarted when beaten.
+@export var resolution: HobSpectrumComponent.UnboggartResolution = HobSpectrumComponent.UnboggartResolution.STATE_UNBOGGART_RELEASE
+## What a released spirit becomes.
+@export var release_form: HobSpectrumComponent.ReleaseForm = HobSpectrumComponent.ReleaseForm.HEDGE_WREN
+## Bellows a 45-frame Challenge-Roar before its first blow (a Cairn-Drake).
+@export var roars: bool = false
+## Wears a chest Maker-Seal that starts upside-down (a Furrow Iron-Man).
+@export var has_maker_seal: bool = false
 
 @export_group("Look")
 @export var body: Body = Body.BOAR

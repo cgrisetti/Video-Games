@@ -33,7 +33,7 @@ const RANGER_LEATHER: StringName = &"ranger_leather"
 const IRONWOOD_PLATE: StringName = &"ironwood_plate"
 ## The trail's first coat: every Fellowship's Level 1 armor.
 const BRAMBLE_JERKIN: StringName = &"armor_bramble_jerkin"
-# The classic weapons (05 GDD §2.2): Bramblebridge steel, with the base numbers
+# The classic weapons (05 GDD §2.2): Bramble-Bridge steel, with the base numbers
 # every trail tier is a multiple of.
 const LIGHT_SWORD: StringName = &"light_sword"
 const HEAVY_AXE: StringName = &"heavy_axe"
@@ -49,12 +49,12 @@ const IRON_FALCHION: StringName = &"weapon_iron_falchion"
 const COPPICE_BROADAXE: StringName = &"weapon_coppice_broadaxe"
 const COPPER_WAYSTAFF: StringName = &"weapon_copper_waystaff"
 const HORN_LONGBOW: StringName = &"weapon_horn_longbow"
-# Tier 3: Bramblebridge Steel.
+# Tier 3: Bramble-Bridge Steel.
 const BRAMBLE_FALCHION: StringName = &"weapon_bramble_falchion"
 const MILL_BROADAXE: StringName = &"weapon_mill_broadaxe"
 const SCRIBE_WAYSTAFF: StringName = &"weapon_scribe_waystaff"
 const WEALD_LONGBOW: StringName = &"weapon_weald_longbow"
-# Tier 4: Doverslap Relic.
+# Tier 4: Dover-Slap Relic.
 const CAIRNSMAN_FALCHION: StringName = &"weapon_cairnsman_falchion"
 const DOVERSLAP_BROADAXE: StringName = &"weapon_doverslap_broadaxe"
 const CARILLON_WAYSTAFF: StringName = &"weapon_carillon_waystaff"
@@ -70,7 +70,7 @@ const TIER_WEAPONS: Array[Array] = [
 ## The classic weapon of each WeaponType: the template its tiers scale.
 const CLASSIC_WEAPONS: Array[StringName] = [LIGHT_SWORD, HEAVY_AXE, SCRIBE_STAFF, HUNTER_BOW]
 ## Each tier's name, opening level, damage and poise multiplier and palette (11 GDD §5.1), Tier 1 first.
-const TIER_NAMES: Array[String] = ["Apprentice Timber", "Hedgerow Iron", "Bramblebridge Steel", "Doverslap Relic"]
+const TIER_NAMES: Array[String] = ["Apprentice Timber", "Hedgerow Iron", "Bramble-Bridge Steel", "Dover-Slap Relic"]
 const TIER_LEVELS: Array[int] = [1, 2, 5, 10]
 const TIER_MULTIPLIERS: Array[float] = [1.0, 1.2, 1.45, 1.75]
 ## Unvarnished hazel, hammered dark iron, milled steel, gilded Carillon bronze.
@@ -81,7 +81,7 @@ const TIER_TRIMS: Array[Color] = [Color(0.851, 0.765, 0.604), Color(0.78, 0.6, 0
 const TIER_GRIPS: Array[Color] = [Color(0.851, 0.765, 0.604), Color(0.478, 0.322, 0.188), Color(0.2, 0.32, 0.36), Color(0.29, 0.2, 0.15)]
 const TIER_METALLIC: Array[float] = [0.0, 0.55, 0.8, 0.9]
 const TIER_ROUGHNESS: Array[float] = [0.85, 0.6, 0.35, 0.25]
-## The Doverslap relics' glowing Sign-stone.
+## The Dover-Slap relics' glowing Sign-stone.
 const SIGN_STONE_COLOR: Color = Color(1.0, 0.9, 0.62)
 ## Each WeaponType's Un-Inked Martial Flourishes (11 GDD §4.1): R, then L+R.
 const UNINKED_NAMES: Array[Array] = [
@@ -110,7 +110,7 @@ const MOONFALL_CLEAVE: StringName = &"moonfall_cleave"
 const EMBER_AEGIS: StringName = &"ember_aegis"
 const STARLIT_VOLLEY: StringName = &"starlit_volley"
 const DAWNBREAKER: StringName = &"dawnbreaker"
-# Uncommon cards found on the Doverslap Expedition (the Wayfarer's Chest).
+# Uncommon cards found on the Dover-Slap-Falls Expedition (the Wayfarer's Chest).
 const HOLLOWAY_LUNGE: StringName = &"holloway_lunge"
 const ROOT_SNARE_STEP: StringName = &"root_snare_step"
 const LANTERN_MOTE: StringName = &"lantern_mote"
@@ -514,7 +514,7 @@ func roll_card_drop(rng: RandomNumberGenerator) -> StringName:
 			break
 	var variant: ScribeCardResource.CardVariant = roll_variant(rng)
 	if chosen.starter and variant == ScribeCardResource.CardVariant.STANDARD:
-		variant = ScribeCardResource.CardVariant.SHINY_FOIL
+		variant = ScribeCardResource.CardVariant.GILDED_LEAF
 	return ScribeCardResource.copy_key(chosen.card_id, variant)
 
 
@@ -640,19 +640,19 @@ func _seal(scribe_sign: Sign, label: String, seal_name: String, detonation: Stri
 # --- Armor (05 GDD §2.1) --------------------------------------------------
 
 func _build_armor() -> void:
-	var linen: EquipmentItemResource = _armor(HEARTH_LINEN, "Hearth-Linen", EquipmentItemResource.ArmorWeight.LIGHT, 0.10, 27.5, 5.2, 0.20,
+	var linen: EquipmentItemResource = _armor(HEARTH_LINEN, "Hearth-Linen Coat", EquipmentItemResource.ArmorWeight.LIGHT, 0.10, 27.5, 5.2, 0.20,
 		"Light and quick: long rolls and fast stamina for healers and archers.")
 	linen.prop_parts = [PropPartResource.make(Part.CYLINDER, Vector3(0.5, 0.14, 0.5), Vector3(0.0, 1.5, 0.0), Color(0.93, 0.88, 0.76))]
 	register_item(linen)
-	var leather: EquipmentItemResource = _armor(RANGER_LEATHER, "Ranger Leather", EquipmentItemResource.ArmorWeight.MEDIUM, 0.20, 22.0, 4.6, 0.20,
+	var leather: EquipmentItemResource = _armor(RANGER_LEATHER, "Hedgerow Wool-Mantle", EquipmentItemResource.ArmorWeight.MEDIUM, 0.20, 22.0, 4.6, 0.20,
 		"The all-rounder: fair protection, fair footwork.")
 	leather.prop_parts = [
 		PropPartResource.make(Part.CYLINDER, Vector3(0.49, 0.14, 0.49), Vector3(0.0, 0.95, 0.0), Color(0.42, 0.28, 0.16)),
 		PropPartResource.make(Part.BOX, Vector3(0.12, 0.6, 0.06), Vector3(0.2, 1.25, -0.43), Color(0.42, 0.28, 0.16), Vector3(0.0, 0.0, -25.0)),
 	]
 	register_item(leather)
-	var plate: EquipmentItemResource = _armor(IRONWOOD_PLATE, "Ironwood Plate", EquipmentItemResource.ArmorWeight.HEAVY, 0.35, 18.0, 3.8, 0.26,
-		"Heavy plate for the front line: shrugs off blows, rolls short, and widens the Perfect Guard window.")
+	var plate: EquipmentItemResource = _armor(IRONWOOD_PLATE, "Iron-Wood Ring-Coat", EquipmentItemResource.ArmorWeight.HEAVY, 0.35, 18.0, 3.8, 0.26,
+		"A heavy iron-wood ring-coat for the front line: shrugs off blows, rolls short, and widens the Perfect Guard window.")
 	var iron: Color = Color(0.55, 0.57, 0.6)
 	plate.prop_parts = [
 		PropPartResource.make(Part.BOX, Vector3(0.34, 0.16, 0.42), Vector3(-0.42, 1.45, 0.0), iron, Vector3(0.0, 0.0, 18.0)),
@@ -692,7 +692,7 @@ func _build_weapons() -> void:
 	var wood: Color = Color(0.45, 0.3, 0.18)
 
 	var sword: EquipmentItemResource = _weapon(LIGHT_SWORD, "Falchion", EquipmentItemResource.WeaponType.LIGHT_SWORD,
-		EquipmentItemResource.DeliveryVector.MELEE, "A crisp three-cut chain and an advancing thrust. Cards land as rune-wreathed cuts.")
+		EquipmentItemResource.DeliveryVector.MELEE, "A crisp three-cut chain and an advancing thrust. Cards land as Sign-wreathed cuts.")
 	var slash_1: CombatActionResource = _strike(&"slash_1", "Slash", Cmd.LIGHT, 0.15, 0.1, 0.3, 10.0, 8.0)
 	slash_1.poise_damage = 4.0
 	slash_1.resonance_gain = 0.07
@@ -795,7 +795,7 @@ func _build_weapons() -> void:
 	register_item(staff)
 
 	var bow: EquipmentItemResource = _weapon(HUNTER_BOW, "Yew Longbow", EquipmentItemResource.WeaponType.BOW,
-		EquipmentItemResource.DeliveryVector.RANGED_ARROW, "Stepping snap-shots and a planted, piercing draw. Cards fly as rune arrows.")
+		EquipmentItemResource.DeliveryVector.RANGED_ARROW, "Stepping snap-shots and a planted, piercing draw. Cards fly as Sign-arrows.")
 	var snap_1: CombatActionResource = _shot(&"snap_shot_1", "Snap-Shot", Cmd.LIGHT, 0.14, 0.08, 0.34, 10.0, 8.0, 14.0, 34.0)
 	snap_1.lunge_distance = -0.6
 	snap_1.resonance_gain = 0.06
@@ -828,7 +828,7 @@ func _build_weapons() -> void:
 		PropPartResource.make(Part.CYLINDER, Vector3(0.008, 1.5, 0.008), Vector3(-0.5, 1.15, -0.27), Color(0.95, 0.95, 0.9)),
 	]
 	register_item(bow)
-	# The classics are Bramblebridge steel with the base numbers, open from Level 5.
+	# The classics are Bramble-Bridge steel with the base numbers, open from Level 5.
 	for classic: EquipmentItemResource in [sword, axe, staff, bow]:
 		classic.equipment_tier = EquipmentItemResource.EquipmentTier.TIER_3_STEEL
 		classic.required_level = TIER_LEVELS[2]
@@ -852,13 +852,13 @@ func _build_tier_weapons() -> void:
 		["Turned-Hazel Falchion", "Split-Ash Broad-Axe", "Reed-Light Way-Staff", "Willow-Coppice Longbow"],
 		["Hedgerow Iron Falchion", "Coppice-Forged Broad-Axe", "Copper-Shod Way-Staff", "Horn-Tipped Yew Longbow"],
 		["Bramble-Steel Falchion", "Mill-Forged Broad-Axe", "Scribe-Banded Way-Staff", "Weald-Ranger Yew Longbow"],
-		["Cairnsman's Span-Blade", "Doverslap Cleaver-Axe", "Arch-Scribe's Carillon Staff", "Gorge-Wind Greatbow"],
+		["Cairnsman's Span-Blade", "Dover-Slap Cleaver-Axe", "Arch-Scribe's Carillon Staff", "Gorge-Wind Greatbow"],
 	]
 	var blurbs: PackedStringArray = [
 		"Lathe-turned practice arms bound in hemp cord.",
 		"Hammered hedgerow iron on an oak grip, riveted in brass.",
-		"Bright milled steel from the Bramblebridge forge, with a brass bell-guard.",
-		"A Doverslap relic of gilded Carillon bronze and star-etched steel, a Sign-stone glowing in its pommel.",
+		"Bright milled steel from the Bramble-Bridge forge, with a brass bell-guard.",
+		"A Dover-Slap relic of gilded Carillon bronze and star-etched steel, a Sign-stone glowing in its pommel.",
 	]
 	for tier_index: int in TIER_WEAPONS.size():
 		for weapon_type: int in CLASSIC_WEAPONS.size():
@@ -1149,7 +1149,7 @@ func _build_lead_cards() -> void:
 	gale.hit_stop_scale = 2.2
 	gale.resonance_gain = 0.0
 	gale.primer = Sign.SIGN_STAR_TIDE
-	_trail_find(_lead(gale, Slot.ULTIMATE, Sign.SIGN_STAR_TIDE, "The Doverslap's gale bursts out around you, stamping the Sign of Star-Tide (3 pips).",
+	_trail_find(_lead(gale, Slot.ULTIMATE, Sign.SIGN_STAR_TIDE, "Dover-Slap-Falls' gale bursts out around you, stamping the Sign of Star-Tide (3 pips).",
 		ScribeCardResource.Delivery.AT_CASTER))
 
 
@@ -1329,16 +1329,16 @@ func _scribery_leaf(leaf: ScribeCardResource) -> ScribeCardResource:
 
 ## The four Place-Cards (14 GDD §4.2), charted at the Reed-Light Scribery.
 func _build_place_cards() -> void:
-	var oaks: ScribeCardResource = _place(ARIUNDLE_MOSS_OAKS, "Ariundle Moss-Oaks", Sign.SIGN_IRON_ROOT, &"ariundle_trail_chime_post",
+	var oaks: ScribeCardResource = _place(ARIUNDLE_MOSS_OAKS, "Moss-Oak-Hollow", Sign.SIGN_IRON_ROOT, &"ariundle_trail_chime_post",
 		"Root-Bind: mossy oak bark sprouts on the blade; every coated strike lands 15 more poise.")
 	oaks.location_bonus_poise = 15.0
-	var gorge: ScribeCardResource = _place(DOVERSLAP_GORGE, "Doverslap Gorge Bridge", Sign.SIGN_RIME_GALE, &"doverslap_gatehouse",
+	var gorge: ScribeCardResource = _place(DOVERSLAP_GORGE, "Dover-Slap-Bridge", Sign.SIGN_RIME_GALE, &"doverslap_gatehouse",
 		"Gorge-Draft: a sweeping river-mist arc reaches 0.8 m further.")
 	gorge.location_bonus_reach_m = 0.8
-	var mill: ScribeCardResource = _place(BRAMBLEBRIDGE_MILL, "Bramblebridge Hearth-Mill", Sign.SIGN_WARM_HEARTH, &"bramblebridge_green",
+	var mill: ScribeCardResource = _place(BRAMBLEBRIDGE_MILL, "Bramble-Bridge Hearth-Mill", Sign.SIGN_WARM_HEARTH, &"bramblebridge_green",
 		"Mill-Warmth: casting pulses a warm ember ring that mends friends within 4 m for 10.")
 	mill.location_bonus_heal = 10.0
-	var tor: ScribeCardResource = _place(BARROW_CRAG_TOR, "Barrow-Crag Star-Tor", Sign.SIGN_STAR_TIDE, &"ring_of_the_cairnsman",
+	var tor: ScribeCardResource = _place(BARROW_CRAG_TOR, "Barrow-Crag-Crossing", Sign.SIGN_STAR_TIDE, &"ring_of_the_cairnsman",
 		"Star-Spark: violet starlight on the weapon gives back 8 stamina on every Flow-Link cancel.")
 	tor.location_stamina_refund = 8.0
 
@@ -1366,7 +1366,7 @@ func _build_encounters() -> void:
 	_encounter(SCREE_WORM, "Scree-Worm", BossEncounterResource.ThreatTier.TIER_1_MINOR_PEBBLE, 2, [Sign.SIGN_IRON_ROOT], 0, 0, "", "")
 	_encounter(SHINGLE_SCRAY, "Shingle-Scray", BossEncounterResource.ThreatTier.TIER_2_TRAIL_WARDEN, 7, [Sign.SIGN_RIME_GALE], 210, 150, "",
 		"dive")
-	_encounter(CAIRNSMAN, "The Cairnsman of Doverslap", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 5,
+	_encounter(CAIRNSMAN, "The Cairnsman of Dover-Slap-Falls", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 5,
 		[Sign.SIGN_IRON_ROOT, Sign.SIGN_STAR_TIDE], 180, 120,
 		"When the cairn-core glows and the old stones roar,\nring Iron-Root or Star-Tide and he'll stand no more!", "roar")
 	_encounter(GALE_BUCCA, "The Gale-Bucca", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 10, [Sign.SIGN_STAR_TIDE], 180, 120,
@@ -1380,9 +1380,9 @@ func _build_encounters() -> void:
 	_encounter(TOR_SLEEPER, "The Tor-Sleeper", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 50,
 		[Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE], 75, 45,
 		"Mantle, then tether, then strike with your Sign:\nthe Tor-Sleeper wakes when the three fall in line.", "yawn")
-	_encounter(OLD_HOB, "Old Hob of the Barrow", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 60,
+	_encounter(OLD_HOB, "Old-Hob-of-the-Hill", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 60,
 		[Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE], 75, 45,
-		"Old Hob hums low in his barrow of moss:\nmantle, tether and Sign, or the whole trail is lost.", "hum")
+		"Old-Hob hums low on his hill of moss:\nmantle, tether and Sign, or the whole trail is lost.", "hum")
 
 
 func _encounter(id: StringName, label: String, tier: BossEncounterResource.ThreatTier, level: int, counters: Array[int],

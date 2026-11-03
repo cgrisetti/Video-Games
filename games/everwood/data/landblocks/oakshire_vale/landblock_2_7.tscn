@@ -8,7 +8,7 @@ metadata/chunk = Vector2i(2, 7)
 [node name="Spawner_Wights_00" type="Node3D" parent="." unique_id=1996849045 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 359.80164, 14.24716, 1018.275)
 script = ExtResource("1_jxvj3")
-territory = "The Barrow Hills"
+territory = "Nine-Stones-Crossing"
 variant_ids = Array[StringName]([&"risen_shield_sworn_husk"])
 leash = 19.95593
 patrol = PackedVector3Array()

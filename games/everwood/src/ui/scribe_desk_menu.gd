@@ -386,7 +386,7 @@ func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
 		if under == null:
 			return "Slide an Under-Card beneath this slot's lead card to change it with one verb."
 		return "Memory %d. %s" % [under.memory_cost(), under.description]
-	return "Back to Bramblebridge."
+	return "Back to Bramble-Bridge."
 
 
 ## The weapon's Un-Inked Martial Flourish for R or L+R.

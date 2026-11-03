@@ -1,7 +1,7 @@
 ## Walking somewhere by the navigation map (ChunkNavBuilder): which way to
 ## head now to reach a goal, following a path around walls, banks and
 ## ledges, across chunk seams. Close goals, open ground with no mesh yet, and
-## goals off the mesh (a Rune-Plate's edge) are walked to straight, as before.
+## goals off the mesh (a Maker-Seal Plate's edge) are walked to straight, as before.
 ## Companions and woodland minions each keep one.
 class_name NavSteering
 extends RefCounted

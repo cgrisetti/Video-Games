@@ -195,7 +195,7 @@ func gildable_copies() -> Array[StringName]:
 static func _add_gildable(listed: Array[StringName], copy_key: StringName) -> void:
 	if ScribeCardResource.copy_card_id(copy_key) == &"" or listed.has(copy_key):
 		return
-	if ScribeCardResource.copy_variant(copy_key) >= ScribeCardResource.CardVariant.ASTRAL_PRISM:
+	if ScribeCardResource.copy_variant(copy_key) >= ScribeCardResource.CardVariant.STAR_INKED_VELLUM:
 		return
 	if LoadoutComposer.owns(copy_key, 1, PartyProgress.current.collection):
 		listed.append(copy_key)
@@ -310,7 +310,7 @@ func _slot_new_copy(copy_key: StringName, replaces: StringName) -> void:
 
 static func _finer(copy_key: StringName) -> StringName:
 	return ScribeCardResource.copy_key(ScribeCardResource.copy_card_id(copy_key),
-		mini(ScribeCardResource.copy_variant(copy_key) + 1, ScribeCardResource.CardVariant.ASTRAL_PRISM) as ScribeCardResource.CardVariant)
+		mini(ScribeCardResource.copy_variant(copy_key) + 1, ScribeCardResource.CardVariant.STAR_INKED_VELLUM) as ScribeCardResource.CardVariant)
 
 
 func _on_socket_picked(_socket: int) -> void:

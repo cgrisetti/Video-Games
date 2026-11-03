@@ -21,7 +21,7 @@ npc_seed = 58
 [node name="Spawner_Outlaws_01" type="Node3D" parent="." unique_id=1022689909 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1177.6625, 19.666666, 1078.5154)
 script = ExtResource("2_w5xj4")
-territory = "The East Quarry"
+territory = "Quarry-Wick"
 variant_ids = Array[StringName]([&"foreman_iron_gavel", &"soot_paw_cutthroat", &"quarry_sling_shotter"])
 leash = 18.278086
 patrol = PackedVector3Array()

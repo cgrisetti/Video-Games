@@ -2,24 +2,24 @@
 ## hand-edits their sub-resources. Re-run after changing anything here:
 ##   godot --headless --path . --script res://tools/build_levels.gd
 ##
-## - Bramblebridge (hub_town.tscn, 07 GDD §1.1): a walled canal village. The
+## - Bramble-Bridge (hub_town.tscn, 07 GDD §1.1): a walled canal village. The
 ##   spawn green and its fountain in the south; the canal across the middle,
 ##   crossed by the low stone arch the village is named for (walkable ramps,
 ##   no jump needed) and turning a watermill; the village square in the north
 ##   with the Armory & Scribe Desk, the Chime-Shrine, a bakery and pigment
 ##   racks among stepped-gable houses; and the Raid Portal at the forest gate.
-## - The Doverslap Expedition (dungeon_dojo.tscn, 07 GDD §3): Zone 1, the
-##   Ariundle Moss-Oaks (a walled clearing, a bramble camp, a side alcove with
-##   the Wayfarer's Chest) and the Sunken Holloway (a lane between earthen banks
+## - The Dover-Slap-Falls Expedition (dungeon_dojo.tscn, 07 GDD §3): Zone 1, the
+##   Moss-Oak-Hollow (a walled clearing, a bramble camp, a side alcove with
+##   the Wayfarer's Chest) and Rush-Light-Hollow (a lane between earthen banks
 ##   under root arches and Wind-Lanterns, the Water-Shrine, the imp camp);
-##   Zone 2, the Doverslap Gorge Bridge with its waterfall and paper-mill wheel,
-##   and the Sinaya Gatehouse with its Co-Op Threshold; Zone 3, a causeway into
+##   Zone 2, Dover-Slap-Bridge with its waterfall and paper-mill wheel,
+##   and the Dover-Slap Gatehouse with its Co-Op Threshold; Zone 3, a causeway into
 ##   the Ring of the Cairnsman, six pillars round the boss.
 ## - The seamless world (everwood_world.tscn, 10_WORLD_ARCHITECTURE.md): the
 ##   same village and zones as Landblocks, one scene per chunk in
-##   data/landblocks/ (landblock_0_1 the Kindled Bivouac, where the party
-##   wakes by a campfire, and Oakshire Commons along the walled lane north,
-##   landblock_0_0 Bramblebridge with its Forest Gate open and a south gate,
+##   data/landblocks/ (landblock_0_1 the Kindle-Fire, where the party
+##   wakes by a campfire, and Honey-Wick along the walled lane north,
+##   landblock_0_0 Bramble-Bridge with its Forest Gate open and a south gate,
 ##   landblock_0_-1 the Moss-Oaks and holloway with a gap in the clearing's
 ##   south wall under the Moss-Oak Great Arch, landblock_0_-2 the gorge,
 ##   landblock_0_-3 the Ring), each moved to its world origin
@@ -66,9 +66,9 @@ const SPAWN_PAD_COLORS: Array[Color] = [
 const STONE_COLOR: Color = Color(0.58, 0.56, 0.53)
 const WALL_COLOR: Color = Color(0.48, 0.47, 0.46)
 
-# The Doverslap Expedition (dungeon_dojo.tscn, 07_EXPEDITION_HUD_AND_ART_GDD.md
-# §3). North is -Z: you arrive among the Ariundle Moss-Oaks in the south, go
-# down the Sunken Holloway, over the Doverslap Gorge Bridge, through the Sinaya
+# The Dover-Slap-Falls Expedition (dungeon_dojo.tscn, 07_EXPEDITION_HUD_AND_ART_GDD.md
+# §3). North is -Z: you arrive among Moss-Oak-Hollow in the south, go
+# down Rush-Light-Hollow, over Dover-Slap-Bridge, through the Dover-Slap
 # Gatehouse and along a causeway into the Ring of the Cairnsman in the north.
 const EARTH_COLOR: Color = Color(0.42, 0.33, 0.24)
 const TRAIL_COLOR: Color = Color(0.52, 0.43, 0.3)
@@ -80,7 +80,7 @@ const MUSHROOM_COLOR: Color = Color(0.55, 0.9, 0.75)
 const DRYSTONE_HEIGHT: float = 1.2
 const RAIL_HEIGHT: float = 1.1
 const EXIT_PORTAL_COLOR: Color = Color(0.95, 0.8, 0.4)
-# Zone 1: the Ariundle Moss-Oaks clearing (x and z bounds).
+# Zone 1: Moss-Oak-Hollow clearing (x and z bounds).
 const OAKS_MIN: Vector2 = Vector2(-24.0, 46.0)
 const OAKS_MAX: Vector2 = Vector2(24.0, 90.0)
 const EXPEDITION_SPAWN_Z: float = 82.0
@@ -93,7 +93,7 @@ const OAK_SPOTS: Array[Vector3] = [Vector3(-15.0, 0.0, 84.0), Vector3(14.0, 0.0,
 	Vector3(-7.0, 0.0, 78.0), Vector3(9.0, 0.0, 79.0), Vector3(16.0, 0.0, 64.0)]
 const CAMP_ONE_POSITION: Vector3 = Vector3(8.0, 0.0, 64.0)
 const CAMP_ONE_KINDS: Array[int] = [0, 0, 0]
-## In the seamless world the trail from Bramblebridge comes in through a gap
+## In the seamless world the trail from Bramble-Bridge comes in through a gap
 ## this wide in the clearing's south wall, under the Moss-Oak Great Arch.
 const OAKS_SOUTH_GAP: float = 6.0
 const GREAT_ARCH_Z: float = 93.0
@@ -103,7 +103,7 @@ const GREAT_ARCH_HEIGHT: float = 12.0
 const ALCOVE_MIN: Vector2 = Vector2(-32.0, 50.0)
 const ALCOVE_MAX: Vector2 = Vector2(-24.0, 56.0)
 const WAYFARER_CHEST_POSITION: Vector3 = Vector3(-29.5, 0.0, 53.0)
-# The Sunken Holloway: a lane between earthen banks, six feet down.
+# Rush-Light-Hollow: a lane between earthen banks, six feet down.
 const HOLLOWAY_HALF_WIDTH: float = 4.0
 const HOLLOWAY_DEPTH: float = 1.8
 const HOLLOWAY_TOP_Z: float = 46.0
@@ -120,12 +120,12 @@ const WIND_LANTERN_SPOTS: Array[Vector3] = [Vector3(-1.7, 3.3, 41.0), Vector3(1.
 const WATER_SHRINE_POSITION: Vector3 = Vector3(2.7, -1.8, 35.5)
 const CAMP_TWO_POSITION: Vector3 = Vector3(-0.5, -1.8, 26.0)
 const CAMP_TWO_KINDS: Array[int] = [1, 1, 0, 1]
-# Zone 2: the Doverslap Gorge Bridge and the Sinaya Gatehouse.
+# Zone 2: Dover-Slap-Bridge and the Dover-Slap Gatehouse.
 const CLIFF_HALF_WIDTH: float = 16.0
 const SOUTH_CLIFF_Z: Vector2 = Vector2(6.0, 14.0)
 const NORTH_CLIFF_Z: Vector2 = Vector2(-24.0, -12.0)
 const GORGE_BRIDGE_HALF_WIDTH: float = 3.0
-## The bridge's side bays, where the Rune-Plates sit (z range, and how far they reach out).
+## The bridge's side bays, where the Maker-Seal Plates sit (z range, and how far they reach out).
 const BRIDGE_BAY_Z: Vector2 = Vector2(-9.0, -3.0)
 const BRIDGE_BAY_DEPTH: float = 3.6
 const GORGE_DEPTH: float = 24.0
@@ -152,7 +152,7 @@ const CHECKPOINT_THREE_Z: float = -28.0
 ## Checkpoint pads across a 6 m path.
 const CHECKPOINT_SPACING: float = 1.5
 
-# Bramblebridge (07_EXPEDITION_HUD_AND_ART_GDD.md §1.1). North is -Z: the
+# Bramble-Bridge (07_EXPEDITION_HUD_AND_ART_GDD.md §1.1). North is -Z: the
 # spawn green in the south, the canal across the middle with the bridge over
 # it, and the village square and the forest gate in the north. Nothing needs
 # a jump: Space is the dodge roll.
@@ -168,7 +168,7 @@ const RAID_PORTAL_COLOR: Color = Color(0.55, 0.5, 1.0)
 const GATE_WIDTH: float = 6.0
 const GATE_HEIGHT: float = 5.0
 const GATE_COLOR: Color = Color(0.42, 0.29, 0.18)
-## Oaks of the Ariundle Moss-Oaks beyond the north wall, seen through the gate.
+## Oaks of Moss-Oak-Hollow beyond the north wall, seen through the gate.
 const GATE_TREES: Array[Vector3] = [Vector3(-2.0, 0.0, -34.0), Vector3(3.5, 0.0, -36.5), Vector3(-6.5, 0.0, -38.0), Vector3(8.0, 0.0, -33.5),
 	Vector3(0.5, 0.0, -41.0), Vector3(-11.0, 0.0, -34.5)]
 const HOUSE_SIZE: Vector3 = Vector3(6.0, 3.6, 5.0)
@@ -198,7 +198,7 @@ const CANAL_WIDTH: float = 3.6
 const CANAL_BANK_HEIGHT: float = 0.55
 const CANAL_BANK_THICKNESS: float = 0.4
 const WATER_COLOR: Color = Color(0.25, 0.5, 0.75)
-## Bramblebridge itself: a low stone arch over the canal. Each ramp climbs
+## Bramble-Bridge itself: a low stone arch over the canal. Each ramp climbs
 ## BRIDGE_RISE over BRIDGE_RAMP_LENGTH (about 13 degrees, under the 25-degree
 ## limit), and its walkway is one convex collider, so there's no lip to catch on.
 const BRIDGE_WIDTH: float = 4.0
@@ -230,14 +230,14 @@ const SCRIBERY_POSITION: Vector3 = Vector3(-9.0, 0.0, -19.5)
 const OAK_TRUNK_COLOR: Color = Color(0.36, 0.26, 0.18)
 const OAK_LEAF_COLOR: Color = Color(0.28, 0.46, 0.25)
 const MOSS_COLOR: Color = Color(0.36, 0.5, 0.26)
-## Bramblebridge's south gate (seamless world only): the commons' lane comes in through it.
+## Bramble-Bridge's south gate (seamless world only): the commons' lane comes in through it.
 const SOUTH_GATE_WIDTH: float = 5.0
 
 
-# The Kindled Bivouac and Oakshire Commons, Chunk (0, 1), built in world
+# The Kindle-Fire and Honey-Wick, Chunk (0, 1), built in world
 # coordinates round LandblockManifest.CAMPFIRE_POSITION and LANE. The party
 # wakes round the campfire facing the lane; knee-high dry-stone walls line
-# the lane all the way to Bramblebridge's south gate.
+# the lane all the way to Bramble-Bridge's south gate.
 ## The four spawn spots round the fire, just outside its warmth (x, z from its middle).
 const BIVOUAC_SPAWNS: Array[Vector2] = [Vector2(2.6, -3.4), Vector2(4.0, -1.2), Vector2(4.0, 1.2), Vector2(2.6, 3.4)]
 ## Everyone wakes facing up the lane, east-north-east (yaw: 0 faces north).
@@ -306,7 +306,7 @@ func _process(_delta: float) -> bool:
 	return false
 
 
-# --- Bramblebridge --------------------------------------------------------
+# --- Bramble-Bridge --------------------------------------------------------
 
 func _build_hub() -> Node3D:
 	var root: Node3D = Node3D.new()
@@ -346,7 +346,7 @@ func _build_town(root: Node3D, world_mode: bool) -> void:
 	_add_bridge(town)
 	_add_watermill(town)
 	_add_pigment_rack(town)
-	var portal: Node3D = _portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Doverslap Expedition", RAID_PORTAL_COLOR,
+	var portal: Node3D = _portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Dover-Slap-Falls Expedition", RAID_PORTAL_COLOR,
 		WORLD_RAID_PORTAL_POSITION if world_mode else RAID_PORTAL_POSITION)
 	root.add_child(_entity(portal) if world_mode else portal)
 	var shrine: Node3D = Node3D.new()
@@ -370,7 +370,7 @@ func _build_town(root: Node3D, world_mode: bool) -> void:
 
 
 ## The village wall, with the forest gate's opening in the north side and, in
-## the seamless world, a south gate where the lane from Oakshire Commons comes in.
+## the seamless world, a south gate where the lane from Honey-Wick comes in.
 func _add_hub_walls(parent: Node3D, world_mode: bool) -> void:
 	var half_width: float = HUB_WIDTH * 0.5
 	var half_depth: float = HUB_DEPTH * 0.5
@@ -394,7 +394,7 @@ func _add_hub_walls(parent: Node3D, world_mode: bool) -> void:
 			Vector3(side * (GATE_WIDTH * 0.5 + side_length * 0.5), WALL_HEIGHT * 0.5, -half_depth), stone)))
 
 
-## The timber gate out to the Ariundle Moss-Oaks, behind the Raid Portal: you
+## The timber gate out to Moss-Oak-Hollow, behind the Raid Portal: you
 ## see the oaks through it, but the way out is the portal. In the seamless
 ## world it stands open and the trail runs on into the Moss-Oaks' Landblock.
 func _add_forest_gate(parent: Node3D, world_mode: bool) -> void:
@@ -434,7 +434,7 @@ func _add_forest_gate(parent: Node3D, world_mode: bool) -> void:
 		gate.add_child(blocker)
 	var sign_label: Label3D = Label3D.new()
 	sign_label.name = "GateSign"
-	sign_label.text = "To the Ariundle Moss-Oaks"
+	sign_label.text = "To Moss-Oak-Hollow"
 	sign_label.font_size = 40
 	sign_label.outline_size = 10
 	sign_label.pixel_size = 0.01
@@ -580,7 +580,7 @@ func _add_canal(parent: Node3D) -> void:
 				Vector3(side * (gap + bank_length * 0.5), CANAL_BANK_HEIGHT * 0.5, bank_z), stone)))
 
 
-## Bramblebridge: a low stone arch. The walkway is one convex collider shaped
+## Bramble-Bridge: a low stone arch. The walkway is one convex collider shaped
 ## like the arch (ramp, crown, ramp), starting flush with the ground at each
 ## end, and parapets follow its edges so nobody steps off into the canal.
 func _add_bridge(parent: Node3D) -> void:
@@ -655,7 +655,7 @@ func _add_bridge(parent: Node3D) -> void:
 			parapets.add_child(rail_mesh)
 	var village_sign: Label3D = Label3D.new()
 	village_sign.name = "VillageSign"
-	village_sign.text = "Bramblebridge"
+	village_sign.text = "Bramble-Bridge"
 	village_sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	village_sign.font_size = 64
 	village_sign.outline_size = 12
@@ -786,7 +786,7 @@ func _lantern(lantern_name: String, where: Vector3) -> Node3D:
 	return post
 
 
-# --- The Doverslap Expedition ---------------------------------------------
+# --- The Dover-Slap-Falls Expedition ---------------------------------------------
 
 func _build_dojo() -> Node3D:
 	var root: Node3D = Node3D.new()
@@ -801,8 +801,8 @@ func _build_dojo() -> Node3D:
 	_build_gorge(world)
 	_build_ring(world)
 	root.add_child(_boss_spawn())
-	var exit: Node3D = _portal("ExitPortal", InstanceManager.HUB_TOWN, "Exit: Bramblebridge", EXIT_PORTAL_COLOR, EXIT_PORTAL_POSITION)
-	# Home is whichever Bramblebridge the party came from (the hub, or the seamless world).
+	var exit: Node3D = _portal("ExitPortal", InstanceManager.HUB_TOWN, "Exit: Bramble-Bridge", EXIT_PORTAL_COLOR, EXIT_PORTAL_POSITION)
+	# Home is whichever Bramble-Bridge the party came from (the hub, or the seamless world).
 	exit.set(&"goes_home", true)
 	root.add_child(exit)
 	_add_zone_one_entities(root, false)
@@ -832,8 +832,8 @@ func _boss_spawn() -> Marker3D:
 ## each with its WorldStateDB id (Landblock entities in the seamless world).
 func _add_zone_one_entities(root: Node3D, world_mode: bool) -> void:
 	var stateful: Array[Node3D] = [
-		_scripted("CampOne", CAMP_SCRIPT, CAMP_ONE_POSITION, {&"camp_name": "Bramble Camp", &"kinds": CAMP_ONE_KINDS, &"persist_id": LandblockManifest.CAMP_BRAMBLE}),
-		_scripted("CampTwo", CAMP_SCRIPT, CAMP_TWO_POSITION, {&"camp_name": "Holloway Camp", &"kinds": CAMP_TWO_KINDS, &"persist_id": LandblockManifest.CAMP_HOLLOWAY}),
+		_scripted("CampOne", CAMP_SCRIPT, CAMP_ONE_POSITION, {&"camp_name": "Bramble Hush-Crack", &"kinds": CAMP_ONE_KINDS, &"persist_id": LandblockManifest.CAMP_BRAMBLE}),
+		_scripted("CampTwo", CAMP_SCRIPT, CAMP_TWO_POSITION, {&"camp_name": "Rush-Light Hush-Crack", &"kinds": CAMP_TWO_KINDS, &"persist_id": LandblockManifest.CAMP_HOLLOWAY}),
 		_scripted("WaterShrine", SHRINE_WATER_SCRIPT, WATER_SHRINE_POSITION, {&"persist_id": LandblockManifest.WATER_SHRINE}),
 	]
 	for node: Node3D in stateful:
@@ -850,7 +850,7 @@ func _add_zone_one_entities(root: Node3D, world_mode: bool) -> void:
 
 ## Zone 1: a walled clearing of moss-oaks, the first bramble camp, a winding
 ## trail to the holloway, and the deer-run alcove through the west wall. In the
-## seamless world its south wall has a gap for the trail from Bramblebridge,
+## seamless world its south wall has a gap for the trail from Bramble-Bridge,
 ## under the Moss-Oak Great Arch.
 func _build_moss_oaks(parent: Node3D, world_mode: bool) -> void:
 	var oaks: Node3D = _node3d("MossOaks")
@@ -895,7 +895,7 @@ func _build_moss_oaks(parent: Node3D, world_mode: bool) -> void:
 
 ## The Moss-Oak Great Arch over the trail into the clearing: two old oaks
 ## leaning together, their boughs meeting high overhead. Seen from
-## Bramblebridge's gate, and the Moss-Oaks' HLOD landmark.
+## Bramble-Bridge's gate, and the Moss-Oaks' HLOD landmark.
 func _add_great_arch(parent: Node3D) -> void:
 	var arch: Node3D = _node3d("GreatArch")
 	parent.add_child(arch)
@@ -917,7 +917,7 @@ func _add_great_arch(parent: Node3D) -> void:
 		arch.add_child(heap)
 
 
-## The Sunken Holloway: a ramp down into a lane between high earthen banks,
+## Rush-Light-Hollow: a ramp down into a lane between high earthen banks,
 ## root arches overhead hung with Wind-Lanterns, and a ramp back up to the gorge.
 func _build_holloway(parent: Node3D) -> void:
 	var holloway: Node3D = _node3d("Holloway")
@@ -963,8 +963,8 @@ func _build_holloway(parent: Node3D) -> void:
 
 
 ## Zone 2: the cliff edges, the timber-and-stone trestle bridge over the
-## Doverslap (with side bays for the Rune-Plates), the waterfall and the
-## paper-mill wheel, and the Sinaya Gatehouse's towers around the CoopGate.
+## Dover-Slap-Falls (with side bays for the Maker-Seal Plates), the waterfall and the
+## paper-mill wheel, and the Dover-Slap Gatehouse's towers around the CoopGate.
 func _build_gorge(parent: Node3D) -> void:
 	var gorge: Node3D = _node3d("Gorge")
 	parent.add_child(gorge)
@@ -1014,7 +1014,7 @@ func _build_gorge(parent: Node3D) -> void:
 	gorge.add_child(ShapeKit.box("FaceNorth", Vector3(w * 2.0, GORGE_DEPTH, 0.6), Vector3(0.0, -GORGE_DEPTH * 0.5, NORTH_CLIFF_Z.y + 0.3), cliff))
 	for side: float in [-1.0, 1.0]:
 		gorge.add_child(ShapeKit.box("Face%s" % ("West" if side < 0.0 else "East"), Vector3(0.6, GORGE_DEPTH + 8.0, span), Vector3(side * (w + 0.3), -GORGE_DEPTH * 0.5 + 4.0, middle_z), cliff))
-	# The Doverslap: a roaring fall of water down the east side, misting at its foot.
+	# The Dover-Slap-Falls: a roaring fall of water down the east side, misting at its foot.
 	var fall: StandardMaterial3D = StandardMaterial3D.new()
 	fall.albedo_color = WATERFALL_COLOR
 	fall.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -1032,7 +1032,7 @@ func _build_gorge(parent: Node3D) -> void:
 	wheel.scale = Vector3.ONE * MILLWHEEL_SCALE
 	gorge.add_child(wheel)
 	gorge.add_child(ShapeKit.box("MillHouse", Vector3(4.0, 5.0, 5.0), MILLWHEEL_POSITION + Vector3(-3.5, 0.5, 0.0), _material(MILL_COLOR)))
-	# The Sinaya Gatehouse: two stone towers with carved timber turrets, walls out to the cliff sides.
+	# The Dover-Slap Gatehouse: two stone towers with carved timber turrets, walls out to the cliff sides.
 	var half_gate: float = CoopGate.PORTCULLIS_WIDTH * 0.5
 	for side: float in [-1.0, 1.0]:
 		var label: String = "West" if side < 0.0 else "East"
@@ -1053,7 +1053,7 @@ func _build_gorge(parent: Node3D) -> void:
 	gorge.add_child(ShapeKit.box("GateLintel", Vector3(CoopGate.PORTCULLIS_WIDTH + 0.6, 0.6, 0.9), Vector3(0.0, CoopGate.PORTCULLIS_HEIGHT + 0.5, GATE_POSITION.z), timber))
 	var gate_sign: Label3D = Label3D.new()
 	gate_sign.name = "GateSign"
-	gate_sign.text = "Sinaya Gatehouse"
+	gate_sign.text = "Dover-Slap Gatehouse"
 	gate_sign.font_size = 52
 	gate_sign.outline_size = 10
 	gate_sign.pixel_size = 0.01
@@ -1098,7 +1098,7 @@ func _build_ring(parent: Node3D) -> void:
 
 # --- The seamless world ---------------------------------------------------
 
-## The world scene: just the skeleton (spawning on Bramblebridge's green, now
+## The world scene: just the skeleton (spawning on Bramble-Bridge's green, now
 ## in Landblock (0, 0)) and the WorldGridManager that streams everything else.
 func _build_world() -> Node3D:
 	var root: Node3D = Node3D.new()
@@ -1111,7 +1111,7 @@ func _build_world() -> Node3D:
 	grid.set_script(load(GRID_MANAGER_SCRIPT))
 	root.add_child(grid)
 	_add_level_skeleton(root, HUB_SPAWN_Z, LandblockManifest.BRAMBLEBRIDGE_ORIGIN, false)
-	# The party wakes round the Kindled Bivouac's campfire, facing up the lane.
+	# The party wakes round the Kindle-Fire's campfire, facing up the lane.
 	var markers: Array[Node] = root.get_node("SpawnPoints").get_children()
 	for index: int in markers.size():
 		var marker: Marker3D = markers[index] as Marker3D
@@ -1146,7 +1146,7 @@ func _build_landblock(chunk: Vector2i) -> Node3D:
 	return root
 
 
-# --- The Kindled Bivouac and Oakshire Commons ---------------------------------------
+# --- The Kindle-Fire and Honey-Wick ---------------------------------------
 
 ## Chunk (0, 1), in world coordinates: the campfire where the party wakes, the
 ## oak and its Wind-Lantern, the walled lane east then north, the homestead,

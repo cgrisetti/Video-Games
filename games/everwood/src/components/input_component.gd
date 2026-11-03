@@ -13,7 +13,7 @@
 ## controller drives the menu instead of the character (menu_input).
 ##
 ## Sign-Flow (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §5) reuses the same buttons:
-## out of combat, R and L+R wait to see if they're held; held 90 frames they're
+## out of combat, R and L+R wait to see if they're held; held 120 frames they're
 ## the Hearth-Rite (hearth_rite_held), let go sooner they fire as usual. A tap
 ## of Tab / View (whose hold changes Fellowship) opens the Grimoire Binder.
 class_name InputComponent
@@ -628,7 +628,7 @@ func _start_rite(command: int, buttons: Array[StringName], held_for: float) -> v
 	_rite_fired = false
 
 
-## Held the Hearth-Rite's time (90 frames, 60 on Star-Inked Vellum): the rite.
+## Held the Hearth-Rite Tuck's time (120 frames, 80 on Star-Inked Vellum): the rite.
 ## Let go sooner, or a fight starts, and it's the move as usual.
 func _update_hearth_rite(dt: float) -> void:
 	if _rite_command < 0:

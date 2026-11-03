@@ -1,7 +1,7 @@
 ## A hero's storybook puppet (07_EXPEDITION_HUD_AND_ART_GDD.md §4.1), built in code
 ## from simple shapes in the storybook cel look, so every Fellowship reads at a
 ## glance from the split-screen camera:
-##   the Shield-Sworn   a crested warden helm, broad pauldrons in plate, a heavy
+##   the Shield-Sworn   a crested warden helm, broad iron-wood pauldrons, a heavy
 ##                      cape and a banded oak-and-brass Greatshield
 ##   the Wayfarers      a feathered ranger hood, a travel cloak that streams out
 ##                      as they run, and a quiver (with a bow) or a Scribe Satchel
@@ -9,7 +9,7 @@
 ##                      Tether-Lantern that really glows
 ## The tunic keeps the seat's colour; a tabard front and back (so it reads from
 ## the camera behind you) shows the Secondary Calling's colour. Armor shows by
-## weight (a sash, a leather jerkin, or plate), trimmed in the Calling's colour;
+## weight (a sash, a jerkin or wool-mantle, or a ring-coat), trimmed in the Calling's colour;
 ## the weapon in the right hand comes from its item (PropBuilder).
 ##
 ## Drop a model at res://assets/models/<class_id>.glb (say, a CC0 KayKit or

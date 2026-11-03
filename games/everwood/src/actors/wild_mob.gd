@@ -1,15 +1,19 @@
-## A wild creature of the starting zone (13_STARTING_ZONE_ENCOUNTER_DESIGN.md),
-## played from its MobVariantResource (Bestiary): a boar, a scuttler, a wolf, a
-## toad, an outlaw, a vine, a shambler, a bog-hulk, a wight or the Crag-Back
-## Behemoth, each built in code from simple shapes in the storybook look.
+## A spirit of the starting zone (13_STARTING_ZONE_ENCOUNTER_DESIGN.md), a kin of
+## the First-Quiet (15_THE_MYTHOPOETIC_LENS.md), played from its MobVariantResource
+## (Bestiary): a bristle-hob, a hedgerow-hob, a padfoot, a puddle-bucca, an
+## Iron-Man, a bramble-lasher, a spore-puff lob, a bog-hulk, a spriggan or the
+## Crag-Back Cairn-Drake, each built in code from simple shapes in the storybook look.
 ##
-## It keeps to its MobSpawner. A hostile one turns on any player within its
-## aggro radius; a neutral one (the meadow vermin) only fights back once hurt;
-## one in a fight calls its pack. Past the spawner's leash (18–25 m) it gives
-## up, walks home and mends. A rooted vine never moves; a ranged one keeps its
-## distance and looses shots that boulders stop; the Behemoth walks its patrol
-## round the High Road with a heavy bell-stomp. The host runs it; other peers
-## see a copy. When it falls it fades, and its spawner grows another later.
+## It keeps to its MobSpawner. An awake one turns on any player within its
+## aggro radius; a curious hob (HobSpectrumComponent) only fights back once
+## wronged, and a soothed one keeps out of its pack's fights; one in a fight
+## calls its pack. Past the spawner's leash (18–25 m) it gives up, walks home
+## and mends. A rooted lasher never moves; a ranged one keeps its distance and
+## looses shots that boulders stop; the Cairn-Drake walks its patrol round the
+## High Road with a heavy bell-stomp and holds its first blow through its
+## Challenge-Roar. The host runs it; other peers see a copy. Beaten, it's
+## un-boggarted (released, lulled into a cairn, or bowed as a steward) and its
+## body sinks away; its spawner grows another later.
 class_name WildMob
 extends ActorBase
 
@@ -20,15 +24,17 @@ const WANDER_RADIUS: float = 4.5
 const WANDER_PAUSE: Vector2 = Vector2(4.0, 7.0)
 const BAR_DOTS: int = 6
 const BAR_COLOR: Color = Color(1.0, 0.45, 0.4)
-## Neutral creatures' dots are yellow until they're riled.
+## Curious hobs' dots are yellow until they're wronged.
 const NEUTRAL_BAR_COLOR: Color = Color(1.0, 0.86, 0.35)
 ## A ranged creature shoots from this share of its range.
 const RANGED_KEEP: float = 0.7
-## The Behemoth's stomp: every this many seconds while it walks, heard within this many metres.
+## The Cairn-Drake's stomp: every this many seconds while it walks, heard within this many metres.
 const STOMP_EVERY: float = 1.1
 const STOMP_HEARD: float = 45.0
-## Creatures up to this level are roadside kin (Tier 1 to Iron-Root).
+## Spirits up to this level are roadside kin (Tier 1 to Iron-Root).
 const ROADSIDE_KIN_MAX_LEVEL: int = 4
+## A steward Iron-Man bows this far forward (radians).
+const STEWARD_BOW: float = 0.45
 
 var variant: MobVariantResource
 ## The spawner it belongs to (set before it enters the tree).
@@ -96,6 +102,16 @@ func soft_target() -> ActorBase:
 	return CombatDirector.current.get_actor(top) if top != &"" else null
 
 
+## Its place on the Hob-to-Boggart Spectrum comes from its variant.
+func configure_spirit(spirit: HobSpectrumComponent) -> void:
+	spirit.equilibrium = variant.equilibrium
+	spirit.resolution = variant.resolution
+	spirit.release_form = variant.release_form
+	spirit.roars = variant.roars
+	spirit.has_maker_seal = variant.has_maker_seal
+	spirit.spirit_color = variant.accent_color
+
+
 func _build_components() -> void:
 	super._build_components()
 	threat = ThreatComponent.new()
@@ -159,6 +175,10 @@ func _gather_intent(delta: float) -> void:
 	if action_queue.is_busy():
 		return
 	var to_target: Vector3 = target.global_position - global_position
+	if spectrum != null and spectrum.is_roaring():
+		# The Challenge-Roar: it faces you and bellows, holding its blow.
+		turn_toward(to_target, loadout.stats.turn_speed * delta)
+		return
 	to_target.y = 0.0
 	var distance: float = to_target.length()
 	var reach: float = variant.projectile_range * RANGED_KEEP if variant.ranged \
@@ -192,7 +212,8 @@ func _update_engagement(home: Vector3) -> void:
 			threat.clear()
 		return
 	var hurt: bool = stats.health < stats.stats.max_health - 0.5
-	if not engaged and (in_aggro or hurt or spawner.alert):
+	var soothed: bool = spectrum != null and spectrum.is_soothed()
+	if not engaged and (in_aggro or hurt or (spawner.alert and not soothed)):
 		engaged = true
 		_anchor = global_position if variant.patrols else spawn_transform.origin
 
@@ -252,7 +273,7 @@ func _idle(delta: float, home: Vector3) -> void:
 		move_intent = to_wander.normalized() * 0.35
 
 
-## The Behemoth's footfalls: a deep bell-stomp, heard by anyone near.
+## The Cairn-Drake's footfalls: a deep bell-stomp, heard by anyone near.
 func _stomp(delta: float) -> void:
 	if not variant.stomps:
 		return
@@ -291,6 +312,10 @@ func _update_pose(delta: float) -> void:
 			collision_layer = 0
 			hurtbox.collision_layer = 0
 			_name_label.visible = false
+		if spectrum != null and spectrum.is_steward():
+			# A steward Iron-Man stands bowed, friendly, until his time is up.
+			visual.rotation.x = STEWARD_BOW
+			return
 		_fade_left = maxf(0.0, _fade_left - delta)
 		visual.scale = Vector3.ONE * maxf(0.05, _fade_left / FADE_TIME)
 		visual.position.y = -0.4 * (1.0 - _fade_left / FADE_TIME)
@@ -381,7 +406,7 @@ func _build_creature() -> void:
 			_add_legs(2, r * 0.45, r * 0.6, h * 0.35, accent)
 			_add_eyes(Vector3(r * 0.16, h * 1.0, -r * 0.75), r * 0.08)
 		_:
-			# The Crag-Back Behemoth: a great grey shell of stacked crag on four columns, moss on its back.
+			# The Crag-Back Cairn-Drake: a great grey shell of stacked crag on four columns, moss on its back.
 			visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Shell", r, Vector3(0.0, h * 0.62, 0.0), _body_material), Vector3(1.15, 0.8, 1.45)))
 			for index: int in 6:
 				var along: float = float(index) / 5.0 - 0.5

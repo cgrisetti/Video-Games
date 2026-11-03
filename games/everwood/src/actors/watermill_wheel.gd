@@ -1,4 +1,4 @@
-## Bramblebridge's watermill wheel (06_WORLD_AND_CALLINGS.md §1): a timber
+## Bramble-Bridge's watermill wheel (06_WORLD_AND_CALLINGS.md §1): a timber
 ## wheel with paddles, turning slowly in the canal. It builds itself in code
 ## and spins around its local Y axis; the level builder stands it on its side.
 class_name WatermillWheel

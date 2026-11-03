@@ -3106,7 +3106,7 @@ mesh = SubResource("BoxMesh_kwbda")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.5, -15.4)
 pixel_size = 0.01
 modulate = Color(1, 0.92, 0.75, 1)
-text = "Sinaya Gatehouse"
+text = "Dover-Slap Gatehouse"
 font_size = 52
 outline_size = 10
 
@@ -3319,7 +3319,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 87)
 script = ExtResource("6_geb67")
 target_instance = &"hub_town"
 goes_home = true
-title = "Exit: Bramblebridge"
+title = "Exit: Bramble-Bridge"
 portal_color = Color(0.95, 0.8, 0.4, 1)
 
 [node name="CampOne" type="Node3D" parent="." unique_id=835366130]
@@ -3331,7 +3331,7 @@ persist_id = &"camp_bramble"
 [node name="CampTwo" type="Node3D" parent="." unique_id=2059167770]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -1.8, 26)
 script = ExtResource("7_yjihc")
-camp_name = "Holloway Camp"
+camp_name = "Rush-Light Hush-Crack"
 kinds = Array[int]([1, 1, 0, 1])
 persist_id = &"camp_holloway"
 

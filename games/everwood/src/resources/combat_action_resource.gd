@@ -87,7 +87,7 @@ enum Delivery { MELEE, PROJECTILE }
 @export var pierces: bool = false
 ## The weapon whose projectile parts draw the shot (also its pool kind).
 @export var projectile_look: StringName = &""
-## A melee rune-wreathed strike draws its weapon's ribbon trail.
+## A melee Sign-wreathed strike draws its weapon's ribbon trail.
 @export var trail: bool = false
 
 @export_group("Support effects")

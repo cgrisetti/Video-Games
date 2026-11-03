@@ -1,7 +1,7 @@
 ## A roll. The actor is invulnerable during the dodge's active frames; ground
 ## telegraphs still hit if you roll into one, so roll out. How far it carries
 ## comes from the equipped armor (stats.roll_distance): long in Hearth-Linen,
-## short in Ironwood Plate.
+## short in Iron-Wood Ring-Coat.
 class_name DodgeState
 extends ActorState
 

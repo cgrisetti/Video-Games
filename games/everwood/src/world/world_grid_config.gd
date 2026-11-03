@@ -27,13 +27,13 @@ const FRAME_BUDGET_USEC: int = 2000
 ## Seconds between streaming decisions (the 5 Hz heartbeat).
 const STREAM_HEARTBEAT: float = 0.2
 
-## The Doverslap world's bounds, inclusive: the Bramble-to-Doverslap corridor
+## The Dover-Slap-Falls world's bounds, inclusive: the Bramble-Bridge-to-Dover-Slap corridor
 ## (x = 0, z = 0 to -3) and the ring of crags around it (x = -1 and 1, z = 1 and -4).
 const BOUNDS_MIN: Vector2i = Vector2i(-1, -4)
 const BOUNDS_MAX: Vector2i = Vector2i(1, 1)
 
 ## The world being streamed. Its WorldGridManager picks it (use_layout) before
-## anything streams; until then it's the Doverslap corridor, which the level
+## anything streams; until then it's Dover-Slap-Falls corridor, which the level
 ## builder and the tests use. Read from worker threads, never changed while
 ## a world is streaming.
 static var layout: WorldLayout = DoverslapLayout.new()

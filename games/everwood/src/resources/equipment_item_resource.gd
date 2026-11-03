@@ -5,7 +5,7 @@
 ## Channels the Card"). Items are drawn from greybox parts until `model` holds
 ## real art. Weapons come in four tiers along the Trail of the Four Signs
 ## (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §5.1): apprentice timber at Level 1,
-## hedgerow iron, Bramblebridge steel and Doverslap relics, each with its own
+## hedgerow iron, Bramble-Bridge steel and Dover-Slap relics, each with its own
 ## material palette and a damage and poise multiplier.
 class_name EquipmentItemResource
 extends Resource
@@ -46,7 +46,7 @@ enum EquipmentTier { TIER_1_TIMBER = 1, TIER_2_IRON = 2, TIER_3_STEEL = 3, TIER_
 @export var projectile_parts: Array[PropPartResource] = []
 ## Sanctuary zones cast with this weapon in hand are this much bigger.
 @export var support_radius_multiplier: float = 1.0
-## The ribbon a melee weapon draws through a rune-wreathed strike.
+## The ribbon a melee weapon draws through a Sign-wreathed strike.
 @export var trail_color: Color = Color(1.0, 1.0, 1.0, 0.8)
 ## Where along the weapon (actor space) the ribbon runs from and to.
 @export var trail_base: Vector3 = Vector3(0.45, 1.0, -0.3)

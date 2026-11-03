@@ -30,7 +30,7 @@ enum GrimoireSlot { FORWARD, BACK, SIGNATURE, ULTIMATE }
 enum CardRarity { BASIC, COMMON, UNCOMMON, RARE, LEGENDARY }
 ## A copy's finish (06_WORLD_AND_CALLINGS.md §2): Plain Vellum, Gilded Leaf or
 ## Star-Inked Vellum. Presentation only: the mechanics never read it.
-enum CardVariant { STANDARD, SHINY_FOIL, ASTRAL_PRISM }
+enum CardVariant { STANDARD, GILDED_LEAF, STAR_INKED_VELLUM }
 ## THROUGH_WEAPON cards take the weapon's delivery (a swing or a projectile);
 ## AT_CASTER cards happen around the caster whatever is in their hands.
 enum Delivery { THROUGH_WEAPON, AT_CASTER }

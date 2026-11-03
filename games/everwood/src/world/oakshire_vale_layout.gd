@@ -2,13 +2,13 @@
 ## square (12 x 12 Landblocks, chunks (0, 0) to (11, 11)), a 1,280 m floor
 ## inside a 128 m skirt of cliff and forest.
 ##
-## A pinwheel basin round Oakshire Village on a raised central saddle (+12 m),
+## A pinwheel basin round Oakshire-Wick on a raised central saddle (+12 m),
 ## the Scribe's Tor ridge behind it, in concentric rings measured as a rounded
 ## square (a superellipse) out from the centre:
 ##   Tier 0  the river and mill basin, 0 to 4 m: a wadeable river (0.4 m deep)
 ##           arcing west to east south of the village, under the Bridge-Warden's span
 ##   Tier 1  the settled meadow and the High Road, 4 to 14 m, gently rolling
-##   Tier 2  the Bramble Weald and the quarry terraces, 14 to 32 m: shelves with
+##   Tier 2  Bramble-Hollow and the quarry terraces, 14 to 32 m: shelves with
 ##           cliffs between them (too steep to climb), the roads ramping through
 ##   Tier 3  the rim crags, 32 to 65 m: a sheer escarpment with the four dungeon
 ##           and raid portal aprons recessed into it
@@ -56,7 +56,7 @@ const TERRACE_RISER: float = 0.06
 const MEADOW_ROLL: float = 1.6
 
 # --- The petals ------------------------------------------------------------------
-const PETAL_NAMES: Array[String] = ["The Bramble Weald", "The East Quarry", "Wayfarer's Glade", "The Barrow Hills", "The Orchard Reach"]
+const PETAL_NAMES: Array[String] = ["Bramble-Hollow", "Quarry-Wick", "Wayfarer-Green", "Nine-Stones-Crossing", "Pippin-Green"]
 ## Bearings in degrees clockwise from north (-Z).
 const PETAL_BEARINGS: Array[float] = [40.0, 112.0, 184.0, 256.0, 328.0]
 ## How far each road sways from its bearing (radians): an S of two 35°–50° bends.
@@ -105,7 +105,7 @@ const BANK_REACH: float = FLOODPLAIN + 100.0
 const TOR_CENTER: Vector2 = Vector2(768.0, 650.0)
 const TOR_SIZE: Vector2 = Vector2(150.0, 34.0)
 const TOR_HEIGHT: float = 24.0
-## The Barrow Hills' mounds, between the Barrow camp and Hollow-King's Barrow (kept off the road).
+## Nine-Stones-Crossing' mounds, between the Barrow camp and Star-Barrow-Hollow (kept off the road).
 const BARROWS: Array[Vector2] = [Vector2(262.0, 872.0), Vector2(236.0, 842.0), Vector2(282.0, 905.0), Vector2(214.0, 884.0),
 	Vector2(246.0, 925.0), Vector2(300.0, 852.0), Vector2(205.0, 845.0)]
 const BARROW_HEIGHT: float = 4.5
@@ -123,7 +123,7 @@ const TREE_SPACING: float = 4.5
 const CANOPY_BASE: float = 5.5
 const BOULDERS_PER_CHUNK: Vector2i = Vector2i(4, 8)
 const BOULDER_SIZE: Vector2 = Vector2(2.5, 8.0)
-## A lantern pole and a Scribe runestone every this many metres of road.
+## A lantern pole and a Scribe Sign-stone every this many metres of road.
 const WAYMARK_SPACING: float = 75.0
 const WAYMARK_OFFSET: float = 5.0
 const HERO_TREE_COUNT: int = 18
@@ -593,7 +593,7 @@ func petal_count() -> int:
 	return PETAL_BEARINGS.size()
 
 
-## The petal camp's middle, beside its road (Wayfarer's Glade straddles its road's end).
+## The petal camp's middle, beside its road (Wayfarer-Green straddles its road's end).
 func camp_center_2d(petal: int) -> Vector2:
 	var theta0: float = deg_to_rad(PETAL_BEARINGS[petal])
 	var r: float = CAMP_DISTANCE / superellipse_factor(theta0)
@@ -1218,7 +1218,7 @@ func _find_spurs() -> Array[Vector2]:
 
 
 ## The 18 hero trees (12 GDD §3): three along each petal road where its
-## sub-zones change, the Tangled Root-Sanctum's petrified oak, and the two
+## sub-zones change, Tangle-Root-Hollow's petrified oak, and the two
 ## mini-boss arenas (the Old Tusk-Crag's meadow and the Alpha Frost-Fang's weald).
 func _place_hero_trees() -> Array[Dictionary]:
 	var trees: Array[Dictionary] = []

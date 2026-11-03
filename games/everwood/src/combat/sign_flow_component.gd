@@ -1,8 +1,8 @@
 ## Sign-Flow on a hero ("Coat, Break, Turn!", 14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md
 ## §2 and §5). The same L, R and L+R postures work two ways, with no card swap:
 ##
-## - Out of combat, holding R or L+R for 90 frames (60 on a Star-Inked Vellum
-##   leaf) is the 0-pip Hearth-Rite Trail-Prep: the hero tops up to at least
+## - Out of combat, holding R or L+R for 120 frames (80 on a Star-Inked Vellum
+##   leaf) is the 0-pip Hearth-Rite Tuck: the hero tops up to at least
 ##   one Resonance Pip, the weapon glows at 1.35x in the socket's Place-Card
 ##   tint, and the next fight's first landed strike discharges the socket's
 ##   full Sign and Place-Card bonus (it carries the Sign, stamps its seal and
@@ -37,8 +37,8 @@ enum CoatLook { CLEAR, TRAIL_TUCK, FLARE, COAT }
 ## An engaged foe this close puts the hero in combat.
 const COMBAT_RADIUS: float = 18.0
 const FRAMES_PER_SECOND: float = 60.0
-const HEARTH_RITE_HOLD_FRAMES: int = 90
-const STAR_INKED_HOLD_FRAMES: int = 60
+const HEARTH_RITE_HOLD_FRAMES: int = 120
+const STAR_INKED_HOLD_FRAMES: int = 80
 ## The Hearth-Rite tops the hero up to at least this many pips.
 const HEARTH_RITE_PIPS: float = 1.0
 const TRAIL_COAT_SCALE: float = 1.35
@@ -143,10 +143,10 @@ func socket_synergy(socket: int) -> Dictionary:
 	return ArsenalCatalog.current.compute_diorama_synergy(kit.socket_leaf_id(socket), kit.place_ids[socket])
 
 
-## How long R or L+R must be held for the Hearth-Rite: 90 frames, 60 on a Star-Inked Vellum leaf.
+## How long R or L+R must be held for the Hearth-Rite Tuck: 120 frames, 80 on a Star-Inked Vellum leaf.
 func hearth_rite_hold_frames(socket: int) -> int:
 	var kit: EquipmentLoadoutResource = actor.loadout.kit
-	if kit != null and kit.socket_leaf_variant(socket) == ScribeCardResource.CardVariant.ASTRAL_PRISM:
+	if kit != null and kit.socket_leaf_variant(socket) == ScribeCardResource.CardVariant.STAR_INKED_VELLUM:
 		return STAR_INKED_HOLD_FRAMES
 	return HEARTH_RITE_HOLD_FRAMES
 
@@ -187,7 +187,7 @@ func sign_flow_casts() -> int:
 	return _casts
 
 
-# --- State 1: the Hearth-Rite Trail-Prep --------------------------------------
+# --- State 1: the Hearth-Rite Tuck --------------------------------------
 
 ## Out of combat, for free: at least one pip, the 1.35x glow, and an empowered
 ## opening strike from this socket's diorama. Returns whether it took.
@@ -208,7 +208,7 @@ func begin_hearth_rite(socket: int) -> bool:
 	trail_coat_timer = TRAIL_COAT_COMBAT_GRACE
 	CombatDirector.current.show_sign_coat(actor, CoatLook.TRAIL_TUCK, active_trail_coat_sign, synergy["manifestation_mode"],
 		active_location_card_id, 0.0)
-	var label: String = "HEARTH-RITE"
+	var label: String = "HEARTH-RITE TUCK"
 	if active_trail_coat_sign != NO_SIGN:
 		label += ": %s" % ArsenalCatalog.current.sign_seal(active_trail_coat_sign).display_name.to_upper()
 	CombatDirector.current.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.6), label,

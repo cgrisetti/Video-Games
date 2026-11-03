@@ -173,6 +173,16 @@ func _exit_tree() -> void:
 		director.bravery_countered.disconnect(_on_bravery_countered)
 
 
+
+## The place this hero just walked into (15_THE_MYTHOPOETIC_LENS.md §6.2): crossing
+## into another zone of the atlas unfurls that zone's rhyme on the Chime-Post
+## ribbon (with `unfurl`), and a Hearth-Rite Tuck there sings it again.
+func enter_place(place: String, unfurl: bool = true) -> void:
+	var zone_id: StringName = MythopoeticAtlas.zone_for_place(place)
+	if zone_id == &"" or cross_grimoire == null or zone_id == cross_grimoire.ribbon_zone_id:
+		return
+	cross_grimoire.show_rhyme_ribbon(zone_id, unfurl)
+
 ## The HUD drawn for `target` (a local player), or null.
 static func for_actor(tree: SceneTree, target: ActorBase) -> PlayerHUD:
 	for node: Node in tree.get_nodes_in_group(GROUP):
@@ -344,7 +354,7 @@ func banner_title() -> String:
 
 func _refresh_boss() -> void:
 	var boss: BossDummy = CombatDirector.current.primary_boss() as BossDummy
-	# No boss here (Bramblebridge), it's beaten, or it's still zones away: no bars to show.
+	# No boss here (Bramble-Bridge), it's beaten, or it's still zones away: no bars to show.
 	_top_panel.visible = boss != null and boss.stats != null and not boss.vanquished \
 		and (boss.engaged or boss.global_position.distance_to(actor.global_position) <= BOSS_BAR_RANGE)
 	if not _top_panel.visible:
@@ -378,11 +388,11 @@ func _refresh_boss() -> void:
 		_aggro_label.text = "Walk up to the Cairnsman to start the fight"
 		_aggro_label.modulate = Color.WHITE
 	elif target_id == actor.player_id:
-		_aggro_label.text = "Aggro: on YOU" + ("" if actor.role() == ClassLoadoutResource.Role.TANK else "  (let the tank taunt it back)")
+		_aggro_label.text = "Eyes on: YOU" + ("" if actor.role() == ClassLoadoutResource.Role.TANK else "  (let the tank taunt it back)")
 		_aggro_label.modulate = Color(1.0, 0.55, 0.45)
 	else:
 		var holder: ActorBase = CombatDirector.current.get_actor(target_id)
-		_aggro_label.text = "Aggro: %s" % (holder.display_name() if holder != null else String(target_id))
+		_aggro_label.text = "Eyes on: %s" % (holder.display_name() if holder != null else String(target_id))
 		_aggro_label.modulate = Color(0.85, 0.9, 1.0)
 
 

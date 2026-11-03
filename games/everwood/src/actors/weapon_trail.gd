@@ -1,4 +1,4 @@
-## The ribbon a melee weapon draws through a rune-wreathed strike: a Scribe
+## The ribbon a melee weapon draws through a Sign-wreathed strike: a Scribe
 ## Card swung through a sword or an axe (05 GDD §4.3). While the strike is
 ## live it sweeps the weapon through an arc and samples its base and tip each
 ## frame, drawing the last few samples as a fading strip in the card's Sign
@@ -107,6 +107,6 @@ func _rebuild() -> void:
 func _colour_for(action: CombatActionResource) -> Color:
 	var colour: Color = ArsenalCatalog.current.sign_seal(action.scribe_sign).color
 	var kit: EquipmentLoadoutResource = actor.loadout.kit
-	if action.grimoire_slot >= 0 and kit != null and kit.lead_variant(action.grimoire_slot) == ScribeCardResource.CardVariant.SHINY_FOIL:
+	if action.grimoire_slot >= 0 and kit != null and kit.lead_variant(action.grimoire_slot) == ScribeCardResource.CardVariant.GILDED_LEAF:
 		colour = SHINY_COLOR
 	return Color(colour, TRAIL_ALPHA)

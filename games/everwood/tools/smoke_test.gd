@@ -16,7 +16,7 @@
 ##     stepping aside when people rejoin
 ##   - the victory: slow motion, the banner, the reward chest and its Chimes,
 ##     and the gold portal home with the same ENet session still up
-##   - the Chime-Shrine in Bramblebridge: its menu on the keyboard, upgrades for
+##   - the Chime-Shrine in Bramble-Bridge: its menu on the keyboard, upgrades for
 ##     the whole party, refusals, saving and loading (old "shards" saves too)
 ##   - the Armory & Scribe Desk: weapon, armor and card swaps in place, the
 ##     chest's card, under-card links and the Grimoire's memory and levels,
@@ -24,10 +24,15 @@
 ##   - then the seamless Landblock world (tools/test_world_grid.gd): grid
 ##     maths, streaming layers and HLOD swaps up the corridor, the 2 ms queue,
 ##     WorldStateDB persistence and snapshots, navigation across a seam
-##   - and last Oakshire Vale (tools/test_oakshire_vale.gd): its rings, roads,
+##   - then Oakshire Vale (tools/test_oakshire_vale.gd): its rings, roads,
 ##     trees and boulders, townsfolk, portal aprons and spawners, then walking
-##     it from Wayfarer's Glade into the village, through the ford and up to a
+##     it from Wayfarer-Green into the village, through the ford and up to a
 ##     sealed portal
+##   - and last the Mythopoetic Lens (tools/test_mythopoetic_lens.gd): the four
+##     Linter Rules over every name the game shows, the six-zone atlas, the
+##     Hob-to-Boggart Spectrum (parley, turning boggart, the three
+##     un-boggartings, the Maker-Seal, the Challenge-Roar) and the Chime-Post
+##     ribbon and Hearth-Rite border
 ## Run from games/everwood:
 ##   godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd
 ## Exits 0 when every check passes, 1 otherwise.
@@ -86,6 +91,8 @@ var _orphans_before: int = 0
 const WORLD_GRID_CHECKS: GDScript = preload("res://tools/test_world_grid.gd")
 ## Oakshire Vale's checks (tools/test_oakshire_vale.gd), after the seamless world's.
 const OAKSHIRE_VALE_CHECKS: GDScript = preload("res://tools/test_oakshire_vale.gd")
+## The Mythopoetic Lens's checks (tools/test_mythopoetic_lens.gd), last, in Oakshire Vale.
+const MYTHOPOETIC_LENS_CHECKS: GDScript = preload("res://tools/test_mythopoetic_lens.gd")
 
 
 func _initialize() -> void:
@@ -103,6 +110,8 @@ func _run() -> void:
 	# Sign-Flow and Glimmer-Spots too: the Phase 12 check switches them on for itself.
 	SignFlowComponent.enabled = false
 	GlimmerSpotComponent.enabled = false
+	# Parleys and Challenge-Roars too: the Mythopoetic Lens check switches them on.
+	HobSpectrumComponent.enabled = false
 	change_scene_to_file(HUB_SCENE)
 	await _seconds(0.2)
 	_connect_global_signals()
@@ -152,6 +161,7 @@ func _run() -> void:
 	NetworkManager.current.leave_game()
 	await WORLD_GRID_CHECKS.new().run(self, _check)
 	await OAKSHIRE_VALE_CHECKS.new().run(self, _check)
+	await MYTHOPOETIC_LENS_CHECKS.new().run(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
@@ -165,7 +175,7 @@ func _run() -> void:
 # --- Hub Town, Input Map, hot-join ----------------------------------------
 
 func _check_hub_and_input_map() -> void:
-	_check(current_scene is HubTown, "the smoke test starts in Bramblebridge (Hub Town)")
+	_check(current_scene is HubTown, "the smoke test starts in Bramble-Bridge (Hub Town)")
 	_check(ProjectSettings.get_setting("application/run/main_scene") == InstanceManager.scene_path(InstanceManager.OAKSHIRE_VALE)
 		and InstanceManager.scene_path(InstanceManager.HUB_TOWN) == HUB_SCENE,
 		"the game starts in Oakshire Vale, and Hub Town is still an instance of its own (the tests start there)")
@@ -175,8 +185,8 @@ func _check_hub_and_input_map() -> void:
 		"--instance=bramblebridge starts the seamless world, --instance=hub the classic hub; a name it doesn't know leaves the start in Oakshire Vale")
 	_check(InstanceManager.current.instance_id == InstanceManager.HUB_TOWN and InstanceManager.current.is_live(), "Hub Town is the live instance")
 	var hub: HubTown = current_scene as HubTown
-	_check(hub.level_title() == "Bramblebridge" and hub.raid_portal.title.contains("Doverslap Expedition"),
-		"the hub is Bramblebridge, and its Raid Portal is labelled for the Doverslap Expedition")
+	_check(hub.level_title() == "Bramble-Bridge" and hub.raid_portal.title.contains("Dover-Slap-Falls Expedition"),
+		"the hub is Bramble-Bridge, and its Raid Portal is labelled for the Dover-Slap-Falls Expedition")
 	var actions: Array[StringName] = [InputComponent.ACTION_MOVE_LEFT, InputComponent.ACTION_MOVE_RIGHT,
 		InputComponent.ACTION_MOVE_FORWARD, InputComponent.ACTION_MOVE_BACK, InputComponent.ACTION_CAMERA_LEFT,
 		InputComponent.ACTION_CAMERA_RIGHT, InputComponent.ACTION_JOIN]
@@ -190,7 +200,7 @@ func _check_hub_and_input_map() -> void:
 	_check(InputComponent.binding_label(InputComponent.ACTION_LIGHT, FAKE_PADS[0] + 1) == "X"
 		and InputComponent.binding_label(InputComponent.ACTION_TRIGGER_L, FAKE_PADS[0] + 1) == "LT", "a generic pad reads as Xbox letters")
 	var house: MeshInstance3D = hub.get_node(^"Town/House1/Mesh") as MeshInstance3D
-	_check(house != null and (house.mesh as PrimitiveMesh).material is ShaderMaterial, "Bramblebridge's houses wear the storybook cel shader")
+	_check(house != null and (house.mesh as PrimitiveMesh).material is ShaderMaterial, "Bramble-Bridge's houses wear the storybook cel shader")
 	_check(InputComponent._pad_button_name(JOY_BUTTON_X, InputComponent.PadFamily.PLAYSTATION) == "□"
 		and InputComponent._pad_button_name(JOY_BUTTON_A, InputComponent.PadFamily.PLAYSTATION) == "✕", "a PlayStation pad reads as shapes")
 
@@ -258,7 +268,7 @@ func _check_arsenal_catalog() -> void:
 	var crescent: CombatActionResource = bow.card_action(ScribeCardResource.GrimoireSlot.BACK)
 	_check(snap.is_projectile() and is_equal_approx(snap.projectile_range, 14.0) and draw.pierces and is_equal_approx(draw.projectile_range, 18.0)
 		and drive.is_projectile() and is_equal_approx(drive.projectile_range, 18.0) and is_equal_approx(drive.lunge_distance, 0.0) and crescent.lunge_distance < 0.0,
-		"Hunter Bow: 14 m snap-shots, an 18 m piercing draw, cards as 18 m rune arrows (forward lunges planted, back steps kept)")
+		"Hunter Bow: 14 m snap-shots, an 18 m piercing draw, cards as 18 m Sign-arrows (forward lunges planted, back steps kept)")
 
 	var surged: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.DIRECTIONAL_FLOW_DPS)
 	surged.under_ids[0] = ArsenalCatalog.IRON_ROOT_LINK
@@ -319,7 +329,7 @@ func _check_arsenal_catalog() -> void:
 		seen_variants[variant] = true
 		rare_seen = rare_seen or dropped.rarity >= ScribeCardResource.CardRarity.RARE
 		plain_starter = plain_starter or (dropped.starter and variant == ScribeCardResource.CardVariant.STANDARD)
-	_check(seen_variants.has(ScribeCardResource.CardVariant.SHINY_FOIL) and seen_variants.has(ScribeCardResource.CardVariant.ASTRAL_PRISM) and rare_seen and not plain_starter,
+	_check(seen_variants.has(ScribeCardResource.CardVariant.GILDED_LEAF) and seen_variants.has(ScribeCardResource.CardVariant.STAR_INKED_VELLUM) and rare_seen and not plain_starter,
 		"boss chests drop Rare and Legendary cards and Gilded Leaf or Star-Inked Vellum copies (never a Plain Vellum starter card)")
 
 
@@ -342,7 +352,7 @@ func _check_callings() -> void:
 	_check(is_equal_approx(warden.stats.max_health, 180.0) and is_equal_approx(captain.stats.max_health, 160.0) and is_equal_approx(guard.stats.max_health, 155.0)
 		and is_equal_approx(warden.stats.stamina_regen_per_sec, 16.0) and is_equal_approx(captain.stats.stamina_regen_per_sec, 21.0)
 		and is_equal_approx(guard.stats.stamina_regen_per_sec, 20.0),
-		"on a 160-health Shield-Sworn in plate: Stout Heart +20 health and -2 stamina/s, Swift Foot +3 stamina/s, Wise Hand -5 health and +2 stamina/s")
+		"on a 160-health Shield-Sworn in a ring-coat: Stout Heart +20 health and -2 stamina/s, Swift Foot +3 stamina/s, Wise Hand -5 health and +2 stamina/s")
 	var warden_charge: CombatActionResource = warden.card_action(0)
 	var captain_charge: CombatActionResource = captain.card_action(0)
 	var guard_charge: CombatActionResource = guard.card_action(0)
@@ -364,7 +374,7 @@ func _check_callings() -> void:
 	plate_kit.armor_id = ArsenalCatalog.IRONWOOD_PLATE
 	_check(LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.DIRECTIONAL_FLOW_DPS), plate_kit, 1, empty_binder).contains("needs a Stout Heart (+Tank)")
 		and LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.DIRECTIONAL_FLOW_DPS, Callings.Secondary.STOUT_HEART), plate_kit, 1, empty_binder) == "",
-		"heavy plate waits for a Stout Heart: a Hedge-Runner can't wear it, an Iron-Woodsman can")
+		"the heavy ring-coat waits for a Stout Heart: a Hedge-Runner can't wear it, an Iron-Woodsman can")
 	var staff_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
 	staff_kit.weapon_id = ArsenalCatalog.SCRIBE_STAFF
 	_check(LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK), staff_kit, 1, empty_binder).contains("Wise Hand")
@@ -423,7 +433,7 @@ func _check_four_signs_and_finishes() -> void:
 	_check(ScribeCardResource.VARIANT_NAMES == ["Plain Vellum", "Gilded Leaf", "Star-Inked Vellum"]
 		and catalog.copy_name(&"moonfall_cleave:shiny_foil") == "Moonfall Cleave (Rare, Gilded Leaf)",
 		"card finishes read as Plain Vellum, Gilded Leaf and Star-Inked Vellum")
-	_check(ScribeCardResource.copy_variant(&"gale_rush:astral_prism") == ScribeCardResource.CardVariant.ASTRAL_PRISM,
+	_check(ScribeCardResource.copy_variant(&"gale_rush:astral_prism") == ScribeCardResource.CardVariant.STAR_INKED_VELLUM,
 		"save files keep the Phase 7 finish keys, so existing binders still load")
 
 
@@ -488,7 +498,7 @@ func _check_walk_over_bramblebridge() -> void:
 		waited += 1.0 / 60.0
 		highest = maxf(highest, walker.global_position.y)
 	walker.input.inject_move(Vector2.ZERO)
-	_check(walker.global_position.z <= canal_z - 7.0, "walking north on the stick crosses Bramblebridge to the square (%.1f s)" % waited)
+	_check(walker.global_position.z <= canal_z - 7.0, "walking north on the stick crosses Bramble-Bridge to the square (%.1f s)" % waited)
 	_check(highest > 0.75 and highest < 1.2, "over the arch's crown (%.2f m up), not around or under it" % highest)
 	walker.input.release_script()
 	walker.respawn()
@@ -611,10 +621,10 @@ func _check_portal_into_dojo() -> void:
 	_gather_on(hub.raid_portal, hub)
 	await _until_live_in(InstanceManager.DUNGEON_DOJO)
 	_check(_portal_countdowns == 1, "the whole party on the Raid Portal starts its countdown")
-	_check(current_scene is DungeonDojo and InstanceManager.current.instance_id == InstanceManager.DUNGEON_DOJO, "the portal moves the party onto the Doverslap Expedition")
+	_check(current_scene is DungeonDojo and InstanceManager.current.instance_id == InstanceManager.DUNGEON_DOJO, "the portal moves the party onto the Dover-Slap-Falls Expedition")
 	var ring: DungeonDojo = current_scene as DungeonDojo
-	_check(ring.level_title() == "The Doverslap Expedition" and ring.boss.display_name() == "The Cairnsman of Doverslap"
-		and ring.exit_portal.title == "Exit: Bramblebridge", "the raid is the Doverslap Expedition, its boss the Cairnsman of Doverslap, its exit to Bramblebridge")
+	_check(ring.level_title() == "The Dover-Slap-Falls Expedition" and ring.boss.display_name() == "The Cairnsman of Dover-Slap-Falls"
+		and ring.exit_portal.title == "Exit: Bramble-Bridge", "the raid is the Dover-Slap-Falls Expedition, its boss the Cairnsman of Dover-Slap-Falls, its exit to Bramble-Bridge")
 	_check(root.multiplayer.multiplayer_peer == session and network.is_online(), "the ENet session survives the instance change")
 	dojo = current_scene as DungeonDojo
 	boss = dojo.boss
@@ -628,7 +638,7 @@ func _check_portal_into_dojo() -> void:
 		"Adventurer mode: 550 ms buffer and auto-chaining")
 
 
-# --- The Doverslap Expedition (07 GDD §3) ---------------------------------
+# --- The Dover-Slap-Falls Expedition (07 GDD §3) ---------------------------------
 
 ## Zone 1's ramp, lanterns, camps, shrine and chest; Zone 2's checkpoint, gale
 ## and Co-Op Threshold opened every way (two players on the plates, a tank's
@@ -637,7 +647,7 @@ func _check_doverslap_expedition() -> void:
 	var network: NetworkManager = NetworkManager.current
 	var progress: PartyProgress = PartyProgress.current
 	_check(dojo.zone == 1 and tank.global_position.z > 70.0 and boss.global_position.distance_to(tank.global_position) > 100.0 and not boss.engaged,
-		"the party arrives in Zone 1, the Ariundle Moss-Oaks, far from the Cairnsman, who waits unwoken")
+		"the party arrives in Zone 1, Moss-Oak-Hollow, far from the Cairnsman, who waits unwoken")
 	_check(not (dojo.huds[tank.player_id] as PlayerHUD).boss_bar_visible(), "his health bar stays hidden until the party nears him")
 	var camp_one: MinionCamp = dojo.camps[0]
 	var camp_two: MinionCamp = dojo.camps[1]
@@ -647,7 +657,7 @@ func _check_doverslap_expedition() -> void:
 			built_right = built_right and is_equal_approx(minion.stats.stats.max_health, 65.0) and is_equal_approx(minion.stats.stats.max_poise, 30.0) \
 				and minion.is_boss() and not minion.is_raid_boss() and not minion.is_engaged()
 	_check(built_right and CombatDirector.current.primary_boss() == boss and CombatDirector.current.enemies().size() == 8,
-		"two sleeping woodland camps (3 Bramble-Scuttlers; 3 Bog-Imps and a Scuttler), 65 health and 30 poise each, and the boss is still the boss")
+		"two sleeping woodland camps (3 Bramble-Hobs; 3 Wisp-Boggles and a Scuttler), 65 health and 30 poise each, and the boss is still the boss")
 	# Down the holloway on the stick alone: a real 1.8 m ramp, no jump.
 	dps.place_at(Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, 48.0)))
 	dps.input.inject_move(Vector2(0.0, 1.0))
@@ -657,7 +667,7 @@ func _check_doverslap_expedition() -> void:
 		waited += 1.0 / 60.0
 	dps.input.inject_move(Vector2.ZERO)
 	await _seconds(0.2)
-	_check(dps.global_position.z <= 37.5 and dps.global_position.y < -1.5 and dps.is_on_floor(), "walking down the ramp into the Sunken Holloway, six feet below the oaks")
+	_check(dps.global_position.z <= 37.5 and dps.global_position.y < -1.5 and dps.is_on_floor(), "walking down the ramp into Rush-Light-Hollow, six feet below the oaks")
 	var lantern: WindLantern = dojo.get_node(^"WindLanterns/WindLantern1") as WindLantern
 	# The DPS brushed this one on the way down; let it settle first.
 	await _seconds(WindLantern.COOLDOWN + 0.1)
@@ -665,14 +675,14 @@ func _check_doverslap_expedition() -> void:
 	healer.place_at(Transform3D(Basis.IDENTITY, Vector3(lantern.global_position.x, -0.5, lantern.global_position.z)))
 	await _seconds(0.2)
 	_check(lantern.chimes > lantern_chimes and _audio_cues.has(&"lantern"), "brushing past a clay Wind-Lantern makes it chime")
-	# The Bramble Camp wakes, a bow shot finds a Scuttler, and clearing it pays Chimes.
+	# The Bramble Hush-Crack wakes, a bow shot finds a Scuttler, and clearing it pays Chimes.
 	tank.place_at(Transform3D(Basis.IDENTITY, camp_one.global_position + Vector3(0.0, 0.0, 3.0)))
 	_face_point(dps, camp_one.global_position, Vector3(0.0, 0.0, 10.0))
 	await _seconds(0.3)
 	var all_awake: bool = camp_one.alert
 	for minion: WoodlandMinion in camp_one.minions:
 		all_awake = all_awake and minion.is_engaged()
-	_check(all_awake and not camp_two.alert, "walking up wakes the whole Bramble Camp (and only that camp)")
+	_check(all_awake and not camp_two.alert, "walking up wakes the whole Bramble Hush-Crack (and only that camp)")
 	var nearest: ActorBase = dps.soft_target()
 	_check(nearest is WoodlandMinion, "the DPS's soft-lock picks the nearest woken minion")
 	dps.stats.stamina = dps.stats.stats.max_stamina
@@ -693,6 +703,10 @@ func _check_doverslap_expedition() -> void:
 	for minion: WoodlandMinion in camp_one.minions:
 		faded = faded and minion.collision_layer == 0 and not minion.visual.visible and not minion.is_targetable()
 	_check(faded, "beaten minions shrink into the moss and are gone")
+	var released: bool = not camp_one.minions.is_empty()
+	for minion: WoodlandMinion in camp_one.minions:
+		released = released and minion.spectrum != null and minion.spectrum.state == HobSpectrumComponent.SpiritState.STATE_UNBOGGART_RELEASE
+	_check(released, "beaten Bramble-Hobs are un-boggarted, not slain: each flies off a hedge-wren (STATE_UNBOGGART_RELEASE)")
 	# The Water-Shrine refreshes the whole party.
 	tank.stats.take_damage(60.0)
 	tank.stats.stamina = 10.0
@@ -718,20 +732,20 @@ func _check_doverslap_expedition() -> void:
 	healer.place_at(Transform3D(Basis.IDENTITY, Vector3(6.0, 0.0, 11.0)))
 	await _seconds(0.1)
 	_check(dojo.zone == 2 and absf(tank.spawn_transform.origin.z - dojo.checkpoint_transform(2, tank.party_slot).origin.z) < 0.1,
-		"reaching the Doverslap Gorge moves everyone's respawn to its checkpoint")
+		"reaching Dover-Slap-Falls moves everyone's respawn to its checkpoint")
 	dps.place_at(Transform3D(Basis.IDENTITY, gate.to_global(Vector3(0.0, 0.0, 6.0))))
 	await _seconds(0.1)
 	var start_z: float = dps.global_position.z
 	_check(gate.gale.blast() >= 1, "the Gorge Gale-Jet blows down the lane")
 	await _seconds(0.6)
 	_check(dps.global_position.z > start_z + 3.0, "and shoves an exposed player back down the bridge")
-	_check(CoopGate.plates_needed(1) == 1 and CoopGate.plates_needed(3) == 2 and CoopGate.plates_needed(5) == 2, "the gate needs min(2, party) Rune-Plates")
+	_check(CoopGate.plates_needed(1) == 1 and CoopGate.plates_needed(3) == 2 and CoopGate.plates_needed(5) == 2, "the gate needs min(2, party) Maker-Seal Plates")
 	# Way one: two players on the plates.
 	tank.place_at(Transform3D(Basis.IDENTITY, gate.plates[0].global_position))
 	dps.place_at(Transform3D(Basis.IDENTITY, gate.plates[1].global_position))
 	await _seconds(CoopGate.PLATE_HOLD_TIME + 0.3)
 	_check(gate.is_open and gate.opened_by == CoopGate.Method.RUNE_PLATES and not gate.gale.active,
-		"two players holding both Rune-Plates for 2 s open the portcullis, and the gale dies away")
+		"two players holding both Maker-Seal Plates for 2 s open the portcullis, and the gale dies away")
 	gate.reset_gate()
 	dps.place_at(Transform3D(Basis.IDENTITY, Vector3(6.0, 0.0, 11.0)))
 	await _seconds(CoopGate.PLATE_HOLD_TIME + 0.5)
@@ -764,7 +778,7 @@ func _check_doverslap_expedition() -> void:
 	while waited < 10.0 and not gate.is_open:
 		await _seconds(0.25)
 		waited += 0.25
-	_check(gate.is_open and gate.opened_by == CoopGate.Method.RUNE_PLATES, "in solo play a companion walks to the second Rune-Plate and the gate opens (%.1f s)" % waited)
+	_check(gate.is_open and gate.opened_by == CoopGate.Method.RUNE_PLATES, "in solo play a companion walks to the second Maker-Seal Plate and the gate opens (%.1f s)" % waited)
 	network.request_local_player(1, ClassLoadouts.SOUL_TETHER_HEALER, InputComponent.AssistMode.ADVENTURER)
 	network.request_local_player(2, ClassLoadouts.DIRECTIONAL_FLOW_DPS, InputComponent.AssistMode.MASTER)
 	await _seconds(0.2)
@@ -895,7 +909,7 @@ func _check_storybook_art() -> void:
 	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, leather, tank.loadout.calling))
 	await physics_frame
 	_check(tank.visuals.find_child("Jerkin", true, false) != null and tank.visuals.find_child("Breastplate", true, false) == null,
-		"a new armor weight redraws the puppet (plate off, a leather jerkin on)")
+		"a new armor weight redraws the puppet (ring-coat off, a jerkin on)")
 	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, null, tank.loadout.calling))
 	var core: Node = boss.find_child("AmberCore", true, false)
 	_check(boss.find_child("ArmLeft", true, false) != null and boss.find_child("ArmRight", true, false) != null and core != null
@@ -1040,7 +1054,7 @@ func _check_ranged_and_armor() -> void:
 	healer.input.inject_command(Cmd.FORWARD_HEAVY)
 	await _seconds(0.8)
 	_check(_projectiles.count(healer.player_id) > shots and boss.stats.health < health_before,
-		"the healer's Sunlit Lance card flies through the staff as a rune bolt and hits from 8 m")
+		"the healer's Sunlit Lance card flies through the staff as a Sign-bolt and hits from 8 m")
 	var pool: FxPool = CombatDirector.current.fx_pool
 	var made: int = pool.made_count
 	for volley: int in 6:
@@ -1056,7 +1070,7 @@ func _check_ranged_and_armor() -> void:
 	var guards: int = _perfect_guards
 	CombatDirector.current.deliver(CombatEvent.strike_from(boss, tank, boss.loadout.openers[0]))
 	await _seconds(0.1)
-	_check(_perfect_guards == guards + 1, "Ironwood Plate's 260 ms window, +30 ms for a Stout Heart: a guard raised 0.27 s early is still perfect")
+	_check(_perfect_guards == guards + 1, "Iron-Wood Ring-Coat's 260 ms window, +30 ms for a Stout Heart: a guard raised 0.27 s early is still perfect")
 	tank.input.inject_guard(false)
 	await _seconds(0.3)
 	tank.re_equip(_compose(ClassLoadouts.SHIELD_TANK, ArsenalCatalog.RANGER_LEATHER, &""))
@@ -1067,7 +1081,7 @@ func _check_ranged_and_armor() -> void:
 	CombatDirector.current.deliver(CombatEvent.strike_from(boss, tank, boss.loadout.openers[0]))
 	await _seconds(0.1)
 	_check(_perfect_guards == guards + 1 and _outcomes.slice(outcomes).has(StatsComponent.StrikeOutcome.GUARDED),
-		"in Ranger Leather (200 + 30 ms) the same guard is too early: it just blocks")
+		"in Hedgerow Wool-Mantle (200 + 30 ms) the same guard is too early: it just blocks")
 	tank.input.inject_guard(false)
 	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK))
 	await _seconds(0.1)
@@ -1076,12 +1090,12 @@ func _check_ranged_and_armor() -> void:
 	var dps_health: float = dps.stats.health
 	CombatDirector.current.deliver(_strike(boss, dps, 50.0, 0.0))
 	await _seconds(0.05)
-	_check(is_equal_approx(dps_health - dps.stats.health, 50.0 * (1.0 - 0.20)), "Ranger Leather takes 20% off a 50-damage hit")
+	_check(is_equal_approx(dps_health - dps.stats.health, 50.0 * (1.0 - 0.20)), "Hedgerow Wool-Mantle takes 20% off a 50-damage hit")
 	dps.stats.heal(dps.stats.stats.max_health)
 	var light_roll: float = await _measure_roll(dps, ArsenalCatalog.HEARTH_LINEN)
 	var heavy_roll: float = await _measure_roll(dps, ArsenalCatalog.IRONWOOD_PLATE)
 	dps.re_equip(ClassLoadouts.compose(ClassLoadouts.DIRECTIONAL_FLOW_DPS))
-	_check(light_roll > heavy_roll + 1.0, "Hearth-Linen rolls farther than Ironwood Plate (%.1f m against %.1f m)" % [light_roll, heavy_roll])
+	_check(light_roll > heavy_roll + 1.0, "Hearth-Linen rolls farther than Iron-Wood Ring-Coat (%.1f m against %.1f m)" % [light_roll, heavy_roll])
 
 	var arrow: CombatActionResource = dps.loadout.opener_for(Cmd.LIGHT)
 	var packet: Dictionary = CombatEvent.strike_from(dps, boss, arrow).to_dict()
@@ -1123,7 +1137,7 @@ func _check_card_invocations() -> void:
 	_check(standard != null and not standard.in_use, "the Standard flourish ends after 0.6 s and goes back to the effect pool")
 
 	var foil_chimes: int = _audio_cues.count(&"card_chime_foil")
-	var foil: ScribeInvocationFX = await _charge_with(ScribeCardResource.CardVariant.SHINY_FOIL)
+	var foil: ScribeInvocationFX = await _charge_with(ScribeCardResource.CardVariant.GILDED_LEAF)
 	_check(foil != null and foil.is_showing_foil() and _audio_cues.count(&"card_chime_foil") > foil_chimes,
 		"a Gilded Leaf copy adds two counter-rotating gold rings and a brighter chime")
 	await _seconds(tank.loadout.card_action(0).windup_time)
@@ -1131,7 +1145,7 @@ func _check_card_invocations() -> void:
 		"and its sword swings a gold ribbon trail")
 	await _seconds(1.0)
 
-	var astral: ScribeInvocationFX = await _charge_with(ScribeCardResource.CardVariant.ASTRAL_PRISM)
+	var astral: ScribeInvocationFX = await _charge_with(ScribeCardResource.CardVariant.STAR_INKED_VELLUM)
 	_check(astral != null and astral.is_showing_dome(), "a Star-Inked Vellum copy raises a starfield dome through the wind-up")
 	await _seconds(0.8)
 	_check(_active_footprints() >= 2, "and the charge leaves glowing footprints behind the tank")
@@ -1139,7 +1153,7 @@ func _check_card_invocations() -> void:
 	_check(astral != null and not astral.in_use, "the Star-Inked flourish lasts 2.5 s, then goes back to the pool")
 
 	var shiny_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
-	shiny_kit.lead_variants[0] = ScribeCardResource.CardVariant.SHINY_FOIL
+	shiny_kit.lead_variants[0] = ScribeCardResource.CardVariant.GILDED_LEAF
 	var shiny_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, shiny_kit).card_action(0)
 	var plain_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK).card_action(0)
 	_check(is_equal_approx(shiny_charge.damage, plain_charge.damage) and shiny_charge.action_id == plain_charge.action_id,
@@ -1152,7 +1166,7 @@ func _check_card_invocations() -> void:
 	dps.input.inject_command(Cmd.BACK_HEAVY)
 	await _seconds(0.05)
 	var shot_fx: ScribeInvocationFX = _active_invocation(dps)
-	_check(shot_fx != null and shot_fx.is_showing_muzzle_ring(), "a card fired through the bow charges through a standing rune ring first")
+	_check(shot_fx != null and shot_fx.is_showing_muzzle_ring(), "a card fired through the bow charges through a standing Sign ring first")
 	await _seconds(1.0)
 	boss.set_physics_process(true)
 	_stage_party()
@@ -1465,7 +1479,7 @@ func _check_wipe_resets_fight() -> void:
 
 ## Fewer than 3 people: AI companions fill the missing trinity roles, fight by
 ## their Gambit lists, and step aside when people come back.
-## The Cairnsman's Phase 2 (07 GDD §3, Zone 3): at half health the Doverslap
+## The Cairnsman's Phase 2 (07 GDD §3, Zone 3): at half health Dover-Slap-Falls
 ## Gale-Beam joins its casts, aimed at the tank. Behind the tank's Shadow
 ## Sanctuary nobody is hurt and everyone earns half a pip; out in the lane it hits
 ## for 40 (before armor) and throws you back.
@@ -1491,8 +1505,8 @@ func _check_gale_beam() -> void:
 		await physics_frame
 		waited += 1.0 / 60.0
 		beam = CombatDirector.current.beam_telegraph()
-	_check(beam != null and beam.follow_target == tank and boss.cast_name == "Doverslap Gale-Beam" and is_equal_approx(beam.cast_time, 3.2),
-		"the Doverslap Gale-Beam: a blue lane from the boss to the tank with a shield pillar, cast over 3.2 s")
+	_check(beam != null and beam.follow_target == tank and boss.cast_name == "Dover-Slap Gale-Beam" and is_equal_approx(beam.cast_time, 3.2),
+		"the Dover-Slap Gale-Beam: a blue lane from the boss to the tank with a shield pillar, cast over 3.2 s")
 	if beam == null:
 		return
 	await physics_frame
@@ -1863,7 +1877,7 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 	await _seconds(0.1)
 	_check(progress.trail_level() == 5 and tank.loadout.weapon.item_id == ArsenalCatalog.BRAMBLE_FALCHION and tank.loadout.kit.lead_ids[3] == ArsenalCatalog.BULWARK_QUAKE
 		and dps.loadout.kit.lead_ids[3] == ArsenalCatalog.TEMPEST_FLOW and healer.loadout.kit.lead_ids[3] == ArsenalCatalog.LIFELINE_PULL,
-		"Level 5: Bramblebridge Steel and an L+R card")
+		"Level 5: Bramble-Bridge Steel and an L+R card")
 	progress.award_xp(PartyProgress.LEVEL_XP[6] - progress.xp)
 	await _seconds(0.1)
 	_check(tank.loadout.kit.under_ids[2] == ArsenalCatalog.IRON_ROOT_LINK and dps.loadout.kit.under_ids[2] == ArsenalCatalog.STAR_TIDE_LINK
@@ -1873,7 +1887,7 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 	await _seconds(0.1)
 	_check(progress.trail_level() == 10 and tank.loadout.weapon.item_id == ArsenalCatalog.CAIRNSMAN_FALCHION and dps.loadout.weapon.item_id == ArsenalCatalog.GORGE_LONGBOW
 		and Callings.is_valid(tank.loadout.calling) and tank.loadout.display_name != "Shield-Sworn",
-		"Level 10: a Doverslap relic, and the Secondary Calling opens (%s)" % tank.loadout.display_name)
+		"Level 10: a Dover-Slap relic, and the Secondary Calling opens (%s)" % tank.loadout.display_name)
 
 	# A card's Sign: the bow swells Sea-Azure, the Ring and badge mark the foe, the tank is prompted to detonate.
 	await _until_idle(dps)
@@ -1976,8 +1990,8 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	var old_kit: Dictionary = {"armor": "ironwood_plate", "weapon": "light_sword", "leads": ["shield_charge", "shadow_sanctuary", "taunt", "bulwark_quake"],
 		"variants": [1, 0, 0, 0], "unders": ["", "", "", ""]}
 	var read_back: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(old_kit)
-	_check(ScribeCardResource.variant_for_key("shiny_foil") == ScribeCardResource.CardVariant.SHINY_FOIL
-		and ScribeCardResource.copy_variant(&"taunt:astral_prism") == ScribeCardResource.CardVariant.ASTRAL_PRISM
+	_check(ScribeCardResource.variant_for_key("shiny_foil") == ScribeCardResource.CardVariant.GILDED_LEAF
+		and ScribeCardResource.copy_variant(&"taunt:astral_prism") == ScribeCardResource.CardVariant.STAR_INKED_VELLUM
 		and ScribeCardResource.VARIANT_NAMES == ["Plain Vellum", "Gilded Leaf", "Star-Inked Vellum"]
 		and read_back.lead_variants[0] == 1 and read_back.guard_leaf_id == &"" and read_back.place_ids == [&"", &"", &""],
 		"old saves still read: standard / shiny_foil / astral_prism are Plain Vellum, Gilded Leaf and Star-Inked Vellum, and old kits get empty dioramas")
@@ -1988,7 +2002,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	_check(harmony["is_home_ground_harmony"] and is_equal_approx(harmony["coat_duration_sec"], 10.0) and is_equal_approx(harmony["bonus_poise"], 15.0)
 		and harmony["scribe_sign"] == Sign.SIGN_IRON_ROOT and not stranger["is_home_ground_harmony"] and is_equal_approx(stranger["coat_duration_sec"], 8.0)
 		and is_equal_approx(stranger["bonus_reach_m"], 0.8),
-		"Rising Drive framed by the Ariundle Moss-Oaks is Home-Ground Harmony: a 10.0 s coat (1.25x) and +15 poise; on the Gorge Bridge it's 8.0 s with +0.8 m reach")
+		"Rising Drive framed by Moss-Oak-Hollow is Home-Ground Harmony: a 10.0 s coat (1.25x) and +15 poise; on the Gorge Bridge it's 8.0 s with +0.8 m reach")
 
 	# The scaling formulas, at 60 frames a second.
 	var worm: BossEncounterResource = catalog.encounter(ArsenalCatalog.SCREE_WORM)
@@ -2012,9 +2026,9 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	var hud: PlayerHUD = dojo.huds[tank.player_id]
 	_check(tank.loadout.kit.place_ids[Diorama.SKILL] == ArsenalCatalog.ARIUNDLE_MOSS_OAKS and tank.loadout.kit.guard_leaf_id == ArsenalCatalog.SHADOW_SANCTUARY
 		and flow.socket_synergy(Diorama.SKILL)["is_home_ground_harmony"] and hud.cross_grimoire.diorama.socket_view(Diorama.SKILL)["place"] == ArsenalCatalog.ARIUNDLE_MOSS_OAKS,
-		"the tank's R diamond frames Taunt (Iron-Root) with the Ariundle Moss-Oaks, shown on the HUD's diamonds; L holds Shadow Sanctuary")
+		"the tank's R diamond frames Taunt (Iron-Root) with Moss-Oak-Hollow, shown on the HUD's diamonds; L holds Shadow Sanctuary")
 
-	# 0-pip Hearth-Rite: hold R out of combat for 90 frames.
+	# 0-pip Hearth-Rite Tuck: hold R out of combat for 120 frames.
 	var issued: Array[int] = []
 	var issued_hook: Callable = func(command: int) -> void: issued.append(command)
 	tank.input.command_issued.connect(issued_hook)
@@ -2032,7 +2046,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	await physics_frame
 	_check(not flow.is_in_combat and not early and holding > 0.95 and flow.has_hearth_rite_tuck and flow.opening_strike_empowered
 		and is_equal_approx(tank.stats.resonance_charge, 1.0) and not issued.has(Cmd.TRIGGER_R_SKILL),
-		"out of combat, holding R for 90 frames is the Hearth-Rite: it costs no pip, tops the tank up to 1.0 and empowers the opening strike")
+		"out of combat, holding R for 120 frames is the Hearth-Rite Tuck: it costs no pip, tops the tank up to 1.0 and empowers the opening strike")
 	_check(is_equal_approx(tank.visuals.weapon_scale(), SignFlowComponent.TRAIL_COAT_SCALE) and flow.active_trail_coat_sign == Sign.SIGN_IRON_ROOT
 		and flow.active_location_card_id == ArsenalCatalog.ARIUNDLE_MOSS_OAKS and tank.visuals.sign_coat_look() == SignFlowComponent.CoatLook.TRAIL_TUCK,
 		"the falchion glows at %.2fx in the Moss-Oaks' tint, carrying Iron-Root into the next fight" % tank.visuals.weapon_scale())
@@ -2046,7 +2060,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	tank.stats.resonance_charge = 2.0
 	flow.begin_hearth_rite(Diorama.SKILL)
 	var astral_kit: EquipmentLoadoutResource = tank.loadout.kit.copy()
-	astral_kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] = ScribeCardResource.CardVariant.ASTRAL_PRISM
+	astral_kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] = ScribeCardResource.CardVariant.STAR_INKED_VELLUM
 	var astral_frames: int = 0
 	var real_kit: EquipmentLoadoutResource = tank.loadout.kit
 	tank.loadout.kit = astral_kit
@@ -2145,7 +2159,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	var gorge_reach: float = -tank.hitbox.position.z
 	tank.hitbox.deactivate()
 	flow.coat_time_left = 0.01
-	_check(is_equal_approx(gorge_reach, light.reach + 0.8), "a coat framed by the Doverslap Gorge Bridge reaches 0.8 m further (Gorge-Draft)")
+	_check(is_equal_approx(gorge_reach, light.reach + 0.8), "a coat framed by Dover-Slap-Bridge reaches 0.8 m further (Gorge-Draft)")
 	# The window's length: 18 frames near a Lantern-Bearer, 9 alone in Dread-Chill.
 	healer.place_at(Transform3D(Basis.IDENTITY, tank.global_position + Vector3(2.0, 0.0, 0.0)))
 	var promise: int = flow.flow_window_frames()
@@ -2295,18 +2309,18 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 		and int((saved.get_value("cards", "collection", {}) as Dictionary).get("loc_barrow_crag_tor", 0)) == 1 and int(saved.get_value("party", "chimes", 0)) == 175
 		and tank.loadout.kit.place_ids[Diorama.ULT] == ArsenalCatalog.BARROW_CRAG_TOR
 		and shop.widget.socket_view(Diorama.ULT)["place"] == ArsenalCatalog.BARROW_CRAG_TOR and hud_widget.socket_view(Diorama.ULT)["place"] == ArsenalCatalog.BARROW_CRAG_TOR,
-		"charting the Barrow-Crag Star-Tor takes 25 Chimes, saves it, and frames L+R in both the shop's diamonds and the HUD's")
+		"charting the Barrow-Crag-Crossing takes 25 Chimes, saves it, and frames L+R in both the shop's diamonds and the HUD's")
 	shop.select_tab(ScriberyShopPanel.Tab.GILD)
 	var on_press: bool = shop.select_option(ArsenalCatalog.TAUNT)
 	var gilded: bool = shop.buy()
 	await _seconds(0.1)
 	saved.load(TEST_SAVE_PATH)
-	_check(on_press and gilded and progress.chimes == 125 and progress.owns_card(ArsenalCatalog.TAUNT, ScribeCardResource.CardVariant.SHINY_FOIL)
+	_check(on_press and gilded and progress.chimes == 125 and progress.owns_card(ArsenalCatalog.TAUNT, ScribeCardResource.CardVariant.GILDED_LEAF)
 		and int((saved.get_value("cards", "collection", {}) as Dictionary).get("taunt:shiny_foil", 0)) == 1
-		and tank.loadout.kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] == ScribeCardResource.CardVariant.SHINY_FOIL
-		and shop.widget.kit.socket_leaf_variant(Diorama.SKILL) == ScribeCardResource.CardVariant.SHINY_FOIL
-		and hud_widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.SHINY_FOIL
-		and shop.widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.ASTRAL_PRISM
+		and tank.loadout.kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] == ScribeCardResource.CardVariant.GILDED_LEAF
+		and shop.widget.kit.socket_leaf_variant(Diorama.SKILL) == ScribeCardResource.CardVariant.GILDED_LEAF
+		and hud_widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.GILDED_LEAF
+		and shop.widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.STAR_INKED_VELLUM
 		and PartyProgress.gilding_cost(&"taunt:shiny_foil") == 120,
 		"the Gilding Press turns the worn Taunt from Plain Vellum to Gilded Leaf for 50 Chimes: saved, worn, gold-trimmed on the HUD, and the press now previews Star-Inked (120)")
 	shop.close()
@@ -2355,7 +2369,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	boss.set_physics_process(true)
 
 
-## The Reed-Light Scribery on Bramblebridge's square: under the 3.2 m sightline
+## The Reed-Light Scribery on Bramble-Bridge's square: under the 3.2 m sightline
 ## cap, its prompt, and light at the counter opens the shop on your own screen.
 func _check_reed_light_scribery() -> void:
 	var hub: HubTown = current_scene as HubTown
@@ -2433,6 +2447,9 @@ func _check_victory_and_loot() -> void:
 	boss.stats.take_damage(boss.stats.health)
 	await _seconds(0.1)
 	_check(dojo.victory and boss.vanquished and boss.state_machine.is_in(&"downed"), "defeating the Cairnsman starts the victory")
+	var cairn: UnboggartFx = boss.get_parent().get_node_or_null(^"LulledCairn") as UnboggartFx
+	_check(boss.spectrum != null and boss.spectrum.state == HobSpectrumComponent.SpiritState.STATE_LULLED_CAIRN and cairn != null
+		and is_inf(cairn.linger), "the Cairnsman isn't slain: he's lulled back into a mossy river-cairn that stays (STATE_LULLED_CAIRN)")
 	_check(is_equal_approx(Engine.time_scale, DungeonDojo.VICTORY_TIME_SCALE), "the win plays out in slow motion (x0.2)")
 	_check(dojo.chest != null and dojo.chest.is_inside_tree(), "a reward chest drops into the arena")
 	_check(PartyProgress.current.grimoire_level() == level_before + 1, "the win raises the Grimoire to Lv %d" % (level_before + 1))
@@ -2460,12 +2477,12 @@ func _check_victory_and_loot() -> void:
 	_check(coins != null, "brass Chimes burst out of the chest toward the party")
 	_check(dojo.exit_portal.is_recalling(), "the gold exit portal starts calling the party home")
 	await _until_live_in(InstanceManager.HUB_TOWN)
-	_check(current_scene is HubTown, "the gold portal brings the party back to Bramblebridge")
+	_check(current_scene is HubTown, "the gold portal brings the party back to Bramble-Bridge")
 	_check(root.multiplayer.multiplayer_peer == session and NetworkManager.current.is_online(), "still the same ENet session after the round trip")
 	_check(NetworkManager.current.party_size() == 3 and _hub().grid.view_count() == 3, "the whole party is back in town")
 	await _seconds(0.2)
 	var orphans: int = _orphan_count()
-	_check(orphans <= _orphans_before, "no orphaned nodes after Bramblebridge, the Ring and back (%d before, %d after)" % [_orphans_before, orphans])
+	_check(orphans <= _orphans_before, "no orphaned nodes after Bramble-Bridge, the Ring and back (%d before, %d after)" % [_orphans_before, orphans])
 
 
 func _check_audio_cues() -> void:
@@ -2547,7 +2564,7 @@ func _check_chime_shrine() -> void:
 	NetworkManager.current.drop_local_player(1)
 	NetworkManager.current.drop_local_player(2)
 	await _seconds(0.1)
-	_check(NetworkManager.current.companion_seats().is_empty() and hub.actors.size() == 1, "companions only join raids, not Bramblebridge")
+	_check(NetworkManager.current.companion_seats().is_empty() and hub.actors.size() == 1, "companions only join raids, not Bramble-Bridge")
 
 
 # --- Armory & Scribe Desk -------------------------------------------------
@@ -2590,7 +2607,7 @@ func _check_scribe_desk() -> void:
 	await _tap_key(KEY_W)
 	await _tap_key(KEY_A)
 	_check(keyboard.loadout.armor.item_id == ArsenalCatalog.RANGER_LEATHER and is_equal_approx(keyboard.loadout.stats.perfect_guard_window, 0.2),
-		"A on the Armor row trades Ironwood Plate for Ranger Leather (and its 200 ms window)")
+		"A on the Armor row trades Iron-Wood Ring-Coat for Hedgerow Wool-Mantle (and its 200 ms window)")
 	await _tap_key(KEY_S)
 	await _tap_key(KEY_S)
 	for press: int in 6:

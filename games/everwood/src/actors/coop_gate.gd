@@ -1,7 +1,7 @@
-## The Co-Op Threshold at the Sinaya Gatehouse (07_EXPEDITION_HUD_AND_ART_GDD.md
+## The Co-Op Threshold at the Dover-Slap Gatehouse (07_EXPEDITION_HUD_AND_ART_GDD.md
 ## §3, Zone 2). A timber portcullis seals the way to the Ring of the Cairnsman
 ## while the Gorge Gale-Jet sweeps the bridge in front of it. Two ways open it:
-##   Rune-Plates  stand on the twin plates on the bridge's side bays together
+##   Maker-Seal Plates  stand on the twin plates on the bridge's side bays together
 ##                for 2 s (as many plates as min(2, standing party), so a
 ##                lone player needs one; in solo play an AI companion takes
 ##                the second, LevelBase's companions are steered here)

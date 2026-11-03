@@ -31,7 +31,7 @@ const APRON_COLOR: Color = Color(0.86, 0.8, 0.66)
 @export var npc_name: String = ""
 ## What they are: "Bowyer", "Bridge-Warden", "Miller".
 @export var title: String = ""
-## Their quest hub ("Oakshire Village").
+## Their quest hub ("Oakshire-Wick").
 @export var hub: String = ""
 @export var quests: PackedStringArray = PackedStringArray()
 @export var wares: Wares = Wares.NONE

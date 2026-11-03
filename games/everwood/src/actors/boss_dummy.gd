@@ -1,20 +1,23 @@
-## The Cairnsman of Doverslap (06_WORLD_AND_CALLINGS.md §1): the first raid boss,
+## The Cairnsman of Dover-Slap-Falls (06_WORLD_AND_CALLINGS.md §1): the first raid boss,
 ## an ancient sentinel of stacked river-boulders, heather and weathered bridge
-## timbers bound with brass bell-ropes.
+## timbers bound with brass bell-ropes: a river-cairn of the First-Quiet that
+## turned boggart when the bridge was built across his falls
+## (15_THE_MYTHOPOETIC_LENS.md).
 ##
-## - Chases whoever tops its aggro table (ThreatComponent) and swings a
+## - Chases whoever tops its threat table (ThreatComponent) and swings a
 ##   Crushing Swipe with a long, readable wind-up.
 ## - Every few seconds it casts a raid telegraph, alternating:
 ##     Crimson Bloom     (CRIMSON_DODGE_OUT) a red puddle under every player: get out
 ##     Golden Communion  (GOLD_PARTY_SOAK)   a gold circle on one player: stack in to share it
 ## - Phase 2, at half health or less (07 GDD §3, Zone 3), every other cast is the
-##     Doverslap Gale-Beam (BLUE_BEHIND_TANK) a 3.2 s lane from the boss to its
+##     Dover-Slap Gale-Beam (BLUE_BEHIND_TANK) a 3.2 s lane from the boss to its
 ##                       tank: anyone in the tank's Shadow Sanctuary cone (and
 ##                       the tank holding it) takes nothing and earns ½ a pip;
 ##                       anyone else in the lane takes 40 and is knocked back
 ## - Heavy hits and Perfect Guards drain its poise; at zero it's knocked down for 5 s.
 ## - Defeated, it stays down and signals `defeated`: the dojo plays the victory
-##   and drops a reward chest (DungeonDojo).
+##   and drops a reward chest (DungeonDojo). Its spirit is lulled, not slain: a
+##   mossy cairn rises where it fell and stays (STATE_LULLED_CAIRN).
 ##
 ## The host simulates the boss; other peers see a synced copy and the same telegraphs.
 class_name BossDummy
@@ -24,7 +27,7 @@ signal cast_started(cast_name: String, duration: float)
 ## Health reached zero (on the host, which simulates the boss).
 signal defeated
 
-const DISPLAY_NAME: String = "The Cairnsman of Doverslap"
+const DISPLAY_NAME: String = "The Cairnsman of Dover-Slap-Falls"
 ## Health scales with the party when a fight starts: base + per player.
 const HEALTH_BASE: float = 900.0
 const HEALTH_PER_PLAYER: float = 500.0
@@ -57,7 +60,7 @@ const SOAK_FAIL_DAMAGE: float = 30.0
 const PHASE_TWO_HEALTH: float = 0.5
 ## Seconds from entering Phase 2 to its first Gale-Beam.
 const PHASE_TWO_FIRST_BEAM: float = 1.5
-const BEAM_NAME: String = "Doverslap Gale-Beam"
+const BEAM_NAME: String = "Dover-Slap Gale-Beam"
 const BEAM_CAST_TIME: float = 3.2
 const BEAM_LENGTH: float = 22.0
 const BEAM_WIDTH: float = 4.5
@@ -611,6 +614,17 @@ func mark_vanquished() -> void:
 ## A beaten boss never gets up again in this instance.
 func downed_duration() -> float:
 	return INF
+
+
+func is_beaten() -> bool:
+	return vanquished or stats.is_downed
+
+
+## The Cairnsman is lulled back into a river-cairn that stays.
+func configure_spirit(spirit: HobSpectrumComponent) -> void:
+	spirit.resolution = HobSpectrumComponent.UnboggartResolution.STATE_LULLED_CAIRN
+	spirit.spirit_color = Color(0.5, 0.56, 0.44)
+	spirit.cairn_stays = true
 
 
 ## Sets max health for a party of `players` (at full health, so only between fights).

@@ -8,9 +8,9 @@
 ##
 ## Each card diamond is a diorama. Its outer panoramic frame is the Place-Card,
 ## filled in the place's Sign palette with its landscape in the corners: oak
-## trees for the Ariundle Moss-Oaks, a bridge arch for the Doverslap Gorge, a
-## waterwheel for the Bramblebridge Hearth-Mill, crags under a star for the
-## Barrow-Crag Star-Tor. Its inner portrait is the Action-Leaf: its Sign's
+## trees for Moss-Oak-Hollow, a bridge arch for Dover-Slap-Falls, a
+## waterwheel for the Bramble-Bridge Hearth-Mill, crags under a star for the
+## Barrow-Crag-Crossing. Its inner portrait is the Action-Leaf: its Sign's
 ## colour, an icon for its manifestation (a blade for a Weapon-Coat, a shield
 ## for a Ward-Mantle, a lantern for a Lantern-Tether) and its finish's trim
 ## (Plain Vellum ivory, Gilded Leaf gold, Star-Inked Vellum violet and gold with
@@ -289,10 +289,10 @@ func _draw_key(socket: int, center: Vector2, outer: float) -> void:
 func _draw_finish(variant: int, center: Vector2, inner: float) -> void:
 	var line: float = FRAME_BORDER * display_scale
 	match variant:
-		Variant.SHINY_FOIL:
+		Variant.GILDED_LEAF:
 			_outline(center, inner, GOLD, line * 1.6)
 			_outline(center, inner * 0.84, Color(GOLD, 0.8), line * 0.6)
-		Variant.ASTRAL_PRISM:
+		Variant.STAR_INKED_VELLUM:
 			_outline(center, inner, STAR_INK, line * 1.8)
 			_outline(center, inner * 0.84, GOLD, line * 0.7)
 			for point: Vector2 in [Vector2(-0.55, -0.2), Vector2(0.5, -0.32), Vector2(0.1, 0.55)]:
@@ -449,8 +449,8 @@ func _crag(at: Vector2, r: float, color: Color) -> void:
 
 func _finish_color(variant: int, fallback: Color) -> Color:
 	match variant:
-		Variant.SHINY_FOIL:
+		Variant.GILDED_LEAF:
 			return GOLD
-		Variant.ASTRAL_PRISM:
+		Variant.STAR_INKED_VELLUM:
 			return STAR_INK.lerp(GOLD, 0.35)
 	return fallback

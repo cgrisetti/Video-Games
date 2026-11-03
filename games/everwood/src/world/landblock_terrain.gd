@@ -21,16 +21,16 @@
 ##
 ## It also gives each corridor chunk its HLOD proxy, one merged mesh baked from
 ## its landblock by tools/build_levels.gd (the village rooftops and mill, the
-## Moss-Oak Great Arch and canopy, the Sinaya Gatehouse and waterwheel, the
+## Moss-Oak Great Arch and canopy, the Dover-Slap Gatehouse and waterwheel, the
 ## Cairnsman's standing stones), occluders along the ridges, and the far
-## landmarks on the crags (the Sinaya Mill-Castle, the Wadden-Green's mill).
+## landmarks on the crags (far mill-castles and windmills).
 ##
 ## Data is built by pure static functions, safe on a worker thread; nodes are
 ## made on the main thread from that data.
 ##
 ## The field itself belongs to the world being streamed (WorldGridConfig.layout):
 ## sample_height and the colours ask it. The corridor's own field, nav faces,
-## trail walls, occluders and landmarks below are the Doverslap world's
+## trail walls, occluders and landmarks below are Dover-Slap-Falls world's
 ## (DoverslapLayout hands them over).
 class_name LandblockTerrain
 extends RefCounted
@@ -93,7 +93,7 @@ static func sample_height(world_x: float, world_z: float) -> float:
 	return WorldGridConfig.layout.sample_height(world_x, world_z)
 
 
-## The Doverslap corridor's ground height at world (x, z).
+## The Dover-Slap-Falls corridor's ground height at world (x, z).
 static func corridor_height(world_x: float, world_z: float) -> float:
 	var height: float = LandblockManifest.base_height(world_z) - FLAT_SINK
 	var dx: float = world_x - LandblockManifest.CORRIDOR_X
@@ -385,8 +385,8 @@ static func make_occluders(chunk: Vector2i) -> OccluderInstance3D:
 	return occluder
 
 
-## A far landmark on a crag chunk, or null: the Sinaya Mill-Castle east of the
-## gorge, and the Wadden-Green's windmill on the downs south-west of the village.
+## A far landmark on a crag chunk, or null: a mill-castle east of the
+## gorge, and a windmill on the downs south-west of the village.
 static func make_horizon_landmark(chunk: Vector2i) -> MeshInstance3D:
 	var merge: MeshMerge = MeshMerge.new()
 	var center: Vector3 = WorldGridConfig.chunk_to_world_center(chunk)

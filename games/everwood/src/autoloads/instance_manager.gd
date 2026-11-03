@@ -1,6 +1,6 @@
 ## The Instance Manager (autoload): which instance (the seamless world, Hub
 ## Town or a raid) the party is in, and moving everyone between them without
-## dropping ENet. It remembers which Bramblebridge the party last stood in
+## dropping ENet. It remembers which Bramble-Bridge the party last stood in
 ## (the world's or the classic hub's), so a raid's exit portal takes them home.
 ##
 ## The host decides. It tells every peer to load the new instance; each peer
@@ -17,11 +17,11 @@ signal instance_live(instance_id: StringName)
 
 const HUB_TOWN: StringName = &"hub_town"
 const DUNGEON_DOJO: StringName = &"dungeon_dojo"
-## The seamless Landblock world (10_WORLD_ARCHITECTURE.md): Bramblebridge and the
+## The seamless Landblock world (10_WORLD_ARCHITECTURE.md): Bramble-Bridge and the
 ## expedition in one streamed world (start it with --instance=bramblebridge).
 const EVERWOOD_WORLD: StringName = &"everwood_world"
 ## Oakshire Vale (12_WORLD_OAKSHIRE_VALE_GDD.md): the 12 x 12 Landblock starting
-## zone, and the game's main scene: every launch arrives at Wayfarer's Glade
+## zone, and the game's main scene: every launch arrives at Wayfarer-Green
 ## unless --instance= names somewhere else.
 const OAKSHIRE_VALE: StringName = &"oakshire_vale"
 const FADE_TIME: float = 0.35
@@ -31,7 +31,7 @@ const FADE_LAYER: int = 100
 static var current: InstanceManager
 
 var instance_id: StringName = &""
-## Where "home" is: the last Bramblebridge loaded (hub_town or everwood_world).
+## Where "home" is: the last Bramble-Bridge loaded (hub_town or everwood_world).
 var home_instance: StringName = EVERWOOD_WORLD
 ## Peers known to have the current instance loaded (the host shares this list).
 var live_peers: PackedInt32Array = PackedInt32Array()
@@ -58,7 +58,7 @@ static func scene_path(id: StringName) -> String:
 
 ## The instance a --instance= name means: an id, or a friendly name
 ## ("bramblebridge" or "world" for the seamless world, "hub" for the classic
-## Bramblebridge hub, "oakshire", "expedition"); &"" when it names none.
+## Bramble-Bridge hub, "oakshire", "expedition"); &"" when it names none.
 static func instance_for_name(name: String) -> StringName:
 	match name.strip_edges().to_lower():
 		"bramblebridge", "world", "everwood_world":

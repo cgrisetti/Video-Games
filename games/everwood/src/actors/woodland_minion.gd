@@ -1,20 +1,23 @@
-## A woodland minion of the Ariundle Moss-Oaks (07_EXPEDITION_HUD_AND_ART_GDD.md
-## §3, Zone 1): a Bramble-Scuttler, a thorny bramble ball on twig legs, or a
-## Bog-Imp, a hunched moss-grey sprite with lantern eyes. They wait in
-## their MinionCamp until a player comes near or one of them is hit, then the
-## whole camp charges whoever tops its aggro table (a tank's taunt works on
-## them too). 65 health and 30 poise: cleaves, bow volleys and Sign
+## A woodland kin of the First-Quiet on the Dover-Slap-Falls trail
+## (07_EXPEDITION_HUD_AND_ART_GDD.md §3, Zone 1; 15_THE_MYTHOPOETIC_LENS.md): a
+## Bramble-Hob, a thorny bramble ball on twig legs, or a Wisp-Boggle, a hunched
+## moss-grey sprite with lantern eyes. They slumber round their Hush-Crack
+## (MinionCamp) until a player comes near or one of them is hit, then the
+## whole crack's kin charge whoever tops its threat table (a tank's taunt works
+## on them too). 65 health and 30 poise: cleaves, bow volleys and Sign
 ## detonations (Glacial Rupture splashes them) sweep them up.
 ##
 ## They're on the enemy side (the boss role and layers), owned by the host;
-## other peers see synced copies. Beaten, they topple, shrink into the moss and
-## are gone for the rest of the expedition.
+## other peers see synced copies. Beaten, they're un-boggarted: a Bramble-Hob
+## flies off a hedge-wren, a Wisp-Boggle rises as a warm path-light, and the
+## bramble-ball or moss husk they wore shrinks into the moss for the rest of
+## the expedition.
 class_name WoodlandMinion
 extends ActorBase
 
 enum Kind { SCUTTLER, IMP }
 
-const KIND_NAMES: Array[String] = ["Bramble-Scuttler", "Bog-Imp"]
+const KIND_NAMES: Array[String] = ["Bramble-Hob", "Wisp-Boggle"]
 const HEALTH: float = 65.0
 const POISE: float = 30.0
 const RADII: Array[float] = [0.55, 0.4]
@@ -70,6 +73,12 @@ func glimmer_encounter_id() -> StringName:
 ## Beaten minions stay beaten.
 func downed_duration() -> float:
 	return INF
+
+
+## Awakened kin, un-boggarted when beaten: a hedge-wren or a path-light.
+func configure_spirit(spirit: HobSpectrumComponent) -> void:
+	spirit.release_form = HobSpectrumComponent.ReleaseForm.HEDGE_WREN if kind == Kind.SCUTTLER else HobSpectrumComponent.ReleaseForm.PATH_LIGHT
+	spirit.spirit_color = EYE_COLORS[kind]
 
 
 func _build_components() -> void:

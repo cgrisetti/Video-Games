@@ -1,13 +1,13 @@
-## The Doverslap Expedition (07_EXPEDITION_HUD_AND_ART_GDD.md §3): the raid, three
+## The Dover-Slap-Falls Expedition (07_EXPEDITION_HUD_AND_ART_GDD.md §3): the raid, three
 ## zones end to end (its files and network id keep the old name, Dungeon Dojo):
-##   Zone 1  the Ariundle Moss-Oaks and the Sunken Holloway: two woodland
+##   Zone 1  Moss-Oak-Hollow and Rush-Light-Hollow: two woodland
 ##           minion camps (each pays a few Chimes when cleared), the Wayfarer's
 ##           Water-Shrine, Wind-Lanterns, and the Wayfarer's Chest in the
 ##           alcove (Chimes and an Uncommon Scribe Card)
-##   Zone 2  the Doverslap Gorge Bridge and the Sinaya Gatehouse's Co-Op
-##           Threshold (CoopGate): two Rune-Plates, or a Shield-Sworn's
+##   Zone 2  Dover-Slap-Bridge and the Dover-Slap Gatehouse's Co-Op
+##           Threshold (CoopGate): two Maker-Seal Plates, or a Shield-Sworn's
 ##           Shadow Sanctuary and the Bell-Winch, open the portcullis
-##   Zone 3  the Ring of the Cairnsman and its boss, The Cairnsman of Doverslap
+##   Zone 3  the Ring of the Cairnsman and its boss, The Cairnsman of Dover-Slap-Falls
 ## Reaching a zone moves everyone's respawn to its checkpoint. Seating,
 ## hot-join and the split-screen grid come from LevelBase.
 ##
@@ -51,7 +51,7 @@ const PASSING_BANNER_TIME: float = 4.0
 ## A zone starts once anyone in the party is past this line (north is -Z).
 const ZONE_TWO_Z: float = 15.0
 const ZONE_THREE_Z: float = -17.0
-const ZONE_NAMES: Array[String] = ["", "The Ariundle Moss-Oaks", "The Doverslap Gorge Bridge", "The Ring of the Cairnsman"]
+const ZONE_NAMES: Array[String] = ["", "Moss-Oak-Hollow", "Dover-Slap-Bridge", "The Ring of the Cairnsman"]
 ## Checkpoint pads sit this far apart across the path.
 const CHECKPOINT_SPACING: float = 1.5
 ## The whole expedition, for its navigation bake.
@@ -90,7 +90,11 @@ func instance_id() -> StringName:
 
 
 func level_title() -> String:
-	return "The Doverslap Expedition"
+	return "The Dover-Slap-Falls Expedition"
+
+
+func home_place() -> String:
+	return ZONE_NAMES[1]
 
 
 func level_hint() -> String:
@@ -104,8 +108,8 @@ func level_hint() -> String:
 		2:
 			if coop_gate.is_open:
 				return "%s: the gate is open. On to the Ring of the Cairnsman!" % ZONE_NAMES[2]
-			return "%s: stand on both Rune-Plates together, or ring the Bridge-Bell in a Shield-Sworn's Shadow Sanctuary" % ZONE_NAMES[2]
-	return "%s: face the Cairnsman of Doverslap" % ZONE_NAMES[3]
+			return "%s: stand on both Maker-Seal Plates together, or ring the Bridge-Bell in a Shield-Sworn's Shadow Sanctuary" % ZONE_NAMES[2]
+	return "%s: face the Cairnsman of Dover-Slap-Falls" % ZONE_NAMES[3]
 
 
 ## AI companions fill missing trinity roles in here.
@@ -196,6 +200,7 @@ func _physics_process(_delta: float) -> void:
 		_move_respawns_to(zone)
 		for hud: PlayerHUD in huds.values():
 			hud.show_banner(ZONE_NAMES[zone].to_upper(), "Checkpoint: you'll get back up here.", CHECKPOINT_COLOR, PASSING_BANNER_TIME)
+			hud.enter_place(ZONE_NAMES[zone])
 	if _start_boss_health > 0.0 and not _boss_health_applied and boss.engaged and NetworkManager.current.is_host():
 		_boss_health_applied = true
 		boss.stats.health = boss.stats.stats.max_health * _start_boss_health
@@ -289,9 +294,9 @@ func _on_wayfarer_chest_opened(opener_id: StringName, chimes: int, card_key: Str
 # --- The Co-Op Threshold --------------------------------------------------
 
 func _on_gate_opened(method: int) -> void:
-	var how: String = "The Rune-Plates hum together" if method == CoopGate.Method.RUNE_PLATES else "The Bridge-Bell rings out"
+	var how: String = "The Maker-Seal Plates hum together" if method == CoopGate.Method.RUNE_PLATES else "The Bridge-Bell rings out"
 	for hud: PlayerHUD in huds.values():
-		hud.show_banner("THE GATE OPENS", "%s, and the Sinaya Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR, PASSING_BANNER_TIME)
+		hud.show_banner("THE GATE OPENS", "%s, and the Dover-Slap Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR, PASSING_BANNER_TIME)
 	for actor: ActorBase in actors.values():
 		if actor.companion != null:
 			actor.companion.has_assigned_post = false
@@ -304,7 +309,7 @@ func _rebake_after_gate() -> void:
 		_bake_navigation()
 
 
-## Host: while someone holds one Rune-Plate and the other needs a body, the
+## Host: while someone holds one Maker-Seal Plate and the other needs a body, the
 ## nearest companion goes and stands on it.
 func _steer_companions_to_plates() -> void:
 	if not NetworkManager.current.is_host() or zone != 2:
@@ -389,7 +394,7 @@ func _on_chest_opened(opener_id: StringName, chimes: int, card_key: StringName) 
 
 # --- Demo and report ------------------------------------------------------
 
-## A --demo bot heads for its Rune-Plate while the gate is sealed in Zone 2,
+## A --demo bot heads for its Maker-Seal Plate while the gate is sealed in Zone 2,
 ## else the nearest woken or nearby minion, else the boss.
 func _demo_post_for(actor: ActorBase) -> Vector3:
 	if zone == 2 and not coop_gate.is_open:
@@ -418,5 +423,5 @@ func _report_extra() -> String:
 	var standing: int = 0
 	for camp: MinionCamp in camps:
 		standing += camp.standing_count()
-	return "boss %d/%d hp%s, zone %d, %d minions standing, gate %s, " % [roundi(boss.stats.health), roundi(boss.stats.stats.max_health),
+	return "boss %d/%d hp%s, zone %d, %d kin standing, gate %s, " % [roundi(boss.stats.health), roundi(boss.stats.stats.max_health),
 		" (victory)" if victory else "", zone, standing, "open" if coop_gate.is_open else "sealed"]

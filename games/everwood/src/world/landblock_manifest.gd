@@ -1,17 +1,17 @@
-## The Bramble-to-Doverslap Corridor (10_WORLD_ARCHITECTURE.md §2): which
+## The Bramble-Bridge-to-Dover-Slap Corridor (10_WORLD_ARCHITECTURE.md §2): which
 ## Landblock holds what, and the shape of the land between them.
 ##
-##   Chunk (0, 1)   the Kindled Bivouac, where the party wakes round a campfire
-##                  on the woodland trailhead, and Oakshire Commons (a
+##   Chunk (0, 1)   the Kindle-Fire, where the party wakes round a campfire
+##                  on the woodland trailhead, and Honey-Wick (a
 ##                  stepped-gable homestead, bee-hives and pumpkin patches)
-##                  along the walled lane north to Bramblebridge's south gate
-##   Chunk (0, 0)   Bramblebridge: the spawn green, the canal arch, the village
+##                  along the walled lane north to Bramble-Bridge's south gate
+##   Chunk (0, 0)   Bramble-Bridge: the spawn green, the canal arch, the village
 ##                  square (Armory & Scribe Desk, Chime-Shrine, bakery,
 ##                  watermill) and the Northern Forest Gate, now open
-##   Chunk (0, -1)  the Ariundle Moss-Oaks (the Moss-Oak Great Arch, the Bramble
-##                  Camp, the alcove's Wayfarer's Chest) and the Sunken Holloway
-##                  (Wind-Lanterns, the Water-Shrine, the Holloway Camp)
-##   Chunk (0, -2)  the Doverslap Gorge Bridge and the Sinaya Gatehouse
+##   Chunk (0, -1)  Moss-Oak-Hollow (the Moss-Oak Great Arch, the Bramble
+##                  Camp, the alcove's Wayfarer's Chest) and Rush-Light-Hollow
+##                  (Wind-Lanterns, the Water-Shrine, the Rush-Light Hush-Crack)
+##   Chunk (0, -2)  Dover-Slap-Bridge and the Dover-Slap Gatehouse
 ##   Chunk (0, -3)  the causeway and the Ring of the Cairnsman
 ##   the rest       the crags and oak canopy round the corridor
 ##
@@ -23,21 +23,21 @@ extends RefCounted
 
 enum Zone { BORDER = -1, BRAMBLEBRIDGE, MOSS_OAKS, GORGE, RING, OAKSHIRE_COMMONS }
 
-const ZONE_NAMES: Array[String] = ["Bramblebridge", "The Ariundle Moss-Oaks", "The Doverslap Gorge Bridge", "The Ring of the Cairnsman",
-	"Oakshire Commons"]
-const BORDER_NAME: String = "The Bramble-Reach crags"
+const ZONE_NAMES: Array[String] = ["Bramble-Bridge", "Moss-Oak-Hollow", "Dover-Slap-Bridge", "The Ring of the Cairnsman",
+	"Honey-Wick"]
+const BORDER_NAME: String = "The Tizzi-Wed-Green crags"
 const LANDBLOCK_FOLDER: String = "res://data/landblocks/"
 ## The corridor runs north along this line, the middle of the chunk column x = 0.
 const CORRIDOR_X: float = 64.0
 
-## Where each zone's classic origin lands in the world. Bramblebridge's north
+## Where each zone's classic origin lands in the world. Bramble-Bridge's north
 ## gate ends up at z = 2, just inside Chunk (0, 0), so the trail out of it
 ## crosses the seam into the Moss-Oaks at z = 0.
 const BRAMBLEBRIDGE_ORIGIN: Vector3 = Vector3(64.0, 0.0, 32.0)
 const MOSS_OAKS_ORIGIN: Vector3 = Vector3(64.0, 0.0, -100.0)
 const GORGE_ORIGIN: Vector3 = Vector3(64.0, 3.0, -150.0)
 const RING_ORIGIN: Vector3 = Vector3(64.0, 6.0, -240.0)
-## Oakshire Commons is new, not a classic level, so it's built in world coordinates.
+## Honey-Wick is new, not a classic level, so it's built in world coordinates.
 const COMMONS_ORIGIN: Vector3 = Vector3.ZERO
 const COMMONS_CHUNK: Vector2i = Vector2i(0, 1)
 
@@ -53,18 +53,18 @@ const SINAYA_GATE: StringName = &"gate_sinaya"
 const CAIRNSMAN: StringName = &"boss_cairnsman"
 const CAIRNSMAN_CHEST: StringName = &"chest_cairnsman"
 const CAMPFIRE: StringName = &"campfire_bivouac"
-## Set once anyone has crossed the canal bridge into Bramblebridge's square.
+## Set once anyone has crossed the canal bridge into Bramble-Bridge's square.
 const TOWN_CHECKPOINT: StringName = &"checkpoint_bramblebridge"
 
-## The Kindled Bivouac's campfire, where the party wakes, round its south-west
+## The Kindle-Fire's campfire, where the party wakes, round its south-west
 ## of the commons. The lane leaves it eastward, bends north through the
-## commons and runs straight up to Bramblebridge's south gate (world x, z).
+## commons and runs straight up to Bramble-Bridge's south gate (world x, z).
 const CAMPFIRE_POSITION: Vector3 = Vector3(30.0, 0.0, 178.0)
 const LANE: Array[Vector2] = [Vector2(36.0, 178.0), Vector2(48.0, 178.0), Vector2(56.5, 174.5), Vector2(62.0, 167.0), Vector2(64.0, 156.0),
 	Vector2(64.0, 62.5)]
 ## The lane's dirt and cobbles reach this far either side of its middle.
 const LANE_HALF_WIDTH: float = 2.4
-## Over the bridge and this far north is Bramblebridge's square (the bridge's north foot).
+## Over the bridge and this far north is Bramble-Bridge's square (the bridge's north foot).
 const SQUARE_Z: float = 26.5
 ## Where the party gets back up once the square is reached: on the lane between
 ## the Scribe Desk and the Chime-Shrine, facing the Forest Gate.
@@ -95,7 +95,7 @@ const BAND: Array[Vector3] = [
 	Vector3(-270.0, 5.0, 5.0), Vector3(-273.4, 22.0, 22.0), Vector3(-314.6, 22.0, 22.0), Vector3(-318.0, 0.0, 0.0),
 	Vector3(-900.0, 0.0, 0.0),
 ]
-## The Sunken Holloway's cut (world rect: the lane and both ramps, inset from
+## Rush-Light-Hollow's cut (world rect: the lane and both ramps, inset from
 ## the banks' outer edges so the cut hides under them). The ground there
 ## follows the holloway's own floor (down the south ramp, along the lane, up
 ## the north ramp) just under it, so it never pokes up through a ramp.
@@ -105,7 +105,7 @@ const HOLLOWAY_CUT: Rect2 = Rect2(57.5, -86.0, 13.0, 32.0)
 const HOLLOWAY_RAMPS: Array[float] = [-54.0, -62.0, -78.0, -86.0]
 const HOLLOWAY_LANE_Y: float = -1.8
 const HOLLOWAY_CLEARANCE: float = 0.12
-## The Doverslap's chasm (world rect, inset from its rock faces) and its floor.
+## Dover-Slap-Falls' chasm (world rect, inset from its rock faces) and its floor.
 const CHASM_CUT: Rect2 = Rect2(47.7, -161.7, 32.6, 17.4)
 const CHASM_BOTTOM: float = -20.5
 ## The terrain trails players walk between zones: (south z, north z, half width).
@@ -197,7 +197,7 @@ static func carve_bottom(x: float, z: float) -> float:
 	return INF
 
 
-## The Sunken Holloway's floor height at world z (0 at both ramp tops, the lane between).
+## Rush-Light-Hollow's floor height at world z (0 at both ramp tops, the lane between).
 static func holloway_floor(z: float) -> float:
 	if z >= HOLLOWAY_RAMPS[1]:
 		return lerpf(0.0, HOLLOWAY_LANE_Y, clampf((HOLLOWAY_RAMPS[0] - z) / (HOLLOWAY_RAMPS[0] - HOLLOWAY_RAMPS[1]), 0.0, 1.0))

@@ -18,7 +18,7 @@ const FLOOR_OFFSET: float = 0.03
 
 ## The InstanceManager id this portal leads to.
 @export var target_instance: StringName = &""
-## Leads home instead: whichever Bramblebridge the party came from (InstanceManager.home_instance).
+## Leads home instead: whichever Bramble-Bridge the party came from (InstanceManager.home_instance).
 @export var goes_home: bool = false
 @export var title: String = "Raid Portal"
 @export var portal_color: Color = Color(0.45, 0.62, 1.0)

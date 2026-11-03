@@ -11,7 +11,7 @@ metadata/buildings = true
 transform = Transform3D(-0.76604444, 0, 0.64278764, 0, 1, 0, -0.64278764, 0, -0.76604444, 1229.0359, 28, 218.55878)
 script = ExtResource("1_siv1g")
 code = "[R1]"
-title = "The Tangled Root-Sanctum"
+title = "Tangle-Root-Hollow"
 blurb = "Lvl 6 Capstone 5-Player Family Raid"
 required_level = 6
 scribe_sign = 2
@@ -20,7 +20,7 @@ dungeon_id = &"r1_root_sanctum"
 [node name="Spawner_GateWights_0" type="Node3D" parent="." unique_id=1416839457 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1236.7494, 58.407425, 209.36624)
 script = ExtResource("2_ymgos")
-territory = "The Bramble Weald"
+territory = "Bramble-Hollow"
 variant_ids = Array[StringName]([&"risen_shield_sworn_husk", &"hollow_scribe_acolyte"])
 leash = 18.0
 patrol = PackedVector3Array()

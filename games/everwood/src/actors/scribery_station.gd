@@ -1,4 +1,4 @@
-## The Reed-Light Scribery (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §6), Bramblebridge's
+## The Reed-Light Scribery (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §6), Bramble-Bridge's
 ## Grimoire shop on the village square: an open timber pavilion under a
 ## stepped-gable roof, a brass-and-oak Vellum Press-Wheel turning beside the
 ## counter, and four Deep-Ink Vat Lanterns along the back, each glowing in one

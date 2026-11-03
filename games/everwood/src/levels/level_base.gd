@@ -91,6 +91,12 @@ func level_hint() -> String:
 	return ""
 
 
+## Where the party arrives, as a place in the Mythopoetic Atlas (15 GDD §5):
+## it sets which zone's rhyme the Chime-Post ribbon sings.
+func home_place() -> String:
+	return ""
+
+
 ## Whether AI companions fill missing roles here (raids yes, Hub Town no).
 func wants_companions() -> bool:
 	return false
@@ -336,6 +342,7 @@ func _on_player_registered(seat: PartyMember) -> void:
 			hud.setup(actor)
 			overlay.add_child(hud)
 			huds[seat.player_id] = hud
+			hud.enter_place.call_deferred(home_place(), false)
 
 
 func _on_player_updated(seat: PartyMember) -> void:

@@ -37,7 +37,7 @@ const GUARD_BREAK_STAGGER: float = 0.9
 const DOWNED_RESPAWN_TIME: float = 8.0
 const RESPAWN_HEALTH_RATIO: float = 0.5
 const FALL_RESPAWN_HEIGHT: float = -10.0
-## Walking over Bramblebridge's arch and the expedition's ramps (07 GDD §1.1).
+## Walking over Bramble-Bridge's arch and the expedition's ramps (07 GDD §1.1).
 const FLOOR_SNAP_LENGTH: float = 0.35
 const FLOOR_MAX_ANGLE_DEGREES: float = 50.0
 const FLASH_TIME: float = 0.08
@@ -98,6 +98,8 @@ var braced_guard: BracedGuardComponent
 var sign_flow: SignFlowComponent
 ## Foes with an encounter: the Glimmer-Spot a Bravery Counter cracks (14 GDD §2–3).
 var glimmer: GlimmerSpotComponent
+## Foes: a spirit of the First-Quiet on the Hob-to-Boggart Spectrum (15 GDD §6.1).
+var spectrum: HobSpectrumComponent
 ## Something this local player is standing at and can use with light (the Chime-Shrine).
 var interactable: Interactable
 
@@ -117,7 +119,7 @@ var downed_time_left: float = 0.0
 var visual: Node3D
 ## Players: the storybook puppet (its parts, cape and off-hand).
 var visuals: ActorVisuals
-## Melee players: the ribbon a rune-wreathed strike draws.
+## Melee players: the ribbon a Sign-wreathed strike draws.
 var trail: WeaponTrail
 ## Enemies: the body's material, lit by hit flashes and wind-up tells.
 var _body_material: Material
@@ -236,6 +238,9 @@ func _build_components() -> void:
 			glimmer = GlimmerSpotComponent.new()
 			glimmer.setup(self, encounter)
 			add_child(glimmer)
+		spectrum = HobSpectrumComponent.new()
+		spectrum.setup(self)
+		add_child(spectrum)
 
 	if loadout.has_soul_tethers:
 		tether = SoulTetherComponent.new()
@@ -433,6 +438,18 @@ func is_engaged() -> bool:
 ## Enemies: still worth aiming at (not beaten, not fading away).
 func is_targetable() -> bool:
 	return not stats.is_downed
+
+
+## Enemies: beaten, so its spirit is un-boggarted (the raid boss: vanquished).
+func is_beaten() -> bool:
+	return stats.is_downed
+
+
+## Enemies: where this spirit stands on the Hob-to-Boggart Spectrum and how
+## it's un-boggarted (15 GDD §6.1). By default an awakened boggart, released
+## as a hedge-wren.
+func configure_spirit(_spirit: HobSpectrumComponent) -> void:
+	pass
 
 
 func is_local_player() -> bool:
@@ -877,7 +894,7 @@ func _update_pose(delta: float) -> void:
 	visual.rotation.z = lerpf(visual.rotation.z, tilt, blend)
 	visual.scale.y = lerpf(visual.scale.y, height_scale, blend)
 	if _weapon_prop != null and trail != null:
-		# A rune-wreathed strike sweeps the weapon through the trail's arc.
+		# A Sign-wreathed strike sweeps the weapon through the trail's arc.
 		_weapon_prop.rotation.y = trail.swing_angle
 	if visuals != null:
 		# R and L+R swell the weapon into its Sign's glowing silhouette (any peer: copies read the owner's action).

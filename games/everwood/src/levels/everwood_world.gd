@@ -1,20 +1,20 @@
-## The seamless world (10_WORLD_ARCHITECTURE.md): Bramblebridge and the
-## Doverslap Expedition as one bounded world of 128 m Landblocks, streamed
+## The seamless world (10_WORLD_ARCHITECTURE.md): Bramble-Bridge and the
+## Dover-Slap-Falls Expedition as one bounded world of 128 m Landblocks, streamed
 ## round every player (WorldGridManager), with no loading screen between town
 ## and the Cairnsman.
 ##
-## The party wakes round the Kindled Bivouac's campfire (Chunk (0, 1)), south
+## The party wakes round the Kindle-Fire's campfire (Chunk (0, 1)), south
 ## of the village; standing by the fire warms everyone to full, like the
 ## Water-Shrine. The walled lane runs east, then north through Oakshire
-## Commons to Bramblebridge's south gate and over the canal bridge. Once anyone
+## Commons to Bramble-Bridge's south gate and over the canal bridge. Once anyone
 ## reaches the village square, the square (by the Scribe Desk and Chime-Shrine)
 ## is where the party gets back up and where a raid brings it home, for the
 ## rest of this run of the game. The Armory &
 ## Scribe Desk and the Chime-Shrine work as in the hub, and the Raid Portal
 ## still warps the party into the instanced expedition (dungeon_dojo), whose
 ## exit brings them back here. Or walk north through the open Forest Gate,
-## under the Moss-Oak Great Arch, into the Ariundle Moss-Oaks (0, -1), down the
-## Sunken Holloway, over the Doverslap Gorge Bridge and through the Sinaya
+## under the Moss-Oak Great Arch, into Moss-Oak-Hollow (0, -1), down the
+## Rush-Light-Hollow, over Dover-Slap-Bridge and through the Dover-Slap
 ## Gatehouse (0, -2), and up the causeway to the Ring of the Cairnsman (0, -3).
 ## Reaching each zone moves everyone's respawn to its checkpoint; AI
 ## companions fill missing roles once anyone has left the village. Beating the
@@ -29,7 +29,7 @@
 class_name EverwoodWorld
 extends LevelBase
 
-const TITLE: String = "The Bramble-Reach"
+const TITLE: String = "Tizzi-Wed-Green"
 const CHECKPOINT_COLOR: Color = DungeonDojo.CHECKPOINT_COLOR
 const VICTORY_COLOR: Color = DungeonDojo.VICTORY_COLOR
 const PASSING_BANNER_TIME: float = DungeonDojo.PASSING_BANNER_TIME
@@ -43,7 +43,7 @@ const DEMO_WAYPOINTS: Array[Vector3] = [Vector3(48.0, 0.0, 177.0), Vector3(62.0,
 	Vector3(64.0, 0.0, 10.0), Vector3(64.0, 0.0, -20.0), Vector3(64.0, -1.8, -70.0), Vector3(64.0, 3.0, -140.0),
 	Vector3(64.0, 3.0, -170.0), Vector3(64.0, 6.0, -280.0)]
 
-## Whether the party has reached Bramblebridge's square since the game started:
+## Whether the party has reached Bramble-Bridge's square since the game started:
 ## from then on it gets back up there, and a raid brings it home there. It
 ## outlives the level (a trip to the instanced raid reloads it).
 static var town_square_reached: bool = false
@@ -51,7 +51,7 @@ static var town_square_reached: bool = false
 @onready var grid_manager: WorldGridManager = $World
 
 var world_state: WorldStateDB
-## The furthest zone the party has reached (0: still in Bramblebridge, 1 to 3: the expedition's zones).
+## The furthest zone the party has reached (0: still in Bramble-Bridge, 1 to 3: the expedition's zones).
 var zone: int = 0
 var boss: BossDummy
 var chest: RewardChest
@@ -78,24 +78,28 @@ func level_title() -> String:
 	return TITLE
 
 
+func home_place() -> String:
+	return "Honey-Wick"
+
+
 func level_hint() -> String:
 	if chest != null and is_instance_valid(chest) and chest.is_open:
-		return "Victory! The gold portal is taking you home to Bramblebridge"
+		return "Victory! The gold portal is taking you home to Bramble-Bridge"
 	if victory:
 		return "Victory! Walk up to the reward chest"
 	match zone:
 		0:
 			if not town_square_reached:
-				return "The Kindled Bivouac: stand by the campfire to warm up, then follow the walled lane east and north through Oakshire Commons into Bramblebridge\n%s" % HubTown.CHANGE_KEYS
-			return "Walk north through the Forest Gate into the Ariundle Moss-Oaks, or take the Raid Portal to the instanced expedition · Chime-Shrine: %d Chimes · Scribe Desk: armor, weapons, cards and Calling\n%s" % [
+				return "The Kindle-Fire: stand by the campfire to warm up, then follow the walled lane east and north through Honey-Wick into Bramble-Bridge\n%s" % HubTown.CHANGE_KEYS
+			return "Walk north through the Forest Gate into Moss-Oak-Hollow, or take the Raid Portal to the instanced expedition · Chime-Shrine: %d Chimes · Scribe Desk: armor, weapons, cards and Calling\n%s" % [
 				PartyProgress.current.chimes, HubTown.CHANGE_KEYS]
 		1:
 			return "%s: clear the bramble camps, drink at the Water-Shrine, find the Wayfarer's Chest, then down the holloway" % LandblockManifest.ZONE_NAMES[1]
 		2:
 			if gate_is_open():
 				return "%s: the gate is open. On up the causeway to the Ring of the Cairnsman!" % LandblockManifest.ZONE_NAMES[2]
-			return "%s: stand on both Rune-Plates together, or ring the Bridge-Bell in a Shield-Sworn's Shadow Sanctuary" % LandblockManifest.ZONE_NAMES[2]
-	return "%s: face the Cairnsman of Doverslap" % LandblockManifest.ZONE_NAMES[3]
+			return "%s: stand on both Maker-Seal Plates together, or ring the Bridge-Bell in a Shield-Sworn's Shadow Sanctuary" % LandblockManifest.ZONE_NAMES[2]
+	return "%s: face the Cairnsman of Dover-Slap-Falls" % LandblockManifest.ZONE_NAMES[3]
 
 
 ## Companions fill missing roles once anyone has walked out of the village.
@@ -136,6 +140,7 @@ func _physics_process(_delta: float) -> void:
 		_move_respawns_to(zone)
 		for hud: PlayerHUD in huds.values():
 			hud.show_banner(LandblockManifest.ZONE_NAMES[zone].to_upper(), "Checkpoint: you'll get back up here.", CHECKPOINT_COLOR, PASSING_BANNER_TIME)
+			hud.enter_place(LandblockManifest.ZONE_NAMES[zone])
 	if NetworkManager.current.is_host() and zone == 2 and coop_gate != null:
 		DungeonDojo.steer_companions_to_plates(coop_gate, actors)
 
@@ -153,7 +158,7 @@ func _on_player_unregistered(player_id: StringName) -> void:
 			enemy.threat.forget(player_id)
 
 
-## Whether the Sinaya Gatehouse stands open (from the gate if its chunk is in, else from the record).
+## Whether the Dover-Slap Gatehouse stands open (from the gate if its chunk is in, else from the record).
 func gate_is_open() -> bool:
 	if coop_gate != null and is_instance_valid(coop_gate):
 		return coop_gate.is_open
@@ -229,7 +234,8 @@ func _promote_town_checkpoint() -> void:
 		for actor: ActorBase in actors.values():
 			actor.spawn_transform = town_transform(actor.party_slot)
 	for hud: PlayerHUD in huds.values():
-		hud.show_banner("BRAMBLEBRIDGE", "Checkpoint: you'll get back up here, by the Scribe Desk and the Chime-Shrine.", CHECKPOINT_COLOR, PASSING_BANNER_TIME)
+		hud.show_banner("BRAMBLE-BRIDGE", "Checkpoint: you'll get back up here, by the Scribe Desk and the Chime-Shrine.", CHECKPOINT_COLOR, PASSING_BANNER_TIME)
+		hud.enter_place("Bramble-Bridge")
 
 
 # --- Landblock entities ---------------------------------------------------------
@@ -326,9 +332,9 @@ func _on_wayfarer_chest_opened(opener_id: StringName, chimes: int, card_key: Str
 
 
 func _on_gate_opened(method: int) -> void:
-	var how: String = "The Rune-Plates hum together" if method == CoopGate.Method.RUNE_PLATES else "The Bridge-Bell rings out"
+	var how: String = "The Maker-Seal Plates hum together" if method == CoopGate.Method.RUNE_PLATES else "The Bridge-Bell rings out"
 	for hud: PlayerHUD in huds.values():
-		hud.show_banner("THE GATE OPENS", "%s, and the Sinaya Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR, PASSING_BANNER_TIME)
+		hud.show_banner("THE GATE OPENS", "%s, and the Dover-Slap Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR, PASSING_BANNER_TIME)
 	for actor: ActorBase in actors.values():
 		if actor.companion != null:
 			actor.companion.has_assigned_post = false
@@ -427,7 +433,7 @@ func _on_chest_opened(opener_id: StringName, chimes: int, card_key: StringName) 
 	var holder: Node3D = grid_manager.gameplay_root(RING_CHUNK)
 	recall_portal = RaidPortal.new()
 	recall_portal.name = "RecallPortal"
-	recall_portal.title = "Home: Bramblebridge"
+	recall_portal.title = "Home: Bramble-Bridge"
 	recall_portal.portal_color = RECALL_PORTAL_COLOR
 	(holder if holder != null else effects_root).add_child(recall_portal)
 	recall_portal.global_position = chest.global_position + RECALL_PORTAL_OFFSET
@@ -448,12 +454,12 @@ func _on_recall(_target: StringName) -> void:
 		if actor.is_multiplayer_authority():
 			actor.spawn_at(town_transform(actor.party_slot))
 	for hud: PlayerHUD in huds.values():
-		hud.show_banner("BRAMBLEBRIDGE", "Home again. The expedition waits beyond the Forest Gate.", CHECKPOINT_COLOR, PASSING_BANNER_TIME)
+		hud.show_banner("BRAMBLE-BRIDGE", "Home again. The expedition waits beyond the Forest Gate.", CHECKPOINT_COLOR, PASSING_BANNER_TIME)
 
 
 # --- Demo and report ------------------------------------------------------
 
-## A --demo bot heads for its Rune-Plate while the gate is sealed, else the
+## A --demo bot heads for its Maker-Seal Plate while the gate is sealed, else the
 ## nearest woken minion, else the boss, else the next waypoint north.
 func _demo_post_for(actor: ActorBase) -> Vector3:
 	if zone == 2 and coop_gate != null and not coop_gate.is_open:

@@ -8,7 +8,7 @@
 ##   3  the landblocks: 68 townsfolk (18 quest givers, 14 vendors, 16 guards,
 ##      20 villagers), the four portal aprons with their Signs and levels, and
 ##      the six families' spawners with 18–25 m leashes and 45–90 s respawns
-##   4  in play: the party arrives at Wayfarer's Glade, the village's chunks
+##   4  in play: the party arrives at Wayfarer-Green, the village's chunks
 ##      ([5, 5], [5, 6], [6, 5]) stream in with their folk, creatures stand on
 ##      the ground, the ford is 0.4 m deep and splashes, a quest giver shows
 ##      their quest, a weapon vendor opens the Armory, walking into the village
@@ -178,7 +178,7 @@ func _check_dressing() -> void:
 		ring_last = here
 	var expected: int = floori(road_length / OakshireValeLayout.WAYMARK_SPACING)
 	check.call(lanterns >= expected - 6 and lanterns <= expected + 6 and runestones >= expected - 6,
-		"%d lantern poles and %d Scribe runestones along %d m of road (one of each every 75 m)" % [lanterns, runestones, roundi(road_length)])
+		"%d lantern poles and %d Scribe Sign-stones along %d m of road (one of each every 75 m)" % [lanterns, runestones, roundi(road_length)])
 
 
 # --- 3: the landblocks -----------------------------------------------------------------
@@ -234,7 +234,7 @@ func _check_landblocks() -> void:
 		sheep = sheep or flock.kind == AmbientFlock.Kind.SHEEP
 		foxes = foxes or flock.kind == AmbientFlock.Kind.FOX
 	check.call(families.size() == 6 and leashes_ok and behemoth_patrol >= 24 and sheep and foxes and Bestiary.all().size() == 16,
-		"%d spawners for all six families (18–25 m leashes, 45–90 s respawns), sheep and foxes, and the Crag-Back Behemoth walking a %d-stop round of the High Road" % [
+		"%d spawners for all six families (18–25 m leashes, 45–90 s respawns), sheep and foxes, and the Crag-Back Cairn-Drake walking a %d-stop round of the High Road" % [
 			spawners.size(), behemoth_patrol])
 	for landblock: Node in scenes:
 		landblock.free()
@@ -246,8 +246,8 @@ func _check_in_play() -> void:
 	var glade: Vector3 = vale.camp_center(OakshireValeLayout.Petal.GLADE)
 	await _settle([WorldGridConfig.world_to_chunk(glade)])
 	var p1: ActorBase = _people()[0]
-	check.call(level.region_at(p1.global_position) == "Wayfarer's Glade" and p1.is_on_floor() and p1.global_position.distance_to(glade) < 30.0,
-		"the party arrives at Wayfarer's Glade, standing on the ground")
+	check.call(level.region_at(p1.global_position) == "Wayfarer-Green" and p1.is_on_floor() and p1.global_position.distance_to(glade) < 30.0,
+		"the party arrives at Wayfarer-Green, standing on the ground")
 	await _move_party(Vector3(768.0, 0.0, 790.0))
 	await _settle(VILLAGE_CHUNKS)
 	# The village's own folk: 14 vendors, its 3 quest givers, 8 Hearth-Guards and 12 villagers.
@@ -262,7 +262,7 @@ func _check_in_play() -> void:
 		ready = ready and grid.get_chunk_state(chunk) == FULL
 	var all_folk: bool = roles.get(TownsfolkNPC.Role.VENDOR, 0) == 14 and roles.get(TownsfolkNPC.Role.QUEST_GIVER, 0) == 3 \
 		and roles.get(TownsfolkNPC.Role.GUARD, 0) == 8 and roles.get(TownsfolkNPC.Role.VILLAGER, 0) == 12
-	check.call(ready and all_folk and p1.is_on_floor(), "walking into Oakshire Village streams in chunks [5, 5], [5, 6] and [6, 5] with all %d of its folk" % village_folk)
+	check.call(ready and all_folk and p1.is_on_floor(), "walking into Oakshire-Wick streams in chunks [5, 5], [5, 6] and [6, 5] with all %d of its folk" % village_folk)
 	var standing: int = 0
 	var mobs: int = 0
 	for spawner: MobSpawner in level.spawners:
@@ -287,7 +287,7 @@ func _check_folk(p1: ActorBase) -> void:
 	for npc: TownsfolkNPC in level.townsfolk:
 		if not is_instance_valid(npc):
 			continue
-		if giver == null and npc.role == TownsfolkNPC.Role.QUEST_GIVER and npc.hub == "Oakshire Village":
+		if giver == null and npc.role == TownsfolkNPC.Role.QUEST_GIVER and npc.hub == "Oakshire-Wick":
 			giver = npc
 		if smith == null and npc.role == TownsfolkNPC.Role.VENDOR and npc.wares == TownsfolkNPC.Wares.WEAPONS:
 			smith = npc
@@ -337,7 +337,7 @@ func _check_ford(p1: ActorBase) -> void:
 		"wading the river's ford: 0.4 m deep, %d wet footsteps, and full running speed through it" % splashes[0])
 
 
-## The Smuggler's Root-Cellar opens at Level 3: below it the Sign's barrier blocks the arch, above it the way is open.
+## Flagstone-Hollow opens at Level 3: below it the Sign's barrier blocks the arch, above it the way is open.
 func _check_barrier(p1: ActorBase) -> void:
 	var frame_at: Transform3D = vale.apron_portal(OakshireValeLayout.Petal.ORCHARD)
 	var front: Vector3 = frame_at.origin - frame_at.basis.z * 7.0 + Vector3(0.0, 0.3, 0.0)
@@ -368,7 +368,7 @@ func _check_barrier(p1: ActorBase) -> void:
 	var open: bool = is_instance_valid(apron) and apron.is_open and space.intersect_ray(through).is_empty()
 	progress.xp = xp_before
 	check.call(blocked and sealed_prompt and open,
-		"below Level 3 the Sign of Warm-Hearth's barrier seals the Smuggler's Root-Cellar; at Level 3 it lifts")
+		"below Level 3 the Sign of Warm-Hearth's barrier seals Flagstone-Hollow; at Level 3 it lifts")
 
 
 # --- Helpers ----------------------------------------------------------------------------

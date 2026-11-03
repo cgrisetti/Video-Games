@@ -1,4 +1,4 @@
-## The Wayfarer's Water-Shrine midway down the Sunken Holloway
+## The Wayfarer's Water-Shrine midway down Rush-Light-Hollow
 ## (07_EXPEDITION_HUD_AND_ART_GDD.md §3, Zone 1): a mossy spring basin under a
 ## tiny shingled roof, breathing mist. Walk through the mist and the whole
 ## party is restored to full health and stamina; then the spring rests for a

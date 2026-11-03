@@ -1,8 +1,8 @@
 ## Oakshire Vale (12_WORLD_OAKSHIRE_VALE_GDD.md, 13_STARTING_ZONE_ENCOUNTER_DESIGN.md):
 ## the starting zone as one streamed world of 12 x 12 Landblocks, through the
-## same WorldGridManager as the Doverslap world (OakshireValeLayout tells it the
-## vale's shape). The party arrives at Wayfarer's Glade in the south petal and
-## walks up over the Bridge-Warden's span into Oakshire Village.
+## same WorldGridManager as Dover-Slap-Falls world (OakshireValeLayout tells it the
+## vale's shape). The party arrives at Wayfarer-Green in the south petal and
+## walks up over the Bridge-Warden's span into Oakshire-Wick.
 ##
 ## The level wires up what streams in: wild creatures' spawners grow their
 ## packs, quest givers show their quests on the asker's screen, vendors open
@@ -25,12 +25,12 @@ const WADE_SPEED: float = 1.0
 const CATCH_FALL_SPEED: float = -4.0
 ## A hub you walk into becomes where you get back up, this far from its middle.
 const RESPAWN_SPREAD: float = 2.5
-## What each petal holds, for its banner.
-const PETAL_LINES: Array[String] = ["Blight-Thorn Briarlings choke the weald; the Tangled Root-Sanctum waits at the petrified oak",
-	"Soot-Paw Outlaws hold the quarry terraces; the Gloom-Vein Iron Mine is in the east crags",
+## What each petal holds, for its banner (its kin of the First-Quiet and its delve).
+const PETAL_LINES: Array[String] = ["Bramble-Hobs choke the thickets; Tangle-Root-Hollow waits under the petrified oak",
+	"Furrow Iron-Men march the quarry terraces; Iron-Kettle-Hollow sleeps in the east crags",
 	"The Wayfarers' camp, where every road into the vale begins",
-	"Tarnished Chime-Wights walk the barrows; Hollow-King's Barrow lies behind them",
-	"Bristleboars raid the orchard; the Smuggler's Root-Cellar is under it"]
+	"Crag-Spriggans guard the standing stones; Star-Barrow-Hollow lies behind them",
+	"Curious Bristle-Hobs nose round the orchard; Flagstone-Hollow is under it"]
 
 @onready var grid_manager: WorldGridManager = $World
 
@@ -50,6 +50,10 @@ func instance_id() -> StringName:
 
 func level_title() -> String:
 	return TITLE
+
+
+func home_place() -> String:
+	return "Wayfarer-Green"
 
 
 func level_hint() -> String:
@@ -123,7 +127,10 @@ func _name_region(actor: ActorBase) -> void:
 	_regions[actor.player_id] = region
 	_move_respawn(actor, region)
 	var hud: PlayerHUD = huds.get(actor.player_id) as PlayerHUD
-	if hud == null or first:
+	if hud == null:
+		return
+	hud.enter_place(region, not first)
+	if first:
 		return
 	var petal: int = OakshireValeLayout.PETAL_NAMES.find(region)
 	hud.show_banner(region.to_upper(), PETAL_LINES[petal] if petal >= 0 else "", REGION_COLOR, REGION_BANNER_TIME)
@@ -132,7 +139,7 @@ func _name_region(actor: ActorBase) -> void:
 ## Walking into the village or a petal's camp makes it where you get back up when downed.
 func _move_respawn(actor: ActorBase, region: String) -> void:
 	var hub: Vector3
-	if region == "Oakshire Village":
+	if region == "Oakshire-Wick":
 		hub = Vector3(OakshireValeLayout.CENTER.x, OakshireValeLayout.VILLAGE_HEIGHT, OakshireValeLayout.CENTER.y + 10.0)
 	else:
 		var petal: int = OakshireValeLayout.PETAL_NAMES.find(region)
@@ -147,7 +154,7 @@ func _move_respawn(actor: ActorBase, region: String) -> void:
 func region_at(at: Vector3) -> String:
 	var offset: Vector2 = Vector2(at.x, at.z) - OakshireValeLayout.CENTER
 	if offset.length() < OakshireValeLayout.VILLAGE_RADIUS + 14.0:
-		return "Oakshire Village"
+		return "Oakshire-Wick"
 	if OakshireValeLayout.ring_distance(offset) < OakshireValeLayout.MEADOW_OUTER - 30.0:
 		return "The Settled Meadow"
 	var theta: float = rad_to_deg(OakshireValeLayout.bearing(offset))

@@ -6,7 +6,7 @@
 ## the bridge deck) and the terrain floor. Each bake is clipped to its chunk
 ## but sees a few metres past it, and the world's navigation map joins edges
 ## that meet within half a metre, so paths run straight across the seams: out
-## of Bramblebridge's gate into the Moss-Oaks, up the holloway, over the gorge
+## of Bramble-Bridge's gate into the Moss-Oaks, up the holloway, over the gorge
 ## bridge. The classic Dojo bakes one region for its whole expedition the same way.
 ##
 ## Companions and woodland minions follow those paths (NavSteering), falling

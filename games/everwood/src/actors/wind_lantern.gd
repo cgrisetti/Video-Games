@@ -1,4 +1,4 @@
-## A clay Wind-Lantern hanging from the Sunken Holloway's root arches
+## A clay Wind-Lantern hanging from Rush-Light-Hollow's root arches
 ## (07_EXPEDITION_HUD_AND_ART_GDD.md §3, Zone 1). It sways on its cord, and when
 ## a player brushes past (or a Scribe Card is cast nearby) it swings, chimes and
 ## sheds a puff of golden motes. Each peer reacts to what it sees: it's only

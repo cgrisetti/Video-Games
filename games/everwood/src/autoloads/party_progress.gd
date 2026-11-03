@@ -1,5 +1,5 @@
 ## The party's progress (autoload "Progress"): the Chimes earned on raids (07 GDD
-## §1.2) and the upgrades bought with them at Bramblebridge's Chime-Shrine, the
+## §1.2) and the upgrades bought with them at Bramble-Bridge's Chime-Shrine, the
 ## Scribe Card binder (collected copies, by copy key), each class's last kit and Calling,
 ## and the victories that set the Grimoire level, all saved between sessions
 ## in user://everwood_progress.cfg. Everything is ids and numbers, so the file

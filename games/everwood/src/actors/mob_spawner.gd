@@ -1,7 +1,7 @@
 ## A spawn point for wild creatures (13_STARTING_ZONE_ENCOUNTER_DESIGN.md §1):
 ## the pack it grows (by Bestiary id), the leash they keep to (18–25 m in the
 ## open), and their respawn (45–90 s after one falls). One in a fight calls the
-## rest of its pack. A patrolling creature (the Crag-Back Behemoth) walks
+## rest of its pack. A patrolling creature (the Crag-Back Cairn-Drake) walks
 ## `patrol` round the High Road. Placed in an Oakshire Vale landblock by
 ## tools/build_oakshire_vale.gd; its creatures stream in and out with it.
 ##
@@ -13,7 +13,7 @@ extends Node3D
 ## Where the pack stands round its spot.
 const PACK_SPREAD: float = 2.6
 
-## Shown in tests and telemetry ("The East Quarry").
+## Shown in tests and telemetry ("Quarry-Wick").
 @export var territory: String = ""
 ## Bestiary variant ids, one per creature, in spawn order.
 @export var variant_ids: Array[StringName] = []

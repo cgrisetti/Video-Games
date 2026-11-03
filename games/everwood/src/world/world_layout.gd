@@ -2,7 +2,7 @@
 ## its bounds, its ground, what grows on it and which landblocks fill it. The
 ## Landblock streaming (WorldGridManager, LandblockTerrain, LandblockClutter)
 ## asks the current layout (WorldGridConfig.layout) instead of knowing any one
-## world, so the Bramble-to-Doverslap corridor (DoverslapLayout) and Oakshire
+## world, so the Bramble-Bridge-to-Dover-Slap corridor (DoverslapLayout) and Oakshire
 ## Vale (OakshireValeLayout) stream through the same code.
 ##
 ## Every method is pure and safe on a worker thread, except the make_* ones,

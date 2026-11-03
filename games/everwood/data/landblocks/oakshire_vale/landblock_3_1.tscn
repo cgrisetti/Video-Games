@@ -30,7 +30,7 @@ metadata/buildings = true
 transform = Transform3D(-0.8480481, 0, -0.52991927, 0, 1, 0, 0.52991927, 0, -0.8480481, 401.37625, 28, 181.27936)
 script = ExtResource("1_gsbdv")
 code = "[D3]"
-title = "The Smuggler's Root-Cellar"
+title = "Flagstone-Hollow"
 blurb = "Lvl 3 Solo/Co-op Delve"
 required_level = 3
 scribe_sign = 3
@@ -43,7 +43,7 @@ mesh = SubResource("BoxMesh_yfgts")
 [node name="Spawner_Smugglers" type="Node3D" parent="." unique_id=1580467456 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 395.0172, 58.35598, 171.10278)
 script = ExtResource("3_7q28f")
-territory = "The Orchard Reach"
+territory = "Pippin-Green"
 variant_ids = Array[StringName]([&"soot_paw_cutthroat", &"quarry_sling_shotter"])
 leash = 18.0
 patrol = PackedVector3Array()

@@ -1969,7 +1969,7 @@ persist_id = &"camp_bramble"
 [node name="CampTwo" type="Node3D" parent="." unique_id=279606793 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -1.8, 26)
 script = ExtResource("3_xl4wd")
-camp_name = "Holloway Camp"
+camp_name = "Rush-Light Hush-Crack"
 kinds = Array[int]([1, 1, 0, 1])
 persist_id = &"camp_holloway"
 

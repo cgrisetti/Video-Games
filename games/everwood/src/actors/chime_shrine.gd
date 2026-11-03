@@ -1,4 +1,4 @@
-## The Chime-Shrine on Bramblebridge's village square (07_EXPEDITION_HUD_AND_ART_GDD.md
+## The Chime-Shrine on Bramble-Bridge's village square (07_EXPEDITION_HUD_AND_ART_GDD.md
 ## §1.1): a stone plinth under a little shingled roof, a bronze bell, and a
 ## brass Chime turning in the air above an offering bowl. Walk up and press
 ## light to open the upgrade menu (HubUpgradeMenu) on your own screen and spend

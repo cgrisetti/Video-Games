@@ -11,16 +11,16 @@
 ## the vale's layout, the horizon and the skeleton LevelBase expects), and one
 ## landblock per chunk with anything in it (landblock_X_Z.tscn, everything at
 ## its world position), with an HLOD proxy for the ones with buildings:
-##   Oakshire Village on the central saddle: ten gabled houses round a green
+##   Oakshire-Wick on the central saddle: ten gabled houses round a green
 ##     and its fountain, fourteen market stalls and their vendors, a quest hub,
 ##     Hearth-Guard sentries at the road ends and villagers about their day
 ##   the Bridge-Warden's stone span and its sentries, and the watermill
-##   Wayfarer's Glade (the spawn and the Wayfarer's Arch home) and the four
+##   Wayfarer-Green (the spawn and the Wayfarer's Arch home) and the four
 ##     petal camps, each with tents, a fire, a sentry and a three-quest hub,
-##     and the orchard by the Orchard Reach camp
+##     and the orchard by Pippin-Green camp
 ##   the four portal aprons in the rim crags, each sealed by its Sign
 ##   the six families' spawners in their territories, the sheep and foxes, and
-##     the Crag-Back Behemoth's round of the High Road
+##     the Crag-Back Cairn-Drake's round of the High Road
 ## 68 friendly folk: 18 quest givers, 14 vendors, 16 guards and 20 villagers.
 extends "res://tools/build_levels.gd"
 
@@ -55,25 +55,25 @@ const TOWNSFOLK_TOTALS: Dictionary = {"quest_givers": 18, "vendors": 14, "guards
 
 ## Each hub's three quest givers: name, title, their quest.
 const QUEST_HUBS: Dictionary = {
-	"Wayfarer's Glade": [["Tamsin Hale", "Glade Warden", "Lanterns on the High Road"], ["Joss Brindle", "Pedlar", "Strays in the Meadow"],
+	"Wayfarer-Green": [["Tamsin Hale", "Green-Warden", "Lanterns on the High Road"], ["Joss Brindle", "Pedlar", "Strays in the Meadow"],
 		["Wren Ashby", "Wayfarer Scout", "First Steps on the Trail"]],
-	"Oakshire Village": [["Godric Marlow", "Village Reeve", "The Bridge-Warden's Charge"], ["Maude Penrose", "Hearthwife", "Cider-Thieves at the Orchard Gate"],
-		["Ellery Thorne", "Scribe of the Tor", "Runes on the Scribe's Tor"]],
-	"The Orchard Reach": [["Hob Applegarth", "Orchard-Keeper", "Bristleboars in the Cider Rows"], ["Nell Quince", "Cellarer", "The Trapdoor Under the Old Pear"],
-		["Ida Combe", "Beekeeper", "Old Tusk-Crag's Wallow"]],
-	"The East Quarry": [["Bram Stonely", "Quarry-Master", "Soot-Paw Outlaws on the Terraces"], ["Pip Cutler", "Spoil-Heap Lookout", "Shots from the Spoil-Heaps"],
-		["Odo Pennyfeather", "Mine-Clerk", "The Gloom-Vein Lamps"]],
-	"The Bramble Weald": [["Rowan Fell", "Woodwarden", "Bark That Will Not Split"], ["Sorrel Dunmore", "Herbwife", "Spore-Puffs in the Hollows"],
+	"Oakshire-Wick": [["Godric Marlow", "Village Reeve", "The Bridge-Warden's Charge"], ["Maude Penrose", "Hearthwife", "Cider-Hobs at the Orchard Gate"],
+		["Ellery Thorne", "Scribe of the Tor", "Signs on the Scribe's Tor"]],
+	"Pippin-Green": [["Hob Applegarth", "Orchard-Keeper", "Bristle-Hobs in the Cider Rows"], ["Nell Quince", "Cellarer", "The Trapdoor Under the Old Pear"],
+		["Ida Combe", "Beekeeper", "Old Tusk-Hob's Wallow"]],
+	"Quarry-Wick": [["Bram Stonely", "Quarry-Master", "Iron-Men on the Terraces"], ["Pip Cutler", "Spoil-Heap Lookout", "Shots from the Spoil-Heaps"],
+		["Odo Pennyfeather", "Mine-Clerk", "The Iron-Kettle Lamps"]],
+	"Bramble-Hollow": [["Rowan Fell", "Woodwarden", "Bark That Will Not Split"], ["Sorrel Dunmore", "Herbwife", "Spore-Puffs in the Hollows"],
 		["Alder Mossgrave", "Druid-Scribe", "The Petrified Oak's Song"]],
-	"The Barrow Hills": [["Cuthbert Knoll", "Bell-Ringer", "The Tarnished Chimes"], ["Edith Barrowe", "Gravewarden", "Wights Beyond the Mounds"],
-		["Felix Wynn", "Lantern-Scribe", "The Hollow-King's Seal"]],
+	"Nine-Stones-Crossing": [["Cuthbert Knoll", "Bell-Ringer", "The Tarnished Chimes"], ["Edith Barrowe", "Stone-Warden", "Spriggans Beyond the Mounds"],
+		["Felix Wynn", "Lantern-Scribe", "The Star-Barrow Seal"]],
 }
 ## The village's fourteen vendors: name, title, wares (TownsfolkNPC.Wares), what light does.
 const VENDORS: Array = [
 	["Hilda Forde", "Falchion Smith", 1, "browse Falchions"], ["Garth Holloway", "Broad-Axe Smith", 1, "browse Broad-Axes"],
 	["Elspeth Rowe", "Way-Staff Carver", 1, "browse Rowan Way-Staves"], ["Tobias Yewdale", "Bowyer", 1, "browse Yew Longbows"],
-	["Agnes Linley", "Linen Weaver", 2, "try on Hearth-Linen"], ["Wat Leatherby", "Leatherworker", 2, "try on Ranger Leather"],
-	["Osric Ironside", "Plate Armourer", 2, "try on Ironwood Plate"], ["Mabel Fennick", "Apothecary", 3, "drink a mending tonic"],
+	["Agnes Linley", "Linen Weaver", 2, "try on a Hearth-Linen Coat"], ["Wat Fleecewell", "Wool-Mantle Weaver", 2, "try on a Hedgerow Wool-Mantle"],
+	["Osric Ironside", "Ring-Coat Smith", 2, "try on an Iron-Wood Ring-Coat"], ["Mabel Fennick", "Apothecary", 3, "drink a mending tonic"],
 	["Quentin Sage", "Herbalist", 3, "drink a mending tonic"], ["Lettice Hart", "Hedge-Doctor", 3, "drink a mending tonic"],
 	["Ambrose Coyne", "Chime-Vault Keeper", 4, "open the Chime-Vault"], ["Philippa Ledger", "Chime-Vault Clerk", 4, "open the Chime-Vault"],
 	["Isolde Marsh", "Calling Tutor", 5, "change your Calling"], ["Benedict Ashcombe", "Calling Respec Tutor", 5, "change your Calling"],
@@ -287,7 +287,7 @@ func _around(center: Vector3, bearing_degrees: float, radius: float) -> Vector3:
 	return _ground_at(center + Vector3(sin(theta), 0.0, -cos(theta)) * radius)
 
 
-# --- Oakshire Village ------------------------------------------------------------------
+# --- Oakshire-Wick ------------------------------------------------------------------
 
 func _add_village() -> void:
 	var center: Vector3 = _ground_at(Vector3(OakshireValeLayout.CENTER.x, 0.0, OakshireValeLayout.CENTER.y))
@@ -319,10 +319,10 @@ func _add_village() -> void:
 			_put(_stall("Stall%d" % vendor_index, STALL_COLORS[vendor_index % STALL_COLORS.size()], _facing(spot, center)), spot, true)
 			var entry: Array = VENDORS[vendor_index]
 			var behind: Vector3 = _around(center, bearing_degrees, STALL_RADIUS + 1.6)
-			_npc(TownsfolkNPC.Role.VENDOR, entry[0], entry[1], "Oakshire Village", PackedStringArray(), entry[2], entry[3], behind, _facing(behind, center),
+			_npc(TownsfolkNPC.Role.VENDOR, entry[0], entry[1], "Oakshire-Wick", PackedStringArray(), entry[2], entry[3], behind, _facing(behind, center),
 				PackedVector3Array(), STALL_COLORS[vendor_index % STALL_COLORS.size()].darkened(0.2), Color(0.86, 0.8, 0.66))
 			vendor_index += 1
-	_add_quest_hub("Oakshire Village", center, 7.0, 150.0)
+	_add_quest_hub("Oakshire-Wick", center, 7.0, 150.0)
 	# Hearth-Guard sentries at each road's end and three round the green.
 	for index: int in exits.size():
 		var post: Vector3 = _around(center, exits[index] + 6.0, OakshireValeLayout.VILLAGE_RADIUS - 3.0)
@@ -509,8 +509,8 @@ func _add_camp(petal: int) -> void:
 	if glade:
 		var second: Vector3 = _around(center, OakshireValeLayout.PETAL_BEARINGS[petal] - 90.0, OakshireValeLayout.GLADE_RADIUS - 3.0)
 		_guard("Bridge-Warden", second, _facing(center, second))
-		# The Wayfarer's Arch: walk into it together to go home to Bramblebridge.
-		var arch: Node3D = _scripted("WayfarersArch", PORTAL_SCRIPT, Vector3.ZERO, {&"goes_home": true, &"title": "Wayfarer's Arch: home to Bramblebridge",
+		# The Wayfarer's Arch: walk into it together to go home to Bramble-Bridge.
+		var arch: Node3D = _scripted("WayfarersArch", PORTAL_SCRIPT, Vector3.ZERO, {&"goes_home": true, &"title": "Wayfarer's Arch: home to Bramble-Bridge",
 			&"portal_color": Color(0.95, 0.8, 0.4)})
 		_put(_entity(arch), _around(center, OakshireValeLayout.PETAL_BEARINGS[petal], 14.0), true)
 
@@ -521,7 +521,7 @@ func _tent_shape() -> BoxShape3D:
 	return box
 
 
-## The Orchard Reach's cider rows beside its camp, and four villagers tending them.
+## Pippin-Green's cider rows beside its camp, and four villagers tending them.
 func _add_orchard() -> void:
 	var camp: Vector3 = _vale.camp_center(OakshireValeLayout.Petal.ORCHARD)
 	var toward_village: Vector3 = (Vector3(OakshireValeLayout.CENTER.x, camp.y, OakshireValeLayout.CENTER.y) - camp).normalized()
@@ -554,10 +554,10 @@ func _fruit_tree(tree_name: String) -> Node3D:
 
 func _add_aprons() -> void:
 	var table: Array = [
-		[OakshireValeLayout.Petal.WEALD, "[R1]", "The Tangled Root-Sanctum", "Lvl 6 Capstone 5-Player Family Raid", 6, ScribeSignResource.Sign.SIGN_RIME_GALE, &"r1_root_sanctum"],
-		[OakshireValeLayout.Petal.QUARRY, "[D1]", "The Gloom-Vein Iron Mine", "Lvl 4–5 5-Player Story Dungeon", 4, ScribeSignResource.Sign.SIGN_IRON_ROOT, &"d1_gloom_vein_mine"],
-		[OakshireValeLayout.Petal.BARROWS, "[D2]", "Hollow-King's Barrow", "Lvl 5–6 Undead Crypt", 5, ScribeSignResource.Sign.SIGN_STAR_TIDE, &"d2_hollow_kings_barrow"],
-		[OakshireValeLayout.Petal.ORCHARD, "[D3]", "The Smuggler's Root-Cellar", "Lvl 3 Solo/Co-op Delve", 3, ScribeSignResource.Sign.SIGN_WARM_HEARTH, &"d3_root_cellar"],
+		[OakshireValeLayout.Petal.WEALD, "[R1]", "Tangle-Root-Hollow", "Lvl 6 Capstone 5-Player Family Raid", 6, ScribeSignResource.Sign.SIGN_RIME_GALE, &"r1_root_sanctum"],
+		[OakshireValeLayout.Petal.QUARRY, "[D1]", "Iron-Kettle-Hollow", "Lvl 4–5 5-Player Story Dungeon", 4, ScribeSignResource.Sign.SIGN_IRON_ROOT, &"d1_gloom_vein_mine"],
+		[OakshireValeLayout.Petal.BARROWS, "[D2]", "Star-Barrow-Hollow", "Lvl 5–6 Spriggan Barrow", 5, ScribeSignResource.Sign.SIGN_STAR_TIDE, &"d2_hollow_kings_barrow"],
+		[OakshireValeLayout.Petal.ORCHARD, "[D3]", "Flagstone-Hollow", "Lvl 3 Solo/Co-op Delve", 3, ScribeSignResource.Sign.SIGN_WARM_HEARTH, &"d3_root_cellar"],
 	]
 	for entry: Array in table:
 		var frame: Transform3D = _vale.apron_portal(entry[0])
@@ -602,29 +602,29 @@ func _add_spawners() -> void:
 	for index: int in 3:
 		var angle: float = TAU * index / 3.0
 		var spot: Vector3 = _ground_at(cluster + Vector3(cos(angle), 0.0, sin(angle)) * 12.0 / sqrt(3.0))
-		_spawner("Spawner_OutlawCamp_%d" % index, "The East Quarry", outlaw_pull, spot, rng.randf_range(18.0, 22.0))
+		_spawner("Spawner_OutlawCamp_%d" % index, "Quarry-Wick", outlaw_pull, spot, rng.randf_range(18.0, 22.0))
 	for index: int in 2:
 		var spot: Vector3 = _spot(rng, 92.0 + index * 24.0, 112.0 + index * 22.0, 390.0, 470.0, taken, 26.0)
-		_spawner("Spawner_Outlaws_%02d" % index, "The East Quarry", outlaw_pull, spot, rng.randf_range(18.0, 25.0))
-	# 4. Blight-Thorn Briarlings in the Bramble Weald.
+		_spawner("Spawner_Outlaws_%02d" % index, "Quarry-Wick", outlaw_pull, spot, rng.randf_range(18.0, 25.0))
+	# 4. Blight-Thorn Briarlings in Bramble-Hollow.
 	var briar_packs: Array = [[&"bramble_lasher_vine"], [&"spore_puff_shambler", &"spore_puff_shambler"], [&"bog_hulk_tangler"],
 		[&"bramble_lasher_vine", &"spore_puff_shambler"], [&"spore_puff_shambler", &"bramble_lasher_vine"]]
 	for index: int in briar_packs.size():
 		var spot: Vector3 = _spot(rng, 18.0 + index * 9.5, 27.0 + index * 9.5, 390.0, 570.0, taken, 26.0)
-		_spawner("Spawner_Briars_%02d" % index, "The Bramble Weald", briar_packs[index], spot, rng.randf_range(18.0, 25.0))
+		_spawner("Spawner_Briars_%02d" % index, "Bramble-Hollow", briar_packs[index], spot, rng.randf_range(18.0, 25.0))
 	# 5. Tarnished Chime-Wights on the barrows, and at the gates of the Mine, the Barrow and the Root-Sanctum.
 	var wight_packs: Array = [[&"risen_shield_sworn_husk"], [&"hollow_scribe_acolyte", &"risen_shield_sworn_husk"], [&"barrow_warden_knell"],
 		[&"risen_shield_sworn_husk", &"hollow_scribe_acolyte"]]
 	for index: int in wight_packs.size():
 		var spot: Vector3 = _spot(rng, 236.0 + index * 11.0, 246.0 + index * 11.0, 400.0, 560.0, taken, 26.0)
-		_spawner("Spawner_Wights_%02d" % index, "The Barrow Hills", wight_packs[index], spot, rng.randf_range(18.0, 25.0))
+		_spawner("Spawner_Wights_%02d" % index, "Nine-Stones-Crossing", wight_packs[index], spot, rng.randf_range(18.0, 25.0))
 	for petal: int in [OakshireValeLayout.Petal.WEALD, OakshireValeLayout.Petal.QUARRY, OakshireValeLayout.Petal.BARROWS]:
 		var gate: Transform3D = _vale.apron_portal(petal)
 		_spawner("Spawner_GateWights_%d" % petal, OakshireValeLayout.PETAL_NAMES[petal], [&"risen_shield_sworn_husk", &"hollow_scribe_acolyte"],
 			_ground_at(gate.origin + gate.basis.z * 12.0), 18.0)
 	var cellar: Transform3D = _vale.apron_portal(OakshireValeLayout.Petal.ORCHARD)
-	_spawner("Spawner_Smugglers", "The Orchard Reach", [&"soot_paw_cutthroat", &"quarry_sling_shotter"], _ground_at(cellar.origin + cellar.basis.z * 12.0), 18.0)
-	# 6. The Crag-Back Behemoth walks the High Road.
+	_spawner("Spawner_Smugglers", "Pippin-Green", [&"soot_paw_cutthroat", &"quarry_sling_shotter"], _ground_at(cellar.origin + cellar.basis.z * 12.0), 18.0)
+	# 6. The Crag-Back Cairn-Drake walks the High Road.
 	var round_trip: PackedVector3Array = PackedVector3Array()
 	for step: int in 36:
 		round_trip.append(_vale.ring_road_point(TAU * step / 36.0))

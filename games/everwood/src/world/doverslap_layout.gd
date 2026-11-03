@@ -1,5 +1,5 @@
-## The first seamless world (10_WORLD_ARCHITECTURE.md): Bramblebridge and the
-## Doverslap corridor north of it, x = 0 and z = 0 to -3 with a ring of crags
+## The first seamless world (10_WORLD_ARCHITECTURE.md): Bramble-Bridge and the
+## Dover-Slap-Falls corridor north of it, x = 0 and z = 0 to -3 with a ring of crags
 ## round it. Its shape lives in LandblockManifest and LandblockTerrain's
 ## corridor functions, its clutter in LandblockClutter; this hands them to the
 ## streaming.

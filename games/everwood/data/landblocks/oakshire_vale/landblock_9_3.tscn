@@ -8,7 +8,7 @@ metadata/chunk = Vector2i(9, 3)
 [node name="Spawner_Briars_03" type="Node3D" parent="." unique_id=683320938 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1208.266, 19.666666, 434.94003)
 script = ExtResource("1_r2lnr")
-territory = "The Bramble Weald"
+territory = "Bramble-Hollow"
 variant_ids = Array[StringName]([&"bramble_lasher_vine", &"spore_puff_shambler"])
 leash = 24.644932
 patrol = PackedVector3Array()

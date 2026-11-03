@@ -3,11 +3,11 @@
 ##   Plain Vellum (STANDARD)          the Sign's geometric seal blooms under the
 ##                                    caster's boots for 0.6 s, and a vellum card
 ##                                    flips and dissolves above their shoulder
-##   Gilded Leaf (SHINY_FOIL)         + two counter-rotating gold rings and a
+##   Gilded Leaf (GILDED_LEAF)         + two counter-rotating gold rings and a
 ##                                    brighter, higher chime (and a gold ribbon trail)
-##   Star-Inked Vellum (ASTRAL_PRISM) + a starfield dome through the wind-up and
+##   Star-Inked Vellum (STAR_INKED_VELLUM) + a starfield dome through the wind-up and
 ##                                    luminous footprints for 2.5 s
-## A card fired through a bow or staff also charges through a standing rune ring
+## A card fired through a bow or staff also charges through a standing Sign ring
 ## in front of the caster. Presentation only: nothing here changes the fight.
 ## Pooled: when the last flourish ends, finish() hands it back to the FxPool.
 class_name ScribeInvocationFX
@@ -43,7 +43,7 @@ const DOME_FADE_TIME: float = 0.35
 const FOOTPRINT_TIME: float = 2.5
 const FOOTPRINT_STRIDE: float = 0.55
 const FOOTPRINT_SIDE_STEP: float = 0.14
-## Card shots charge through a standing rune ring this far in front of the caster.
+## Card shots charge through a standing Sign ring this far in front of the caster.
 const MUZZLE_RING_OFFSET: Vector3 = Vector3(0.0, 1.2, -0.95)
 const MUZZLE_RING_RADIUS: float = 0.45
 const MUZZLE_RING_START_SCALE: float = 0.4
@@ -154,7 +154,7 @@ func play(on: ActorBase, seal: ScribeSignResource, card_variant: ScribeCardResou
 	_age = 0.0
 	_colour = seal.color
 	_life = SEAL_TIME
-	if variant == ScribeCardResource.CardVariant.ASTRAL_PRISM:
+	if variant == ScribeCardResource.CardVariant.STAR_INKED_VELLUM:
 		_life = maxf(SEAL_TIME, FOOTPRINT_TIME)
 	if _ranged:
 		_life = maxf(_life, _windup + MUZZLE_RING_LINGER)
@@ -162,22 +162,22 @@ func play(on: ActorBase, seal: ScribeSignResource, card_variant: ScribeCardResou
 	_seal_material.set_shader_parameter(&"glyph", seal.glyph)
 	_emblem_material.set_shader_parameter(&"tint", _colour)
 	_emblem_material.set_shader_parameter(&"glyph", seal.glyph)
-	_card_material.emission = FOIL_COLOR * FOIL_EDGE_GLOW if variant == ScribeCardResource.CardVariant.SHINY_FOIL else Color.BLACK
+	_card_material.emission = FOIL_COLOR * FOIL_EDGE_GLOW if variant == ScribeCardResource.CardVariant.GILDED_LEAF else Color.BLACK
 	_muzzle_material.albedo_color = _colour
 	_muzzle_material.emission = _colour
 	_dome_material.set_shader_parameter(&"tint", _colour.lerp(Color(0.75, 0.6, 1.0), 0.5))
 	for ring: MeshInstance3D in _rings:
-		ring.visible = variant == ScribeCardResource.CardVariant.SHINY_FOIL
-	_dome.visible = variant == ScribeCardResource.CardVariant.ASTRAL_PRISM
+		ring.visible = variant == ScribeCardResource.CardVariant.GILDED_LEAF
+	_dome.visible = variant == ScribeCardResource.CardVariant.STAR_INKED_VELLUM
 	_muzzle_ring.visible = _ranged
 	_last_step = caster.global_position
 	_follow_caster()
 	_update(0.0)
-	AudioCues.play(VARIANT_SOUNDS[variant], FOIL_PITCH if variant == ScribeCardResource.CardVariant.SHINY_FOIL else 1.0)
+	AudioCues.play(VARIANT_SOUNDS[variant], FOIL_PITCH if variant == ScribeCardResource.CardVariant.GILDED_LEAF else 1.0)
 
 
 func is_showing_foil() -> bool:
-	return in_use and variant == ScribeCardResource.CardVariant.SHINY_FOIL and _rings[0].visible
+	return in_use and variant == ScribeCardResource.CardVariant.GILDED_LEAF and _rings[0].visible
 
 
 func is_showing_dome() -> bool:
@@ -195,7 +195,7 @@ func _process(delta: float) -> void:
 	_age += delta
 	_follow_caster()
 	_update(delta)
-	if variant == ScribeCardResource.CardVariant.ASTRAL_PRISM and _age < FOOTPRINT_TIME:
+	if variant == ScribeCardResource.CardVariant.STAR_INKED_VELLUM and _age < FOOTPRINT_TIME:
 		_leave_footprints()
 	if _age >= _life:
 		finish()
@@ -231,7 +231,7 @@ func _update(delta: float) -> void:
 		_dome.scale = Vector3.ONE * lerpf(DOME_START_SCALE, 1.0, grow)
 		_dome_material.set_shader_parameter(&"strength", fade)
 		_dome.visible = fade > 0.0 or _age < _windup
-	# A card shot's rune ring stands in front of the caster until the shot has gone through.
+	# A card shot's Sign ring stands in front of the caster until the shot has gone through.
 	if _ranged:
 		_muzzle_ring.global_transform = Transform3D(Basis(Vector3.RIGHT, PI * 0.5).rotated(Vector3.UP, caster.rotation.y), frame * MUZZLE_RING_OFFSET)
 		_muzzle_ring.scale = Vector3.ONE * lerpf(MUZZLE_RING_START_SCALE, 1.0, clampf(_age / _windup, 0.0, 1.0))

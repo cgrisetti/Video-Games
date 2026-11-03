@@ -1,4 +1,4 @@
-## Bramblebridge (06_WORLD_AND_CALLINGS.md §1, 07 GDD §1.1), the hub village
+## Bramble-Bridge (06_WORLD_AND_CALLINGS.md §1, 07 GDD §1.1), the hub village
 ## where the party gathers (its files and network id keep the old name, Hub
 ## Town). You arrive on the spawn green, walk over the stone arch across the
 ## canal to the village square, change armor, weapon and Scribe Cards at the
@@ -23,7 +23,11 @@ func instance_id() -> StringName:
 
 
 func level_title() -> String:
-	return "Bramblebridge"
+	return "Bramble-Bridge"
+
+
+func home_place() -> String:
+	return "Bramble-Bridge"
 
 
 func level_hint() -> String:

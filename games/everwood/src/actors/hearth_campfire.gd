@@ -1,5 +1,5 @@
-## The Warm-Hearth Campfire at the Kindled Bivouac, where the party wakes on
-## the woodland trailhead south of Oakshire Commons: crackling logs in a mossy
+## The Warm-Hearth Campfire at the Kindle-Fire, where the party wakes on
+## the woodland trailhead south of Honey-Wick: crackling logs in a mossy
 ## river-stone ring under a cast-iron tripod kettle, travel packs leaning on a
 ## log seat, and a saffron-gold light (the Sign of Warm-Hearth's) that
 ## flickers. Stand by it and the whole party is warmed to full health and
@@ -72,7 +72,7 @@ func _ready() -> void:
 	add_child(body)
 	var sign_label: Label3D = Label3D.new()
 	sign_label.name = "Sign"
-	sign_label.text = "The Kindled Bivouac"
+	sign_label.text = "The Kindle-Fire"
 	sign_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign_label.font_size = 36
 	sign_label.outline_size = 10

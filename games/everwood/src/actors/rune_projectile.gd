@@ -13,7 +13,7 @@ extends PooledFx
 ## Shots leave the archer this high and this far in front.
 const MUZZLE_HEIGHT: float = 1.2
 const MUZZLE_FORWARD: float = 0.6
-## A card shot's rune ring.
+## A card shot's Sign ring.
 const RUNE_RING_RADIUS: float = 0.34
 const RUNE_RING_THICKNESS: float = 0.05
 const RUNE_RING_SPIN: float = 9.0
