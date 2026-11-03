@@ -1,7 +1,7 @@
 # 11_COMBAT_ONBOARDING_AND_FEEL_GDD.md — Kinetic Combat Loop, Martial Imbuement, & Level 1–10 Trail Progression
 
 ## 1. Executive Summary & Design Mandate
-This specification upgrades the core combat loop of **Everwood (Oakshire Raids)** to eliminate stationary "turret clicking," make every weapon swing and Scribe Card unmistakable from our $4.8\text{ m}$ split-screen camera eye-line, and replace "endgame gear at Level 1" with an authentic zero-to-hero progression arc from **Bramblebridge Green** to **The Ring of the Cairnsman**.
+This specification upgrades the core combat loop of **Everwood (Oakshire Raids)** to eliminate stationary "turret clicking," make every weapon swing and Scribe Card unmistakable from our $4.8\text{ m}$ split-screen camera eye-line, and replace "endgame gear at Level 1" with an authentic zero-to-hero progression arc from **Bramble-Bridge Green** to **The Ring of the Cairnsman**.
 
 In strict compliance with **The Musk Razor (`01_VISION.md` & `08_EVERGREEN_DEV_BIBLE.md`)**:
 1. **Zero Progressive HUD Locks:** All 6 postures (`Light`, `Heavy`, `Forward+Heavy`, `Back+Heavy`, `L Guard`, `R Skill`, `L+R Ult`, and `D-Pad Soul Tether`) and all four diamonds of the bottom-centered `CrossGrimoireHUD` are $100\%$ active from Level 1.
@@ -18,7 +18,7 @@ In strict compliance with **The Musk Razor (`01_VISION.md` & `08_EVERGREEN_DEV_B
 | **GATE 2: The Musk Razor** | **PASS** | Zero new buttons, zero mid-combat menus, zero floating pickup orbs, and zero locked HUD buttons. Early simplicity comes solely from starting with Tier 1 wooden arms and empty vellum slots. |
 | **GATE 3: Philological & Whimsy Linter** | **PASS** | Uses tactile Anglo-folk craft terminology: `Turned-Hazel Falchion`, `Split-Ash Broad-Axe`, `Willow-Coppice Longbow`, `Reed-Light Way-Staff`, `Moss-Oak Buckler`, and `Braced Front Guard`. |
 | **GATE 4: Schema-First Registry** | **PASS** | Equipment tiers, weapon visual scale/material presets, and level milestone grants are defined as typed properties on `EquipmentItemResource` and registered in `ArsenalCatalog`. |
-| **GATE 5: Code-First & Multi-Age Safe** | **PASS** | `ActorVisuals` procedurally renders wood, hedgerow iron, Bramblebridge steel, and Doverslap relic tiers plus $2.0\times$ Sign weapon-channel silhouettes visible at $4.8\text{ m}$ height. |
+| **GATE 5: Code-First & Multi-Age Safe** | **PASS** | `ActorVisuals` procedurally renders wood, hedgerow iron, Bramble-Bridge steel, and Dover-Slap relic tiers plus $2.0\times$ Sign weapon-channel silhouettes visible at $4.8\text{ m}$ height. |
 
 ---
 
@@ -46,7 +46,7 @@ To prevent 4–5 players from clumping in front of a mob or boss and mashing:
 2. **Frontal Mitigation & Counter-Shove:** Attacks hitting the front $120^\circ$ arc while braced deal only $30\%$ HP damage ($70\%$ reduction) and $50\%$ poise damage, accompanied by a dull wooden *clunk* and gray deflected sparks. After $1.8\text{ s}$ in Braced Front Guard, the enemy projects a $2.5\text{ m}$ `RED_AVOID` frontal shield-shove telegraph that knocks back stationary front-mashers.
 3. **Two Cooperative Counter-Plays:**
    - **Wayfarer Flanking (`Flank Breach`):** Landing a `Forward + Heavy`, `Back + Heavy`, or `R Skill` against the enemy's unguarded rear/side $240^\circ$ arc triggers a **Flank Breach** ($1.35\times$ HP damage, $+20.0$ bonus poise damage, and instantly shatters Braced Front Guard).
-   - **Shield-Sworn Poise Cracking & Sanctuary:** A Tank wielding `SIGN_IRON_ROOT` or `+ TANK` Calling modifiers deals $2.0\times$ poise damage directly against Braced Front Guard, cracking it from the front while holding `ThreatComponent` aggro so teammates have an open back-arc, or holds `L Guard` (`Shadow Sanctuary`) to project the $4.0\text{ m}$ `BLUE_BEHIND_TANK` safe-fan that blocks the enemy's counter-shove for all allies standing behind the Tank.
+   - **Shield-Sworn Poise Cracking & Sanctuary:** A Tank wielding `SIGN_IRON_ROOT` or `+ TANK` Calling modifiers deals $2.0\times$ poise damage directly against Braced Front Guard, cracking it from the front while holding the foe's attention on the `ThreatComponent` so teammates have an open back-arc, or holds `L Guard` (`Shadow Sanctuary`) to project the $4.0\text{ m}$ `BLUE_BEHIND_TANK` safe-fan that blocks the enemy's counter-shove for all allies standing behind the Tank.
 
 ---
 
@@ -88,22 +88,22 @@ Players no longer spawn at Level 1 with ornate endgame steel. `ArsenalCatalog` r
 | Tier | Unlock Level | Material Palette (`ActorVisuals`) | Canonical Weapon Names | Base Damage / Poise Multiplier |
 |---|---|---|---|---|
 | **Tier 1: Apprentice Timber** | **Level 1** *(Starting Gear)* | Unvarnished hazel/ash wood (`#A67B5B`), hemp cord wrap (`#D9C39A`), zero metallic sheen | `Turned-Hazel Falchion`, `Split-Ash Broad-Axe`, `Willow-Coppice Longbow`, `Reed-Light Way-Staff` | $1.00\times\text{ Base}$ |
-| **Tier 2: Hedgerow Iron** | **Level 2–3** *(Ariundle Moss-Oaks)* | Hammered dark iron (`#5A626A`), oak grip (`#7A5230`), brass rivet trim | `Hedgerow Iron Falchion`, `Coppice-Forged Broad-Axe`, `Horn-Tipped Yew Longbow`, `Copper-Shod Way-Staff` | $1.20\times\text{ Base}$ |
-| **Tier 3: Bramblebridge Steel** | **Level 5–6** *(Sunken Holloway)* | Bright milled steel (`#C4CED4`), dyed leather wrap, brass bell-guard (`#D4AF37`) | `Bramble-Steel Falchion`, `Mill-Forged Broad-Axe`, `Weald-Ranger Yew Longbow`, `Scribe-Banded Way-Staff` | $1.45\times\text{ Base}$ |
-| **Tier 4: Doverslap Relic** | **Level 9–10** *(Ring of the Cairnsman)* | Gilded Carillon bronze & star-etched steel (`#E5C158`), glowing Sign-stone pommel | `Cairnsman's Span-Blade`, `Doverslap Cleaver-Axe`, `Gorge-Wind Greatbow`, `Arch-Scribe's Carillon Staff` | $1.75\times\text{ Base}$ |
+| **Tier 2: Hedgerow Iron** | **Level 2–3** *(Moss-Oak-Hollow)* | Hammered dark iron (`#5A626A`), oak grip (`#7A5230`), brass rivet trim | `Hedgerow Iron Falchion`, `Coppice-Forged Broad-Axe`, `Horn-Tipped Yew Longbow`, `Copper-Shod Way-Staff` | $1.20\times\text{ Base}$ |
+| **Tier 3: Bramble-Bridge Steel** | **Level 5–6** *(Rush-Light-Hollow)* | Bright milled steel (`#C4CED4`), dyed wool wrap, brass bell-guard (`#D4AF37`) | `Bramble-Steel Falchion`, `Mill-Forged Broad-Axe`, `Weald-Ranger Yew Longbow`, `Scribe-Banded Way-Staff` | $1.45\times\text{ Base}$ |
+| **Tier 4: Dover-Slap Relic** | **Level 9–10** *(Ring of the Cairnsman)* | Gilded Carillon bronze & star-etched steel (`#E5C158`), glowing Sign-stone pommel | `Cairnsman's Span-Blade`, `Dover-Slap Cleaver-Axe`, `Gorge-Wind Greatbow`, `Arch-Scribe's Carillon Staff` | $1.75\times\text{ Base}$ |
 
 ### 5.2 Milestone-by-Milestone Onboarding Table (Levels 1–10)
 XP is awarded by defeating trail packs ($+35\text{ XP}$ per mob), completing co-op threshold gates ($+80\text{ XP}$), and felling bosses ($+200\text{ XP}$). Level thresholds are tuned so a family party progresses from Level 1 to Level 5 across their first expedition run, and reaches Level 10 across their second run or mastery rematch:
 
 | Level | Trail Milestone Context | What Changes in Player Kit | Co-Op & Combat Lesson Mastered |
 |---|---|---|---|
-| **Level 1** | **Bramblebridge Green** *(Spawn)* | **Tier 1 Apprentice Timber** weapon + `Bramble-Spun Jerkin`. All 6 postures & `D-Pad Soul Tether` active; `R` and `L+R` fire **Un-Inked Martial Flourishes**. | Moving with attacks, spending $1\diamond$ / $3\diamond$ Pips, and Flow-Canceling the 3rd swing into `Forward+Heavy` or `Back+Heavy`. |
-| **Level 2** | **Ariundle Moss-Oaks Trailhead** *(First Mob Pack)* | Drops **Tier 2 Hedgerow Iron** weapon upgrade ($+20\%$ damage, iron mesh swap in `ActorVisuals`). | Breaking enemy **Braced Front Guard** via Tank frontal poise pressure or DPS rear `Flank Breach`. |
-| **Level 3** | **Ariundle Moss-Oaks Way-Shrine** | Grants **1st Plain Vellum Scribe Card** (auto-slotted into `R Skill` if empty, aligned with Primary Fellowship: `SIGN_IRON_ROOT` for Shield-Sworn, `SIGN_RIME_GALE` for Wayfarers, `SIGN_WARM_HEARTH` for Lantern-Bearers). | Seeing `R Skill` transform from a plain wooden swing into a $2.0\times$ glowing Sign channel that primes a $2.5\text{ m}$ Sign Ring. |
-| **Level 4** | **Holloway Threshold Gate** | Grants **Role Signature Talisman** enhancing `L Guard` (`Shadow Sanctuary` $4.0\text{ m}$ `BLUE_BEHIND_TANK` safe-fan gains $+15\%$ ally damage buff) and `D-Pad Soul Tether` (braided 3D tether ribbon pulses $+4.0\text{ HP}$ every $2.0\text{ s}$). | Standing behind the Tank during red boss cones and keeping a `Soul Tether` linked to the frontliner. |
-| **Level 5** | **The Sunken Holloway Mid-Camp** | Grants **Tier 3 Bramblebridge Steel** weapon + **2nd Plain Vellum Scribe Card** (auto-slotted into `L+R Ult`, e.g., `SIGN_STAR_TIDE` or role secondary Sign). | Using $3\diamond$ `L+R Ult` for big AoE waves and chaining `R Skill` $\rightarrow$ teammate `R Skill` for a **Four-Sign Detonation**. |
-| **Level 7** | **Doverslap Gorge Bridge Gatehouse** | Unlocks the **Under-Card Tuck** slot beneath `R Skill` and awards the player's first Under-Card modifier (`Widened Arc`, `Twin-Echo`, or `Leeching Ink`). | Learning lenticular deckbuilding: tucking an Under-Card beneath a primary card to alter its geometry or resource return. |
-| **Level 10** | **The Ring of the Cairnsman** | Unlocks the **$3 \times 3$ Secondary Calling** (`+ TANK`, `+ DPS`, or `+ MAGIC` modifiers from `06_WORLD_AND_CALLINGS.md`), bestowing canonical Calling title (`Bridge-Warden`, `Hedge-Runner`, `Lantern-Scribe`, etc.) and **Tier 4 Doverslap Relic** weapon. | Full raid mastery: combining $3 \times 3$ Calling passives, Under-Card tucks, and all 4 Scribe Sign Detonations (`Shatterpoint`, `Glacial Rupture`, `Dawnburst`, `Astral Chorus`). |
+| **Level 1** | **Bramble-Bridge Green** *(Spawn)* | **Tier 1 Apprentice Timber** weapon + `Bramble-Spun Jerkin`. All 6 postures & `D-Pad Soul Tether` active; `R` and `L+R` fire **Un-Inked Martial Flourishes**. | Moving with attacks, spending $1\diamond$ / $3\diamond$ Pips, and Flow-Canceling the 3rd swing into `Forward+Heavy` or `Back+Heavy`. |
+| **Level 2** | **Moss-Oak-Hollow Trailhead** *(First Bramble-Hobs)* | Drops **Tier 2 Hedgerow Iron** weapon upgrade ($+20\%$ damage, iron mesh swap in `ActorVisuals`). | Breaking enemy **Braced Front Guard** via Tank frontal poise pressure or DPS rear `Flank Breach`. |
+| **Level 3** | **Moss-Oak-Hollow Way-Shrine** | Grants **1st Plain Vellum Scribe Card** (auto-slotted into `R Skill` if empty, aligned with Primary Fellowship: `SIGN_IRON_ROOT` for Shield-Sworn, `SIGN_RIME_GALE` for Wayfarers, `SIGN_WARM_HEARTH` for Lantern-Bearers). | Seeing `R Skill` transform from a plain wooden swing into a $2.0\times$ glowing Sign channel that primes a $2.5\text{ m}$ Sign Ring. |
+| **Level 4** | **Rush-Light-Hollow Threshold Gate** | Grants **Role Signature Talisman** enhancing `L Guard` (`Shadow Sanctuary` $4.0\text{ m}$ `BLUE_BEHIND_TANK` safe-fan gains $+15\%$ ally damage buff) and `D-Pad Soul Tether` (braided 3D tether ribbon pulses $+4.0\text{ HP}$ every $2.0\text{ s}$). | Standing behind the Tank during red boss cones and keeping a `Soul Tether` linked to the frontliner. |
+| **Level 5** | **Rush-Light Hush-Crack** | Grants **Tier 3 Bramble-Bridge Steel** weapon + **2nd Plain Vellum Scribe Card** (auto-slotted into `L+R Ult`, e.g., `SIGN_STAR_TIDE` or role secondary Sign). | Using $3\diamond$ `L+R Ult` for big AoE waves and chaining `R Skill` $\rightarrow$ teammate `R Skill` for a **Four-Sign Detonation**. |
+| **Level 7** | **Dover-Slap-Bridge Gatehouse** | Unlocks the **Under-Card Tuck** slot beneath `R Skill` and awards the player's first Under-Card modifier (`Widened Arc`, `Twin-Echo`, or `Leeching Ink`). | Learning lenticular deckbuilding: tucking an Under-Card beneath a primary card to alter its geometry or resource return. |
+| **Level 10** | **The Ring of the Cairnsman** | Unlocks the **$3 \times 3$ Secondary Calling** (`+ TANK`, `+ DPS`, or `+ MAGIC` modifiers from `06_WORLD_AND_CALLINGS.md`), bestowing canonical Calling title (`Bridge-Warden`, `Hedge-Runner`, `Lantern-Scribe`, etc.) and **Tier 4 Dover-Slap Relic** weapon. | Full raid mastery: combining $3 \times 3$ Calling passives, Under-Card tucks, and all 4 Scribe Sign Detonations (`Shatterpoint`, `Glacial Rupture`, `Dawnburst`, `Astral Chorus`). |
 
 ---
 
@@ -130,15 +130,15 @@ What the game does today, where it differs from the spec above, and what's still
 - **Testing.** `PartyProgress.apply_full_endgame_kit_for_testing()` (the brief's `apply_Full_endgame_kit_for_testing`, in the project's snake_case) puts the party at Level 10 with every class in its classic full kit, so the older smoke checks measure what they always did. The smoke test also turns the Braced Front Guard off for those older checks; `_check_phase_11_combat_onboarding_and_flanking` turns it on and plays the trail from Level 1.
 
 **Deliberate differences from the spec**
-- **The classic weapons stay.** The Falchion, Broad-Axe, Rowan Way-Staff and Yew Longbow are Tier 3 Bramblebridge steel, open from Level 5, with the base (1.0x) numbers every tier scales. They are what `apply_full_endgame_kit_for_testing` wears.
+- **The classic weapons stay.** The Falchion, Broad-Axe, Rowan Way-Staff and Yew Longbow are Tier 3 Bramble-Bridge steel, open from Level 5, with the base (1.0x) numbers every tier scales. They are what `apply_full_endgame_kit_for_testing` wears.
 - **R cards at Level 3** are the Fellowships' own: Taunt (Iron-Root) for the Shield-Sworn, Homing Heal (Warm-Hearth) for the Lantern-Bearers, and a new Plain Vellum card, **Rime-Lash** (Rime-Gale, 1 pip), for the Wayfarers. Rime-Lash is kept out of chest drops so the drop table is unchanged. L+R cards at Level 5 are the Fellowships' starter ultimates (Bulwark Quake, Lifeline Pull, Tempest Flow).
 - **The Level 7 Under-Card** is one the game already has: Iron-Root Link (Potency Surge) for the Shield-Sworn, Star-Tide Link (Sign Infusion) for the Wayfarers, Warm-Hearth Link (Hearth Echo) for the Lantern-Bearers. Under-Card links stay shut below Level 7; from Level 7 the link beneath R is always open, and the Grimoire's victories open the others as before.
 - **Forward+Heavy and Back+Heavy** keep their Fellowship cards from Level 1, so seals and detonations can be learned from the first fight; only R and L+R start un-inked.
 - **Seals still last 8 s** (§4.2 says 6 s); the badge's arc counts down the real time.
-- **Every enemy braces,** minions too, as §3.2 says. A Light from behind isn't a breach, but it does full damage.
+- **Every foe braces,** the woodland kin too, as §3.2 says. A Light from behind isn't a breach, but it does full damage.
 - **Each Light keeps its weapon's own frame data** rather than §3.1's single table, so the four weapons still feel different; the steps, the winded third Light and the Flow-Link window are as specified.
 
 **Still to come**
 - The Level 4 Role Signature Talisman (a stronger Shadow Sanctuary and a pulsing Soul Tether).
 - §6's animated card or weapon icon sliding into the Cross-Grimoire on a milestone.
-- The doc's own Under-Cards (Widened Arc, Twin-Echo, Leeching Ink) and Doverslap relic armor.
+- The doc's own Under-Cards (Widened Arc, Twin-Echo, Leeching Ink) and Dover-Slap relic armor.

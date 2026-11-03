@@ -1,6 +1,6 @@
-# 04_BALANCE.md — Balance (Phases 5 to 11)
+# 04_BALANCE.md — Balance (Phases 5 to 12 and the Mythopoetic Lens)
 
-Phase 8 renamed things (06_WORLD_AND_CALLINGS.md): the Aspects are the Four Scribe Signs, the Dojo Warden is The Cairnsman of Doverslap, and card variants are finishes. The numbers didn't change. Phases 9 and 10 (07_EXPEDITION_HUD_AND_ART_GDD.md) renamed Dojo Shards to Chimes and added the Callings, the Doverslap Expedition and the Phase 2 Gale-Beam: see the sections from "The 3x3 Callings" down.
+Every name below is in the words of [15_THE_MYTHOPOETIC_LENS.md](15_THE_MYTHOPOETIC_LENS.md): the Four Scribe Signs, the Cairnsman of Dover-Slap-Falls, card finishes, Chimes, and foes as kin of the First-Quiet. Renames never moved a number. The Callings, the Dover-Slap-Falls Expedition and the Phase 2 Gale-Beam start at "The 3x3 Callings"; the Hob-to-Boggart Spectrum's numbers are in the last table.
 
 First-pass numbers, set by arithmetic rather than playtesting. Tune them after the family plays. Every number is a named constant; the "Where" column says which file.
 
@@ -19,7 +19,7 @@ First-pass numbers, set by arithmetic rather than playtesting. Tune them after t
 - Sustained damage per second, counting stamina pauses: Flow DPS about 12 to 16, Shield Tank about 8 to 10, Healer about 5. A 3-player party deals about 25 once you allow for moving and dodging.
 - 2,400 HP ÷ 25 ≈ 96 s. Health scales with the party when the fight starts: **900 + 500 per player** (1,400 solo, 2,400 for three, 3,400 for five).
 
-## Boss: The Cairnsman of Doverslap
+## Boss: The Cairnsman of Dover-Slap-Falls
 
 | Number | Value | Where | Why |
 |---|---|---|---|
@@ -73,20 +73,20 @@ The player who stamped a seal can't detonate it. Each detonation plays its own s
 
 | Armor | Mitigation | Stamina regen | Roll | Perfect Guard window | Worn by (starter) |
 |---|---|---|---|---|---|
-| Hearth-Linen (Light) | 10% | 27.5 / s | 5.2 m | 200 ms | Healer |
-| Ranger Leather (Medium) | 20% | 22.0 / s | 4.6 m | 200 ms | DPS |
-| Ironwood Plate (Heavy) | 35% | 18.0 / s | 3.8 m | 260 ms | Tank |
+| Hearth-Linen Coat (Light) | 10% | 27.5 / s | 5.2 m | 200 ms | Healer |
+| Hedgerow Wool-Mantle (Medium) | 20% | 22.0 / s | 4.6 m | 200 ms | DPS |
+| Iron-Wood Ring-Coat (Heavy) | 35% | 18.0 / s | 3.8 m | 260 ms | Tank |
 
-Mitigation comes off every hit before guards (telegraphs too). So a guarded swipe now costs the tank about 2 health (24 × 0.65 × 0.15), and a full soak costs 27 in linen or 19.5 in plate. Fights are a little gentler than in Phase 6; the upgrade and level curves assume that. A roll also slides on after its push, so the distance travelled is longer than the table (the smoke test compares linen against plate rather than exact metres).
+Mitigation comes off every hit before guards (telegraphs too). So a guarded swipe now costs the tank about 2 health (24 × 0.65 × 0.15), and a full soak costs 27 in a Hearth-Linen Coat or 19.5 in an Iron-Wood Ring-Coat. Fights are a little gentler than in Phase 6; the upgrade and level curves assume that. A roll also slides on after its push, so the distance travelled is longer than the table (the smoke test compares linen against plate rather than exact metres).
 
 ## Weapons (05 GDD §2.2)
 
 | Weapon | Light chain | Heavy (always detonates) | Cards travel as | Notes |
 |---|---|---|---|---|
-| Sword & Buckler | 3 cuts, 0.55 s, 10 stamina, 8/9/12 damage | Advancing Thrust: 18 damage, 15 poise, 2 m lunge | Melee swing with a ribbon trail | Tank starter |
-| Greataxe | 2 wide cleaves, 0.85 s, 16 stamina, 14/17 damage | Earth-Splitter: 28 damage, 35 poise | Melee swing with a ribbon trail | Slow and heavy |
-| Hearthwood Scribe Staff | 2 sweeps (7) then a 12 m arcane bolt (10) | Resonant Pulse: 16 damage AoE around you | 12 m rune bolts | Sanctuaries +25% radius; healer starter |
-| Wind-Ash Hunter Bow | 14 m snap-shots, 10 stamina, stepping back 0.6 m | Piercing Draw: 24 damage, 20 poise, 18 m, pierces | 18 m rune arrows | DPS starter |
+| Falchion | 3 cuts, 0.55 s, 10 stamina, 8/9/12 damage | Advancing Thrust: 18 damage, 15 poise, 2 m lunge | Melee swing with a ribbon trail | Tank starter |
+| Broad-Axe | 2 wide cleaves, 0.85 s, 16 stamina, 14/17 damage | Earth-Splitter: 28 damage, 35 poise | Melee swing with a ribbon trail | Slow and heavy |
+| Rowan Way-Staff | 2 sweeps (7) then a 12 m arcane bolt (10) | Resonant Pulse: 16 damage AoE around you | 12 m Sign-bolts | Sanctuaries +25% radius; healer starter |
+| Yew Longbow | 14 m snap-shots, 10 stamina, stepping back 0.6 m | Piercing Draw: 24 damage, 20 poise, 18 m, pierces | 18 m Sign-arrows | DPS starter |
 
 Ranged cards keep their numbers but are planted: forward lunges are dropped (Rising Drive, Gale Rush), backward steps stay (Frost Crescent). Shots lean toward a target within about 37° of where you face. A shot freezes only its target in hit-stop.
 
@@ -162,7 +162,7 @@ Each level adds 10% of the class's own number for the whole party, up to 5 level
 | DPS roll | 0.35 s before the swipe lands | `companion_ai_component.gd` | Clears the reach with time to spare |
 | Healer | Heals anyone under 75%; Lifeline when a friend stands in red that's half full | `companion_ai_component.gd` | Keeps a child up without overhealing |
 | Stamina reserve | Attacks keep 30 back; the tank keeps 30 too (25 guards, +5) | `companion_ai_component.gd` | Always enough for a roll or a guard (a Stout Heart's slower stamina had a tank swinging itself too tired to guard) |
-| Minions | Fight any woken minion within 20 m | `companion_ai_component.gd` | Bots help clear camps, but don't wander off after far ones |
+| Awakened kin | Fight any woken Bramble-Hob or Wisp-Boggle within 20 m | `companion_ai_component.gd` | Bots help close Hush-Cracks, but don't wander off after far ones |
 | Catch-up | More than 22 m behind the leader, with no foe nearby: appear 3 m behind them | `companion_ai_component.gd` | A long trail (and walls) would otherwise strand a bot |
 | Gale-Beam | The tank faces the boss and raises Shadow Sanctuary; others go into its cone (45% of its length), or step out of the lane | `companion_ai_component.gd` | Shows children what to do |
 
@@ -178,28 +178,28 @@ A Calling is the Fellowship's base numbers plus one Secondary modifier. The modi
 | Swift Foot (+DPS) | +0 | +3 / s | +15% damage on every strike (weapon and card) | Bow and axe |
 | Wise Hand (+Magic) | −5 | +2 / s | +20% pips from every source, +20% healing, +1 Grimoire Memory | Staff |
 
-Everyone may use the Falchion and light or medium armor, and a Fellowship always has its own column's gear (the Shield-Sworn wear plate, Wayfarers carry bows and axes, Lantern-Bearers bear staves). Stamina regen never drops below 6 a second, whatever the armor and Calling. A save naming gear the Calling can't use falls back to the starter piece.
+Everyone may use the Falchion and light or medium armor, and a Fellowship always has its own column's gear (the Shield-Sworn wear the Iron-Wood Ring-Coat, Wayfarers carry bows and axes, Lantern-Bearers bear staves). Stamina regen never drops below 6 a second, whatever the armor and Calling. A save naming gear the Calling can't use falls back to the starter piece.
 
 Why these numbers: every Secondary costs something or gives in two directions, so no column is simply best. The double-down Callings (Bridge-Warden, Hedge-Runner, Lantern-Scribe) get the purest version of their seat, and the cross Callings trade a little of it for new gear (a Weald-Captain tank with a Broad-Axe, a Sign-Seeker archer who earns pips faster).
 
-## The Doverslap Expedition (07 GDD §3)
+## The Dover-Slap-Falls Expedition (07 GDD §3)
 
 | Number | Value | Where | Why |
 |---|---|---|---|
-| Minions | 65 health, 30 poise (2 s knockdown), Scuttler nip 7, Bog-Imp claw 10 | `class_loadouts.gd` | A cleave, a volley or one detonation clears a few; they teach multi-target play, not hurt |
-| Minion speed | Scuttler 4.6 m/s, Bog-Imp 3.6 m/s; a strike every 1.5 s | `class_loadouts.gd`, `woodland_minion.gd` | Slower than a player (6+), so you can always walk away |
-| Camp wake / settle | A player within 9 m, or a minion hurt; settles when nobody is within 18 m | `minion_camp.gd` | Visible camps don't jump you from across the clearing |
-| Camp reward | 3 Chimes per cleared camp (2 camps) | `dungeon_dojo.gd` | Small, but it makes the trail worth fighting |
+| Woodland kin | 65 health, 30 poise (2 s knockdown), Bramble-Hob nip 7, Wisp-Boggle claw 10 | `class_loadouts.gd` | A cleave, a volley or one detonation un-boggarts a few; they teach multi-target play, not hurt |
+| Kin speed | Bramble-Hob 4.6 m/s, Wisp-Boggle 3.6 m/s; a strike every 1.5 s | `class_loadouts.gd`, `woodland_minion.gd` | Slower than a player (6+), so you can always walk away |
+| Hush-Crack wake / settle | A player within 9 m, or one of its kin hurt; settles when nobody is within 18 m | `minion_camp.gd` | Sleeping kin don't jump you from across the clearing |
+| Hush-Crack reward | 3 Chimes per sealed Hush-Crack (2 of them) | `dungeon_dojo.gd` | Small, but it makes the trail worth fighting |
 | Wayfarer's Chest | 15 Chimes and one Uncommon card (own dice, never shifts the boss's drop) | `dungeon_dojo.gd` | A reward for exploring the alcove |
 | Water-Shrine | Full health and stamina for the whole party, then rests 40 s | `water_shrine.gd` | One clean reset before the gorge; not a heal-bot |
-| Rune-Plates | min(2, standing party) plates held together for 2 s | `coop_gate.gd` | Needs teamwork without ever soft-locking a lone player |
+| Maker-Seal Plates | min(2, standing party) plates held together for 2 s | `coop_gate.gd` | Needs teamwork without ever soft-locking a lone player |
 | Gale-Jet | Quiet 3.5 s, gathers 1.4 s (the lane pales), blows 0.6 s: a 5 m shove down the lane, no damage | `gorge_gale_jet.gd` | A readable rhythm that pushes children around without hurting them |
 | Bell-Winch | Only rings from inside a Shadow Sanctuary cone (the tank holding it counts) | `coop_gate.gd` | The tank's shield is the key; teaches "stand behind the tank" before the boss asks for it |
-| Checkpoints | Zone 2 from z < 15, Zone 3 past the gate | `dungeon_dojo.gd` | A wipe never sends you back through the camps |
+| Checkpoints | Zone 2 from z < 15, Zone 3 past the gate | `dungeon_dojo.gd` | A wipe never sends you back through the Hush-Cracks |
 
-In a headless run, one player with two companions clears both camps and reaches the gorge in about 40 seconds, and a demo player and a companion open the gate on the plates in under 20.
+In a headless run, one player with two companions seals both Hush-Cracks and reaches the falls in about 40 seconds, and a demo player and a companion open the gate on the plates in under 20.
 
-## Phase 2: the Doverslap Gale-Beam (07 GDD §3, Zone 3)
+## Phase 2: the Dover-Slap Gale-Beam (07 GDD §3, Zone 3)
 
 | Number | Value | Where | Why |
 |---|---|---|---|
@@ -207,7 +207,7 @@ In a headless run, one player with two companions clears both camps and reaches 
 | Rotation | Beam, then Crimson or Golden by turns, then beam again (every other cast) | `boss_dummy.gd` | The floor mechanics stay, the beam joins them |
 | Gale-Beam | 3.2 s cast; a 22 × 4.5 m lane from the boss through its top-threat player; it tracks them until 70% cast, then locks | `boss_dummy.gd`, `raid_telegraph_decal.gd` | Long enough for the tank to turn and raise the shield and for everyone to get behind it |
 | Sheltered | In any Shadow Sanctuary cone (or holding one): no damage, +½ pip | `boss_dummy.gd` | Rewards doing it right, like a Perfect Guard |
-| Exposed | 40 damage (before armor: 36 in linen, 26 in plate) and a 4 m knockback, never past 16 m from the boss | `boss_dummy.gd` | Hurts but never kills a full-health player on its own |
+| Exposed | 40 damage (before armor: 36 in a Hearth-Linen Coat, 26 in an Iron-Wood Ring-Coat) and a 4 m knockback, never past 16 m from the boss | `boss_dummy.gd` | Hurts but never kills a full-health player on its own |
 | Squire shelter | A Squire tank the beam is aimed at turns to the boss and raises Shadow Sanctuary once the beam is 25% full (if it has the stamina); anyone else in the lane outside a shield rolls sideways at 85% | `input_component.gd` (`AUTO_SHELTER_FILL`, `AUTO_EVADE_FILL`) | 08 Gate 5: an assisted child survives every mechanic |
 
 ## The seamless world (10_WORLD_ARCHITECTURE.md)
@@ -220,7 +220,7 @@ In a headless run, one player with two companions clears both camps and reaches 
 | Trails | 0 to 3 m rise from the holloway to the gorge, 3 to 6 m from the gorge to the Ring, 10 to 12 m wide | `landblock_manifest.gd` | Gentler than the 13° bridge ramps; wide enough for the party and a fight |
 | Checkpoints | Inside the Moss-Oaks' south gap, the gorge's south cliff, the causeway | `landblock_manifest.gd` | Nobody walks back from the village after a wipe |
 | Companions | Join once anyone walks out of the Forest Gate, leave when everyone's back in the village | `everwood_world.gd` | The village stays the family's own space |
-| AI tick | Enemies think every tick within 35 m of a player, 10 times a second to 90 m, rest beyond; always full rate in a fight | `chunk_nav_builder.gd` | Far camps cost nothing until someone comes near |
+| AI tick | Enemies think every tick within 35 m of a player, 10 times a second to 90 m, rest beyond; always full rate in a fight | `chunk_nav_builder.gd` | Far Hush-Cracks cost nothing until someone comes near |
 | Recall | 5 s after the Cairnsman's chest opens, everyone is back on the green and the expedition resets (the village's state stays) | `everwood_world.gd` | One run, then home, as in the instanced expedition |
 
 ## The Trail of the Four Signs (11 GDD §5)
@@ -229,8 +229,8 @@ In a headless run, one player with two companions clears both camps and reaches 
 |---|---|---|---|---|
 | 1 Apprentice Timber | Level 1 | 1.0x | hazel `#A67B5B`, hemp cord | 0 |
 | 2 Hedgerow Iron | Level 2 | 1.2x | dark iron `#5A626A`, brass rivets | 0.55 |
-| 3 Bramblebridge Steel | Level 5 | 1.45x | milled steel `#C4CED4`, brass bell-guard | 0.80 |
-| 4 Doverslap Relic | Level 10 | 1.75x | gilded bronze `#E5C158`, glowing Sign-stone | 0.90 |
+| 3 Bramble-Bridge Steel | Level 5 | 1.45x | milled steel `#C4CED4`, brass bell-guard | 0.80 |
+| 4 Dover-Slap Relic | Level 10 | 1.75x | gilded bronze `#E5C158`, glowing Sign-stone | 0.90 |
 
 Each tier multiplies its classic weapon's numbers above (the classics are Tier 3 looks with 1.0x numbers, open from Level 5). The Bramble-Spun Jerkin, everyone's Level 1 armor, is medium: 15% mitigation, 24 stamina a second, 4.8 m rolls, 220 ms Perfect Guard.
 
@@ -255,15 +255,32 @@ A Tier 1 Falchion's Timber-Cross Slash hits for 29, Gale Rush for 22: a flourish
 
 - Should taunt cost 1 pip, or should the tank's Perfect Guard pip already be enough?
 - Is a companion tank that always lands Perfect Guards too strong next to a child playing tank? (Raise `PERFECT_GUARD_LEAD` past 0.2 s to make it guard early and take chip damage.)
-- Is about 40 Chimes a run the right pace? Maxing both upgrades takes about 3 runs; with the camps and the Wayfarer's Chest that may now be too fast.
+- Is about 40 Chimes a run the right pace? Maxing both upgrades takes about 3 runs; with the Hush-Cracks and the Wayfarer's Chest that may now be too fast.
 - With armor mitigation on every hit, is the Cairnsman now too gentle? Its damage could rise 15–20% to make up for it.
 - Does a Rare card at Lv 2 (memory 7 of 8, no room for a link) feel like a real choice, or should Lv 2 hold 9?
 - Does the Gale-Beam's 3.2 s give a child at tank, in Adventurer or Master mode, enough time to turn and raise Shadow Sanctuary? (Squire Gambit now does it for them.)
 - Is the Gale-Jet's push fun for younger players, or should it slow (not shove) them?
-- Do two minion camps feel like enough fighting before the boss, or should the holloway hold a third?
-- Do minions bracing after three frontal hits slow the trail down too much for a party of small children? `BRACED_GUARD_HIT_THRESHOLD` could rise for minions only.
-- Is Level 5 at the Gatehouse right, or should the Tier 3 weapon and the L+R card come before the second camp?
+- Do two Hush-Cracks feel like enough fighting before the boss, or should Rush-Light-Hollow hold a third?
+- Do woodland kin bracing after three frontal hits slow the trail down too much for a party of small children? `BRACED_GUARD_HIT_THRESHOLD` could rise for them only.
+- Is Level 5 at the Gatehouse right, or should the Tier 3 weapon and the L+R card come before the second Hush-Crack?
 - Is the winded third Light felt as "weave in a heavy" or just as lag? 550 ms may want to be 450.
 - In the seamless world, is the walk from the village to the Ring (about 350 m) a pleasant journey or a chore? The trails could be shorter, or a checkpoint could let the party skip back to the gorge.
-- In Oakshire Vale, do the neutral Meadow Vermin give small children a gentle first fight, or do the Weald Predators' 10 m aggro catch them on the roads?
+- In Oakshire Vale, do the Curious Weald-Wights (parley or fight) give small children a gentle first meeting, or do the Padfoot Boggarts' 10 m waking radius catch them on the roads?
+- Is a 120-frame Hearth-Rite Tuck (2 s, up from 1.5 s) too long for a four-year-old to hold?
 - With no navigation mesh in Oakshire yet, do creatures and companions snag on trees and boulders too often when they walk straight at you?
+
+## The Lantern's Promise & the First-Quiet Bestiary (15 GDD §4, §6)
+
+| What | Number | Where | Why |
+|---|---|---|---|
+| Hearth-Rite Tuck | Hold R or L+R `120 frames` (`80` on a Star-Inked Vellum leaf) out of combat; `0` pips | `sign_flow_component.gd` | A free, calm pre-fight beat |
+| Tuck empowerments | `60.0` poise (*Shatterpoint*) / `60.0` burst (*Glacial Rupture*) / `30.0` heal (*Dawnburst*) / `+40.0` stamina and `+1.0` pip (*Astral Chorus*) on the opening strike, by the leaf's Sign | 15 GDD §4 (spec) | One strong opening, never a stockpile |
+| Flow-Link Window | `9f` Dread-Chill (alone) / `14f` baseline / `18f` The Lantern's Promise (within `5.5m` of a Lantern-Bearer) | `sign_flow_component.gd` | Staying together is easier than going alone |
+| Cairn-Drake Challenge-Roar | `45 frames` (`0.75s`), no blow during it | `hob_spectrum_component.gd`, `wild_mob.gd` | A readable cue before a big foe's first swing |
+| Bravery Counter | `(60.0 + 45.0) × M(L)` = `105.0` posture at Lv 1 (`1.33x` at the Cairnsman's Lv 5) | `glimmer_spot_component.gd` | Rewards answering the roar, not mashing |
+| Truce-Sign parley | Within `6.0m`, a `180-frame` window; `+25` Chimes, `+1.0` pip | `hob_spectrum_component.gd` | Greeting a curious hob is worth as much as a fight |
+| Furrow Iron-Man | `50%` mitigation on un-tucked weapon strikes (spec); Maker-Seal opens on a Warm-Hearth strike for `6.0s`, turns `180°` on an Iron-Root strike | 15 GDD §4.3; `hob_spectrum_component.gd` | Two Signs, two players, one puzzle |
+| Steward helper | `600.0s` (`10 minutes`) bowed and friendly | `hob_spectrum_component.gd` | Long enough to feel like a friend |
+| Lulled cairn (mobs) | Stays `30.0s`; a boss's stays for good | `hob_spectrum_component.gd` | A mob's spawner grows a fresh spirit later |
+
+Today's Oakshire Iron-Men keep their Phase 11 mitigation (20–30%); the 50% un-tucked penalty and the per-Sign Tuck empowerments are Pass 2 tuning (15 GDD §7).

@@ -1,21 +1,23 @@
-# EVERWOOD (OAKSHIRE RAIDS) — ENCOUNTER & MOB ROSTER SPECIFICATION
-**Combat Mechanics & Four-Sign Synergy Integration**
+# EVERWOOD (OAKSHIRE RAIDS) — ENCOUNTER & FIRST-QUIET KIN ROSTER SPECIFICATION
+**Combat Mechanics, Four-Sign Synergy & The Hob-to-Boggart Spectrum**
 
-## 1. Encounter Pacing & Camp Pull Math
-* **Leash Spacing:** Open-field mobs maintain an $18\text{m} \text{–} 25\text{m}$ leash; camp clusters maintain $10\text{m} \text{–} 14\text{m}$ pack spacing.
-* **Respawn Timer:** Dynamic $45 \text{–} 90\text{ second}$ respawn timers.
-* **LoS Pull Mechanics:** Ranged add pull mechanics require the **Shield-Sworn** tank to break enemy missile trajectories using zone boulders and terrain berms.
+Every creature that fights in Oakshire Vale is a kin of **The First-Quiet**, risen through a crack in the vale and stirred by **Old-Hob-of-the-Hill** ([15_THE_MYTHOPOETIC_LENS.md](15_THE_MYTHOPOETIC_LENS.md)). None is a race or a gang; each stands somewhere on the Hob-to-Boggart Spectrum, and none leaves a body when beaten.
 
-## 2. The 6 Starting Zone Mob Families & Combat Profiles
-| Family & Tier | Variants & Roles | Poise / HP Profile | Combat Behavior & Sign Counter |
-| :--- | :--- | :--- | :--- |
-| **1. Meadow Vermin** (Tier 1, Lvl 1–2) | • *Cider-Thief Bristleboar*<br>• *Thorn-Tail Scuttler*<br>• *Old Tusk-Crag* (Rare) | Low Poise ($15.0$), Low HP ($80$). | **100% Yellow/Neutral**; slow $1.2\text{s}$ wind-up animations designed for 1-button Gambit Assist practice. |
-| **2. Weald Predators** (Tier 2, Lvl 2–3) | • *Grey-Pelt Prowler*<br>• *River-Snapper Toad*<br>• *Alpha Frost-Fang* | Medium Poise ($30.0$), Medium HP ($180$). | Red hostile aggro ($10\text{m}$ radius); linear dash telegraphs rewarded by `SIGN_RIME_GALE` (*Glacial Rupture* slow). |
-| **3. Soot-Paw Outlaws** (Tier 3, Lvl 3–4) | • *Soot-Paw Cutthroat*<br>• *Quarry Sling-Shotter*<br>• *Foreman Iron-Gavel* | Mixed Poise ($45.0$), Shielded. | Grouped in 3-mob pulls (1 Heavy + 1 Melee + 1 Ranged). Teaches Tank LoS pulling and `SIGN_IRON_ROOT` (*Shatterpoint* `+45.0` poise damage). |
-| **4. Blight-Thorn Briarlings** (Tier 4, Lvl 4–5) | • *Bramble-Lasher Vine*<br>• *Spore-Puff Shambler*<br>• *Bog-Hulk Tangler* | High Poise ($75.0$), Armor Bark. | Plant constructs requiring coordinated party focus to crack bark armor via heavy attacks. |
-| **5. Tarnished Chime-Wights** (Tier 5, Lvl 5) | • *Risen Shield-Sworn Husk*<br>• *Hollow Scribe-Acolyte*<br>• *Barrow-Warden Knell* | Undead elites with barrier shields. | Protects dungeon gates; tests interrupt timings and `SIGN_WARM_HEARTH` (*Dawnburst* $20.0$ HP heal) party sustain. |
-| **6. Ambient Wildlife & Roaming Boss** (Zone-wide) | • *Golden-Fleece Sheep*<br>• *Red Fox*<br>• *The Crag-Back Behemoth* | Boss Poise ($150.0$), Boss HP ($2,500$). | Ambient critters add life; the roaming Mini-Boss patrols outer roads with a heavy bell-stomp audio cue. |
+## 1. Encounter Pacing & Pack Pull Math
+* **Leash Spacing:** Open-field kin keep an $18\text{m} \text{–} 25\text{m}$ leash; packs round a crack keep $10\text{m} \text{–} 14\text{m}$ spacing.
+* **Regrowth Timer:** A beaten spirit's spawner grows a fresh one after $45 \text{–} 90\text{ seconds}$.
+* **LoS Pull Mechanics:** Ranged kin's shots stop on the zone's boulders and terrain berms, so the **Shield-Sworn** tank breaks their line of fire to pull them in.
+
+## 2. The 6 Starting Zone Families & Combat Profiles
+| Family & Tier | Spectrum | Variants & Roles | Poise / HP Profile | Combat Behavior, Sign Counter & Un-Boggarting |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Curious Weald-Wights** (Tier 1, Lvl 1–2) — *Hedgerow-Hobs of Pippin-Green* | `HOB_BENIGN` · `STATE_CURIOUS` | • *Bristle-Hob*<br>• *Thorn-Tail Hedgerow-Hob*<br>• *Old Tusk-Hob* (Rare) | Low Poise ($15.0$), Low HP ($80$). | **Yellow, curious.** Within `6.0m` a `180-frame` parley window opens: the 1-button Gambit Assist (`Light`) waves the Truce-Sign, the hob dances, and the party earns `+25` Chimes and a pip. Strike one instead and it turns boggart; its slow $1.2\text{s}$ wind-ups make it gentle Gambit practice. Beaten, it flies off a hedge-wren. |
+| **2. Padfoot Boggarts** (Tier 2, Lvl 2–3) — *mist-hounds of the meadow and the river* | `BOGGART_AWOKEN` | • *Grey Padfoot*<br>• *Puddle-Bucca*<br>• *Frost-Fang Padfoot* (Elite) | Medium Poise ($30.0$), Medium HP ($180$). | Wakes within $10\text{m}$ ($12\text{m}$ for the Frost-Fang); linear dash telegraphs reward `SIGN_RIME_GALE` (*Glacial Rupture* slow). Beaten, its mist dissolves into a white sea-swallow (`STATE_UNBOGGART_RELEASE`). |
+| **3. Furrow Iron-Men** (Tier 3, Lvl 3–4) — *Quarry-Wick's terraces* | `BOGGART_AWOKEN` | • *Furrow Iron-Man*<br>• *Clod-Flinger Iron-Man*<br>• *Plough-Giant Iron-Man* (Elite) | Mixed Poise ($45.0$), riveted (20–30% mitigation). | Three-spirit pulls (1 Heavy + 1 Melee + 1 Ranged) teach tank line-of-sight pulls and `SIGN_IRON_ROOT` (*Shatterpoint* `+45.0` poise). Each wears an upside-down chest **Maker-Seal**: a `SIGN_WARM_HEARTH` strike ("feed him a coal") opens it, a `SIGN_IRON_ROOT` strike turns it right-way up, and beaten so he bows as a steward for `600s` (`STATE_STEWARD_HELPER`). Left upside-down, he sinks back into the furrow to sleep. |
+| **4. Bramble-Hobs** (Tier 4, Lvl 4–5) — *Bramble-Hollow's thickets* | `BOGGART_AWOKEN` | • *Bramble-Lasher Hob*<br>• *Spore-Puff Lob*<br>• *Bog-Hulk Boggart* (Elite) | High Poise ($75.0$), Armor Bark. | Briar-and-bark kin that need coordinated focus: a knockdown cracks the bark (twice the damage while down). Beaten, each unwinds into a hedge-wren (`STATE_UNBOGGART_RELEASE`). |
+| **5. Crag-Spriggans** (Tier 5, Lvl 5) — *Nine-Stones-Crossing's barrow-guards* | `BOGGART_AWOKEN` | • *Moss-Shield Spriggan*<br>• *Barrow-Rime Spriggan* (Ranged)<br>• *Barrow-Bell Spriggan* (Elite) | Barrier-shielded stone-guards (35% mitigation). | Guard the delve gates; test interrupt timing and `SIGN_WARM_HEARTH` (*Dawnburst* $20.0$ HP heal) party sustain. Beaten, each curls back into a mossy cairn (`STATE_LULLED_CAIRN`). |
+| **6. Ambient Wildlife & the Roaming Cairn-Drake** (Zone-wide) | — / `BOGGART_AWOKEN` | • *Golden-Fleece Sheep*<br>• *Red Fox*<br>• *The Crag-Back Cairn-Drake* | Boss Poise ($150.0$), Boss HP ($2,500$). | Sheep and foxes are ordinary animals who add life and can't be fought. The Cairn-Drake walks the High Road with a heavy bell-stomp; walking up wakes it with a `45-frame` **Challenge-Roar** (no blow during it), and beaten it is lulled into a mossy cairn. |
 
 ## 3. Build Notes
 
-The six families are built as `Bestiary` (16 fighting variants with the health and poise above), `WildMob` and `MobSpawner` (40 spawners in Oakshire Vale, 18 to 25 m leashes, 45 to 90 s respawns). The sheep and foxes are ambient critters that can't be fought. See `12_WORLD_OAKSHIRE_VALE_GDD.md` §6 for where they stand and what differs.
+The six families are built as `Bestiary` (16 fighting variants with the health and poise above), `WildMob` and `MobSpawner` (40 spawners in Oakshire Vale, 18 to 25 m leashes, 45 to 90 s regrowth). Each variant's place on the spectrum and its un-boggarting are data on `MobVariantResource` (`equilibrium`, `resolution`, `release_form`, `roars`, `has_maker_seal`), and every foe carries a `HobSpectrumComponent` (15 GDD §7). The variants' ids are unchanged, so spawners and saves still name them as before (`cider_thief_bristleboar`, `soot_paw_cutthroat`, `crag_back_behemoth`…). Their code-built bodies (boar, wolf, toad, humanoid, vine, shambler, hulk and the stone-guard and drake shapes) are Phase 10's; new silhouettes in the Lens's look are Pass 2. See `12_WORLD_OAKSHIRE_VALE_GDD.md` §6 for where they stand and what differs.
