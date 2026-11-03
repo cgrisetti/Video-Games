@@ -73,7 +73,7 @@ What the game does today, where it differs from the spec above (and from `13_STA
 
 **Deliberate differences from the spec**
 - **GDScript only.** The brief named a C# and GDScript hybrid; the engineering contract (`CLAUDE.md`) is strict GDScript.
-- **The 192 m budget** is read as fog and streaming, not a hard clip: props stream in within two chunks and fog thickens past them, but the camera sees 300 m like every level, so the rim and the horizon mesh still show.
+- **The 192 m budget** is read as fog and streaming, not a hard clip: props stream in within two chunks and fog thickens past them, but the camera sees 3 km like every level (Phase 17), so the rim, the horizon mesh and the HorizonVistaRing beyond still show.
 - **The active window** is the streamer's own rings round every player (gameplay within one chunk, props within two, HLOD within three), not a fixed 3 x 3 on the Soul Tether. With four players spread out, more chunks are live.
 - **Ramps.** The terraces' only ways up are the 7 m roads, rather than separate stone ramps.
 - **The sheep and foxes** are ambient critters (`AmbientFlock`) that wander and can't be fought.
@@ -85,3 +85,14 @@ What the game does today, where it differs from the spec above (and from `13_STA
 - Travel between Bramble-Bridge and Oakshire Vale.
 - The quest log, and the four dungeon instances behind the aprons.
 - Navigation along the road bands, so creatures path round cliffs and boulders.
+
+## 7. Build Notes (Phase 17: the storybook vale)
+
+`17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md` §5.1 and §8 in the vale:
+- **Each part wears its biome** (`OakshireVale.visual_biome_at()` from `OakshireValeLayout.region_name_at()`): Oakshire-Wick in the village and the Settled Meadow, then Wayfarer-Green, Pippin-Green, Quarry-Wick, Bramble-Hollow and Nine-Stones-Crossing. The sky, sun and fog ease to it as the party walks, and each landblock grows its biome's clutter.
+- **Oakshire-Wick:** ten stepped-gable kit houses (House0 is the Oakshire Homestead Hall, with its wing and porch), the Kindle-Fire ring (river stones, a tripod kettle and travel packs), the Armory & Scribe Desk pavilion and the Chime-Shrine pagoda as landmarks, seven cedar hives along the east woodline, two pumpkin patches inside knee-high walls open toward the green, and a Chime-Post on the road south. The mill is a stepped-gable mill house with its race.
+- **The petals:** Wayfarer-Green's windmill with turning sails and two sheep-stiles; Pippin-Green's cider mill, barrels, walled orchard of fruit trees and plough-furrow strips in the field; Quarry-Wick's two pulley-cranes, three ashlar stacks with Iron-Root marks, cairns and rusty gravel roads; Bramble-Hollow's three willow pools, hanging Wind-Lanterns and a Water-Shrine; Nine-Stones-Crossing's nine standing stones with Star-Tide spirals, the Threshold Bell-Frame, a flagged causeway and heather. Every camp has a Chime-Post singing its petal's rhyme. Wayfarer-Green's roads are chalk.
+- **Hush-Cracks** sit under Bramble-Hollow's five briar packs, the outlaws' camp and the four barrow-wight packs (10 in all): sealed while the whole pack is beaten, quietly open again when one regrows.
+- **The river and the falls** run in the storybook water shader; the meadow's trees are trunks with roots under leaf-cloud crowns, the boulders and Sign-stones crafted granite.
+- **Not done:** the Furrow Iron-Men standing in Pippin-Green's furrows (creatures, a later pass), and §5.1's petal-to-zone pairing, which differs from the game's atlas (see doc 17 §8).
+

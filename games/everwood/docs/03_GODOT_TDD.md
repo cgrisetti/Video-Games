@@ -1,20 +1,21 @@
 # 03_GODOT_TDD.md — Technical Design Document (Godot 4.7.2-stable)
 
 ## 1. Directory & Repository Topology
-The tree as it stands after the Mythopoetic Lens's Pass 1. File names and ids that saves, RPCs and scenes carry keep their old spelling (`hub_town`, `dungeon_dojo`, `rune_plate.gd`, `minion_camp.gd`); what players read is in the Lens's words.
+The tree as it stands after Phase 17 (the Living Storybook Atelier). File names and ids that saves, RPCs and scenes carry keep their old spelling (`hub_town`, `dungeon_dojo`, `rune_plate.gd`, `minion_camp.gd`); what players read is in the Lens's words.
 ```text
 games/everwood/
 ├── CLAUDE.md                           # The engineering contract
 ├── project.godot                       # Main scene: scenes/worlds/oakshire_vale.tscn
-├── docs/                               # 01–15: vision, GDDs, this TDD, balance, the Mythopoetic Lens
+├── docs/                               # 01–17: vision, GDDs, this TDD, balance, the Mythopoetic Lens, audio, world visuals
 ├── scenes/worlds/oakshire_vale.tscn    # Oakshire Vale, the starting world
 ├── data/landblocks/                    # Baked 128 m Landblocks + HLOD proxies (tools/build_*.gd)
 ├── tools/
 │   ├── build_levels.gd                 # Builds hub_town, dungeon_dojo and the Bramble-Bridge trail's Landblocks
 │   ├── build_oakshire_vale.gd          # Bakes Oakshire Vale's field, horizon and Landblocks
 │   ├── build_input_map.gd              # Writes the Input Map
-│   ├── smoke_test.gd                   # Headless functional checks (runs the three below last)
+│   ├── smoke_test.gd                   # Headless functional checks (runs the five below last)
 │   ├── test_world_grid.gd · test_oakshire_vale.gd · test_mythopoetic_lens.gd · test_adaptive_audio.gd
+│   ├── test_world_visuals.gd           # The storybook world: catalog, atelier, shaders, sightlines, succession
 │   └── fetch_terrain3d.sh              # Optional Terrain3D addon
 └── src/
     ├── autoloads/
@@ -29,7 +30,8 @@ games/everwood/
     │   └── procedural_chamber_synth.gd # Code-built stems, stingers and station ambience
     ├── resources/                      # Typed data: actions, stats, kits, cards, Signs, encounters,
     │   │                               # Callings, MobVariantResource, StewardshipZoneResource,
-    │   │                               # Zone/Sign/Calling/Boss audio profiles
+    │   │                               # Zone/Sign/Calling/Boss audio profiles, ZoneBiomeResource,
+    │   │                               # WorldPropKitResource, ZoneSuccessionVisualResource
     │   └── …
     ├── components/
     │   ├── input_component.gd          # Master, Adventurer and Squire Gambit assist tiers
@@ -52,8 +54,14 @@ games/everwood/
     │   ├── bestiary.gd                 # Oakshire Vale's six families of First-Quiet kin
     │   ├── mythopoetic_atlas.gd        # The Six-Zone Stewardship Atlas and each place's zone
     │   ├── boss_dummy.gd · woodland_minion.gd · wild_mob.gd · mob_spawner.gd
+    │   ├── chime_post.gd · hush_crack_landmark.gd # A threshold's rhyme-post; a camp's Hush-Crack and Lulled Cairn
     │   └── …                           # Shrines, gates, portals, chests, townsfolk, FX
     ├── world/                          # Landblock streaming: WorldGridManager, layouts, WorldStateDB, nav
+    │   ├── world_visual_catalog.gd     # Biomes, kits, succession looks, shared world materials
+    │   ├── world_atmosphere_director.gd # Autoload "Atmosphere": atelier, sky/sun/fog, shader globals, succession
+    │   ├── procedural_texture_atelier.gd · world_asset_catalog.gd · world_kit_instance.gd
+    │   ├── chunk_clutter_baker.gd · horizon_vista_ring.gd
+    │   └── shaders/                    # Triplanar, terrain splat, foliage wind, water stream (+ shared include)
     ├── levels/                         # LevelBase, HubTown, DungeonDojo, EverwoodWorld, OakshireVale
     └── ui/
         ├── player_hud.gd               # Each player's cell: banners, boss frame, prompts
@@ -88,5 +96,12 @@ Every foe carries one. Its states are plain enums, so saves and RPCs never need 
 ### 2.4 The adaptive score ([16_ADAPTIVE_AUDIO_ARCHITECTURE.md](16_ADAPTIVE_AUDIO_ARCHITECTURE.md) §8)
 `AudioDirector` (autoload `Score`) builds the five buses in code and plays two decks, each one zone's four phase-locked stems in an `AudioStreamSynchronized`, driven only by `set_sync_stream_volume()`. Every 0.4 s it resolves one party state from the local players: the zone most of them stand in (`LevelBase.music_profile_at()`), the depth blend, and the threat round them (Exploration, Pre-Warm, Skirmish, Boss, Exhale). Profiles are data in `AudioCatalog`; until curated stems exist, `ProceduralChamberSynth` renders each zone's stems on worker threads. Positional sounds share a 32-voice `AudioStreamPlayer3D` pool made once at start (45 m cull, 50 ms per kind, `area_mask = 1`).
 
-### 2.5 Verification
-`godot --headless --check-only -s <script>` on every changed script, a headless boot, and `tools/smoke_test.gd` (see the README). `tools/test_mythopoetic_lens.gd` lints every name the game shows against the four Linter Rules.
+### 2.5 The storybook world ([17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md](17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md) §8)
+- **Data.** `WorldVisualCatalog` registers the biomes, kits and succession looks, and hands out one shared material per look (`craft()`, `foliage()`, `water()` and the rest). Levels say which biome a spot wears (`LevelBase.visual_biome_at()`); nothing in the director names a place.
+- **Global shader parameters** (`project.godot` `[shader_globals]`) carry what every world surface needs: the atelier's three `Texture2DArray`s, the heroes, the four nearest open Hush-Cracks, the blooms and the wind. `WorldAtmosphereDirector` (autoload `Atmosphere`) sets them, renders the atelier on worker threads, and eases the level's sky, sun and fog to the biome most local players stand in.
+- **Kits are code, placed by id.** `WorldAssetCatalog` merges a kit's static parts into one mesh, one surface per material, cached by options. Scenes hold `WorldKitInstance` nodes; a new kit builds in a 1.5 ms-a-frame queue so streaming never stalls. A `.glb` at `res://assets/models/world/<kit_id>.glb` replaces it, and HLOD bakes use each kit's low-poly stand-in.
+- **Colour space.** Palette colours, vertex colours and MultiMesh instance colours are authored in sRGB; the shaders convert them, so Mode B ground, HLODs and clutter match Terrain3D's.
+- **Succession.** `HushCrackLandmark` registers with the director; `set_succession_state()` takes a camp's id or a biome's. A camp's cleared state stays in `WorldStateDB`, so it streams back as a cairn.
+
+### 2.6 Verification
+`godot --headless --check-only -s <script>` on every changed script, a headless boot, and `tools/smoke_test.gd` (see the README). `tools/test_mythopoetic_lens.gd` lints every name the game shows against the four Linter Rules, the world's biome and kit names included. `tools/test_world_visuals.gd` checks the storybook world.

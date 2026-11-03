@@ -146,3 +146,13 @@ What the game does today, where it differs from the spec above, and what's still
 **Not built yet**
 - Loaded landblock scenes and HLOD meshes stay cached for the session (four of each). Nothing is evicted yet.
 - The other zones of the atlas (Gull-Wick-Haven, Barley-Bridge-Meadow and the rest; 06 §1.1) are design only; Oakshire Vale is the second world built on the streamer. The crag chunks have terrain, clutter and occluders but no gameplay.
+
+## 7. Build Notes (Phase 17: the storybook world)
+
+See `17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md` §8 for the whole phase. What changed in the streamer:
+- **Four rings.** The grid's three (gameplay within a chunk, clutter within two, HLOD within three to four) now sit inside Ring 3, the `HorizonVistaRing`: one unlit mesh of three ridgelines from 0.9 to 2.3 km that the `WorldAtmosphereDirector` keeps centred on the party. Player cameras see 3 km (they saw 300 m, which hid the HLOD ring).
+- **Clutter.** Each chunk's Layer 2 adds `ChunkClutterBaker`'s three batches (grass, the biome's wildflowers or ferns or heather, pebbles and fungi), packed on the worker thread with the rest and placed at the chunk's middle so they fade out by 220 m. Nothing grows inside a zone's footprint, so the Ring's floor stays clear.
+- **Kits stream as ids.** Landblocks hold `WorldKitInstance` nodes; a kit whose mesh isn't cached yet waits in a queue the director builds 1.5 ms a frame, on top of the 2 ms attach queue. The landblock files shrank (`landblock_0_1.tscn` 180 KB to 60 KB).
+- **HLOD bakes** merge every surface of a kit's mesh and use each kit's low-poly stand-in (house blocks with gable rooflines, trunk-and-crown trees), so the proxies stay about the size they were.
+- **Mode B's ground** wears `storybook_terrain_splat`; Terrain3D's shader gets the same craft detail and succession. Vertex and instance colours are now read as sRGB everywhere, matching Terrain3D's colour maps.
+
