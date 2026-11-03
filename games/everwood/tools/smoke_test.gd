@@ -165,10 +165,14 @@ func _run() -> void:
 # --- Hub Town, Input Map, hot-join ----------------------------------------
 
 func _check_hub_and_input_map() -> void:
-	_check(current_scene is HubTown, "the game starts in Bramblebridge (Hub Town)")
-	_check(ProjectSettings.get_setting("application/run/main_scene") == InstanceManager.scene_path(InstanceManager.EVERWOOD_WORLD)
+	_check(current_scene is HubTown, "the smoke test starts in Bramblebridge (Hub Town)")
+	_check(ProjectSettings.get_setting("application/run/main_scene") == InstanceManager.scene_path(InstanceManager.OAKSHIRE_VALE)
 		and InstanceManager.scene_path(InstanceManager.HUB_TOWN) == HUB_SCENE,
-		"the game starts in the seamless world, and Hub Town is still an instance of its own (the tests start there)")
+		"the game starts in Oakshire Vale, and Hub Town is still an instance of its own (the tests start there)")
+	_check(InstanceManager.instance_for_name("bramblebridge") == InstanceManager.EVERWOOD_WORLD and InstanceManager.instance_for_name("Hub") == InstanceManager.HUB_TOWN
+		and InstanceManager.instance_for_name("hub_town") == InstanceManager.HUB_TOWN and InstanceManager.instance_for_name("oakshire") == InstanceManager.OAKSHIRE_VALE
+		and InstanceManager.instance_for_name("expedition") == InstanceManager.DUNGEON_DOJO and InstanceManager.instance_for_name("nowhere") == &"",
+		"--instance=bramblebridge starts the seamless world, --instance=hub the classic hub; a name it doesn't know leaves the start in Oakshire Vale")
 	_check(InstanceManager.current.instance_id == InstanceManager.HUB_TOWN and InstanceManager.current.is_live(), "Hub Town is the live instance")
 	var hub: HubTown = current_scene as HubTown
 	_check(hub.level_title() == "Bramblebridge" and hub.raid_portal.title.contains("Doverslap Expedition"),

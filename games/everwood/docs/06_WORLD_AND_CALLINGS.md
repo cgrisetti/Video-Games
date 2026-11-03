@@ -52,7 +52,7 @@ What the game uses today, and what is still design only.
 - The expedition trail: the Ariundle Moss-Oaks, the Sunken Holloway, the Doverslap Gorge Bridge with its gatehouse and paper-mill wheel, and the Ring of the Cairnsman. Bramblebridge Green is the hub's spawn green.
 
 **Built in Phase 11** (see 10_WORLD_ARCHITECTURE.md §6)
-- **The Bramble-Reach**, the first seamless region: Bramblebridge and the expedition joined as 128 m Landblocks. Walk out of the village's open Forest Gate, under the Moss-Oak Great Arch, all the way to the Ring of the Cairnsman. The game now starts there; the Raid Portal still leads to the instanced expedition.
+- **The Bramble-Reach**, the first seamless region: Bramblebridge and the expedition joined as 128 m Landblocks. Walk out of the village's open Forest Gate, under the Moss-Oak Great Arch, all the way to the Ring of the Cairnsman. Start it with `-- --instance=bramblebridge` (the game itself starts in Oakshire Vale); the Raid Portal still leads to the instanced expedition.
 - The Sinaya Mill-Castle and the Wadden-Green appear only as far silhouettes on the crags round the corridor.
 
 **Design only, not built yet**

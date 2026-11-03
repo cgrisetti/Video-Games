@@ -18,9 +18,11 @@ signal instance_live(instance_id: StringName)
 const HUB_TOWN: StringName = &"hub_town"
 const DUNGEON_DOJO: StringName = &"dungeon_dojo"
 ## The seamless Landblock world (10_WORLD_ARCHITECTURE.md): Bramblebridge and the
-## expedition in one streamed world, the game's start.
+## expedition in one streamed world (start it with --instance=bramblebridge).
 const EVERWOOD_WORLD: StringName = &"everwood_world"
-## Oakshire Vale (12_WORLD_OAKSHIRE_VALE_GDD.md): the 12 x 12 Landblock starting zone.
+## Oakshire Vale (12_WORLD_OAKSHIRE_VALE_GDD.md): the 12 x 12 Landblock starting
+## zone, and the game's main scene: every launch arrives at Wayfarer's Glade
+## unless --instance= names somewhere else.
 const OAKSHIRE_VALE: StringName = &"oakshire_vale"
 const FADE_TIME: float = 0.35
 const FADE_LAYER: int = 100
@@ -52,6 +54,22 @@ static func scene_path(id: StringName) -> String:
 		OAKSHIRE_VALE:
 			return "res://scenes/worlds/oakshire_vale.tscn"
 	return ""
+
+
+## The instance a --instance= name means: an id, or a friendly name
+## ("bramblebridge" or "world" for the seamless world, "hub" for the classic
+## Bramblebridge hub, "oakshire", "expedition"); &"" when it names none.
+static func instance_for_name(name: String) -> StringName:
+	match name.strip_edges().to_lower():
+		"bramblebridge", "world", "everwood_world":
+			return EVERWOOD_WORLD
+		"hub", "hub_town":
+			return HUB_TOWN
+		"oakshire", "oakshire_vale":
+			return OAKSHIRE_VALE
+		"expedition", "dojo", "dungeon_dojo":
+			return DUNGEON_DOJO
+	return &""
 
 
 func _enter_tree() -> void:

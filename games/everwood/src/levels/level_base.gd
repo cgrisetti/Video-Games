@@ -18,7 +18,8 @@
 ## them, and they step aside as people join.
 ##
 ## Keys: F5 host · F6 join · F7 leave · click to steer the camera with the mouse, Esc to let go.
-## Command line (after --): --players=N --mode=master|adventurer|squire --instance=ID
+## Command line (after --): --players=N --mode=master|adventurer|squire
+##   --instance=bramblebridge|hub|oakshire|expedition (or an instance id; without it the game starts in Oakshire Vale)
 ##   --host --join=ADDRESS --demo --screenshot=PATH --screenshot-delay=S --quit-after=S
 ##   --weapon=ITEM_ID --armor=ITEM_ID (this screen's players start with them)
 ##   --save=PATH (another save file; read by PartyProgress)
@@ -617,7 +618,9 @@ func _start_session() -> void:
 		elif arg.begins_with("--mode="):
 			_assist_mode = _mode_from_name(value)
 		elif arg.begins_with("--instance="):
-			start_instance = StringName(value)
+			start_instance = InstanceManager.instance_for_name(value)
+			if start_instance == &"":
+				push_warning("LevelBase: no instance is called '%s'; starting where the game starts" % value)
 		elif arg == "--host":
 			host = true
 		elif arg.begins_with("--join"):
