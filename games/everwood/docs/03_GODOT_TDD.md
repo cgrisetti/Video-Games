@@ -1,14 +1,14 @@
 # 03_GODOT_TDD.md — Technical Design Document (Godot 4.7.2-stable)
 
 ## 1. Directory & Repository Topology
-The tree as it stands after Phase 17 (the Living Storybook Atelier). File names and ids that saves, RPCs and scenes carry keep their old spelling (`hub_town`, `dungeon_dojo`, `rune_plate.gd`, `minion_camp.gd`); what players read is in the Lens's words.
+The tree as it stands after Phase 18 (pastoral rendering, the living blight, the camera's pitch and the Wayfarer's map). File names and ids that saves, RPCs and scenes carry keep their old spelling (`hub_town`, `dungeon_dojo`, `rune_plate.gd`, `minion_camp.gd`); what players read is in the Lens's words.
 ```text
 games/everwood/
 ├── CLAUDE.md                           # The engineering contract
 ├── project.godot                       # Main scene: scenes/worlds/oakshire_vale.tscn
-├── docs/                               # 01–17: vision, GDDs, this TDD, balance, the Mythopoetic Lens, audio, world visuals
+├── docs/                               # 01–18: vision, GDDs, this TDD, balance, the Mythopoetic Lens, audio, world visuals, wayfinding
 ├── scenes/worlds/oakshire_vale.tscn    # Oakshire Vale, the starting world
-├── data/landblocks/                    # Baked 128 m Landblocks + HLOD proxies (tools/build_*.gd)
+├── data/landblocks/                    # Baked 128 m Landblocks + HLOD proxies + cartography.json (tools/build_*.gd)
 ├── tools/
 │   ├── build_levels.gd                 # Builds hub_town, dungeon_dojo and the Bramble-Bridge trail's Landblocks
 │   ├── build_oakshire_vale.gd          # Bakes Oakshire Vale's field, horizon and Landblocks
@@ -16,6 +16,7 @@ games/everwood/
 │   ├── smoke_test.gd                   # Headless functional checks (runs the five below last)
 │   ├── test_world_grid.gd · test_oakshire_vale.gd · test_mythopoetic_lens.gd · test_adaptive_audio.gd
 │   ├── test_world_visuals.gd           # The storybook world: catalog, atelier, shaders, sightlines, succession
+│   ├── test_pastoral_cartography.gd    # Phase 18: camera pitch, labels, sculpted kits, clutter, the map and Atlas
 │   └── fetch_terrain3d.sh              # Optional Terrain3D addon
 └── src/
     ├── autoloads/
@@ -31,7 +32,7 @@ games/everwood/
     ├── resources/                      # Typed data: actions, stats, kits, cards, Signs, encounters, combo forms,
     │   │                               # Callings, MobVariantResource, StewardshipZoneResource,
     │   │                               # Zone/Sign/Calling/Boss audio profiles, ZoneBiomeResource,
-    │   │                               # WorldPropKitResource, ZoneSuccessionVisualResource
+    │   │                               # WorldPropKitResource, ZoneSuccessionVisualResource, WorldMapZoneResource
     │   └── …
     ├── components/
     │   ├── input_component.gd          # Master, Adventurer and Squire Gambit assist tiers
@@ -59,18 +60,24 @@ games/everwood/
     │   ├── mythopoetic_atlas.gd        # The Six-Zone Stewardship Atlas and each place's zone
     │   ├── boss_dummy.gd · woodland_minion.gd · wild_mob.gd · mob_spawner.gd
     │   ├── chime_post.gd · hush_crack_landmark.gd # A threshold's rhyme-post; a camp's Hush-Crack and Lulled Cairn
+    │   ├── shape_kit.gd                # Primitives, and the sculpted generators (trunks, crowns, tufts, megaliths, cornices, skirts)
+    │   ├── wayfarer_trail_guide_fx.gd  # The firefly trail to a pinned place
     │   └── …                           # Shrines, gates, portals, chests, townsfolk, FX
     ├── world/                          # Landblock streaming: WorldGridManager, layouts, WorldStateDB, nav
     │   ├── world_visual_catalog.gd     # Biomes, kits, succession looks, shared world materials
     │   ├── world_atmosphere_director.gd # Autoload "Atmosphere": atelier, sky/sun/fog, shader globals, succession
     │   ├── procedural_texture_atelier.gd · world_asset_catalog.gd · world_kit_instance.gd
     │   ├── chunk_clutter_baker.gd · horizon_vista_ring.gd
-    │   └── shaders/                    # Triplanar, terrain splat, foliage wind, water stream (+ shared include)
+    │   └── shaders/                    # Triplanar, terrain splat, foliage wind, water stream, hush ring (+ shared include)
     ├── levels/                         # LevelBase, HubTown, DungeonDojo, EverwoodWorld, OakshireVale
     └── ui/
         ├── player_hud.gd               # Each player's cell: banners, boss frame, prompts
         ├── cross_grimoire_hud.gd       # The bottom-centre cross, the Chime-Post ribbon, the Hearth-Rite border
         ├── cross_grimoire_diamond_widget.gd · grimoire_binder_panel.gd · scribery_shop_panel.gd
+        ├── player_camera.gd            # Each player's camera: yaw, pitch (-12 to +52 degrees), boom, ground clamp
+        ├── world_label_style.gd        # How every Label3D reads, and the station layer
+        ├── cartography_baker.gd        # The parchment map of a level, painted in code
+        ├── wayfarer_minimap_widget.gd · cartography_atlas_panel.gd # The minimap and the Vellum Atlas
         └── split_screen_viewport_grid.gd # Dynamic 1-to-4 player SubViewport container
 ```
 
@@ -113,5 +120,14 @@ Every foe carries one. Its states are plain enums, so saves and RPCs never need 
 - **Colour space.** Palette colours, vertex colours and MultiMesh instance colours are authored in sRGB; the shaders convert them, so Mode B ground, HLODs and clutter match Terrain3D's.
 - **Succession.** `HushCrackLandmark` registers with the director; `set_succession_state()` takes a camp's id or a biome's. A camp's cleared state stays in `WorldStateDB`, so it streams back as a cairn.
 
-### 2.7 Verification
+### 2.7 The pastoral pass and the Wayfarer's map ([18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md](18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md) §9)
+- **Ground.** `storybook_ground()` in the shared include blends a road into turf by height and noise (`frayed_road`), lays a trodden-loam verge with 18% AO, and snaps slopes to scree and roots (walkable banks) or strata with a dark toe (cliffs). The Mode B splat and the Terrain3D shader both call it. Builders camber the roads (+4 cm flagged, -5 cm footpaths).
+- **Sculpted meshes.** `ShapeKit`'s generators return `ArrayMesh`es with vertex shading; `Parts.add_mesh()` merges them into kits keeping it, and `WorldVisualCatalog.shaded()` turns that shading on in the triplanar shader. Crowns use `canopy()` (the three-band leaf ramp and backlight in `storybook_cel_light`'s `STORYBOOK_FOLIAGE_LIGHT` branch); grass uses `grass_blades()`.
+- **Clutter.** `ChunkClutterBaker.bake()` takes the layout's ground colour (grass roots), its road-edge distance (curbs and verges) and its crest pieces (cornices), all pure, so it still runs on worker threads. Six batches, each with `FADE_SELF`.
+- **The blight.** The director's globals carry each open crack (22 m), the blight's palette and Frozen Wind, the Lantern's Promise halos (5.5 m) and the cloud-shadow parameters; every world shader reads them through `apply_succession()`, `blight_at()` and `cloud_shadow()`.
+- **The camera.** `PlayerCamera` reads `InputComponent.camera_pitch_input` and `take_mouse_pitch()`, interpolates its pivot and boom by pitch, clamps itself above the ground by a ray, and drops `WorldLabelStyle.STATION_LABEL_LAYER` from its cull mask while its player's menu is open. `LevelBase.set_camera_pitch_degrees()` / `get_camera_pitch_degrees()` address cameras by seat (P-number).
+- **Labels.** `WorldLabelStyle.watch()` styles every `Label3D` as it enters the tree (deferred, after its maker has set it up), so no script needs to know the style.
+- **The map.** `CartographyBaker` gathers a level's ground on the main thread (a layout's functions, or rays at a walled instance's colliders) and paints on a worker thread; `poll()` hands the texture over on the main thread, and `finish_pending()` waits for any paint before a level leaves. Builders write `cartography.json` (footprints, cracks) beside a world's landblocks. Shrines, desks and portals join the `map_glyphs` group.
+
+### 2.8 Verification
 `godot --headless --check-only -s <script>` on every changed script, a headless boot, and `tools/smoke_test.gd` (see the README). `tools/test_mythopoetic_lens.gd` lints every name the game shows against the four Linter Rules, the world's biome and kit names included. `tools/test_world_visuals.gd` checks the storybook world.
