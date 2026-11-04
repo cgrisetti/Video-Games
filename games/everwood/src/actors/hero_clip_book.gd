@@ -121,20 +121,8 @@ static func _idles(book: Array[Array]) -> void:
 		var ready: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, entry[1], entry[2]])
 		var breath: Dictionary = _p([ready, _e({B.CHEST: Vector3(1.0, -6.0, 0.0), B.SPINE: Vector3(-7.0, 0.0, 0.0)}), _hips(Vector3(0.0, -0.065, 0.0))])
 		_clip(book, entry[0], 90, [[0, ready], [45, breath], [90, ready]], {"loop": true, "grip": true})
-	# The double-bounce storybook run: the body bobs twice a cycle, the chest counter-swings the hips.
-	var stride: Dictionary = _p([FEET_FLAT, _hips(Vector3(0.0, -0.035, 0.0)),
-		_e({B.HIPS: Vector3(0.0, -8.0, 0.0), B.SPINE: Vector3(-10.0, 10.0, 0.0), B.CHEST: Vector3(-4.0, 4.0, 0.0), B.HEAD: Vector3(4.0, -6.0, 0.0)}),
-		_aim({B.THIGH_L: Vector3(-0.05, -1.0, -0.55), B.SHIN_L: Vector3(-0.03, -1.0, -0.12), B.FOOT_L: Vector3(0.0, -0.1, -1.0),
-			B.THIGH_R: Vector3(0.05, -1.0, 0.5), B.SHIN_R: Vector3(0.05, -0.55, 0.95), B.FOOT_R: Vector3(0.0, -0.75, -0.65),
-			B.UPPER_ARM_R: Vector3(0.14, -1.0, -0.45), B.FOREARM_R: Vector3(0.08, -0.35, -0.95),
-			B.UPPER_ARM_L: Vector3(-0.14, -1.0, 0.4), B.FOREARM_L: Vector3(-0.08, -0.9, 0.12)})])
-	var passing: Dictionary = _p([FEET_FLAT, _hips(Vector3(0.0, 0.025, 0.0)), _e({B.SPINE: Vector3(-10.0, 0.0, 0.0), B.CHEST: Vector3(-4.0, 0.0, 0.0)}),
-		_aim({B.THIGH_L: Vector3(-0.05, -1.0, 0.08), B.SHIN_L: Vector3(-0.03, -1.0, 0.1),
-			B.THIGH_R: Vector3(0.06, -1.0, -0.35), B.SHIN_R: Vector3(0.05, -0.75, 0.6), B.FOOT_R: Vector3(0.0, -0.6, -0.8),
-			B.UPPER_ARM_R: Vector3(0.13, -1.0, -0.05), B.FOREARM_R: Vector3(0.08, -0.7, -0.6),
-			B.UPPER_ARM_L: Vector3(-0.13, -1.0, 0.0), B.FOREARM_L: Vector3(-0.08, -0.7, -0.6)})])
-	_clip(book, "locomotion_run_cycle", 28, [[0, stride], [7, passing], [14, HeroPoseBaker.mirror(stride)],
-		[21, HeroPoseBaker.mirror(passing)], [28, stride]], {"loop": true})
+	# The jaunty woodsman's run (19B §2, Pillar 2).
+	_run_cycle(book)
 	# Winded after a third Light in a row: hands toward the knees, the chest heaving.
 	var ready_sword: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, R_SWORD, L_SHIELD])
 	var slump: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, -0.1, 0.0)),
@@ -144,6 +132,110 @@ static func _idles(book: Array[Array]) -> void:
 	var heave: Dictionary = _p([slump, _e({B.SPINE: Vector3(-10.0, 0.0, 0.0), B.CHEST: Vector3(2.0, 0.0, 0.0), B.HEAD: Vector3(10.0, 0.0, 0.0),
 		B.CLAVICLE_L: Vector3(0.0, 0.0, 8.0), B.CLAVICLE_R: Vector3(0.0, 0.0, -8.0)})])
 	_clip(book, "winded_3rd_light_recovery", 33, [[0, ready_sword], [6, slump], [16, heave], [26, slump], [33, ready_sword]])
+
+
+# --- The run (19B, Pillar 2) ------------------------------------------------------
+
+## The run's frames and, at each, the pelvis: its offset (x weight shift over
+## the planted boot, y the contact squash and the push-off loft), its yaw
+## (degrees; the leading leg's hip forward) and its roll (the swing side dropping).
+const RUN_FRAMES: Array[int] = [0, 2, 4, 7, 11, 14, 16, 18, 21, 25, 28]
+const RUN_HIPS: Array[Vector2] = [Vector2(0.0, 0.02), Vector2(-0.012, -0.01), Vector2(-0.025, -0.045), Vector2(-0.035, -0.035), Vector2(-0.02, 0.055),
+	Vector2(0.0, 0.02), Vector2(0.012, -0.01), Vector2(0.025, -0.045), Vector2(0.035, -0.035), Vector2(0.02, 0.055), Vector2(0.0, 0.02)]
+const RUN_YAW: Array[float] = [-4.4, -7.4, -10.3, -5.9, 0.0, 4.4, 7.4, 10.3, 5.9, 0.0, -4.4]
+const RUN_ROLL: Array[float] = [0.0, -2.0, -4.0, -6.5, -3.0, 0.0, 2.0, 4.0, 6.5, 3.0, 0.0]
+## The legs' beat at each frame, and which leg leads it (-1 left, 1 right).
+const RUN_BEATS: Array[String] = ["reach", "heel", "contact", "cushion", "loft", "reach", "heel", "contact", "cushion", "loft", "reach"]
+const RUN_LEADS: Array[float] = [-1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0]
+## The weapon arm's suspension bounce, lagging the pelvis by 3 frames (-1 dipped, 0 carried, 1 riding high).
+const RUN_PORT: Array[float] = [1.0, 0.4, 0.0, -1.0, 0.0, 1.0, 0.4, 0.0, -1.0, 0.0, 1.0]
+## The off arm's counter-balance swing (-1 back, the left leg leading; 1 forward).
+const RUN_SWING: Array[float] = [-0.6, -0.85, -1.0, -0.7, 0.0, 0.6, 0.85, 1.0, 0.7, 0.0, -0.6]
+## The leading boot pitched up 24 degrees on heel-strike, half that at contact; flat;
+## the trailing ankle snapped 31 degrees down on toe-off.
+const FOOT_HEEL: Vector3 = Vector3(0.0, 0.094, -0.996)
+const FOOT_CONTACT: Vector3 = Vector3(0.0, -0.115, -0.993)
+const FOOT_FLAT: Vector3 = Vector3(0.0, -0.32, -0.95)
+const FOOT_TOE_OFF: Vector3 = Vector3(0.0, -0.762, -0.648)
+## The legs run 35 mm wider a side than they stand.
+const RUN_THIGH_OUT: float = 0.07
+const RUN_SHIN_OUT: float = 0.03
+
+
+## The athletic woodsman's stride: a crisp 3-frame contact squash at each boot
+## plant (frames 4 and 18) springing into a buoyant loft (11 and 25), weight
+## shifting over the planted boot, the pelvis rolling and yawing while the chest
+## counter-twists and rolls its shoulders, the head held steady; the weapon
+## carried one-handed in a 30-degree diagonal low port across the hip, bouncing
+## 3 frames behind the pelvis, while the off arm swings to counter-balance;
+## heel-strike, roll-through and toe-off, the knee whipped high into the next stride.
+static func _run_cycle(book: Array[Array]) -> void:
+	var keys: Array = []
+	for index: int in RUN_FRAMES.size():
+		var yaw: float = RUN_YAW[index]
+		var roll: float = RUN_ROLL[index]
+		var squash: float = clampf(-RUN_HIPS[index].y / 0.045, 0.0, 1.0)
+		var chest_pitch: float = lerpf(-4.0, -6.0, squash) + 2.0 * clampf(RUN_HIPS[index].y / 0.055, 0.0, 1.0)
+		var pose: Dictionary = _p([
+			_run_legs(RUN_BEATS[index], RUN_LEADS[index]),
+			_hips(Vector3(RUN_HIPS[index].x, RUN_HIPS[index].y, 0.0)),
+			_e({B.HIPS: Vector3(0.0, yaw, roll), B.SPINE: Vector3(-5.0, -0.4 * yaw, -0.6 * roll), B.CHEST: Vector3(chest_pitch, -1.2 * yaw, -0.7 * roll),
+				B.NECK: Vector3(0.0, 0.2 * yaw, 0.0), B.HEAD: Vector3(-0.35 * (chest_pitch + 4.0), 0.42 * yaw, 0.25 * roll)}),
+			_run_port(RUN_PORT[index]),
+			_run_swing(RUN_SWING[index]),
+		])
+		keys.append([RUN_FRAMES[index], pose])
+	_clip(book, "locomotion_run_cycle", 28, keys, {"loop": true})
+
+
+## The legs at a beat of the stride for the leading leg (`lead` -1 left, 1 right).
+static func _run_legs(beat: String, lead: float) -> Dictionary:
+	var trail: float = -lead
+	var lead_thigh: int = B.THIGH_L if lead < 0.0 else B.THIGH_R
+	var lead_shin: int = B.SHIN_L if lead < 0.0 else B.SHIN_R
+	var lead_foot: int = B.FOOT_L if lead < 0.0 else B.FOOT_R
+	var trail_thigh: int = B.THIGH_R if lead < 0.0 else B.THIGH_L
+	var trail_shin: int = B.SHIN_R if lead < 0.0 else B.SHIN_L
+	var trail_foot: int = B.FOOT_R if lead < 0.0 else B.FOOT_L
+	var lo: float = lead * RUN_THIGH_OUT
+	var ls: float = lead * RUN_SHIN_OUT
+	var to: float = trail * RUN_THIGH_OUT
+	var ts: float = trail * RUN_SHIN_OUT
+	var aims: Dictionary = {}
+	match beat:
+		"reach":
+			aims = {lead_thigh: Vector3(lo, -0.8, -0.6), lead_shin: Vector3(ls, -0.95, -0.12), lead_foot: Vector3(0.0, -0.1, -1.0),
+				trail_thigh: Vector3(to, -0.9, 0.42), trail_shin: Vector3(ts, -0.72, 0.7), trail_foot: Vector3(0.0, -0.7, -0.7)}
+		"heel":
+			aims = {lead_thigh: Vector3(lo, -0.85, -0.52), lead_shin: Vector3(ls, -1.0, -0.18), lead_foot: FOOT_HEEL,
+				trail_thigh: Vector3(to, -0.92, 0.38), trail_shin: Vector3(ts, -0.62, 0.78), trail_foot: FOOT_TOE_OFF}
+		"contact":
+			aims = {lead_thigh: Vector3(lo, -0.92, -0.38), lead_shin: Vector3(ls, -1.0, -0.04), lead_foot: FOOT_CONTACT,
+				trail_thigh: Vector3(to, -0.95, 0.3), trail_shin: Vector3(ts, -0.5, 0.86), trail_foot: FOOT_TOE_OFF}
+		"cushion":
+			aims = {lead_thigh: Vector3(lo, -1.0, -0.12), lead_shin: Vector3(ls, -1.0, 0.12), lead_foot: FOOT_FLAT,
+				trail_thigh: Vector3(to, -0.95, 0.05), trail_shin: Vector3(ts, -0.35, 0.94), trail_foot: Vector3(0.0, -0.6, -0.8)}
+		"loft":
+			# The planted leg pushes off behind; the swing knee whips up 0.78 rad.
+			aims = {lead_thigh: Vector3(lo, -0.95, 0.25), lead_shin: Vector3(ls, -0.85, 0.5), lead_foot: Vector3(0.0, -0.6, -0.8),
+				trail_thigh: Vector3(to, -0.71, -0.7), trail_shin: Vector3(ts, -1.0, 0.15), trail_foot: Vector3(0.0, -0.2, -0.98)}
+	return {"aim": aims}
+
+
+## The weapon arm's diagonal low port: carried across the hip, the haft 30 degrees off upright, bouncing.
+static func _run_port(bounce: float) -> Dictionary:
+	var upper: Vector3 = Vector3(0.22, -0.92, -0.2).lerp(Vector3(0.22, -0.95, -0.12) if bounce < 0.0 else Vector3(0.22, -0.9, -0.27), absf(bounce))
+	var fore: Vector3 = Vector3(-0.62, -0.28, -0.73).lerp(Vector3(-0.6, -0.4, -0.69) if bounce < 0.0 else Vector3(-0.62, -0.16, -0.77), absf(bounce))
+	return {"aim": {B.UPPER_ARM_R: upper, B.FOREARM_R: fore}, "wpn": {B.HAND_R: Vector3(-0.75, 0.62, -0.3)}}
+
+
+## The off arm's counter-balance arc: back while the left leg leads, forward and across while the right does.
+static func _run_swing(swing: float) -> Dictionary:
+	var middle_upper: Vector3 = Vector3(-0.2, -1.0, 0.0)
+	var middle_fore: Vector3 = Vector3(-0.02, -0.75, -0.55)
+	var upper: Vector3 = middle_upper.lerp(Vector3(-0.18, -0.86, -0.46) if swing > 0.0 else Vector3(-0.2, -0.88, 0.42), absf(swing))
+	var fore: Vector3 = middle_fore.lerp(Vector3(0.2, -0.3, -0.93) if swing > 0.0 else Vector3(-0.1, -0.82, 0.2), absf(swing))
+	return {"aim": {B.UPPER_ARM_L: upper, B.FOREARM_L: fore}}
 
 
 # --- The Broad-Axe -------------------------------------------------------------

@@ -18,7 +18,11 @@
 ##             frame-locked to their actions, the off hand on the haft, the run's
 ##             foot-plants and cloak, a dodge roll, a hit-stop's tremor and
 ##             squash, the parry and parley one-shots, and the 120-frame
-##             Hearth-Rite Tuck ending at a 1.35x weapon
+##             Hearth-Rite Tuck ending at a 1.35x weapon; and Phase 19B's polish:
+##             the micro-surfaces (twill and fuzz, timber grain, burnished
+##             leather, hammered metal, the face's zones, its scatter and the
+##             eyes' catchlight), the anatomical head, the stepped armour layers
+##             and the jaunty run
 ##   run_vale  last, in Oakshire Vale: companions stay home unless backfill is
 ##             turned on, and the Truce-Sign the Lens check waved played its bow
 extends RefCounted
@@ -106,6 +110,10 @@ func run_rig(scene_tree: SceneTree, checker: Callable, tank: ActorBase, healer: 
 	_check_surfaces(tank, healer, dps)
 	_check_arsenal_sculpts()
 	_check_shader_and_library()
+	_check_material_fidelity()
+	_check_facial_sculpt()
+	_check_tectonic_armor()
+	_check_jaunty_run()
 	await _check_iron_woodsman(dps, boss)
 
 
@@ -470,6 +478,242 @@ func _check_iron_woodsman(dps: ActorBase, boss: ActorBase) -> void:
 	dps.re_equip(original)
 	dps.place_at(standing)
 	await _frames(3)
+
+
+# --- Phase 19B: material fidelity, the face, the armour, the run ----------------------
+
+## The Phase 19 counts (the Iron-Woodsman in the Hedgerow Wool-Mantle) the polish must grow past.
+const PHASE_19_VERTICES: Array[int] = [1339, 1556, 750, 2271, 732]
+
+
+func _check_material_fidelity() -> void:
+	var code: String = HeroMeshAtelier.SHADER.code
+	var wanted: Array[String] = [
+		"sin((uv.x + uv.y) * 110.0) * sin((uv.x - uv.y) * 110.0)", "uniform float weave_strength = 0.28;",
+		"pow(1.0 - max(0.0, dot(NORMAL, VIEW)), 2.2) * fuzz_strength", "uniform float fuzz_strength = 0.22;",
+		"value_noise(vec2(UV.x * 84.0, UV.y * 6.0))", "uniform float grain_strength = 0.24;", "rough = 0.68;",
+		"rough = mix(0.78, 0.28, burnish);", "mat.z = 0.65 * burnish;", "fract(UV.y / 0.015)",
+		"uniform float facet_cells = 32.0;", "uniform float facet_strength = 0.16;", "voronoi_tilt(vec3(UV * facet_cells", "smoothstep(0.86, 0.92, reflect_dot)",
+		"soot_color", "malar_mix = 0.32", "smoothstep(-0.18, 0.20, ndl) * (1.0 - smoothstep(0.0, 0.35, ndl))", "smoothstep(0.95, 0.985, reflect_dot) * 1.6",
+	]
+	var missing: Array[String] = []
+	for line: String in wanted:
+		if not code.contains(line):
+			missing.append(line)
+	var names: Array[String] = []
+	for uniform: Dictionary in HeroMeshAtelier.SHADER.get_shader_uniform_list():
+		names.append(String(uniform["name"]))
+	for uniform_name: String in ["weave_strength", "fuzz_strength", "grain_strength", "facet_cells", "facet_strength", "soot_color", "leather_color", "bark_color",
+			"malar_color", "cool_undertone_color", "scatter_color", "sclera_color", "iris_color"]:
+		if not names.has(uniform_name):
+			missing.append(uniform_name)
+	check.call(missing.is_empty(),
+		"the hero shader parses with Phase 19B's micro-surfaces: a twill weave (0.28) and fuzz rim (0.22) on cloth, 14:1 timber grain (0.24, rough 0.68), leather matte in its creases (0.78) and burnished on its edges (0.28, specular 0.65) with saddle stitches every 15 mm, 32-a-metre hammer facets (0.16) with a sun glint and forge-soot, the face's malar flush, a sub-dermal scatter band and the eyes' catchlight%s"
+		% ("" if missing.is_empty() else " (missing %s)" % ", ".join(missing)))
+	var cloth: bool = HeroMeshAtelier.MAT_COAT < 0.3 and HeroMeshAtelier.MAT_BREECHES < 0.3 and HeroMeshAtelier.MAT_TABARD < 0.3 and HeroMeshAtelier.MAT_TUNIC < 0.3 \
+		and HeroMeshAtelier.MAT_TRIM < 0.3 and HeroMeshAtelier.MAT_LINEN < 0.3 and HeroMeshAtelier.MAT_ROPE < 0.3
+	var timber: bool = HeroMeshAtelier.MAT_TIMBER >= 0.3 and HeroMeshAtelier.MAT_BARK < 0.42
+	var leather: bool = HeroMeshAtelier.MAT_LEATHER >= 0.42 and HeroMeshAtelier.MAT_BOOT < 0.5
+	var metal: bool = HeroMeshAtelier.MAT_IRON >= 0.5 and HeroMeshAtelier.MAT_STEEL < 0.7
+	var skin: bool = HeroMeshAtelier.MAT_SKIN >= 0.7 and HeroMeshAtelier.MAT_FACE >= 0.7 and HeroMeshAtelier.MAT_SCLERA > HeroMeshAtelier.MAT_BEARD
+	check.call(cloth and timber and leather and metal and skin,
+		"every material id sits in its band: wool and linen below 0.3, timber below 0.42, leather below 0.5, metal below 0.7, then skin, the face and the eyes")
+
+
+func _check_facial_sculpt() -> void:
+	var woodsman: Array[ArrayMesh] = HeroMeshAtelier.build_hero_surfaces(ArsenalCatalog.current.hero_appearance(&"iron_woodsman"), ArsenalCatalog.RANGER_LEATHER)
+	var arrays: Array = woodsman[0].surface_get_arrays(0)
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+	var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+	var counted: Dictionary[float, int] = {}
+	var nose_tip: float = 0.0
+	var brow_front: float = 0.0
+	var socket_front: float = -1.0
+	var wings: Array[int] = [0, 0]
+	var lobes: Array[int] = [0, 0, 0]
+	var widest_face: float = 0.0
+	var flushed: int = 0
+	var warm_brow: int = 0
+	for index: int in vertices.size():
+		var p: Vector3 = vertices[index]
+		var material: float = colors[index].b
+		for id: float in [HeroMeshAtelier.MAT_FACE, HeroMeshAtelier.MAT_SCLERA, HeroMeshAtelier.MAT_IRIS, HeroMeshAtelier.MAT_EYE, HeroMeshAtelier.MAT_HAIR, HeroMeshAtelier.MAT_BEARD]:
+			if absf(material - id) < 0.006:
+				counted[id] = counted.get(id, 0) + 1
+		if absf(material - HeroMeshAtelier.MAT_FACE) < 0.006:
+			widest_face = maxf(widest_face, absf(p.x))
+			flushed += 1 if uvs[index].x > 0.5 else 0
+			warm_brow += 1 if uvs[index].y > 0.5 else 0
+			if absf(p.x) < 0.03 and p.y < 1.6:
+				nose_tip = minf(nose_tip, p.z)
+			if p.y > 1.622 and p.y < 1.636 and absf(p.x) > 0.03 and absf(p.x) < 0.08:
+				brow_front = minf(brow_front, p.z)
+			if p.y > 1.59 and p.y < 1.605 and absf(p.x) > 0.03 and absf(p.x) < 0.08:
+				socket_front = minf(socket_front, p.z) if socket_front > -0.5 else p.z
+		if absf(material - HeroMeshAtelier.MAT_BEARD) < 0.006:
+			if absf(p.x) > 0.09 and p.y > 1.53 and p.y < 1.57:
+				wings[0 if p.x < 0.0 else 1] += 1
+			if p.y < 1.4:
+				lobes[0 if p.x < -0.04 else (2 if p.x > 0.04 else 1)] += 1
+	check.call(vertices.size() > PHASE_19_VERTICES[0] and counted.get(HeroMeshAtelier.MAT_SCLERA, 0) > 0 and counted.get(HeroMeshAtelier.MAT_IRIS, 0) > 0
+		and counted.get(HeroMeshAtelier.MAT_EYE, 0) > 0 and counted.get(HeroMeshAtelier.MAT_HAIR, 0) > 0,
+		"the head is re-sculpted (%d vertices, up from %d) with layered eyes: ivory sclera, a hazel-amber iris, a dark pupil, lash rims and brows"
+		% [vertices.size(), PHASE_19_VERTICES[0]])
+	check.call(nose_tip <= -0.17 and socket_front > -0.5 and socket_front - brow_front >= 0.015,
+		"the face has true planes: a brow ridge standing %.0f mm proud of the recessed eye sockets, and a three-plane nose to a tip %.3f m forward"
+		% [(socket_front - brow_front) * 1000.0, -nose_tip])
+	check.call(wings[0] > 10 and wings[1] > 10 and lobes[0] > 10 and lobes[1] > 10 and lobes[2] > 10,
+		"the two-wing mustache sweeps out to either side, proud of a three-lobed woodsman beard (%s wing, %s lobe vertices)" % [str(wings), str(lobes)])
+	var warden: Array[ArrayMesh] = HeroMeshAtelier.build_hero_surfaces(ArsenalCatalog.current.hero_appearance(&"bridge_warden"), ArsenalCatalog.IRONWOOD_PLATE)
+	var warden_arrays: Array = warden[0].surface_get_arrays(0)
+	var warden_vertices: PackedVector3Array = warden_arrays[Mesh.ARRAY_VERTEX]
+	var warden_colors: PackedColorArray = warden_arrays[Mesh.ARRAY_COLOR]
+	var ears: Array[int] = [0, 0]
+	for index: int in warden_vertices.size():
+		if absf(warden_colors[index].b - HeroMeshAtelier.MAT_FACE) < 0.006 and absf(warden_vertices[index].x) > 0.15:
+			ears[0 if warden_vertices[index].x < 0.0 else 1] += 1
+	check.call(ears[0] > 20 and ears[1] > 20 and widest_face < 0.15 and flushed > 20 and warm_brow > 20,
+		"cupped ears show at x = +-0.155 m when the head is uncovered (a kettle-cap) and stay under the Wayfarer hood; the face carries its malar flush and warm forehead zones")
+
+
+func _check_tectonic_armor() -> void:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var woodsman: HeroAppearanceResource = catalog.hero_appearance(&"iron_woodsman")
+	var meshes: Array[ArrayMesh] = HeroMeshAtelier.build_hero_surfaces(woodsman, ArsenalCatalog.RANGER_LEATHER)
+	var grew: bool = true
+	var weighted: bool = true
+	var counts: Array[int] = []
+	for index: int in meshes.size():
+		var arrays: Array = meshes[index].surface_get_arrays(0)
+		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+		var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
+		var count: int = meshes[index].surface_get_array_len(0)
+		counts.append(count)
+		grew = grew and count > PHASE_19_VERTICES[index]
+		for vertex: int in count:
+			var total: float = 0.0
+			for slot: int in 4:
+				total += weights[vertex * 4 + slot]
+				weighted = weighted and bones[vertex * 4 + slot] >= 0 and bones[vertex * 4 + slot] < HeroRigBuilder.BONE_COUNT
+			weighted = weighted and absf(total - 1.0) < 0.01
+	check.call(grew and weighted, "the armour is rebuilt in stepped layers (%s vertices by region, each past Phase 19's %s), every vertex weighted to the 24 bones"
+		% [str(counts), str(PHASE_19_VERTICES)])
+	var torso: Array = meshes[1].surface_get_arrays(0)
+	var vertices: PackedVector3Array = torso[Mesh.ARRAY_VERTEX]
+	var colors: PackedColorArray = torso[Mesh.ARRAY_COLOR]
+	var tunic_front: float = 0.0
+	var plate_front: float = 0.0
+	var lips: int = 0
+	var found: Dictionary[float, int] = {}
+	for index: int in vertices.size():
+		var p: Vector3 = vertices[index]
+		var material: float = colors[index].b
+		for id: float in [HeroMeshAtelier.MAT_LEATHER, HeroMeshAtelier.MAT_BRASS, HeroMeshAtelier.MAT_IRON, HeroMeshAtelier.MAT_COAT, HeroMeshAtelier.MAT_LINEN]:
+			if absf(material - id) < 0.006:
+				found[id] = found.get(id, 0) + 1
+		lips += 1 if absf(colors[index].r - HeroMeshAtelier.UNDER_LIP_AO) < 0.01 else 0
+		if p.y > 1.17 and p.y < 1.23 and absf(p.x) < 0.05:
+			if absf(material - HeroMeshAtelier.MAT_TUNIC) < 0.006:
+				tunic_front = minf(tunic_front, p.z)
+			elif absf(material - HeroMeshAtelier.MAT_LEATHER) < 0.006:
+				plate_front = minf(plate_front, p.z)
+	check.call(tunic_front - plate_front >= 0.015 and lips > 100 and found.get(HeroMeshAtelier.MAT_LEATHER, 0) > 0 and found.get(HeroMeshAtelier.MAT_BRASS, 0) > 0
+		and found.get(HeroMeshAtelier.MAT_IRON, 0) > 0 and found.get(HeroMeshAtelier.MAT_LINEN, 0) > 0,
+		"the Wool-Mantle's brigandine stands %.0f mm off the tunic in leather lames with iron studs, brass corner rivets and roller-buckled harnesses, over a rolled linen collar, every layer's lip in shadow"
+		% ((tunic_front - plate_front) * 1000.0))
+	var coat_parts: Dictionary[StringName, Array] = {
+		ArsenalCatalog.IRONWOOD_PLATE: [HeroMeshAtelier.MAT_STEEL, HeroMeshAtelier.MAT_RING_MAIL], ArsenalCatalog.BRAMBLE_JERKIN: [HeroMeshAtelier.MAT_TUNIC, HeroMeshAtelier.MAT_LEATHER],
+		ArsenalCatalog.HEARTH_LINEN: [HeroMeshAtelier.MAT_LINEN, HeroMeshAtelier.MAT_BRASS, HeroMeshAtelier.MAT_TRIM],
+	}
+	var coats_ok: bool = true
+	for coat: StringName in coat_parts:
+		var coat_colors: PackedColorArray = HeroMeshAtelier.build_hero_surfaces(woodsman, coat)[1].surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+		for id: float in coat_parts[coat]:
+			var has: bool = false
+			for color: Color in coat_colors:
+				if absf(color.b - id) < 0.006:
+					has = true
+					break
+			coats_ok = coats_ok and has
+	check.call(coats_ok, "each coat has its own chest: a beveled steel breastplate over ring-mail, a quilted jack with leather side-laces, a pleated linen surcoat with a brass carillon-clasp")
+	var limbs: Array = meshes[3].surface_get_arrays(0)
+	var limb_vertices: PackedVector3Array = limbs[Mesh.ARRAY_VERTEX]
+	var limb_colors: PackedColorArray = limbs[Mesh.ARRAY_COLOR]
+	var hobnails: int = 0
+	var knuckles: Array[int] = [0, 0]
+	var boot_tops: int = 0
+	for index: int in limb_vertices.size():
+		var p: Vector3 = limb_vertices[index]
+		var material: float = limb_colors[index].b
+		if absf(material - HeroMeshAtelier.MAT_IRON) < 0.006 and p.y < 0.03:
+			hobnails += 1
+		if absf(material - HeroMeshAtelier.MAT_IRON) < 0.006 and p.y > 0.7 and p.y < 0.8:
+			knuckles[0 if p.x < 0.0 else 1] += 1
+		if absf(material - HeroMeshAtelier.MAT_BOOT) < 0.006 and p.y > 0.34 and p.y < 0.425 and Vector2(absf(p.x) - 0.115, p.z).length() > 0.095:
+			boot_tops += 1
+	var pauldrons: Array = meshes[2].surface_get_arrays(0)
+	var pauldron_vertices: PackedVector3Array = pauldrons[Mesh.ARRAY_VERTEX]
+	var pauldron_colors: PackedColorArray = pauldrons[Mesh.ARRAY_COLOR]
+	var third_lame: int = 0
+	var haute_piece: int = 0
+	var cop_studs: int = 0
+	for index: int in pauldron_vertices.size():
+		var p: Vector3 = pauldron_vertices[index]
+		var material: float = pauldron_colors[index].b
+		third_lame += 1 if absf(material - HeroMeshAtelier.MAT_BARK) < 0.006 and p.x < -0.3 else 0
+		haute_piece += 1 if absf(material - HeroMeshAtelier.MAT_IRON) < 0.006 and p.x < 0.0 and p.y > 1.48 else 0
+		cop_studs += 1 if absf(material - HeroMeshAtelier.MAT_BRASS) < 0.006 and p.x > 0.15 else 0
+	check.call(hobnails > 50 and knuckles[0] > 20 and knuckles[1] > 20 and boot_tops > 40 and third_lame > 10 and haute_piece > 10 and cop_studs > 10,
+		"three laminated Iron-Wood plates and an upturned haute-piece on the left shoulder, a brass-studded two-lame leather cop on the right, articulated knuckle plates, folded-down boot tops and iron hobnails round the soles")
+
+
+func _check_jaunty_run() -> void:
+	var info: Dictionary = HeroCombatAnimator.clip_info(&"locomotion_run_cycle")
+	var poses: Dictionary[int, Dictionary] = {}
+	for frame: int in [2, 4, 7, 11, 18, 21, 25]:
+		poses[frame] = HeroCombatAnimator.sample_pose(&"locomotion_run_cycle", float(frame))
+	var hips_ok: bool = absf((poses[4]["hips"] as Vector3).y + 0.045) < 0.004 and absf((poses[18]["hips"] as Vector3).y + 0.045) < 0.004 \
+		and absf((poses[11]["hips"] as Vector3).y - 0.055) < 0.004 and absf((poses[25]["hips"] as Vector3).y - 0.055) < 0.004 \
+		and absf((poses[7]["hips"] as Vector3).x + 0.035) < 0.004 and absf((poses[21]["hips"] as Vector3).x - 0.035) < 0.004
+	var roll_l: float = _rotation(poses[7], B.HIPS).get_euler().z
+	var roll_r: float = _rotation(poses[21], B.HIPS).get_euler().z
+	var yaw_l: float = _rotation(poses[4], B.HIPS).get_euler().y
+	var chest_yaw: float = _rotation(poses[4], B.CHEST).get_euler().y
+	var chest_roll: float = _rotation(poses[7], B.CHEST).get_euler().z
+	check.call(hips_ok and absf(roll_l + 0.113) < 0.01 and absf(roll_r - 0.113) < 0.01 and absf(yaw_l + 0.18) < 0.01
+		and chest_yaw > 0.15 and chest_roll > 0.05 and not info.get("grip", false),
+		"the run squashes the hips 45 mm at each plant (frames 4, 18) and lofts them 55 mm (11, 25), shifting 35 mm over the planted boot with a 6.5-degree pelvic roll and 0.18 rad yaw, the chest counter-twisting (%.2f rad) and rolling its shoulders"
+		% chest_yaw)
+	var port: Array[Transform3D] = _pose_globals(poses[11])
+	var chest: Basis = port[B.CHEST].basis.orthonormalized()
+	var haft: Vector3 = (chest.inverse() * port[B.HAND_R].basis.z.normalized()).normalized()
+	var tilt: float = rad_to_deg(acos(clampf(haft.y, -1.0, 1.0)))
+	var back_swing: float = _pose_globals(poses[4])[B.UPPER_ARM_L].basis.y.normalized().z
+	var fore_swing: float = _pose_globals(poses[18])[B.UPPER_ARM_L].basis.y.normalized().z
+	check.call(tilt > 20.0 and tilt < 45.0 and haft.x < 0.0 and back_swing > 0.2 and fore_swing < -0.2,
+		"the weapon rides one-handed in a diagonal low port across the hip (%.0f degrees off upright) while the off arm swings back and forth to counter-balance" % tilt)
+	var heel: float = _pose_globals(poses[2])[B.FOOT_L].basis.y.normalized().y
+	var toe_off: float = _pose_globals(poses[4])[B.FOOT_R].basis.y.normalized().y
+	var stance_x: float = _pose_globals(poses[7])[B.FOOT_L].origin.x
+	var knee: float = -_pose_globals(poses[11])[B.THIGH_R].basis.y.normalized().z
+	check.call(heel > 0.0 and toe_off < -0.6 and stance_x < -0.14 and knee > 0.6,
+		"heel-strike tips the leading boot up, toe-off snaps the trailing ankle down, the planted boot runs %.0f mm wide of the middle, and the swing knee whips up" % (-stance_x * 1000.0))
+
+
+static func _rotation(pose: Dictionary, bone: int) -> Quaternion:
+	var rotations: Array[Quaternion] = pose["rotations"]
+	return rotations[bone]
+
+
+## A sampled pose's bone transforms in the skeleton's space.
+static func _pose_globals(pose: Dictionary) -> Array[Transform3D]:
+	var positions: Array[Vector3] = []
+	for rest: Transform3D in HeroRigBuilder.local_rests():
+		positions.append(rest.origin)
+	positions[B.HIPS] += pose["hips"] as Vector3
+	var rotations: Array[Quaternion] = pose["rotations"]
+	return StorybookKinematicsModifier3D._globals(rotations, positions)
 
 
 # --- Oakshire Vale: companions only when asked ---------------------------------------

@@ -121,6 +121,7 @@ var _clock: float = 0.0
 var _tremor_clock: float = 0.0
 var _last_yaw: float = NAN
 var _last_head_forward: Vector3 = Vector3.FORWARD
+var _last_hips_y: float = NAN
 var _was_stopped: bool = false
 var _last_usec: int = 0
 
@@ -304,7 +305,10 @@ func _solve(dt: float) -> void:
 	var pitch_rate: float = 0.0 if dt <= 0.0 else (head_forward.y - _last_head_forward.y) / dt
 	var turn_rate: float = 0.0 if dt <= 0.0 else _last_head_forward.cross(head_forward).y / dt
 	_last_head_forward = head_forward
-	_beard = spring_step(_beard, clampf(0.05 * pitch_rate - 0.04 * forward_speed / maxf(move_speed, 0.1) + 0.03 * sin(_clock * 9.0) * run, -0.35, 0.35),
+	# The stride's bounce flicks it too: it trails the hips' rise and fall by about two frames (19B).
+	var hips_rise: float = 0.0 if dt <= 0.0 or is_nan(_last_hips_y) else (pos[B.HIPS].y - _last_hips_y) / dt
+	_last_hips_y = pos[B.HIPS].y
+	_beard = spring_step(_beard, clampf(0.05 * pitch_rate - 0.04 * forward_speed / maxf(move_speed, 0.1) - 0.12 * hips_rise, -0.35, 0.35),
 		BEARD_OMEGA, BEARD_ZETA, dt)
 	_beard_roll = spring_step(_beard_roll, clampf(-0.05 * turn_rate, -0.3, 0.3), BEARD_OMEGA, BEARD_ZETA, dt)
 	beard_pitch = _beard.x

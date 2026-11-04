@@ -55,12 +55,16 @@ const FELLOWSHIP_RIMS: Array[Color] = [Color(0.949, 0.718, 0.286), Color(0.322, 
 @export var value_1_coat_color: Color = Color(0.180, 0.251, 0.169)
 ## #36281E Oiled Bog-Leather.
 @export var value_1_boot_color: Color = Color(0.212, 0.157, 0.118)
+## #3A3F47 Slate-wool knee-breeches.
+@export var value_1_breeches_color: Color = Color(0.227, 0.247, 0.278)
 
 @export_group("Value 2: tactile craft and joinery")
 ## #9C7250 Hewn Hazel.
 @export var value_2_timber_leather_color: Color = Color(0.612, 0.447, 0.314)
 ## #D6C7B2 Buff Gambeson.
 @export var value_2_linen_color: Color = Color(0.839, 0.780, 0.698)
+## #A06A4A Oiled saddle leather (straps, belts, bracers, the stitched cop).
+@export var value_2_leather_color: Color = Color(0.627, 0.416, 0.290)
 ## The Fellowship's tunic (#3B7A47 Wayfarer Emerald for the Wayfarers).
 @export var value_2_tunic_color: Color = Color(0.231, 0.478, 0.278)
 
@@ -71,7 +75,10 @@ const FELLOWSHIP_RIMS: Array[Color] = [Color(0.949, 0.718, 0.286), Color(0.322, 
 ## #B8C0C8 Light Ash-Gray, speckled through the beard.
 @export var beard_speckle_color: Color = Color(0.722, 0.753, 0.784)
 @export_range(0.0, 1.0) var beard_speckle_ratio: float = 0.28
-@export var eye_color: Color = Color(0.16, 0.11, 0.08)
+## The eyes (19B §2): #F4EFE6 ivory sclera, a #5E4728 hazel-amber iris, a dark pupil.
+@export var sclera_color: Color = Color(0.957, 0.937, 0.902)
+@export var iris_color: Color = Color(0.369, 0.278, 0.157)
+@export var eye_color: Color = Color(0.08, 0.06, 0.05)
 
 @export_group("Silhouette")
 @export var headgear_style: StringName = &"wayfarer_hood_up"

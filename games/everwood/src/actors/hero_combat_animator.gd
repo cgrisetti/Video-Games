@@ -15,7 +15,8 @@
 ## The clips:
 ##   idles and footwork  idle_steward_calm (weapon on the back after 4 s out of
 ##                       a fight), idle_combat_ready (+ _axe, _staff, _bow),
-##                       locomotion_run_cycle (28 f, feet planting on f 4 and 18),
+##                       locomotion_run_cycle (28 f, feet planting on f 4 and 18:
+##                       the jaunty woodsman's stride, weapon in a low port),
 ##                       winded_3rd_light_recovery (33 f, 550 ms)
 ##   Broad-Axe           axe_light_1, axe_light_2 (51 f), axe_heavy_earth_splitter
 ##                       (56 f), axe_flourish_r_coppice, axe_ult_lr_heartwood
@@ -157,6 +158,15 @@ static func clip_names() -> Array[StringName]:
 	var names: Array[StringName] = []
 	names.assign(_info.keys())
 	return names
+
+
+## A clip's pose at a frame, for checks: {"rotations": Array[Quaternion] (each
+## bone's local rotation), "hips": the hips' offset, "scale": the hips' scale}.
+static func sample_pose(clip_name: StringName, frame: float) -> Dictionary:
+	var rotations: Array[Quaternion] = rest_rotations().duplicate()
+	var offset: Array[Vector3] = [Vector3.ZERO, Vector3.ONE]
+	_sample(clip_name, frame, rotations, offset)
+	return {"rotations": rotations, "hips": offset[0], "scale": offset[1]}
 
 
 ## Each bone's rest rotation (the pose an un-keyed bone keeps).
@@ -374,9 +384,8 @@ func _choose_clip(step: float) -> Array:
 	var info: Dictionary = clip_info(picked)
 	foot_ik_weight = 1.0 if info.get("foot_ik", true) else 0.0
 	var two_handed: bool = HeroMeshAtelier.is_two_handed(weapon_type)
-	grip_weight = 1.0 if two_handed and not calm and (info.get("grip", false) or picked == &"locomotion_run_cycle") else 0.0
-	if picked == &"locomotion_run_cycle" and calm:
-		grip_weight = 0.0
+	# On the run the weapon rides one-handed in the low port, so the off hand swings free.
+	grip_weight = 1.0 if two_handed and not calm and info.get("grip", false) else 0.0
 	return [picked, frame]
 
 
@@ -470,7 +479,8 @@ func _count(clip_name: StringName) -> void:
 
 
 static func _sample(clip_name: StringName, frame: float, rotations: Array[Quaternion], offset: Array[Vector3]) -> void:
-	var animation: Animation = library().get_animation(clip_name) if _library.has_animation(clip_name) else null
+	var book: AnimationLibrary = library()
+	var animation: Animation = book.get_animation(clip_name) if book.has_animation(clip_name) else null
 	if animation == null:
 		return
 	var t: float = clampf(frame / FPS, 0.0, animation.length)
