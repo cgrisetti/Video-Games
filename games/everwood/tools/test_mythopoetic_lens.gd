@@ -1,7 +1,8 @@
 ## The Mythopoetic Lens's checks (15_THE_MYTHOPOETIC_LENS.md), run by
 ## tools/smoke_test.gd last, while the party stands in Oakshire Vale:
 ##   1  the four Linter Rules: no banned word in any name, blurb, quest or rhyme
-##      the game shows (catalog, bestiary, places, townsfolk, atlas), and every
+##      the game shows (catalog, bestiary, places, townsfolk, atlas, and Phase
+##      19's hero looks, dyes, styles and weapon-tier crafts), and every
 ##      settlement, zone, delve and Place-Card a hyphenated Map-Sense compound
 ##      (-bridge, -green, -hollow, -falls, -haven, -wick or -crossing)
 ##   2  the atlas: six zones, each with its Cooper Sign, kin and four-line rhyme
@@ -106,6 +107,12 @@ func _check_linter() -> void:
 		shown.append(kit.display_name)
 	for state: int in 3:
 		shown.append(WorldVisualCatalog.succession(state).display_name)
+	# Phase 19's heroes (19 GDD §5): every Calling's look, the heritage dyes, the style names and the weapon tiers' crafts.
+	for look: HeroAppearanceResource in catalog.hero_appearances() + catalog.heritage_dyes():
+		shown.append(look.display_name)
+	shown.append_array(HeroAppearanceResource.HEADGEAR_NAMES + HeroAppearanceResource.BEARD_NAMES + HeroAppearanceResource.PAULDRON_NAMES)
+	for tier: WeaponVisualTierResource in catalog.weapon_visual_tiers():
+		shown.append_array([tier.display_name, tier.craft_note])
 	# The Wayfarer's map places (18 GDD §7).
 	for place: WorldMapZoneResource in WorldVisualCatalog.map_zones():
 		shown.append_array([place.display_name, place.cooper_sign_title])

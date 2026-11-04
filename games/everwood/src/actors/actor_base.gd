@@ -7,7 +7,9 @@
 ## and Scribe Cards, LoadoutComposer). Nothing here knows a weapon or a card by
 ## name: props are built from the items' parts, and a strike either swings the
 ## hitbox or fires a projectile, as its action says. A player is drawn as a
-## storybook puppet (ActorVisuals); enemies draw their own bodies.
+## sculpted 24-bone storybook hero (ActorVisuals, 19_HERO_CHARACTER_ART_AND_ANIMATION_RIG_GDD.md)
+## that the animator and kinematics pose every tick, hit-stops included; enemies
+## draw their own bodies.
 ##
 ## The Phase 12 Kaizen pass (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §8) adds three
 ## components: heroes track their directional combo forms (ComboChainComponent),
@@ -381,8 +383,12 @@ func _build_capsule_body() -> void:
 
 
 ## What the actor holds (and, without a puppet to show it, wears), drawn from its items.
+## A sculpted hero mounts its tiered weapon in hand on the rig instead.
 func _build_prop() -> Node3D:
 	if loadout.weapon == null and loadout.armor == null:
+		return null
+	if visuals != null and visuals.has_rig():
+		_weapon_prop = visuals.mount_weapon(loadout.weapon)
 		return null
 	var prop: Node3D = Node3D.new()
 	prop.name = "Prop"
@@ -565,8 +571,10 @@ func _physics_process(delta: float) -> void:
 	_flash_left = maxf(0.0, _flash_left - delta)
 	_flow_glow_left = maxf(0.0, _flow_glow_left - delta)
 	if _hit_stop_left > 0.0:
-		# Hit-stop: this actor alone freezes for a few frames.
+		# Hit-stop: this actor alone freezes for a few frames (its hero trembles through it).
 		_hit_stop_left -= delta
+		if visuals != null:
+			visuals.update_rig(delta, Vector3.ZERO, true)
 		return
 	if ai_tick_interval <= 0.0:
 		_gather_intent(delta)
@@ -657,6 +665,8 @@ func cancel_action() -> void:
 
 func apply_hit_stop(duration: float) -> void:
 	_hit_stop_left = maxf(_hit_stop_left, duration)
+	if visuals != null:
+		visuals.note_hit_stop(duration)
 
 
 func is_hit_stopped() -> bool:
@@ -891,6 +901,9 @@ func receive_strike(event: CombatEvent) -> int:
 			_flash_left = FLASH_TIME
 		StatsComponent.StrikeOutcome.HIT, StatsComponent.StrikeOutcome.GUARDED:
 			_flash_left = FLASH_TIME
+		StatsComponent.StrikeOutcome.PERFECT_GUARD:
+			if visuals != null:
+				visuals.play_perfect_guard_parry()
 	return outcome
 
 
@@ -1013,6 +1026,9 @@ func _update_attack_aura() -> void:
 # --- Greybox posing -------------------------------------------------------
 
 func _update_pose(delta: float) -> void:
+	if visuals != null and visuals.has_rig():
+		_update_rig_pose(delta)
+		return
 	var state: StringName = state_machine.current_name() if is_multiplayer_authority() else net_sync.remote_state
 	var lean: float = 0.0
 	var tilt: float = 0.0
@@ -1054,5 +1070,23 @@ func _update_pose(delta: float) -> void:
 	if visuals != null:
 		# Worked out from how far it moved, so a networked copy's cape streams too.
 		var moved: Vector3 = (global_position - _last_pose_position) / maxf(delta, 0.0001)
-		visuals.update_motion(delta, moved if moved.length() < 30.0 else Vector3.ZERO, loadout.stats.move_speed)
+		visuals.update_rig(delta, moved if moved.length() < 30.0 else Vector3.ZERO)
+	_last_pose_position = global_position
+
+
+## A sculpted hero poses itself (HeroCombatAnimator and StorybookKinematicsModifier3D):
+## the weapon's swell and Sign looks, the glow, then the rig, every peer.
+func _update_rig_pose(delta: float) -> void:
+	visual.rotation = Vector3.ZERO
+	visual.scale = Vector3.ONE
+	visuals.update_channel(delta, current_action())
+	if _flash_left > 0.0:
+		_set_glow(Color(1.0, 1.0, 1.0) * 0.9)
+	elif _flow_glow_left > 0.0:
+		_set_glow(FLOW_GLOW_COLOR * (_flow_glow_left / FLOW_GLOW_TIME) * 1.4)
+	else:
+		_set_glow(Color.BLACK)
+	# Worked out from how far it moved, so a networked copy's cloak streams too.
+	var moved: Vector3 = (global_position - _last_pose_position) / maxf(delta, 0.0001)
+	visuals.update_rig(delta, moved if moved.length() < 30.0 else Vector3.ZERO)
 	_last_pose_position = global_position

@@ -1,7 +1,8 @@
 ## The ribbon a melee weapon draws through a Sign-wreathed strike: a Scribe
 ## Card swung through a sword or an axe (05 GDD §4.3). While the strike is
-## live it sweeps the weapon through an arc and samples its base and tip each
-## frame, drawing the last few samples as a fading strip in the card's Sign
+## live it samples the weapon's base and tip each frame (a sculpted hero's
+## weapon, swung by its animation, gives its own TrailBase and TrailTip; a
+## part-built prop is swept through an arc), drawing the last few samples as a fading strip in the card's Sign
 ## colour (gold for a Gilded Leaf copy). It reads the actor's synced current
 ## action, so every peer draws it.
 class_name WeaponTrail
@@ -77,10 +78,16 @@ func _process(delta: float) -> void:
 			_tips.remove_at(index)
 			_ages.remove_at(index)
 	if live:
-		var turn: Basis = Basis(Vector3.UP, swing_angle)
-		var frame: Transform3D = actor.global_transform
-		_bases.append(frame * (turn * weapon.trail_base))
-		_tips.append(frame * (turn * weapon.trail_tip))
+		# A sculpted hero's weapon swings in its hand: sample its own base and tip.
+		var points: PackedVector3Array = actor.visuals.trail_points() if actor.visuals != null else PackedVector3Array()
+		if points.size() == 2:
+			_bases.append(points[0])
+			_tips.append(points[1])
+		else:
+			var turn: Basis = Basis(Vector3.UP, swing_angle)
+			var frame: Transform3D = actor.global_transform
+			_bases.append(frame * (turn * weapon.trail_base))
+			_tips.append(frame * (turn * weapon.trail_tip))
 		_ages.append(0.0)
 		while _ages.size() > MAX_SAMPLES:
 			_bases.remove_at(0)

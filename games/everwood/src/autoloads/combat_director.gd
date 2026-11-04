@@ -842,6 +842,8 @@ func bravery_counter(target: ActorBase, event: CombatEvent, scribe_sign: int, en
 	var counterer: ActorBase = _actor_at(event.attacker_path)
 	if counterer != null and counterer.is_multiplayer_authority():
 		frozen.append(counterer)
+	if counterer != null and counterer.visuals != null:
+		counterer.visuals.play_bravery_counter()
 	request_hit_stop(frozen, event.hit_stop_scale)
 	var label: String = "BRAVERY COUNTER!  %s x%.2f" % [seal.detonation_name if banner == "" else banner, encounter.get_impact_multiplier()]
 	if NetworkManager.current.is_online():

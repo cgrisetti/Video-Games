@@ -1,0 +1,429 @@
+## Every clip in the hero's AnimationLibrary, as key poses at 60 Hz frames
+## (19_HERO_CHARACTER_ART_AND_ANIMATION_RIG_GDD.md §3.3, Stage 7). HeroCombatAnimator
+## bakes them (HeroPoseBaker) into rotation, position and scale tracks.
+##
+## A clip is {"frames", "keys": [[frame, pose] ...]} with, for an action,
+## "windup" and "active" (the frames where its wind-up and active phases end,
+## stretched onto the action's real timing), and flags: "loop", "foot_ik"
+## (the feet plant on the ground), "grip" (a two-hander's off hand rides its
+## haft), "draw" (the bow hand pulls to the jaw through the wind-up), and
+## "leg_space" ("hips" for spins and rolls, so the legs turn with the body).
+## Directions are in the chest's frame for arms (forward is -Z, right +X) and
+## the ground's for legs.
+class_name HeroClipBook
+extends RefCounted
+
+const B = HeroRigBuilder.Bone
+
+# --- Parts ---------------------------------------------------------------------
+
+const FEET_FLAT: Dictionary = {"aim": {B.FOOT_L: Vector3(0.0, -0.32, -0.95), B.FOOT_R: Vector3(0.0, -0.32, -0.95)}}
+const LEGS_CALM: Dictionary = {"aim": {B.THIGH_L: Vector3(-0.04, -1.0, -0.03), B.SHIN_L: Vector3(-0.03, -1.0, 0.02),
+	B.THIGH_R: Vector3(0.12, -1.0, 0.05), B.SHIN_R: Vector3(0.1, -1.0, 0.08)}, "e": {B.HIPS: Vector3(0.0, 0.0, 3.0)}}
+const LEGS_READY: Dictionary = {"aim": {B.THIGH_L: Vector3(-0.12, -1.0, -0.22), B.SHIN_L: Vector3(-0.08, -1.0, 0.03),
+	B.THIGH_R: Vector3(0.15, -1.0, 0.17), B.SHIN_R: Vector3(0.1, -1.0, 0.3)}, "hips": Vector3(0.0, -0.05, 0.0)}
+const LEGS_LUNGE: Dictionary = {"aim": {B.THIGH_L: Vector3(-0.1, -0.8, -0.6), B.SHIN_L: Vector3(-0.05, -1.0, 0.05),
+	B.THIGH_R: Vector3(0.12, -0.85, 0.5), B.SHIN_R: Vector3(0.1, -0.55, 0.85)}, "hips": Vector3(0.0, -0.14, 0.0)}
+const LEGS_WIDE: Dictionary = {"aim": {B.THIGH_L: Vector3(-0.4, -1.0, -0.1), B.SHIN_L: Vector3(-0.22, -1.0, 0.06),
+	B.THIGH_R: Vector3(0.4, -1.0, 0.1), B.SHIN_R: Vector3(0.22, -1.0, 0.14)}, "hips": Vector3(0.0, -0.13, 0.0)}
+const LEGS_RISE: Dictionary = {"aim": {B.THIGH_L: Vector3(-0.08, -1.0, -0.08), B.SHIN_L: Vector3(-0.06, -1.0, 0.0),
+	B.THIGH_R: Vector3(0.1, -1.0, 0.06), B.SHIN_R: Vector3(0.08, -1.0, 0.04),
+	B.FOOT_L: Vector3(0.0, -0.9, -0.45), B.FOOT_R: Vector3(0.0, -0.9, -0.45)}, "hips": Vector3(0.0, 0.05, 0.0)}
+const LEGS_KNEEL: Dictionary = {"aim": {B.THIGH_R: Vector3(0.1, -1.0, 0.05), B.SHIN_R: Vector3(0.08, -0.15, 1.0), B.FOOT_R: Vector3(0.0, -1.0, 0.2),
+	B.THIGH_L: Vector3(-0.1, -0.05, -1.0), B.SHIN_L: Vector3(-0.05, -1.0, 0.0), B.FOOT_L: Vector3(0.0, -0.32, -0.95)}, "hips": Vector3(0.0, -0.42, 0.0)}
+const LEGS_TUCK: Dictionary = {"aim": {B.THIGH_L: Vector3(-0.08, -0.25, -1.0), B.SHIN_L: Vector3(-0.05, -1.0, 0.3),
+	B.THIGH_R: Vector3(0.08, -0.25, -1.0), B.SHIN_R: Vector3(0.05, -1.0, 0.3)}}
+const LEGS_SLUMP: Dictionary = {"aim": {B.THIGH_L: Vector3(-0.15, -0.2, -1.0), B.SHIN_L: Vector3(-0.1, -1.0, -0.3),
+	B.THIGH_R: Vector3(0.15, -0.2, -1.0), B.SHIN_R: Vector3(0.1, -1.0, -0.3)}, "hips": Vector3(0.0, -0.6, 0.0)}
+const TORSO_READY: Dictionary = {"e": {B.SPINE: Vector3(-6.0, 0.0, 0.0), B.CHEST: Vector3(-2.0, -6.0, 0.0), B.NECK: Vector3(0.0, 3.0, 0.0), B.HEAD: Vector3(2.0, 4.0, 0.0)}}
+const TORSO_CALM: Dictionary = {"e": {B.SPINE: Vector3(-1.0, 0.0, -2.0), B.CHEST: Vector3(1.0, 0.0, 1.0), B.HEAD: Vector3(0.0, 6.0, 0.0)}}
+const R_HANG: Dictionary = {"aim": {B.UPPER_ARM_R: Vector3(0.12, -1.0, 0.02), B.FOREARM_R: Vector3(0.08, -1.0, -0.12)}}
+const L_HANG: Dictionary = {"aim": {B.UPPER_ARM_L: Vector3(-0.12, -1.0, 0.02), B.FOREARM_L: Vector3(-0.08, -1.0, -0.12)}}
+const R_SWORD: Dictionary = {"aim": {B.UPPER_ARM_R: Vector3(0.32, -0.62, -0.5), B.FOREARM_R: Vector3(0.06, 0.18, -1.0)}, "wpn": {B.HAND_R: Vector3(0.04, 0.9, -0.45)}}
+const L_SHIELD: Dictionary = {"aim": {B.UPPER_ARM_L: Vector3(-0.32, -0.62, -0.5), B.FOREARM_L: Vector3(0.45, 0.12, -0.85)}}
+const R_AXE: Dictionary = {"aim": {B.UPPER_ARM_R: Vector3(0.26, -0.8, -0.3), B.FOREARM_R: Vector3(-0.2, 0.05, -1.0)}, "wpn": {B.HAND_R: Vector3(-0.45, 0.8, -0.25)}}
+const L_GRIP: Dictionary = {"aim": {B.UPPER_ARM_L: Vector3(-0.12, -0.7, -0.55), B.FOREARM_L: Vector3(0.45, 0.2, -0.8)}}
+const R_STAFF: Dictionary = {"aim": {B.UPPER_ARM_R: Vector3(0.26, -0.75, -0.3), B.FOREARM_R: Vector3(-0.15, 0.0, -1.0)}, "wpn": {B.HAND_R: Vector3(-0.12, 1.0, -0.05)}}
+const R_BOW: Dictionary = {"aim": {B.UPPER_ARM_R: Vector3(0.18, -0.9, 0.05), B.FOREARM_R: Vector3(0.05, -0.55, -0.75)}}
+const L_BOW: Dictionary = {"aim": {B.UPPER_ARM_L: Vector3(-0.2, -0.85, -0.4), B.FOREARM_L: Vector3(-0.05, -0.45, -1.0)}, "wpn": {B.HAND_L: Vector3(0.0, 1.0, 0.12)}}
+## The left hand at the hip satchel, and holding a card up before the face.
+const L_SATCHEL: Dictionary = {"aim": {B.UPPER_ARM_L: Vector3(-0.35, -0.85, 0.35), B.FOREARM_L: Vector3(-0.05, -0.6, 0.8)}}
+const L_CARD_UP: Dictionary = {"aim": {B.UPPER_ARM_L: Vector3(-0.35, 0.2, -0.9), B.FOREARM_L: Vector3(0.35, 0.75, -0.55)}}
+## A weapon thrust straight out ahead.
+const R_THRUST: Dictionary = {"aim": {B.UPPER_ARM_R: Vector3(0.05, 0.05, -1.0), B.FOREARM_R: Vector3(0.0, 0.02, -1.0)}, "wpn": {B.HAND_R: Vector3(0.0, 0.02, -1.0)}}
+## Both arms raised overhead.
+const ARMS_OVERHEAD: Dictionary = {"aim": {B.UPPER_ARM_R: Vector3(0.15, 1.0, -0.1), B.FOREARM_R: Vector3(-0.2, 0.95, -0.1), B.UPPER_ARM_L: Vector3(-0.15, 1.0, -0.1),
+	B.FOREARM_L: Vector3(0.2, 0.95, -0.1)}, "wpn": {B.HAND_R: Vector3(0.0, 1.0, -0.2)}}
+
+
+# --- The book --------------------------------------------------------------------
+
+## Every clip: [name, spec].
+static func clips() -> Array[Array]:
+	var book: Array[Array] = []
+	_idles(book)
+	_broad_axe(book)
+	_falchion(book)
+	_longbow(book)
+	_way_staff(book)
+	_cards(book)
+	_defence(book)
+	_stewardship(book)
+	_reactions(book)
+	return book
+
+
+static func _p(parts: Array) -> Dictionary:
+	return HeroPoseBaker.compose(parts)
+
+
+static func _e(turns: Dictionary) -> Dictionary:
+	return {"e": turns}
+
+
+static func _aim(aims: Dictionary) -> Dictionary:
+	return {"aim": aims}
+
+
+static func _wpn(hand: int, haft: Vector3) -> Dictionary:
+	return {"wpn": {hand: haft}}
+
+
+static func _hips(offset: Vector3) -> Dictionary:
+	return {"hips": offset}
+
+
+static func _clip(book: Array[Array], clip_name: String, frames: int, keys: Array, extra: Dictionary = {}) -> void:
+	var spec: Dictionary = {"frames": frames, "keys": keys}
+	spec.merge(extra, true)
+	book.append([StringName(clip_name), spec])
+
+
+static func _action(windup: int, active: int, extra: Dictionary = {}) -> Dictionary:
+	var spec: Dictionary = {"windup": windup, "active": active}
+	spec.merge(extra, true)
+	return spec
+
+
+## A turn of the hips about Y (degrees), for spins.
+static func _spin(degrees: float) -> Dictionary:
+	return {"e": {B.HIPS: Vector3(0.0, degrees, 0.0)}}
+
+
+# --- Idles and footwork ----------------------------------------------------------
+
+static func _idles(book: Array[Array]) -> void:
+	var calm: Dictionary = _p([LEGS_CALM, FEET_FLAT, TORSO_CALM, R_HANG, L_HANG])
+	var calm_breath: Dictionary = _p([calm, _e({B.CHEST: Vector3(3.0, 0.0, 1.0), B.HEAD: Vector3(-2.0, 12.0, 0.0), B.HIPS: Vector3(0.0, 0.0, 3.5)}), _hips(Vector3(0.0, -0.01, 0.0))])
+	_clip(book, "idle_steward_calm", 120, [[0, calm], [60, calm_breath], [120, calm]], {"loop": true})
+	for entry: Array in [["idle_combat_ready", R_SWORD, L_SHIELD], ["idle_combat_ready_axe", R_AXE, L_GRIP],
+			["idle_combat_ready_staff", R_STAFF, L_GRIP], ["idle_combat_ready_bow", R_BOW, L_BOW]]:
+		var ready: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, entry[1], entry[2]])
+		var breath: Dictionary = _p([ready, _e({B.CHEST: Vector3(1.0, -6.0, 0.0), B.SPINE: Vector3(-7.0, 0.0, 0.0)}), _hips(Vector3(0.0, -0.065, 0.0))])
+		_clip(book, entry[0], 90, [[0, ready], [45, breath], [90, ready]], {"loop": true, "grip": true})
+	# The double-bounce storybook run: the body bobs twice a cycle, the chest counter-swings the hips.
+	var stride: Dictionary = _p([FEET_FLAT, _hips(Vector3(0.0, -0.035, 0.0)),
+		_e({B.HIPS: Vector3(0.0, -8.0, 0.0), B.SPINE: Vector3(-10.0, 10.0, 0.0), B.CHEST: Vector3(-4.0, 4.0, 0.0), B.HEAD: Vector3(4.0, -6.0, 0.0)}),
+		_aim({B.THIGH_L: Vector3(-0.05, -1.0, -0.55), B.SHIN_L: Vector3(-0.03, -1.0, -0.12), B.FOOT_L: Vector3(0.0, -0.1, -1.0),
+			B.THIGH_R: Vector3(0.05, -1.0, 0.5), B.SHIN_R: Vector3(0.05, -0.55, 0.95), B.FOOT_R: Vector3(0.0, -0.75, -0.65),
+			B.UPPER_ARM_R: Vector3(0.14, -1.0, -0.45), B.FOREARM_R: Vector3(0.08, -0.35, -0.95),
+			B.UPPER_ARM_L: Vector3(-0.14, -1.0, 0.4), B.FOREARM_L: Vector3(-0.08, -0.9, 0.12)})])
+	var passing: Dictionary = _p([FEET_FLAT, _hips(Vector3(0.0, 0.025, 0.0)), _e({B.SPINE: Vector3(-10.0, 0.0, 0.0), B.CHEST: Vector3(-4.0, 0.0, 0.0)}),
+		_aim({B.THIGH_L: Vector3(-0.05, -1.0, 0.08), B.SHIN_L: Vector3(-0.03, -1.0, 0.1),
+			B.THIGH_R: Vector3(0.06, -1.0, -0.35), B.SHIN_R: Vector3(0.05, -0.75, 0.6), B.FOOT_R: Vector3(0.0, -0.6, -0.8),
+			B.UPPER_ARM_R: Vector3(0.13, -1.0, -0.05), B.FOREARM_R: Vector3(0.08, -0.7, -0.6),
+			B.UPPER_ARM_L: Vector3(-0.13, -1.0, 0.0), B.FOREARM_L: Vector3(-0.08, -0.7, -0.6)})])
+	_clip(book, "locomotion_run_cycle", 28, [[0, stride], [7, passing], [14, HeroPoseBaker.mirror(stride)],
+		[21, HeroPoseBaker.mirror(passing)], [28, stride]], {"loop": true})
+	# Winded after a third Light in a row: hands toward the knees, the chest heaving.
+	var ready_sword: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, R_SWORD, L_SHIELD])
+	var slump: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, -0.1, 0.0)),
+		_e({B.SPINE: Vector3(-18.0, 0.0, 0.0), B.CHEST: Vector3(-8.0, 0.0, 0.0), B.HEAD: Vector3(16.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.3, -0.8, -0.45), B.FOREARM_R: Vector3(0.05, -0.95, -0.25),
+			B.UPPER_ARM_L: Vector3(-0.3, -0.8, -0.45), B.FOREARM_L: Vector3(-0.05, -0.95, -0.25)})])
+	var heave: Dictionary = _p([slump, _e({B.SPINE: Vector3(-10.0, 0.0, 0.0), B.CHEST: Vector3(2.0, 0.0, 0.0), B.HEAD: Vector3(10.0, 0.0, 0.0),
+		B.CLAVICLE_L: Vector3(0.0, 0.0, 8.0), B.CLAVICLE_R: Vector3(0.0, 0.0, -8.0)})])
+	_clip(book, "winded_3rd_light_recovery", 33, [[0, ready_sword], [6, slump], [16, heave], [26, slump], [33, ready_sword]])
+
+
+# --- The Broad-Axe -------------------------------------------------------------
+
+static func _broad_axe(book: Array[Array]) -> void:
+	var ready: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, R_AXE, L_GRIP])
+	# Light 1: a right-to-left diagonal timber-felling hew off a 38-degree hip coil.
+	var coil: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, -0.08, 0.0)),
+		_e({B.HIPS: Vector3(0.0, -12.0, 0.0), B.SPINE: Vector3(-4.0, -20.0, 0.0), B.CHEST: Vector3(4.0, -22.0, 0.0), B.HEAD: Vector3(0.0, 30.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.55, 0.45, 0.4), B.FOREARM_R: Vector3(0.05, 0.95, 0.25)}), _wpn(B.HAND_R, Vector3(0.25, 0.45, 0.85))])
+	var taut: Dictionary = _p([coil, _e({B.CHEST: Vector3(6.0, -26.0, 0.0)})])
+	var hew: Dictionary = _p([LEGS_LUNGE, FEET_FLAT, _hips(Vector3(0.0, -0.12, 0.0)),
+		_e({B.SPINE: Vector3(-10.0, 4.0, 0.0), B.CHEST: Vector3(-8.0, 8.0, 0.0), B.HEAD: Vector3(-4.0, -8.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.2, 0.05, -1.0), B.FOREARM_R: Vector3(-0.25, -0.15, -1.0)}), _wpn(B.HAND_R, Vector3(-0.45, 0.1, -0.9))])
+	var through: Dictionary = _p([LEGS_LUNGE, FEET_FLAT, _hips(Vector3(0.0, -0.15, 0.0)),
+		_e({B.HIPS: Vector3(0.0, 14.0, 0.0), B.SPINE: Vector3(-14.0, 20.0, 0.0), B.CHEST: Vector3(-10.0, 22.0, 0.0), B.HEAD: Vector3(-4.0, -30.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(-0.55, -0.5, -0.65), B.FOREARM_R: Vector3(-0.85, -0.5, -0.3)}), _wpn(B.HAND_R, Vector3(-0.75, -0.55, 0.3))])
+	var settle: Dictionary = _p([through, _e({B.SPINE: Vector3(-10.0, 16.0, 0.0)})])
+	_clip(book, "axe_light_1", 51, [[0, ready], [12, coil], [18, taut], [22, hew], [27, through], [38, settle], [51, ready]], _action(18, 27, {"grip": true}))
+	# Light 2: a low-to-high reverse undercut, the hips dropping 0.16 m.
+	var low: Dictionary = _p([LEGS_WIDE, FEET_FLAT, _hips(Vector3(0.0, -0.16, 0.0)),
+		_e({B.HIPS: Vector3(0.0, 12.0, 0.0), B.SPINE: Vector3(-14.0, 18.0, 0.0), B.CHEST: Vector3(-6.0, 20.0, 0.0), B.HEAD: Vector3(0.0, -25.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(-0.35, -0.85, -0.2), B.FOREARM_R: Vector3(-0.6, -0.6, -0.3)}), _wpn(B.HAND_R, Vector3(-0.55, -0.65, 0.45))])
+	var low_taut: Dictionary = _p([low, _e({B.SPINE: Vector3(-16.0, 22.0, 0.0)})])
+	var undercut: Dictionary = _p([LEGS_WIDE, FEET_FLAT, _hips(Vector3(0.0, -0.1, 0.0)), _e({B.SPINE: Vector3(-6.0, 0.0, 0.0), B.CHEST: Vector3(-4.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.15, -0.35, -1.0), B.FOREARM_R: Vector3(0.05, 0.2, -1.0)}), _wpn(B.HAND_R, Vector3(0.0, 0.4, -1.0))])
+	var high: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, -0.02, 0.0)),
+		_e({B.HIPS: Vector3(0.0, -10.0, 0.0), B.SPINE: Vector3(4.0, -18.0, 0.0), B.CHEST: Vector3(8.0, -24.0, 0.0), B.HEAD: Vector3(-6.0, 20.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.5, 0.65, -0.35), B.FOREARM_R: Vector3(0.35, 0.85, -0.15)}), _wpn(B.HAND_R, Vector3(0.3, 0.85, 0.35))])
+	_clip(book, "axe_light_2", 51, [[0, ready], [12, low], [18, low_taut], [22, undercut], [27, high], [38, high], [51, ready]], _action(18, 27, {"grip": true}))
+	# The Earth-Splitter: up onto the toes with the axe hoisted overhead, the torso
+	# arched back, then the whole body jackknifes and slams it into the earth.
+	var hoist: Dictionary = _p([LEGS_RISE, _e({B.SPINE: Vector3(14.0, 0.0, 0.0), B.CHEST: Vector3(12.0, 0.0, 0.0), B.HEAD: Vector3(-8.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.12, 1.0, 0.18), B.FOREARM_R: Vector3(0.02, 0.55, 0.9)}), _wpn(B.HAND_R, Vector3(0.0, 0.15, 1.0))])
+	var arched: Dictionary = _p([hoist, _e({B.SPINE: Vector3(18.0, 0.0, 0.0), B.CHEST: Vector3(14.0, 0.0, 0.0)})])
+	var falling: Dictionary = _p([LEGS_LUNGE, FEET_FLAT, _hips(Vector3(0.0, -0.05, 0.0)), _e({B.SPINE: Vector3(-22.0, 0.0, 0.0), B.CHEST: Vector3(-16.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.1, 0.25, -1.0), B.FOREARM_R: Vector3(0.0, -0.35, -1.0)}), _wpn(B.HAND_R, Vector3(0.0, -0.15, -1.0))])
+	var impact: Dictionary = _p([LEGS_LUNGE, FEET_FLAT, _hips(Vector3(0.0, -0.2, 0.0)), {"scale": Vector3(1.078, 0.86, 1.078)},
+		_e({B.SPINE: Vector3(-34.0, 0.0, 0.0), B.CHEST: Vector3(-20.0, 0.0, 0.0), B.HEAD: Vector3(16.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.08, -0.5, -0.85), B.FOREARM_R: Vector3(0.0, -0.75, -0.65)}), _wpn(B.HAND_R, Vector3(0.0, -0.85, -0.5))])
+	var planted: Dictionary = _p([impact, {"scale": Vector3.ONE}])
+	_clip(book, "axe_heavy_earth_splitter", 56, [[0, ready], [14, hoist], [23, arched], [26, falling], [29, impact], [38, planted], [56, ready]],
+		_action(23, 29, {"grip": true}))
+	# R un-inked: the Coppice-Splitter Slam, a 360-degree ring cleave into a slam.
+	var out_right: Dictionary = _p([LEGS_WIDE, FEET_FLAT, _hips(Vector3(0.0, -0.08, 0.0)), _e({B.CHEST: Vector3(0.0, -45.0, 0.0), B.SPINE: Vector3(-6.0, -15.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.95, 0.0, 0.2), B.FOREARM_R: Vector3(0.95, 0.05, -0.2)}), _wpn(B.HAND_R, Vector3(1.0, 0.05, 0.0))])
+	var whirl: Dictionary = _p([LEGS_WIDE, FEET_FLAT, _hips(Vector3(0.0, -0.1, 0.0)), _e({B.SPINE: Vector3(-6.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.95, 0.05, -0.2), B.FOREARM_R: Vector3(0.9, 0.05, -0.45)}), _wpn(B.HAND_R, Vector3(0.75, 0.05, -0.65))])
+	var slam: Dictionary = _p([impact, {"scale": Vector3(1.06, 0.89, 1.06)}])
+	_clip(book, "axe_flourish_r_coppice", 64, [[0, ready], [14, out_right], [20, out_right], [27, _p([whirl, _spin(120.0)])],
+		[33, _p([whirl, _spin(240.0)])], [36, _p([hoist, _spin(300.0)])], [40, _p([slam, _spin(360.0)])], [48, planted], [64, ready]],
+		_action(20, 40, {"grip": true, "leg_space": "hips"}))
+	# L+R un-inked: Heartwood Sundering, a double whirl into a seismic slam.
+	var big_slam: Dictionary = _p([impact, {"scale": Vector3(1.09, 0.84, 1.09)}, _hips(Vector3(0.0, -0.24, 0.0))])
+	var keys: Array = [[0, ready], [12, out_right], [30, out_right]]
+	for index: int in 6:
+		keys.append([34 + index * 4, _p([whirl, _spin(120.0 * float(index + 1))])])
+	keys.append_array([[62, _p([arched, _spin(720.0)])], [68, _p([big_slam, _spin(720.0)])], [80, planted], [90, ready]])
+	_clip(book, "axe_ult_lr_heartwood", 90, keys, _action(30, 68, {"grip": true, "leg_space": "hips"}))
+
+
+# --- The Falchion ----------------------------------------------------------------
+
+static func _falchion(book: Array[Array]) -> void:
+	var ready: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, R_SWORD, L_SHIELD])
+	var high_right: Dictionary = _p([ready, _e({B.CHEST: Vector3(4.0, -18.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.6, 0.55, 0.1), B.FOREARM_R: Vector3(0.3, 0.95, -0.1)}), _wpn(B.HAND_R, Vector3(0.2, 0.6, 0.75))])
+	var mid_cut: Dictionary = _p([ready, _e({B.CHEST: Vector3(-6.0, 8.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.1, 0.1, -1.0), B.FOREARM_R: Vector3(-0.3, -0.3, -1.0)}), _wpn(B.HAND_R, Vector3(-0.4, -0.3, -0.9))])
+	var low_left: Dictionary = _p([LEGS_LUNGE, FEET_FLAT, TORSO_READY, L_SHIELD, _hips(Vector3(0.0, -0.08, 0.0)),
+		_e({B.CHEST: Vector3(-8.0, 20.0, 0.0), B.SPINE: Vector3(-6.0, 10.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(-0.5, -0.55, -0.6), B.FOREARM_R: Vector3(-0.8, -0.5, -0.3)}), _wpn(B.HAND_R, Vector3(-0.7, -0.6, 0.3))])
+	# Light 1: a high diagonal slash.
+	_clip(book, "falchion_light_1", 33, [[0, ready], [6, high_right], [9, high_right], [12, mid_cut], [15, low_left], [24, low_left], [33, ready]], _action(9, 15))
+	# Light 2: a quick backhand sweep, left to right.
+	var back_left: Dictionary = _p([ready, _e({B.CHEST: Vector3(0.0, 24.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(-0.5, -0.2, -0.6), B.FOREARM_R: Vector3(-0.95, 0.05, -0.1)}), _wpn(B.HAND_R, Vector3(-0.6, 0.0, 0.8))])
+	var across: Dictionary = _p([ready, _e({B.CHEST: Vector3(0.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.15, -0.1, -1.0), B.FOREARM_R: Vector3(0.1, 0.0, -1.0)}), _wpn(B.HAND_R, Vector3(0.0, 0.0, -1.0))])
+	var out_right: Dictionary = _p([ready, _e({B.CHEST: Vector3(0.0, -26.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.95, -0.1, -0.2), B.FOREARM_R: Vector3(0.95, 0.0, 0.25)}), _wpn(B.HAND_R, Vector3(0.7, 0.0, 0.7))])
+	_clip(book, "falchion_light_2", 33, [[0, ready], [6, back_left], [9, back_left], [12, across], [15, out_right], [24, out_right], [33, ready]], _action(9, 15))
+	# Light 3: a spinning flourish cut.
+	var extended: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, L_SHIELD,
+		_aim({B.UPPER_ARM_R: Vector3(1.0, 0.05, -0.1), B.FOREARM_R: Vector3(1.0, 0.05, -0.2)}), _wpn(B.HAND_R, Vector3(0.85, 0.0, -0.55))])
+	_clip(book, "falchion_light_3", 33, [[0, ready], [6, back_left], [9, extended], [11, _p([extended, _spin(120.0)])], [13, _p([extended, _spin(240.0)])],
+		[15, _p([low_left, _spin(360.0)])], [24, low_left], [33, ready]], _action(9, 15, {"leg_space": "hips"}))
+	# Heavy: the Advancing Thrust, a fencer's long lunge with the off arm counterbalancing behind.
+	var chamber: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, -0.08, 0.0)), _e({B.CHEST: Vector3(0.0, -30.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.6, -0.3, 0.6), B.FOREARM_R: Vector3(0.2, 0.0, -1.0), B.UPPER_ARM_L: Vector3(-0.5, -0.3, 0.7),
+			B.FOREARM_L: Vector3(-0.5, 0.4, 0.6)}), _wpn(B.HAND_R, Vector3(0.0, 0.05, -1.0))])
+	var lunge: Dictionary = _p([LEGS_LUNGE, FEET_FLAT, R_THRUST, _hips(Vector3(0.0, -0.2, 0.0)),
+		_e({B.CHEST: Vector3(-10.0, 10.0, 0.0), B.SPINE: Vector3(-14.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_L: Vector3(-0.6, 0.1, 0.75), B.FOREARM_L: Vector3(-0.7, 0.3, 0.6)})])
+	_clip(book, "falchion_heavy_advancing_thrust", 63, [[0, ready], [15, chamber], [21, chamber], [30, lunge], [42, lunge], [63, ready]], _action(21, 30))
+	# R un-inked: the Timber-Cross Slash, two diagonal cuts in an X.
+	var high_left: Dictionary = _p([ready, _e({B.CHEST: Vector3(4.0, 18.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(-0.3, 0.7, -0.1), B.FOREARM_R: Vector3(-0.5, 0.85, -0.1)}), _wpn(B.HAND_R, Vector3(-0.4, 0.6, 0.65))])
+	_clip(book, "falchion_flourish_r_timber_cross", 60, [[0, ready], [10, high_right], [20, high_right], [24, low_left], [28, high_left],
+		[32, out_right], [44, out_right], [60, ready]], _action(20, 32))
+	# L+R un-inked: the Bramble-Whirl Flurry, two spinning sweeps into a cross cut.
+	var keys: Array = [[0, ready], [16, back_left], [30, extended]]
+	for index: int in 6:
+		keys.append([32 + index * 2, _p([extended, _spin(120.0 * float(index + 1))])])
+	keys.append_array([[46, _p([low_left, _spin(720.0)])], [60, low_left], [80, ready]])
+	_clip(book, "falchion_ult_lr_bramble_whirl", 80, keys, _action(30, 46, {"leg_space": "hips"}))
+
+
+# --- The Yew Longbow -------------------------------------------------------------
+
+static func _longbow(book: Array[Array]) -> void:
+	var ready: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, R_BOW, L_BOW])
+	# The canted storybook archer: side-on, the bow tipped 22 degrees so the face shows.
+	var aim: Dictionary = _p([LEGS_WIDE, FEET_FLAT,
+		_e({B.HIPS: Vector3(0.0, -35.0, 0.0), B.SPINE: Vector3(-4.0, -20.0, 0.0), B.CHEST: Vector3(0.0, -20.0, 6.0), B.NECK: Vector3(0.0, 8.0, 0.0), B.HEAD: Vector3(0.0, 62.0, 0.0)}),
+		_aim({B.UPPER_ARM_L: Vector3(-0.96, 0.06, -0.27), B.FOREARM_L: Vector3(-0.96, 0.06, -0.27),
+			B.UPPER_ARM_R: Vector3(0.85, 0.18, 0.45), B.FOREARM_R: Vector3(-0.92, 0.25, -0.25)}), _wpn(B.HAND_L, Vector3(-0.37, 0.93, 0.0))])
+	var release: Dictionary = _p([aim, _hips(Vector3(0.0, -0.1, 0.0)), _aim({B.UPPER_ARM_R: Vector3(0.9, 0.25, 0.35), B.FOREARM_R: Vector3(0.4, 0.5, 0.75)})])
+	_clip(book, "bow_light_snap_shot_1", 34, [[0, ready], [8, aim], [13, release], [22, release], [34, ready]], _action(8, 13, {"draw": true}))
+	var aim_low: Dictionary = _p([aim, _e({B.CHEST: Vector3(-4.0, -22.0, 10.0)})])
+	_clip(book, "bow_light_snap_shot_2", 34, [[0, ready], [8, aim_low], [13, release], [22, release], [34, ready]], _action(8, 13, {"draw": true}))
+	# The Piercing Draw: planted wide, a long, deep draw.
+	var deep: Dictionary = _p([aim, _hips(Vector3(0.0, -0.16, 0.0)), _e({B.SPINE: Vector3(-6.0, -22.0, 0.0)})])
+	_clip(book, "bow_heavy_piercing_draw", 66, [[0, ready], [12, aim], [30, deep], [36, release], [50, release], [66, ready]], _action(30, 36, {"draw": true}))
+	# R un-inked: the Vaulting Bough-Shot, a crouch, a vault back and a shot in the air.
+	var crouch: Dictionary = _p([LEGS_WIDE, FEET_FLAT, _hips(Vector3(0.0, -0.25, 0.0)), _e({B.SPINE: Vector3(-20.0, 0.0, 0.0)}), R_BOW, L_BOW])
+	var vault: Dictionary = _p([aim, LEGS_TUCK, _hips(Vector3(0.0, 0.1, 0.0)), _e({B.HIPS: Vector3(30.0, -35.0, 0.0)})])
+	_clip(book, "bow_flourish_r_vaulting_bough", 60, [[0, ready], [10, crouch], [18, crouch], [24, vault], [30, _p([vault, release])], [44, crouch], [60, ready]],
+		_action(18, 30, {"draw": true, "leg_space": "hips", "foot_ik": false}))
+	# L+R un-inked: Hail of the Hedgerow, arrows loosed high into the sky.
+	var sky: Dictionary = _p([aim, _e({B.SPINE: Vector3(14.0, -20.0, 0.0), B.HEAD: Vector3(-20.0, 62.0, 0.0)}),
+		_aim({B.UPPER_ARM_L: Vector3(-0.6, 0.75, -0.25), B.FOREARM_L: Vector3(-0.6, 0.75, -0.25)})])
+	_clip(book, "bow_ult_lr_hail_of_hedgerow", 80, [[0, ready], [16, aim], [30, sky], [34, _p([sky, release])], [38, sky], [44, _p([sky, release])],
+		[60, release], [80, ready]], _action(30, 44, {"draw": true}))
+
+
+# --- The Rowan Way-Staff ---------------------------------------------------------
+
+static func _way_staff(book: Array[Array]) -> void:
+	var ready: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, R_STAFF, L_GRIP])
+	var swing_right: Dictionary = _p([ready, _e({B.CHEST: Vector3(0.0, -24.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.7, -0.3, 0.2), B.FOREARM_R: Vector3(0.6, 0.1, -0.6)}), _wpn(B.HAND_R, Vector3(0.85, 0.3, -0.3))])
+	var swing_left: Dictionary = _p([ready, _e({B.CHEST: Vector3(0.0, 24.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(-0.1, -0.4, -0.9), B.FOREARM_R: Vector3(-0.6, -0.1, -0.8)}), _wpn(B.HAND_R, Vector3(-0.9, 0.15, -0.35))])
+	var low_left: Dictionary = _p([swing_left, _hips(Vector3(0.0, -0.1, 0.0)), _wpn(B.HAND_R, Vector3(-0.85, -0.35, -0.35))])
+	var low_right: Dictionary = _p([swing_right, _hips(Vector3(0.0, -0.1, 0.0)), _wpn(B.HAND_R, Vector3(0.85, -0.3, -0.35))])
+	# Two figure-eight quarterstaff sweeps.
+	_clip(book, "staff_light_sweep_1", 40, [[0, ready], [8, swing_right], [10, swing_right], [16, swing_left], [28, swing_left], [40, ready]], _action(10, 16, {"grip": true}))
+	_clip(book, "staff_light_sweep_2", 43, [[0, ready], [8, low_left], [10, low_left], [16, low_right], [28, low_right], [43, ready]], _action(10, 16, {"grip": true}))
+	# The bolt: a planted one-handed extension, the staff's head levelled at the foe.
+	var drawn_back: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, L_HANG, _e({B.CHEST: Vector3(0.0, -14.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.5, -0.2, 0.5), B.FOREARM_R: Vector3(0.2, 0.3, -0.9)}), _wpn(B.HAND_R, Vector3(0.0, 1.0, -0.3))])
+	var levelled: Dictionary = _p([LEGS_LUNGE, FEET_FLAT, _e({B.CHEST: Vector3(-6.0, 6.0, 0.0), B.SPINE: Vector3(-8.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.15, 0.25, -1.0), B.FOREARM_R: Vector3(0.05, 0.2, -1.0), B.UPPER_ARM_L: Vector3(-0.5, -0.4, 0.6),
+			B.FOREARM_L: Vector3(-0.4, -0.2, 0.7)}), _wpn(B.HAND_R, Vector3(0.0, 0.3, -1.0))])
+	_clip(book, "staff_light_bolt", 42, [[0, ready], [13, drawn_back], [18, levelled], [30, levelled], [42, ready]], _action(13, 18))
+	# The Resonant Pulse: the staff raised upright, then its butt-cap struck into the flagstones.
+	var raised: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, 0.03, 0.0)), _e({B.SPINE: Vector3(4.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.2, 0.9, -0.3), B.FOREARM_R: Vector3(0.0, 1.0, -0.1)}), _wpn(B.HAND_R, Vector3(0.0, 1.0, 0.0))])
+	var struck: Dictionary = _p([LEGS_WIDE, FEET_FLAT, _hips(Vector3(0.0, -0.14, 0.0)), {"scale": Vector3(1.04, 0.92, 1.04)}, _e({B.SPINE: Vector3(-12.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.2, -0.3, -0.9), B.FOREARM_R: Vector3(0.0, -0.6, -0.8)}), _wpn(B.HAND_R, Vector3(0.0, 1.0, 0.0))])
+	var rang: Dictionary = _p([struck, {"scale": Vector3.ONE}])
+	_clip(book, "staff_heavy_resonant_pulse", 69, [[0, ready], [18, raised], [24, raised], [30, struck], [33, struck], [45, rang], [69, ready]], _action(24, 33, {"grip": true}))
+	# R un-inked: the Reed-Sweep Gust, a wide low sweep.
+	_clip(book, "staff_flourish_r_reed_sweep", 60, [[0, ready], [12, low_right], [20, low_right], [26, _p([low_left, _spin(-40.0)])], [32, low_left],
+		[44, low_left], [60, ready]], _action(20, 32, {"grip": true}))
+	# L+R un-inked: the Lantern-Keeper's Chime, the staff raised high and rung into the ground.
+	var high_ring: Dictionary = _p([raised, ARMS_OVERHEAD, _e({B.SPINE: Vector3(10.0, 0.0, 0.0), B.CHEST: Vector3(8.0, 0.0, 0.0)}), _wpn(B.HAND_R, Vector3(0.0, 1.0, -0.1))])
+	_clip(book, "staff_ult_lr_lantern_chime", 80, [[0, ready], [16, raised], [30, high_ring], [38, struck], [44, struck], [60, rang], [80, ready]], _action(30, 44, {"grip": true}))
+
+
+# --- Scribe Cards ---------------------------------------------------------------
+
+static func _cards(book: Array[Array]) -> void:
+	var ready: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, R_SWORD, L_SHIELD])
+	var satchel: Dictionary = _p([ready, L_SATCHEL, _e({B.CHEST: Vector3(0.0, 10.0, 0.0)})])
+	var card_up: Dictionary = _p([ready, L_CARD_UP, _e({B.HEAD: Vector3(-6.0, 4.0, 0.0)})])
+	var touch: Dictionary = _p([ready, _e({B.CHEST: Vector3(0.0, -12.0, 0.0)}),
+		_aim({B.UPPER_ARM_L: Vector3(0.1, -0.35, -0.95), B.FOREARM_L: Vector3(0.75, 0.15, -0.65)})])
+	# Through the weapon, each slot its own delivery: a thrust, a low back-step sweep, an overhead chop, a wide arc.
+	var deliveries: Array[Dictionary] = [
+		_p([LEGS_LUNGE, FEET_FLAT, R_THRUST, L_SHIELD, _e({B.SPINE: Vector3(-12.0, 0.0, 0.0)})]),
+		_p([LEGS_WIDE, FEET_FLAT, L_SHIELD, _e({B.CHEST: Vector3(-6.0, 26.0, 0.0)}), _aim({B.UPPER_ARM_R: Vector3(-0.4, -0.6, -0.6), B.FOREARM_R: Vector3(-0.8, -0.4, -0.3)}),
+			_wpn(B.HAND_R, Vector3(-0.8, -0.3, 0.4))]),
+		_p([LEGS_LUNGE, FEET_FLAT, L_SHIELD, _e({B.SPINE: Vector3(-24.0, 0.0, 0.0)}), _aim({B.UPPER_ARM_R: Vector3(0.08, -0.4, -0.9), B.FOREARM_R: Vector3(0.0, -0.7, -0.7)}),
+			_wpn(B.HAND_R, Vector3(0.0, -0.8, -0.6))]),
+		_p([LEGS_WIDE, FEET_FLAT, L_SHIELD, _e({B.CHEST: Vector3(0.0, -34.0, 0.0)}), _aim({B.UPPER_ARM_R: Vector3(0.95, 0.1, -0.2), B.FOREARM_R: Vector3(0.9, 0.2, 0.3)}),
+			_wpn(B.HAND_R, Vector3(0.7, 0.2, 0.7))]),
+	]
+	var names: Array[String] = ["card_invoke_forward", "card_invoke_back", "card_invoke_r", "card_invoke_lr"]
+	for index: int in names.size():
+		_clip(book, names[index], 48, [[0, ready], [6, satchel], [12, card_up], [16, touch], [21, deliveries[index]], [26, deliveries[index]],
+			[38, deliveries[index]], [48, ready]], _action(16, 26))
+	# At the caster: the card raised overhead in both hands, then planted, arms flung wide.
+	var overhead: Dictionary = _p([ready, ARMS_OVERHEAD, _e({B.SPINE: Vector3(8.0, 0.0, 0.0)})])
+	var radiate: Dictionary = _p([LEGS_WIDE, FEET_FLAT, _hips(Vector3(0.0, -0.1, 0.0)), _e({B.SPINE: Vector3(-6.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.9, -0.4, -0.2), B.FOREARM_R: Vector3(0.95, -0.2, -0.2), B.UPPER_ARM_L: Vector3(-0.9, -0.4, -0.2),
+			B.FOREARM_L: Vector3(-0.95, -0.2, -0.2)}), _wpn(B.HAND_R, Vector3(0.6, 0.6, -0.4))])
+	_clip(book, "card_invoke_at_caster", 48, [[0, ready], [6, satchel], [14, overhead], [16, overhead], [20, radiate], [26, radiate], [38, radiate], [48, ready]],
+		_action(16, 26))
+
+
+# --- Defence --------------------------------------------------------------------
+
+static func _defence(book: Array[Array]) -> void:
+	var guard: Dictionary = _p([LEGS_WIDE, FEET_FLAT, _hips(Vector3(0.0, -0.12, 0.0)), _e({B.SPINE: Vector3(-8.0, 0.0, 0.0), B.CHEST: Vector3(-2.0, -10.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.35, -0.45, -0.6), B.FOREARM_R: Vector3(-0.45, 0.4, -0.75), B.UPPER_ARM_L: Vector3(-0.3, -0.45, -0.75),
+			B.FOREARM_L: Vector3(0.3, 0.25, -0.9)}), _wpn(B.HAND_R, Vector3(-0.6, 0.75, -0.1))])
+	var guard_breath: Dictionary = _p([guard, _hips(Vector3(0.0, -0.135, 0.0)), _e({B.CHEST: Vector3(0.0, -10.0, 0.0)})])
+	_clip(book, "guard_hold", 30, [[0, guard], [15, guard_breath], [30, guard]], {"loop": true, "grip": true})
+	# The Perfect Guard: the shoulder snaps forward in a deflecting bash.
+	var bash: Dictionary = _p([guard, _hips(Vector3(0.0, -0.14, 0.0)), _e({B.CHEST: Vector3(-6.0, 14.0, 0.0), B.SPINE: Vector3(-12.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_L: Vector3(-0.1, -0.1, -1.0), B.FOREARM_L: Vector3(0.05, 0.05, -1.0)}), _wpn(B.HAND_R, Vector3(-0.3, 0.5, -0.8))])
+	_clip(book, "perfect_guard_parry", 18, [[0, guard], [5, bash], [10, bash], [18, guard]])
+	# Shadow Sanctuary: crouched behind the planted guard, both hands bracing.
+	var ready: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, R_SWORD, L_SHIELD])
+	var brace: Dictionary = _p([LEGS_LUNGE, FEET_FLAT, _hips(Vector3(0.0, -0.2, 0.0)), _e({B.SPINE: Vector3(-16.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_L: Vector3(-0.2, -0.6, -0.8), B.FOREARM_L: Vector3(0.2, -0.3, -0.95), B.UPPER_ARM_R: Vector3(0.25, -0.55, -0.8),
+			B.FOREARM_R: Vector3(-0.3, -0.2, -0.95)}), _wpn(B.HAND_R, Vector3(-0.2, 0.8, -0.4))])
+	_clip(book, "shadow_sanctuary_brace", 48, [[0, ready], [12, brace], [16, brace], [26, brace], [40, brace], [48, ready]], _action(16, 26))
+	# The dodge roll: a tucked forward somersault, out into a low crouch (0.32 s untouchable).
+	var tuck: Dictionary = _p([LEGS_TUCK, _e({B.SPINE: Vector3(-30.0, 0.0, 0.0), B.CHEST: Vector3(-20.0, 0.0, 0.0), B.HEAD: Vector3(-20.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.25, -0.6, -0.75), B.FOREARM_R: Vector3(-0.25, 0.35, -0.85), B.UPPER_ARM_L: Vector3(-0.25, -0.6, -0.75),
+			B.FOREARM_L: Vector3(0.25, 0.35, -0.85)})])
+	var crouch: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, -0.16, 0.0)), _e({B.SPINE: Vector3(-14.0, 0.0, 0.0)}), R_HANG, L_HANG])
+	_clip(book, "dodge_roll_evade", 24, [[0, _p([crouch, _hips(Vector3(0.0, -0.1, 0.0))])], [2, _p([tuck, _hips(Vector3(0.0, -0.3, 0.0)), _e({B.HIPS: Vector3(-50.0, 0.0, 0.0)})])],
+		[7, _p([tuck, _hips(Vector3(0.0, -0.42, 0.0)), _e({B.HIPS: Vector3(-140.0, 0.0, 0.0)})])],
+		[12, _p([tuck, _hips(Vector3(0.0, -0.48, 0.0)), _e({B.HIPS: Vector3(-230.0, 0.0, 0.0)})])],
+		[17, _p([tuck, _hips(Vector3(0.0, -0.38, 0.0)), _e({B.HIPS: Vector3(-320.0, 0.0, 0.0)})])],
+		[19, _p([tuck, _hips(Vector3(0.0, -0.3, 0.0)), _e({B.HIPS: Vector3(-360.0, 0.0, 0.0)})])], [24, crouch]],
+		_action(2, 19, {"leg_space": "hips", "foot_ik": false}))
+
+
+# --- Stewardship ------------------------------------------------------------------
+
+static func _stewardship(book: Array[Array]) -> void:
+	var ready: Dictionary = _p([LEGS_READY, FEET_FLAT, TORSO_READY, R_SWORD, L_SHIELD])
+	# The Hearth-Rite Tuck: down on the right knee, the weapon across the left;
+	# a vellum card drawn from the satchel and swept along it; then up, the weapon hoisted high.
+	var kneel: Dictionary = _p([LEGS_KNEEL, _e({B.SPINE: Vector3(-8.0, 0.0, 0.0)}), L_SATCHEL,
+		_aim({B.UPPER_ARM_R: Vector3(0.25, -0.75, -0.5), B.FOREARM_R: Vector3(-0.55, -0.25, -0.8)}), _wpn(B.HAND_R, Vector3(-0.95, 0.05, -0.2))])
+	var card_drawn: Dictionary = _p([kneel, L_CARD_UP, _e({B.HEAD: Vector3(-10.0, -10.0, 0.0)})])
+	var at_base: Dictionary = _p([kneel, _aim({B.UPPER_ARM_L: Vector3(-0.1, -0.55, -0.8), B.FOREARM_L: Vector3(0.6, -0.3, -0.75)}), _e({B.HEAD: Vector3(-18.0, 10.0, 0.0)})])
+	var swept: Dictionary = _p([kneel, _aim({B.UPPER_ARM_L: Vector3(-0.55, -0.5, -0.65), B.FOREARM_L: Vector3(-0.6, -0.35, -0.7)}), _e({B.HEAD: Vector3(-18.0, 20.0, 0.0)})])
+	var rising: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, -0.15, 0.0)), R_SWORD, L_HANG])
+	var hoisted: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, 0.0, 0.0)), ARMS_OVERHEAD, _e({B.SPINE: Vector3(6.0, 0.0, 0.0)})])
+	_clip(book, "hearth_rite_tuck", 120, [[0, ready], [20, kneel], [40, card_drawn], [70, at_base], [95, swept], [108, rising], [120, hoisted]], {"foot_ik": false})
+	# The Truce-Sign Parley: weapon grounded, a hand on the heart, a warm bow, the Sign-leaf raised.
+	var calm: Dictionary = _p([LEGS_CALM, FEET_FLAT, TORSO_CALM, R_HANG, L_HANG])
+	var heart: Dictionary = _p([calm, _aim({B.UPPER_ARM_R: Vector3(0.3, -0.65, -0.55), B.FOREARM_R: Vector3(-0.85, 0.35, -0.3)}), _wpn(B.HAND_R, Vector3(0.1, -0.9, -0.3))])
+	var bow: Dictionary = _p([heart, _e({B.SPINE: Vector3(-30.0, 0.0, 0.0), B.CHEST: Vector3(-8.0, 0.0, 0.0), B.HEAD: Vector3(-10.0, 0.0, 0.0)})])
+	var leaf: Dictionary = _p([heart, _aim({B.UPPER_ARM_L: Vector3(-0.2, 1.0, -0.1), B.FOREARM_L: Vector3(-0.05, 1.0, 0.0)}),
+		_e({B.SPINE: Vector3(-4.0, 0.0, 0.0), B.HEAD: Vector3(8.0, 0.0, 0.0)})])
+	_clip(book, "truce_sign_parley", 48, [[0, ready], [10, heart], [20, bow], [30, heart], [38, leaf], [44, leaf], [48, calm]])
+	# The Bravery Counter: coiled, then a lunging Sign-charged strike into the Glimmer-Spot.
+	var coiled: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, -0.1, 0.0)), _e({B.CHEST: Vector3(0.0, -30.0, 0.0)}), L_SHIELD,
+		_aim({B.UPPER_ARM_R: Vector3(0.6, -0.2, 0.6), B.FOREARM_R: Vector3(0.3, 0.1, -0.95)}), _wpn(B.HAND_R, Vector3(0.0, 0.1, -1.0))])
+	var strike: Dictionary = _p([LEGS_LUNGE, FEET_FLAT, R_THRUST, L_SHIELD, _hips(Vector3(0.0, -0.2, 0.0)), {"scale": Vector3(1.05, 0.9, 1.05)},
+		_e({B.SPINE: Vector3(-16.0, 0.0, 0.0), B.CHEST: Vector3(-6.0, 12.0, 0.0)})])
+	_clip(book, "bravery_counter_strike", 40, [[0, coiled], [8, strike], [16, _p([strike, {"scale": Vector3.ONE}])], [28, ready], [40, ready]])
+
+
+# --- Reactions and overlays --------------------------------------------------------
+
+static func _reactions(book: Array[Array]) -> void:
+	var reel: Dictionary = _p([LEGS_READY, FEET_FLAT, _hips(Vector3(0.0, -0.04, 0.0)),
+		_e({B.SPINE: Vector3(12.0, 0.0, 4.0), B.CHEST: Vector3(8.0, 0.0, 0.0), B.HEAD: Vector3(14.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.6, -0.5, 0.5), B.FOREARM_R: Vector3(0.5, -0.3, 0.6), B.UPPER_ARM_L: Vector3(-0.6, -0.5, 0.5), B.FOREARM_L: Vector3(-0.5, -0.3, 0.6)})])
+	var sway: Dictionary = _p([reel, _e({B.SPINE: Vector3(8.0, 0.0, -4.0), B.HEAD: Vector3(10.0, 0.0, 6.0)})])
+	_clip(book, "stagger_reel", 24, [[0, reel], [12, sway], [24, reel]], {"loop": true})
+	var slumped: Dictionary = _p([LEGS_SLUMP, _e({B.SPINE: Vector3(-25.0, 0.0, 0.0), B.CHEST: Vector3(-15.0, 0.0, 0.0), B.HEAD: Vector3(-25.0, 0.0, 0.0)}),
+		_aim({B.UPPER_ARM_R: Vector3(0.25, -1.0, -0.25), B.FOREARM_R: Vector3(0.1, -1.0, -0.4), B.UPPER_ARM_L: Vector3(-0.25, -1.0, -0.25),
+			B.FOREARM_L: Vector3(-0.1, -1.0, -0.4)})])
+	var breath: Dictionary = _p([slumped, _e({B.CHEST: Vector3(-11.0, 0.0, 0.0)})])
+	_clip(book, "downed_slump", 60, [[0, slumped], [30, breath], [60, slumped]], {"loop": true, "foot_ik": false})
+	# The Overhead Pocket Blessing (right arm): to the coat pocket, up overhead with the card, back.
+	var pocket_r: Dictionary = _p([R_HANG, _aim({B.UPPER_ARM_R: Vector3(0.3, -0.8, -0.25), B.FOREARM_R: Vector3(-0.55, -0.4, -0.75)})])
+	var overhead: Dictionary = _p([_aim({B.UPPER_ARM_R: Vector3(0.12, 1.0, 0.05), B.FOREARM_R: Vector3(0.04, 1.0, 0.04)}), _wpn(B.HAND_R, Vector3(0.0, 0.0, -1.0))])
+	_clip(book, "overhead_pocket_blessing", 90, [[0, R_HANG], [15, pocket_r], [33, overhead], [63, overhead], [78, pocket_r], [90, R_HANG]])
+	# The Offhand Pocket-Draw (left arm): to the pocket, the card swept along the weapon, back.
+	var pocket_l: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(-0.3, -0.85, -0.3), B.FOREARM_L: Vector3(0.45, -0.45, -0.75)})])
+	var sweep: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(0.15, -0.05, -1.0), B.FOREARM_L: Vector3(0.75, 0.35, -0.55)})])
+	_clip(book, "offhand_pocket_draw", 25, [[0, L_SHIELD], [5, pocket_l], [18, sweep], [25, L_SHIELD]])

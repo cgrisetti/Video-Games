@@ -1,20 +1,23 @@
-## A hero's storybook puppet (07_EXPEDITION_HUD_AND_ART_GDD.md §4.1), built in code
-## from simple shapes in the storybook cel look, so every Fellowship reads at a
-## glance from the split-screen camera:
-##   the Shield-Sworn   a crested warden helm, broad iron-wood pauldrons, a heavy
-##                      cape and a banded oak-and-brass Greatshield
-##   the Wayfarers      a feathered ranger hood, a travel cloak that streams out
-##                      as they run, and a quiver (with a bow) or a Scribe Satchel
-##   the Lantern-Bearers a pointed scribe hat, a mantle and a swinging brass
-##                      Tether-Lantern that really glows
-## The tunic keeps the seat's colour; a tabard front and back (so it reads from
-## the camera behind you) shows the Secondary Calling's colour. Armor shows by
-## weight (a sash, a jerkin or wool-mantle, or a ring-coat), trimmed in the Calling's colour;
-## the weapon in the right hand comes from its item (PropBuilder).
+## A hero, drawn and moved (19_HERO_CHARACTER_ART_AND_ANIMATION_RIG_GDD.md):
+## the canonical 24-bone skeleton (HeroRigBuilder) wearing five continuous
+## skinned surfaces sculpted for their Calling and coat (HeroMeshAtelier) in the
+## Three-Value Harmony shader (storybook_hero_atelier.gdshader), its tiered
+## weapon in the MainHandSocket (the bow in the OffHandSocket), and its kit on
+## the BackStowSocket and HipSatchelSocket:
+##   the Shield-Sworn    a kettle-cap, broad warden pauldrons and a banded
+##                       oak-and-brass Greatshield on the off forearm
+##   the Wayfarers       a hood, asymmetric hewing pauldrons, a quiver for the
+##                       bow (and on a Stout Heart, a buckler-targe on the back)
+##   the Lantern-Bearers a feather-hat, a saffron stole and a brass
+##                       Tether-Lantern at the hip that really glows
+## Every hero carries the Scribe Vellum Satchel at the hip, its flap opening for
+## a card. Each tick HeroCombatAnimator poses the skeleton frame-locked to the
+## action, and StorybookKinematicsModifier3D layers the cloak, beard, lean,
+## foot-plant, grip, look-at and hit-stop on top. Out of a fight for 4 s the
+## weapon goes on the back.
 ##
-## Drop a model at res://assets/models/<class_id>.glb (say, a CC0 KayKit or
-## Quaternius character named shield_tank.glb) and it's used instead of the
-## procedural body.
+## Drop a model at res://assets/models/<class_id>.glb or
+## res://assets/models/heroes/<calling_id>.glb and it's shown instead.
 ##
 ## It also shows what a hero's power just did (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md
 ## §4.2, §6): R and L+R swell the weapon to 2x (2.4x) in its Sign's colour, or
@@ -25,7 +28,9 @@
 ## Hearth-Rite holds the weapon at 1.35x, glowing in its Place-Card's tint; a
 ## Sign-Flow cast flares it to 2.0x for 600 ms; a coat keeps a soft rim of its
 ## Sign. A Ward-Mantle wraps the shoulders in a ring of the Sign's crest, and a
-## Lantern-Tether circles the hero with three glowing motes.
+## Lantern-Tether circles the hero with three glowing motes. The coat's Sign
+## lights the hero's Maker-Seal veins; the solo Dread-Chill window frosts their
+## boots and The Lantern's Promise warms their rim.
 ##
 ## And the card choreography (14 GDD §8), played on every peer:
 ## - the Overhead Pocket Blessing (the Hearth-Rite): the weapon is lowered and
@@ -41,27 +46,11 @@ extends Node3D
 enum Choreography { NONE, OVERHEAD_BLESSING, POCKET_DRAW }
 
 const MODEL_FOLDER: String = "res://assets/models/"
-const SKIN_COLOR: Color = Color(0.96, 0.8, 0.66)
-const TROUSER_COLOR: Color = Color(0.3, 0.26, 0.24)
-const LEATHER_COLOR: Color = Color(0.45, 0.3, 0.18)
-const METAL_COLOR: Color = Color(0.66, 0.68, 0.72)
-const BRASS_COLOR: Color = Color(0.88, 0.68, 0.3)
-const OAK_COLOR: Color = Color(0.46, 0.31, 0.18)
-const EYE_COLOR: Color = Color(0.12, 0.1, 0.1)
 const LANTERN_GLOW: Color = Color(1.0, 0.78, 0.4)
 const VELLUM_COLOR: Color = Color(0.97, 0.93, 0.8)
-## Cape length per Fellowship: a heavy oilskin, a travel cloak, a short mantle.
-const CAPE_LENGTHS: Array[float] = [1.0, 0.9, 0.6]
-## The cape lifts back this far (radians) at full running speed...
-const CAPE_SWING: float = 0.95
-## ...hangs back with this tilt at rest (clear of the skirt), and follows this quickly.
-## Heroes face -Z, so a cape tilts back with a negative turn about X and an arm
-## reaches forward with a positive one.
-const CAPE_REST: float = 0.2
-const CAPE_SHARPNESS: float = 8.0
 const LANTERN_SWAY: float = 0.25
-## The tabard flaps hanging below the belt, front and back.
-const TABARD_SIZE: Vector3 = Vector3(0.3, 0.4, 0.03)
+## The five skinned surfaces' nodes, in HeroMeshAtelier.REGIONS order.
+const REGION_NODES: Array[String] = ["HeadHeritage", "TorsoCoat", "PauldronsTabard", "LimbsBoots", "BeltCloak"]
 ## Martial Imbuement's silhouette (11 GDD §4.2, Layer 2): R swells the weapon to
 ## 2x, L+R to 2.4x, over the 450 ms the skill channels, rimmed in its Sign's
 ## colour (or warm ivory-gold un-inked). It swells in the first 15% and
@@ -73,8 +62,6 @@ const CHANNEL_RISE: float = 0.15
 const CHANNEL_FALL: float = 0.8
 const CHANNEL_GLOW: float = 1.6
 const UNINKED_CHANNEL_COLOR: Color = Color(1.0, 0.9, 0.62)
-## A bow swells from its grip in the left hand.
-const BOW_GRIP: Vector3 = Vector3(-0.5, 1.15, -0.46)
 ## The Flow-Link Pulse ring at the waist.
 const FLOW_RING_TIME: float = 0.35
 const FLOW_RING_RADIUS: float = 1.1
@@ -84,6 +71,7 @@ const PENNANT_TIME: float = 3.0
 const PENNANT_HEIGHT: float = 2.4
 const PENNANT_UNFURL: float = 0.4
 const PENNANT_COLOR: Color = Color(0.98, 0.72, 0.18)
+const OAK_COLOR: Color = Color(0.46, 0.31, 0.18)
 ## Sign-Flow (SignFlowComponent.CoatLook): the tuck's steady size and glow, the flare's peak, the coat's soft rim.
 const TRAIL_TUCK_SCALE: float = 1.35
 const TRAIL_TUCK_GLOW: float = 0.6
@@ -104,37 +92,61 @@ const CARD_SIZE: Vector3 = Vector3(0.18, 0.26, 0.01)
 const CARD_GLOW: float = 3.2
 ## A rim of the Sign's colour round the card, so it reads from the split-screen camera.
 const CARD_HALO: float = 0.08
-## The card sits this far past the hand, along the arm.
-const CARD_IN_HAND: float = 0.78
+## The card sits this far past the wrist, along the hand.
+const CARD_IN_HAND: float = 0.17
 const BLESSING_TIME: float = 1.5
 const POCKET_DRAW_TIME: float = 0.42
 ## The ink column pours from here (the 3.2 m sightline cap stays clear above it) to the ground.
 const INK_COLUMN_TOP: float = 2.5
 const INK_COLUMN_RADIUS: float = 0.55
-## Arm poses as (x, z) rotations: at the coat pocket, overhead, and sweeping the blade.
-const RIGHT_POCKET_POSE: Vector2 = Vector2(-0.3, 0.32)
-const RIGHT_OVERHEAD_POSE: Vector2 = Vector2(PI, 0.08)
-const LEFT_POCKET_POSE: Vector2 = Vector2(-0.25, -0.35)
-const LEFT_SWEEP_FROM: Vector2 = Vector2(0.5, -0.2)
-const LEFT_SWEEP_TO: Vector2 = Vector2(1.35, 0.7)
+## The vein glow of each Sign-Flow look on the hero's Maker-Seal veins (0 to 2.4).
+const TUCK_VEIN_GLOW: float = 1.2
+const COAT_VEIN_GLOW: float = 0.8
+const FLARE_VEIN_GLOW: float = 2.4
+## A two-hander's off-hand grip slides from high on the haft (ready, wind-up)
+## down beside the right hand as the blow lands (§3.2).
+const GRIP_HIGH: Dictionary[int, float] = {EquipmentItemResource.WeaponType.HEAVY_AXE: 0.62, EquipmentItemResource.WeaponType.STAFF: 0.46}
+const GRIP_LOW: Dictionary[int, float] = {EquipmentItemResource.WeaponType.HEAVY_AXE: 0.2, EquipmentItemResource.WeaponType.STAFF: 0.28}
+## A weapon stowed on the back: across it diagonally, its edge out.
+const STOW_BASIS: Basis = Basis(Vector3(-0.83, 0.56, 0.0), Vector3(0.56, 0.83, 0.0), Vector3(0.0, 0.0, -1.0))
+## The Sign-stone's float and turn.
+const STONE_BOB: float = 0.012
+const STONE_SPIN: float = 2.0
+## Feet look for the ground this far above and below them.
+const GROUND_PROBE_UP: float = 0.5
+const GROUND_PROBE_DOWN: float = 0.9
+const GROUND_MAX_STEP: float = 0.4
 
 var actor: ActorBase
-## Every cel material on the puppet, lit together by a hit flash.
+## Every material on the hero, lit together by a hit flash.
 var materials: Array[Material] = []
-## A dropped-in .glb model in use instead of the procedural body, if there is one.
+## A dropped-in .glb model in use instead of the sculpted hero, if there is one.
 var model: Node3D
+## The sculpted hero: its look, skeleton, surfaces, motion and animation.
+var appearance: HeroAppearanceResource
+var skeleton: Skeleton3D
+var body_material: ShaderMaterial
+var surfaces: Array[MeshInstance3D] = []
+var kinematics: StorybookKinematicsModifier3D
+var animator: HeroCombatAnimator
+## What the sculpt put on this hero, by part (headgear, beard, pauldrons, coat, props...).
+var features: Dictionary = {}
 
-var _cape_pivot: Node3D
 var _lantern: Node3D
+var _satchel_flap: Node3D
 var _age: float = 0.0
-## The weapon in hand (ActorBase's prop) and where it swells from.
+## The weapon in hand (ActorBase's prop) and its mount on the hand socket.
 var _weapon: Node3D
+var _weapon_item: EquipmentItemResource
+var _weapon_mount: Node3D
 var _weapon_pivot: Vector3 = Vector3.ZERO
 var _weapon_materials: Array[Material] = []
+var _sign_stone: MeshInstance3D
 var _channel_action: StringName = &""
 var _channel_left: float = 0.0
 var _channel_peak: float = 1.0
 var _channel_color: Color = UNINKED_CHANNEL_COLOR
+var _channel_lit: float = 0.0
 var _pennant: Node3D
 var _coat_look: int = SignFlowComponent.CoatLook.CLEAR
 var _coat_ink: Color = UNINKED_CHANNEL_COLOR
@@ -155,6 +167,12 @@ var _ink_material: StandardMaterial3D
 ## How high the card's top edge rose in the last choreography (metres above the feet).
 var _card_peak: float = 0.0
 var _played: Dictionary[int, int] = {}
+var _stowed: bool = false
+var _grip_slide: float = 0.0
+var _frost: float = 0.0
+var _warmth: float = 0.0
+var _hit_stop_left: float = 0.0
+var _hit_stop_total: float = 0.0
 
 
 static func model_path(id: StringName) -> String:
@@ -183,52 +201,384 @@ func _ready() -> void:
 	rebuild()
 
 
-## Builds the puppet for the actor's current loadout (again after a Scribe Desk swap or a new Calling).
+## Whether this hero is the sculpted 24-bone rig (not a dropped-in model).
+func has_rig() -> bool:
+	return is_instance_valid(skeleton)
+
+
+## Builds the hero for the actor's current loadout (again after a Scribe Desk swap or a new Calling).
 func rebuild() -> void:
 	for child: Node in get_children():
 		remove_child(child)
 		child.queue_free()
 	materials.clear()
-	_cape_pivot = null
+	surfaces.clear()
+	features.clear()
+	skeleton = null
+	kinematics = null
+	animator = null
 	_lantern = null
+	_satchel_flap = null
 	_card = null
 	_ink_column = null
+	_weapon = null
+	_weapon_mount = null
+	_sign_stone = null
+	_stowed = false
 	_choreo = Choreography.NONE
-	model = load_model(actor.loadout.class_id)
+	var loadout: ClassLoadoutResource = actor.loadout
+	var column: int = Callings.resolve(loadout.class_id, loadout.calling)
+	appearance = ArsenalCatalog.current.hero_appearance_for_seat(loadout.class_id, column, actor.party_slot)
+	model = load_model(loadout.class_id)
+	if model == null:
+		model = HeroMeshAtelier.hero_override(appearance)
 	if model != null:
 		add_child(model)
 		return
-	var loadout: ClassLoadoutResource = actor.loadout
 	var row: int = Callings.fellowship_row(loadout.class_id)
 	# Trim and tabard in the Secondary Calling's colour (its SecondaryCallingResource).
-	var calling: SecondaryCallingResource = Callings.secondary(Callings.resolve(loadout.class_id, loadout.calling))
+	var calling: SecondaryCallingResource = Callings.secondary(column)
 	var trim: Color = calling.trim_color if calling != null else Callings.UNSWORN_TRIM
-	var body: Color = loadout.body_color
-	var weight: EquipmentItemResource.ArmorWeight = loadout.armor.armor_weight if loadout.armor != null else EquipmentItemResource.ArmorWeight.MEDIUM
-	_build_body(body)
-	_build_tabard(body, trim)
-	_build_armor(weight, body, trim)
-	_build_head(row, body, trim)
-	_build_cape(row, body, trim)
-	_build_off_hand(row, loadout, trim)
+	var coat: StringName = loadout.armor.item_id if loadout.armor != null else &"ranger_leather"
+	skeleton = HeroRigBuilder.build_hero_skeleton()
+	add_child(skeleton)
+	body_material = HeroMeshAtelier.hero_material(appearance, trim)
+	materials.append(body_material)
+	var meshes: Array[ArrayMesh] = HeroMeshAtelier.build_hero_surfaces(appearance, coat)
+	for index: int in meshes.size():
+		var surface: MeshInstance3D = MeshInstance3D.new()
+		surface.name = REGION_NODES[index]
+		surface.mesh = meshes[index]
+		surface.skin = HeroRigBuilder.skin_of(skeleton)
+		surface.material_override = body_material
+		skeleton.add_child(surface)
+		surface.skeleton = surface.get_path_to(skeleton)
+		surfaces.append(surface)
+	_build_kit(row, loadout)
+	kinematics = StorybookKinematicsModifier3D.new()
+	kinematics.name = "StorybookKinematics"
+	skeleton.add_child(kinematics)
+	animator = HeroCombatAnimator.new()
+	animator.setup(actor, skeleton)
+	add_child(animator)
+	features = {
+		"calling": appearance.calling_id, "headgear": appearance.headgear_style, "headgear_crest": appearance.headgear_crest,
+		"beard": appearance.beard_style, "left_pauldron": appearance.left_pauldron_style, "right_pauldron": appearance.right_pauldron_style,
+		"belt_trinket": appearance.belt_trinket_id, "back_buckler_targe": appearance.back_buckler_targe, "split_hewing_apron": appearance.split_hewing_apron,
+		"coat": coat, "dye": appearance.coat_dye_preset, "trim": trim, "tunic": appearance.value_2_tunic_color, "rim": appearance.role_rim_color,
+	}
 
 
-## The weapon this hero holds (built by ActorBase from its item), so R and L+R can swell it.
+## The Fellowship's kit on the sockets: the satchel, an off-hand piece, what's on the back.
+func _build_kit(row: int, loadout: ClassLoadoutResource) -> void:
+	var satchel: Node3D = HeroMeshAtelier.build_scribe_satchel(body_material)
+	satchel.position = Vector3(-0.215, -0.1, 0.07)
+	socket(HeroRigBuilder.HIP_SATCHEL_SOCKET).add_child(satchel)
+	_satchel_flap = satchel.get_node(^"Flap") as Node3D
+	var weapon_type: int = loadout.weapon.weapon_type if loadout.weapon != null else EquipmentItemResource.WeaponType.LIGHT_SWORD
+	var free_off_hand: bool = weapon_type == EquipmentItemResource.WeaponType.LIGHT_SWORD
+	var back: Node3D = socket(HeroRigBuilder.BACK_STOW_SOCKET)
+	var quivered: bool = loadout.is_ranged() and weapon_type == EquipmentItemResource.WeaponType.BOW
+	match row:
+		0:
+			# The banded oak-and-brass Greatshield on the off forearm, or on the back for a two-hander.
+			var shield: Node3D = HeroMeshAtelier.build_greatshield(body_material)
+			if free_off_hand:
+				shield.position = Vector3(-0.075, -0.12, 0.0)
+				socket(HeroRigBuilder.OFF_HAND_SOCKET).add_child(shield)
+			else:
+				shield.transform = Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(0.0, -0.06, 0.27))
+				back.add_child(shield)
+		2:
+			# The brass Tether-Lantern hanging at the left hip, really glowing.
+			_lantern = HeroMeshAtelier.build_tether_lantern(body_material, LANTERN_GLOW)
+			_lantern.position = Vector3(-0.235, -0.04, -0.1)
+			socket(HeroRigBuilder.HIP_SATCHEL_SOCKET).add_child(_lantern)
+	if quivered:
+		var quiver: Node3D = HeroMeshAtelier.build_quiver(body_material)
+		quiver.transform = Transform3D(Basis(Vector3.BACK, -0.35), Vector3(0.12, 0.02, 0.21))
+		back.add_child(quiver)
+	if appearance.back_buckler_targe and row != 0:
+		var targe: Node3D = HeroMeshAtelier.build_buckler_targe(body_material)
+		targe.position = Vector3(-0.05 if quivered else 0.0, -0.02, 0.215)
+		back.add_child(targe)
+
+
+## One of the skeleton's four sockets by name (HeroRigBuilder.MAIN_HAND_SOCKET...).
+func socket(socket_name: StringName) -> BoneAttachment3D:
+	return HeroRigBuilder.socket(skeleton, socket_name) if is_instance_valid(skeleton) else null
+
+
+## Builds the weapon this hero holds, sculpted at its tier, and mounts it in
+## hand (the bow in the off hand). Returns it, or null without a rig.
+func mount_weapon(item: EquipmentItemResource) -> Node3D:
+	if not has_rig() or item == null:
+		return null
+	var weapon: Node3D = HeroMeshAtelier.build_tiered_weapon(item.weapon_type, int(item.equipment_tier), item.item_id)
+	_weapon_mount = Node3D.new()
+	_weapon_mount.name = "WeaponMount"
+	_weapon_mount.add_child(weapon)
+	_hold(item)
+	set_weapon(weapon, item)
+	return weapon
+
+
+func _hold(item: EquipmentItemResource) -> void:
+	var bow: bool = item.weapon_type == EquipmentItemResource.WeaponType.BOW
+	var hand: BoneAttachment3D = socket(HeroRigBuilder.OFF_HAND_SOCKET if bow else HeroRigBuilder.MAIN_HAND_SOCKET)
+	if _weapon_mount.get_parent() != null:
+		_weapon_mount.get_parent().remove_child(_weapon_mount)
+	hand.add_child(_weapon_mount)
+	_weapon_mount.transform = HeroMeshAtelier.GRIP_MOUNT
+	_stowed = false
+
+
+## Out of a fight a while, the weapon goes on the back; any action draws it again.
+func _stow(stowed: bool) -> void:
+	if stowed == _stowed or not is_instance_valid(_weapon_mount) or _weapon_item == null:
+		return
+	if not stowed:
+		_hold(_weapon_item)
+		return
+	_weapon_mount.get_parent().remove_child(_weapon_mount)
+	socket(HeroRigBuilder.BACK_STOW_SOCKET).add_child(_weapon_mount)
+	var half: float = HeroMeshAtelier.weapon_length(_weapon_item.weapon_type) * 0.5
+	_weapon_mount.transform = Transform3D(STOW_BASIS, -STOW_BASIS.y * half + Vector3(0.0, 0.04, 0.27))
+	_stowed = true
+
+
+## Whether the weapon is on the back right now.
+func is_weapon_stowed() -> bool:
+	return _stowed
+
+
+## The weapon this hero holds (built here or by ActorBase from its item), so R and L+R can swell it.
 func set_weapon(weapon_root: Node3D, item: EquipmentItemResource) -> void:
 	_weapon = weapon_root
-	_weapon_pivot = BOW_GRIP if item.weapon_type == EquipmentItemResource.WeaponType.BOW else item.trail_base
+	_weapon_item = item
+	# A sculpted weapon's grip is its origin; a part-built prop swells about its trail base (or the bow's grip).
+	_weapon_pivot = Vector3.ZERO if has_rig() else item.trail_base
 	_weapon_materials.clear()
 	_channel_left = 0.0
+	_sign_stone = weapon_root.find_child("SignStoneCore", true, false) as MeshInstance3D
 	for mesh: Node in weapon_root.find_children("*", "MeshInstance3D", true, false):
-		var primitive: PrimitiveMesh = (mesh as MeshInstance3D).mesh as PrimitiveMesh
-		if primitive != null and primitive.material != null:
-			_weapon_materials.append(primitive.material)
+		var shape: MeshInstance3D = mesh as MeshInstance3D
+		var material: Material = shape.material_override
+		if material == null and shape.mesh is PrimitiveMesh:
+			material = (shape.mesh as PrimitiveMesh).material
+		if material is ShaderMaterial:
+			_weapon_materials.append(material)
 
 
 ## How big the weapon is drawn right now (2.0 at the height of an R channel).
 func weapon_scale() -> float:
 	return _weapon.scale.x if is_instance_valid(_weapon) else 1.0
 
+
+## The world positions of the weapon's trail base and tip (empty without them).
+func trail_points() -> PackedVector3Array:
+	if not is_instance_valid(_weapon):
+		return PackedVector3Array()
+	var base: Node3D = _weapon.get_node_or_null(^"TrailBase") as Node3D
+	var tip: Node3D = _weapon.get_node_or_null(^"TrailTip") as Node3D
+	if base == null or tip == null:
+		return PackedVector3Array()
+	return PackedVector3Array([base.global_position, tip.global_position])
+
+
+## The weapon root (for tests and the trail).
+func weapon() -> Node3D:
+	return _weapon if is_instance_valid(_weapon) else null
+
+
+# --- Each tick ------------------------------------------------------------------
+
+## Poses the hero for this tick: the animator's frame-locked clip, then the
+## modifier's springs, IK and hit-stop, then the kit and the shader's play
+## state. `moved` is the hero's velocity (worked out from its motion, so
+## networked copies move too); `frozen` holds the clips still through a hit-stop.
+func update_rig(delta: float, moved: Vector3, frozen: bool = false) -> void:
+	_age += delta
+	if _lantern != null:
+		_lantern.rotation.z = sin(_age * 2.4) * LANTERN_SWAY * 0.4
+		_lantern.rotation.x = sin(_age * 1.7) * LANTERN_SWAY * 0.3
+	if not has_rig():
+		return
+	_hit_stop_left = maxf(0.0, _hit_stop_left - delta)
+	if frozen and _hit_stop_left <= 0.0:
+		_hit_stop_left = delta
+	animator.update(delta, frozen)
+	_stow(animator.calm)
+	_feed_kinematics(delta, moved, frozen)
+	skeleton.advance(delta)
+	_update_kit(delta)
+	_update_shader_state(delta)
+
+
+func _feed_kinematics(delta: float, moved: Vector3, frozen: bool) -> void:
+	var k: StorybookKinematicsModifier3D = kinematics
+	k.velocity = Vector3.ZERO if frozen else moved
+	k.move_speed = actor.loadout.stats.move_speed
+	k.stamina_ratio = actor.stats.stamina / maxf(actor.stats.stats.max_stamina, 1.0) if actor.stats != null else 1.0
+	k.winded = actor.is_multiplayer_authority() and actor.action_queue != null and actor.action_queue.winded
+	k.hit_stop_left = _hit_stop_left if frozen else 0.0
+	k.hit_stop_duration = _hit_stop_total
+	k.foot_ik_weight = animator.foot_ik_weight
+	var whole_body: bool = animator.clip == &"dodge_roll_evade" or animator.clip == &"hearth_rite_tuck" or animator.clip == &"downed_slump"
+	k.lean_weight = 0.0 if whole_body else 1.0
+	k.grip_weight = animator.grip_weight
+	k.draw_weight = animator.draw_weight
+	if WorldAtmosphereDirector.current != null:
+		k.wind = WorldAtmosphereDirector.current.wind
+	# The off hand's grip on a two-hander slides down the haft as the blow lands.
+	var grip: Node3D = _weapon.get_node_or_null(^"HaftGripMarker") as Node3D if is_instance_valid(_weapon) else null
+	if grip != null and _weapon_item != null:
+		var landing: bool = actor.current_phase() == ActionQueueComponent.Phase.ACTIVE
+		_grip_slide = move_toward(_grip_slide, 1.0 if landing else 0.0, delta * 8.0)
+		grip.position.y = lerpf(GRIP_HIGH.get(_weapon_item.weapon_type, 0.5), GRIP_LOW.get(_weapon_item.weapon_type, 0.3), _grip_slide)
+		k.grip_in_hand = _weapon_mount.transform * _weapon.transform * grip.transform
+	else:
+		k.grip_weight = 0.0
+	_probe_ground(k)
+	k.has_look_target = false
+	if actor.current_action() == null and not frozen:
+		var target: Vector3 = _look_target()
+		if target != Vector3.INF:
+			k.has_look_target = true
+			k.look_target = target
+
+
+## Raycasts under each foot for the ground's height there, relative to the hero's feet.
+func _probe_ground(k: StorybookKinematicsModifier3D) -> void:
+	k.ground_left = 0.0
+	k.ground_right = 0.0
+	k.grounded = actor.is_on_floor() or not actor.is_multiplayer_authority()
+	if not k.grounded or not actor.is_inside_tree():
+		return
+	var space: PhysicsDirectSpaceState3D = actor.get_world_3d().direct_space_state
+	var origin_y: float = actor.global_position.y
+	var heights: Array[float] = []
+	for bone: int in [HeroRigBuilder.Bone.FOOT_L, HeroRigBuilder.Bone.FOOT_R]:
+		var foot: Vector3 = skeleton.global_transform * skeleton.get_bone_global_pose(bone).origin
+		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(
+			Vector3(foot.x, origin_y + GROUND_PROBE_UP, foot.z), Vector3(foot.x, origin_y - GROUND_PROBE_DOWN, foot.z),
+			ActorBase.LAYER_WORLD | ActorBase.LAYER_LOW_SCENERY)
+		var hit: Dictionary = space.intersect_ray(query)
+		heights.append(clampf((hit["position"] as Vector3).y - origin_y, -GROUND_MAX_STEP, GROUND_MAX_STEP) if not hit.is_empty() else 0.0)
+	k.ground_left = heights[0]
+	k.ground_right = heights[1]
+
+
+## A curious hob to parley with or an open Glimmer-Spot within 8 m (Vector3.INF for none).
+func _look_target() -> Vector3:
+	var best: Vector3 = Vector3.INF
+	var nearest: float = StorybookKinematicsModifier3D.LOOK_RANGE
+	for foe: ActorBase in CombatDirector.current.enemies():
+		var curious: bool = foe.spectrum != null and foe.spectrum.is_parleyable()
+		var glimmering: bool = foe.glimmer != null and foe.glimmer.is_open()
+		if not curious and not glimmering:
+			continue
+		var distance: float = foe.global_position.distance_to(actor.global_position)
+		if distance < nearest:
+			nearest = distance
+			best = foe.global_position + Vector3.UP * foe.body_height() * 0.75
+	return best
+
+
+## The kit's motion: the bowstring follows the draw hand, the Sign-stone floats
+## and turns, the satchel's flap opens for a card.
+func _update_kit(delta: float) -> void:
+	if is_instance_valid(_weapon) and _weapon_item != null and _weapon_item.weapon_type == EquipmentItemResource.WeaponType.BOW:
+		var mid: Node3D = _weapon.get_node_or_null(^"BowString/BowStringMid") as Node3D
+		if mid != null:
+			var rest: Vector3 = Vector3(0.0, 0.0, 0.12)
+			var hand: Vector3 = _weapon.get_node(^"BowString").to_local(socket(HeroRigBuilder.MAIN_HAND_SOCKET).global_position)
+			mid.position = rest.lerp(hand, animator.draw_weight)
+			HeroMeshAtelier.update_bowstring(_weapon)
+	if is_instance_valid(_sign_stone):
+		var spot: Vector3 = _sign_stone.get_meta(&"rest_position", _sign_stone.position)
+		_sign_stone.position = spot + Vector3(0.0, sin(_age * 2.6) * STONE_BOB, 0.0)
+		_sign_stone.rotate_y(STONE_SPIN * delta)
+	if _satchel_flap != null:
+		var opening: bool = animator.clip.begins_with("card_invoke") or animator.clip == &"hearth_rite_tuck" or animator.overlay_clip() != &""
+		_satchel_flap.rotation.z = move_toward(_satchel_flap.rotation.z, -1.1 if opening else 0.0, delta * 8.0)
+
+
+## The shader's play state: the Sign veins, the solo Dread-Chill frost and The Lantern's Promise warmth.
+func _update_shader_state(delta: float) -> void:
+	var vein_color: Color = _coat_ink
+	var vein: float = 0.0
+	match sign_coat_look():
+		SignFlowComponent.CoatLook.TRAIL_TUCK:
+			vein_color = _coat_ambient
+			vein = TUCK_VEIN_GLOW
+		SignFlowComponent.CoatLook.COAT:
+			vein = COAT_VEIN_GLOW
+	if _flare_left > 0.0:
+		vein_color = _flare_ink
+		vein = FLARE_VEIN_GLOW
+	if _channel_lit > vein / FLARE_VEIN_GLOW:
+		vein_color = _channel_color
+		vein = _channel_lit * FLARE_VEIN_GLOW
+	var frost: bool = false
+	var warm: bool = false
+	var flow: SignFlowComponent = actor.sign_flow
+	if flow != null and SignFlowComponent.enabled and flow.is_flow_window_open():
+		var frames: int = flow.flow_window_frames()
+		frost = frames == SignFlowComponent.DREAD_CHILL_WINDOW_FRAMES
+		warm = frames == SignFlowComponent.LANTERNS_PROMISE_WINDOW_FRAMES
+	_frost = move_toward(_frost, 1.0 if frost else 0.0, delta * 6.0)
+	_warmth = move_toward(_warmth, 1.0 if warm else 0.0, delta * 6.0)
+	body_material.set_shader_parameter(&"active_sign_color", vein_color)
+	body_material.set_shader_parameter(&"sign_emission_strength", vein)
+	body_material.set_shader_parameter(&"dread_chill_frost", _frost)
+	body_material.set_shader_parameter(&"lantern_promise_warmth", _warmth)
+	if is_instance_valid(_sign_stone):
+		var primitive: PrimitiveMesh = _sign_stone.mesh as PrimitiveMesh
+		var stone: StandardMaterial3D = primitive.material as StandardMaterial3D if primitive != null else null
+		if stone != null:
+			var tint: Color = vein_color if vein > 0.0 else ArsenalCatalog.SIGN_STONE_COLOR
+			stone.albedo_color = tint
+			stone.emission = tint
+
+
+## The shader's state, for checks: the frost, the warmth and the vein glow.
+func shader_state() -> Dictionary:
+	if body_material == null:
+		return {}
+	return {"frost": float(body_material.get_shader_parameter(&"dread_chill_frost")), "warmth": float(body_material.get_shader_parameter(&"lantern_promise_warmth")),
+		"sign": float(body_material.get_shader_parameter(&"sign_emission_strength"))}
+
+
+## A hit-stop just froze this hero for `duration` seconds (the tremor and squash play through it).
+func note_hit_stop(duration: float) -> void:
+	if _hit_stop_left <= 0.0:
+		_hit_stop_total = 0.0
+	_hit_stop_left = maxf(_hit_stop_left, duration)
+	_hit_stop_total = maxf(_hit_stop_total, duration)
+
+
+# --- One-shots ------------------------------------------------------------------
+
+## The Truce-Sign bow when a curious hob this hero greeted starts to dance.
+func play_truce_sign_parley() -> void:
+	if has_rig():
+		animator.play_one_shot(&"truce_sign_parley")
+
+
+## The lunging counter when this hero lands a Bravery Counter on a Glimmer-Spot.
+func play_bravery_counter() -> void:
+	if has_rig():
+		animator.play_one_shot(&"bravery_counter_strike")
+
+
+## The deflecting bash of a Perfect Guard.
+func play_perfect_guard_parry() -> void:
+	if has_rig():
+		animator.play_one_shot(&"perfect_guard_parry")
+
+
+# --- Martial Imbuement and Sign-Flow ---------------------------------------------
 
 ## Starts the swell when an R or L+R begins, and plays it out (every peer calls
 ## this each frame with the action the hero is doing).
@@ -248,6 +598,7 @@ func update_channel(delta: float, action: CombatActionResource) -> void:
 		_channel_left = maxf(0.0, _channel_left - delta)
 		var t: float = 1.0 - _channel_left / CHANNEL_TIME
 		swell = smoothstep(0.0, CHANNEL_RISE, t) * (1.0 - smoothstep(CHANNEL_FALL, 1.0, t))
+	_channel_lit = swell
 	var size: float = lerpf(1.0, _channel_peak, swell)
 	var tint: Color = _channel_color
 	var lit: float = swell
@@ -368,7 +719,7 @@ func choreography() -> Choreography:
 	return _choreo
 
 
-## How many times a choreography has played on this puppet.
+## How many times a choreography has played on this hero.
 func choreography_count(kind: Choreography) -> int:
 	return _played.get(kind, 0)
 
@@ -394,22 +745,22 @@ func is_card_out() -> bool:
 
 
 func _start_choreography(kind: Choreography, color: Color) -> void:
-	var right: Node3D = get_node_or_null(^"RightArm") as Node3D
-	if right == null:
-		return # A dropped-in model has no arms to play it with.
+	if not has_rig():
+		return # A dropped-in model has no hands to play it with.
 	_end_choreography()
 	_choreo = kind
 	_choreo_time = 0.0
 	_choreo_color = color
 	_card_peak = 0.0
 	_played[kind] = _played.get(kind, 0) + 1
-	var hand: Node3D = right if kind == Choreography.OVERHEAD_BLESSING else get_node_or_null(^"LeftArm") as Node3D
+	var hand: BoneAttachment3D = socket(HeroRigBuilder.MAIN_HAND_SOCKET if kind == Choreography.OVERHEAD_BLESSING else HeroRigBuilder.OFF_HAND_SOCKET)
+	animator.play_overlay(&"overhead_pocket_blessing" if kind == Choreography.OVERHEAD_BLESSING else &"offhand_pocket_draw")
 	if _card_material == null:
 		_card_material = StorybookMaterial.glowing(VELLUM_COLOR, CARD_GLOW)
 		_card_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_card_material.albedo_color = VELLUM_COLOR
 	_card_material.emission = VELLUM_COLOR.lerp(color, 0.25)
-	_card = ShapeKit.no_shadow(ShapeKit.box("VellumCard", CARD_SIZE, Vector3(0.0, -CARD_IN_HAND, 0.0), _card_material))
+	_card = ShapeKit.no_shadow(ShapeKit.box("VellumCard", CARD_SIZE, Vector3(0.0, CARD_IN_HAND, 0.0), _card_material))
 	var halo: StandardMaterial3D = StorybookMaterial.glowing(color, 2.2)
 	halo.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	halo.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -432,7 +783,8 @@ func _start_choreography(kind: Choreography, color: Color) -> void:
 		add_child(_ink_column)
 
 
-## Plays the choreography out: arm poses, the card and the ink column, keyed on its clock.
+## Plays the choreography out: the card and the ink column, keyed on its clock
+## (the arm itself moves on the animator's overlay clip).
 func _update_choreography(delta: float) -> void:
 	if _choreo == Choreography.NONE:
 		return
@@ -451,20 +803,6 @@ func _update_choreography(delta: float) -> void:
 ## 0-0.25 s to the pocket as the weapon is put away; up overhead with the card
 ## by 0.55; ink pours down to 1.05; back to the pocket by 1.3; the weapon drawn by 1.5.
 func _play_blessing(t: float) -> void:
-	var right: Node3D = get_node(^"RightArm") as Node3D
-	var rest: Vector2 = _arm_rest(true)
-	var pose: Vector2 = rest
-	if t < 0.25:
-		pose = rest.lerp(RIGHT_POCKET_POSE, smoothstep(0.0, 0.25, t))
-	elif t < 0.55:
-		pose = RIGHT_POCKET_POSE.lerp(RIGHT_OVERHEAD_POSE, smoothstep(0.25, 0.55, t))
-	elif t < 1.05:
-		pose = RIGHT_OVERHEAD_POSE
-	elif t < 1.3:
-		pose = RIGHT_OVERHEAD_POSE.lerp(RIGHT_POCKET_POSE, smoothstep(1.05, 1.3, t))
-	else:
-		pose = RIGHT_POCKET_POSE.lerp(rest, smoothstep(1.3, BLESSING_TIME, t))
-	right.rotation = Vector3(pose.x, 0.0, pose.y)
 	_card.visible = t >= 0.25 and t < 1.25
 	if is_instance_valid(_weapon):
 		_weapon.visible = t < 0.12 or t >= 1.3
@@ -482,30 +820,12 @@ func _play_blessing(t: float) -> void:
 ## 0-0.08 s the off hand dips to the pocket; to 0.3 it sweeps the card along
 ## the weapon as it ignites; to 0.42 it's back, the card tucked away.
 func _play_pocket_draw(t: float) -> void:
-	var left: Node3D = get_node_or_null(^"LeftArm") as Node3D
-	if left == null:
-		return
-	var rest: Vector2 = _arm_rest(false)
-	var pose: Vector2 = rest
-	if t < 0.08:
-		pose = rest.lerp(LEFT_POCKET_POSE, smoothstep(0.0, 0.08, t))
-	elif t < 0.3:
-		pose = LEFT_SWEEP_FROM.lerp(LEFT_SWEEP_TO, smoothstep(0.08, 0.3, t))
-	else:
-		pose = LEFT_SWEEP_TO.lerp(rest, smoothstep(0.3, POCKET_DRAW_TIME, t))
-	left.rotation = Vector3(pose.x, 0.0, pose.y)
 	_card.visible = t >= 0.08 and t < 0.36
 
 
 func _end_choreography() -> void:
 	if _choreo == Choreography.NONE:
 		return
-	var right: Node3D = get_node_or_null(^"RightArm") as Node3D
-	var left: Node3D = get_node_or_null(^"LeftArm") as Node3D
-	if right != null:
-		right.rotation = Vector3(_arm_rest(true).x, 0.0, _arm_rest(true).y)
-	if left != null:
-		left.rotation = Vector3(_arm_rest(false).x, 0.0, _arm_rest(false).y)
 	if is_instance_valid(_weapon):
 		_weapon.visible = true
 	if is_instance_valid(_card):
@@ -515,11 +835,6 @@ func _end_choreography() -> void:
 	_card = null
 	_ink_column = null
 	_choreo = Choreography.NONE
-
-
-## Each arm's resting pose (x, z), as _build_body sets it.
-static func _arm_rest(right: bool) -> Vector2:
-	return Vector2(0.95, 0.12) if right else Vector2(0.35, -0.15)
 
 
 static func _tint_children(root: Node3D, color: Color) -> void:
@@ -592,164 +907,12 @@ func milestone_pennant() -> Node3D:
 	return _pennant if is_instance_valid(_pennant) and not _pennant.is_queued_for_deletion() else null
 
 
-## Lights the whole puppet (a hit flash or flow glow); black turns it off.
+## Lights the whole hero (a hit flash or flow glow); black turns it off.
 func set_glow(color: Color) -> void:
 	for material: Material in materials:
 		StorybookMaterial.set_glow(material, color)
 
 
-## The cape streams back with speed; the lantern swings.
-func update_motion(delta: float, velocity: Vector3, move_speed: float) -> void:
-	_age += delta
-	if _cape_pivot != null:
-		var run: float = clampf(Vector2(velocity.x, velocity.z).length() / maxf(0.1, move_speed), 0.0, 1.0)
-		var wanted: float = CAPE_REST + CAPE_SWING * run + sin(_age * 3.0) * 0.04
-		_cape_pivot.rotation.x = lerpf(_cape_pivot.rotation.x, -wanted, 1.0 - exp(-CAPE_SHARPNESS * delta))
-	if _lantern != null:
-		_lantern.rotation.z = sin(_age * 2.4) * LANTERN_SWAY * 0.4
-		_lantern.rotation.x = sin(_age * 1.7) * LANTERN_SWAY * 0.3
-
-
-# --- Parts ------------------------------------------------------------------
-
-func _build_body(body: Color) -> void:
-	var trousers: Material = _cel(TROUSER_COLOR, body)
-	for side: float in [-1.0, 1.0]:
-		add_child(ShapeKit.capsule("Leg", 0.11, 0.8, Vector3(side * 0.14, 0.4, 0.0), trousers))
-		add_child(ShapeKit.box("Boot", Vector3(0.16, 0.12, 0.26), Vector3(side * 0.14, 0.06, -0.04), _cel(LEATHER_COLOR.darkened(0.3), body)))
-	var tunic: Material = _cel(body, body)
-	add_child(ShapeKit.cylinder("Tunic", 0.31, 0.37, 0.72, Vector3(0.0, 1.06, 0.0), tunic))
-	add_child(ShapeKit.cylinder("Skirt", 0.39, 0.35, 0.26, Vector3(0.0, 0.68, 0.0), _cel(body.darkened(0.2), body)))
-	add_child(ShapeKit.cylinder("Belt", 0.38, 0.38, 0.08, Vector3(0.0, 0.82, 0.0), _cel(LEATHER_COLOR, body)))
-	add_child(ShapeKit.box("Buckle", Vector3(0.1, 0.08, 0.04), Vector3(0.0, 0.82, -0.38), _cel(BRASS_COLOR, body)))
-	# Arms: the right reaches forward to the weapon's grip, the left hangs to the off hand.
-	var sleeve: Material = _cel(body.darkened(0.08), body)
-	var right: Node3D = _pivot("RightArm", Vector3(0.39, 1.36, 0.0), Vector3(0.95, 0.0, 0.12))
-	right.add_child(ShapeKit.capsule("Sleeve", 0.08, 0.6, Vector3(0.0, -0.28, 0.0), sleeve))
-	right.add_child(ShapeKit.sphere("Hand", 0.07, Vector3(0.0, -0.6, 0.0), _cel(SKIN_COLOR, body)))
-	var left: Node3D = _pivot("LeftArm", Vector3(-0.39, 1.36, 0.0), Vector3(0.35, 0.0, -0.15))
-	left.add_child(ShapeKit.capsule("Sleeve", 0.08, 0.6, Vector3(0.0, -0.28, 0.0), sleeve))
-	left.add_child(ShapeKit.sphere("Hand", 0.07, Vector3(0.0, -0.6, 0.0), _cel(SKIN_COLOR, body)))
-
-
-## The Calling's tabard: a flap below the belt in front and one behind, flared a little.
-func _build_tabard(body: Color, trim: Color) -> void:
-	var cloth: Material = _cel(trim, body)
-	for side: float in [-1.0, 1.0]:
-		var flap: MeshInstance3D = ShapeKit.box("Tabard" if side < 0.0 else "TabardBack", TABARD_SIZE, Vector3(0.0, 0.57, side * 0.41), cloth)
-		flap.rotation = Vector3(side * 0.08, 0.0, 0.0)
-		add_child(flap)
-
-
-func _build_armor(weight: EquipmentItemResource.ArmorWeight, body: Color, trim: Color) -> void:
-	match weight:
-		EquipmentItemResource.ArmorWeight.LIGHT:
-			var sash: MeshInstance3D = ShapeKit.box("Sash", Vector3(0.09, 0.82, 0.05), Vector3(0.0, 1.08, -0.33), _cel(trim, body))
-			sash.rotation = Vector3(0.0, 0.0, 0.62)
-			add_child(sash)
-		EquipmentItemResource.ArmorWeight.MEDIUM:
-			add_child(ShapeKit.cylinder("Jerkin", 0.34, 0.39, 0.5, Vector3(0.0, 1.12, 0.0), _cel(LEATHER_COLOR, body)))
-			add_child(ShapeKit.cylinder("JerkinTrim", 0.35, 0.35, 0.05, Vector3(0.0, 1.36, 0.0), _cel(trim, body)))
-		EquipmentItemResource.ArmorWeight.HEAVY:
-			var metal: Material = _cel(METAL_COLOR, body)
-			add_child(ShapeKit.box("Breastplate", Vector3(0.6, 0.52, 0.14), Vector3(0.0, 1.12, -0.29), metal))
-			for side: float in [-1.0, 1.0]:
-				var pauldron: MeshInstance3D = ShapeKit.sphere("Pauldron", 0.22, Vector3(side * 0.42, 1.4, 0.0), metal)
-				pauldron.scale = Vector3(1.15, 0.7, 1.2)
-				add_child(pauldron)
-				add_child(ShapeKit.torus("PauldronTrim", 0.2, 0.24, Vector3(side * 0.42, 1.36, 0.0), _cel(trim, body)))
-
-
-func _build_head(row: int, body: Color, trim: Color) -> void:
-	add_child(ShapeKit.sphere("Head", 0.21, Vector3(0.0, 1.62, 0.0), _cel(SKIN_COLOR, body)))
-	# Two dark eyes show which way the hero faces.
-	var eyes: StandardMaterial3D = StandardMaterial3D.new()
-	eyes.albedo_color = EYE_COLOR
-	for side: float in [-1.0, 1.0]:
-		add_child(ShapeKit.sphere("Eye", 0.035, Vector3(side * 0.075, 1.65, -0.19), eyes))
-	match row:
-		0:
-			var metal: Material = _cel(METAL_COLOR, body)
-			add_child(ShapeKit.cylinder("Helm", 0.23, 0.23, 0.16, Vector3(0.0, 1.71, 0.0), metal))
-			var dome: MeshInstance3D = ShapeKit.sphere("Dome", 0.23, Vector3(0.0, 1.78, 0.0), metal)
-			dome.scale = Vector3(1.0, 0.72, 1.0)
-			add_child(dome)
-			add_child(ShapeKit.box("Crest", Vector3(0.06, 0.18, 0.4), Vector3(0.0, 1.98, 0.02), _cel(trim, body)))
-		1:
-			var hood: MeshInstance3D = ShapeKit.sphere("Hood", 0.26, Vector3(0.0, 1.68, 0.04), _cel(body.darkened(0.25), body))
-			hood.scale = Vector3(1.0, 1.08, 1.05)
-			add_child(hood)
-			add_child(ShapeKit.tilted(ShapeKit.cone("HoodTip", 0.12, 0.3, Vector3(0.0, 1.82, 0.24), _cel(body.darkened(0.25), body)), Vector3(-1.0, 0.0, 0.0)))
-			var feather: MeshInstance3D = ShapeKit.box("Feather", Vector3(0.03, 0.34, 0.07), Vector3(0.21, 1.86, 0.05), _cel(trim, body))
-			feather.rotation = Vector3(0.0, 0.0, -0.45)
-			add_child(feather)
-		_:
-			var hat: Material = _cel(body.darkened(0.3), body)
-			add_child(ShapeKit.cylinder("Brim", 0.34, 0.34, 0.03, Vector3(0.0, 1.78, 0.0), hat))
-			add_child(ShapeKit.tilted(ShapeKit.cone("Hat", 0.2, 0.5, Vector3(0.0, 2.04, 0.04), hat), Vector3(-0.18, 0.0, 0.0)))
-			add_child(ShapeKit.cylinder("HatBand", 0.205, 0.205, 0.05, Vector3(0.0, 1.82, 0.0), _cel(trim, body)))
-
-
-func _build_cape(row: int, body: Color, trim: Color) -> void:
-	var length: float = CAPE_LENGTHS[row]
-	_cape_pivot = _pivot("Cape", Vector3(0.0, 1.44, 0.27), Vector3(-CAPE_REST, 0.0, 0.0))
-	_cape_pivot.add_child(ShapeKit.box("Cloth", Vector3(0.62, length, 0.04), Vector3(0.0, -length * 0.5, 0.0), _cel(body.darkened(0.35), body)))
-	_cape_pivot.add_child(ShapeKit.box("Hem", Vector3(0.62, 0.06, 0.05), Vector3(0.0, -length + 0.03, 0.0), _cel(trim, body)))
-
-
-func _build_off_hand(row: int, loadout: ClassLoadoutResource, trim: Color) -> void:
-	var body: Color = loadout.body_color
-	match row:
-		0:
-			# The banded oak-and-brass Greatshield on the left arm.
-			var shield: Node3D = _pivot("Greatshield", Vector3(-0.5, 1.0, -0.12), Vector3(0.0, 0.22, 0.0))
-			shield.add_child(ShapeKit.box("Board", Vector3(0.08, 0.95, 0.7), Vector3.ZERO, _cel(OAK_COLOR, body)))
-			for y: float in [-0.28, 0.28]:
-				shield.add_child(ShapeKit.box("Band", Vector3(0.1, 0.07, 0.72), Vector3(0.0, y, 0.0), _cel(BRASS_COLOR, body)))
-			shield.add_child(ShapeKit.sphere("Boss", 0.09, Vector3(-0.05, 0.0, 0.0), _cel(BRASS_COLOR, body)))
-			shield.add_child(ShapeKit.box("Emblem", Vector3(0.1, 0.22, 0.22), Vector3(-0.02, 0.0, 0.0), _cel(trim, body)))
-		2:
-			# The brass Tether-Lantern swinging from the left hand, really glowing.
-			_lantern = _pivot("TetherLantern", Vector3(-0.47, 0.82, -0.18), Vector3.ZERO)
-			_lantern.add_child(ShapeKit.cylinder("Cord", 0.012, 0.012, 0.22, Vector3(0.0, -0.11, 0.0), _cel(LEATHER_COLOR, body)))
-			_lantern.add_child(ShapeKit.cylinder("Cage", 0.09, 0.11, 0.22, Vector3(0.0, -0.33, 0.0), _cel(BRASS_COLOR, body)))
-			var flame: MeshInstance3D = ShapeKit.sphere("Flame", 0.065, Vector3(0.0, -0.33, 0.0), StorybookMaterial.glowing(LANTERN_GLOW, 3.0))
-			flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			_lantern.add_child(flame)
-			_lantern.add_child(ShapeKit.cone("Cap", 0.11, 0.1, Vector3(0.0, -0.18, 0.0), _cel(BRASS_COLOR, body)))
-			var light: OmniLight3D = OmniLight3D.new()
-			light.name = "Light"
-			light.light_color = LANTERN_GLOW
-			light.light_energy = 0.8
-			light.omni_range = 3.0
-			light.position = Vector3(0.0, -0.33, 0.0)
-			_lantern.add_child(light)
-		_:
-			if loadout.is_ranged():
-				# A quiver on the back, arrows fletched in the Calling's colour.
-				var quiver: Node3D = _pivot("Quiver", Vector3(0.16, 1.18, 0.3), Vector3(0.0, 0.0, -0.35))
-				quiver.add_child(ShapeKit.cylinder("Case", 0.09, 0.08, 0.6, Vector3.ZERO, _cel(LEATHER_COLOR, body)))
-				for index: int in 3:
-					quiver.add_child(ShapeKit.box("Fletch", Vector3(0.03, 0.12, 0.05), Vector3((float(index) - 1.0) * 0.04, 0.36, 0.0), _cel(trim, body)))
-			else:
-				var satchel: Node3D = _pivot("ScribeSatchel", Vector3(0.36, 0.86, 0.06), Vector3.ZERO)
-				satchel.add_child(ShapeKit.box("Bag", Vector3(0.12, 0.24, 0.28), Vector3.ZERO, _cel(LEATHER_COLOR, body)))
-				satchel.add_child(ShapeKit.box("Flap", Vector3(0.13, 0.08, 0.29), Vector3(0.0, 0.1, 0.0), _cel(trim, body)))
-
-
-# --- Shape helpers ----------------------------------------------------------
-
-## A cel material rimmed in the hero's colour, remembered for hit flashes.
+## A cel material for the pennant's pole.
 func _cel(color: Color, rim: Color) -> Material:
-	var material: ShaderMaterial = StorybookMaterial.actor(color, rim)
-	materials.append(material)
-	return material
-
-
-func _pivot(pivot_name: String, where: Vector3, rotation_radians: Vector3) -> Node3D:
-	var pivot: Node3D = Node3D.new()
-	pivot.name = pivot_name
-	pivot.position = where
-	pivot.rotation = rotation_radians
-	add_child(pivot)
-	return pivot
+	return StorybookMaterial.actor(color, rim)

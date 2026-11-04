@@ -81,12 +81,28 @@ const TIER_LEVELS: Array[int] = [1, 2, 5, 10]
 const TIER_MULTIPLIERS: Array[float] = [1.0, 1.2, 1.45, 1.75]
 ## Unvarnished hazel, hammered dark iron, milled steel, gilded Carillon bronze.
 const TIER_BLADES: Array[Color] = [Color(0.651, 0.482, 0.357), Color(0.353, 0.384, 0.416), Color(0.769, 0.808, 0.831), Color(0.898, 0.757, 0.345)]
-## Hemp cord, brass rivets, a brass bell-guard, star-etched steel.
-const TIER_TRIMS: Array[Color] = [Color(0.851, 0.765, 0.604), Color(0.78, 0.6, 0.3), Color(0.831, 0.686, 0.216), Color(0.79, 0.83, 0.86)]
+## Hemp cord #C8B594, brass rivets #B88B3A, a brass bell-guard #D4A84E, star-etched steel round the Sign-stone (19 GDD §5.3).
+const TIER_TRIMS: Array[Color] = [Color(0.784, 0.710, 0.580), Color(0.722, 0.545, 0.227), Color(0.831, 0.659, 0.306), Color(0.79, 0.83, 0.86)]
 ## The grip: hemp-wrapped hazel, an oak grip, dyed leather, dark leather.
 const TIER_GRIPS: Array[Color] = [Color(0.851, 0.765, 0.604), Color(0.478, 0.322, 0.188), Color(0.2, 0.32, 0.36), Color(0.29, 0.2, 0.15)]
 const TIER_METALLIC: Array[float] = [0.0, 0.55, 0.8, 0.9]
-const TIER_ROUGHNESS: Array[float] = [0.85, 0.6, 0.35, 0.25]
+const TIER_ROUGHNESS: Array[float] = [0.78, 0.52, 0.32, 0.22]
+## Each tier's look as a WeaponVisualTierResource id (19 GDD §5.3), and how brightly its Sign-stone core glows.
+const TIER_IDS: Array[StringName] = [&"apprentice_timber", &"hedgerow_iron", &"bramble_bridge_steel", &"dover_slap_relic"]
+const TIER_SIGN_CORE_EMISSION: Array[float] = [0.0, 0.2, 0.5, 1.8]
+## What each tier adds to the sculpt.
+const TIER_CRAFT_NOTES: Array[String] = [
+	"Lathe-turned hazel with chamfered edges, criss-cross hemp cord and an oak-leaf twig at the pommel.",
+	"Hand-hammered dark iron with a bright honed bevel, an ash haft, a squared guard and brass rivets.",
+	"Fuller-grooved milled steel, reinforced wings, a cast-brass bell-guard and a diamond-wrapped grip.",
+	"Scroll-forged gilded bronze round an open cage that holds a turning Sign-stone core.",
+]
+# The heroes' looks (19 GDD §5.4): four heritage dye presets for couch co-op, one per seat.
+const TIZZI_WED_PINE: StringName = &"tizzi_wed_pine"
+const GULL_WICK_SLATE: StringName = &"gull_wick_slate"
+const BARLEY_BRIDGE_RUSSET: StringName = &"barley_bridge_russet"
+const BARROW_CRAG_HEATHER: StringName = &"barrow_crag_heather"
+const HERITAGE_DYES: Array[StringName] = [TIZZI_WED_PINE, GULL_WICK_SLATE, BARLEY_BRIDGE_RUSSET, BARROW_CRAG_HEATHER]
 ## The Dover-Slap relics' glowing Sign-stone.
 const SIGN_STONE_COLOR: Color = Color(1.0, 0.9, 0.62)
 ## Each WeaponType's Un-Inked Martial Flourishes (11 GDD §4.1): R, then L+R.
@@ -224,10 +240,15 @@ var _henchmen: Dictionary[StringName, int] = {}
 # Registration order, so menus and drop rolls are the same on every peer.
 var _item_order: Array[StringName] = []
 var _card_order: Array[StringName] = []
+var _weapon_tiers: Array[WeaponVisualTierResource] = []
+var _appearances: Dictionary[StringName, HeroAppearanceResource] = {}
+var _appearance_order: Array[StringName] = []
+var _dyes: Dictionary[StringName, HeroAppearanceResource] = {}
 
 
 func _init() -> void:
 	_build_signs()
+	_build_weapon_visual_tiers()
 	_build_armor()
 	_build_weapons()
 	_build_tier_weapons()
@@ -236,6 +257,7 @@ func _init() -> void:
 	_build_action_leaves()
 	_build_place_cards()
 	_build_callings()
+	_build_hero_appearances()
 	_build_encounters()
 	_build_combos()
 	_build_henchmen()
@@ -296,6 +318,57 @@ func callings() -> Array[CallingResource]:
 	var list: Array[CallingResource] = []
 	list.assign(_callings.values())
 	return list
+
+# --- Heroes' looks (19 GDD §5) ----------------------------------------------
+
+## A weapon tier's look, 1 to 4 (Apprentice Timber to Dover-Slap Relic).
+func weapon_visual_tier(tier: int) -> WeaponVisualTierResource:
+	return _weapon_tiers[clampi(tier, 1, _weapon_tiers.size()) - 1]
+
+
+func weapon_visual_tiers() -> Array[WeaponVisualTierResource]:
+	return _weapon_tiers.duplicate()
+
+
+## A Calling's look by its calling_id (&"iron_woodsman"), or null.
+func hero_appearance(calling_id: StringName) -> HeroAppearanceResource:
+	return _appearances.get(calling_id, null)
+
+
+## Every Calling's look, in the Callings' order.
+func hero_appearances() -> Array[HeroAppearanceResource]:
+	var list: Array[HeroAppearanceResource] = []
+	for id: StringName in _appearance_order:
+		list.append(_appearances[id])
+	return list
+
+
+## A heritage dye preset by id (&"gull_wick_slate"), or null.
+func heritage_dye(dye_id: StringName) -> HeroAppearanceResource:
+	return _dyes.get(dye_id, null)
+
+
+func heritage_dyes() -> Array[HeroAppearanceResource]:
+	var list: Array[HeroAppearanceResource] = []
+	for id: StringName in HERITAGE_DYES:
+		list.append(_dyes[id])
+	return list
+
+
+## How a seat looks: its Calling's look (an Unsworn hero wears their
+## Fellowship's own column, Bridge-Warden, Hedge-Runner or Lantern-Scribe) in
+## its seat's heritage dye, so siblings on the couch in the same Calling still
+## read apart. P1 wears the Calling's own dye.
+func hero_appearance_for_seat(fellowship_class_id: StringName, column: int, party_slot: int) -> HeroAppearanceResource:
+	var resolved: int = column if Callings.is_valid(column) else Callings.default_secondary(fellowship_class_id)
+	var calling: CallingResource = calling_for(fellowship_class_id, Callings.id_of(resolved))
+	var look: HeroAppearanceResource = hero_appearance(calling.calling_id) if calling != null else null
+	if look == null:
+		look = hero_appearance(&"iron_woodsman")
+	if party_slot <= 0:
+		return look
+	var own: int = HERITAGE_DYES.find(look.coat_dye_preset)
+	return look.with_dye(_dyes[HERITAGE_DYES[(maxi(own, 0) + party_slot) % HERITAGE_DYES.size()]])
 
 
 func armors() -> Array[EquipmentItemResource]:
@@ -1272,17 +1345,17 @@ func _boss_drop(lead: ScribeCardResource, rarity: ScribeCardResource.CardRarity)
 ## Fellowships. The names are the Creative Director's (06 §3, chosen
 ## 2026-11-01); a rename is one line here.
 func _build_callings() -> void:
-	var stout: SecondaryCallingResource = _secondary(STOUT_HEART, "Stout Heart", "+Tank", Color(0.86, 0.56, 0.26))
+	var stout: SecondaryCallingResource = _secondary(STOUT_HEART, "Stout Heart", "+Tank", Color(0.769, 0.584, 0.251))
 	stout.health_bonus = 20.0
 	stout.stamina_regen_bonus = -2.0
 	stout.poise_damage_multiplier = 1.25
 	stout.perfect_guard_bonus = 0.03
 	stout.unlocked_armor_weights = [EquipmentItemResource.ArmorWeight.HEAVY]
-	var swift: SecondaryCallingResource = _secondary(SWIFT_FOOT, "Swift Foot", "+DPS", Color(0.38, 0.76, 0.5))
+	var swift: SecondaryCallingResource = _secondary(SWIFT_FOOT, "Swift Foot", "+DPS", Color(0.231, 0.549, 0.322))
 	swift.stamina_regen_bonus = 3.0
 	swift.strike_damage_multiplier = 1.15
 	swift.unlocked_weapon_types = [EquipmentItemResource.WeaponType.BOW, EquipmentItemResource.WeaponType.HEAVY_AXE]
-	var wise: SecondaryCallingResource = _secondary(WISE_HAND, "Wise Hand", "+Magic", Color(0.68, 0.54, 0.95))
+	var wise: SecondaryCallingResource = _secondary(WISE_HAND, "Wise Hand", "+Magic", Color(0.494, 0.322, 0.722))
 	wise.health_bonus = -5.0
 	wise.stamina_regen_bonus = 2.0
 	wise.resonance_gain_multiplier = 1.2
@@ -1319,6 +1392,103 @@ func _calling(id: StringName, label: String, subtitle: String, fellowship_class_
 	calling.fellowship_class_id = fellowship_class_id
 	calling.secondary_id = secondary_id
 	register_calling(calling)
+
+
+# --- Heroes' looks (19 GDD §5.3, §5.4) ----------------------------------------
+
+## The four weapon tiers' looks, from the trail's tier tables above.
+func _build_weapon_visual_tiers() -> void:
+	for index: int in TIER_IDS.size():
+		var tier: WeaponVisualTierResource = WeaponVisualTierResource.new()
+		tier.tier_id = TIER_IDS[index]
+		tier.tier_level = index + 1
+		tier.display_name = TIER_NAMES[index]
+		tier.opens_at_level = TIER_LEVELS[index]
+		tier.stat_multiplier = TIER_MULTIPLIERS[index]
+		tier.blade_color = TIER_BLADES[index]
+		tier.trim_color = TIER_TRIMS[index]
+		tier.grip_color = TIER_GRIPS[index]
+		tier.metallic = TIER_METALLIC[index]
+		tier.roughness = TIER_ROUGHNESS[index]
+		tier.sign_core_emission = TIER_SIGN_CORE_EMISSION[index]
+		tier.craft_note = TIER_CRAFT_NOTES[index]
+		_weapon_tiers.append(tier)
+
+
+## Each Calling's silhouette (§5.4) and the four heritage dyes. The
+## Iron-Woodsman is the flagship: a raised Wayfarer hood, the bark-brown beard
+## speckled ash-gray, a heavy Iron-Wood bark pauldron on the bracing left
+## shoulder and a stitched-leather cop on the hewing right, iron splitting
+## wedges at the belt and a buckler-targe across the back.
+func _build_hero_appearances() -> void:
+	var pine: Color = Color(0.180, 0.251, 0.169)
+	_dye(TIZZI_WED_PINE, "Tizzi-Wed Pine", pine)
+	_dye(GULL_WICK_SLATE, "Gull-Wick Slate", Color(0.180, 0.227, 0.282))
+	_dye(BARLEY_BRIDGE_RUSSET, "Barley-Bridge Russet", Color(0.290, 0.180, 0.133))
+	_dye(BARROW_CRAG_HEATHER, "Barrow-Crag Heather", Color(0.243, 0.180, 0.267))
+	# Shield-Sworn: kettle-caps, broad warden pauldrons, braids or a soldier's mustache.
+	var warden: HeroAppearanceResource = _look(&"bridge_warden", 0, &"stout_kettle_cap", &"braided_hearth", &"broad_warden_pauldron",
+		&"broad_warden_pauldron", &"brass_bridge_key", GULL_WICK_SLATE, Color(0.86, 0.68, 0.56), Color(0.42, 0.30, 0.18))
+	warden.headgear_crest = true
+	var captain: HeroAppearanceResource = _look(&"weald_captain", 0, &"stout_kettle_cap", &"mustache_sideburns", &"broad_warden_pauldron",
+		&"stitched_leather_cop", &"oak_signal_whistle", TIZZI_WED_PINE, Color(0.78, 0.58, 0.45), Color(0.24, 0.17, 0.12))
+	captain.headgear_crest = true
+	_look(&"hearth_guard", 0, &"stout_kettle_cap", &"braided_hearth", &"broad_warden_pauldron", &"saffron_stole", &"ember_lamp_flask",
+		BARLEY_BRIDGE_RUSSET, Color(0.62, 0.44, 0.32), Color(0.16, 0.12, 0.10))
+	# Wayfarers: hoods, leather cops, belts of trade-tools.
+	var woodsman: HeroAppearanceResource = _look(&"iron_woodsman", 1, &"wayfarer_hood_up", &"woodsman_full_speckled", &"iron_wood_bark_pauldron",
+		&"stitched_leather_cop", &"iron_splitting_wedges", TIZZI_WED_PINE, Color(0.86, 0.68, 0.56), Color(0.290, 0.196, 0.133))
+	woodsman.appearance_id = &"iron_woodsman_default"
+	woodsman.back_buckler_targe = true
+	woodsman.split_hewing_apron = true
+	_look(&"hedge_runner", 1, &"wayfarer_hood_up", &"clean_youth", &"stitched_leather_cop", &"stitched_leather_cop", &"hedge_snare_coil",
+		BARROW_CRAG_HEATHER, Color(0.92, 0.76, 0.64), Color(0.52, 0.34, 0.18))
+	_look(&"sign_seeker", 1, &"hood_back_shaved_crown", &"mustache_sideburns", &"stitched_leather_cop", &"none", &"brass_astrolabe",
+		GULL_WICK_SLATE, Color(0.70, 0.52, 0.40), Color(0.20, 0.15, 0.12))
+	# Lantern-Bearers: feather-hats and saffron stoles.
+	_look(&"bell_keeper", 2, &"scribe_feather_hat", &"braided_hearth", &"saffron_stole", &"stitched_leather_cop", &"brass_hand_bell",
+		BARLEY_BRIDGE_RUSSET, Color(0.80, 0.60, 0.46), Color(0.58, 0.56, 0.54))
+	_look(&"wind_mender", 2, &"scribe_feather_hat", &"clean_youth", &"saffron_stole", &"saffron_stole", &"reed_pipes",
+		TIZZI_WED_PINE, Color(0.94, 0.80, 0.68), Color(0.62, 0.42, 0.22))
+	_look(&"lantern_scribe", 2, &"scribe_feather_hat", &"mustache_sideburns", &"saffron_stole", &"none", &"quill_case",
+		BARROW_CRAG_HEATHER, Color(0.66, 0.48, 0.36), Color(0.30, 0.22, 0.16))
+
+
+func _dye(id: StringName, label: String, wool: Color) -> void:
+	var dye: HeroAppearanceResource = HeroAppearanceResource.new()
+	dye.appearance_id = id
+	dye.calling_id = &""
+	dye.display_name = label
+	dye.coat_dye_preset = id
+	dye.value_1_coat_color = wool
+	_dyes[id] = dye
+
+
+func _look(calling_id: StringName, row: int, headgear: StringName, beard: StringName, left: StringName, right: StringName,
+		trinket: StringName, dye: StringName, skin: Color, beard_color: Color) -> HeroAppearanceResource:
+	var calling: CallingResource = _callings[calling_id]
+	var look: HeroAppearanceResource = HeroAppearanceResource.new()
+	look.appearance_id = StringName("%s_default" % calling_id)
+	look.calling_id = calling_id
+	look.display_name = calling.display_name
+	look.heritage_id = &"tizzi_wed_green" if row == 1 else (&"gull_wick_grey" if row == 0 else &"barley_bridge_gold")
+	look.coat_dye_preset = dye
+	look.value_1_coat_color = _dyes[dye].value_1_coat_color
+	look.value_2_tunic_color = HeroAppearanceResource.FELLOWSHIP_TUNICS[row]
+	look.role_rim_color = HeroAppearanceResource.FELLOWSHIP_RIMS[row]
+	look.headgear_style = headgear
+	look.beard_style = beard
+	look.left_pauldron_style = left
+	look.right_pauldron_style = right
+	look.belt_trinket_id = trinket
+	look.skin_tone_color = skin
+	look.beard_primary_color = beard_color
+	look.back_buckler_targe = calling.secondary_id == STOUT_HEART and row != 0
+	look.split_hewing_apron = row == 1
+	look.glb_override_path = "res://assets/models/heroes/%s.glb" % calling_id
+	_appearances[calling_id] = look
+	_appearance_order.append(calling_id)
+	return look
 
 
 # --- Under-cards (05 GDD §3.1) --------------------------------------------

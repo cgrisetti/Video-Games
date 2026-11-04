@@ -221,6 +221,9 @@ func _soothe(player_id: StringName) -> void:
 		stats.resonance_changed.emit(stats.resonance_pips(), stats.resonance_charge)
 	CombatDirector.current.announce(actor.global_position + Vector3.UP * (actor.body_height() + 0.6),
 		"TRUCE!  +%d CHIMES" % PARLEY_CHIMES, SOOTHE_COLOR, &"chime")
+	# The hero who waved it bows (19 GDD §3.3, the Truce-Sign Parley).
+	if by != null and by.visuals != null:
+		by.visuals.play_truce_sign_parley()
 	soothed.emit(player_id)
 
 

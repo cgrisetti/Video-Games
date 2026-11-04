@@ -118,6 +118,9 @@ const WORLD_VISUALS_CHECKS: GDScript = preload("res://tools/test_world_visuals.g
 ## Phase 18's checks (tools/test_pastoral_cartography.gd): the camera, labels, sculpted world and the Wayfarer's map, in every instance.
 const PASTORAL_CHECKS: GDScript = preload("res://tools/test_pastoral_cartography.gd")
 var _pastoral: RefCounted = PASTORAL_CHECKS.new()
+## Phase 19's checks (tools/test_hero_rig.gd): the solo Iron-Woodsman boot first, the hero rig in the expedition, companions in Oakshire Vale.
+const HERO_RIG_CHECKS: GDScript = preload("res://tools/test_hero_rig.gd")
+var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
 
 func _initialize() -> void:
@@ -144,6 +147,8 @@ func _run() -> void:
 	change_scene_to_file(HUB_SCENE)
 	await _seconds(0.2)
 	_connect_global_signals()
+	# A default boot is the solo Iron-Woodsman (Phase 19); then the classic trinity's tank takes the keyboard.
+	await _hero_rig.run_boot(self, _check)
 
 	await _check_hub_and_input_map()
 	_check_arsenal_catalog()
@@ -163,6 +168,7 @@ func _run() -> void:
 	await _check_cross_grimoire_hud()
 	await _pastoral.run_dojo(self, _check)
 	await _check_storybook_art()
+	await _hero_rig.run_rig(self, _check, tank, healer, dps, boss)
 	await _check_flow_cancel_and_hit_stop()
 	await _check_flow_windows()
 	await _check_synergies()
@@ -171,6 +177,7 @@ func _run() -> void:
 	await _check_poise_and_knockdown()
 	await _check_taunt()
 	await _check_perfect_guard()
+	_check(tank.visuals.animator.played.get(&"perfect_guard_parry", 0) > 0, "a Perfect Guard plays the deflecting perfect_guard_parry bash on the rig")
 	await _check_healer()
 	await _check_shadow_sanctuary()
 	await _check_squire_auto_evade()
@@ -202,6 +209,7 @@ func _run() -> void:
 	await _pastoral.run_vale(self, _check)
 	await MYTHOPOETIC_LENS_CHECKS.new().run(self, _check)
 	await audio.run_vale(self, _check)
+	await _hero_rig.run_vale(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
@@ -910,55 +918,61 @@ func _check_cross_grimoire_hud() -> void:
 	await _until_idle(dps)
 
 
-# --- Storybook art (07 GDD §4) ----------------------------------------------
+# --- Storybook art (07 GDD §4, 19 GDD) ----------------------------------------
 
-## Heroes are puppets that read by Fellowship, everything wears the cel look,
-## hits flash the whole puppet, and dropped-in .glb models would be picked up.
+## Heroes are sculpted 24-bone rigs that read by Fellowship and Calling, wear
+## the hero shader, flash on a hit, and would pick up a dropped-in .glb.
 func _check_storybook_art() -> void:
-	_check(tank.visuals != null and tank.visuals.find_child("Greatshield", true, false) != null and tank.visuals.find_child("Crest", true, false) != null
-		and tank.visuals.find_child("Breastplate", true, false) != null,
-		"the Shield-Sworn is a puppet with a crested helm, plate and a banded Greatshield")
+	var shield: Node = tank.visuals.socket(HeroRigBuilder.OFF_HAND_SOCKET).find_child("Greatshield", true, false) if tank.visuals.has_rig() else null
+	_check(tank.visuals.has_rig() and shield != null and tank.visuals.features.get("headgear") == &"stout_kettle_cap"
+		and tank.visuals.features.get("left_pauldron") == &"broad_warden_pauldron" and tank.visuals.features.get("coat") == ArsenalCatalog.IRONWOOD_PLATE,
+		"the Shield-Sworn wears a kettle-cap, broad warden pauldrons, the Iron-Wood Ring-Coat and a banded Greatshield on the off forearm")
 	var lantern: Node = healer.visuals.find_child("TetherLantern", true, false)
-	_check(lantern != null and lantern.find_child("Light", true, false) is OmniLight3D and healer.visuals.find_child("Hat", true, false) != null,
-		"the Lantern-Bearer wears a pointed scribe hat and carries a Tether-Lantern that really glows")
-	_check(dps.visuals.find_child("Quiver", true, false) != null and dps.visuals.find_child("Feather", true, false) != null
-		and dps.visuals.find_child("Cape", true, false) != null, "the Wayfarer has a feathered hood, a travel cloak and a quiver for the bow")
-	var tunic: MeshInstance3D = tank.visuals.find_child("Tunic", true, false) as MeshInstance3D
-	var cel: ShaderMaterial = (tunic.mesh as PrimitiveMesh).material as ShaderMaterial if tunic != null else null
-	var blade: MeshInstance3D = tank.find_child("Weapon", true, false).get_child(0) as MeshInstance3D
-	_check(cel != null and cel.shader == StorybookMaterial.SHADER and (blade.mesh as PrimitiveMesh).material is ShaderMaterial,
-		"heroes and their weapons wear the storybook cel shader (two-band light, rim glow)")
+	_check(lantern != null and lantern.find_child("Light", true, false) is OmniLight3D and healer.visuals.features.get("headgear") == &"scribe_feather_hat",
+		"the Lantern-Bearer wears a pointed scribe feather-hat and carries a Tether-Lantern that really glows")
+	_check(dps.visuals.find_child("Quiver", true, false) != null and dps.visuals.features.get("headgear") == &"wayfarer_hood_up"
+		and dps.visuals.skeleton.find_bone("Cloak_03") == HeroRigBuilder.Bone.CLOAK_03 and dps.visuals.find_child("ScribeSatchel", true, false) != null,
+		"the Wayfarer has a hood, a three-bone travel cloak, a quiver for the bow and the Scribe Vellum Satchel at the hip")
+	var blade: MeshInstance3D = tank.find_child("Weapon", true, false).get_node(^"Blade") as MeshInstance3D
+	_check(tank.visuals.body_material.shader == HeroMeshAtelier.SHADER and (blade.material_override as ShaderMaterial).shader == HeroMeshAtelier.SHADER,
+		"heroes and their weapons wear the storybook hero shader (two-band light, rim glow)")
 	var tabards_match: bool = true
 	for hero: ActorBase in [tank, dps, healer]:
 		var calling: SecondaryCallingResource = Callings.secondary(Callings.resolve(hero.loadout.class_id, hero.loadout.calling))
-		for flap_name: String in ["Tabard", "TabardBack"]:
-			var flap: MeshInstance3D = hero.visuals.find_child(flap_name, true, false) as MeshInstance3D
-			var cloth: ShaderMaterial = (flap.mesh as PrimitiveMesh).material as ShaderMaterial if flap != null else null
-			tabards_match = tabards_match and cloth != null and cloth.get_shader_parameter(&"albedo") == calling.trim_color
+		tabards_match = tabards_match and hero.visuals.body_material.get_shader_parameter(&"calling_trim_color") == calling.trim_color
 	_check(tabards_match, "every hero wears a tabard, front and back, in their Secondary Calling's colour")
-	var hem: Node3D = tank.visuals.find_child("Hem", true, false) as Node3D
-	var hand: Node3D = tank.visuals.find_child("RightArm", true, false).find_child("Hand", true, false) as Node3D
-	var lantern_hand: Node3D = healer.visuals.find_child("LeftArm", true, false).find_child("Hand", true, false) as Node3D
-	_check(tank.to_local(hem.global_position).z > 0.4 and tank.to_local(hand.global_position).z < -0.3
-		and healer.to_local(lantern_hand.global_position).z < -0.1,
-		"capes hang behind the hero, clear of the body, and arms reach forward to the weapon and the lantern")
+	var skeleton: Skeleton3D = tank.visuals.skeleton
+	var hem: Vector3 = skeleton.global_transform * (skeleton.get_bone_global_pose(HeroRigBuilder.Bone.CLOAK_03).origin
+		+ skeleton.get_bone_global_pose(HeroRigBuilder.Bone.CLOAK_03).basis.y.normalized() * HeroRigBuilder.bone_length(HeroRigBuilder.Bone.CLOAK_03))
+	var tank_standing: Transform3D = tank.global_transform
+	tank.stats.stamina = tank.stats.stats.max_stamina
+	tank.input.inject_command(Cmd.HEAVY)
+	var reach: float = 0.0
+	for frame: int in 30:
+		await physics_frame
+		reach = minf(reach, tank.to_local(tank.visuals.socket(HeroRigBuilder.MAIN_HAND_SOCKET).global_position).z)
+	await _until_idle(tank)
+	tank.place_at(tank_standing)
+	_check(tank.to_local(hem).z > 0.2 and reach < -0.3,
+		"the cloak hangs behind the hero, clear of the body, and the sword arm reaches forward into a thrust (%.2f m)" % -reach)
 	_check(tank.loadout.weapon.display_name == "Falchion" and dps.loadout.weapon.display_name == "Yew Longbow"
 		and healer.loadout.weapon.display_name == "Rowan Way-Staff", "the weapons are the Falchion, Yew Longbow and Rowan Way-Staff")
 	CombatDirector.current.deliver(_strike(boss, dps, 1.0, 0.0))
 	await physics_frame
 	await physics_frame
-	var dps_tunic: MeshInstance3D = dps.visuals.find_child("Tunic", true, false) as MeshInstance3D
-	var glow: Color = ((dps_tunic.mesh as PrimitiveMesh).material as ShaderMaterial).get_shader_parameter(&"glow")
-	_check(glow.r > 0.5, "a hit flashes the whole puppet white")
+	var glow: Color = dps.visuals.body_material.get_shader_parameter(&"glow")
+	_check(glow.r > 0.5, "a hit flashes the whole hero white")
 	_check(ActorVisuals.model_path(ClassLoadouts.SHIELD_TANK) == "res://assets/models/shield_tank.glb"
-		and not ActorVisuals.has_model(ClassLoadouts.SHIELD_TANK) and ActorVisuals.load_model(ClassLoadouts.SHIELD_TANK) == null,
-		"a model dropped at res://assets/models/<id>.glb would replace the procedural body (none is there now)")
+		and not ActorVisuals.has_model(ClassLoadouts.SHIELD_TANK) and ActorVisuals.load_model(ClassLoadouts.SHIELD_TANK) == null
+		and HeroMeshAtelier.hero_override(ArsenalCatalog.current.hero_appearance(&"bridge_warden")) == null,
+		"a model dropped at res://assets/models/<id>.glb or assets/models/heroes/<calling_id>.glb would replace the sculpted hero (none is there now)")
+	var torso: Mesh = tank.visuals.surfaces[1].mesh
 	var leather: EquipmentLoadoutResource = tank.loadout.kit.copy()
 	leather.armor_id = ArsenalCatalog.RANGER_LEATHER
 	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, leather, tank.loadout.calling))
 	await physics_frame
-	_check(tank.visuals.find_child("Jerkin", true, false) != null and tank.visuals.find_child("Breastplate", true, false) == null,
-		"a new armor weight redraws the puppet (ring-coat off, a jerkin on)")
+	_check(tank.visuals.features.get("coat") == ArsenalCatalog.RANGER_LEATHER and tank.visuals.surfaces[1].mesh != torso,
+		"a new coat re-sculpts the hero (the ring-coat off, the Hedgerow Wool-Mantle on)")
 	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, null, tank.loadout.calling))
 	var core: Node = boss.find_child("AmberCore", true, false)
 	_check(boss.find_child("ArmLeft", true, false) != null and boss.find_child("ArmRight", true, false) != null and core != null

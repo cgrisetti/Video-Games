@@ -13,6 +13,14 @@ const RAID_BOSS_DUMMY: StringName = &"raid_boss_dummy"
 ## Moss-Oak-Hollow's woodland kin (WoodlandMinion), by WoodlandMinion.Kind.
 const MINION_CLASSES: Array[StringName] = [&"bramble_scuttler", &"bog_imp"]
 const PLAYER_CLASSES: Array[StringName] = [SHIELD_TANK, SOUL_TETHER_HEALER, DIRECTIONAL_FLOW_DPS]
+## The playtest boot (19_HERO_CHARACTER_ART_AND_ANIMATION_RIG_GDD.md, Stage 1):
+## Player 1 starts as the Iron-Woodsman ("Hewn-Hand of the High Pines"), a
+## Wayfarer with a Stout Heart, sworn from Level 1, in the Hedgerow Wool-Mantle
+## with a Broad-Axe, alone (LevelBase.solo_iron_woodsman_boot).
+const SOLO_BOOT_CLASS: StringName = DIRECTIONAL_FLOW_DPS
+const SOLO_BOOT_CALLING: StringName = &"stout_heart"
+const SOLO_BOOT_ARMOR: StringName = &"ranger_leather"
+const SOLO_BOOT_WEAPON_TYPE: int = EquipmentItemResource.WeaponType.HEAVY_AXE
 ## The Dojo Warden's swing (the Squire auto-guard and companions watch for it).
 const BOSS_SWIPE: StringName = &"boss_crushing_swipe"
 
