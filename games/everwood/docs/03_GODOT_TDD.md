@@ -28,7 +28,7 @@ games/everwood/
     │   ├── audio_director.gd           # Autoload "Score": buses, Deck A/B, combat stages, 32-voice 3D pool, stingers
     │   ├── audio_catalog.gd            # Zone, Sign, Calling and boss sound profiles by id
     │   └── procedural_chamber_synth.gd # Code-built stems, stingers and station ambience
-    ├── resources/                      # Typed data: actions, stats, kits, cards, Signs, encounters,
+    ├── resources/                      # Typed data: actions, stats, kits, cards, Signs, encounters, combo forms,
     │   │                               # Callings, MobVariantResource, StewardshipZoneResource,
     │   │                               # Zone/Sign/Calling/Boss audio profiles, ZoneBiomeResource,
     │   │                               # WorldPropKitResource, ZoneSuccessionVisualResource
@@ -43,8 +43,12 @@ games/everwood/
     │   ├── soul_tether_component.gd · companion_ai_component.gd · network_sync_component.gd
     │   └── state_machine/              # Idle, Locomotion, Attack, Guard, Dodge, Stagger, Downed
     ├── combat/
-    │   ├── sign_flow_component.gd      # Heroes: the Hearth-Rite Tuck and in-combat Sign-Flow
+    │   ├── sign_flow_component.gd      # Heroes: the Hearth-Rite Tuck, in-combat Sign-Flow, and each
+    │   │                               # role's coat (One-and-Done, Ward-Mantle, Aegis Ward, Ink-Share)
+    │   ├── combo_chain_component.gd    # Heroes: the directional combo forms and their finishers
     │   ├── glimmer_spot_component.gd   # Foes with an encounter: Glimmer-Spots and Bravery Counters
+    │   ├── posture_escalation_component.gd # Foes of Miyamoto Tier 1 and 2: the armour-drop and its locks
+    │   ├── boss_gate_component.gd      # Four-gate bosses: the Measure, Summons, Tempest and Seal-Turn
     │   ├── hob_spectrum_component.gd   # Foes: the Hob-to-Boggart Spectrum and Un-Boggarting
     │   └── unboggart_fx.gd             # The released bird or path-light, and the lulled cairn
     ├── actors/
@@ -73,7 +77,7 @@ games/everwood/
 ## 2. Architecture Notes
 
 ### 2.1 Composition
-Every actor is an `ActorBase` (`CharacterBody3D`) that builds its own child components in `_build_components()`: stats, the action queue, the state machine, hit/hurtboxes and network sync for everyone; input and Sign-Flow for heroes; threat, the Braced Front Guard, a Glimmer-Spot (with an encounter) and the **Hob-to-Boggart Spectrum** for foes. Behaviour that differs by kind of actor comes from small virtuals (`glimmer_encounter_id()`, `is_beaten()`, `configure_spirit()`) and from data, never from `match` branches on ids (08 Gate 4).
+Every actor is an `ActorBase` (`CharacterBody3D`) that builds its own child components in `_build_components()`: stats, the action queue, the state machine, hit/hurtboxes and network sync for everyone; input, Sign-Flow and the combo forms (`ComboChainComponent`) for heroes; threat, the Braced Front Guard, a Glimmer-Spot and the Miyamoto armour-drop (`PostureEscalationComponent`, with an encounter), the four gates (`BossGateComponent`, raid bosses) and the **Hob-to-Boggart Spectrum** for foes. Behaviour that differs by kind of actor comes from small virtuals (`glimmer_encounter_id()`, `is_beaten()`, `configure_spirit()`) and from data, never from `match` branches on ids (08 Gate 4).
 
 ### 2.2 The Hob-to-Boggart Spectrum (`HobSpectrumComponent`, 15 GDD §6.1)
 Every foe carries one. Its states are plain enums, so saves and RPCs never need them:
@@ -90,18 +94,24 @@ Every foe carries one. Its states are plain enums, so saves and RPCs never need 
 - **Parley without a new button.** A curious hob adds a `ParleyPoint` (an `Interactable`, 6 m reach). A hero within reach gets a 180-frame window in which `Light`—the Squire Gambit's one button—waves the Truce-Sign.
 - **Authority.** The host decides parleys and seal turns and tells the other peers by RPC. Every peer resolves a beaten spirit from its synced health, so each draws the same sea-swallow or cairn.
 
-### 2.3 The Mythopoetic Atlas and the Chime-Post ribbon
+### 2.3 Sign-Flow's Phase 12 Kaizen pass ([14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md](14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md) §8)
+- **A strike carries its attacker's state by id.** A combo finisher sets `CombatEvent.combo_id`, a One-and-Done `one_and_done` and `finisher_card_id`, a Support's Ink-Share `coat_sign` and `ink_share_from`. The foe's owner looks the numbers up in `ArsenalCatalog` (`_apply_flourishes`) and checks the claim (the form is known at the party's level and ends in the strike's posture; the leaf is in the hero's diorama; the lent Sign is in the Support's).
+- **One judging order on the foe's owner** (`ActorBase.receive_strike`): the Braced Front Guard, then the boss's gates (a Seal-Turn settles the strike), its Glimmer-Spot, then a Tier 1 or 2 lock; on a hero, the Ward Blessing and a Ward-Mantle soften it before the guard maths. A stun lands after the hit (`CombatEvent.stun_seconds`), and a Ward-Mantle or Aegis Ward shrugs it off in `ActorBase.stagger()`.
+- **Support blessings** (Aegis Ward, Ink-Share) go to each hero's owner by RPC (`CombatDirector.share_ink`, `grant_aegis_ward`); a peer only accepts one from the Support's own peer, for a Sign the Support carries.
+- **The gates and locks** run on the foe's owner and tell the other peers by RPC: the lock and its plate, the Aegis Mantle, the summoned henchmen (a `MinionCamp` with `summoned` set), the roar and the seal.
+
+### 2.4 The Mythopoetic Atlas and the Chime-Post ribbon
 `MythopoeticAtlas` registers six `StewardshipZoneResource`s (name, Cooper Sign, harmony Signs, crack, kin, a four-line rhyme and the phrases each Sign tints) and maps every built place to its zone. Each level names its arrival place (`LevelBase.home_place()`); crossing a threshold calls `PlayerHUD.enter_place()`, and a new zone unfurls a couplet on `CrossGrimoireHUD`'s ribbon. `SignFlowComponent.hearth_rite_prepared` sings it again, and `CrossGrimoireHUD` draws the Saffron-Gold ember border while the Tuck is held.
 
-### 2.4 The adaptive score ([16_ADAPTIVE_AUDIO_ARCHITECTURE.md](16_ADAPTIVE_AUDIO_ARCHITECTURE.md) §8)
+### 2.5 The adaptive score ([16_ADAPTIVE_AUDIO_ARCHITECTURE.md](16_ADAPTIVE_AUDIO_ARCHITECTURE.md) §8)
 `AudioDirector` (autoload `Score`) builds the five buses in code and plays two decks, each one zone's four phase-locked stems in an `AudioStreamSynchronized`, driven only by `set_sync_stream_volume()`. Every 0.4 s it resolves one party state from the local players: the zone most of them stand in (`LevelBase.music_profile_at()`), the depth blend, and the threat round them (Exploration, Pre-Warm, Skirmish, Boss, Exhale). Profiles are data in `AudioCatalog`; until curated stems exist, `ProceduralChamberSynth` renders each zone's stems on worker threads. Positional sounds share a 32-voice `AudioStreamPlayer3D` pool made once at start (45 m cull, 50 ms per kind, `area_mask = 1`).
 
-### 2.5 The storybook world ([17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md](17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md) §8)
+### 2.6 The storybook world ([17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md](17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md) §8)
 - **Data.** `WorldVisualCatalog` registers the biomes, kits and succession looks, and hands out one shared material per look (`craft()`, `foliage()`, `water()` and the rest). Levels say which biome a spot wears (`LevelBase.visual_biome_at()`); nothing in the director names a place.
 - **Global shader parameters** (`project.godot` `[shader_globals]`) carry what every world surface needs: the atelier's three `Texture2DArray`s, the heroes, the four nearest open Hush-Cracks, the blooms and the wind. `WorldAtmosphereDirector` (autoload `Atmosphere`) sets them, renders the atelier on worker threads, and eases the level's sky, sun and fog to the biome most local players stand in.
 - **Kits are code, placed by id.** `WorldAssetCatalog` merges a kit's static parts into one mesh, one surface per material, cached by options. Scenes hold `WorldKitInstance` nodes; a new kit builds in a 1.5 ms-a-frame queue so streaming never stalls. A `.glb` at `res://assets/models/world/<kit_id>.glb` replaces it, and HLOD bakes use each kit's low-poly stand-in.
 - **Colour space.** Palette colours, vertex colours and MultiMesh instance colours are authored in sRGB; the shaders convert them, so Mode B ground, HLODs and clutter match Terrain3D's.
 - **Succession.** `HushCrackLandmark` registers with the director; `set_succession_state()` takes a camp's id or a biome's. A camp's cleared state stays in `WorldStateDB`, so it streams back as a cairn.
 
-### 2.6 Verification
+### 2.7 Verification
 `godot --headless --check-only -s <script>` on every changed script, a headless boot, and `tools/smoke_test.gd` (see the README). `tools/test_mythopoetic_lens.gd` lints every name the game shows against the four Linter Rules, the world's biome and kit names included. `tools/test_world_visuals.gd` checks the storybook world.

@@ -146,3 +146,61 @@ What the game does today, where it differs from the spec above, and what's still
 - The 3-Echo trail build-up and Chime-Post engravings.
 - Place-Cards charted at landmark Chime-Posts.
 - The hero raising their weapon during the rite.
+
+---
+
+## 8. Build Notes (the Phase 12 Kaizen pass: combos, Miyamoto tiers, role asymmetry)
+
+A second Phase 12 brief arrived with its spec named `12_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md`. That file was cut off after the first sentence of its §1, so it isn't kept here; the brief is the spec for this pass, and this section says what it built. It went in as five increments (the data, combos and card choreography, the Trinity loops, the Miyamoto tiers and gates, the Grimoire surfaces), each checked with `--check-only` before the next.
+
+**In the code now**
+- **Five combo forms** (`ComboChainResource`, registered by id in `ArsenalCatalog`; `get_unlocked_combos_for_level()`). `ComboChainComponent` on every hero hears each posture as a token. Heavy with the stick pushed sideways is `SIDE_HEAVY`, so there's no new button. A roll, a guard, a stagger or a second's rest starts the run over. The finisher keeps its own posture, so one form can flow into the next.
+
+  | Form | Lv | Postures | Finisher |
+  |---|---|---|---|
+  | Apprentice's Three-Beat | 1 | Light, Light, Heavy | steps 1.2 m; 1.5x damage, +15 poise |
+  | Sundering Gap-Leap | 2 | Light, Light, ↑+Heavy | leaps 2.8 m; 1.5x, +15, a 1.2 s stun; cracks a martial lock |
+  | Wayfarer's Vault-Strike | 4 | Light, Light, ↓+Heavy | vaults 2.6 m back with 200 ms of evasion frames; 1.5x, +15 |
+  | Whirling Flank-Sweep | 6 | Heavy, ←/→+Heavy | orbits 2.2 m round the foe to its flank; 1.5x, +20 |
+  | Grand Sign-Flow | 8 | ↑+Heavy, R, L+R | a Sign detonation riding it reaches 25% further |
+
+  A landed finisher names its form in the strike (`CombatEvent.combo_id`), and the foe's owner adds the numbers. The HUD's weapon diamond lights a pip per step (o - o - >).
+- **The Overhead Pocket Blessing** is the Hearth-Rite's look. The weapon is put away, the right hand draws a glowing vellum card (0.18 x 0.26 m, with a rim of the Sign's colour) from the coat pocket and raises it overhead (its top edge reaches 2.2 m, under the 2.5 m limit), and a column of the Sign's ink pours down round the hero. Then the card goes back and the weapon is drawn again at 1.35x. The rite also grants a **Ward Blessing**: the first foe that strikes in the next fight does 15% less, until 15 s into it.
+- **The Offhand Pocket-Draw** plays on every Sign-Flow cast: the off hand flicks the card out and sweeps it along the weapon as it ignites at 2.0x. That player's camera dolly-pulses 0.35 m toward the hero's shoulder and back over 120 ms, beside the 110 ms freeze.
+- **DPS: the One-and-Done Seal-Breaker.** L+R while a Weapon-Coat of a Sign burns spends the coat and 3 pips. Its strikes land the leaf's 3.2x, ride the Sign's detonation (Shatterpoint +45 poise, Glacial Rupture +45 burst, Dawnburst 20 heal, Astral Chorus +25 stamina and ½ pip), and crack whatever the foe shows: a lock, an open Glimmer-Spot, the Aegis Mantle or the Maker-Seal.
+- **Tank: the Ward-Mantle.** A blow of the mantle's own Sign takes 80% less. So does any Sign's blow Perfect-Guarded under a mantle. Either way the tank shrugs off the stun and the shove, throws 60 poise back at the attacker and raises the 4 m shelter cone. Every Ward-Mantle and Support leaf grants stun immunity while its coat lasts. To make this readable, foes' blows now carry Signs, and the striking limb glows in that colour through the wind-up. The Cairnsman's Crushing Swipe is Iron-Root (amber fists), so the starter tank's Taunt wards it. In Oakshire, padfoots and the Barrow-Rime spriggan are Rime-Gale, Iron-Men, lashers, the bog-hulk and the Crag-Back are Iron-Root, and the spore-puff and the Moss-Shield and Barrow-Bell spriggans are Star-Tide. The curious hobs and the expedition's kin stay plain.
+- **Support: the Aegis Ward and the Ink-Share.** Binding the Soul Tether, or laying a Green Sanctuary (allies within 10 m), wards an ally: their next stun or shove is shrugged off. The tethered ally also gets The Lantern's Promise (18 frames) at any distance. A Support's leaf shares its ink: when its R or L+R starts in a fight, everyone on the tether or within 10 m strikes in its Sign for 8 s with their physical blows. The Sign pulses down the beam and rings the ground. So a party with a Warm-Hearth Homing Heal melts a Furrow Iron-Man's rust and opens his Maker-Seal with plain Lights.
+- **The Miyamoto tiers** replace the old threat tiers (`BossEncounterResource.MiyamotoTier`). `PostureEscalationComponent` on every foe with an encounter plays Tiers 1 and 2. At the threshold the foe leaps 3 m back over 220 ms (a rooted lasher stays put), an armour plate falls, and a lock ring lights on its chest. The key cracks it with a Bravery Counter: (60 + 45) x M(L) poise and a 2.5 s stun. A plain blow on a locked foe lands at half damage with a dull clank, so nobody is ever stuck. A Squire's one button finishes the Gap-Leap when a martial lock is up.
+
+  | Tier | Foes | Lock |
+  |---|---|---|
+  | 0 Punching Bag | the expedition's kin, Oakshire's hobs and padfoots up to Lv 2 | none: Iron-Root cracks them for 1.25x poise, no text |
+  | 1 Single Evade | Frost-Fang Padfoot (Lv 3), Bramble-Hobs (Lv 4-5) | martial (white-gold) at 75% |
+  | 1 Single Evade | Furrow Iron-Men (Lv 3-4) | Warm-Hearth ink (their rust) at 75% |
+  | 1 Single Evade | Crag-Spriggans (Lv 5) | Iron-Root ink (their shields) at 75% |
+  | 2 Multi-Lock | the Crag-Back Cairn-Drake (Lv 6); the Shingle-Scray (data) | martial at 75%, Warm-Hearth at 50%, Iron-Root at 25% |
+  | 3 Four-Gate Boss | the Cairnsman (Lv 5); the later bosses (data) | the four gates |
+
+- **The four gates** (`BossGateComponent`, on the Cairnsman). Gate 1, the Measure: his roar opens Iron-Root or Star-Tide. Gate 2, the Summons, at 75%: he leaps 3 m back behind a glassy Aegis Mantle (a tenth of the damage) and three Bramble-Hobs answer. He can't fall past 50% while the mantle stands. Un-boggarting them shatters it and opens a Star-Tide Glimmer-Spot. Gate 3, the Tempest, at 50%: his Gale-Beam phase, and his weakness shifts to Warm-Hearth. Gate 4, the Seal-Turn, at 25%: a 45-frame Challenge-Roar and his upside-down Maker-Seal shows for the scaled window (168 frames on the second sighting). An Iron-Root strike or a One-and-Done turns it right-way up: `STATE_UNBOGGART_RELEASE`, the fight won there and then, and he's lulled into his cairn. Missed, the seal hides until his next roar. The HUD rhyme carries a badge for each Sign that cracks him now.
+- **Gilding adds potency:** a Gilded Leaf card does 10% more damage, poise and healing (a Place-Card lends 10% more), and Star-Inked Vellum 20% more, with the quicker rite it already had. The Gilding Press shows the gain.
+- **One widget, three places.** `CrossGrimoireDiamondWidget.set_presentation_mode()` is the one call. The weapon diamond shows its tier (I to IV) and the combo pips. The Binder grows the diamonds from 1.0x to 2.2x over 220 ms and lists the Combo Forms the party knows under the Place-Cards. Picking a card at the Scribery plays the pocket-draw on your puppet at the press.
+- **Checks.** `test_phase_12_miyamoto_posture_trinity_and_grimoire_ux()` in the smoke test plays all of it in the Ring: the combos on the controller, both card animations, the One-and-Done, the Ward-Mantle against the swipe, the Aegis Ward and Ink-Share against a practice Iron-Man, a Frost-Fang and a Crag-Back, a practice Cairnsman through all four gates, the window maths, potency, and the widget in the Scribery and Binder. The Lens linter now reads the combo, tier, gate and lock names, and bans "tincture" and "catalyst" too. 528 checks pass.
+
+**Deliberate differences from the brief**
+- **The Hearth-Rite hold stays 120 frames** (80 on Star-Inked Vellum), as the Mythopoetic Lens set it (15 §6.2). The brief asks for 60 (0.65 s on Star-Inked). That's a Creative Director call.
+- **The brief's file names** were mapped onto the code as it is. `ArsenalCatalog` lives in `src/actors/`. There's no `SaveManager` (`PartyProgress` is the save) and no `EnemyMob` or `EnemyAIController` (`WildMob`, `WoodlandMinion` and `BossDummy`). The combo state lives on `ComboChainComponent`, not `ActorBase`, the way Sign-Flow lives on `SignFlowComponent`. Small hooks went outside the brief's folders: the stick's sideways read and the posture step (`src/components`), the tether's pulse, the bestiary's encounters and blow Signs, potency in `LoadoutComposer`, and the clank in `AudioCues`.
+- **`role_delivery` is the manifestation under its role's name**, the same stored value, so a card can't disagree with itself. Every Lantern-Tether leaf is a Support's Ink-Share leaf.
+- **The tiers were renumbered.** The old Tier 1 (always open) is Tier 0, and §3's table still uses the old numbers. Oakshire's kin from Lv 3 now lock; before, they were roadside kin up to Lv 4.
+- **The Ink-Share fires whenever a Support's R or L+R card starts in a fight**, not only from the Flow-Link Window, and it inks physical blows (Light, Heavy, ↑/↓+Heavy), not cards.
+- **The Lantern's Promise reaches a tethered ally at any distance**, so a party with a Lantern-Bearer always has one ally on the 18-frame window. Worth watching on the couch.
+- **"Shadow Sanctuary (10 m)" for the Support** is read as the Lantern-Bearer's Green Sanctuary; Shadow Sanctuary is the Tank's cone.
+- **The Ward Blessing turns toward the first foe that strikes**, rather than toward an element, since foes don't have one element.
+- **Tier 2's "multi-lock"** is a lock at each gate threshold, each with its own key (`gate_weakness_signs`).
+- **Gate 2's henchmen** are Bramble-Hobs for the Cairnsman. The resource's default `mob_scree_worm` is registered, but it wears the Bramble-Hob's body until Scree-Worms have one. Henchmen pay trail XP but no Chimes.
+- **The Seal-Turn ends the fight at once.** Without it, the boss is beaten the plain way at 0. The Cairnsman is lulled into his cairn either way.
+- **The HUD's diamonds stay beside the slot grid at 172 px**; the brief says 140 px, bottom-centred. That's the same open call as in §7.
+- **Screenshots:** `--screenshot=PATH` takes one frame of a normal launch, so a windowed probe (kept out of the repo) staged each moment instead and saved split-screen and close-up frames.
+
+**Still to come**
+- Bodies for Scree-Worm henchmen, and the bosses past the Cairnsman (their four gates are data only).
+- The items still open from §7: the 3-Echo trail build-up, Chime-Post engravings, Place-Cards charted at landmark Chime-Posts, and live Tier 2 foes beyond the Crag-Back.
