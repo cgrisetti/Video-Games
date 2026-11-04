@@ -16,9 +16,15 @@
 ## (Plain Vellum ivory, Gilded Leaf gold, Star-Inked Vellum violet and gold with
 ## stars). A gold star on the frame marks Home-Ground Harmony.
 ##
-## set_display_scale(1.0, false) is the HUD's compact cross; (2.2, true) is the
-## Binder's and the Scribery's, where a diamond can be picked with the mouse
-## (socket_picked). Everything is drawn at the display scale, so text stays sharp.
+## set_presentation_mode(1.0, false) is the HUD's compact cross; (2.2, true) is
+## the Binder's and the Scribery's, where a diamond can be picked with the mouse
+## (socket_picked). Everything is drawn at the display scale, so text stays
+## sharp; the Binder grows it there from the HUD's size over 220 ms
+## (grow_from), drawn from the middle while its place in the layout is already 2.2x.
+##
+## The bottom weapon diamond (14 GDD §8) shows the weapon's tier (I to IV) and,
+## for a hero, the live combo-chain pips: one per step of the form they're
+## playing, a gold arrow for its finisher (o - o - >).
 class_name CrossGrimoireDiamondWidget
 extends Control
 
@@ -46,6 +52,12 @@ const STAR_INK: Color = Color(0.58, 0.4, 0.95)
 const OUTLINE: Color = Color(0.0, 0.0, 0.0, 0.85)
 const UNINKED: Color = Color(1.0, 0.9, 0.62)
 const SELECT_COLOR: Color = Color(1.0, 0.9, 0.45)
+## The Binder grows the widget from the HUD's size to its own over this long.
+const GROW_TIME: float = 0.22
+const PIP_RADIUS: float = 3.4
+const PIP_GAP: float = 11.0
+const PIP_EMPTY: Color = Color(0.32, 0.3, 0.28, 0.95)
+const TIER_NUMERALS: Array[String] = ["", "I", "II", "III", "IV"]
 ## Socket key badges and pip costs, in DioramaSocket order.
 const KEYS: Array[String] = ["L", "R", "L+R"]
 
@@ -65,6 +77,11 @@ var follow: ActorBase
 ## A highlighted card shown in one socket before it's slotted: {socket, leaf, leaf_variant, place, place_variant}.
 var _preview: Dictionary = {}
 var _age: float = 0.0
+## The grow animation: the scale it started from and the time left (0 when it's done).
+var _grow_from: float = 1.0
+var _grow_left: float = 0.0
+## The scale this frame is drawn at (display_scale, or on its way there).
+var _ds: float = 1.0
 
 
 func _ready() -> void:
@@ -72,7 +89,34 @@ func _ready() -> void:
 	set_display_scale(display_scale, interactive)
 
 
-## The one control for every use: 1.0 and not interactive in the HUD, 2.2 and interactive in the Binder and Scribery.
+## The one control for every use (Rule of Three, 08 GDD Stage 5): 1.0 and not
+## interactive in the HUD, 2.2 and interactive in the Binder and Scribery.
+func set_presentation_mode(scale_factor: float, is_interactive: bool) -> void:
+	set_display_scale(scale_factor, is_interactive)
+
+
+## Grows the drawing from `from_scale` to the display scale over `seconds` (the Binder's 220 ms opening).
+func grow_from(from_scale: float, seconds: float = GROW_TIME) -> void:
+	_grow_from = maxf(0.1, from_scale)
+	_grow_left = maxf(0.0, seconds)
+	queue_redraw()
+
+
+## The scale the widget is drawn at right now (it reaches display_scale once a grow ends).
+func draw_scale() -> float:
+	if _grow_left <= 0.0:
+		return display_scale
+	var t: float = 1.0 - _grow_left / GROW_TIME
+	return lerpf(_grow_from, display_scale, ease(clampf(t, 0.0, 1.0), 0.4))
+
+
+## The combo-chain pips the weapon diamond shows now: steps played and the form's length (0, 0 for none).
+func combo_pips() -> Vector2i:
+	if is_instance_valid(follow) and follow.combo != null:
+		return Vector2i(follow.combo.step_index, follow.combo.max_steps)
+	return Vector2i.ZERO
+
+
 func set_display_scale(scale_factor: float, is_interactive: bool) -> void:
 	display_scale = maxf(0.1, scale_factor)
 	interactive = is_interactive
@@ -102,6 +146,7 @@ func clear_preview() -> void:
 
 func _process(delta: float) -> void:
 	_age += delta
+	_grow_left = maxf(0.0, _grow_left - delta)
 	if is_instance_valid(follow) and follow.loadout != null:
 		kit = follow.loadout.kit
 		weapon = follow.loadout.weapon
@@ -145,15 +190,15 @@ func _shown_kit() -> EquipmentLoadoutResource:
 	return kit
 
 
-## A diamond's centre in this control's own pixels (a socket, or WEAPON).
+## A diamond's centre in this control's own pixels (a socket, or WEAPON), drawn from the middle as it grows.
 func diamond_center(index: int) -> Vector2:
-	var middle: Vector2 = BASE_SIZE * 0.5
+	var middle: Vector2 = BASE_SIZE * 0.5 * display_scale
 	var offsets: Array[Vector2] = [Vector2(-SPREAD, 0.0), Vector2(SPREAD, 0.0), Vector2(0.0, -SPREAD), Vector2(0.0, SPREAD)]
-	return (middle + offsets[index]) * display_scale
+	return middle + offsets[index] * draw_scale()
 
 
 func diamond_radius() -> float:
-	return RADIUS * display_scale
+	return RADIUS * draw_scale()
 
 
 ## The diamond (socket or WEAPON) under a point in this control's pixels, or -1.
@@ -179,6 +224,7 @@ func _gui_input(event: InputEvent) -> void:
 # --- Drawing ------------------------------------------------------------------
 
 func _draw() -> void:
+	_ds = draw_scale()
 	for socket: int in EquipmentLoadoutResource.SOCKET_COUNT:
 		_draw_socket(socket)
 	_draw_weapon()
@@ -199,7 +245,7 @@ func _draw_socket(socket: int) -> void:
 		draw_colored_polygon(_diamond(center, outer), palette.darkened(0.35))
 		draw_colored_polygon(_diamond(center + Vector2(0.0, outer * 0.12), outer * 0.84), palette.darkened(0.15))
 		_draw_landscape(place, center, outer, palette.darkened(0.6))
-		_outline(center, outer, _finish_color(view["place_variant"], palette.lightened(0.3)), FRAME_BORDER * display_scale)
+		_outline(center, outer, _finish_color(view["place_variant"], palette.lightened(0.3)), FRAME_BORDER * _ds)
 	else:
 		draw_colored_polygon(_diamond(center, outer), EMPTY_FRAME)
 		_dashed_outline(center, outer, EMPTY_EDGE)
@@ -216,7 +262,7 @@ func _draw_socket(socket: int) -> void:
 	_draw_live(socket, center, outer)
 	if interactive and socket == selected_socket:
 		var breath: float = 0.5 + 0.5 * sin(_age * 5.0)
-		_outline(center, outer + 4.0 * display_scale, Color(SELECT_COLOR, 0.65 + 0.35 * breath), (2.0 + breath) * display_scale)
+		_outline(center, outer + 4.0 * _ds, Color(SELECT_COLOR, 0.65 + 0.35 * breath), (2.0 + breath) * _ds)
 
 
 ## The HUD's hero: a Hearth-Rite hold filling round the diamond, its blessing
@@ -226,23 +272,23 @@ func _draw_live(socket: int, center: Vector2, outer: float) -> void:
 	if not is_instance_valid(follow) or follow.sign_flow == null:
 		return
 	var flow: SignFlowComponent = follow.sign_flow
-	var line: float = 3.0 * display_scale
+	var line: float = 3.0 * _ds
 	if follow.input != null and follow.input.hearth_rite_socket() == socket:
-		_partial_outline(center, outer + 3.0 * display_scale, follow.input.hearth_rite_progress(), GOLD, line)
+		_partial_outline(center, outer + 3.0 * _ds, follow.input.hearth_rite_progress(), GOLD, line)
 	if flow.has_hearth_rite_tuck and flow.active_socket == socket:
 		var glow: float = 0.6 + 0.4 * sin(_age * 4.0)
 		var tint: Color = ArsenalCatalog.current.compute_diorama_synergy(&"", flow.active_location_card_id)["ambient_color"] \
 			if flow.active_location_card_id != &"" else GOLD
-		_outline(center, outer + 2.0 * display_scale, Color(tint.lightened(0.3), glow), line)
+		_outline(center, outer + 2.0 * _ds, Color(tint.lightened(0.3), glow), line)
 	if flow.coat_time_left > 0.0 and flow.coat_sign != ScribeSignResource.Sign.NONE \
 			and socket_view(socket)["synergy"]["scribe_sign"] == flow.coat_sign:
 		var share: float = flow.coat_time_left / maxf(0.1, flow.coat_synergy.get("coat_duration_sec", 1.0))
-		_partial_outline(center, outer + 3.0 * display_scale, share, ArsenalCatalog.current.sign_seal(flow.coat_sign).color.lightened(0.3), line)
+		_partial_outline(center, outer + 3.0 * _ds, share, ArsenalCatalog.current.sign_seal(flow.coat_sign).color.lightened(0.3), line)
 	if flow.is_flow_window_open() and follow.stats.resonance_charge >= ScribeCardResource.SOCKET_PIP_COSTS[socket]:
 		_outline(center, outer * 0.62, Color(1.0, 0.96, 0.82, 0.9), line)
 	if _counters_open_glimmer(socket):
 		var beat: float = 0.5 + 0.5 * sin(_age * 9.0)
-		_outline(center, outer + 6.0 * display_scale, Color(GOLD, beat), line)
+		_outline(center, outer + 6.0 * _ds, Color(GOLD, beat), line)
 
 
 ## Whether a foe near the HUD's hero has an open Glimmer-Spot this socket's Sign cracks.
@@ -252,7 +298,7 @@ func _counters_open_glimmer(socket: int) -> bool:
 		return false
 	for enemy: ActorBase in CombatDirector.current.enemies():
 		if enemy.glimmer != null and not enemy.glimmer.encounter.is_always_open() and enemy.glimmer.is_open() \
-				and enemy.glimmer.encounter.is_countered_by(scribe_sign) \
+				and enemy.glimmer.is_countered_now(scribe_sign) \
 				and enemy.global_position.distance_to(follow.global_position) <= SignFlowComponent.COMBAT_RADIUS:
 			return true
 	return false
@@ -265,29 +311,60 @@ func _draw_weapon() -> void:
 	draw_colored_polygon(_diamond(center, outer), Color(0.07, 0.07, 0.1, 0.9))
 	draw_colored_polygon(_diamond(center, outer * 0.86), body.darkened(0.45))
 	var tier_trim: Color = weapon.trim_albedo if weapon != null else PARCHMENT
-	_outline(center, outer, tier_trim, FRAME_BORDER * display_scale)
+	_outline(center, outer, tier_trim, FRAME_BORDER * _ds)
 	_draw_weapon_icon(center, outer * 0.42, weapon.weapon_type if weapon != null else -1, body.lightened(0.5))
+	if weapon != null and weapon.is_weapon():
+		# The trail tier, I to IV, in the right corner.
+		var font: Font = ThemeDB.fallback_font
+		var font_size: int = roundi(KEY_FONT_SIZE * 0.9 * _ds)
+		var at: Vector2 = center + Vector2(outer * 0.18, outer * 0.12)
+		var numeral: String = TIER_NUMERALS[clampi(weapon.equipment_tier, 0, TIER_NUMERALS.size() - 1)]
+		draw_string_outline(font, at, numeral, HORIZONTAL_ALIGNMENT_CENTER, outer * 0.9, font_size, roundi(3 * _ds), OUTLINE)
+		draw_string(font, at, numeral, HORIZONTAL_ALIGNMENT_CENTER, outer * 0.9, font_size, tier_trim.lightened(0.3))
+	_draw_combo_pips(center, outer)
+
+
+## The live combo-chain pips under the weapon diamond: o - o - > (steps played lit gold, the finisher an arrow).
+func _draw_combo_pips(center: Vector2, outer: float) -> void:
+	var pips: Vector2i = combo_pips()
+	if pips.y <= 0:
+		return
+	var gap: float = PIP_GAP * _ds
+	var radius: float = PIP_RADIUS * _ds
+	var row_y: float = center.y + outer + 5.0 * _ds
+	var first_x: float = center.x - gap * (pips.y - 1) * 0.5
+	for step: int in pips.y:
+		var at: Vector2 = Vector2(first_x + gap * step, row_y)
+		var lit: bool = step < pips.x
+		var color: Color = GOLD if lit else PIP_EMPTY
+		if step > 0:
+			draw_line(Vector2(at.x - gap + radius, row_y), Vector2(at.x - radius, row_y), Color(GOLD if lit else PIP_EMPTY, 0.85), maxf(1.0, _ds))
+		if step == pips.y - 1:
+			draw_colored_polygon(PackedVector2Array([at + Vector2(-radius, -radius * 1.2), at + Vector2(radius * 1.4, 0.0),
+				at + Vector2(-radius, radius * 1.2)]), color)
+		else:
+			draw_circle(at, radius, color)
 
 
 func _draw_key(socket: int, center: Vector2, outer: float) -> void:
 	var font: Font = ThemeDB.fallback_font
-	var font_size: int = roundi(KEY_FONT_SIZE * display_scale)
+	var font_size: int = roundi(KEY_FONT_SIZE * _ds)
 	var text: String = KEYS[socket]
 	# In the frame's top corner, where every diamond keeps it clear of the landscape.
 	var at: Vector2 = center + Vector2(-outer, -outer * 0.5)
-	draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, outer * 2.0, font_size, roundi(4 * display_scale), OUTLINE)
+	draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, outer * 2.0, font_size, roundi(4 * _ds), OUTLINE)
 	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, outer * 2.0, font_size, PARCHMENT)
 	# Pip gems: one for L and R, three for L+R.
 	var pips: int = roundi(ScribeCardResource.SOCKET_PIP_COSTS[socket])
 	for gem: int in pips:
-		var gem_center: Vector2 = center + Vector2((gem - (pips - 1) * 0.5) * 8.0 * display_scale, -outer - 2.0 * display_scale)
-		draw_colored_polygon(_diamond(gem_center, 3.6 * display_scale), GOLD)
+		var gem_center: Vector2 = center + Vector2((gem - (pips - 1) * 0.5) * 8.0 * _ds, -outer - 2.0 * _ds)
+		draw_colored_polygon(_diamond(gem_center, 3.6 * _ds), GOLD)
 
 
 ## A finish's trim round the portrait: Plain Vellum's ivory edge, Gilded Leaf's
 ## double gold, Star-Inked Vellum's violet edge with a gold line and three stars.
 func _draw_finish(variant: int, center: Vector2, inner: float) -> void:
-	var line: float = FRAME_BORDER * display_scale
+	var line: float = FRAME_BORDER * _ds
 	match variant:
 		Variant.GILDED_LEAF:
 			_outline(center, inner, GOLD, line * 1.6)
@@ -401,7 +478,7 @@ func _dashed_outline(center: Vector2, r: float, color: Color) -> void:
 	var corners: PackedVector2Array = _diamond(center, r)
 	corners.append(corners[0])
 	for edge: int in 4:
-		draw_dashed_line(corners[edge], corners[edge + 1], color, maxf(1.0, display_scale * 1.5), 4.0 * display_scale)
+		draw_dashed_line(corners[edge], corners[edge + 1], color, maxf(1.0, _ds * 1.5), 4.0 * _ds)
 
 
 func _star(center: Vector2, r: float, color: Color) -> void:

@@ -34,6 +34,9 @@ const NEST_COLOR: Color = Color(0.3, 0.33, 0.18)
 @export var kinds: Array[int] = []
 ## Its WorldStateDB id (10_WORLD_ARCHITECTURE.md §4.2); empty: not remembered.
 @export var persist_id: StringName = &""
+## Called in by a boss's second gate (BossGateComponent, 14 GDD §8): no nest or
+## Hush-Crack, awake from the start, and never remembered or paid for.
+@export var summoned: bool = false
 
 var minions: Array[WoodlandMinion] = []
 var alert: bool = false
@@ -43,7 +46,10 @@ var hush_crack: HushCrackLandmark
 
 
 func _ready() -> void:
-	_build_nest()
+	if summoned:
+		alert = true
+	else:
+		_build_nest()
 
 
 ## Wakes its minions into the world. The level calls this from its setup, after

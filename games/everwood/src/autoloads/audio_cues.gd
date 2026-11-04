@@ -208,6 +208,10 @@ func _notes_for(cue: StringName) -> Array[Note]:
 			return _arpeggio([523.0, 659.0, 784.0], 0.08, Wave.SQUARE, 0.2)
 		&"beam":
 			return [Note.new(0.0, 1.1, 0.0, 0.0, Wave.NOISE, 0.45), Note.new(0.0, 1.1, 110.0, 220.0, Wave.SAW, 0.3)]
+		&"clank":
+			# A plain blow on a locked foe (14 GDD §8): a dull, short iron thunk.
+			return [Note.new(0.0, 0.05, 0.0, 0.0, Wave.NOISE, 0.3), Note.new(0.0, 0.14, 210.0, 150.0, Wave.SQUARE, 0.22),
+				Note.new(0.0, 0.1, 95.0, 80.0, Wave.SINE, 0.4)]
 		&"wade":
 			# A wet footstep in the ford: a soft splash with a little gurgle under it.
 			return [Note.new(0.0, 0.16, 0.0, 0.0, Wave.NOISE, 0.32), Note.new(0.02, 0.12, 320.0, 160.0, Wave.SINE, 0.18)]

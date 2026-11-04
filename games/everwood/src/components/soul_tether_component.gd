@@ -10,11 +10,17 @@ const SLOT_ARROWS: Array[String] = ["↑", "→", "↓", "←"]
 const BEAM_RADIUS: float = 0.04
 const BEAM_HEIGHT: float = 1.1
 const BEAM_COLOR: Color = Color(0.45, 1.0, 0.6, 0.55)
+## An Ink-Share pulses the beam in its Sign's colour for this long (14 GDD §8).
+const PULSE_TIME: float = 1.2
+const PULSE_WIDTH: float = 2.6
 
 var actor: ActorBase
 var tethered_id: StringName = &""
 
 var _beam: MeshInstance3D
+var _beam_material: StandardMaterial3D
+var _pulse_color: Color = BEAM_COLOR
+var _pulse_left: float = 0.0
 
 
 func setup(owner_actor: ActorBase) -> void:
@@ -32,6 +38,7 @@ func setup(owner_actor: ActorBase) -> void:
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.albedo_color = BEAM_COLOR
 	cylinder.material = material
+	_beam_material = material
 	_beam.mesh = cylinder
 	_beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_beam.top_level = true
@@ -82,9 +89,24 @@ func slot_arrow_for(player_id: StringName) -> String:
 
 
 ## Stretches the beam between the healer and the tethered ally.
+## A Support's Ink-Share runs down the tether: the beam glows thick in the Sign's colour, then fades back.
+func pulse(color: Color) -> void:
+	_pulse_color = Color(color, 0.9)
+	_pulse_left = PULSE_TIME
+
+
+## Whether an Ink-Share is pulsing down the beam now.
+func is_pulsing() -> bool:
+	return _pulse_left > 0.0
+
+
 func update_beam() -> void:
 	if _beam == null or not _beam.is_inside_tree():
 		return
+	if _pulse_left > 0.0:
+		_pulse_left = maxf(0.0, _pulse_left - actor.get_physics_process_delta_time())
+		var share: float = _pulse_left / PULSE_TIME
+		_beam_material.albedo_color = BEAM_COLOR.lerp(_pulse_color, share)
 	var target: ActorBase = tethered_actor()
 	if target == null or target == actor:
 		_beam.visible = false
@@ -100,4 +122,5 @@ func update_beam() -> void:
 	var up: Vector3 = (to - from) / length
 	var side: Vector3 = up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.95 else Vector3.RIGHT).normalized()
 	var forward: Vector3 = side.cross(up).normalized()
-	_beam.global_transform = Transform3D(Basis(side, up * length, forward), mid)
+	var width: float = lerpf(1.0, PULSE_WIDTH, _pulse_left / PULSE_TIME)
+	_beam.global_transform = Transform3D(Basis(side * width, up * length, forward * width), mid)

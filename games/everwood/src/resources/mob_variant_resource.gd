@@ -44,6 +44,13 @@ enum Body { BOAR, SCUTTLER, WOLF, TOAD, HUMANOID, VINE, SHAMBLER, HULK, WIGHT, B
 @export var ranged: bool = false
 @export var projectile_look: StringName = &""
 @export var projectile_range: float = 16.0
+## The Sign its blow carries (ScribeSignResource.Sign): its limb glows that colour
+## through the wind-up, and a Ward-Mantle of the same Sign soaks it (14 GDD §8).
+@export var blow_sign: int = ScribeSignResource.Sign.NONE
+
+@export_group("Posture")
+## Its Miyamoto tier and lock (a BossEncounterResource id); &"" for roadside kin's default.
+@export var encounter_id: StringName = &""
 
 @export_group("Temper")
 ## Turns on a player this close (0: a curious hob, it only fights back once wronged).

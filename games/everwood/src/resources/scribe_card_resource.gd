@@ -12,6 +12,14 @@
 ## backdrop and lends it its landmark's strength; a Place-Card of the leaf's own
 ## Sign is Home-Ground Harmony and makes the coat last 25% longer.
 ##
+## Role asymmetry (14 GDD §8, the Phase 12 Kaizen pass): the manifestation is
+## also the role's delivery (role_delivery reads the same value). A DPS
+## Weapon-Coat can be spent by L+R on a 3.2x One-and-Done Seal-Breaker; a Tank
+## Ward-Mantle soaks 80% of a blow of its own Sign, shrugs off the stun and
+## throws 60 poise back; a Support's leaf shares its ink, so for 8 s every
+## teammate on the Soul Tether or within 10 m strikes in its Sign. A finer
+## finish adds potency: Gilded Leaf +10%, Star-Inked Vellum +20%.
+##
 ## Cards are data: adding one is a register_card() call in ArsenalCatalog (or a
 ## .tres file), and nothing that plays cards changes.
 class_name ScribeCardResource
@@ -23,13 +31,16 @@ enum LinkRole { LEAD, UNDER }
 enum CardKind { ACTION_LEAF = 0, LOCATION_PLACE = 1 }
 ## How an Action-Leaf shows its Sign: on the weapon, on the shield and shoulders, or down the Soul Tether.
 enum ManifestationMode { WEAPON_COAT = 0, WARD_MANTLE = 1, LANTERN_TETHER = 2 }
+## The same three as each role delivers them (DPS, Tank, Support): one value, two names.
+enum RoleDelivery { DPS_WEAPON_COAT = 0, TANK_WARD_MANTLE = 1, SUPPORT_INK_SHARE = 2 }
 ## The diamond sockets that hold a diorama pair: L Guard, R Skill and L+R Ult.
 enum DioramaSocket { GUARD, SKILL, ULT }
 ## The four posture slots, in Grimoire order.
 enum GrimoireSlot { FORWARD, BACK, SIGNATURE, ULTIMATE }
 enum CardRarity { BASIC, COMMON, UNCOMMON, RARE, LEGENDARY }
 ## A copy's finish (06_WORLD_AND_CALLINGS.md §2): Plain Vellum, Gilded Leaf or
-## Star-Inked Vellum. Presentation only: the mechanics never read it.
+## Star-Inked Vellum. A finer finish adds potency (FINISH_POTENCY: +10%, +20%)
+## and a Star-Inked leaf's Hearth-Rite is quicker.
 enum CardVariant { STANDARD, GILDED_LEAF, STAR_INKED_VELLUM }
 ## THROUGH_WEAPON cards take the weapon's delivery (a swing or a projectile);
 ## AT_CASTER cards happen around the caster whatever is in their hands.
@@ -59,6 +70,9 @@ const SOCKET_GRIMOIRE_SLOTS: Array[int] = [-1, GrimoireSlot.SIGNATURE, GrimoireS
 const SOCKET_PIP_COSTS: Array[float] = [1.0, 1.0, 3.0]
 ## The Gilding Press's price to raise a copy to each finish: Gilded Leaf 50, Star-Inked Vellum 120 Chimes.
 const GILDING_COSTS: Array[int] = [0, 50, 120]
+## What each finish adds to a card's potency (damage, poise, heals, a Place-Card's bonuses): +10% and +20%.
+const FINISH_POTENCY: Array[float] = [1.0, 1.1, 1.2]
+const ROLE_DELIVERY_NAMES: Array[String] = ["Weapon-Coat", "Ward-Mantle", "Ink-Share"]
 
 @export var card_id: StringName = &""
 @export var display_name: String = ""
@@ -99,6 +113,26 @@ const GILDING_COSTS: Array[int] = [0, 50, 120]
 ## What the Reed-Light Scribery asks to inscribe or chart a copy.
 @export var chime_cost: int = 25
 
+@export_group("Role asymmetry")
+## How long a Sign-Flow coat lasts is coat_duration_sec; these say what each role's coat does.
+## Support: casting it shares its Sign with the party (Ink-Share) for INK_SHARE_TIME.
+@export var shares_ink_to_party: bool = false
+## Tank and Support: a coat of it shrugs off stuns and knockback.
+@export var grants_stun_immunity: bool = false
+## Tank: a Ward-Mantle takes this share off a blow of its own Sign.
+@export var ward_damage_mitigation_pct: float = 0.80
+## Tank: and throws this much poise back at the attacker.
+@export var ward_reflected_poise: float = 60.0
+## DPS: L+R spends a live Weapon-Coat on a finisher this many times the weapon's damage.
+@export var one_and_done_finisher_mult: float = 3.2
+
+## The role that delivers this leaf (the manifestation under its role's name). Not stored: it is manifestation_mode.
+var role_delivery: RoleDelivery:
+	get:
+		return manifestation_mode as int as RoleDelivery
+	set(value):
+		manifestation_mode = value as int as ManifestationMode
+
 
 func is_lead() -> bool:
 	return kind == LinkRole.LEAD and card_kind == CardKind.ACTION_LEAF
@@ -119,6 +153,16 @@ func is_place_card() -> bool:
 
 func mode_name() -> String:
 	return MODE_NAMES[manifestation_mode]
+
+
+## A Support leaf whose cast shares its Sign with the party.
+func shares_ink() -> bool:
+	return is_action_leaf() and (shares_ink_to_party or role_delivery == RoleDelivery.SUPPORT_INK_SHARE)
+
+
+## How much a copy of this finish adds to what the card does (1.0, 1.1 or 1.2).
+static func finish_potency(variant: int) -> float:
+	return FINISH_POTENCY[clampi(variant, 0, FINISH_POTENCY.size() - 1)]
 
 
 func memory_cost() -> int:

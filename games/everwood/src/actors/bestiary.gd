@@ -18,6 +18,12 @@
 ##     bellows a Challenge-Roar on the High Road and is lulled into a cairn
 ## How each fights its Sign counter (Glacial Rupture slows the dashers,
 ## Shatterpoint cracks the shields) comes from the Four Signs as they stand.
+## Its Miyamoto tier (14 GDD §8) comes from its encounter: hobs and padfoots up
+## to Lv 2 are roadside kin; from Lv 3 each family leaps back at 75% and shows
+## its lock (the Frost-Fang's and the Bramble-Hobs' martial, the Iron-Men's rust
+## that Warm-Hearth melts, the Spriggans' shields that Iron-Root cracks), and
+## the Crag-Back locks at every gate. Each hostile family's blow carries a Sign
+## (its limb glows through the wind-up), which a Tank's Ward-Mantle can soak.
 class_name Bestiary
 extends RefCounted
 
@@ -85,6 +91,7 @@ static func loadout(chosen: MobVariantResource) -> ClassLoadoutResource:
 	blow.lunge_distance = chosen.lunge
 	blow.hit_stop_scale = 1.4 if chosen.rank == Rank.BOSS else 0.9
 	blow.resonance_gain = 0.0
+	blow.scribe_sign = chosen.blow_sign as ScribeSignResource.Sign
 	if chosen.ranged:
 		blow.delivery = CombatActionResource.Delivery.PROJECTILE
 		blow.projectile_range = chosen.projectile_range
@@ -249,6 +256,24 @@ static func _ensure() -> void:
 	for kin: MobVariantResource in [husk, acolyte, knell, behemoth]:
 		_spirit(kin, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_LULLED_CAIRN, Form.HEDGE_WREN)
 	behemoth.roars = true
+	# Their Miyamoto tiers and locks (ArsenalCatalog encounters), and the Sign each family's blow carries.
+	alpha.encounter_id = ArsenalCatalog.FROST_FANG_KIN
+	for kin: MobVariantResource in [cutthroat, slinger, foreman]:
+		kin.encounter_id = ArsenalCatalog.IRON_MAN_KIN
+	for kin: MobVariantResource in [lasher, puff, hulk]:
+		kin.encounter_id = ArsenalCatalog.BRAMBLE_HOB_KIN
+	for kin: MobVariantResource in [husk, acolyte, knell]:
+		kin.encounter_id = ArsenalCatalog.SPRIGGAN_KIN
+	behemoth.encounter_id = ArsenalCatalog.CRAG_BACK_DRAKE
+	lasher.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
+	hulk.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
+	puff.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
+	for kin: MobVariantResource in [prowler, toad, alpha, acolyte]:
+		kin.blow_sign = ScribeSignResource.Sign.SIGN_RIME_GALE
+	for kin: MobVariantResource in [cutthroat, slinger, foreman, behemoth]:
+		kin.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
+	for kin: MobVariantResource in [husk, knell]:
+		kin.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
 
 
 static func _make(id: StringName, label: String, family: Family, level: int, body: Body, health: float, poise: float, damage: float) -> MobVariantResource:

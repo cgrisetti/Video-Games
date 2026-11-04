@@ -16,6 +16,12 @@
 ## the four Place-Cards that frame them, the dioramas they make together
 ## (compute_diorama_synergy), and every foe's BossEncounterResource: its threat
 ## tier, level, counter Signs and Glimmer-Spot window.
+##
+## And the Phase 12 Kaizen pass (14 GDD §8): the five directional combo forms
+## (ComboChainResource, get_unlocked_combos_for_level), each role's coat (a
+## Tank's Ward-Mantle shrugs off stuns; a Support's leaf shares its ink), the
+## Miyamoto tiers of every foe with their locks, and the henchmen a boss can
+## summon in its second gate.
 class_name ArsenalCatalog
 extends Node
 
@@ -146,6 +152,12 @@ const UNINKED_INK: Color = Color(1.0, 0.9, 0.62)
 # Encounters (14 GDD §3), by threat tier.
 const ROADSIDE_KIN: StringName = &"roadside_kin"
 const SCREE_WORM: StringName = &"scree_worm"
+## The starting zone's locked kin (Miyamoto Tiers 1 and 2), by family.
+const FROST_FANG_KIN: StringName = &"frost_fang_padfoot"
+const IRON_MAN_KIN: StringName = &"furrow_iron_man_rust"
+const BRAMBLE_HOB_KIN: StringName = &"bramble_hob_bark"
+const SPRIGGAN_KIN: StringName = &"crag_spriggan_shield"
+const CRAG_BACK_DRAKE: StringName = &"crag_back_cairn_drake"
 const SHINGLE_SCRAY: StringName = &"shingle_scray"
 const CAIRNSMAN: StringName = &"cairnsman"
 const GALE_BUCCA: StringName = &"gale_bucca"
@@ -153,6 +165,18 @@ const FURROW_IRON_MAN: StringName = &"furrow_iron_man"
 const CAIRN_DRAKE: StringName = &"cairn_drake"
 const TOR_SLEEPER: StringName = &"tor_sleeper"
 const OLD_HOB: StringName = &"old_hob"
+
+# The directional combo forms (ComboChainResource), in the order the trail teaches them.
+const COMBO_APPRENTICE_THREE_BEAT: StringName = &"combo_apprentice_three_beat"
+const COMBO_SUNDERING_GAP_LEAP: StringName = &"combo_sundering_gap_leap"
+const COMBO_WAYFARER_VAULT_STRIKE: StringName = &"combo_wayfarer_vault_strike"
+const COMBO_WHIRLING_FLANK_SWEEP: StringName = &"combo_whirling_flank_sweep"
+const COMBO_GRAND_SIGN_FLOW: StringName = &"combo_grand_sign_flow"
+
+# Henchmen a boss can summon (BossEncounterResource.gate_2_henchman_id): a WoodlandMinion.Kind each.
+const HENCHMAN_SCREE_WORM: StringName = &"mob_scree_worm"
+const HENCHMAN_BRAMBLE_HOB: StringName = &"mob_bramble_hob"
+const HENCHMAN_WISP_BOGGLE: StringName = &"mob_wisp_boggle"
 
 # The Secondary Callings (06 §3, 07 GDD §1.3), in column order.
 const STOUT_HEART: StringName = &"stout_heart"
@@ -183,6 +207,8 @@ const Fx = CombatActionResource.Effect
 const Sign = ScribeSignResource.Sign
 const Slot = ScribeCardResource.GrimoireSlot
 const Part = PropPartResource.Shape
+const Tier = BossEncounterResource.MiyamotoTier
+const Key = BossEncounterResource.LockKeyType
 
 var _signs: Dictionary[int, ScribeSignResource] = {}
 var _secondaries: Dictionary[StringName, SecondaryCallingResource] = {}
@@ -191,6 +217,10 @@ var _secondary_order: Array[StringName] = []
 var _items: Dictionary[StringName, EquipmentItemResource] = {}
 var _cards: Dictionary[StringName, ScribeCardResource] = {}
 var _encounters: Dictionary[StringName, BossEncounterResource] = {}
+var _combos: Dictionary[StringName, ComboChainResource] = {}
+var _combo_order: Array[StringName] = []
+## Henchman id -> WoodlandMinion.Kind.
+var _henchmen: Dictionary[StringName, int] = {}
 # Registration order, so menus and drop rolls are the same on every peer.
 var _item_order: Array[StringName] = []
 var _card_order: Array[StringName] = []
@@ -207,6 +237,8 @@ func _init() -> void:
 	_build_place_cards()
 	_build_callings()
 	_build_encounters()
+	_build_combos()
+	_build_henchmen()
 	_load_card_folder()
 
 
@@ -327,12 +359,12 @@ func scribery_leaves() -> Array[ScribeCardResource]:
 	return list
 
 
-## The most poise any Place-Card lends a strike (the cap on what another peer may claim).
+## The most poise any Place-Card lends a strike, at its finest finish (the cap on what another peer may claim).
 func max_place_poise() -> float:
 	var most: float = 0.0
 	for place: ScribeCardResource in place_cards():
 		most = maxf(most, place.location_bonus_poise)
-	return most
+	return most * ScribeCardResource.finish_potency(ScribeCardResource.CardVariant.STAR_INKED_VELLUM)
 
 
 ## A diorama pair (14 GDD §4): an Action-Leaf framed by a Place-Card, either
@@ -341,10 +373,15 @@ func max_place_poise() -> float:
 ##   place_sign, is_home_ground_harmony   true when leaf and place share a Sign
 ##   coat_duration_sec                 the leaf's, x the place's home-ground multiplier on harmony
 ##   bonus_reach_m, bonus_poise, bonus_heal, stamina_refund   what the place lends
+##     (x its finish's potency: Gilded Leaf +10%, Star-Inked Vellum +20%)
 ##   ink_color, ambient_color          the leaf's Sign colour and the place's tint
-func compute_diorama_synergy(action_card_id: StringName, location_card_id: StringName) -> Dictionary:
+##   shares_ink, grants_stun_immunity, ward_mitigation, ward_reflected_poise,
+##   one_and_done_mult                 what the leaf's role does with its coat (14 GDD §8)
+func compute_diorama_synergy(action_card_id: StringName, location_card_id: StringName,
+		action_variant: int = ScribeCardResource.CardVariant.STANDARD, location_variant: int = ScribeCardResource.CardVariant.STANDARD) -> Dictionary:
 	var action: ScribeCardResource = card(action_card_id)
 	var place: ScribeCardResource = card(location_card_id)
+	var place_potency: float = ScribeCardResource.finish_potency(location_variant)
 	var inked: bool = action != null and action.is_action_leaf()
 	var framed: bool = place != null and place.is_place_card()
 	var leaf_sign: int = action.scribe_sign if inked else Sign.NONE
@@ -363,11 +400,18 @@ func compute_diorama_synergy(action_card_id: StringName, location_card_id: Strin
 		"is_home_ground_harmony": harmony,
 		"coat_duration_sec": duration,
 		"bonus_reach_m": place.location_bonus_reach_m if framed else 0.0,
-		"bonus_poise": place.location_bonus_poise if framed else 0.0,
-		"bonus_heal": place.location_bonus_heal if framed else 0.0,
-		"stamina_refund": place.location_stamina_refund if framed else 0.0,
+		"bonus_poise": place.location_bonus_poise * place_potency if framed else 0.0,
+		"bonus_heal": place.location_bonus_heal * place_potency if framed else 0.0,
+		"stamina_refund": place.location_stamina_refund * place_potency if framed else 0.0,
 		"ink_color": ink,
 		"ambient_color": sign_seal(place_sign).color if framed else ink,
+		"action_variant": action_variant if inked else ScribeCardResource.CardVariant.STANDARD,
+		"location_variant": location_variant if framed else ScribeCardResource.CardVariant.STANDARD,
+		"shares_ink": inked and action.shares_ink(),
+		"grants_stun_immunity": inked and action.grants_stun_immunity,
+		"ward_mitigation": action.ward_damage_mitigation_pct if inked else 0.0,
+		"ward_reflected_poise": action.ward_reflected_poise if inked else 0.0,
+		"one_and_done_mult": action.one_and_done_finisher_mult if inked else 1.0,
 	}
 
 
@@ -380,6 +424,33 @@ func encounters() -> Array[BossEncounterResource]:
 	var list: Array[BossEncounterResource] = []
 	list.assign(_encounters.values())
 	return list
+
+
+## A combo form by id (&"combo_sundering_gap_leap"), or null.
+func combo(id: StringName) -> ComboChainResource:
+	return _combos.get(id, null)
+
+
+## Every combo form, in the order the trail teaches them.
+func combos() -> Array[ComboChainResource]:
+	var list: Array[ComboChainResource] = []
+	for id: StringName in _combo_order:
+		list.append(_combos[id])
+	return list
+
+
+## The combo forms the party knows at this trail level (with a weapon of `weapon_tier`, 1-4).
+func get_unlocked_combos_for_level(player_level: int, weapon_tier: int = EquipmentItemResource.EquipmentTier.TIER_4_RELIC) -> Array[ComboChainResource]:
+	var list: Array[ComboChainResource] = []
+	for listed: ComboChainResource in combos():
+		if listed.is_unlocked(player_level, weapon_tier):
+			list.append(listed)
+	return list
+
+
+## The WoodlandMinion.Kind a henchman id summons (-1 when there's no such henchman).
+func henchman_kind(id: StringName) -> int:
+	return _henchmen.get(id, -1)
 
 
 ## How a card copy reads in menus and banners: "Moonfall Cleave (Rare, Gilded Leaf)".
@@ -561,6 +632,16 @@ func register_secondary_calling(added: SecondaryCallingResource) -> void:
 
 func register_calling(added: CallingResource) -> void:
 	_callings[added.calling_id] = added
+
+
+func register_combo(added: ComboChainResource) -> void:
+	if not _combos.has(added.combo_id):
+		_combo_order.append(added.combo_id)
+	_combos[added.combo_id] = added
+
+
+func register_henchman(id: StringName, kind: int) -> void:
+	_henchmen[id] = kind
 
 
 func register_encounter(added: BossEncounterResource) -> void:
@@ -1317,6 +1398,15 @@ func _build_action_leaves() -> void:
 		card(id).manifestation_mode = ScribeCardResource.ManifestationMode.WARD_MANTLE
 	for id: StringName in LANTERN_TETHER_LEAVES:
 		card(id).manifestation_mode = ScribeCardResource.ManifestationMode.LANTERN_TETHER
+	# Each role's coat (14 GDD §8): a Tank's Ward-Mantle shrugs off stuns and throws
+	# poise back; a Support's leaf shares its ink with the party and wards against stuns.
+	for leaf: ScribeCardResource in action_leaves():
+		match leaf.role_delivery:
+			ScribeCardResource.RoleDelivery.TANK_WARD_MANTLE:
+				leaf.grants_stun_immunity = true
+			ScribeCardResource.RoleDelivery.SUPPORT_INK_SHARE:
+				leaf.shares_ink_to_party = true
+				leaf.grants_stun_immunity = true
 
 
 ## A Common leaf the Scribery inscribes: not a starter, never in a chest.
@@ -1356,41 +1446,58 @@ func _place(id: StringName, label: String, scribe_sign: Sign, landmark: StringNa
 	return place
 
 
-# --- Encounters: threat tiers and Glimmer-Spots (14 GDD §3) --------------------
+# --- Encounters: Miyamoto tiers, locks and Glimmer-Spots (14 GDD §3, §8) ------------
 
-## Every foe's encounter. Tier 1 kin are always open to Iron-Root; the bosses
-## open a Glimmer-Spot during their pattern, tightening from the base window to
-## the floor as the family sees it (12 frames a sighting, five sightings).
+## Every foe's encounter. Tier 0 kin are always open to Iron-Root; Tier 1 kin
+## leap back and lock at 75%, Tier 2 at every gate; the bosses open a
+## Glimmer-Spot during their pattern, tightening from the base window to the
+## floor as the family sees it (12 frames a sighting, five sightings), across
+## their four gates.
 func _build_encounters() -> void:
-	_encounter(ROADSIDE_KIN, "Roadside Pebbles & Minor Kin", BossEncounterResource.ThreatTier.TIER_1_MINOR_PEBBLE, 1, [Sign.SIGN_IRON_ROOT], 0, 0, "", "")
-	_encounter(SCREE_WORM, "Scree-Worm", BossEncounterResource.ThreatTier.TIER_1_MINOR_PEBBLE, 2, [Sign.SIGN_IRON_ROOT], 0, 0, "", "")
-	_encounter(SHINGLE_SCRAY, "Shingle-Scray", BossEncounterResource.ThreatTier.TIER_2_TRAIL_WARDEN, 7, [Sign.SIGN_RIME_GALE], 210, 150, "",
-		"dive")
-	_encounter(CAIRNSMAN, "The Cairnsman of Dover-Slap-Falls", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 5,
+	_encounter(ROADSIDE_KIN, "Roadside Pebbles & Minor Kin", Tier.TIER_0_PUNCHING_BAG, 1, [Sign.SIGN_IRON_ROOT], 0, 0, "", "")
+	_encounter(SCREE_WORM, "Scree-Worm", Tier.TIER_0_PUNCHING_BAG, 2, [Sign.SIGN_IRON_ROOT], 0, 0, "", "")
+	# Tier 1: the starting zone's locked kin, one lock each at 75%.
+	_locked(_encounter(FROST_FANG_KIN, "Frost-Fang Padfoot", Tier.TIER_1_SINGLE_EVADE, 3, [], 0, 0, "", "pounce"), Key.MARTIAL_COMBO_KEY)
+	_locked(_encounter(IRON_MAN_KIN, "Furrow Iron-Man", Tier.TIER_1_SINGLE_EVADE, 3, [Sign.SIGN_WARM_HEARTH], 0, 0, "", "plough-stamp"),
+		Key.ELEMENTAL_INK_KEY)
+	_locked(_encounter(BRAMBLE_HOB_KIN, "Bramble-Hob", Tier.TIER_1_SINGLE_EVADE, 4, [], 0, 0, "", "lash"), Key.MARTIAL_COMBO_KEY)
+	_locked(_encounter(SPRIGGAN_KIN, "Crag-Spriggan", Tier.TIER_1_SINGLE_EVADE, 5, [Sign.SIGN_IRON_ROOT], 0, 0, "", "shield-brace"),
+		Key.ELEMENTAL_INK_KEY)
+	# Tier 2: the roaming Crag-Back locks at each gate, a new key every time.
+	var drake: BossEncounterResource = _locked(_encounter(CRAG_BACK_DRAKE, "The Crag-Back Cairn-Drake", Tier.TIER_2_MULTI_LOCK, 6,
+		[Sign.SIGN_WARM_HEARTH], 0, 0, "", "coil"), Key.MARTIAL_COMBO_KEY)
+	drake.gate_weakness_signs = [Sign.NONE, Sign.NONE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_IRON_ROOT]
+	_locked(_encounter(SHINGLE_SCRAY, "Shingle-Scray", Tier.TIER_2_MULTI_LOCK, 7, [Sign.SIGN_RIME_GALE], 210, 150, "", "dive"),
+		Key.ELEMENTAL_INK_KEY)
+	# Tier 3: the milestone bosses' four gates.
+	var cairnsman: BossEncounterResource = _encounter(CAIRNSMAN, "The Cairnsman of Dover-Slap-Falls", Tier.TIER_3_FOUR_GATE_BOSS, 5,
 		[Sign.SIGN_IRON_ROOT, Sign.SIGN_STAR_TIDE], 180, 120,
 		"When the cairn-core glows and the old stones roar,\nring Iron-Root or Star-Tide and he'll stand no more!", "roar")
-	_encounter(GALE_BUCCA, "The Gale-Bucca", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 10, [Sign.SIGN_STAR_TIDE], 180, 120,
+	# Gate 2's core answers Star-Tide, the Tempest's Warm-Hearth, and the Seal-Turn Iron-Root.
+	cairnsman.gate_weakness_signs = [Sign.NONE, Sign.SIGN_STAR_TIDE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_IRON_ROOT]
+	cairnsman.gate_2_henchman_id = HENCHMAN_BRAMBLE_HOB
+	_encounter(GALE_BUCCA, "The Gale-Bucca", Tier.TIER_3_FOUR_GATE_BOSS, 10, [Sign.SIGN_STAR_TIDE], 180, 120,
 		"When the Bucca spreads wide its storm-feathered wings,\nsing Star-Tide inside where the wild weather sings!", "wing-spread")
-	_encounter(FURROW_IRON_MAN, "The Furrow Iron-Man", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 15,
+	_encounter(FURROW_IRON_MAN, "The Furrow Iron-Man", Tier.TIER_3_FOUR_GATE_BOSS, 15,
 		[Sign.SIGN_WARM_HEARTH, Sign.SIGN_IRON_ROOT], 120, 75,
 		"Warm the rust with Hearth-light, then turn him round with Root:\nthe ploughman's iron giant will stand down at your boot!", "plough-stamp")
-	_encounter(CAIRN_DRAKE, "The Cairn-Drake", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 25,
+	_encounter(CAIRN_DRAKE, "The Cairn-Drake", Tier.TIER_3_FOUR_GATE_BOSS, 25,
 		[Sign.SIGN_WARM_HEARTH, Sign.SIGN_IRON_ROOT], 120, 75,
 		"When the drake curls tight round its hoard of grey stone,\nsing Hearth to the heart and it sleeps on its own.", "coil")
-	_encounter(TOR_SLEEPER, "The Tor-Sleeper", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 50,
+	_encounter(TOR_SLEEPER, "The Tor-Sleeper", Tier.TIER_3_FOUR_GATE_BOSS, 50,
 		[Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE], 75, 45,
 		"Mantle, then tether, then strike with your Sign:\nthe Tor-Sleeper wakes when the three fall in line.", "yawn")
-	_encounter(OLD_HOB, "Old-Hob-of-the-Hill", BossEncounterResource.ThreatTier.TIER_3_MILESTONE_BOSS, 60,
+	_encounter(OLD_HOB, "Old-Hob-of-the-Hill", Tier.TIER_3_FOUR_GATE_BOSS, 60,
 		[Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE], 75, 45,
 		"Old-Hob hums low on his hill of moss:\nmantle, tether and Sign, or the whole trail is lost.", "hum")
 
 
-func _encounter(id: StringName, label: String, tier: BossEncounterResource.ThreatTier, level: int, counters: Array[int],
-		base_frames: int, floor_frames: int, couplet: String, pattern: String) -> void:
+func _encounter(id: StringName, label: String, tier: BossEncounterResource.MiyamotoTier, level: int, counters: Array[int],
+		base_frames: int, floor_frames: int, couplet: String, pattern: String) -> BossEncounterResource:
 	var added: BossEncounterResource = BossEncounterResource.new()
 	added.encounter_id = id
 	added.display_name = label
-	added.threat_tier = tier
+	added.miyamoto_tier = tier
 	added.encounter_level = level
 	added.weakness_counter_signs = counters
 	added.base_glimmer_window_frames = base_frames
@@ -1398,6 +1505,61 @@ func _encounter(id: StringName, label: String, tier: BossEncounterResource.Threa
 	added.hud_rhyme_couplet = couplet
 	added.opening_pattern = pattern
 	register_encounter(added)
+	return added
+
+
+func _locked(added: BossEncounterResource, key: BossEncounterResource.LockKeyType) -> BossEncounterResource:
+	added.primary_lock_type = key
+	return added
+
+
+# --- Combo forms (14 GDD §8) ---------------------------------------------------
+
+## The five directional combo forms, one every few trail levels (Lv 1, 2, 4, 6
+## and 8), built from the postures every hero already has.
+func _build_combos() -> void:
+	var three: ComboChainResource = _combo(COMBO_APPRENTICE_THREE_BEAT, "Apprentice's Three-Beat", [ComboChainResource.LIGHT, ComboChainResource.LIGHT, ComboChainResource.HEAVY], 1,
+		"Two quick cuts and a heavy one: the finisher steps in 1.2 m for 1.5x damage and 15 more poise.")
+	three.step_displacement_m = 1.2
+	var leap: ComboChainResource = _combo(COMBO_SUNDERING_GAP_LEAP, "Sundering Gap-Leap", [ComboChainResource.LIGHT, ComboChainResource.LIGHT, ComboChainResource.FORWARD_HEAVY], 2,
+		"Leap 2.8 m through the gap and stun the foe for 1.2 s: it cracks a martial lock.")
+	leap.step_displacement_m = 2.8
+	leap.stun_duration_sec = 1.2
+	leap.breaks_martial_lock = true
+	var vault: ComboChainResource = _combo(COMBO_WAYFARER_VAULT_STRIKE, "Wayfarer's Vault-Strike", [ComboChainResource.LIGHT, ComboChainResource.LIGHT, ComboChainResource.BACK_HEAVY], 4,
+		"Strike as you vault 2.6 m back, untouchable for 200 ms.")
+	vault.step_displacement_m = -2.6
+	vault.evasion_iframes_ms = 200
+	var sweep: ComboChainResource = _combo(COMBO_WHIRLING_FLANK_SWEEP, "Whirling Flank-Sweep", [ComboChainResource.HEAVY, ComboChainResource.SIDE_HEAVY], 6,
+		"A heavy, then Heavy with the stick sideways: orbit 2.2 m round the foe to its flank for 20 more poise.")
+	sweep.step_displacement_m = 2.2
+	sweep.triggers_flank_orbit = true
+	sweep.finisher_poise_damage = 20.0
+	var grand: ComboChainResource = _combo(COMBO_GRAND_SIGN_FLOW, "Grand Sign-Flow", [ComboChainResource.FORWARD_HEAVY, ComboChainResource.R_SKILL, ComboChainResource.LR_ULT], 8,
+		"Forward+Heavy, R, then L+R: the Sign detonation riding the finisher reaches 25% further.")
+	grand.finisher_damage_mult = 1.0
+	grand.finisher_poise_damage = 0.0
+	grand.step_displacement_m = 0.0
+	grand.detonation_radius_mult = 1.25
+
+
+func _combo(id: StringName, label: String, sequence: Array[StringName], level: int, blurb: String) -> ComboChainResource:
+	var added: ComboChainResource = ComboChainResource.new()
+	added.combo_id = id
+	added.display_name = label
+	added.description = blurb
+	added.input_sequence = sequence
+	added.required_level = level
+	register_combo(added)
+	return added
+
+
+## The kin a boss can call in its second gate. A Scree-Worm henchman wears the
+## Bramble-Hob's thorny body until the worms have bodies of their own.
+func _build_henchmen() -> void:
+	register_henchman(HENCHMAN_SCREE_WORM, WoodlandMinion.Kind.SCUTTLER)
+	register_henchman(HENCHMAN_BRAMBLE_HOB, WoodlandMinion.Kind.SCUTTLER)
+	register_henchman(HENCHMAN_WISP_BOGGLE, WoodlandMinion.Kind.IMP)
 
 
 # --- Action builders ------------------------------------------------------

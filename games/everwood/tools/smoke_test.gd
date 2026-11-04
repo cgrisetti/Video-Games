@@ -39,6 +39,11 @@
 ##     sightline fades, the 3 km camera and horizon ring, a Hush-Crack sealed
 ##     into a cairn, the kit build queue; then in Oakshire Vale each part's
 ##     biome, the village's and petals' landmarks and Pippin-Green's furrows
+##   - the Phase 12 Kaizen pass (14 GDD §8): directional combo forms, the
+##     Overhead Pocket Blessing and Offhand Pocket-Draw, the One-and-Done, the
+##     Tank's Ward-Mantle and the Support's Aegis Ward and Ink-Share, Miyamoto
+##     armour-drops and locks, a practice Cairnsman's four gates, Gilding
+##     potency and the shared Grimoire widget's pips, growth and Combo Forms
 ##   - and the Mythopoetic Lens (tools/test_mythopoetic_lens.gd): the four
 ##     Linter Rules over every name the game shows, the six-zone atlas, the
 ##     Hob-to-Boggart Spectrum (parley, turning boggart, the three
@@ -129,6 +134,10 @@ func _run() -> void:
 	GlimmerSpotComponent.enabled = false
 	# Parleys and Challenge-Roars too: the Mythopoetic Lens check switches them on.
 	HobSpectrumComponent.enabled = false
+	# Combo forms, armour-drops and boss gates too: the Phase 12 Kaizen check switches them on.
+	ComboChainComponent.enabled = false
+	PostureEscalationComponent.enabled = false
+	BossGateComponent.enabled = false
 	change_scene_to_file(HUB_SCENE)
 	await _seconds(0.2)
 	_connect_global_signals()
@@ -169,6 +178,7 @@ func _run() -> void:
 	await _check_companion_backfill()
 	await _check_phase_11_combat_onboarding_and_flanking()
 	await test_phase_12_sign_flow_and_grimoire_ux()
+	await test_phase_12_miyamoto_posture_trinity_and_grimoire_ux()
 	await _check_victory_and_loot()
 	await _check_chime_shrine()
 	await _check_scribe_desk()
@@ -1188,8 +1198,9 @@ func _check_card_invocations() -> void:
 	shiny_kit.lead_variants[0] = ScribeCardResource.CardVariant.GILDED_LEAF
 	var shiny_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, shiny_kit).card_action(0)
 	var plain_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK).card_action(0)
-	_check(is_equal_approx(shiny_charge.damage, plain_charge.damage) and shiny_charge.action_id == plain_charge.action_id,
-		"finishes change the look only: a Gilded Leaf Shield Charge hits exactly as hard")
+	_check(is_equal_approx(shiny_charge.damage, plain_charge.damage * 1.1) and shiny_charge.action_id == plain_charge.action_id,
+		"a finish adds potency (14 GDD §8): a Gilded Leaf Shield Charge hits 10% harder (%.1f vs %.1f), with the same action id" % [shiny_charge.damage,
+			plain_charge.damage])
 	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK))
 
 	await _until_idle(dps)
@@ -2109,6 +2120,8 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 		"with 2 pips the rite keeps both (it never costs one), and a Star-Inked Vellum leaf needs only 60 frames")
 
 	# The opening strike in the fight discharges the blessing: Iron-Root, its seal, and the Moss-Oaks' poise.
+	# (The healer holds the DPS on the Soul Tether, not the tank: a tethered ally gets The Lantern's Promise's longer window.)
+	healer.tether.bind_actor(dps)
 	var resolved: Array[CombatEvent] = []
 	var resolved_hook: Callable = func(event: CombatEvent, _outcome: int) -> void: resolved.append(event)
 	director.hit_resolved.connect(resolved_hook)
@@ -2406,6 +2419,582 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	_stage_party()
 	_reset_boss_poise()
 	boss.set_physics_process(true)
+
+
+## The Phase 12 Kaizen pass (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §8), in the
+## Ring with the trinity: directional combo forms (the Sundering Gap-Leap and
+## the Wayfarer's Vault-Strike, with the HUD's pips), the Overhead Pocket
+## Blessing and the Offhand Pocket-Draw with its camera pulse, the One-and-Done,
+## the Tank's Ward-Mantle against an Iron-Root swipe, the Support's Aegis Ward
+## and Ink-Share against a Furrow Iron-Man's rust, Miyamoto armour-drops and
+## locks (Tier 1 and 2), a practice Cairnsman through all four gates, the
+## window and impact maths, Gilding potency, and the shared Grimoire widget
+## across the HUD, the Binder and the Scribery.
+func test_phase_12_miyamoto_posture_trinity_and_grimoire_ux() -> void:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var progress: PartyProgress = PartyProgress.current
+	var network: NetworkManager = NetworkManager.current
+	var director: CombatDirector = CombatDirector.current
+	var chimes_before: int = progress.chimes
+	var collection_before: Dictionary = progress.collection.duplicate()
+	SignFlowComponent.enabled = true
+	GlimmerSpotComponent.enabled = true
+	ComboChainComponent.enabled = true
+	PostureEscalationComponent.enabled = true
+	BossGateComponent.enabled = true
+	# The real Cairnsman stands still and keeps his gates shut: a practice Cairnsman plays them below.
+	boss.set_physics_process(false)
+	boss.gates.set_physics_process(false)
+	boss.engaged = true
+	_reset_boss_poise()
+	for actor: ActorBase in [tank, healer, dps]:
+		await _until_idle(actor)
+		actor.stats.heal(actor.stats.stats.max_health)
+		actor.stats.restore_stamina(actor.stats.stats.max_stamina)
+		actor.sign_flow.ward_blessing_left = 0.0
+		actor.sign_flow.aegis_ward = false
+		actor.combo.reset()
+	var resolved: Array[CombatEvent] = []
+	var resolved_hook: Callable = func(event: CombatEvent, _outcome: int) -> void: resolved.append(event)
+	director.hit_resolved.connect(resolved_hook)
+	var stops: Array[float] = []
+	var stop_hook: Callable = func(duration: float) -> void: stops.append(duration)
+	director.hit_stop_applied.connect(stop_hook)
+
+	# --- Schema: five combo forms, every Sign in every role, the Miyamoto tiers ---
+	var forms: Array[ComboChainResource] = catalog.combos()
+	var leap: ComboChainResource = catalog.combo(ArsenalCatalog.COMBO_SUNDERING_GAP_LEAP)
+	var vault: ComboChainResource = catalog.combo(ArsenalCatalog.COMBO_WAYFARER_VAULT_STRIKE)
+	var sweep: ComboChainResource = catalog.combo(ArsenalCatalog.COMBO_WHIRLING_FLANK_SWEEP)
+	var grand: ComboChainResource = catalog.combo(ArsenalCatalog.COMBO_GRAND_SIGN_FLOW)
+	_check(forms.size() == 5 and catalog.get_unlocked_combos_for_level(1).size() == 1 and catalog.get_unlocked_combos_for_level(2).size() == 2
+		and catalog.get_unlocked_combos_for_level(8).size() == 5 and leap.input_sequence == [&"LIGHT", &"LIGHT", &"FORWARD_HEAVY"]
+		and is_equal_approx(leap.step_displacement_m, 2.8) and is_equal_approx(leap.stun_duration_sec, 1.2) and leap.breaks_martial_lock
+		and vault.evasion_iframes_ms == 200 and is_equal_approx(vault.step_displacement_m, -2.6) and sweep.triggers_flank_orbit
+		and is_equal_approx(sweep.finisher_poise_damage, 20.0) and sweep.input_sequence == [&"HEAVY", &"SIDE_HEAVY"]
+		and is_equal_approx(grand.detonation_radius_mult, 1.25) and grand.required_level == 8,
+		"five combo forms are registered by id, taught at Lv 1, 2, 4, 6 and 8: the Gap-Leap (+2.8 m, 1.2 s stun, cracks martial locks), the Vault-Strike (-2.6 m, 200 ms i-frames), the Flank-Sweep (+20 poise) and the Grand Sign-Flow (+25% detonation)")
+	var roles: bool = true
+	for scribe_sign: int in [Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE]:
+		for delivery: int in [ScribeCardResource.RoleDelivery.DPS_WEAPON_COAT, ScribeCardResource.RoleDelivery.TANK_WARD_MANTLE,
+				ScribeCardResource.RoleDelivery.SUPPORT_INK_SHARE]:
+			var found: bool = false
+			for leaf: ScribeCardResource in catalog.action_leaves():
+				found = found or (leaf.scribe_sign == scribe_sign and leaf.role_delivery == delivery
+					and (delivery != ScribeCardResource.RoleDelivery.TANK_WARD_MANTLE or leaf.grants_stun_immunity)
+					and (delivery != ScribeCardResource.RoleDelivery.SUPPORT_INK_SHARE or (leaf.shares_ink_to_party and leaf.grants_stun_immunity)))
+			roles = roles and found
+	var heal_leaf: ScribeCardResource = catalog.card(ArsenalCatalog.HOMING_HEAL)
+	_check(roles and heal_leaf.shares_ink() and is_equal_approx(heal_leaf.ward_damage_mitigation_pct, 0.8) and is_equal_approx(heal_leaf.ward_reflected_poise, 60.0)
+		and is_equal_approx(heal_leaf.one_and_done_finisher_mult, 3.2) and catalog.card(ArsenalCatalog.TAUNT).role_delivery == ScribeCardResource.RoleDelivery.TANK_WARD_MANTLE,
+		"every Sign has a DPS Weapon-Coat, a stun-immune Tank Ward-Mantle and a Support Ink-Share leaf; leaves carry the 80% ward, 60 reflected poise and 3.2x One-and-Done")
+	var worm: BossEncounterResource = catalog.encounter(ArsenalCatalog.SCREE_WORM)
+	var iron_kin: BossEncounterResource = catalog.encounter(ArsenalCatalog.IRON_MAN_KIN)
+	var drake_kin: BossEncounterResource = catalog.encounter(ArsenalCatalog.CRAG_BACK_DRAKE)
+	var cairnsman: BossEncounterResource = catalog.encounter(ArsenalCatalog.CAIRNSMAN)
+	var bucca: BossEncounterResource = catalog.encounter(ArsenalCatalog.GALE_BUCCA)
+	var hob: BossEncounterResource = catalog.encounter(ArsenalCatalog.OLD_HOB)
+	_check(worm.miyamoto_tier == BossEncounterResource.MiyamotoTier.TIER_0_PUNCHING_BAG and worm.get_scaled_glimmer_frames(0) == 999999
+		and iron_kin.miyamoto_tier == BossEncounterResource.MiyamotoTier.TIER_1_SINGLE_EVADE and iron_kin.primary_lock_type == BossEncounterResource.LockKeyType.ELEMENTAL_INK_KEY
+		and drake_kin.miyamoto_tier == BossEncounterResource.MiyamotoTier.TIER_2_MULTI_LOCK and drake_kin.lock_thresholds().size() == 3
+		and cairnsman.miyamoto_tier == BossEncounterResource.MiyamotoTier.TIER_3_FOUR_GATE_BOSS and cairnsman.gate_thresholds == [0.75, 0.5, 0.25]
+		and Bestiary.variant(&"soot_paw_cutthroat").encounter_id == ArsenalCatalog.IRON_MAN_KIN and is_equal_approx(iron_kin.uninked_physical_mult, 0.5),
+		"Miyamoto tiers: a Scree-Worm is a Tier 0 punching bag (always open), the Iron-Men lock at Tier 1 (a rust ink lock), the Crag-Back at every gate (Tier 2), the Cairnsman has four gates")
+	_check(bucca.get_scaled_glimmer_frames(0) == 180 and absf(bucca.get_scaled_glimmer_seconds(0) - 3.0) < 0.001
+		and hob.get_scaled_glimmer_frames(5) == 45 and absf(hob.get_scaled_glimmer_seconds(5) - 0.75) < 0.001
+		and is_equal_approx(hob.get_impact_multiplier(), 5.0) and is_equal_approx(hob.bravery_counter_poise(), 525.0),
+		"window scaling: 180 frames (3.0 s) at Lv 10 unseen, 45 frames (0.75 s) at Lv 60 seen five times, with a 5.0x impact (525 poise)")
+
+	# --- 1. Directional combos, played on the controller ---
+	_check(progress.trail_level() >= grand.required_level, "the party's trail Lv %d knows every combo form" % progress.trail_level())
+	var pips_seen: Array[Vector2i] = []
+	var names_seen: Array[String] = []
+	var pip_hook: Callable = func(step: int, steps: int, combo_name: String) -> void:
+		pips_seen.append(Vector2i(step, steps))
+		names_seen.append(combo_name)
+	dps.combo.combo_step_advanced.connect(pip_hook)
+	var hud: PlayerHUD = dojo.huds[dps.player_id]
+	var hud_widget: CrossGrimoireDiamondWidget = hud.cross_grimoire.diorama
+	# 12 m out, facing the boss, so the finisher's step runs straight and lands nowhere.
+	_face_boss(dps, Vector3(0.0, 0.0, 12.0))
+	dps.input.inject_move(Vector2.ZERO)
+	await _seconds(0.1)
+	var step_log: Dictionary = {"from": Vector3.ZERO, "to": Vector3.ZERO, "facing": Vector3.ZERO, "iframes": 0.0}
+	var step_start: Callable = func(action: CombatActionResource, _flowed: bool) -> void:
+		if action.command == Cmd.FORWARD_HEAVY or action.command == Cmd.BACK_HEAVY:
+			step_log["from"] = dps.global_position
+			step_log["facing"] = dps.facing_vector()
+			step_log["iframes"] = dps.stats._invulnerable_left
+	var step_end: Callable = func(phase: ActionQueueComponent.Phase) -> void:
+		var current: CombatActionResource = dps.action_queue.current_action
+		if phase == ActionQueueComponent.Phase.RECOVERY and current != null \
+				and (current.command == Cmd.FORWARD_HEAVY or current.command == Cmd.BACK_HEAVY):
+			step_log["to"] = dps.global_position
+	dps.action_queue.action_started.connect(step_start)
+	dps.action_queue.phase_changed.connect(step_end)
+	await _play(dps, Cmd.LIGHT)
+	var after_one: Vector2i = hud_widget.combo_pips()
+	await _play(dps, Cmd.LIGHT)
+	var after_two: Vector2i = hud_widget.combo_pips()
+	var finishers_before: int = dps.combo.finishers_played()
+	await _play(dps, Cmd.FORWARD_HEAVY)
+	var leap_step: Vector3 = (step_log["to"] as Vector3) - (step_log["from"] as Vector3)
+	leap_step.y = 0.0
+	_check(after_one == Vector2i(1, 3) and after_two == Vector2i(2, 3) and pips_seen.has(Vector2i(3, 3)) and names_seen.has(leap.display_name)
+		and dps.combo.finishers_played() == finishers_before + 1,
+		"Light, Light, Forward+Heavy: the HUD's weapon diamond lights o - o - > (1/3, 2/3) and the Sundering Gap-Leap finishes")
+	_check(absf(leap_step.length() - 2.8) < 0.25 and leap_step.normalized().dot(step_log["facing"]) > 0.9,
+		"the Gap-Leap's finisher lunges %.2f m forward (2.8)" % leap_step.length())
+	await _seconds(1.2)
+	await _play(dps, Cmd.LIGHT)
+	await _play(dps, Cmd.LIGHT)
+	await _play(dps, Cmd.BACK_HEAVY)
+	var vault_step: Vector3 = (step_log["to"] as Vector3) - (step_log["from"] as Vector3)
+	vault_step.y = 0.0
+	_check(absf(vault_step.length() - 2.6) < 0.25 and vault_step.normalized().dot(step_log["facing"]) < -0.9
+		and float(step_log["iframes"]) >= 0.19 and names_seen.has(vault.display_name),
+		"Light, Light, Back+Heavy is the Wayfarer's Vault-Strike: %.2f m back (2.6) with %.0f ms of evasion frames" % [vault_step.length(),
+			float(step_log["iframes"]) * 1000.0])
+	dps.action_queue.action_started.disconnect(step_start)
+	dps.action_queue.phase_changed.disconnect(step_end)
+	await _seconds(1.2)
+	_check(hud_widget.combo_pips() == Vector2i.ZERO, "a second's rest starts the run over: the pips go dark")
+	# The finisher's numbers land on the foe's owner from its id: 1.5x damage, +15 poise and the 1.2 s stun.
+	_reset_boss_poise()
+	var leap_hit: CombatEvent = _strike(dps, boss, 20.0, 10.0)
+	leap_hit.combo_id = leap.combo_id
+	leap_hit.command = Cmd.FORWARD_HEAVY
+	resolved.clear()
+	boss.stagger_time_left = 0.0
+	director.deliver(leap_hit)
+	_check(not resolved.is_empty() and is_equal_approx(resolved.back().damage, 30.0) and is_equal_approx(resolved.back().poise_damage, 25.0)
+		and absf(boss.stagger_time_left - 1.2) < 0.02 and resolved.back().breaks_martial_lock,
+		"a landed Gap-Leap finisher deals 1.5x (20 -> 30), +15 poise and stuns the Cairnsman 1.2 s, cracking a martial lock")
+	boss.stagger_time_left = 0.0
+	boss.stats.heal(boss.stats.stats.max_health)
+	dps.combo.combo_step_advanced.disconnect(pip_hook)
+
+	# --- 2. The two card choreographies ---
+	# Out of combat: hold R 120 frames for the Overhead Pocket Blessing (no pip spent).
+	dps.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(0.0, 0.0, 26.0)))
+	dps.input.inject_move(Vector2.ZERO)
+	await _seconds(0.1)
+	dps.stats.resonance_charge = 0.3
+	var flow: SignFlowComponent = dps.sign_flow
+	var blessings: int = dps.visuals.choreography_count(ActorVisuals.Choreography.OVERHEAD_BLESSING)
+	dps.input.inject_hold(InputComponent.ACTION_TRIGGER_R, true)
+	for frame: int in SignFlowComponent.HEARTH_RITE_HOLD_FRAMES:
+		await physics_frame
+	dps.input.inject_hold(InputComponent.ACTION_TRIGGER_R, false)
+	var blessing_started: bool = dps.visuals.choreography() == ActorVisuals.Choreography.OVERHEAD_BLESSING
+	await _seconds(0.6)
+	var mid_blessing: bool = dps.visuals.is_card_out() and dps.visuals.is_ink_pouring() and not dps.visuals.is_weapon_drawn()
+	await _seconds(1.0)
+	_check(not flow.is_in_combat and flow.has_hearth_rite_tuck and blessing_started and mid_blessing
+		and dps.visuals.choreography_count(ActorVisuals.Choreography.OVERHEAD_BLESSING) == blessings + 1
+		and dps.visuals.card_peak_height() > 1.8 and dps.visuals.card_peak_height() <= 2.6 and dps.visuals.is_weapon_drawn()
+		and dps.visuals.choreography() == ActorVisuals.Choreography.NONE,
+		"holding R out of combat plays the Overhead Pocket Blessing: weapon put away, the vellum card raised to %.2f m (<= 2.6) under a column of ink, weapon drawn again" % dps.visuals.card_peak_height())
+	_check(is_equal_approx(dps.stats.resonance_charge, 1.0) and flow.opening_strike_empowered and is_equal_approx(flow.ward_blessing_mitigation(), 0.15)
+		and is_equal_approx(dps.visuals.weapon_scale(), SignFlowComponent.TRAIL_COAT_SCALE),
+		"the blessing costs 0 pips, tops up to 1.0, empowers the opening strike, glows the bow at 1.35x and grants a 15% Ward Blessing")
+	var swipe: CombatActionResource = boss.loadout.action_by_id(ClassLoadouts.BOSS_SWIPE)
+	dps.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(0.0, 0.0, 2.4)))
+	await _seconds(0.05)
+	var blessed_before: float = dps.stats.health
+	director.deliver(CombatEvent.strike_from(boss, dps, swipe))
+	var blessed_hit: float = blessed_before - dps.stats.health
+	flow.ward_blessing_left = 0.0
+	dps.stats.heal(dps.stats.stats.max_health)
+	var plain_before: float = dps.stats.health
+	director.deliver(CombatEvent.strike_from(boss, dps, swipe))
+	var plain_hit: float = plain_before - dps.stats.health
+	dps.stats.heal(dps.stats.stats.max_health)
+	_check(plain_hit > 0.0 and absf(blessed_hit / plain_hit - 0.85) < 0.01 and flow.ward_attuned_id == boss.player_id,
+		"the Ward Blessing turns toward the first foe that strikes (the Cairnsman): his swipe does 15%% less (%.1f vs %.1f)" % [blessed_hit, plain_hit])
+	# In combat: a Light that lands opens the Flow-Link Window; R tapped in it is the Offhand Pocket-Draw.
+	_face_boss(dps, Vector3(0.0, 0.0, 2.4))
+	dps.input.inject_move(Vector2.ZERO)
+	await _until_idle(dps)
+	dps.stats.resonance_charge = 1.0
+	dps.input.inject_command(Cmd.LIGHT)
+	var waited: float = 0.0
+	while flow.flow_window_left <= 0.0 and waited < 1.5:
+		await physics_frame
+		waited += 1.0 / 60.0
+	var camera: PlayerCamera = dojo.grid.camera_for(dps.player_id)
+	var pulses_before: int = camera.dolly_pulses() if camera != null else 0
+	var draws: int = dps.visuals.choreography_count(ActorVisuals.Choreography.POCKET_DRAW)
+	stops.clear()
+	dps.input.inject_command(Cmd.TRIGGER_R_SKILL)
+	var biggest: float = 1.0
+	var drew: bool = false
+	for frame: int in 40:
+		await physics_frame
+		biggest = maxf(biggest, dps.visuals.weapon_scale())
+		drew = drew or dps.visuals.choreography() == ActorVisuals.Choreography.POCKET_DRAW and dps.visuals.is_card_out()
+	var froze: bool = false
+	for duration: float in stops:
+		froze = froze or is_equal_approx(duration, SignFlowComponent.SIGN_FLOW_HIT_STOP)
+	_check(drew and dps.visuals.choreography_count(ActorVisuals.Choreography.POCKET_DRAW) == draws + 1 and biggest >= 1.95 and froze
+		and flow.coat_time_left > 7.0 and flow.coat_mode == Manifest.WEAPON_COAT and flow.coat_sign == Sign.SIGN_STAR_TIDE,
+		"R tapped in the Flow-Link Window: the off hand sweeps the card along the bow, a 110 ms hit-stop, and a 2.0x Star-Tide Weapon-Coat")
+	_check(camera != null and camera.dolly_pulses() == pulses_before + 1 and camera.dolly_peak() > 0.3 and camera.dolly_peak() <= 0.351,
+		"and the split-screen camera dolly-pulses %.2f m toward the shoulder and back over 120 ms" % (camera.dolly_peak() if camera != null else 0.0))
+	# L+R while the Weapon-Coat burns: the One-and-Done Seal-Breaker.
+	await _until_idle(dps)
+	_reset_boss_poise()
+	_face_boss(dps, Vector3(0.0, 0.0, 2.2))
+	dps.stats.resonance_charge = 3.0
+	var ult: CombatActionResource = dps.loadout.opener_for(Cmd.TRIGGER_BOTH_ULT)
+	var dones: int = flow.one_and_dones()
+	var detonations: Array[String] = []
+	var detonation_hook: Callable = func(_target: ActorBase, _primer: int, _cross: bool, label: String) -> void: detonations.append(label)
+	director.synergy_detonated.connect(detonation_hook)
+	resolved.clear()
+	dps.input.inject_command(Cmd.TRIGGER_BOTH_ULT)
+	await _seconds(0.9)
+	var finisher: CombatEvent = null
+	for event: CombatEvent in resolved:
+		if event.one_and_done:
+			finisher = event
+	_check(flow.one_and_dones() == dones + 1 and flow.coat_time_left <= 0.0 and finisher != null
+		and is_equal_approx(finisher.damage, ult.damage * 3.2) and finisher.coat_sign == Sign.SIGN_STAR_TIDE and finisher.cracks_lock
+		and dps.stats.resonance_charge < 1.01,
+		"L+R (3 pips) spends the Weapon-Coat on a One-and-Done: %s lands 3.2x (%.0f), cracking whatever lock or gate is up" % [ult.display_name,
+			finisher.damage if finisher != null else 0.0])
+	var chorus: bool = false
+	for label: String in detonations:
+		chorus = chorus or (label.contains("ONE-AND-DONE") and label.contains("ASTRAL CHORUS"))
+	_check(chorus, "and its Four-Sign detonation rings out: Star-Tide's Astral Chorus")
+	director.synergy_detonated.disconnect(detonation_hook)
+	boss.stats.heal(boss.stats.stats.max_health)
+	_reset_boss_poise()
+
+	# --- 3. The Trinity: Tank Ward-Mantle, Support Aegis Ward and Ink-Share ---
+	await _until_idle(tank)
+	_face_boss(tank, Vector3(0.0, 0.0, 2.6))
+	tank.input.inject_move(Vector2.ZERO)
+	tank.input.inject_guard(false)
+	await _seconds(0.1)
+	tank.sign_flow._cast(Diorama.SKILL)
+	var mantled: bool = tank.sign_flow.is_mantled() and tank.sign_flow.coat_sign == Sign.SIGN_IRON_ROOT
+	var warded_before: int = tank.sign_flow.warded_hits
+	var tank_before: float = tank.stats.health
+	var boss_poise_before: float = boss.stats.poise
+	var reflected: Array[float] = []
+	var reflect_hook: Callable = func(_defender: ActorBase, _attacker: ActorBase, poise: float) -> void: reflected.append(poise)
+	director.poise_reflected.connect(reflect_hook)
+	director.deliver(CombatEvent.strike_from(boss, tank, swipe))
+	var warded_hit: float = tank_before - tank.stats.health
+	tank.stagger(1.0)
+	var shrugged: bool = tank.stagger_time_left <= 0.0
+	tank.sign_flow._clear_coat()
+	tank.stats.heal(tank.stats.stats.max_health)
+	var bare_before: float = tank.stats.health
+	director.deliver(CombatEvent.strike_from(boss, tank, swipe))
+	var bare_hit: float = bare_before - tank.stats.health
+	tank.stats.heal(tank.stats.stats.max_health)
+	_check(mantled and swipe.scribe_sign == Sign.SIGN_IRON_ROOT and bare_hit > 0.0 and absf(warded_hit / bare_hit - 0.2) < 0.01
+		and tank.sign_flow.warded_hits == warded_before + 1 and shrugged,
+		"an Iron-Root Ward-Mantle against the Cairnsman's Iron-Root swipe soaks 80%% (%.1f instead of %.1f) and shrugs off the stun" % [warded_hit, bare_hit])
+	_check(reflected == [60.0] and absf((boss_poise_before - boss.stats.poise) - 60.0) < 0.5 and director.has_zone_from(tank.player_id),
+		"the ward throws 60 poise back at the Cairnsman and the 4 m shelter cone stands behind the tank")
+	director.poise_reflected.disconnect(reflect_hook)
+	_reset_boss_poise()
+	tank.stagger_time_left = 0.0
+	# The Support: a Soul Tether link wards the DPS; an Ink-Share leaf lends Warm-Hearth against a Furrow Iron-Man's rust.
+	var iron_man: WildMob = _practice_mob(&"soot_paw_cutthroat", boss.global_position + Vector3(9.0, 0.0, 9.0))
+	await _seconds(0.1)
+	_place_beside(dps, iron_man, 2.0)
+	healer.place_at(Transform3D(Basis.IDENTITY, iron_man.global_position + Vector3(-8.0, 0.0, 0.0)))
+	healer.input.inject_move(Vector2.ZERO)
+	await _seconds(0.2)
+	var plain_light: CombatActionResource = dps.loadout.opener_for(Cmd.LIGHT)
+	flow._clear_coat()
+	flow._end_tuck()
+	resolved.clear()
+	var full_before: float = iron_man.stats.health
+	director.report_hit(dps, iron_man, plain_light, false)
+	var full_hit: float = full_before - iron_man.stats.health
+	var expected_full: float = plain_light.damage * (1.0 - iron_man.variant.mitigation)
+	iron_man.stats.take_damage(iron_man.stats.health - iron_man.stats.stats.max_health * 0.74)
+	var leap_from: Vector3 = iron_man.global_position
+	await _seconds(0.7)
+	var posture: PostureEscalationComponent = iron_man.posture
+	var plates: int = 0
+	for child: Node in iron_man.get_parent().get_children():
+		if String(child.name).begins_with("ShedPlate"):
+			plates += 1
+	var warm: Color = catalog.sign_seal(Sign.SIGN_WARM_HEARTH).color
+	_check(absf(full_hit - expected_full) < 0.01 and posture.state == PostureEscalationComponent.PostureState.STATE_EVASIVE_ARMOR_DROP
+		and absf(posture.last_leap_distance - 3.0) < 0.05 and absf(iron_man.global_position.distance_to(leap_from) - 3.0) < 0.2 and plates >= 1
+		and posture.is_ring_lit() and posture.lock_color() == warm and posture.lock_signs == [Sign.SIGN_WARM_HEARTH],
+		"a Tier 1 Iron-Man takes full damage (%.0f) down to 75%%, then leaps 3 m back, sheds a plate and lights a Saffron-Gold Glimmer-Spot ring" % full_hit)
+	var rust_before: float = iron_man.stats.health
+	director.report_hit(dps, iron_man, plain_light, false)
+	var rust_hit: float = rust_before - iron_man.stats.health
+	_check(absf(rust_hit - expected_full * 0.5) < 0.01 and posture.is_locked(),
+		"locked in rust, an un-inked Light clanks for half (%.1f), so nobody is ever stuck" % rust_hit)
+	await _until_idle(healer)
+	healer.tether.tethered_id = &""
+	healer.tether.bind_actor(dps)
+	await _seconds(0.05)
+	var aegis: bool = dps.sign_flow.aegis_ward
+	var promise: int = dps.sign_flow.flow_window_frames()
+	healer.stats.resonance_charge = 2.0
+	healer.stats.restore_stamina(healer.stats.stats.max_stamina)
+	var shares: Array[int] = []
+	var share_hook: Callable = func(_support: ActorBase, scribe_sign: int, _recipients: Array[ActorBase]) -> void: shares.append(scribe_sign)
+	director.ink_shared.connect(share_hook)
+	healer.input.inject_command(Cmd.TRIGGER_R_SKILL)
+	await _seconds(0.3)
+	_check(aegis and promise == SignFlowComponent.LANTERNS_PROMISE_WINDOW_FRAMES and healer.sign_flow.is_in_combat,
+		"binding the Soul Tether wards the DPS (an Aegis Ward) and gives them The Lantern's Promise (18 frames) from 8 m away")
+	_check(shares == [Sign.SIGN_WARM_HEARTH] and dps.sign_flow.shared_party_sign_override == Sign.SIGN_WARM_HEARTH
+		and dps.sign_flow.ink_share_left > 7.0 and healer.tether.is_pulsing(),
+		"the Support's Homing Heal is an Ink-Share: Warm-Hearth pulses down the Soul Tether, lent to the DPS for 8 s")
+	director.ink_shared.disconnect(share_hook)
+	var stagger_with_aegis: bool = false
+	dps.stagger(0.8)
+	stagger_with_aegis = dps.stagger_time_left <= 0.0 and not dps.sign_flow.aegis_ward
+	resolved.clear()
+	var inked_before: float = iron_man.stats.health
+	await _until_idle(dps)
+	director.report_hit(dps, iron_man, plain_light, false)
+	var inked_hit: float = inked_before - iron_man.stats.health
+	var inked: CombatEvent = resolved.back() if not resolved.is_empty() else null
+	_check(inked != null and inked.coat_sign == Sign.SIGN_WARM_HEARTH and inked.ink_share_from == healer.player_id
+		and absf(inked_hit - expected_full) < 0.01 and posture.state == PostureEscalationComponent.PostureState.STATE_LOCK_CRACKED
+		and posture.locks_cracked == 1 and absf(inked.poise_damage - iron_kin.bravery_counter_poise()) < 0.01
+		and absf(iron_man.stagger_time_left - 2.5) < 0.05 and iron_man.spectrum.is_maker_seal_exposed,
+		"the DPS's plain Light now strikes as Warm-Hearth: full damage again (%.0f, 0.5x -> 1.0x), a Bravery Counter (%.0f poise, 2.5 s stun) and the Iron-Man's Maker-Seal opens" % [inked_hit,
+			inked.poise_damage if inked != null else 0.0])
+	_check(stagger_with_aegis, "and the Aegis Ward shrugged off the DPS's next stun, then was spent")
+	iron_man.queue_free()
+	# A Tier 1 martial lock (the Frost-Fang Padfoot) cracks under the Gap-Leap; a Tier 2 Crag-Back locks again at each gate.
+	var padfoot: WildMob = _practice_mob(&"alpha_frost_fang", boss.global_position + Vector3(-9.0, 0.0, 9.0))
+	await _seconds(0.1)
+	padfoot.stats.take_damage(padfoot.stats.health - padfoot.stats.stats.max_health * 0.74)
+	await _seconds(0.7)
+	var martial: PostureEscalationComponent = padfoot.posture
+	var white_gold: bool = martial.is_locked() and martial.lock_type == BossEncounterResource.LockKeyType.MARTIAL_COMBO_KEY \
+		and martial.lock_color() == PostureEscalationComponent.MARTIAL_COLOR and martial.wants_martial_key()
+	var gap: CombatEvent = _strike(dps, padfoot, 10.0, 0.0)
+	gap.combo_id = leap.combo_id
+	gap.command = Cmd.FORWARD_HEAVY
+	director.deliver(gap)
+	_check(white_gold and martial.state == PostureEscalationComponent.PostureState.STATE_LOCK_CRACKED and padfoot.stagger_time_left >= 2.4,
+		"a Frost-Fang Padfoot's martial lock glows white-gold; the Sundering Gap-Leap cracks it with a Bravery Counter and a 2.5 s stun")
+	padfoot.queue_free()
+	var drake: WildMob = _practice_mob(&"crag_back_behemoth", boss.global_position + Vector3(0.0, 0.0, 16.0))
+	await _seconds(0.1)
+	drake.stats.take_damage(drake.stats.health - drake.stats.stats.max_health * 0.74)
+	await _seconds(0.7)
+	var first_key: int = drake.posture.lock_type
+	var breaker: CombatEvent = _strike(dps, drake, 10.0, 0.0)
+	breaker.one_and_done = true
+	breaker.finisher_card_id = ArsenalCatalog.GALE_RUSH
+	breaker.coat_sign = Sign.SIGN_STAR_TIDE
+	breaker.command = Cmd.TRIGGER_BOTH_ULT
+	director.deliver(breaker)
+	var cracked_by_breaker: bool = drake.posture.state == PostureEscalationComponent.PostureState.STATE_LOCK_CRACKED
+	drake.stats.take_damage(drake.stats.health - drake.stats.stats.max_health * 0.49)
+	await _seconds(0.7)
+	_check(first_key == BossEncounterResource.LockKeyType.MARTIAL_COMBO_KEY and cracked_by_breaker and drake.posture.is_locked()
+		and drake.posture.lock_type == BossEncounterResource.LockKeyType.ELEMENTAL_INK_KEY and drake.posture.lock_signs == [Sign.SIGN_WARM_HEARTH]
+		and drake.posture.locks_shown == 2,
+		"the Tier 2 Crag-Back locks at 75% (martial: a One-and-Done cracks it) and again at 50% with a Warm-Hearth ink lock")
+	drake.queue_free()
+
+	# --- 4. A practice Cairnsman through his four gates ---
+	var ring: Node3D = Node3D.new()
+	ring.name = "PracticeRing"
+	dojo.add_child(ring)
+	var practice: BossDummy = BossDummy.new()
+	practice.name = "PracticeCairnsman"
+	practice.player_id = &"practice_cairnsman"
+	practice.loadout = ClassLoadouts.raid_boss_dummy()
+	practice.telegraphs_root = boss.telegraphs_root
+	practice.set_multiplayer_authority(1)
+	ring.add_child(practice)
+	practice.spawn_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(-8.0, 0.0, 0.0)))
+	practice.set_physics_process(false)
+	practice.engaged = true
+	practice.scale_health_to_party(1)
+	var defeated: Array[bool] = []
+	var defeated_hook: Callable = func() -> void: defeated.append(true)
+	practice.defeated.connect(defeated_hook)
+	progress.pattern_seen.erase(ArsenalCatalog.CAIRNSMAN)
+	_place_beside(dps, practice, 3.0)
+	await _seconds(0.1)
+	var gates: BossGateComponent = practice.gates
+	var max_health: float = practice.stats.stats.max_health
+	_check(gates.is_active() and gates.gate == 0 and practice.glimmer.active_weakness() == [Sign.SIGN_IRON_ROOT, Sign.SIGN_STAR_TIDE],
+		"Gate 1 (The Measure, 100-75%): the Cairnsman's Glimmer-Spot answers Iron-Root or Star-Tide")
+	practice.stats.take_damage(max_health * 0.26)
+	await _seconds(0.1)
+	var summoned: int = gates.summons.standing_count() if is_instance_valid(gates.summons) else 0
+	var leap_back: float = practice._pull_from.distance_to(practice._pull_to)
+	# Its physics is paused for the test, so the leap's untouchable frames would never run out.
+	practice._pull_duration = 0.0
+	practice.stats._invulnerable_left = 0.0
+	var shielded: float = practice.stats.health
+	director.deliver(_strike(dps, practice, 100.0, 0.0))
+	var aegis_hit: float = shielded - practice.stats.health
+	director.deliver(_strike(dps, practice, 99999.0, 0.0))
+	var held_at: float = practice.stats.health / max_health
+	_check(gates.gate == 1 and gates.aegis_up and summoned == 3 and absf(leap_back - 3.0) < 0.05 and absf(aegis_hit - 10.0) < 0.5
+		and held_at > 0.5 and held_at < 0.52 and not practice.glimmer.is_open(),
+		"Gate 2 (The Summons, at 75%%): he leaps 3 m back behind a 90%% Aegis Mantle (100 lands as %.0f), three Bramble-Hobs answer, and he can't fall past 50%% while it stands" % aegis_hit)
+	for minion: WoodlandMinion in gates.summons.minions:
+		minion.stats.take_damage(minion.stats.health)
+	await _seconds(0.1)
+	await physics_frame
+	_check(not gates.aegis_up and practice.glimmer.is_open() and practice.glimmer.active_weakness() == [Sign.SIGN_STAR_TIDE]
+		and hud.rhyme_text() != "" and hud.rhyme_badges() == PackedStringArray(["◆ Star-Tide"]),
+		"un-boggarting the henchmen shatters the mantle and opens Gate 2's Glimmer-Spot (Star-Tide), its rhyme on the HUD with a Star-Tide badge")
+	practice.glimmer.close()
+	practice.stats.take_damage(practice.stats.health - max_health * 0.49)
+	await _seconds(0.1)
+	_check(gates.gate == 2 and practice.phase_two and practice._next_cast == RaidTelegraphDecal.Kind.BLUE_BEHIND_TANK
+		and practice.glimmer.is_countered_now(Sign.SIGN_WARM_HEARTH) and not practice.glimmer.is_countered_now(Sign.SIGN_IRON_ROOT),
+		"Gate 3 (The Tempest, at 50%): the arena's Gale-Beam (BLUE_BEHIND_TANK) is next, and his weakness shifts to Warm-Hearth")
+	var seen_before: int = progress.pattern_seen_count(ArsenalCatalog.CAIRNSMAN)
+	var seal_frames: int = cairnsman.get_scaled_glimmer_frames(seen_before)
+	practice.stats.take_damage(practice.stats.health - max_health * 0.24)
+	await _seconds(0.1)
+	_check(gates.gate == 3 and gates.is_roaring() and gates.is_seal_exposed() and gates.is_seal_showing() and not gates.seal_upright
+		and absf(practice.glimmer.time_left() - (seal_frames / 60.0 - 0.1)) < 0.05,
+		"Gate 4 (The Seal-Turn, at 25%%): a Challenge-Roar, and his inverted Maker-Seal shows for %d frames (seen %d times before)" % [seal_frames, seen_before])
+	var wrong: CombatEvent = _strike(dps, practice, 5.0, 0.0)
+	wrong.scribe_sign = Sign.SIGN_STAR_TIDE
+	director.deliver(wrong)
+	var still_inverted: bool = not gates.seal_upright and not practice.stats.is_downed
+	var root_turn: CombatEvent = _strike(tank, practice, 5.0, 0.0)
+	root_turn.scribe_sign = Sign.SIGN_IRON_ROOT
+	director.deliver(root_turn)
+	await _seconds(0.3)
+	var cairn: UnboggartFx = ring.get_node_or_null(^"LulledCairn") as UnboggartFx
+	_check(still_inverted and gates.seal_upright and gates.seals_turned == 1 and gates.state == BossGateComponent.GateState.STATE_UNBOGGART_RELEASE
+		and practice.vanquished and defeated == [true] and practice.spectrum.state == HobSpectrumComponent.SpiritState.STATE_LULLED_CAIRN and cairn != null,
+		"a Star-Tide strike leaves the seal be; an Iron-Root strike spins it right-way up: STATE_UNBOGGART_RELEASE, the fight won at 24%, and he's lulled into his cairn")
+	ring.queue_free()
+
+	# --- 5. Dioramas, Gilding potency, and one widget across the HUD, Binder and Scribery ---
+	var harmony: Dictionary = catalog.compute_diorama_synergy(ArsenalCatalog.RISING_DRIVE, ArsenalCatalog.ARIUNDLE_MOSS_OAKS)
+	var gilded_place: Dictionary = catalog.compute_diorama_synergy(ArsenalCatalog.RISING_DRIVE, ArsenalCatalog.ARIUNDLE_MOSS_OAKS,
+		ScribeCardResource.CardVariant.STANDARD, ScribeCardResource.CardVariant.GILDED_LEAF)
+	_check(harmony["is_home_ground_harmony"] and is_equal_approx(harmony["coat_duration_sec"], 10.0) and is_equal_approx(harmony["bonus_poise"], 15.0)
+		and is_equal_approx(gilded_place["bonus_poise"], 16.5),
+		"Moss-Oak-Hollow behind an Iron-Root Action-Leaf is Home-Ground Harmony: a 10.0 s coat and +15 poise (16.5 from a Gilded Leaf Place-Card)")
+	var dps_class: PlayerClassResource = ClassLoadouts.player_class(dps.loadout.class_id, dps.loadout.calling)
+	var plain_kit: EquipmentLoadoutResource = dps.loadout.kit.copy()
+	var gilded_kit: EquipmentLoadoutResource = plain_kit.copy()
+	gilded_kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] = ScribeCardResource.CardVariant.GILDED_LEAF
+	var star_kit: EquipmentLoadoutResource = plain_kit.copy()
+	star_kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] = ScribeCardResource.CardVariant.STAR_INKED_VELLUM
+	var plain_r: float = LoadoutComposer.compose(dps_class, plain_kit).opener_for(Cmd.TRIGGER_R_SKILL).damage
+	var gilded_r: float = LoadoutComposer.compose(dps_class, gilded_kit).opener_for(Cmd.TRIGGER_R_SKILL).damage
+	var star_r: float = LoadoutComposer.compose(dps_class, star_kit).opener_for(Cmd.TRIGGER_R_SKILL).damage
+	_check(plain_r > 0.0 and is_equal_approx(gilded_r, plain_r * 1.1) and is_equal_approx(star_r, plain_r * 1.2),
+		"the Gilding Press adds potency: Gale Rush hits %.1f Plain, %.1f Gilded Leaf (+10%%), %.1f Star-Inked Vellum (+20%%)" % [plain_r, gilded_r, star_r])
+	# Gild the DPS's worn Gale Rush at the Scribery: the shop's, the HUD's and the Binder's diamonds all show it.
+	dps.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(0.0, 0.0, 26.0)))
+	await _seconds(0.1)
+	progress.chimes = 300
+	progress.save()
+	hud.open_scribery_shop()
+	var shop: ScriberyShopPanel = hud.scribery_panel()
+	var previews: int = shop.previews_played
+	var draws_before: int = dps.visuals.choreography_count(ActorVisuals.Choreography.POCKET_DRAW)
+	shop.select_tab(ScriberyShopPanel.Tab.GILD)
+	var picked: bool = shop.select_option(ArsenalCatalog.GALE_RUSH)
+	await physics_frame
+	var preview_drew: bool = shop.previews_played > previews and dps.visuals.choreography_count(ActorVisuals.Choreography.POCKET_DRAW) > draws_before
+	var gilded: bool = shop.buy()
+	await _seconds(0.1)
+	_check(picked and preview_drew and gilded and progress.owns_card(ArsenalCatalog.GALE_RUSH, ScribeCardResource.CardVariant.GILDED_LEAF)
+		and dps.loadout.kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] == ScribeCardResource.CardVariant.GILDED_LEAF
+		and hud_widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.GILDED_LEAF
+		and shop.widget.kit.socket_leaf_variant(Diorama.SKILL) == ScribeCardResource.CardVariant.GILDED_LEAF
+		and is_equal_approx(dps.loadout.opener_for(Cmd.TRIGGER_R_SKILL).damage, plain_r * 1.1),
+		"picking Gale Rush at the Gilding Press plays the pocket-draw preview on the DPS's puppet; gilding it (+10%%) shows on the shop's and the HUD's diamonds and in the swing")
+	shop.close()
+	await _seconds(0.05)
+	hud.toggle_binder()
+	var binder: GrimoireBinderPanel = hud.binder_panel()
+	var opening_scale: float = binder.widget.draw_scale() if binder != null else 0.0
+	await _seconds(0.3)
+	_check(binder != null and binder.widget.display_scale == CrossGrimoireDiamondWidget.BINDER_SCALE and binder.widget.interactive
+		and opening_scale < CrossGrimoireDiamondWidget.BINDER_SCALE - 0.3 and is_equal_approx(binder.widget.draw_scale(), CrossGrimoireDiamondWidget.BINDER_SCALE)
+		and binder.widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.GILDED_LEAF
+		and hud_widget.display_scale == CrossGrimoireDiamondWidget.HUD_SCALE and not hud_widget.interactive
+		and GrimoireBinderPanel.combo_forms_text().contains("✓ Sundering Gap-Leap:  Light → Light → ↑+Heavy"),
+		"the Binder grows the same widget from %.1fx to 2.2x over 220 ms, shows the Gilded Gale Rush, and lists the Combo Forms the party knows" % opening_scale)
+	hud.toggle_binder()
+	await _seconds(0.05)
+
+	# Back as we were, and the new systems off again for the checks that follow.
+	director.hit_resolved.disconnect(resolved_hook)
+	director.hit_stop_applied.disconnect(stop_hook)
+	SignFlowComponent.enabled = false
+	GlimmerSpotComponent.enabled = false
+	ComboChainComponent.enabled = false
+	PostureEscalationComponent.enabled = false
+	BossGateComponent.enabled = false
+	boss.gates.set_physics_process(true)
+	boss.glimmer.close()
+	progress.pattern_seen.clear()
+	progress.chimes = chimes_before
+	progress.collection.assign(collection_before)
+	if healer.tether != null:
+		healer.tether.bind_slot(0)
+	for actor: ActorBase in [tank, healer, dps]:
+		await _until_idle(actor)
+		network.update_local_kit(actor.device_id, ClassLoadouts.starter_kit(actor.loadout.class_id).to_dict())
+		actor.stats.heal(actor.stats.stats.max_health)
+		actor.stagger_time_left = 0.0
+		actor.sign_flow._end_ink_share()
+		actor.sign_flow._clear_coat()
+		actor.sign_flow._end_tuck()
+		actor.sign_flow.aegis_ward = false
+		actor.sign_flow.ward_blessing_left = 0.0
+	progress.save()
+	await _seconds(0.1)
+	boss.stats.heal(boss.stats.stats.max_health)
+	_stage_party()
+	_reset_boss_poise()
+	boss.set_physics_process(true)
+
+
+## Plays one posture on a hero's controller and waits for it to finish.
+func _play(actor: ActorBase, command: int) -> void:
+	actor.input.inject_command(command)
+	await physics_frame
+	await physics_frame
+	await _until_idle(actor)
+
+
+## A starting-zone spirit dropped into the Ring as a practice dummy: no spawner, so it stands still; awake, so it counts as a fight.
+func _practice_mob(variant_id: StringName, where: Vector3) -> WildMob:
+	var mob: WildMob = WildMob.new()
+	mob.variant = Bestiary.variant(variant_id)
+	mob.loadout = Bestiary.loadout(mob.variant)
+	mob.name = "Practice%s" % String(variant_id).to_pascal_case()
+	mob.player_id = StringName("practice_%s" % variant_id)
+	mob.set_multiplayer_authority(1)
+	dojo.actors_root.add_child(mob)
+	mob.spawn_at(Transform3D(Basis.IDENTITY, where))
+	mob.engaged = true
+	return mob
+
+
+## Puts `actor` `distance` metres in front of `target`, facing it.
+func _place_beside(actor: ActorBase, target: ActorBase, distance: float) -> void:
+	var where: Vector3 = target.global_position + Vector3(0.0, 0.0, distance)
+	actor.place_at(Transform3D(Basis.looking_at((target.global_position - where).normalized(), Vector3.UP), where))
+	actor.input.inject_move(Vector2.ZERO)
 
 
 ## The Reed-Light Scribery on Bramble-Bridge's square: under the 3.2 m sightline

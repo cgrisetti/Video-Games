@@ -6,7 +6,10 @@
 ##   right  "Place-Cards: Where You Stand"  picking one frames the chosen
 ##          diamond, with a Home-Ground Harmony preview when the Signs match
 ## The middle column picks the diamond (L+R, L, R) or opens the Collection
-## Folio: every card and finish, found or still to find.
+## Folio: every card and finish, found or still to find. Under the Place-Cards
+## sit the Combo Forms (14 GDD §8): the directional forms the party knows, with
+## their postures, and the ones still to learn. The diamonds grow from the HUD's
+## size to 2.2x over 220 ms as the Binder opens.
 ##
 ## Left / right moves between the pages and the diamonds, up / down along
 ## them, light picks, dodge (or Tab again) closes. The mouse works too: click a
@@ -57,6 +60,7 @@ var _detail: Label
 var _note: Label
 var _hint: Label
 var _folio: Label
+var _combo_forms: Label
 var _note_left: float = 0.0
 
 
@@ -92,11 +96,21 @@ func _ready() -> void:
 	widget = CrossGrimoireDiamondWidget.new()
 	widget.name = "Diamonds"
 	widget.follow = actor
-	widget.set_display_scale(CrossGrimoireDiamondWidget.BINDER_SCALE, true)
+	widget.set_presentation_mode(CrossGrimoireDiamondWidget.BINDER_SCALE, true)
+	widget.grow_from(CrossGrimoireDiamondWidget.HUD_SCALE)
 	widget.socket_picked.connect(_on_socket_picked)
 	spread.add_child(widget)
+	var right_side: VBoxContainer = VBoxContainer.new()
+	right_side.name = "RightPage"
+	right_side.add_theme_constant_override(&"separation", 8)
+	right_side.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	spread.add_child(right_side)
 	_place_page = _page("Place-Cards: Where You Stand")
-	spread.add_child(_place_page.get_parent())
+	right_side.add_child(_place_page.get_parent())
+	var forms_page: VBoxContainer = _page("Combo Forms: How You Flow")
+	_combo_forms = _label(SMALL_FONT_SIZE, ROW_COLOR)
+	forms_page.add_child(_combo_forms)
+	right_side.add_child(forms_page.get_parent())
 	_detail = _label(FONT_SIZE, ROW_COLOR)
 	_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_root.add_child(_detail)
@@ -330,6 +344,7 @@ func _refresh() -> void:
 	_folio.visible = folio_open
 	if folio_open:
 		_folio.text = _folio_text()
+	_combo_forms.text = combo_forms_text()
 	var middle: String = "Collection Folio" if DIAMOND_ROWS[diamond_row] < 0 else ScribeCardResource.SOCKET_NAMES[DIAMOND_ROWS[diamond_row]]
 	_hint.text = "%s  ·  ←/→ pages and diamonds · ↑/↓ choose · light picks · dodge or Tab closes" % (
 		("> " + middle) if column == Column.DIAMONDS else ["Action-Leaves", "", "Place-Cards"][column])
@@ -393,6 +408,18 @@ static func _diorama_text(synergy: Dictionary) -> String:
 	else:
 		line += "  ·  coat %.1f s" % synergy["coat_duration_sec"]
 	return line
+
+
+## The Combo Forms page: each directional form, its postures, and the trail level that teaches the rest.
+static func combo_forms_text() -> String:
+	var level: int = PartyProgress.current.trail_level()
+	var lines: PackedStringArray = PackedStringArray()
+	for form: ComboChainResource in ArsenalCatalog.current.combos():
+		if level >= form.required_level:
+			lines.append("✓ %s:  %s" % [form.display_name, form.glyphs()])
+		else:
+			lines.append("  Lv %d: %s (still to learn)" % [form.required_level, form.display_name])
+	return "\n".join(lines)
 
 
 ## Every Action-Leaf and Place-Card: found ones with the finishes the party has, unfound ones as a riddle.

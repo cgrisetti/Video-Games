@@ -1,6 +1,7 @@
 ## Committed to an action. During wind-up (Phase A) the actor may turn up to
 ## 45 degrees toward its target; wind-up and active frames carry the lunge (a
-## hero's posture step, ActorBase.STEP_*). Holding guard in a Light's
+## hero's posture step, ActorBase.STEP_*, or a combo finisher's step,
+## ActorBase.posture_step). Holding guard in a Light's
 ## Flow-Link window drops the swing into the guard (11 GDD §3.1).
 class_name AttackState
 extends ActorState
@@ -34,8 +35,11 @@ func physics_update(dt: float) -> void:
 			_turn_budget -= actor.turn_toward(to_target, minf(WINDUP_TURN_SPEED * dt, _turn_budget))
 	var lunging: bool = queue.phase == ActionQueueComponent.Phase.WINDUP or queue.phase == ActionQueueComponent.Phase.ACTIVE
 	var lunge_time: float = action.windup_time + action.active_time
-	if lunging and absf(action.lunge_distance) > 0.0 and lunge_time > 0.0:
-		var speed: float = action.lunge_distance / lunge_time * queue.speed_scale
-		actor.set_horizontal_velocity(actor.facing_vector() * speed)
+	# The posture's step: the action's own lunge, or a combo finisher's (a leap, a back-vault, a flank orbit).
+	var step: Vector3 = actor.posture_step(action)
+	if lunging and step.length() > 0.0 and lunge_time > 0.0:
+		actor.set_horizontal_velocity(step / lunge_time * queue.speed_scale)
+		if actor.posture_orbits(action):
+			actor.turn_toward(actor.direction_to_soft_target(), WINDUP_TURN_SPEED * dt)
 	else:
 		actor.steer_horizontal(Vector3.ZERO, actor.loadout.stats.move_speed, dt)

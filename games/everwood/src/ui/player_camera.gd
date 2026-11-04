@@ -2,6 +2,10 @@
 ## soft-locks: it swings round behind the player to keep the boss in view.
 ## The right stick, the arrow keys or the mouse turn it; in the assisted modes
 ## the soft-lock takes over again a moment after you let go.
+##
+## A Sign-Flow cast dolly-pulses it (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §8): a
+## smooth 0.35 m push toward the hero's shoulder and back over 120 ms, so the
+## Offhand Pocket-Draw lands with a beat on that player's screen alone.
 class_name PlayerCamera
 extends Camera3D
 
@@ -19,12 +23,21 @@ const FIELD_OF_VIEW: float = 62.0
 const LOCK_RESUME_DELAY: float = 1.2
 ## How far in front of a wall or pillar the camera stops when one is in the way.
 const WALL_CLEARANCE: float = 0.4
+const DOLLY_PULSE_DISTANCE: float = 0.35
+const DOLLY_PULSE_TIME: float = 0.12
+## The shoulder the pulse pushes toward: up and to the right of the hero's feet.
+const SHOULDER_HEIGHT: float = 1.45
+const SHOULDER_SIDE: float = 0.3
 
 var actor: ActorBase
 var yaw: float = 0.0
 
 var _focus: Vector3 = Vector3.ZERO
 var _manual_hold: float = 0.0
+var _dolly_left: float = 0.0
+var _dolly_peak: float = 0.0
+var _pulses: int = 0
+var _listening_to: SignFlowComponent
 
 
 func follow(target_actor: ActorBase) -> void:
@@ -47,9 +60,40 @@ func _ready() -> void:
 		_place()
 
 
+## The Sign-Flow cast's push toward the shoulder and back.
+func dolly_pulse() -> void:
+	_dolly_left = DOLLY_PULSE_TIME
+	_dolly_peak = 0.0
+	_pulses += 1
+
+
+## How far the pulse has pushed the camera in right now (0 to 0.35 m).
+func dolly_offset() -> float:
+	if _dolly_left <= 0.0:
+		return 0.0
+	return DOLLY_PULSE_DISTANCE * sin(PI * (1.0 - _dolly_left / DOLLY_PULSE_TIME))
+
+
+## The furthest the last pulse pushed in, and how many have played.
+func dolly_peak() -> float:
+	return _dolly_peak
+
+
+func dolly_pulses() -> int:
+	return _pulses
+
+
+func _on_sign_flow_cast(_socket: int, _scribe_sign: int) -> void:
+	dolly_pulse()
+
+
 func _process(delta: float) -> void:
 	if not is_instance_valid(actor):
 		return
+	if actor.sign_flow != null and _listening_to != actor.sign_flow:
+		_listening_to = actor.sign_flow
+		actor.sign_flow.sign_flow_cast.connect(_on_sign_flow_cast)
+	_dolly_left = maxf(0.0, _dolly_left - delta)
 	var orbit: float = actor.input.camera_orbit_input if actor.input != null else 0.0
 	var mouse_yaw: float = actor.input.take_mouse_yaw() if actor.input != null else 0.0
 	var soft_lock: bool = actor.input == null or actor.input.soft_lock_camera()
@@ -75,6 +119,11 @@ func _place() -> void:
 	var look_point: Vector3 = _focus + Vector3.UP * LOOK_HEIGHT
 	var wanted: Vector3 = _focus + Vector3(sin(yaw), 0.0, cos(yaw)) * DISTANCE + Vector3.UP * HEIGHT
 	global_position = _clear_of_walls(look_point, wanted)
+	var push: float = dolly_offset()
+	if push > 0.0:
+		var shoulder: Vector3 = _focus + Vector3.UP * SHOULDER_HEIGHT + Vector3(cos(yaw), 0.0, -sin(yaw)) * SHOULDER_SIDE
+		global_position = global_position.move_toward(shoulder, push)
+		_dolly_peak = maxf(_dolly_peak, push)
 	look_at(look_point)
 
 

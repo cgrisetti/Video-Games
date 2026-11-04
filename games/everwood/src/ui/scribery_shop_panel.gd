@@ -5,8 +5,11 @@
 ##   Chart Place-Cards        the four Place-Cards, for Chimes (one frames every diamond)
 ##   The Gilding Press        a finer finish for a card the party owns:
 ##                            Plain Vellum to Gilded Leaf (50), to Star-Inked Vellum (120)
-## Highlighting a card shows it in the diamonds and, on the hero's own puppet,
-## the coat it would give (ActorVisuals' Hearth-Rite look). A new leaf goes
+## Highlighting a card shows it in the diamonds and, on the hero's own puppet
+## standing at the press, plays the Offhand Pocket-Draw and the blade igniting
+## in the coat it would give (14 GDD §8), then holds the Hearth-Rite's glow. A
+## finer finish adds potency: Gilded Leaf +10%, Star-Inked Vellum +20% and a
+## quicker Hearth-Rite. A new leaf goes
 ## into an empty R; a new Place-Card frames the chosen diamond if it has no
 ## frame; a pressed finish replaces the copy the hero wears. Left / right
 ## changes tab, up / down picks, light buys, dodge closes; the mouse works too.
@@ -51,6 +54,8 @@ var _note: Label
 var _note_left: float = 0.0
 ## A purchase on its way through the host, slotted once the binder has it: {copy_key, socket, kind}.
 var _pending_slot: Dictionary = {}
+## Pocket-draw previews played on the shopper's puppet since the counter opened.
+var previews_played: int = 0
 
 
 func setup(target_actor: ActorBase) -> void:
@@ -375,9 +380,10 @@ func _row_text(id: StringName) -> String:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
 	var progress: PartyProgress = PartyProgress.current
 	if tab == Tab.GILD:
-		return "%s: %s → %s   %d Chimes" % [catalog.card(ScribeCardResource.copy_card_id(id)).display_name,
-			ScribeCardResource.VARIANT_NAMES[ScribeCardResource.copy_variant(id)], ScribeCardResource.VARIANT_NAMES[ScribeCardResource.copy_variant(_finer(id))],
-			PartyProgress.gilding_cost(id)]
+		var finer: int = ScribeCardResource.copy_variant(_finer(id))
+		return "%s: %s → %s (+%d%% potency)   %d Chimes" % [catalog.card(ScribeCardResource.copy_card_id(id)).display_name,
+			ScribeCardResource.VARIANT_NAMES[ScribeCardResource.copy_variant(id)], ScribeCardResource.VARIANT_NAMES[finer],
+			roundi((ScribeCardResource.finish_potency(finer) - 1.0) * 100.0), PartyProgress.gilding_cost(id)]
 	var listed: ScribeCardResource = catalog.card(id)
 	var seal: String = catalog.sign_seal(listed.scribe_sign).display_name
 	var kind: String = seal if listed.is_place_card() else "%s · %s" % [seal, listed.mode_name()]
@@ -408,8 +414,12 @@ func _preview(id: StringName) -> void:
 		"  ·  ★ Home-Ground Harmony" if synergy["is_home_ground_harmony"] else ""]
 	# The puppet shows the coat this pairing gives, as the Hearth-Rite would (on this screen only).
 	var inked: int = synergy["scribe_sign"] if synergy["scribe_sign"] != ScribeSignResource.Sign.NONE else synergy["place_sign"]
-	CombatDirector.current.show_sign_coat_here(actor, SignFlowComponent.CoatLook.TRAIL_TUCK, inked, synergy["manifestation_mode"],
+	var director: CombatDirector = CombatDirector.current
+	director.show_sign_coat_here(actor, SignFlowComponent.CoatLook.FLARE, inked, synergy["manifestation_mode"], synergy["location_card_id"],
+		SignFlowComponent.SIGN_FLOW_FLARE_TIME)
+	director.show_sign_coat_here(actor, SignFlowComponent.CoatLook.TRAIL_TUCK, inked, synergy["manifestation_mode"],
 		synergy["location_card_id"], 0.0)
+	previews_played += 1
 
 
 ## The socket whose leaf is this copy (the default when none is).

@@ -13,6 +13,10 @@
 ## - A Squire (1-Button Gambit Assist) who presses within 90 frames before the
 ##   opening has the counter buffered: their R fires on its first frame.
 ##
+## A four-gate boss's weakness shifts with its gates (14 GDD §8): the Signs that
+## crack it now are active_weakness(), and a One-and-Done cracks an open spot
+## whatever its Sign.
+##
 ## The foe's owner opens the window and judges strikes; every peer shows the
 ## golden glint over the foe while it's open.
 class_name GlimmerSpotComponent
@@ -76,7 +80,22 @@ func _process(delta: float) -> void:
 		_glint.scale = Vector3.ONE * pulse
 
 
-## Open to a counter right now (always, for Tier 1 kin).
+## The gate a four-gate boss is in (0 for Gate 1, and for every other foe).
+func gate_index() -> int:
+	return actor.gates.gate if actor.gates != null and actor.gates.is_active() else 0
+
+
+## The Signs that crack the spot now (the gate's own weakness on a four-gate boss).
+func active_weakness() -> Array[int]:
+	return encounter.weakness_for_gate(gate_index()) if encounter != null else []
+
+
+## Whether a strike in `scribe_sign` cracks the spot now.
+func is_countered_now(scribe_sign: int) -> bool:
+	return encounter != null and encounter.is_countered_in_gate(scribe_sign, gate_index())
+
+
+## Open to a counter right now (always, for Tier 0 kin).
 func is_open() -> bool:
 	if not enabled or encounter == null:
 		return false
@@ -160,10 +179,10 @@ func filter_strike(event: CombatEvent) -> bool:
 	var scribe_sign: int = event.counter_sign()
 	if encounter.is_always_open():
 		if scribe_sign == ScribeSignResource.Sign.SIGN_IRON_ROOT:
-			event.poise_damage *= BossEncounterResource.TIER_1_POISE_MULTIPLIER
+			event.poise_damage *= BossEncounterResource.TIER_0_POISE_MULTIPLIER
 			_flash_left = TIER_ONE_GLINT_TIME
 		return false
-	if not is_open() or not encounter.is_countered_by(scribe_sign):
+	if not is_open() or not (event.cracks_lock or is_countered_now(scribe_sign)):
 		return false
 	close()
 	counters_landed += 1

@@ -64,6 +64,8 @@ var _menu: Control
 var _flow_flash_left: float = 0.0
 var _rhyme_label: Label
 var _rhyme_left: float = 0.0
+## The Nursery Rhyme Diagnostic Ribbon's Sign badges (14 GDD §8): one per Sign that cracks the spot now.
+var _rhyme_badges: HBoxContainer
 
 
 func setup(target_actor: ActorBase) -> void:
@@ -111,6 +113,13 @@ func _ready() -> void:
 	_rhyme_label.modulate = RHYME_COLOR
 	_rhyme_label.visible = false
 	top.add_child(_rhyme_label)
+	_rhyme_badges = HBoxContainer.new()
+	_rhyme_badges.name = "RhymeBadges"
+	_rhyme_badges.alignment = BoxContainer.ALIGNMENT_CENTER
+	_rhyme_badges.add_theme_constant_override(&"separation", 14)
+	_rhyme_badges.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_rhyme_badges.visible = false
+	top.add_child(_rhyme_badges)
 
 	cross_grimoire = CrossGrimoireHUD.new()
 	cross_grimoire.setup(actor)
@@ -197,6 +206,7 @@ func _process(delta: float) -> void:
 		return
 	_rhyme_left = maxf(0.0, _rhyme_left - delta)
 	_rhyme_label.visible = _rhyme_left > 0.0
+	_rhyme_badges.visible = _rhyme_left > 0.0 and _rhyme_badges.get_child_count() > 0
 	_top_panel.offset_top = MARGIN + (BANNER_CLEARANCE if get_global_rect().position.y < 1.0 else 0.0)
 	_refresh_boss()
 	_place_banner()
@@ -269,6 +279,18 @@ func rhyme_text() -> String:
 	return _rhyme_label.text if _rhyme_left > 0.0 else ""
 
 
+## The Sign badges under the rhyme ("◆ Iron-Root"), empty when none is showing.
+func rhyme_badges() -> PackedStringArray:
+	var badges: PackedStringArray = PackedStringArray()
+	if _rhyme_left <= 0.0:
+		return badges
+	for child: Node in _rhyme_badges.get_children():
+		var badge: Label = child as Label
+		if badge != null and not badge.is_queued_for_deletion():
+			badges.append(badge.text)
+	return badges
+
+
 ## A foe near this player opened its Glimmer-Spot: its rhyme shows while it's
 ## open, if the party still needs it (a new opening replaces the last one's).
 func _on_glimmer_opened(enemy: ActorBase, seconds: float, rhyme: String) -> void:
@@ -276,6 +298,17 @@ func _on_glimmer_opened(enemy: ActorBase, seconds: float, rhyme: String) -> void
 		return
 	_rhyme_label.text = rhyme
 	_rhyme_left = seconds if rhyme != "" else 0.0
+	# Each Sign that cracks it now (a four-gate boss's shifts with its gate) as a coloured badge.
+	for child: Node in _rhyme_badges.get_children():
+		_rhyme_badges.remove_child(child)
+		child.queue_free()
+	if rhyme != "" and enemy.glimmer != null:
+		for scribe_sign: int in enemy.glimmer.active_weakness():
+			var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(scribe_sign)
+			var badge: Label = _label(SMALL_FONT_SIZE + 3)
+			badge.text = "◆ %s" % seal.display_name
+			badge.modulate = seal.color
+			_rhyme_badges.add_child(badge)
 
 
 ## A Bravery Counter cracked the spot: the coaching is done.

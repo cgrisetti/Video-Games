@@ -20,6 +20,27 @@
 ##   Ward-Mantle also raises a 4 m shelter cone behind the hero; a
 ##   Lantern-Tether mends whoever the Soul Tether holds.
 ##
+## The Phase 12 Kaizen pass (14 GDD §8) adds the card choreography and each
+## role's loop:
+## - The Hearth-Rite is the Overhead Pocket Blessing: the hero lowers the
+##   weapon, draws a glowing vellum card from the coat pocket, raises it
+##   overhead (under 2.5 m) as Sign ink pours down round them, and draws the
+##   weapon again glowing. It also grants a Ward Blessing: the first foe that
+##   strikes in the next fight does 15% less, until 15 s into it.
+## - A Sign-Flow cast is the Offhand Pocket-Draw: the off hand sweeps the card
+##   along the weapon as it ignites at 2.0x, and the split-screen camera
+##   dolly-pulses 0.35 m toward the hero's shoulder over 120 ms.
+## - DPS: L+R (3 pips) while a Weapon-Coat burns spends the coat on a One-and-Done
+##   Seal-Breaker: its leaf's 3.2x the weapon's damage, the Sign's detonation,
+##   and it cracks whatever lock or gate the foe shows.
+## - Tank: a Ward-Mantle soaks 80% of a blow of its own Sign (or any Sign
+##   blow Perfect-Guarded), shrugs off the stun and knockback, throws 60 poise
+##   back at the attacker and raises the 4 m shelter cone.
+## - Support: binding the Soul Tether (or laying a Green Sanctuary) wards
+##   allies against their next stun (an Aegis Ward); casting an Ink-Share leaf
+##   (R or L+R) lends its Sign for 8 s to everyone on the tether or within
+##   10 m, so their physical blows strike in it and crack its locks.
+##
 ## It runs on the hero's own peer; the looks reach every peer through
 ## CombatDirector.show_sign_coat, and the Sign travels in each strike's event.
 class_name SignFlowComponent
@@ -28,11 +49,16 @@ extends Node
 signal hearth_rite_prepared(socket: int)
 signal opening_strike_discharged(scribe_sign: int)
 signal sign_flow_cast(socket: int, scribe_sign: int)
+signal one_and_done_unleashed(scribe_sign: int)
+signal ward_mantle_held(attacker_id: StringName)
+signal ink_shared(scribe_sign: int)
+signal aegis_ward_spent
 
 ## The smoke test's older checks switch Sign-Flow off (like BracedGuardComponent.enabled).
 static var enabled: bool = true
 
-enum CoatLook { CLEAR, TRAIL_TUCK, FLARE, COAT }
+## BLESSING is a one-shot look, like FLARE: it plays the Overhead Pocket Blessing and leaves the look as it was.
+enum CoatLook { CLEAR, TRAIL_TUCK, FLARE, COAT, BLESSING }
 
 ## An engaged foe this close puts the hero in combat.
 const COMBAT_RADIUS: float = 18.0
@@ -61,6 +87,19 @@ const WARD_MANTLE_CONE_TIME: float = 3.0
 const LANTERN_TETHER_HEAL: float = 6.0
 ## A Place-Card's mending warmth reaches friends this close (Mill-Warmth).
 const PLACE_WARMTH_RADIUS: float = 4.0
+## The Hearth-Rite's Ward Blessing: the next foe's blows do this much less, until the fight's grace runs out.
+const WARD_BLESSING_MITIGATION: float = 0.15
+## The One-and-Done Seal-Breaker spends this many pips (the L+R card's own and any short of it).
+const ONE_AND_DONE_PIPS: float = 3.0
+## A Support's Ink-Share lasts this long and reaches everyone this close (and whoever the Soul Tether holds).
+const INK_SHARE_TIME: float = 8.0
+const INK_SHARE_RADIUS: float = 10.0
+## A Green Sanctuary wards allies this close with an Aegis Ward.
+const SANCTUARY_AEGIS_RADIUS: float = 10.0
+## A warded blow's stun and shove, which land a moment after the blow, are shrugged off for this long.
+const WARD_SHRUG_GRACE: float = 0.3
+const WARD_TEXT_COLOR: Color = Color(0.62, 0.8, 1.0)
+const AEGIS_TEXT_COLOR: Color = Color(0.75, 1.0, 0.82)
 ## The physical attacks whose hits open the Flow-Link Window.
 const PHYSICAL_COMMANDS: Array[int] = [CombatActionResource.Command.LIGHT, CombatActionResource.Command.HEAVY,
 	CombatActionResource.Command.FORWARD_HEAVY, CombatActionResource.Command.BACK_HEAVY]
@@ -87,6 +126,24 @@ var coat_synergy: Dictionary = {}
 ## Seconds the Flow-Link Window stays open.
 var flow_window_left: float = 0.0
 
+## The Ward Blessing: seconds left once a fight starts (it waits, full, until then), and the foe it's turned toward.
+var ward_blessing_left: float = 0.0
+var ward_attuned_id: StringName = &""
+## A Support's Aegis Ward: the next stun or knockdown is shrugged off.
+var aegis_ward: bool = false
+## A Support's Ink-Share on this hero: the Sign, seconds left and who lent it.
+var shared_party_sign_override: int = NO_SIGN
+var ink_share_left: float = 0.0
+var ink_share_from: StringName = &""
+## The L+R playing now as a One-and-Done (null when none), and what it spends.
+var one_and_done_action: CombatActionResource
+var warded_hits: int = 0
+
+var _one_and_done_sign: int = NO_SIGN
+var _one_and_done_leaf: StringName = &""
+var _one_and_dones: int = 0
+var _shrug_until: float = -INF
+var _warded_this_hit: bool = false
 var _trail_synergy: Dictionary = {}
 var _armed_command: int = -1
 var _armed_left: float = 0.0
@@ -103,8 +160,12 @@ func setup(owner_actor: ActorBase) -> void:
 func _ready() -> void:
 	actor.action_queue.action_started.connect(_on_action_started)
 	actor.action_queue.flow_cancelled.connect(_on_flow_cancelled)
+	actor.action_queue.action_finished.connect(_on_action_ended)
+	actor.action_queue.action_interrupted.connect(_on_action_ended)
 	if actor.input != null:
 		actor.input.hearth_rite_held.connect(_on_hearth_rite_held)
+	if actor.tether != null:
+		actor.tether.tether_changed.connect(_on_tether_changed)
 
 
 ## Every physics tick on the hero's peer (ActorBase calls it after its stats).
@@ -117,6 +178,12 @@ func tick(delta: float) -> void:
 		trail_coat_timer -= delta
 		if trail_coat_timer <= 0.0:
 			_end_tuck()
+	if ward_blessing_left > 0.0 and is_in_combat:
+		ward_blessing_left = maxf(0.0, ward_blessing_left - delta)
+	if ink_share_left > 0.0:
+		ink_share_left -= delta
+		if ink_share_left <= 0.0:
+			_end_ink_share()
 	if coat_time_left > 0.0:
 		coat_time_left -= delta
 		if coat_time_left <= 0.0:
@@ -140,7 +207,8 @@ func socket_synergy(socket: int) -> Dictionary:
 	var kit: EquipmentLoadoutResource = actor.loadout.kit
 	if kit == null:
 		return ArsenalCatalog.current.compute_diorama_synergy(&"", &"")
-	return ArsenalCatalog.current.compute_diorama_synergy(kit.socket_leaf_id(socket), kit.place_ids[socket])
+	return ArsenalCatalog.current.compute_diorama_synergy(kit.socket_leaf_id(socket), kit.place_ids[socket],
+		kit.socket_leaf_variant(socket), kit.socket_place_variant(socket))
 
 
 ## How long R or L+R must be held for the Hearth-Rite Tuck: 120 frames, 80 on a Star-Inked Vellum leaf.
@@ -160,11 +228,14 @@ func can_prepare() -> bool:
 	return enabled and not is_in_combat and not actor.stats.is_downed
 
 
-## The window this hero's hits open now, in frames (Dread-Chill alone, The Lantern's Promise near a Lantern-Bearer).
+## The window this hero's hits open now, in frames (Dread-Chill alone, The
+## Lantern's Promise near a Lantern-Bearer or held on one's Soul Tether).
 func flow_window_frames() -> int:
 	for member: ActorBase in CombatDirector.current.alive_party():
-		if member.role() == ClassLoadoutResource.Role.HEALER \
-				and member.global_position.distance_to(actor.global_position) <= LANTERNS_PROMISE_RADIUS:
+		if member.role() != ClassLoadoutResource.Role.HEALER:
+			continue
+		var tethered: bool = member != actor and member.tether != null and member.tether.tethered_id == actor.player_id
+		if tethered or member.global_position.distance_to(actor.global_position) <= LANTERNS_PROMISE_RADIUS:
 			return LANTERNS_PROMISE_WINDOW_FRAMES
 	if CombatDirector.current.alive_party().size() <= 1:
 		return DREAD_CHILL_WINDOW_FRAMES
@@ -206,6 +277,11 @@ func begin_hearth_rite(socket: int) -> bool:
 	active_location_card_id = synergy["location_card_id"]
 	active_action_card_id = synergy["action_card_id"]
 	trail_coat_timer = TRAIL_COAT_COMBAT_GRACE
+	ward_blessing_left = TRAIL_COAT_COMBAT_GRACE
+	ward_attuned_id = &""
+	# The Overhead Pocket Blessing plays first; the steady 1.35x glow follows it.
+	CombatDirector.current.show_sign_coat(actor, CoatLook.BLESSING, active_trail_coat_sign, synergy["manifestation_mode"],
+		active_location_card_id, 0.0)
 	CombatDirector.current.show_sign_coat(actor, CoatLook.TRAIL_TUCK, active_trail_coat_sign, synergy["manifestation_mode"],
 		active_location_card_id, 0.0)
 	var label: String = "HEARTH-RITE TUCK"
@@ -254,13 +330,25 @@ func _end_tuck() -> void:
 func on_strike_landed(action: CombatActionResource, event: CombatEvent) -> void:
 	if not enabled:
 		return
-	if is_in_combat and PHYSICAL_COMMANDS.has(action.command):
+	var physical: bool = PHYSICAL_COMMANDS.has(action.command)
+	if is_in_combat and physical:
 		flow_window_left = flow_window_frames() / FRAMES_PER_SECOND
+	if action == one_and_done_action:
+		event.one_and_done = true
+		event.finisher_card_id = _one_and_done_leaf
+		event.coat_sign = _one_and_done_sign
+		event.coat_poise = 0.0
+		return
 	if opening_strike_empowered and is_in_combat:
 		_discharge_into(event)
 	elif coat_time_left > 0.0 and coat_sign != NO_SIGN:
 		event.coat_sign = coat_sign
 		event.coat_poise = coat_synergy.get("bonus_poise", 0.0)
+	elif ink_share_left > 0.0 and shared_party_sign_override != NO_SIGN and physical:
+		# A Support's Ink-Share: this physical blow strikes in their Sign.
+		event.coat_sign = shared_party_sign_override
+		event.coat_poise = 0.0
+		event.ink_share_from = ink_share_from
 
 
 ## L tapped in the Flow-Link Window: a Counter-Brace from the L socket (1 pip). Returns whether it went.
@@ -291,8 +379,20 @@ func arm(command: int) -> void:
 		_armed_left = ARMED_PRESS_TIME
 
 
-## An R or L+R pressed in the window starts: no wind-up, and the socket's diorama coats the hero.
+## An R or L+R pressed in the window starts: no wind-up, and the socket's
+## diorama coats the hero. An L+R while a Weapon-Coat burns is a One-and-Done
+## instead; a Support's Ink-Share leaf lends its Sign; a Green Sanctuary wards.
 func _on_action_started(action: CombatActionResource, _flowed: bool) -> void:
+	if not enabled:
+		return
+	if action.command == CombatActionResource.Command.TRIGGER_BOTH_ULT and _can_one_and_done(action):
+		_begin_one_and_done(action)
+		return
+	_share_ink_from(action)
+	if action.effect == CombatActionResource.Effect.GREEN_SANCTUARY:
+		for member: ActorBase in CombatDirector.current.alive_party():
+			if member != actor and member.global_position.distance_to(actor.global_position) <= SANCTUARY_AEGIS_RADIUS:
+				CombatDirector.current.grant_aegis_ward(actor, member)
 	if _armed_left <= 0.0 or action.command != _armed_command:
 		return
 	_armed_left = 0.0
@@ -307,6 +407,11 @@ func _on_action_started(action: CombatActionResource, _flowed: bool) -> void:
 func _on_flow_cancelled(_from: CombatActionResource, _to: CombatActionResource) -> void:
 	if coat_time_left > 0.0:
 		actor.stats.restore_stamina(coat_synergy.get("stamina_refund", 0.0))
+
+
+func _on_action_ended(action: CombatActionResource) -> void:
+	if action != null and action == one_and_done_action:
+		one_and_done_action = null
 
 
 func _on_hearth_rite_held(command: int) -> void:
@@ -347,6 +452,156 @@ func _cast(socket: int) -> void:
 	sign_flow_cast.emit(socket, scribe_sign)
 
 
+# --- Role asymmetry (14 GDD §8) ------------------------------------------------
+
+## DPS: L+R with a live Weapon-Coat of a Sign, and 3 pips between what it costs and what's left.
+func _can_one_and_done(action: CombatActionResource) -> bool:
+	return is_in_combat and coat_time_left > 0.0 and coat_sign != NO_SIGN \
+		and coat_mode == ScribeCardResource.ManifestationMode.WEAPON_COAT and action.effect == CombatActionResource.Effect.STRIKE \
+		and actor.stats.resonance_charge + action.resonance_cost >= ONE_AND_DONE_PIPS - 0.001
+
+
+## The coat is spent on the Seal-Breaker: every pip it takes, and the L+R's strikes carry it.
+func _begin_one_and_done(action: CombatActionResource) -> void:
+	var short: float = ONE_AND_DONE_PIPS - float(action.resonance_cost)
+	if short > 0.0:
+		actor.stats.add_resonance(-short)
+	one_and_done_action = action
+	_one_and_done_sign = coat_sign
+	_one_and_done_leaf = coat_synergy.get("action_card_id", &"")
+	_one_and_dones += 1
+	if _armed_left > 0.0 and _armed_command == action.command:
+		# Pressed in the window: no wind-up either.
+		actor.action_queue.phase_time = action.windup_time
+	_armed_left = 0.0
+	_armed_command = -1
+	flow_window_left = 0.0
+	var spent: int = _one_and_done_sign
+	_clear_coat()
+	var director: CombatDirector = CombatDirector.current
+	director.show_sign_coat(actor, CoatLook.FLARE, spent, ScribeCardResource.ManifestationMode.WEAPON_COAT, &"", SIGN_FLOW_FLARE_TIME)
+	director.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.5), "ONE-AND-DONE!",
+		ArsenalCatalog.current.sign_seal(spent).color, 38)
+	one_and_done_unleashed.emit(spent)
+
+
+func one_and_dones() -> int:
+	return _one_and_dones
+
+
+## Support: an R or L+R card that shares its ink lends its Sign to the party.
+func _share_ink_from(action: CombatActionResource) -> void:
+	if not is_in_combat or not action.is_card() or not action.is_skill():
+		return
+	var leaf: ScribeCardResource = ArsenalCatalog.current.card(action.card_id)
+	if leaf == null or not leaf.shares_ink() or leaf.scribe_sign == NO_SIGN:
+		return
+	CombatDirector.current.share_ink(actor, leaf.scribe_sign, INK_SHARE_TIME, INK_SHARE_RADIUS)
+	ink_shared.emit(leaf.scribe_sign)
+
+
+## Support: binding the Soul Tether wards the ally it now holds (their next stun is shrugged off).
+func _on_tether_changed(player_id: StringName) -> void:
+	var held: ActorBase = CombatDirector.current.get_actor(player_id)
+	if enabled and held != null and held != actor:
+		CombatDirector.current.grant_aegis_ward(actor, held)
+
+
+## On this hero's peer: a Support's Ink-Share. Physical blows strike in `scribe_sign` for `seconds`.
+func receive_ink_share(scribe_sign: int, seconds: float, from_id: StringName) -> void:
+	shared_party_sign_override = scribe_sign
+	ink_share_left = seconds
+	ink_share_from = from_id
+	if coat_time_left <= 0.0 and not has_hearth_rite_tuck:
+		CombatDirector.current.show_sign_coat(actor, CoatLook.COAT, scribe_sign, ScribeCardResource.ManifestationMode.WEAPON_COAT, &"", seconds)
+
+
+func _end_ink_share() -> void:
+	ink_share_left = 0.0
+	shared_party_sign_override = NO_SIGN
+	ink_share_from = &""
+	if coat_time_left <= 0.0 and not has_hearth_rite_tuck:
+		CombatDirector.current.show_sign_coat(actor, CoatLook.CLEAR, NO_SIGN, 0, &"", 0.0)
+
+
+## On this hero's peer: a Support's Aegis Ward. The next stun or knockdown is shrugged off.
+func receive_aegis_ward() -> void:
+	if not aegis_ward:
+		CombatDirector.current.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.4), "AEGIS WARD",
+			AEGIS_TEXT_COLOR, 26)
+	aegis_ward = true
+
+
+## A Ward-Mantle is on this hero now.
+func is_mantled() -> bool:
+	return enabled and coat_time_left > 0.0 and coat_mode == ScribeCardResource.ManifestationMode.WARD_MANTLE
+
+
+## How much the Ward Blessing takes off the next foe's blows now (0 when it's spent).
+func ward_blessing_mitigation() -> float:
+	return WARD_BLESSING_MITIGATION if enabled and ward_blessing_left > 0.0 else 0.0
+
+
+## A foe's blow on this hero, on its peer, before the guard maths (ActorBase.receive_strike):
+## the Ward Blessing takes 15% off the first foe's blows, and a Ward-Mantle of the blow's Sign soaks 80%.
+func filter_incoming(event: CombatEvent) -> void:
+	_warded_this_hit = false
+	if not enabled or event.kind != CombatEvent.Kind.STRIKE or event.unavoidable:
+		return
+	var attacker: ActorBase = actor.get_node_or_null(event.attacker_path) as ActorBase
+	if attacker == null or not attacker.is_boss():
+		return
+	if ward_blessing_left > 0.0:
+		if ward_attuned_id == &"":
+			ward_attuned_id = attacker.player_id
+		if ward_attuned_id == attacker.player_id:
+			event.damage *= 1.0 - WARD_BLESSING_MITIGATION
+	if is_mantled() and event.scribe_sign != NO_SIGN and event.scribe_sign == coat_sign:
+		event.damage *= 1.0 - float(coat_synergy.get("ward_mitigation", 0.0))
+		_ward(attacker)
+
+
+## After the guard maths: a Perfect Guard of any Sign's blow under a Ward-Mantle wards it too.
+func after_incoming(event: CombatEvent, outcome: int) -> void:
+	if _warded_this_hit or not is_mantled() or event.scribe_sign == NO_SIGN or outcome != StatsComponent.StrikeOutcome.PERFECT_GUARD:
+		return
+	var attacker: ActorBase = actor.get_node_or_null(event.attacker_path) as ActorBase
+	if attacker != null and attacker.is_boss():
+		_ward(attacker)
+
+
+## The Ward-Mantle holds: the stun is shrugged off, poise is thrown back, the shelter cone goes up.
+func _ward(attacker: ActorBase) -> void:
+	_warded_this_hit = true
+	warded_hits += 1
+	_shrug_until = CombatDirector.game_time() + WARD_SHRUG_GRACE
+	var director: CombatDirector = CombatDirector.current
+	director.reflect_poise(actor, attacker, float(coat_synergy.get("ward_reflected_poise", 0.0)))
+	if not director.has_zone_from(actor.player_id):
+		director.spawn_shelter(actor, WARD_MANTLE_CONE_RADIUS, WARD_MANTLE_CONE_TIME)
+	director.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.5), "WARD-MANTLE!",
+		ArsenalCatalog.current.sign_seal(coat_sign).color, 30)
+	ward_mantle_held.emit(attacker.player_id)
+
+
+## Whether a stun or knockdown on this hero is shrugged off now: just after a
+## warded blow, under a coat that grants stun immunity, or by spending an Aegis Ward.
+func shrugs_off_stagger() -> bool:
+	if not enabled:
+		return false
+	if CombatDirector.game_time() <= _shrug_until:
+		return true
+	if coat_time_left > 0.0 and bool(coat_synergy.get("grants_stun_immunity", false)):
+		return true
+	if aegis_ward:
+		aegis_ward = false
+		CombatDirector.current.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.4), "AEGIS!",
+			AEGIS_TEXT_COLOR, 30)
+		aegis_ward_spent.emit()
+		return true
+	return false
+
+
 ## What a Place-Card gives the moment its diorama is cast: its warmth mends friends nearby.
 func _lend_place(synergy: Dictionary) -> void:
 	var warmth: float = synergy.get("bonus_heal", 0.0)
@@ -376,6 +631,9 @@ func _clear_coat() -> void:
 	if has_hearth_rite_tuck:
 		CombatDirector.current.show_sign_coat(actor, CoatLook.TRAIL_TUCK, active_trail_coat_sign, _trail_synergy.get("manifestation_mode", 0),
 			active_location_card_id, 0.0)
+	elif ink_share_left > 0.0:
+		CombatDirector.current.show_sign_coat(actor, CoatLook.COAT, shared_party_sign_override, ScribeCardResource.ManifestationMode.WEAPON_COAT,
+			&"", ink_share_left)
 	else:
 		CombatDirector.current.show_sign_coat(actor, CoatLook.CLEAR, NO_SIGN, 0, &"", 0.0)
 

@@ -523,6 +523,18 @@ func _issue_attack(base: int) -> void:
 	_issue(command)
 
 
+## +1 when the stick is pushed right, -1 for left, 0 otherwise: Heavy with the
+## stick sideways (and not up or down) is a SIDE_HEAVY to the combo forms.
+func stick_side() -> int:
+	if absf(move_input.y) > DIRECTIONAL_THRESHOLD:
+		return 0
+	if move_input.x > DIRECTIONAL_THRESHOLD:
+		return 1
+	if move_input.x < -DIRECTIONAL_THRESHOLD:
+		return -1
+	return 0
+
+
 ## +1 when the stick is (or was just) pushed up the screen, -1 for down, 0 otherwise.
 ## Screen-relative, like W and S: "forward" is always away from your camera.
 func stick_direction() -> int:
@@ -664,7 +676,7 @@ func _squire_buffer_counter() -> bool:
 	if counter == null or counter.effect != CombatActionResource.Effect.STRIKE or not actor.stats.can_afford(counter):
 		return false
 	var sign_id: int = counter.primer if counter.primer != ScribeSignResource.Sign.NONE else counter.scribe_sign
-	if not target.glimmer.encounter.is_countered_by(sign_id):
+	if not target.glimmer.is_countered_now(sign_id):
 		return false
 	return target.glimmer.buffer_squire_counter(actor)
 
@@ -768,6 +780,12 @@ func _squire_pick() -> int:
 				if not primers.is_empty():
 					_squire_primer_turn = (_squire_primer_turn + 1) % primers.size()
 					return primers[_squire_primer_turn]
+	# A martial lock on the foe and two Lights already in: Forward+Heavy finishes
+	# the Sundering Gap-Leap that cracks it (14 GDD §8), so a Squire is never stuck.
+	if target != null and target.posture != null and target.posture.wants_martial_key() and actor.combo != null \
+			and actor.combo.ends_with([ComboChainResource.LIGHT, ComboChainResource.LIGHT]) \
+			and actor.loadout.has_opener(CombatActionResource.Command.FORWARD_HEAVY):
+		return CombatActionResource.Command.FORWARD_HEAVY
 	# Out of reach: whatever can reach it (a ranged heavy, a card fired through
 	# the weapon), or else close the gap with the forward card.
 	if target != null and distance > _reach_of(CombatActionResource.Command.LIGHT):

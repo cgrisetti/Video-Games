@@ -86,6 +86,8 @@ static func compose(player_class: PlayerClassResource, requested: EquipmentLoado
 	for slot: int in EquipmentLoadoutResource.SLOT_COUNT:
 		var lead: ScribeCardResource = catalog.card(kit.lead_ids[slot])
 		var action: CombatActionResource = _flourish_action(weapon, slot) if lead == null else _card_action(lead, slot, weapon)
+		if lead != null:
+			_apply_finish(action, kit.lead_variants[slot])
 		var under: ScribeCardResource = catalog.card(kit.under_ids[slot])
 		if under != null and under.is_under():
 			apply_under(action, under)
@@ -313,6 +315,18 @@ static func _card_action(lead: ScribeCardResource, slot: int, weapon: EquipmentI
 	if action.effect == Fx.GREEN_SANCTUARY or action.effect == Fx.SHADOW_SANCTUARY:
 		action.effect_radius *= weapon.support_radius_multiplier
 	return action
+
+
+## A finer finish's potency (14 GDD §8): Gilded Leaf +10%, Star-Inked Vellum +20%
+## to the card's damage, poise and heals. Every peer composes the same kit, so
+## every peer gets the same numbers.
+static func _apply_finish(action: CombatActionResource, variant: int) -> void:
+	var potency: float = ScribeCardResource.finish_potency(variant)
+	if is_equal_approx(potency, 1.0):
+		return
+	action.damage *= potency
+	action.poise_damage *= potency
+	action.heal_amount *= potency
 
 
 ## Martial Imbuement's un-inked half (11 GDD §4.1): R (1 pip) or L+R (3 pips)

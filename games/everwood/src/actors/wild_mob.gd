@@ -31,10 +31,24 @@ const RANGED_KEEP: float = 0.7
 ## The Cairn-Drake's stomp: every this many seconds while it walks, heard within this many metres.
 const STOMP_EVERY: float = 1.1
 const STOMP_HEARD: float = 45.0
-## Spirits up to this level are roadside kin (Tier 1 to Iron-Root).
-const ROADSIDE_KIN_MAX_LEVEL: int = 4
+## Spirits up to this level with no encounter of their own are roadside kin (Tier 0 to Iron-Root).
+const ROADSIDE_KIN_MAX_LEVEL: int = 2
 ## A steward Iron-Man bows this far forward (radians).
 const STEWARD_BOW: float = 0.45
+## The parts that strike, by body (MobVariantResource.Body): they glow in the blow's Sign through its wind-up.
+const ATTACK_LIMBS: Dictionary = {
+	MobVariantResource.Body.BOAR: ["Tusk", "Snout"],
+	MobVariantResource.Body.SCUTTLER: ["Tail"],
+	MobVariantResource.Body.WOLF: ["Muzzle"],
+	MobVariantResource.Body.TOAD: ["Jaw"],
+	MobVariantResource.Body.HUMANOID: ["Weapon"],
+	MobVariantResource.Body.VINE: ["Bloom"],
+	MobVariantResource.Body.SHAMBLER: ["Cap"],
+	MobVariantResource.Body.HULK: ["Fist"],
+	MobVariantResource.Body.WIGHT: ["Weapon"],
+	MobVariantResource.Body.BEHEMOTH: ["Head", "Bell"],
+}
+const AURA_SCALE: float = 0.8
 
 var variant: MobVariantResource
 ## The spawner it belongs to (set before it enters the tree).
@@ -77,11 +91,19 @@ func is_engaged() -> bool:
 	return engaged and not stats.is_downed
 
 
-## Normal and Rare creatures up to Level 4 are Tier 1 kin (14 GDD §3): an Iron-Root strike cracks them.
+## Its variant's encounter (its Miyamoto tier and lock, 14 GDD §8), else Normal
+## and Rare creatures up to Level 2 are Tier 0 roadside kin: an Iron-Root strike cracks them.
 func glimmer_encounter_id() -> StringName:
+	if variant.encounter_id != &"":
+		return variant.encounter_id
 	var minor: bool = variant.level <= ROADSIDE_KIN_MAX_LEVEL and variant.rank != MobVariantResource.Rank.BOSS \
 		and variant.rank != MobVariantResource.Rank.ELITE
 	return ArsenalCatalog.ROADSIDE_KIN if minor else &""
+
+
+## A rooted lasher sheds its bark where it stands (14 GDD §8).
+func can_leap() -> bool:
+	return not variant.rooted
 
 
 ## Fallen creatures stay down; their spawner grows a fresh one.
@@ -130,6 +152,7 @@ func _build_visual() -> void:
 		visual.add_child(dropped)
 	else:
 		_build_creature()
+		_register_attack_limbs()
 	_name_label = Label3D.new()
 	_name_label.name = "NameLabel"
 	_name_label.visible = variant.rank != MobVariantResource.Rank.COMMON
@@ -329,6 +352,21 @@ func has_faded() -> bool:
 
 
 # --- Bodies ----------------------------------------------------------------------
+
+## A blow that carries a Sign lights the part that strikes with (14 GDD §8): a Tank reads which Ward-Mantle soaks it.
+func _register_attack_limbs() -> void:
+	if variant.blow_sign == ScribeSignResource.Sign.NONE:
+		return
+	var parts: Array = ATTACK_LIMBS.get(variant.body, [])
+	for child: Node in visual.get_children():
+		var shape: MeshInstance3D = child as MeshInstance3D
+		if shape == null:
+			continue
+		for part: String in parts:
+			if String(shape.name).contains(part):
+				var extent: Vector3 = shape.get_aabb().size
+				register_aura_limb(shape, maxf(0.12, maxf(extent.x, maxf(extent.y, extent.z)) * AURA_SCALE))
+				break
 
 func _build_creature() -> void:
 	var r: float = variant.radius

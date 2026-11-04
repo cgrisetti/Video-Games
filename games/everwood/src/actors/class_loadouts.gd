@@ -147,6 +147,8 @@ static func raid_boss_dummy() -> ClassLoadoutResource:
 	swipe.hit_radius = 2.2
 	swipe.hit_stop_scale = 1.5
 	swipe.resonance_gain = 0.0
+	# Boulder fists: an Iron-Root blow, so the fists glow amber through the wind-up and an Iron-Root Ward-Mantle soaks it.
+	swipe.scribe_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
 
 	var loadout: ClassLoadoutResource = ClassLoadoutResource.new()
 	loadout.class_id = RAID_BOSS_DUMMY

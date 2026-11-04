@@ -15,6 +15,11 @@
 ##                       the tank holding it) takes nothing and earns ½ a pip;
 ##                       anyone else in the lane takes 40 and is knocked back
 ## - Heavy hits and Perfect Guards drain its poise; at zero it's knocked down for 5 s.
+## - Its four gates (BossGateComponent, 14 GDD §8): at 75% it leaps back behind
+##   an Aegis Mantle and calls three Bramble-Hobs; at 50% its Gale-Beam phase is
+##   the Tempest, its core answering Warm-Hearth; at 25% it bellows a
+##   Challenge-Roar and shows its upside-down Maker-Seal, which an Iron-Root
+##   strike (or a One-and-Done) turns right-way up to win the fight at once.
 ## - Defeated, it stays down and signals `defeated`: the dojo plays the victory
 ##   and drops a reward chest (DungeonDojo). Its spirit is lulled, not slain: a
 ##   mossy cairn rises where it fell and stays (STATE_LULLED_CAIRN).
@@ -99,6 +104,8 @@ const ARM_SHARPNESS: float = 10.0
 const BELL_ROPES: int = 4
 const BELL_SWAY: float = 0.25
 const CORE_GLOW: Color = Color(1.0, 0.6, 0.18)
+## A fist's attack aura is this much bigger than the fist.
+const AURA_SCALE: float = 1.35
 const CORE_ENERGY: float = 2.0
 
 ## Where telegraph decals are spawned (the level sets this).
@@ -247,6 +254,8 @@ func _build_prop() -> Node3D:
 		fist_node.mesh = fist
 		fist_node.position = Vector3(0.0, -ARM_LENGTH, 0.0)
 		arm.add_child(fist_node)
+		# The Crushing Swipe is an Iron-Root blow: the fists glow amber through its wind-up (14 GDD §8).
+		register_aura_limb(fist_node, FIST_RADIUS * AURA_SCALE)
 		_arms.append(arm)
 	var rope: TorusMesh = TorusMesh.new()
 	rope.inner_radius = BELL_ROPE_RADIUS - 0.08
@@ -408,6 +417,10 @@ func _gather_intent(delta: float) -> void:
 		return
 	var to_target: Vector3 = target.global_position - global_position
 	to_target.y = 0.0
+	if gates != null and gates.is_roaring():
+		# Gate 4's Challenge-Roar: it faces you and bellows, holding its blow.
+		turn_toward(to_target, loadout.stats.turn_speed * delta)
+		return
 	if is_casting():
 		turn_toward(to_target, loadout.stats.turn_speed * 0.5 * delta)
 		return
@@ -487,7 +500,7 @@ func _begin_cast() -> void:
 	var alive: Array[ActorBase] = CombatDirector.current.alive_party()
 	if alive.is_empty():
 		return
-	if glimmer != null:
+	if glimmer != null and (gates == null or gates.allows_glimmer()):
 		glimmer.open_window()
 	var centers: PackedVector3Array = PackedVector3Array()
 	var follow_id: String = ""
@@ -611,6 +624,12 @@ func mark_vanquished() -> void:
 	collision_layer = 0
 
 
+## Its gates (BossGateComponent): the Tempest is its Gale-Beam phase.
+func on_boss_gate(gate: int) -> void:
+	if gate == BossGateComponent.TEMPEST_GATE and not phase_two:
+		_enter_phase_two()
+
+
 ## A beaten boss never gets up again in this instance.
 func downed_duration() -> float:
 	return INF
@@ -647,6 +666,8 @@ func _reset_fight() -> void:
 		_set_phase_two.rpc_id(peer_id, false)
 	if glimmer != null:
 		glimmer.close()
+	if gates != null:
+		gates.reset()
 	stats.heal(stats.stats.max_health)
 	stats.poise = stats.stats.max_poise
 	stats.poise_changed.emit(stats.poise, stats.stats.max_poise)

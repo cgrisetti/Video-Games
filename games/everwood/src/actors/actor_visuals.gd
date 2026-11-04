@@ -26,8 +26,19 @@
 ## Sign-Flow cast flares it to 2.0x for 600 ms; a coat keeps a soft rim of its
 ## Sign. A Ward-Mantle wraps the shoulders in a ring of the Sign's crest, and a
 ## Lantern-Tether circles the hero with three glowing motes.
+##
+## And the card choreography (14 GDD §8), played on every peer:
+## - the Overhead Pocket Blessing (the Hearth-Rite): the weapon is lowered and
+##   put away, the right hand draws a glowing vellum card (0.18 x 0.26 m) from
+##   the coat pocket and raises it overhead, never above 2.5 m, while a column
+##   of the Sign's ink pours down round the hero; the card goes back in the
+##   pocket and the weapon is drawn again, glowing at 1.35x;
+## - the Offhand Pocket-Draw (a Sign-Flow cast): the off hand flicks the card
+##   out of the pocket and sweeps it along the weapon as it ignites at 2.0x.
 class_name ActorVisuals
 extends Node3D
+
+enum Choreography { NONE, OVERHEAD_BLESSING, POCKET_DRAW }
 
 const MODEL_FOLDER: String = "res://assets/models/"
 const SKIN_COLOR: Color = Color(0.96, 0.8, 0.66)
@@ -38,6 +49,7 @@ const BRASS_COLOR: Color = Color(0.88, 0.68, 0.3)
 const OAK_COLOR: Color = Color(0.46, 0.31, 0.18)
 const EYE_COLOR: Color = Color(0.12, 0.1, 0.1)
 const LANTERN_GLOW: Color = Color(1.0, 0.78, 0.4)
+const VELLUM_COLOR: Color = Color(0.97, 0.93, 0.8)
 ## Cape length per Fellowship: a heavy oilskin, a travel cloak, a short mantle.
 const CAPE_LENGTHS: Array[float] = [1.0, 0.9, 0.6]
 ## The cape lifts back this far (radians) at full running speed...
@@ -87,6 +99,24 @@ const MOTE_HEIGHT: float = 1.0
 const MOTE_RADIUS: float = 0.72
 const MOTE_SIZE: float = 0.08
 const MOTE_SPIN: float = 2.2
+## The card choreography (14 GDD §8).
+const CARD_SIZE: Vector3 = Vector3(0.18, 0.26, 0.01)
+const CARD_GLOW: float = 3.2
+## A rim of the Sign's colour round the card, so it reads from the split-screen camera.
+const CARD_HALO: float = 0.08
+## The card sits this far past the hand, along the arm.
+const CARD_IN_HAND: float = 0.78
+const BLESSING_TIME: float = 1.5
+const POCKET_DRAW_TIME: float = 0.42
+## The ink column pours from here (the 3.2 m sightline cap stays clear above it) to the ground.
+const INK_COLUMN_TOP: float = 2.5
+const INK_COLUMN_RADIUS: float = 0.55
+## Arm poses as (x, z) rotations: at the coat pocket, overhead, and sweeping the blade.
+const RIGHT_POCKET_POSE: Vector2 = Vector2(-0.3, 0.32)
+const RIGHT_OVERHEAD_POSE: Vector2 = Vector2(PI, 0.08)
+const LEFT_POCKET_POSE: Vector2 = Vector2(-0.25, -0.35)
+const LEFT_SWEEP_FROM: Vector2 = Vector2(0.5, -0.2)
+const LEFT_SWEEP_TO: Vector2 = Vector2(1.35, 0.7)
 
 var actor: ActorBase
 ## Every cel material on the puppet, lit together by a hit flash.
@@ -115,6 +145,16 @@ var _flare_left: float = 0.0
 var _flare_ink: Color = UNINKED_CHANNEL_COLOR
 var _mantle: Node3D
 var _motes: Node3D
+var _choreo: Choreography = Choreography.NONE
+var _choreo_time: float = 0.0
+var _choreo_color: Color = UNINKED_CHANNEL_COLOR
+var _card: MeshInstance3D
+var _card_material: StandardMaterial3D
+var _ink_column: MeshInstance3D
+var _ink_material: StandardMaterial3D
+## How high the card's top edge rose in the last choreography (metres above the feet).
+var _card_peak: float = 0.0
+var _played: Dictionary[int, int] = {}
 
 
 static func model_path(id: StringName) -> String:
@@ -151,6 +191,9 @@ func rebuild() -> void:
 	materials.clear()
 	_cape_pivot = null
 	_lantern = null
+	_card = null
+	_ink_column = null
+	_choreo = Choreography.NONE
 	model = load_model(actor.loadout.class_id)
 	if model != null:
 		add_child(model)
@@ -242,6 +285,7 @@ func update_channel(delta: float, action: CombatActionResource) -> void:
 			cel.set_shader_parameter(&"rim_color", tint if lit > 0.0 else StorybookMaterial.WARM_RIM)
 			cel.set_shader_parameter(&"rim_strength", lerpf(PropBuilder.PROP_RIM, 2.5, lit))
 	_update_manifestation(delta)
+	_update_choreography(delta)
 
 
 ## Sign-Flow's look on this hero, on every peer (CombatDirector.show_sign_coat):
@@ -252,6 +296,10 @@ func show_sign_coat(look: int, ink: Color, ambient: Color, mode: int, seconds: f
 		SignFlowComponent.CoatLook.FLARE:
 			_flare_left = maxf(seconds, 0.0)
 			_flare_ink = ink
+			play_pocket_draw_ignition(ink)
+			return
+		SignFlowComponent.CoatLook.BLESSING:
+			play_overhead_blessing_choreography(ambient)
 			return
 		SignFlowComponent.CoatLook.COAT:
 			_coat_left = maxf(seconds, 0.0)
@@ -301,6 +349,177 @@ func _update_manifestation(delta: float) -> void:
 		if tether:
 			_motes.rotate_y(MOTE_SPIN * delta)
 			_tint_children(_motes, color)
+
+
+# --- The card choreography (14 GDD §8) ----------------------------------------
+
+## The Hearth-Rite's Overhead Pocket Blessing, in the Place-Card's tint.
+func play_overhead_blessing_choreography(sign_color: Color) -> void:
+	_start_choreography(Choreography.OVERHEAD_BLESSING, sign_color)
+
+
+## A Sign-Flow cast's Offhand Pocket-Draw and blade ignition, in the leaf's Sign colour.
+func play_pocket_draw_ignition(sign_color: Color) -> void:
+	_start_choreography(Choreography.POCKET_DRAW, sign_color)
+
+
+## The choreography playing now (Choreography.NONE when none is).
+func choreography() -> Choreography:
+	return _choreo
+
+
+## How many times a choreography has played on this puppet.
+func choreography_count(kind: Choreography) -> int:
+	return _played.get(kind, 0)
+
+
+## How high the card's top edge rose in the last choreography, in metres above the hero's feet.
+func card_peak_height() -> float:
+	return _card_peak
+
+
+## Whether the Overhead Pocket Blessing's ink column is pouring right now.
+func is_ink_pouring() -> bool:
+	return is_instance_valid(_ink_column) and _ink_column.visible
+
+
+## Whether the weapon is drawn (the Overhead Pocket Blessing puts it away for a moment).
+func is_weapon_drawn() -> bool:
+	return not is_instance_valid(_weapon) or _weapon.visible
+
+
+## Whether the vellum card is out of the pocket right now.
+func is_card_out() -> bool:
+	return is_instance_valid(_card) and _card.visible
+
+
+func _start_choreography(kind: Choreography, color: Color) -> void:
+	var right: Node3D = get_node_or_null(^"RightArm") as Node3D
+	if right == null:
+		return # A dropped-in model has no arms to play it with.
+	_end_choreography()
+	_choreo = kind
+	_choreo_time = 0.0
+	_choreo_color = color
+	_card_peak = 0.0
+	_played[kind] = _played.get(kind, 0) + 1
+	var hand: Node3D = right if kind == Choreography.OVERHEAD_BLESSING else get_node_or_null(^"LeftArm") as Node3D
+	if _card_material == null:
+		_card_material = StorybookMaterial.glowing(VELLUM_COLOR, CARD_GLOW)
+		_card_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_card_material.albedo_color = VELLUM_COLOR
+	_card_material.emission = VELLUM_COLOR.lerp(color, 0.25)
+	_card = ShapeKit.no_shadow(ShapeKit.box("VellumCard", CARD_SIZE, Vector3(0.0, -CARD_IN_HAND, 0.0), _card_material))
+	var halo: StandardMaterial3D = StorybookMaterial.glowing(color, 2.2)
+	halo.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	halo.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	halo.albedo_color = Color(color, 0.7)
+	_card.add_child(ShapeKit.no_shadow(ShapeKit.box("SignHalo", Vector3(CARD_SIZE.x + CARD_HALO, CARD_SIZE.y + CARD_HALO, CARD_SIZE.z * 0.4),
+		Vector3.ZERO, halo)))
+	_card.visible = false
+	hand.add_child(_card)
+	if kind == Choreography.OVERHEAD_BLESSING:
+		if _ink_material == null:
+			_ink_material = StorybookMaterial.glowing(color, 1.8)
+			_ink_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			_ink_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			_ink_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_ink_material.albedo_color = Color(color, 0.0)
+		_ink_material.emission = color
+		_ink_column = ShapeKit.no_shadow(ShapeKit.cylinder("InkColumn", INK_COLUMN_RADIUS, INK_COLUMN_RADIUS * 1.15, 1.0,
+			Vector3(0.0, INK_COLUMN_TOP - 0.5, 0.0), _ink_material, 16))
+		_ink_column.visible = false
+		add_child(_ink_column)
+
+
+## Plays the choreography out: arm poses, the card and the ink column, keyed on its clock.
+func _update_choreography(delta: float) -> void:
+	if _choreo == Choreography.NONE:
+		return
+	_choreo_time += delta
+	if _choreo == Choreography.OVERHEAD_BLESSING:
+		_play_blessing(_choreo_time)
+	else:
+		_play_pocket_draw(_choreo_time)
+	if is_instance_valid(_card) and _card.visible:
+		_card_peak = maxf(_card_peak, _card.global_position.y + CARD_SIZE.y * 0.5 - global_position.y)
+	var length: float = BLESSING_TIME if _choreo == Choreography.OVERHEAD_BLESSING else POCKET_DRAW_TIME
+	if _choreo_time >= length:
+		_end_choreography()
+
+
+## 0-0.25 s to the pocket as the weapon is put away; up overhead with the card
+## by 0.55; ink pours down to 1.05; back to the pocket by 1.3; the weapon drawn by 1.5.
+func _play_blessing(t: float) -> void:
+	var right: Node3D = get_node(^"RightArm") as Node3D
+	var rest: Vector2 = _arm_rest(true)
+	var pose: Vector2 = rest
+	if t < 0.25:
+		pose = rest.lerp(RIGHT_POCKET_POSE, smoothstep(0.0, 0.25, t))
+	elif t < 0.55:
+		pose = RIGHT_POCKET_POSE.lerp(RIGHT_OVERHEAD_POSE, smoothstep(0.25, 0.55, t))
+	elif t < 1.05:
+		pose = RIGHT_OVERHEAD_POSE
+	elif t < 1.3:
+		pose = RIGHT_OVERHEAD_POSE.lerp(RIGHT_POCKET_POSE, smoothstep(1.05, 1.3, t))
+	else:
+		pose = RIGHT_POCKET_POSE.lerp(rest, smoothstep(1.3, BLESSING_TIME, t))
+	right.rotation = Vector3(pose.x, 0.0, pose.y)
+	_card.visible = t >= 0.25 and t < 1.25
+	if is_instance_valid(_weapon):
+		_weapon.visible = t < 0.12 or t >= 1.3
+	if is_instance_valid(_ink_column):
+		# The column pours down from 2.5 m, holds, then fades.
+		var pour: float = smoothstep(0.55, 0.85, t)
+		var fade: float = 1.0 - smoothstep(0.95, 1.2, t)
+		_ink_column.visible = t >= 0.55 and t < 1.2
+		var height: float = maxf(0.05, INK_COLUMN_TOP * pour)
+		_ink_column.scale = Vector3(1.0, height, 1.0)
+		_ink_column.position = Vector3(0.0, INK_COLUMN_TOP - height * 0.5, 0.0)
+		_ink_material.albedo_color = Color(_choreo_color, 0.42 * fade)
+
+
+## 0-0.08 s the off hand dips to the pocket; to 0.3 it sweeps the card along
+## the weapon as it ignites; to 0.42 it's back, the card tucked away.
+func _play_pocket_draw(t: float) -> void:
+	var left: Node3D = get_node_or_null(^"LeftArm") as Node3D
+	if left == null:
+		return
+	var rest: Vector2 = _arm_rest(false)
+	var pose: Vector2 = rest
+	if t < 0.08:
+		pose = rest.lerp(LEFT_POCKET_POSE, smoothstep(0.0, 0.08, t))
+	elif t < 0.3:
+		pose = LEFT_SWEEP_FROM.lerp(LEFT_SWEEP_TO, smoothstep(0.08, 0.3, t))
+	else:
+		pose = LEFT_SWEEP_TO.lerp(rest, smoothstep(0.3, POCKET_DRAW_TIME, t))
+	left.rotation = Vector3(pose.x, 0.0, pose.y)
+	_card.visible = t >= 0.08 and t < 0.36
+
+
+func _end_choreography() -> void:
+	if _choreo == Choreography.NONE:
+		return
+	var right: Node3D = get_node_or_null(^"RightArm") as Node3D
+	var left: Node3D = get_node_or_null(^"LeftArm") as Node3D
+	if right != null:
+		right.rotation = Vector3(_arm_rest(true).x, 0.0, _arm_rest(true).y)
+	if left != null:
+		left.rotation = Vector3(_arm_rest(false).x, 0.0, _arm_rest(false).y)
+	if is_instance_valid(_weapon):
+		_weapon.visible = true
+	if is_instance_valid(_card):
+		_card.queue_free()
+	if is_instance_valid(_ink_column):
+		_ink_column.queue_free()
+	_card = null
+	_ink_column = null
+	_choreo = Choreography.NONE
+
+
+## Each arm's resting pose (x, z), as _build_body sets it.
+static func _arm_rest(right: bool) -> Vector2:
+	return Vector2(0.95, 0.12) if right else Vector2(0.35, -0.15)
 
 
 static func _tint_children(root: Node3D, color: Color) -> void:

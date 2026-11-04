@@ -8,6 +8,13 @@
 ## name: props are built from the items' parts, and a strike either swings the
 ## hitbox or fires a projectile, as its action says. A player is drawn as a
 ## storybook puppet (ActorVisuals); enemies draw their own bodies.
+##
+## The Phase 12 Kaizen pass (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §8) adds three
+## components: heroes track their directional combo forms (ComboChainComponent),
+## foes with a Miyamoto tier leap back and lock (PostureEscalationComponent), and
+## a four-gate raid boss plays its gates (BossGateComponent). An enemy blow that
+## carries a Sign lights its limb in that colour through the wind-up, so a Tank
+## knows which Ward-Mantle soaks it.
 class_name ActorBase
 extends CharacterBody3D
 
@@ -100,6 +107,12 @@ var sign_flow: SignFlowComponent
 var glimmer: GlimmerSpotComponent
 ## Foes: a spirit of the First-Quiet on the Hob-to-Boggart Spectrum (15 GDD §6.1).
 var spectrum: HobSpectrumComponent
+## Heroes: the directional combo forms (14 GDD §8).
+var combo: ComboChainComponent
+## Foes with an encounter: the Miyamoto armour-drop and its locks (14 GDD §8).
+var posture: PostureEscalationComponent
+## Raid bosses: the four gates (14 GDD §8).
+var gates: BossGateComponent
 ## Something this local player is standing at and can use with light (the Chime-Shrine).
 var interactable: Interactable
 
@@ -136,6 +149,10 @@ var _pull_to: Vector3 = Vector3.ZERO
 var _pull_time: float = 0.0
 var _pull_duration: float = 0.0
 var _ai_clock: float = 0.0
+## Enemies: limbs that glow in a blow's Sign through its wind-up (register_aura_limb), and their glowing shells.
+var _aura_shells: Array[MeshInstance3D] = []
+var _aura_material: StandardMaterial3D
+var _aura_sign: int = ScribeSignResource.Sign.NONE
 
 
 # --- Construction ---------------------------------------------------------
@@ -238,6 +255,13 @@ func _build_components() -> void:
 			glimmer = GlimmerSpotComponent.new()
 			glimmer.setup(self, encounter)
 			add_child(glimmer)
+			posture = PostureEscalationComponent.new()
+			posture.setup(self)
+			add_child(posture)
+			if is_raid_boss():
+				gates = BossGateComponent.new()
+				gates.setup(self)
+				add_child(gates)
 		spectrum = HobSpectrumComponent.new()
 		spectrum.setup(self)
 		add_child(spectrum)
@@ -257,6 +281,9 @@ func _build_components() -> void:
 		sign_flow = SignFlowComponent.new()
 		sign_flow.setup(self)
 		add_child(sign_flow)
+		combo = ComboChainComponent.new()
+		combo.setup(self)
+		add_child(combo)
 
 	if companion != null:
 		add_child(companion)
@@ -445,6 +472,17 @@ func is_beaten() -> bool:
 	return stats.is_downed
 
 
+## Enemies: whether it can leap back when it sheds its armour (a rooted lasher can't).
+func can_leap() -> bool:
+	return true
+
+
+## Raid bosses: a four-gate boss just entered `gate` (BossGateComponent; 1 is
+## the Summons, 2 the Tempest, 3 the Seal-Turn). Each boss plays its own part.
+func on_boss_gate(_gate: int) -> void:
+	pass
+
+
 ## Enemies: where this spirit stands on the Hob-to-Boggart Spectrum and how
 ## it's un-boggarted (15 GDD §6.1). By default an awakened boggart, released
 ## as a hedge-wren.
@@ -504,6 +542,8 @@ func _physics_process(delta: float) -> void:
 	stats.tick(delta, _can_regen_stamina())
 	if sign_flow != null:
 		sign_flow.tick(delta)
+	if combo != null:
+		combo.tick(delta)
 	if _pull_duration > 0.0:
 		_update_pull(delta)
 	else:
@@ -612,6 +652,19 @@ func turn_toward(direction: Vector3, max_step: float) -> float:
 
 func facing_vector() -> Vector3:
 	return Vector3(-sin(rotation.y), 0.0, -cos(rotation.y))
+
+
+## How far, and which way, `action` carries the actor across its wind-up and
+## active frames: its own lunge along the facing, or a combo finisher's step.
+func posture_step(action: CombatActionResource) -> Vector3:
+	if combo != null and combo.has_step_for(action):
+		return combo.step_vector(action)
+	return facing_vector() * action.lunge_distance
+
+
+## A flank-orbit finisher circles the foe, kept turned toward it.
+func posture_orbits(action: CombatActionResource) -> bool:
+	return combo != null and combo.orbits(action)
 
 
 func dodge_direction() -> Vector3:
@@ -774,14 +827,26 @@ func _on_hurtbox_hit(target_hurtbox: HurtboxComponent) -> void:
 # --- Receiving ------------------------------------------------------------
 
 ## Applies a strike on the peer that owns this actor. Returns a StatsComponent.StrikeOutcome.
+## A foe's gates, Glimmer-Spot and lock judge it first; a hero's Ward-Mantle and
+## Ward Blessing soften it.
 func receive_strike(event: CombatEvent) -> int:
 	if braced_guard != null:
 		braced_guard.filter_strike(event)
-	if glimmer != null:
-		glimmer.filter_strike(event)
+	# A Seal-Turn in a boss's fourth gate settles the strike before its Glimmer-Spot sees it.
+	var countered: bool = gates != null and gates.filter_strike(event)
+	if glimmer != null and not countered:
+		countered = glimmer.filter_strike(event)
+	if posture != null and not countered:
+		posture.filter_strike(event)
+	if sign_flow != null:
+		sign_flow.filter_incoming(event)
 	var multiplier: float = CombatDirector.current.damage_taken_multiplier(self)
 	var outcome: StatsComponent.StrikeOutcome = stats.mitigate_strike(
 		event.damage * multiplier, event.poise_damage, _faces_toward(event.origin), event.unavoidable)
+	if sign_flow != null:
+		sign_flow.after_incoming(event, outcome)
+	if gates != null:
+		gates.after_strike(event, outcome)
 	match outcome:
 		StatsComponent.StrikeOutcome.GUARD_BROKEN:
 			stagger(GUARD_BREAK_STAGGER)
@@ -802,6 +867,9 @@ func _faces_toward(point: Vector3) -> bool:
 
 
 func stagger(seconds: float) -> void:
+	# A Ward-Mantle or a Support's Aegis Ward shrugs the stun off (14 GDD §8).
+	if sign_flow != null and sign_flow.shrugs_off_stagger():
+		return
 	action_queue.interrupt()
 	hitbox.deactivate()
 	stagger_time_left = maxf(stagger_time_left, seconds)
@@ -866,6 +934,44 @@ func respawn() -> void:
 		state_machine.transition(&"idle")
 
 
+# --- Enemy attack auras (14 GDD §8, the Tank's loop) --------------------------
+
+## Enemies: a limb (a fist, a jaw, a weapon) that glows in its blow's Sign
+## through the wind-up. A shell `radius` round it carries the glow.
+func register_aura_limb(limb: Node3D, radius: float) -> void:
+	if _aura_material == null:
+		_aura_material = StorybookMaterial.glowing(Color.WHITE, 2.6)
+		_aura_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_aura_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var shell: MeshInstance3D = ShapeKit.no_shadow(ShapeKit.sphere("AttackAura", radius, Vector3.ZERO, _aura_material))
+	shell.visible = false
+	limb.add_child(shell)
+	_aura_shells.append(shell)
+
+
+## The Sign glowing on this foe's limbs right now (Sign.NONE when none is).
+func attack_aura_sign() -> int:
+	return _aura_sign
+
+
+## Lit through the wind-up of a blow that carries a Sign, on every peer.
+func _update_attack_aura() -> void:
+	var action: CombatActionResource = current_action()
+	var lit: int = ScribeSignResource.Sign.NONE
+	if action != null and action.scribe_sign != ScribeSignResource.Sign.NONE and not stats.is_downed \
+			and current_phase() == ActionQueueComponent.Phase.WINDUP:
+		lit = action.scribe_sign
+	if lit != _aura_sign:
+		_aura_sign = lit
+		for shell: MeshInstance3D in _aura_shells:
+			shell.visible = lit != ScribeSignResource.Sign.NONE
+	if lit != ScribeSignResource.Sign.NONE:
+		var color: Color = ArsenalCatalog.current.sign_seal(lit).color
+		var pulse: float = 0.45 + 0.2 * sin(CombatDirector.game_time() * 14.0)
+		_aura_material.albedo_color = Color(color, pulse)
+		_aura_material.emission = color
+
+
 # --- Greybox posing -------------------------------------------------------
 
 func _update_pose(delta: float) -> void:
@@ -899,6 +1005,8 @@ func _update_pose(delta: float) -> void:
 	if visuals != null:
 		# R and L+R swell the weapon into its Sign's glowing silhouette (any peer: copies read the owner's action).
 		visuals.update_channel(delta, current_action())
+	if not _aura_shells.is_empty():
+		_update_attack_aura()
 	if _flash_left > 0.0:
 		_set_glow(Color(1.0, 1.0, 1.0) * 0.9)
 	elif _flow_glow_left > 0.0:

@@ -51,6 +51,10 @@ signal glimmer_opened(enemy: ActorBase, seconds: float, rhyme: String)
 signal bravery_countered(target: ActorBase, scribe_sign: int, label: String)
 ## A hero's Sign-Flow look changed (SignFlowComponent.CoatLook), on every peer.
 signal sign_coat_shown(actor: ActorBase, look: int)
+## A Support's Ink-Share went out (14 GDD §8): who shared, the Sign, and who received it.
+signal ink_shared(support: ActorBase, scribe_sign: int, recipients: Array[ActorBase])
+## A Tank's Ward-Mantle threw poise back at a foe.
+signal poise_reflected(defender: ActorBase, attacker: ActorBase, poise: float)
 
 ## Phase B impact freeze (02_COMBAT_GDD.md §2); each action scales it.
 const BASE_HIT_STOP: float = 0.06
@@ -275,9 +279,12 @@ func is_sheltered(actor: ActorBase) -> bool:
 	return false
 
 
-## Shadow Sanctuary: allies inside a tank's shield cone take less damage.
+## Shadow Sanctuary: allies inside a tank's shield cone take less damage; a
+## four-gate boss behind its Aegis Mantle takes a tenth.
 func damage_taken_multiplier(actor: ActorBase) -> float:
 	var multiplier: float = 1.0
+	if actor.gates != null:
+		multiplier *= actor.gates.damage_taken_multiplier()
 	for zone: SanctuaryZone in _zones:
 		if zone.shape == SanctuaryZone.Shape.CONE and zone.owner_player_id != actor.player_id and zone.contains(actor.global_position):
 			multiplier = minf(multiplier, 1.0 - zone.damage_reduction)
@@ -314,6 +321,8 @@ func report_hit(attacker: ActorBase, target: ActorBase, action: CombatActionReso
 	var event: CombatEvent = CombatEvent.strike_from(attacker, target, action)
 	if attacker.sign_flow != null:
 		attacker.sign_flow.on_strike_landed(action, event)
+	if attacker.combo != null:
+		attacker.combo.on_strike_landed(action, event)
 	deliver(event)
 
 
@@ -353,7 +362,15 @@ func _is_plausible(event: CombatEvent, target: ActorBase, sender: int) -> bool:
 		return false
 	if event.unavoidable:
 		return attacker.is_boss()
-	if event.coat_sign != ScribeSignResource.Sign.NONE and not _diorama_carries(attacker, event.coat_sign):
+	if event.coat_sign != ScribeSignResource.Sign.NONE:
+		# A coat's Sign must be one the hero carries, or one a Support of the party lent them.
+		var lender: ActorBase = get_actor(event.ink_share_from) if event.ink_share_from != &"" else attacker
+		if lender == null or not _diorama_carries(lender, event.coat_sign):
+			return false
+	if event.combo_id != &"" and not _combo_fits(event):
+		return false
+	if event.one_and_done and (event.command != CombatActionResource.Command.TRIGGER_BOTH_ULT
+			or not _diorama_has_leaf(attacker, event.finisher_card_id)):
 		return false
 	var limit: float = event.reach + target.body_radius() + VALIDATION_SLACK
 	return attacker.global_position.distance_to(target.global_position) <= limit
@@ -367,6 +384,27 @@ static func _diorama_carries(attacker: ActorBase, scribe_sign: int) -> bool:
 	for socket: int in EquipmentLoadoutResource.SOCKET_COUNT:
 		var leaf: ScribeCardResource = ArsenalCatalog.current.card(kit.socket_leaf_id(socket))
 		if leaf != null and leaf.scribe_sign == scribe_sign:
+			return true
+	return false
+
+
+## A combo finisher's claim holds: the form exists, the party knows it, and the strike is its last posture.
+static func _combo_fits(event: CombatEvent) -> bool:
+	var form: ComboChainResource = ArsenalCatalog.current.combo(event.combo_id)
+	if form == null or form.required_level > PartyProgress.current.trail_level():
+		return false
+	var final: StringName = form.final_token()
+	return ComboChainResource.token_for(event.command, false) == final \
+		or (final == ComboChainResource.SIDE_HEAVY and event.command == CombatActionResource.Command.HEAVY)
+
+
+## Whether this Action-Leaf is in one of the attacker's diorama sockets.
+static func _diorama_has_leaf(attacker: ActorBase, leaf_id: StringName) -> bool:
+	var kit: EquipmentLoadoutResource = attacker.loadout.kit if attacker.loadout != null else null
+	if kit == null or leaf_id == &"":
+		return false
+	for socket: int in EquipmentLoadoutResource.SOCKET_COUNT:
+		if kit.socket_leaf_id(socket) == leaf_id:
 			return true
 	return false
 
@@ -400,6 +438,10 @@ func _apply(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
 				else:
 					target.threat.add_threat(event.attacker_player_id, event.threat)
 		CombatEvent.Kind.PULL:
+			# A shove (it names the target as its own source) is knockback: a Ward-Mantle or an
+			# Aegis Ward shrugs it off. A friend's Lifeline Pull names the healer, so it still lands.
+			if event.attacker_path == event.target_path and target.sign_flow != null and target.sign_flow.shrugs_off_stagger():
+				return
 			target.start_forced_move(event.origin, event.duration)
 
 
@@ -411,11 +453,14 @@ func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> 
 		if event.coat_primes and event.primer == ScribeSignResource.Sign.NONE:
 			event.primer = event.coat_sign
 	if target.is_boss():
+		_apply_flourishes(target, event)
 		if event.detonates:
 			_try_detonate(target, event)
 		if event.primer != ScribeSignResource.Sign.NONE:
 			_apply_primer(target, event)
 	var outcome: int = target.receive_strike(event)
+	if outcome == StatsComponent.StrikeOutcome.HIT and event.stun_seconds > 0.0 and not target.stats.is_downed:
+		target.stagger(event.stun_seconds)
 	match outcome:
 		StatsComponent.StrikeOutcome.PERFECT_GUARD:
 			_on_perfect_guard(target, event)
@@ -429,6 +474,65 @@ func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> 
 	if from_remote:
 		request_hit_stop([target], event.hit_stop_scale)
 	hit_resolved.emit(event, outcome)
+
+
+## A combo finisher and a One-and-Done, on the foe's owner (14 GDD §8): the
+## finisher's damage, poise, stun and lock-breaking from its form; the
+## Seal-Breaker's 3.2x, its Sign's detonation, and a crack for any lock or gate.
+func _apply_flourishes(target: ActorBase, event: CombatEvent) -> void:
+	if event.combo_id != &"":
+		var form: ComboChainResource = ArsenalCatalog.current.combo(event.combo_id)
+		if form != null:
+			event.damage *= form.finisher_damage_mult
+			event.poise_damage += form.finisher_poise_damage
+			event.stun_seconds = maxf(event.stun_seconds, form.stun_duration_sec)
+			event.breaks_martial_lock = event.breaks_martial_lock or form.breaks_martial_lock
+			event.detonation_radius_mult = maxf(event.detonation_radius_mult, form.detonation_radius_mult)
+	if event.one_and_done:
+		var leaf: ScribeCardResource = ArsenalCatalog.current.card(event.finisher_card_id)
+		event.damage *= leaf.one_and_done_finisher_mult if leaf != null else 1.0
+		event.cracks_lock = true
+		sign_detonation(target, event, event.coat_sign, "ONE-AND-DONE!")
+
+
+## A Sign's canonical detonation riding a strike (the One-and-Done's): Shatterpoint's
+## poise, Glacial Rupture's burst, Dawnburst's heal or Astral Chorus's stamina
+## and pips, reaching as far as the strike's detonation radius allows, with a
+## detonation's freeze and its banner on every peer.
+func sign_detonation(target: ActorBase, event: CombatEvent, scribe_sign: int, banner: String) -> void:
+	if scribe_sign == ScribeSignResource.Sign.NONE:
+		return
+	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(scribe_sign)
+	event.poise_damage += seal.bonus_poise
+	event.damage += seal.bonus_damage
+	if seal.bonus_damage > 0.0 and seal.burst_radius > 0.0:
+		_burst(target, event, seal.bonus_damage, seal.burst_radius * event.detonation_radius_mult)
+	if seal.has_party_effect():
+		_bless_party(target, event, seal, 1.0, event.detonation_radius_mult)
+	event.hit_stop_scale = maxf(event.hit_stop_scale, HIT_STOP_DETONATION / BASE_HIT_STOP) + seal.bonus_hit_stop
+	var label: String = "%s  %s" % [banner, seal.detonation_name]
+	if NetworkManager.current.is_online():
+		_show_detonation.rpc(target.get_path(), scribe_sign, false, label)
+	else:
+		_show_detonation(target.get_path(), scribe_sign, false, label)
+
+
+## A Tank's Ward-Mantle throws `poise` back at the foe whose blow it soaked (like a Perfect Guard's counter).
+func reflect_poise(defender: ActorBase, attacker: ActorBase, poise: float) -> void:
+	if attacker == null or poise <= 0.0:
+		return
+	var counter: CombatEvent = CombatEvent.new()
+	counter.kind = CombatEvent.Kind.STRIKE
+	counter.attacker_path = defender.get_path()
+	counter.target_path = attacker.get_path()
+	counter.attacker_player_id = defender.player_id
+	counter.attacker_role = defender.role()
+	counter.poise_damage = poise
+	counter.threat = PERFECT_GUARD_THREAT * defender.loadout.stats.threat_modifier / TANK_THREAT_MODIFIER
+	counter.origin = defender.global_position
+	counter.reach = attacker.body_radius() + PERFECT_GUARD_COUNTER_REACH
+	deliver(counter)
+	poise_reflected.emit(defender, attacker, poise)
 
 
 ## A Perfect Guard costs nothing, hits the attacker's poise and draws big threat.
@@ -541,9 +645,9 @@ func _try_detonate(target: ActorBase, event: CombatEvent) -> void:
 		frozen.append(detonator)
 	request_hit_stop(frozen, event.hit_stop_scale)
 	if seal.bonus_damage > 0.0 and seal.burst_radius > 0.0:
-		_burst(target, event, seal.bonus_damage * multiplier, seal.burst_radius)
+		_burst(target, event, seal.bonus_damage * multiplier, seal.burst_radius * event.detonation_radius_mult)
 	if seal.has_party_effect():
-		_bless_party(target, event, seal, multiplier)
+		_bless_party(target, event, seal, multiplier, event.detonation_radius_mult)
 	var label: String = seal.detonation_name
 	if cross:
 		label += "  x%.1f CROSS-HARMONY" % multiplier
@@ -588,9 +692,9 @@ func _burst(target: ActorBase, event: CombatEvent, damage: float, radius: float)
 
 
 ## Dawnburst and Astral Chorus: heals, stamina and pips for the party near the target.
-func _bless_party(target: ActorBase, event: CombatEvent, seal: ScribeSignResource, multiplier: float) -> void:
+func _bless_party(target: ActorBase, event: CombatEvent, seal: ScribeSignResource, multiplier: float, radius_mult: float = 1.0) -> void:
 	for member: ActorBase in party_actors():
-		if member.global_position.distance_to(target.global_position) > seal.party_radius:
+		if member.global_position.distance_to(target.global_position) > seal.party_radius * radius_mult:
 			continue
 		if seal.party_heal > 0.0:
 			deliver(_heal_event(event.attacker_path, event.attacker_player_id, member, seal.party_heal * multiplier))
@@ -726,20 +830,20 @@ func _expect_glimmer(enemy_path: NodePath, seconds: float) -> void:
 ## the Sign's detonation rides on it (Glacial Rupture's burst, Dawnburst's heal,
 ## Astral Chorus's stamina and pips; Shatterpoint's poise is already in the
 ## counter), with a detonation's freeze, and every peer sees it.
-func bravery_counter(target: ActorBase, event: CombatEvent, scribe_sign: int, encounter: BossEncounterResource) -> void:
+func bravery_counter(target: ActorBase, event: CombatEvent, scribe_sign: int, encounter: BossEncounterResource, banner: String = "") -> void:
 	var seal: ScribeSignResource = ArsenalCatalog.current.sign_seal(scribe_sign)
 	event.damage += seal.bonus_damage
 	if seal.bonus_damage > 0.0 and seal.burst_radius > 0.0:
-		_burst(target, event, seal.bonus_damage, seal.burst_radius)
+		_burst(target, event, seal.bonus_damage, seal.burst_radius * event.detonation_radius_mult)
 	if seal.has_party_effect():
-		_bless_party(target, event, seal, 1.0)
+		_bless_party(target, event, seal, 1.0, event.detonation_radius_mult)
 	event.hit_stop_scale = maxf(event.hit_stop_scale, HIT_STOP_DETONATION / BASE_HIT_STOP) + seal.bonus_hit_stop
 	var frozen: Array[ActorBase] = [target]
 	var counterer: ActorBase = _actor_at(event.attacker_path)
 	if counterer != null and counterer.is_multiplayer_authority():
 		frozen.append(counterer)
 	request_hit_stop(frozen, event.hit_stop_scale)
-	var label: String = "BRAVERY COUNTER!  %s x%.2f" % [seal.detonation_name, encounter.get_impact_multiplier()]
+	var label: String = "BRAVERY COUNTER!  %s x%.2f" % [seal.detonation_name if banner == "" else banner, encounter.get_impact_multiplier()]
 	if NetworkManager.current.is_online():
 		_show_bravery.rpc(target.get_path(), scribe_sign, label)
 	else:
@@ -759,6 +863,73 @@ func _show_bravery(target_path: NodePath, scribe_sign: int, label: String) -> vo
 		AudioCues.play(seal.sound)
 	SignMark.shockwave(effects_root, target.global_position, seal.color)
 	bravery_countered.emit(target, scribe_sign, label)
+
+
+# --- Support blessings (14 GDD §8) ------------------------------------------------
+
+enum Blessing { AEGIS_WARD, INK_SHARE }
+
+## A Support's Ink-Share: everyone the Soul Tether holds or within `radius` strikes in `scribe_sign` for `seconds`.
+func share_ink(support: ActorBase, scribe_sign: int, seconds: float, radius: float) -> void:
+	var held: ActorBase = support.tether.tethered_actor() if support.tether != null else null
+	var recipients: Array[ActorBase] = []
+	for member: ActorBase in alive_party():
+		if member == held or member.global_position.distance_to(support.global_position) <= radius:
+			recipients.append(member)
+			_send_blessing(member, Blessing.INK_SHARE, scribe_sign, seconds, support.player_id)
+	if NetworkManager.current.is_online():
+		_show_ink_pulse.rpc(support.get_path(), scribe_sign, radius)
+	else:
+		_show_ink_pulse(support.get_path(), scribe_sign, radius)
+	ink_shared.emit(support, scribe_sign, recipients)
+
+
+## A Support's Aegis Ward on an ally: their next stun or knockdown is shrugged off.
+func grant_aegis_ward(support: ActorBase, ally: ActorBase) -> void:
+	_send_blessing(ally, Blessing.AEGIS_WARD, ScribeSignResource.Sign.NONE, 0.0, support.player_id)
+
+
+func _send_blessing(target: ActorBase, kind: Blessing, scribe_sign: int, seconds: float, from_id: StringName) -> void:
+	if target.is_multiplayer_authority():
+		_apply_blessing(target, kind, scribe_sign, seconds, from_id)
+	elif InstanceManager.current.is_peer_live(target.get_multiplayer_authority()):
+		_receive_blessing.rpc_id(target.get_multiplayer_authority(), target.get_path(), kind, scribe_sign, seconds, from_id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _receive_blessing(target_path: NodePath, kind: int, scribe_sign: int, seconds: float, from_id: StringName) -> void:
+	var target: ActorBase = _actor_at(target_path)
+	var support: ActorBase = get_actor(from_id)
+	if target == null or not target.is_multiplayer_authority() or support == null \
+			or support.get_multiplayer_authority() != multiplayer.get_remote_sender_id():
+		return
+	if kind == Blessing.INK_SHARE and not _diorama_carries(support, scribe_sign):
+		return
+	_apply_blessing(target, kind as Blessing, scribe_sign, minf(seconds, SignFlowComponent.INK_SHARE_TIME), from_id)
+
+
+func _apply_blessing(target: ActorBase, kind: Blessing, scribe_sign: int, seconds: float, from_id: StringName) -> void:
+	if target.sign_flow == null:
+		return
+	match kind:
+		Blessing.INK_SHARE:
+			target.sign_flow.receive_ink_share(scribe_sign, seconds, from_id)
+		Blessing.AEGIS_WARD:
+			target.sign_flow.receive_aegis_ward()
+
+
+## The Ink-Share on every peer: the Sign pulses down the Soul Tether and rings out round the Support.
+@rpc("any_peer", "call_local", "reliable")
+func _show_ink_pulse(support_path: NodePath, scribe_sign: int, radius: float) -> void:
+	var support: ActorBase = _actor_at(support_path)
+	if support == null:
+		return
+	var color: Color = ArsenalCatalog.current.sign_seal(scribe_sign).color
+	if support.tether != null:
+		support.tether.pulse(color)
+	SignMark.ground_ring(effects_root, support.global_position, color, radius)
+	show_float_text(_above(support) + Vector3.UP * 0.5, "INK-SHARE: %s" % ArsenalCatalog.current.sign_seal(scribe_sign).display_name.to_upper(),
+		color, 30)
 
 
 # --- Support effects ------------------------------------------------------

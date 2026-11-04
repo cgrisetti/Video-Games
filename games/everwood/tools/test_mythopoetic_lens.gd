@@ -20,7 +20,7 @@
 extends RefCounted
 
 ## Rule 4's grimy and textbook words, and the Lens's cut tropes, as whole words.
-const BANNED_PATTERN: String = "(?i)\\b(runes?|aspects?|constructs?|wharfs?|silt|polders?|lamellar|hauberks?|cuirass(es)?|rubrics?|vermin|trash mobs?|minions?|goblins?|orcs?|lizards?|predators?|dojo shards?|aggro|factions?|loot drops?|undead|outlaws?|smugglers?)\\b"
+const BANNED_PATTERN: String = "(?i)\\b(runes?|aspects?|constructs?|wharfs?|silt|polders?|lamellar|hauberks?|cuirass(es)?|rubrics?|vermin|trash mobs?|minions?|goblins?|orcs?|lizards?|predators?|dojo shards?|aggro|factions?|loot drops?|undead|outlaws?|smugglers?|tinctures?|catalysts?)\\b"
 ## Rule 2's seven geographical nouns. One may sit inside the compound, as in Barley-Bridge-Meadow.
 const MAP_SENSE: Array[String] = ["bridge", "green", "hollow", "falls", "haven", "wick", "crossing"]
 ## Places that aren't settlements or zones: a boss arena and a ring of the vale's terrain.
@@ -71,6 +71,13 @@ func _check_linter() -> void:
 		shown.append_array([item.display_name, item.description])
 	for encounter: BossEncounterResource in catalog.encounters():
 		shown.append_array([encounter.display_name, encounter.hud_rhyme_couplet])
+	# The Phase 12 Kaizen pass (14 GDD §8): combo forms, Miyamoto tiers, gates, locks and role deliveries.
+	for form: ComboChainResource in catalog.combos():
+		shown.append_array([form.display_name, form.description])
+	shown.append_array(BossEncounterResource.TIER_NAMES)
+	shown.append_array(BossEncounterResource.GATE_NAMES)
+	shown.append_array(BossEncounterResource.LOCK_NAMES)
+	shown.append_array(ScribeCardResource.ROLE_DELIVERY_NAMES)
 	for calling: CallingResource in catalog.callings():
 		shown.append(calling.display_name)
 	for creature: MobVariantResource in Bestiary.all():

@@ -52,6 +52,22 @@ var coat_sign: int = ScribeSignResource.Sign.NONE
 var coat_poise: float = 0.0
 ## A Hearth-Rite opening strike: it also stamps its Sign's seal.
 var coat_primes: bool = false
+## The Phase 12 Kaizen pass (14 GDD §8), also the attacker's state, travelling
+## with an action-id strike: the combo form this strike finishes (its numbers
+## come from ArsenalCatalog on the target's owner), a One-and-Done Seal-Breaker
+## (the Weapon-Coat leaf whose finisher multiplier it uses), and a Support whose
+## Ink-Share lent coat_sign.
+var combo_id: StringName = &""
+var one_and_done: bool = false
+var finisher_card_id: StringName = &""
+var ink_share_from: StringName = &""
+## Worked out on the target's owner from the above (never sent): a stun to
+## land, whether it cracks a martial lock or any lock or gate, and how far a
+## Sign detonation riding it reaches.
+var stun_seconds: float = 0.0
+var breaks_martial_lock: bool = false
+var cracks_lock: bool = false
+var detonation_radius_mult: float = 1.0
 
 
 ## The Sign this strike counters a Glimmer-Spot with: a coat's, else its own seal or Sign.
@@ -111,6 +127,12 @@ func to_dict() -> Dictionary:
 	}
 	if coat_sign != ScribeSignResource.Sign.NONE:
 		data.merge({"coat_sign": coat_sign, "coat_poise": coat_poise, "coat_primes": coat_primes})
+	if ink_share_from != &"":
+		data["ink_share_from"] = ink_share_from
+	if combo_id != &"":
+		data["combo_id"] = combo_id
+	if one_and_done:
+		data.merge({"one_and_done": true, "finisher_card_id": finisher_card_id})
 	if kind == Kind.STRIKE and action_id != &"":
 		data["action_id"] = action_id
 		return data
@@ -160,4 +182,8 @@ static func from_dict(data: Dictionary) -> CombatEvent:
 	event.coat_sign = clampi(int(data.get("coat_sign", ScribeSignResource.Sign.NONE)), 0, ScribeSignResource.Sign.size() - 1)
 	event.coat_poise = maxf(0.0, float(data.get("coat_poise", 0.0)))
 	event.coat_primes = bool(data.get("coat_primes", false))
+	event.ink_share_from = StringName(data.get("ink_share_from", &""))
+	event.combo_id = StringName(data.get("combo_id", &""))
+	event.one_and_done = bool(data.get("one_and_done", false))
+	event.finisher_card_id = StringName(data.get("finisher_card_id", &""))
 	return event
