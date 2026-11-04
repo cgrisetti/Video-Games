@@ -32,7 +32,8 @@ games/everwood/
     ├── resources/                      # Typed data: actions, stats, kits, cards, Signs, encounters, combo forms,
     │   │                               # Callings, MobVariantResource, StewardshipZoneResource,
     │   │                               # Zone/Sign/Calling/Boss audio profiles, ZoneBiomeResource,
-    │   │                               # WorldPropKitResource, ZoneSuccessionVisualResource, WorldMapZoneResource
+    │   │                               # WorldPropKitResource, ZoneSuccessionVisualResource, WorldMapZoneResource,
+    │   │                               # HeroAppearanceResource (a Calling's look), WeaponVisualTierResource (a tier's look)
     │   └── …
     ├── components/
     │   ├── input_component.gd          # Master, Adventurer and Squire Gambit assist tiers
@@ -54,7 +55,13 @@ games/everwood/
     │   └── unboggart_fx.gd             # The released bird or path-light, and the lulled cairn
     ├── actors/
     │   ├── actor_base.gd               # Root CharacterBody3D wiring components via signals
-    │   ├── actor_visuals.gd            # Code-built storybook puppets (+ assets/models/<id>.glb hook)
+    │   ├── actor_visuals.gd            # A hero: the rig, its surfaces, kit and weapon, posed each tick (+ .glb hooks)
+    │   ├── hero_rig_builder.gd         # The canonical 24-bone Skeleton3D, its Skin and four read-only sockets
+    │   ├── hero_mesh_atelier.gd        # Catmull-Rom superellipse lofts: five skinned regions, props, 16 weapon sculpts
+    │   ├── hero_combat_animator.gd     # The procedural AnimationLibrary, sampled frame-locked to the action's clock
+    │   ├── hero_clip_book.gd · hero_pose_baker.gd # The 45 clips' key poses, and aim-authored poses into bone rotations
+    │   ├── storybook_kinematics_modifier_3d.gd # Springs, lean, foot-plant and grip IK, look-at, hit-stop tremor
+    │   ├── shaders/storybook_hero_atelier.gdshader # The heroes' Three-Value Harmony shader
     │   ├── arsenal_catalog.gd          # Autoload: Signs, armor, weapons, Scribe Sign-Cards, Callings, encounters
     │   ├── bestiary.gd                 # Oakshire Vale's six families of First-Quiet kin
     │   ├── mythopoetic_atlas.gd        # The Six-Zone Stewardship Atlas and each place's zone
@@ -129,5 +136,12 @@ Every foe carries one. Its states are plain enums, so saves and RPCs never need 
 - **Labels.** `WorldLabelStyle.watch()` styles every `Label3D` as it enters the tree (deferred, after its maker has set it up), so no script needs to know the style.
 - **The map.** `CartographyBaker` gathers a level's ground on the main thread (a layout's functions, or rays at a walled instance's colliders) and paints on a worker thread; `poll()` hands the texture over on the main thread, and `finish_pending()` waits for any paint before a level leaves. Builders write `cartography.json` (footprints, cracks) beside a world's landblocks. Shrines, desks and portals join the `map_glyphs` group.
 
-### 2.8 Verification
-`godot --headless --check-only -s <script>` on every changed script, a headless boot, and `tools/smoke_test.gd` (see the README). `tools/test_mythopoetic_lens.gd` lints every name the game shows against the four Linter Rules, the world's biome and kit names included. `tools/test_world_visuals.gd` checks the storybook world.
+### 2.8 The hero rig ([19_HERO_CHARACTER_ART_AND_ANIMATION_RIG_GDD.md](19_HERO_CHARACTER_ART_AND_ANIMATION_RIG_GDD.md) §7)
+- **Skeleton.** `HeroRigBuilder.build_hero_skeleton()` adds 24 bones parent-first, sets each rest so its +Y runs along the bone (its X the model's +X where it can be), makes one `Skin` with `create_skin_from_rest_transforms()` and hangs four `BoneAttachment3D` sockets with `override_pose` off. Its modifier mode is manual: `ActorVisuals.update_rig()` poses the bones and then calls `Skeleton3D.advance()`, so the modifier runs on that tick's pose. Godot restores the un-modified pose after each update, so `get_bone_pose_*` reads the animator's pose and attachments follow the final one.
+- **Surfaces.** `HeroMeshAtelier` lofts closed superellipse rings along Catmull-Rom spines through a `SurfaceTool` (bones and weights per ring, blended between rings; normals by finite differences leaning 35% to a radial proxy; triangles wound to face their normals). Vertex colours carry AO, worn edges, a material id and Sign veins; UV2.x the height at rest. Surfaces are cached by `HeroAppearanceResource.sculpt_key()` and coat, weapons by type and tier.
+- **Animation.** `HeroClipBook` writes key poses by aim (arms in the chest's frame, legs in the ground's or the hips'), `HeroPoseBaker` turns them into local rotations, and `HeroCombatAnimator` keys them into rotation, position and scale tracks of one shared `AnimationLibrary` on an `AnimationPlayer`. The player stays inactive: the animator samples the tracks itself each physics tick, at the frame the action's phase says (wind-up, active and recovery stretched onto the action's own timing), cross-fades, and layers one-shots (parley, parry, Bravery Counter) and one-arm overlays (the card choreography).
+- **Kinematics.** `StorybookKinematicsModifier3D` (a GDScript `SkeletonModifier3D`, never `SpringBoneSimulator3D`) reads the pose, adds lean, bank, the winded heave, look-at and the hit-stop tremor, drops the hips on slopes, plants the feet and puts the off hand on a two-hander's `HaftGripMarker` (or the bow hand at the jaw) by two-bone IK, swings the cloak and beard on exact damped springs held outside a body capsule, squashes the hips through a hit-stop, and writes it back. `ActorVisuals` feeds it the velocity, stamina, ground heights (two rays a tick), the grip and the look target.
+- **The solo boot.** `LevelBase.solo_iron_woodsman_boot` seats the first person as the Wayfarers and, for the session's first seat, picks the Stout Heart and `PartyProgress.iron_woodsman_kit()`. `LevelBase.auto_backfill_companions` gates companion backfill (`--with-companions`, `set_companion_backfill_enabled()`). The Network Manager still knows nothing about classes.
+
+### 2.9 Verification
+`godot --headless --check-only -s <script>` on every changed script, a headless boot, and `tools/smoke_test.gd` (see the README). `tools/test_mythopoetic_lens.gd` lints every name the game shows against the four Linter Rules, the world's biome and kit names included. `tools/test_world_visuals.gd` checks the storybook world, and `tools/test_hero_rig.gd` the solo boot and the hero rig.
