@@ -5,9 +5,15 @@
 // belong (granite on any slope steeper than about 32°), the ground's value is
 // held in the mid-tones so telegraph rings always read, and open Hush-Cracks
 // grey the turf while a sealed one sweeps its Reclamation Bloom outward.
+//
+// Phase 18 (18 GDD §3, §4.4, §5): road edges fray per pixel into a loam verge,
+// steep banks show scree and cliffs show horizontal strata over a dark toe
+// (the vertex alpha: 1 minus the toe), cloud shadows roll over it, and the
+// First-Quiet's blight drains it toward ashen slate-indigo.
 shader_type spatial;
 render_mode cull_back, specular_disabled;
 
+#define STORYBOOK_CLOUD_POS v_world_pos
 #include "res://src/world/shaders/storybook_world_common.gdshaderinc"
 
 uniform vec4 albedo : source_color = vec4(1.0);
@@ -20,24 +26,21 @@ uniform float max_value = 0.42;
 varying vec3 v_world_pos;
 varying vec3 v_world_normal;
 varying vec3 v_painted;
+varying float v_toe;
 
 void vertex() {
 	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	v_painted = COLOR.rgb;
+	v_toe = clamp(1.0 - COLOR.a, 0.0, 1.0);
 }
 
 void fragment() {
 	vec3 n = normalize(v_world_normal);
 	// The painted field is authored in sRGB, like Terrain3D's colour maps.
-	vec3 color = albedo.rgb * pow(v_painted, vec3(2.2));
-	if (atelier_ready > 0.5) {
-		vec4 classes = terrain_class_weights(v_painted, n);
-		vec3 bent;
-		vec3 detail = terrain_detail(v_world_pos, n, classes, normal_strength, bent);
-		color *= mix(vec3(1.0), detail, detail_strength);
-		n = bent;
-	}
+	vec3 bent;
+	vec3 color = storybook_ground(v_painted, albedo.rgb * pow(v_painted, vec3(2.2)), n, v_world_pos, v_toe, detail_strength, normal_strength, bent);
+	n = bent;
 	float value = luminance(color);
 	color *= clamp(value, min_value, max_value) / max(value, 0.001);
 	vec3 emission = vec3(0.0);

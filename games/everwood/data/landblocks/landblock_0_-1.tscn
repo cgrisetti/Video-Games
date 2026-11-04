@@ -20,6 +20,7 @@ shader_parameter/craft_layer = 5.0
 shader_parameter/triplanar_scale = 0.25
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -29,6 +30,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -50,6 +52,7 @@ shader_parameter/craft_layer = 7.0
 shader_parameter/triplanar_scale = 0.2
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -59,6 +62,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -119,6 +123,7 @@ shader_parameter/craft_layer = 6.0
 shader_parameter/triplanar_scale = 0.25
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -128,6 +133,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -210,6 +216,7 @@ shader_parameter/craft_layer = 3.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -219,6 +226,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -278,6 +286,12 @@ shader_parameter/dapple = null
 shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
+shader_parameter/grass_blades = null
+shader_parameter/tip_color = null
+shader_parameter/wave_bend_degrees = null
+shader_parameter/gust_sheen = null
+shader_parameter/leaf_ramp = null
+shader_parameter/backlight = null
 shader_parameter/shade_color = Color(0.4, 0.42, 0.4, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -378,6 +392,7 @@ shader_parameter/craft_layer = 6.0
 shader_parameter/triplanar_scale = 0.25
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -387,6 +402,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -414,6 +430,7 @@ shader_parameter/craft_layer = 6.0
 shader_parameter/triplanar_scale = 0.25
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -423,6 +440,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -476,6 +494,7 @@ shader_parameter/craft_layer = 3.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -485,6 +504,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -660,619 +680,973 @@ material = SubResource("StandardMaterial3D_8o7ad")
 radius = 0.16
 height = 0.16
 
-[node name="Landblock_0_-1" type="Node3D" unique_id=1615784485]
+[sub_resource type="BoxShape3D" id="BoxShape3D_2ctu6"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_27cr0"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_iskti"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_m0ass"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dqrny"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5qimg"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_xcsv8"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_th6ji"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_00ul2"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_e7ywm"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ds7fo"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tjwor"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_r0o3l"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ahwth"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_36xy1"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dt4fb"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_40jio"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mtwjx"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_e1512"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_co8nb"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[node name="Landblock_0_-1" type="Node3D" unique_id=1539783828]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, 0, -100)
 metadata/chunk = Vector2i(0, -1)
 
-[node name="MossOaks" type="Node3D" parent="." unique_id=755860720]
+[node name="MossOaks" type="Node3D" parent="." unique_id=197989979]
 
-[node name="Ground" type="StaticBody3D" parent="MossOaks" unique_id=1192259801]
+[node name="Ground" type="StaticBody3D" parent="MossOaks" unique_id=247798153]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 68)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Ground" unique_id=198276128]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Ground" unique_id=1898430187]
 shape = SubResource("BoxShape3D_qckh6")
 
-[node name="Mesh" type="MeshInstance3D" parent="MossOaks/Ground" unique_id=698769221]
+[node name="Mesh" type="MeshInstance3D" parent="MossOaks/Ground" unique_id=1855048529]
 mesh = SubResource("BoxMesh_do11w")
 
-[node name="WallSouthWest" type="StaticBody3D" parent="MossOaks" unique_id=1107159946]
+[node name="WallSouthWest" type="StaticBody3D" parent="MossOaks" unique_id=1301313793]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -13.5, 0.6, 90)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallSouthWest" unique_id=1092059612]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallSouthWest" unique_id=489806184]
 shape = SubResource("BoxShape3D_irmkj")
 
-[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallSouthWest" unique_id=475701028]
+[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallSouthWest" unique_id=1385976488]
 mesh = SubResource("BoxMesh_3r6gw")
 
-[node name="WallSouthEast" type="StaticBody3D" parent="MossOaks" unique_id=692080031]
+[node name="WallSouthEast" type="StaticBody3D" parent="MossOaks" unique_id=868585814]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 13.5, 0.6, 90)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallSouthEast" unique_id=410695780]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallSouthEast" unique_id=1472352978]
 shape = SubResource("BoxShape3D_d82pr")
 
-[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallSouthEast" unique_id=941413525]
+[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallSouthEast" unique_id=2004467614]
 mesh = SubResource("BoxMesh_llebt")
 
-[node name="WallEast" type="StaticBody3D" parent="MossOaks" unique_id=345979880]
+[node name="WallEast" type="StaticBody3D" parent="MossOaks" unique_id=634910873]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0.6, 68)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallEast" unique_id=108027718]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallEast" unique_id=845061331]
 shape = SubResource("BoxShape3D_ocueg")
 
-[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallEast" unique_id=794863059]
+[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallEast" unique_id=1540981464]
 mesh = SubResource("BoxMesh_024c0")
 
-[node name="WallWestSouth" type="StaticBody3D" parent="MossOaks" unique_id=208522486]
+[node name="WallWestSouth" type="StaticBody3D" parent="MossOaks" unique_id=2054702166]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0.6, 73)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallWestSouth" unique_id=754619763]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallWestSouth" unique_id=1018073814]
 shape = SubResource("BoxShape3D_4gxv2")
 
-[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallWestSouth" unique_id=1276024057]
+[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallWestSouth" unique_id=538694048]
 mesh = SubResource("BoxMesh_hwgys")
 
-[node name="WallWestNorth" type="StaticBody3D" parent="MossOaks" unique_id=354049333]
+[node name="WallWestNorth" type="StaticBody3D" parent="MossOaks" unique_id=390906342]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0.6, 48)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallWestNorth" unique_id=262306798]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallWestNorth" unique_id=86517361]
 shape = SubResource("BoxShape3D_sm26e")
 
-[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallWestNorth" unique_id=1873015787]
+[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallWestNorth" unique_id=603019723]
 mesh = SubResource("BoxMesh_at7w2")
 
-[node name="WallNorthWest" type="StaticBody3D" parent="MossOaks" unique_id=1809105176]
+[node name="WallNorthWest" type="StaticBody3D" parent="MossOaks" unique_id=258662076]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -14, 0.6, 46)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallNorthWest" unique_id=2101855404]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallNorthWest" unique_id=1653712577]
 shape = SubResource("BoxShape3D_6kqlf")
 
-[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallNorthWest" unique_id=190698290]
+[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallNorthWest" unique_id=1611096986]
 mesh = SubResource("BoxMesh_exvdo")
 
-[node name="WallNorthEast" type="StaticBody3D" parent="MossOaks" unique_id=195447592]
+[node name="WallNorthEast" type="StaticBody3D" parent="MossOaks" unique_id=550444672]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 14, 0.6, 46)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallNorthEast" unique_id=1285949888]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/WallNorthEast" unique_id=1658682449]
 shape = SubResource("BoxShape3D_3ooar")
 
-[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallNorthEast" unique_id=250748134]
+[node name="Mesh" type="MeshInstance3D" parent="MossOaks/WallNorthEast" unique_id=1412318658]
 mesh = SubResource("BoxMesh_slrqe")
 
-[node name="Trail0" type="MeshInstance3D" parent="MossOaks" unique_id=1154515827]
+[node name="Trail0" type="MeshInstance3D" parent="MossOaks" unique_id=161070700]
 transform = Transform3D(-0.95782626, 0, -0.28734794, 0, 1, 0, 0.28734794, 0, -0.95782626, -1.5, 0.01, 80)
 mesh = SubResource("BoxMesh_whqip")
 
-[node name="Trail1" type="MeshInstance3D" parent="MossOaks" unique_id=532158137]
+[node name="Trail1" type="MeshInstance3D" parent="MossOaks" unique_id=53198503]
 transform = Transform3D(-0.89442724, 0, 0.4472135, 0, 1, 0, -0.4472135, 0, -0.89442724, -0.25, 0.01, 69.5)
 mesh = SubResource("BoxMesh_h8v7w")
 
-[node name="Trail2" type="MeshInstance3D" parent="MossOaks" unique_id=364634455]
+[node name="Trail2" type="MeshInstance3D" parent="MossOaks" unique_id=1490868647]
 transform = Transform3D(-0.9438583, 0, -0.33035046, 0, 1, 0, 0.33035046, 0, -0.9438583, 0.75, 0.01, 59)
 mesh = SubResource("BoxMesh_y71kl")
 
-[node name="Trail3" type="MeshInstance3D" parent="MossOaks" unique_id=1069526464]
+[node name="Trail3" type="MeshInstance3D" parent="MossOaks" unique_id=29165062]
 transform = Transform3D(-0.99227786, 0, 0.12403473, 0, 1, 0, -0.12403473, 0, -0.99227786, -0.5, 0.01, 50)
 mesh = SubResource("BoxMesh_2np2v")
 
-[node name="Oak1" type="Node3D" parent="MossOaks" unique_id=350540618]
+[node name="Oak1" type="Node3D" parent="MossOaks" unique_id=594542678]
 transform = Transform3D(0.546024, 0, -0.8377695, 0, 1, 0, 0.8377695, 0, 0.546024, -15, 0, 84)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 7.5
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak1" unique_id=145533219]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak1" unique_id=947025384]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak1/TrunkBody" unique_id=1027773057]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak1/TrunkBody" unique_id=224287493]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0625, 0)
 shape = SubResource("CylinderShape3D_nc083")
 
-[node name="Oak2" type="Node3D" parent="MossOaks" unique_id=1073276272]
+[node name="Oak2" type="Node3D" parent="MossOaks" unique_id=2044506811]
 transform = Transform3D(0.5543745, 0, -0.83226734, 0, 1, 0, 0.83226734, 0, 0.5543745, 14, 0, 85)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 8.3
 seed_value = 1
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak2" unique_id=1606187435]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak2" unique_id=551133960]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak2/TrunkBody" unique_id=1219329083]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak2/TrunkBody" unique_id=1548604251]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2825, 0)
 shape = SubResource("CylinderShape3D_k4ocv")
 
-[node name="Oak3" type="Node3D" parent="MossOaks" unique_id=2094180331]
+[node name="Oak3" type="Node3D" parent="MossOaks" unique_id=1262709514]
 transform = Transform3D(0.5626691, 0, -0.8266822, 0, 1, 0, 0.8266822, 0, 0.5626691, -19, 0, 72)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 9.1
 seed_value = 2
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak3" unique_id=839850782]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak3" unique_id=161595800]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak3/TrunkBody" unique_id=1739378120]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak3/TrunkBody" unique_id=176114489]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5025, 0)
 shape = SubResource("CylinderShape3D_aner1")
 
-[node name="Oak4" type="Node3D" parent="MossOaks" unique_id=980763028]
+[node name="Oak4" type="Node3D" parent="MossOaks" unique_id=486362184]
 transform = Transform3D(0.57090783, 0, -0.82101417, 0, 1, 0, 0.82101417, 0, 0.57090783, -10, 0, 66)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 9.9
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak4" unique_id=988768601]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak4" unique_id=1703734953]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak4/TrunkBody" unique_id=1370342319]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak4/TrunkBody" unique_id=780391976]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7225, 0)
 shape = SubResource("CylinderShape3D_4pelx")
 
-[node name="Oak5" type="Node3D" parent="MossOaks" unique_id=806627116]
+[node name="Oak5" type="Node3D" parent="MossOaks" unique_id=537500183]
 transform = Transform3D(0.5790891, 0, -0.8152643, 0, 1, 0, 0.8152643, 0, 0.5790891, 18, 0, 74)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 7.5
 seed_value = 1
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak5" unique_id=1105804046]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak5" unique_id=1871184486]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak5/TrunkBody" unique_id=484303632]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak5/TrunkBody" unique_id=1266239899]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0625, 0)
 shape = SubResource("CylinderShape3D_dgn6b")
 
-[node name="Oak6" type="Node3D" parent="MossOaks" unique_id=431306872]
+[node name="Oak6" type="Node3D" parent="MossOaks" unique_id=1372901290]
 transform = Transform3D(0.58721286, 0, -0.80943257, 0, 1, 0, 0.80943257, 0, 0.58721286, 19, 0, 57)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 8.3
 seed_value = 2
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak6" unique_id=536496375]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak6" unique_id=1200144250]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak6/TrunkBody" unique_id=1015574913]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak6/TrunkBody" unique_id=809073564]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2825, 0)
 shape = SubResource("CylinderShape3D_fo5nd")
 
-[node name="Oak7" type="Node3D" parent="MossOaks" unique_id=1059600765]
+[node name="Oak7" type="Node3D" parent="MossOaks" unique_id=1260251893]
 transform = Transform3D(0.5952775, 0, -0.8035202, 0, 1, 0, 0.8035202, 0, 0.5952775, -18, 0, 60)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 9.1
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak7" unique_id=470689296]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak7" unique_id=1830424339]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak7/TrunkBody" unique_id=1974374858]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak7/TrunkBody" unique_id=753827194]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5025, 0)
 shape = SubResource("CylinderShape3D_l7rw8")
 
-[node name="Oak8" type="Node3D" parent="MossOaks" unique_id=1511290596]
+[node name="Oak8" type="Node3D" parent="MossOaks" unique_id=1186320289]
 transform = Transform3D(0.603283, 0, -0.7975272, 0, 1, 0, 0.7975272, 0, 0.603283, -12, 0, 51)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 9.9
 seed_value = 1
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak8" unique_id=1288348852]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak8" unique_id=1083750829]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak8/TrunkBody" unique_id=1128764319]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak8/TrunkBody" unique_id=391471355]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7225, 0)
 shape = SubResource("CylinderShape3D_05ml4")
 
-[node name="Oak9" type="Node3D" parent="MossOaks" unique_id=1791791934]
+[node name="Oak9" type="Node3D" parent="MossOaks" unique_id=702788378]
 transform = Transform3D(0.61122775, 0, -0.7914548, 0, 1, 0, 0.7914548, 0, 0.61122775, 13, 0, 50)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 7.5
 seed_value = 2
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak9" unique_id=2049548430]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak9" unique_id=186152413]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak9/TrunkBody" unique_id=1915223461]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak9/TrunkBody" unique_id=1701838459]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0625, 0)
 shape = SubResource("CylinderShape3D_ryg0m")
 
-[node name="Oak10" type="Node3D" parent="MossOaks" unique_id=736171029]
+[node name="Oak10" type="Node3D" parent="MossOaks" unique_id=740328838]
 transform = Transform3D(-0.99959654, 0, -0.028403603, 0, 1, 0, 0.028403603, 0, -0.99959654, -7, 0, 78)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 8.3
 seed_value = 2
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak10" unique_id=701083162]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak10" unique_id=1970894191]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak10/TrunkBody" unique_id=2024087616]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak10/TrunkBody" unique_id=1942529084]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2825, 0)
 shape = SubResource("CylinderShape3D_63tb3")
 
-[node name="Oak11" type="Node3D" parent="MossOaks" unique_id=473075211]
+[node name="Oak11" type="Node3D" parent="MossOaks" unique_id=1394421054]
 transform = Transform3D(-0.9992625, 0, -0.03839797, 0, 1, 0, 0.03839797, 0, -0.9992625, 9, 0, 79)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 9.1
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak11" unique_id=1748556139]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak11" unique_id=2095024096]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak11/TrunkBody" unique_id=33823712]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak11/TrunkBody" unique_id=139032829]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5025, 0)
 shape = SubResource("CylinderShape3D_vdihh")
 
-[node name="Oak12" type="Node3D" parent="MossOaks" unique_id=53463339]
+[node name="Oak12" type="Node3D" parent="MossOaks" unique_id=671504791]
 transform = Transform3D(-0.9988286, 0, -0.0483885, 0, 1, 0, 0.0483885, 0, -0.9988286, 16, 0, 64)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 9.9
 seed_value = 1
 
-[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak12" unique_id=847778458]
+[node name="TrunkBody" type="StaticBody3D" parent="MossOaks/Oak12" unique_id=177449602]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak12/TrunkBody" unique_id=56212724]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/Oak12/TrunkBody" unique_id=1307332908]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7225, 0)
 shape = SubResource("CylinderShape3D_pt6ec")
 
-[node name="TrailIn" type="MeshInstance3D" parent="MossOaks" unique_id=571742761]
+[node name="TrailIn" type="MeshInstance3D" parent="MossOaks" unique_id=1508217564]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 87.5)
 mesh = SubResource("BoxMesh_72oi2")
 
-[node name="GreatArch" type="Node3D" parent="MossOaks" unique_id=1999278238]
+[node name="GreatArch" type="Node3D" parent="MossOaks" unique_id=551719956]
 
-[node name="TrunkWest" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1314081234]
+[node name="TrunkWest" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=318072038]
 transform = Transform3D(-0.9927338, 0.12011419, 0.0072267805, 0.1203314, 0.9909418, 0.05962092, 0, 0.060057312, -0.99819493, -5.1, 3.3, 93.2)
 mesh = SubResource("CylinderMesh_ohe08")
 
-[node name="BoughWest" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1061403838]
+[node name="BoughWest" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=750825594]
 transform = Transform3D(-0.7964463, 0.60365963, -0.035613652, 0.6047092, 0.7950639, -0.04690579, 0, -0.05889385, -0.9982643, -2.6499999, 9.3, 93.2)
 mesh = SubResource("CylinderMesh_3shvb")
 
-[node name="RootWest" type="StaticBody3D" parent="MossOaks/GreatArch" unique_id=1283319375]
+[node name="RootWest" type="StaticBody3D" parent="MossOaks/GreatArch" unique_id=1239654543]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1.5, 93)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/GreatArch/RootWest" unique_id=211300544]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/GreatArch/RootWest" unique_id=2108233316]
 shape = SubResource("BoxShape3D_8itkb")
 
-[node name="Mesh" type="MeshInstance3D" parent="MossOaks/GreatArch/RootWest" unique_id=973081264]
+[node name="Mesh" type="MeshInstance3D" parent="MossOaks/GreatArch/RootWest" unique_id=1843076835]
 mesh = SubResource("BoxMesh_pktl0")
 
-[node name="TrunkEast" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1199972853]
+[node name="TrunkEast" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1625504487]
 transform = Transform3D(-0.9927338, -0.12011419, -0.0072267805, -0.1203314, 0.9909418, 0.05962092, 0, 0.060057312, -0.99819493, 5.1, 3.3, 93.2)
 mesh = SubResource("CylinderMesh_kp4ff")
 
-[node name="BoughEast" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1908747190]
+[node name="BoughEast" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=769672045]
 transform = Transform3D(-0.7964463, -0.60365963, 0.035613652, -0.6047092, 0.7950639, -0.04690579, 0, -0.05889385, -0.9982643, 2.6499999, 9.3, 93.2)
 mesh = SubResource("CylinderMesh_1mxej")
 
-[node name="RootEast" type="StaticBody3D" parent="MossOaks/GreatArch" unique_id=922719048]
+[node name="RootEast" type="StaticBody3D" parent="MossOaks/GreatArch" unique_id=1601748070]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.5, 93)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="MossOaks/GreatArch/RootEast" unique_id=1317530255]
+[node name="Collision" type="CollisionShape3D" parent="MossOaks/GreatArch/RootEast" unique_id=2025151478]
 shape = SubResource("BoxShape3D_j8s0m")
 
-[node name="Mesh" type="MeshInstance3D" parent="MossOaks/GreatArch/RootEast" unique_id=1494279224]
+[node name="Mesh" type="MeshInstance3D" parent="MossOaks/GreatArch/RootEast" unique_id=1464524297]
 mesh = SubResource("BoxMesh_pr830")
 
-[node name="Canopy0" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1765185883]
+[node name="Canopy0" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=873994275]
 transform = Transform3D(1.3, 0, 0, 0, 0.8, 0, 0, 0, 1.1, -4.8, 11.36, 93.6)
 mesh = SubResource("SphereMesh_3qqmo")
 
-[node name="Canopy1" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1495012205]
+[node name="Canopy1" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1426250514]
 transform = Transform3D(1.3, 0, 0, 0, 0.8, 0, 0, 0, 1.1, -2.4, 12.08, 92.4)
 mesh = SubResource("SphereMesh_ksdhc")
 
-[node name="Canopy2" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=773825529]
+[node name="Canopy2" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1103733489]
 transform = Transform3D(1.3, 0, 0, 0, 0.8, 0, 0, 0, 1.1, 0, 12.8, 93.6)
 mesh = SubResource("SphereMesh_pu4kn")
 
-[node name="Canopy3" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1358691401]
+[node name="Canopy3" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=2058400341]
 transform = Transform3D(1.3, 0, 0, 0, 0.8, 0, 0, 0, 1.1, 2.4, 12.08, 92.4)
 mesh = SubResource("SphereMesh_7ihib")
 
-[node name="Canopy4" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1787054233]
+[node name="Canopy4" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1234606668]
 transform = Transform3D(1.3, 0, 0, 0, 0.8, 0, 0, 0, 1.1, 4.8, 11.36, 93.6)
 mesh = SubResource("SphereMesh_4ius5")
 
-[node name="LightShaft0" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=2073949319]
+[node name="LightShaft0" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=207328667]
 transform = Transform3D(0.7536048, 0.3365392, 0.5646425, -0.40776044, 0.9130889, 0, -0.5155688, -0.23023887, 0.8253356, -1.8, 5.4, 91)
 cast_shadow = 0
 mesh = SubResource("BoxMesh_24hcc")
 
-[node name="LightShaft1" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1450439979]
+[node name="LightShaft1" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=647527214]
 transform = Transform3D(0.7536048, 0.3365392, 0.5646425, -0.40776044, 0.9130889, 0, -0.5155688, -0.23023887, 0.8253356, 0, 5.4, 89.5)
 cast_shadow = 0
 mesh = SubResource("BoxMesh_dsqca")
 
-[node name="LightShaft2" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=1287936566]
+[node name="LightShaft2" type="MeshInstance3D" parent="MossOaks/GreatArch" unique_id=675449427]
 transform = Transform3D(0.7536048, 0.3365392, 0.5646425, -0.40776044, 0.9130889, 0, -0.5155688, -0.23023887, 0.8253356, 1.8, 5.4, 88)
 cast_shadow = 0
 mesh = SubResource("BoxMesh_iusfw")
 
-[node name="Alcove" type="Node3D" parent="." unique_id=108687918]
+[node name="Alcove" type="Node3D" parent="." unique_id=1735727076]
 
-[node name="Ground" type="StaticBody3D" parent="Alcove" unique_id=488016193]
+[node name="Ground" type="StaticBody3D" parent="Alcove" unique_id=434572998]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, -0.5, 53)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Alcove/Ground" unique_id=363618526]
+[node name="Collision" type="CollisionShape3D" parent="Alcove/Ground" unique_id=756397102]
 shape = SubResource("BoxShape3D_kc1wj")
 
-[node name="Mesh" type="MeshInstance3D" parent="Alcove/Ground" unique_id=875629434]
+[node name="Mesh" type="MeshInstance3D" parent="Alcove/Ground" unique_id=1145020397]
 mesh = SubResource("BoxMesh_5u3q5")
 
-[node name="WallNorth" type="StaticBody3D" parent="Alcove" unique_id=2023326274]
+[node name="WallNorth" type="StaticBody3D" parent="Alcove" unique_id=1259021646]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -28, 0.6, 50)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Alcove/WallNorth" unique_id=2048084947]
+[node name="Collision" type="CollisionShape3D" parent="Alcove/WallNorth" unique_id=1622797419]
 shape = SubResource("BoxShape3D_wcd78")
 
-[node name="Mesh" type="MeshInstance3D" parent="Alcove/WallNorth" unique_id=1621731132]
+[node name="Mesh" type="MeshInstance3D" parent="Alcove/WallNorth" unique_id=227298094]
 mesh = SubResource("BoxMesh_h3ajv")
 
-[node name="WallSouth" type="StaticBody3D" parent="Alcove" unique_id=982126430]
+[node name="WallSouth" type="StaticBody3D" parent="Alcove" unique_id=1167226292]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -28, 0.6, 56)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Alcove/WallSouth" unique_id=1830247452]
+[node name="Collision" type="CollisionShape3D" parent="Alcove/WallSouth" unique_id=1673870157]
 shape = SubResource("BoxShape3D_u32k2")
 
-[node name="Mesh" type="MeshInstance3D" parent="Alcove/WallSouth" unique_id=1559675911]
+[node name="Mesh" type="MeshInstance3D" parent="Alcove/WallSouth" unique_id=1711836812]
 mesh = SubResource("BoxMesh_bpo8t")
 
-[node name="WallWest" type="StaticBody3D" parent="Alcove" unique_id=1245766083]
+[node name="WallWest" type="StaticBody3D" parent="Alcove" unique_id=1540286464]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32, 0.6, 53)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Alcove/WallWest" unique_id=736376094]
+[node name="Collision" type="CollisionShape3D" parent="Alcove/WallWest" unique_id=1028795223]
 shape = SubResource("BoxShape3D_gfamf")
 
-[node name="Mesh" type="MeshInstance3D" parent="Alcove/WallWest" unique_id=805310240]
+[node name="Mesh" type="MeshInstance3D" parent="Alcove/WallWest" unique_id=1108877284]
 mesh = SubResource("BoxMesh_aucnb")
 
-[node name="Oak" type="Node3D" parent="Alcove" unique_id=1459992578]
+[node name="Oak" type="Node3D" parent="Alcove" unique_id=857011108]
 transform = Transform3D(-0.8568887, 0, 0.51550144, 0, 1, 0, -0.51550144, 0, -0.8568887, -35, 0, 53)
 script = ExtResource("2_qt1hx")
 kit_id = &"kit_tree_moss_oak"
 height = 8.0
 seed_value = 2
 
-[node name="Holloway" type="Node3D" parent="." unique_id=536291627]
+[node name="Holloway" type="Node3D" parent="." unique_id=2057169078]
 
-[node name="RampDown" type="StaticBody3D" parent="Holloway" unique_id=1222781912]
+[node name="RampDown" type="StaticBody3D" parent="Holloway" unique_id=580429042]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Holloway/RampDown" unique_id=1503172873]
+[node name="Collision" type="CollisionShape3D" parent="Holloway/RampDown" unique_id=389609418]
 shape = SubResource("ConvexPolygonShape3D_tvwts")
 
-[node name="Mesh" type="MeshInstance3D" parent="Holloway/RampDown" unique_id=1738479557]
+[node name="Mesh" type="MeshInstance3D" parent="Holloway/RampDown" unique_id=1645880460]
 material_override = SubResource("ShaderMaterial_va8gn")
 mesh = SubResource("ArrayMesh_ow2u3")
 
-[node name="Lane" type="StaticBody3D" parent="Holloway" unique_id=155659010]
+[node name="Lane" type="StaticBody3D" parent="Holloway" unique_id=753945921]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.3, 30)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Holloway/Lane" unique_id=969731003]
+[node name="Collision" type="CollisionShape3D" parent="Holloway/Lane" unique_id=1704969668]
 shape = SubResource("BoxShape3D_o7x4o")
 
-[node name="Mesh" type="MeshInstance3D" parent="Holloway/Lane" unique_id=142259602]
+[node name="Mesh" type="MeshInstance3D" parent="Holloway/Lane" unique_id=127237635]
 mesh = SubResource("BoxMesh_u2yfh")
 
-[node name="RampUp" type="StaticBody3D" parent="Holloway" unique_id=221100019]
+[node name="RampUp" type="StaticBody3D" parent="Holloway" unique_id=1895393838]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Holloway/RampUp" unique_id=702884704]
+[node name="Collision" type="CollisionShape3D" parent="Holloway/RampUp" unique_id=76058345]
 shape = SubResource("ConvexPolygonShape3D_isnpw")
 
-[node name="Mesh" type="MeshInstance3D" parent="Holloway/RampUp" unique_id=26615983]
+[node name="Mesh" type="MeshInstance3D" parent="Holloway/RampUp" unique_id=1188003860]
 material_override = SubResource("ShaderMaterial_va8gn")
 mesh = SubResource("ArrayMesh_0ggg7")
 
-[node name="BankWest" type="StaticBody3D" parent="Holloway" unique_id=1757702658]
+[node name="BankWest" type="StaticBody3D" parent="Holloway" unique_id=645471744]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, -0.8, 30)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Holloway/BankWest" unique_id=1951072129]
+[node name="Collision" type="CollisionShape3D" parent="Holloway/BankWest" unique_id=2141309857]
 shape = SubResource("BoxShape3D_hns0n")
 
-[node name="Mesh" type="MeshInstance3D" parent="Holloway/BankWest" unique_id=1350234507]
+[node name="Mesh" type="MeshInstance3D" parent="Holloway/BankWest" unique_id=1914362138]
 mesh = SubResource("BoxMesh_cmh3m")
 
-[node name="Moss" type="MeshInstance3D" parent="Holloway/BankWest" unique_id=1109238205]
+[node name="Moss" type="MeshInstance3D" parent="Holloway/BankWest" unique_id=1826446696]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 mesh = SubResource("BoxMesh_xe562")
 
-[node name="BankEast" type="StaticBody3D" parent="Holloway" unique_id=344104142]
+[node name="BankEast" type="StaticBody3D" parent="Holloway" unique_id=1681851831]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, -0.8, 30)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Holloway/BankEast" unique_id=1898847244]
+[node name="Collision" type="CollisionShape3D" parent="Holloway/BankEast" unique_id=645081311]
 shape = SubResource("BoxShape3D_1rhw2")
 
-[node name="Mesh" type="MeshInstance3D" parent="Holloway/BankEast" unique_id=869919021]
+[node name="Mesh" type="MeshInstance3D" parent="Holloway/BankEast" unique_id=947145451]
 mesh = SubResource("BoxMesh_o2uyd")
 
-[node name="Moss" type="MeshInstance3D" parent="Holloway/BankEast" unique_id=2021141740]
+[node name="Moss" type="MeshInstance3D" parent="Holloway/BankEast" unique_id=223568139]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 mesh = SubResource("BoxMesh_jfa6t")
 
-[node name="Root0W" type="MeshInstance3D" parent="Holloway" unique_id=2076400490]
+[node name="Root0W" type="MeshInstance3D" parent="Holloway" unique_id=466566075]
 transform = Transform3D(-0.8364611, 0.53718626, 0.1084604, 0.54802626, 0.8199159, 0.16554482, 0, 0.19791095, -0.98021996, -3.3500001, 2.25, 40.949997)
 mesh = SubResource("CylinderMesh_sds7o")
 
-[node name="Bough0W" type="MeshInstance3D" parent="Holloway" unique_id=1555112905]
+[node name="Bough0W" type="MeshInstance3D" parent="Holloway" unique_id=1986081293]
 transform = Transform3D(-0.20395416, 0.9717316, -0.11891297, 0.9789804, 0.20244399, -0.024773523, 0, -0.12146614, -0.9925955, -1.2, 3.9499998, 41.15)
 mesh = SubResource("CylinderMesh_ffkw3")
 
-[node name="Root0E" type="MeshInstance3D" parent="Holloway" unique_id=246060565]
+[node name="Root0E" type="MeshInstance3D" parent="Holloway" unique_id=43578816]
 transform = Transform3D(-0.8364611, -0.53718626, 0.1084604, -0.54802626, 0.8199159, -0.16554482, 0, -0.19791095, -0.98021996, 3.3500001, 2.25, 41.050003)
 mesh = SubResource("CylinderMesh_8sh8y")
 
-[node name="Bough0E" type="MeshInstance3D" parent="Holloway" unique_id=256374620]
+[node name="Bough0E" type="MeshInstance3D" parent="Holloway" unique_id=152674391]
 transform = Transform3D(-0.20395416, -0.9717316, -0.11891297, -0.9789804, 0.20244399, 0.024773523, 0, 0.12146614, -0.9925955, 1.2, 3.9499998, 40.85)
 mesh = SubResource("CylinderMesh_dtj2l")
 
-[node name="Root1W" type="MeshInstance3D" parent="Holloway" unique_id=1499270783]
+[node name="Root1W" type="MeshInstance3D" parent="Holloway" unique_id=128589733]
 transform = Transform3D(-0.8364611, 0.53718626, 0.1084604, 0.54802626, 0.8199159, 0.16554482, 0, 0.19791095, -0.98021996, -3.3500001, 2.25, 33.949997)
 mesh = SubResource("CylinderMesh_e85q0")
 
-[node name="Bough1W" type="MeshInstance3D" parent="Holloway" unique_id=106324695]
+[node name="Bough1W" type="MeshInstance3D" parent="Holloway" unique_id=2071117612]
 transform = Transform3D(-0.20395416, 0.9717316, -0.11891297, 0.9789804, 0.20244399, -0.024773523, 0, -0.12146614, -0.9925955, -1.2, 3.9499998, 34.15)
 mesh = SubResource("CylinderMesh_1uhj1")
 
-[node name="Root1E" type="MeshInstance3D" parent="Holloway" unique_id=464730791]
+[node name="Root1E" type="MeshInstance3D" parent="Holloway" unique_id=186314652]
 transform = Transform3D(-0.8364611, -0.53718626, 0.1084604, -0.54802626, 0.8199159, -0.16554482, 0, -0.19791095, -0.98021996, 3.3500001, 2.25, 34.050003)
 mesh = SubResource("CylinderMesh_e8c68")
 
-[node name="Bough1E" type="MeshInstance3D" parent="Holloway" unique_id=308101364]
+[node name="Bough1E" type="MeshInstance3D" parent="Holloway" unique_id=1368004785]
 transform = Transform3D(-0.20395416, -0.9717316, -0.11891297, -0.9789804, 0.20244399, 0.024773523, 0, 0.12146614, -0.9925955, 1.2, 3.9499998, 33.85)
 mesh = SubResource("CylinderMesh_f5tf4")
 
-[node name="Root2W" type="MeshInstance3D" parent="Holloway" unique_id=1797094193]
+[node name="Root2W" type="MeshInstance3D" parent="Holloway" unique_id=1317284182]
 transform = Transform3D(-0.8364611, 0.5371863, 0.108460106, 0.54802626, 0.81991595, 0.16554436, 0, 0.19791041, -0.98022, -3.3500001, 2.25, 28.45)
 mesh = SubResource("CylinderMesh_o2ajx")
 
-[node name="Bough2W" type="MeshInstance3D" parent="Holloway" unique_id=509297682]
+[node name="Bough2W" type="MeshInstance3D" parent="Holloway" unique_id=722471620]
 transform = Transform3D(-0.20395416, 0.9717316, -0.11891297, 0.9789804, 0.20244399, -0.024773523, 0, -0.12146614, -0.9925955, -1.2, 3.9499998, 28.65)
 mesh = SubResource("CylinderMesh_dnpnh")
 
-[node name="Root2E" type="MeshInstance3D" parent="Holloway" unique_id=871010317]
+[node name="Root2E" type="MeshInstance3D" parent="Holloway" unique_id=1112434752]
 transform = Transform3D(-0.8364611, -0.5371863, 0.108460106, -0.54802626, 0.81991595, -0.16554436, 0, -0.19791041, -0.98022, 3.3500001, 2.25, 28.55)
 mesh = SubResource("CylinderMesh_jckyx")
 
-[node name="Bough2E" type="MeshInstance3D" parent="Holloway" unique_id=934244124]
+[node name="Bough2E" type="MeshInstance3D" parent="Holloway" unique_id=1176676409]
 transform = Transform3D(-0.20395416, -0.9717316, -0.11891297, -0.9789804, 0.20244399, 0.024773523, 0, 0.12146614, -0.9925955, 1.2, 3.9499998, 28.35)
 mesh = SubResource("CylinderMesh_are5x")
 
-[node name="Root3W" type="MeshInstance3D" parent="Holloway" unique_id=2117727804]
+[node name="Root3W" type="MeshInstance3D" parent="Holloway" unique_id=1954516086]
 transform = Transform3D(-0.8364611, 0.5371863, 0.108460106, 0.54802626, 0.81991595, 0.16554436, 0, 0.19791041, -0.98022, -3.3500001, 2.25, 23.45)
 mesh = SubResource("CylinderMesh_n1qln")
 
-[node name="Bough3W" type="MeshInstance3D" parent="Holloway" unique_id=830036305]
+[node name="Bough3W" type="MeshInstance3D" parent="Holloway" unique_id=528250685]
 transform = Transform3D(-0.20395416, 0.9717316, -0.11891297, 0.9789804, 0.20244399, -0.024773523, 0, -0.12146614, -0.9925955, -1.2, 3.9499998, 23.65)
 mesh = SubResource("CylinderMesh_ktasw")
 
-[node name="Root3E" type="MeshInstance3D" parent="Holloway" unique_id=2047621177]
+[node name="Root3E" type="MeshInstance3D" parent="Holloway" unique_id=1149993822]
 transform = Transform3D(-0.8364611, -0.5371863, 0.108460106, -0.54802626, 0.81991595, -0.16554436, 0, -0.19791041, -0.98022, 3.3500001, 2.25, 23.55)
 mesh = SubResource("CylinderMesh_6lmmb")
 
-[node name="Bough3E" type="MeshInstance3D" parent="Holloway" unique_id=1315252441]
+[node name="Bough3E" type="MeshInstance3D" parent="Holloway" unique_id=943026116]
 transform = Transform3D(-0.20395416, -0.9717316, -0.11891297, -0.9789804, 0.20244399, 0.024773523, 0, 0.12146614, -0.9925955, 1.2, 3.9499998, 23.35)
 mesh = SubResource("CylinderMesh_rcwhi")
 
-[node name="Mushroom0" type="MeshInstance3D" parent="Holloway" unique_id=1490195596]
+[node name="Mushroom0" type="MeshInstance3D" parent="Holloway" unique_id=1880025398]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.75, -1.7, 37)
 mesh = SubResource("SphereMesh_dlc08")
 
-[node name="Mushroom1" type="MeshInstance3D" parent="Holloway" unique_id=1307787131]
+[node name="Mushroom1" type="MeshInstance3D" parent="Holloway" unique_id=1557167239]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.75, -1.7, 35.444443)
 mesh = SubResource("SphereMesh_r5ivj")
 
-[node name="Mushroom2" type="MeshInstance3D" parent="Holloway" unique_id=1231850517]
+[node name="Mushroom2" type="MeshInstance3D" parent="Holloway" unique_id=1090243375]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.75, -1.7, 33.88889)
 mesh = SubResource("SphereMesh_mchmc")
 
-[node name="Mushroom3" type="MeshInstance3D" parent="Holloway" unique_id=390061590]
+[node name="Mushroom3" type="MeshInstance3D" parent="Holloway" unique_id=1534968767]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.75, -1.7, 32.333332)
 mesh = SubResource("SphereMesh_pst5v")
 
-[node name="Mushroom4" type="MeshInstance3D" parent="Holloway" unique_id=560537331]
+[node name="Mushroom4" type="MeshInstance3D" parent="Holloway" unique_id=1034999769]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.75, -1.7, 30.777779)
 mesh = SubResource("SphereMesh_3owcr")
 
-[node name="Mushroom5" type="MeshInstance3D" parent="Holloway" unique_id=748263666]
+[node name="Mushroom5" type="MeshInstance3D" parent="Holloway" unique_id=439395247]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.75, -1.7, 29.222221)
 mesh = SubResource("SphereMesh_rvo4l")
 
-[node name="Mushroom6" type="MeshInstance3D" parent="Holloway" unique_id=1118689421]
+[node name="Mushroom6" type="MeshInstance3D" parent="Holloway" unique_id=450618590]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.75, -1.7, 27.666666)
 mesh = SubResource("SphereMesh_d00w5")
 
-[node name="Mushroom7" type="MeshInstance3D" parent="Holloway" unique_id=447224537]
+[node name="Mushroom7" type="MeshInstance3D" parent="Holloway" unique_id=303859361]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.75, -1.7, 26.11111)
 mesh = SubResource("SphereMesh_qewt0")
 
-[node name="Mushroom8" type="MeshInstance3D" parent="Holloway" unique_id=215377346]
+[node name="Mushroom8" type="MeshInstance3D" parent="Holloway" unique_id=1932072902]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.75, -1.7, 24.555555)
 mesh = SubResource("SphereMesh_rgxas")
 
-[node name="Mushroom9" type="MeshInstance3D" parent="Holloway" unique_id=220718456]
+[node name="Mushroom9" type="MeshInstance3D" parent="Holloway" unique_id=677693813]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.75, -1.7, 23)
 mesh = SubResource("SphereMesh_y11i8")
 
-[node name="CampOne" type="Node3D" parent="." unique_id=512373878 groups=["landblock_entities"]]
+[node name="RampDownSleepers" type="Node3D" parent="Holloway" unique_id=1867396540]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, -1.8, 38)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_path_sleeper"
+size = Vector3(6.6, 1.8, 8)
+seed_value = 1
+
+[node name="RampUpSleepers" type="Node3D" parent="Holloway" unique_id=1094904601]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.8, 22)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_path_sleeper"
+size = Vector3(6.6, 1.8, 8)
+seed_value = 2
+
+[node name="GuidePost46W0" type="StaticBody3D" parent="Holloway" unique_id=949808110]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 0.275, 46)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost46W0" unique_id=868998637]
+shape = SubResource("BoxShape3D_2ctu6")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost46W0" unique_id=1354922685]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost46E0" type="StaticBody3D" parent="Holloway" unique_id=1656062786]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 0.275, 46)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost46E0" unique_id=838567479]
+shape = SubResource("BoxShape3D_27cr0")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost46E0" unique_id=578947268]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost46W1" type="StaticBody3D" parent="Holloway" unique_id=1420121464]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, -0.17499998, 44)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost46W1" unique_id=1370647922]
+shape = SubResource("BoxShape3D_iskti")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost46W1" unique_id=2016825211]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost46E1" type="StaticBody3D" parent="Holloway" unique_id=2117468244]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, -0.17499998, 44)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost46E1" unique_id=753791867]
+shape = SubResource("BoxShape3D_m0ass")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost46E1" unique_id=153173920]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost46W2" type="StaticBody3D" parent="Holloway" unique_id=2119147860]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, -0.625, 42)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost46W2" unique_id=1852572322]
+shape = SubResource("BoxShape3D_dqrny")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost46W2" unique_id=1019498750]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost46E2" type="StaticBody3D" parent="Holloway" unique_id=1679710517]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, -0.625, 42)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost46E2" unique_id=2047048067]
+shape = SubResource("BoxShape3D_5qimg")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost46E2" unique_id=125463355]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost46W3" type="StaticBody3D" parent="Holloway" unique_id=64109044]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, -1.0749999, 40)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost46W3" unique_id=1121888395]
+shape = SubResource("BoxShape3D_xcsv8")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost46W3" unique_id=1966807382]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost46E3" type="StaticBody3D" parent="Holloway" unique_id=671364248]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, -1.0749999, 40)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost46E3" unique_id=596173936]
+shape = SubResource("BoxShape3D_th6ji")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost46E3" unique_id=128340417]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost46W4" type="StaticBody3D" parent="Holloway" unique_id=1391764048]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, -1.525, 38)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost46W4" unique_id=2084178095]
+shape = SubResource("BoxShape3D_00ul2")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost46W4" unique_id=1037828597]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost46E4" type="StaticBody3D" parent="Holloway" unique_id=713697927]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, -1.525, 38)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost46E4" unique_id=199407983]
+shape = SubResource("BoxShape3D_e7ywm")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost46E4" unique_id=774835334]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost22W0" type="StaticBody3D" parent="Holloway" unique_id=2123799250]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, -1.525, 22)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost22W0" unique_id=2025588664]
+shape = SubResource("BoxShape3D_ds7fo")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost22W0" unique_id=313345273]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost22E0" type="StaticBody3D" parent="Holloway" unique_id=544414376]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, -1.525, 22)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost22E0" unique_id=1120951791]
+shape = SubResource("BoxShape3D_tjwor")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost22E0" unique_id=2000971059]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost22W1" type="StaticBody3D" parent="Holloway" unique_id=1530708948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, -1.0749999, 20)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost22W1" unique_id=381299579]
+shape = SubResource("BoxShape3D_r0o3l")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost22W1" unique_id=139175283]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost22E1" type="StaticBody3D" parent="Holloway" unique_id=1135488079]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, -1.0749999, 20)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost22E1" unique_id=697231387]
+shape = SubResource("BoxShape3D_ahwth")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost22E1" unique_id=225919787]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost22W2" type="StaticBody3D" parent="Holloway" unique_id=1892394885]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, -0.625, 18)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost22W2" unique_id=256972704]
+shape = SubResource("BoxShape3D_36xy1")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost22W2" unique_id=687445328]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost22E2" type="StaticBody3D" parent="Holloway" unique_id=1045643436]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, -0.625, 18)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost22E2" unique_id=1198630328]
+shape = SubResource("BoxShape3D_dt4fb")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost22E2" unique_id=199203292]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost22W3" type="StaticBody3D" parent="Holloway" unique_id=277496591]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, -0.17499998, 16)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost22W3" unique_id=591437067]
+shape = SubResource("BoxShape3D_40jio")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost22W3" unique_id=1174249259]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost22E3" type="StaticBody3D" parent="Holloway" unique_id=670997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, -0.17499998, 16)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost22E3" unique_id=56240369]
+shape = SubResource("BoxShape3D_mtwjx")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost22E3" unique_id=1172276646]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost22W4" type="StaticBody3D" parent="Holloway" unique_id=350709473]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 0.275, 14)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost22W4" unique_id=1934511344]
+shape = SubResource("BoxShape3D_e1512")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost22W4" unique_id=672599297]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="GuidePost22E4" type="StaticBody3D" parent="Holloway" unique_id=694246522]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 0.275, 14)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Holloway/GuidePost22E4" unique_id=869560589]
+shape = SubResource("BoxShape3D_co8nb")
+
+[node name="Kit" type="Node3D" parent="Holloway/GuidePost22E4" unique_id=1657891228]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_qt1hx")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="CampOne" type="Node3D" parent="." unique_id=1012487466 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 64)
 script = ExtResource("5_53adm")
 kinds = Array[int]([0, 0, 0])
 persist_id = &"camp_bramble"
 
-[node name="CampTwo" type="Node3D" parent="." unique_id=1723241156 groups=["landblock_entities"]]
+[node name="CampTwo" type="Node3D" parent="." unique_id=661259992 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -1.8, 26)
 script = ExtResource("5_53adm")
 camp_name = "Rush-Light Hush-Crack"
 kinds = Array[int]([1, 1, 0, 1])
 persist_id = &"camp_holloway"
 
-[node name="WaterShrine" type="Node3D" parent="." unique_id=1822864888 groups=["landblock_entities"]]
+[node name="WaterShrine" type="Node3D" parent="." unique_id=1559332657 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.7, -1.8, 35.5)
 script = ExtResource("6_qa3qu")
 persist_id = &"shrine_water"
 
-[node name="WindLanterns" type="Node3D" parent="." unique_id=2084743025]
+[node name="WindLanterns" type="Node3D" parent="." unique_id=1124561820]
 
-[node name="WindLantern1" type="Node3D" parent="WindLanterns" unique_id=868890026]
+[node name="WindLantern1" type="Node3D" parent="WindLanterns" unique_id=1467357022]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7, 3.3, 41)
 script = ExtResource("7_x3mag")
 
-[node name="WindLantern2" type="Node3D" parent="WindLanterns" unique_id=580356582]
+[node name="WindLantern2" type="Node3D" parent="WindLanterns" unique_id=535720865]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7, 3.3, 34)
 script = ExtResource("7_x3mag")
 
-[node name="WindLantern3" type="Node3D" parent="WindLanterns" unique_id=614438780]
+[node name="WindLantern3" type="Node3D" parent="WindLanterns" unique_id=2013214177]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7, 3.3, 28.5)
 script = ExtResource("7_x3mag")
 
-[node name="WindLantern4" type="Node3D" parent="WindLanterns" unique_id=545279055]
+[node name="WindLantern4" type="Node3D" parent="WindLanterns" unique_id=153247422]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7, 3.3, 23.5)
 script = ExtResource("7_x3mag")
 
-[node name="CampChimePost" type="Node3D" parent="." unique_id=911916263]
+[node name="CampChimePost" type="Node3D" parent="." unique_id=751784913]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0, 69)
 script = ExtResource("8_oi12c")
 place = "Moss-Oak-Hollow"
 
-[node name="HollowChimePost" type="Node3D" parent="." unique_id=1736342813]
+[node name="HollowChimePost" type="Node3D" parent="." unique_id=1924728007]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.6, 0, 48.5)
 script = ExtResource("8_oi12c")
 place = "Rush-Light-Hollow"
 
-[node name="WayfarerChestSpot" type="Marker3D" parent="." unique_id=422392464 groups=["landblock_entities"]]
+[node name="WayfarerChestSpot" type="Marker3D" parent="." unique_id=727772758 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.5, 0, 53)

@@ -20,3 +20,13 @@ enum SuccessionState { ZONE_HUSHED = 0, ZONE_RECLAIMED = 1, ZONE_WEATHERING_EVEN
 @export var weathering_frost_or_fog_intensity: float = 0.0
 ## The motes drifting over the place: slate hush-motes, golden pollen, or driving fret.
 @export var mote_color: Color = Color(0.62, 0.68, 0.74, 0.7)
+
+@export_group("The First-Quiet's blight (18 §5)")
+## Inside a hush, the warm colour drains by this much toward the ashen slate-indigo.
+@export var blight_desaturation: float = 0.85
+@export var blight_ashen_albedo: Color = Color(0.282, 0.314, 0.369)  ## #48505E
+## The pale crystalline hoar-rime veins round the hush's rim.
+@export var blight_rime_vein_color: Color = Color(0.72, 0.82, 0.88)
+## The Frozen Wind: plants inside a hush sway this much of the world wind, and grass is pressed to this much of its height.
+@export var frozen_wind_multiplier: float = 0.05
+@export var pressed_grass_height: float = 0.55

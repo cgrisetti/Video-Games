@@ -47,6 +47,8 @@ var _trickle: AudioStreamPlayer3D
 
 
 func _ready() -> void:
+	# A glyph on the Wayfarer's map (CartographyBaker.GLYPH_GROUP, 18 GDD §7.2).
+	add_to_group(&"map_glyphs")
 	# Standing by the spring lifts the Holloway's hush into a harp oasis (16 GDD §4.3).
 	add_to_group(AudioDirector.OASIS_GROUP)
 	_trickle = AudioDirector.attach_ambience(self, &"water_trickle", Vector3(0.0, BASIN_HEIGHT, 0.0))

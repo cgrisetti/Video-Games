@@ -35,6 +35,8 @@ var _fade_left: float = 0.0
 
 
 func _ready() -> void:
+	# A glyph on the Wayfarer's map (CartographyBaker.GLYPH_GROUP, 18 GDD §7.2).
+	add_to_group(&"map_glyphs")
 	reach = 5.0
 	_build()
 	_refresh(true)

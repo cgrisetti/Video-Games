@@ -106,6 +106,9 @@ func _check_linter() -> void:
 		shown.append(kit.display_name)
 	for state: int in 3:
 		shown.append(WorldVisualCatalog.succession(state).display_name)
+	# The Wayfarer's map places (18 GDD §7).
+	for place: WorldMapZoneResource in WorldVisualCatalog.map_zones():
+		shown.append_array([place.display_name, place.cooper_sign_title])
 	var vale: OakshireVale = tree.current_scene as OakshireVale
 	if vale != null:
 		for npc: TownsfolkNPC in vale.townsfolk:
@@ -131,6 +134,8 @@ func _check_linter() -> void:
 	places.append_array(LandblockManifest.ZONE_NAMES)
 	for look: ZoneBiomeResource in WorldVisualCatalog.biomes():
 		places.append(look.display_name)
+	for place: WorldMapZoneResource in WorldVisualCatalog.map_zones():
+		places.append(place.display_name)
 	for card: ScribeCardResource in catalog.cards():
 		if card.card_kind == ScribeCardResource.CardKind.LOCATION_PLACE:
 			places.append(card.display_name)

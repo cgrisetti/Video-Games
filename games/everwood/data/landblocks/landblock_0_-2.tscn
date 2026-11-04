@@ -18,6 +18,7 @@ shader_parameter/craft_layer = 5.0
 shader_parameter/triplanar_scale = 0.25
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -27,6 +28,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -55,6 +57,7 @@ shader_parameter/craft_layer = 7.0
 shader_parameter/triplanar_scale = 0.2
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -64,6 +67,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -98,7 +102,7 @@ size = Vector3(1, 1.2, 13)
 [sub_resource type="BoxShape3D" id="BoxShape3D_x1xsn"]
 size = Vector3(0.25, 1.1, 13.05)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_wllw8"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_r8ptr"]
 render_priority = 0
 shader = ExtResource("1_j2ena")
 shader_parameter/albedo = Color(0.4, 0.28, 0.17, 1)
@@ -106,6 +110,7 @@ shader_parameter/craft_layer = 3.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -115,6 +120,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -122,14 +128,14 @@ shader_parameter/metal = null
 shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_btbgk"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.25, 1.1, 13.05)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_mbjb5"]
 size = Vector3(0.25, 1.1, 13.05)
 
 [sub_resource type="BoxMesh" id="BoxMesh_i8li2"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.25, 1.1, 13.05)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0qui3"]
@@ -157,14 +163,14 @@ size = Vector3(1, 1.2, 13)
 size = Vector3(0.25, 1.1, 13.05)
 
 [sub_resource type="BoxMesh" id="BoxMesh_bg5vg"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.25, 1.1, 13.05)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_psb0j"]
 size = Vector3(0.25, 1.1, 13.05)
 
 [sub_resource type="BoxMesh" id="BoxMesh_osrdm"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.25, 1.1, 13.05)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wm7ti"]
@@ -178,123 +184,123 @@ size = Vector3(1, 1.2, 14)
 size = Vector3(6, 0.4, 18)
 
 [sub_resource type="BoxMesh" id="BoxMesh_bnqta"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(6, 0.4, 18)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_8clt7"]
 size = Vector3(3.6, 0.4, 6)
 
 [sub_resource type="BoxMesh" id="BoxMesh_yuhij"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(3.6, 0.4, 6)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_rgq6j"]
 size = Vector3(0.2, 1.1, 9.2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_8elxa"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.2, 1.1, 9.2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_g77au"]
 size = Vector3(0.2, 1.1, 3.2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_86e3a"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.2, 1.1, 3.2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_jqn8q"]
 size = Vector3(0.2, 1.1, 6.2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_eafow"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.2, 1.1, 6.2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_7agcj"]
 size = Vector3(0.2, 1.1, 3.7)
 
 [sub_resource type="BoxMesh" id="BoxMesh_qpv1j"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.2, 1.1, 3.7)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_los6w"]
 size = Vector3(0.2, 1.1, 3.7)
 
 [sub_resource type="BoxMesh" id="BoxMesh_chc2f"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.2, 1.1, 3.7)
 
 [sub_resource type="BoxMesh" id="BoxMesh_jrnjm"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.5, 24, 0.5)
 
 [sub_resource type="BoxMesh" id="BoxMesh_e4mhk"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.5, 24, 0.5)
 
 [sub_resource type="BoxMesh" id="BoxMesh_1yrx3"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.5, 24, 0.5)
 
 [sub_resource type="BoxMesh" id="BoxMesh_y2wbn"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.3, 0.3, 16.2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_vowwp"]
 size = Vector3(3.6, 0.4, 6)
 
 [sub_resource type="BoxMesh" id="BoxMesh_2e8px"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(3.6, 0.4, 6)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_mpyy4"]
 size = Vector3(0.2, 1.1, 9.2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_s84qr"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.2, 1.1, 9.2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_fwmdq"]
 size = Vector3(0.2, 1.1, 3.2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_jmlsi"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.2, 1.1, 3.2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_8twgo"]
 size = Vector3(0.2, 1.1, 6.2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_gg3iy"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.2, 1.1, 6.2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_lwmon"]
 size = Vector3(0.2, 1.1, 3.7)
 
 [sub_resource type="BoxMesh" id="BoxMesh_yv641"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.2, 1.1, 3.7)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_qkbwd"]
 size = Vector3(0.2, 1.1, 3.7)
 
 [sub_resource type="BoxMesh" id="BoxMesh_jc2co"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.2, 1.1, 3.7)
 
 [sub_resource type="BoxMesh" id="BoxMesh_pvw82"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.5, 24, 0.5)
 
 [sub_resource type="BoxMesh" id="BoxMesh_us4r5"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.5, 24, 0.5)
 
 [sub_resource type="BoxMesh" id="BoxMesh_kpj85"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.5, 24, 0.5)
 
 [sub_resource type="BoxMesh" id="BoxMesh_i6uwj"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(0.3, 0.3, 16.2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_f7oc5"]
@@ -305,7 +311,7 @@ size = Vector3(7, 24, 2)
 material = SubResource("ShaderMaterial_if3uk")
 size = Vector3(7, 24, 2)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_tqth3"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_q4wwf"]
 render_priority = 0
 shader = ExtResource("1_j2ena")
 shader_parameter/albedo = Color(0.42, 0.39, 0.35, 1)
@@ -313,6 +319,7 @@ shader_parameter/craft_layer = 0.0
 shader_parameter/triplanar_scale = 0.3333333333333333
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -322,6 +329,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -329,22 +337,22 @@ shader_parameter/metal = null
 shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_ohpvw"]
-material = SubResource("ShaderMaterial_tqth3")
+material = SubResource("ShaderMaterial_q4wwf")
 size = Vector3(32, 24, 0.6)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ygtef"]
-material = SubResource("ShaderMaterial_tqth3")
+material = SubResource("ShaderMaterial_q4wwf")
 size = Vector3(32, 24, 0.6)
 
 [sub_resource type="BoxMesh" id="BoxMesh_2fo1b"]
-material = SubResource("ShaderMaterial_tqth3")
+material = SubResource("ShaderMaterial_q4wwf")
 size = Vector3(0.6, 32, 18)
 
 [sub_resource type="BoxMesh" id="BoxMesh_tud2j"]
-material = SubResource("ShaderMaterial_tqth3")
+material = SubResource("ShaderMaterial_q4wwf")
 size = Vector3(0.6, 32, 18)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_sojup"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tqbdl"]
 render_priority = 0
 shader = ExtResource("2_rdovp")
 shader_parameter/shallow_color = Color(0.32156864, 0.72156864, 0.69803923, 0.72)
@@ -357,7 +365,7 @@ shader_parameter/waterfall = true
 shader_parameter/fixed_depth = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_hga7m"]
-material = SubResource("ShaderMaterial_sojup")
+material = SubResource("ShaderMaterial_tqbdl")
 size = Vector3(5, 26, 0.5)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mryed"]
@@ -383,7 +391,7 @@ size = Vector3(3.6, 7, 4)
 material = SubResource("ShaderMaterial_if3uk")
 size = Vector3(3.6, 7, 4)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_8hhiy"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5f4d8"]
 render_priority = 0
 shader = ExtResource("1_j2ena")
 shader_parameter/albedo = Color(0.43, 0.49, 0.55, 1)
@@ -391,6 +399,7 @@ shader_parameter/craft_layer = 4.0
 shader_parameter/triplanar_scale = 0.4166666666666667
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.2
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -400,6 +409,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -407,13 +417,13 @@ shader_parameter/metal = null
 shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_vy344"]
-material = SubResource("ShaderMaterial_8hhiy")
+material = SubResource("ShaderMaterial_5f4d8")
 top_radius = 0.0
 bottom_radius = 2.2319999
 height = 4.2
 radial_segments = 8
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_e2aev"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ndh5i"]
 render_priority = 0
 shader = ExtResource("1_j2ena")
 shader_parameter/albedo = Color(0.21960784, 0.6392157, 0.81960785, 1)
@@ -421,6 +431,7 @@ shader_parameter/craft_layer = -1.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -430,6 +441,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = 0.0
 shader_parameter/rim_power = null
 shader_parameter/glow = Color(0.21960784, 0.6392157, 0.81960785, 1)
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -437,14 +449,14 @@ shader_parameter/metal = null
 shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_3p06x"]
-material = SubResource("ShaderMaterial_e2aev")
+material = SubResource("ShaderMaterial_ndh5i")
 top_radius = 0.0
 bottom_radius = 0.12
 height = 0.8
 radial_segments = 6
 
 [sub_resource type="BoxMesh" id="BoxMesh_fw35t"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(4.2, 0.5, 4.6)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_icilf"]
@@ -462,21 +474,21 @@ material = SubResource("ShaderMaterial_if3uk")
 size = Vector3(3.6, 7, 4)
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_6pa8d"]
-material = SubResource("ShaderMaterial_8hhiy")
+material = SubResource("ShaderMaterial_5f4d8")
 top_radius = 0.0
 bottom_radius = 2.2319999
 height = 4.2
 radial_segments = 8
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_uqlbl"]
-material = SubResource("ShaderMaterial_e2aev")
+material = SubResource("ShaderMaterial_ndh5i")
 top_radius = 0.0
 bottom_radius = 0.12
 height = 0.8
 radial_segments = 6
 
 [sub_resource type="BoxMesh" id="BoxMesh_wbniy"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(4.2, 0.5, 4.6)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_vg77g"]
@@ -487,380 +499,380 @@ material = SubResource("ShaderMaterial_if3uk")
 size = Vector3(1.2, 4.5, 11.2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_4gckh"]
-material = SubResource("ShaderMaterial_wllw8")
+material = SubResource("ShaderMaterial_r8ptr")
 size = Vector3(5.4, 0.6, 0.9)
 
-[node name="Landblock_0_-2" type="Node3D" unique_id=1613750736]
+[node name="Landblock_0_-2" type="Node3D" unique_id=878613076]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, 3, -150)
 metadata/chunk = Vector2i(0, -2)
 
-[node name="Gorge" type="Node3D" parent="." unique_id=499948622]
+[node name="Gorge" type="Node3D" parent="." unique_id=1565821895]
 
-[node name="SouthCliff" type="StaticBody3D" parent="Gorge" unique_id=499872779]
+[node name="SouthCliff" type="StaticBody3D" parent="Gorge" unique_id=148199440]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 10)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthCliff" unique_id=35015619]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthCliff" unique_id=1549435519]
 shape = SubResource("BoxShape3D_mow04")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthCliff" unique_id=1171772919]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthCliff" unique_id=1808517776]
 mesh = SubResource("BoxMesh_jeu7f")
 
-[node name="NorthCliff" type="StaticBody3D" parent="Gorge" unique_id=1482555083]
+[node name="NorthCliff" type="StaticBody3D" parent="Gorge" unique_id=621749783]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -18)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthCliff" unique_id=841361407]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthCliff" unique_id=1979749311]
 shape = SubResource("BoxShape3D_4fl6f")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthCliff" unique_id=964932166]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthCliff" unique_id=1622655754]
 mesh = SubResource("BoxMesh_5gs8a")
 
-[node name="SouthWallWest" type="StaticBody3D" parent="Gorge" unique_id=785166299]
+[node name="SouthWallWest" type="StaticBody3D" parent="Gorge" unique_id=177398898]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -12, 0.6, 14)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthWallWest" unique_id=905604544]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthWallWest" unique_id=835935174]
 shape = SubResource("BoxShape3D_1kl88")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthWallWest" unique_id=1059984524]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthWallWest" unique_id=1199430801]
 mesh = SubResource("BoxMesh_lutrl")
 
-[node name="SouthWallEast" type="StaticBody3D" parent="Gorge" unique_id=1201903051]
+[node name="SouthWallEast" type="StaticBody3D" parent="Gorge" unique_id=35627917]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 12, 0.6, 14)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthWallEast" unique_id=1818955419]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthWallEast" unique_id=1991206641]
 shape = SubResource("BoxShape3D_8o0yw")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthWallEast" unique_id=1952342960]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthWallEast" unique_id=46674084]
 mesh = SubResource("BoxMesh_40r13")
 
-[node name="SouthSideWest" type="StaticBody3D" parent="Gorge" unique_id=569742015]
+[node name="SouthSideWest" type="StaticBody3D" parent="Gorge" unique_id=485580019]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0.6, 10)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthSideWest" unique_id=1919867857]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthSideWest" unique_id=17646539]
 shape = SubResource("BoxShape3D_7houb")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthSideWest" unique_id=2138736666]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthSideWest" unique_id=775457819]
 mesh = SubResource("BoxMesh_vstug")
 
-[node name="NorthSideWest" type="StaticBody3D" parent="Gorge" unique_id=2003151675]
+[node name="NorthSideWest" type="StaticBody3D" parent="Gorge" unique_id=1918988756]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0.6, -18)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthSideWest" unique_id=1710598646]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthSideWest" unique_id=1106156343]
 shape = SubResource("BoxShape3D_kyblb")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthSideWest" unique_id=2132613133]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthSideWest" unique_id=715801736]
 mesh = SubResource("BoxMesh_p14us")
 
-[node name="SouthEdgeWest" type="StaticBody3D" parent="Gorge" unique_id=1271783525]
+[node name="SouthEdgeWest" type="StaticBody3D" parent="Gorge" unique_id=92961013]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -9.6, 0.55, 6)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthEdgeWest" unique_id=613944284]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthEdgeWest" unique_id=2049870169]
 shape = SubResource("BoxShape3D_x1xsn")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthEdgeWest" unique_id=673044097]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthEdgeWest" unique_id=2141805425]
 mesh = SubResource("BoxMesh_btbgk")
 
-[node name="NorthEdgeWest" type="StaticBody3D" parent="Gorge" unique_id=315223984]
+[node name="NorthEdgeWest" type="StaticBody3D" parent="Gorge" unique_id=548510432]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -9.6, 0.55, -12)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthEdgeWest" unique_id=744210302]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthEdgeWest" unique_id=1421234430]
 shape = SubResource("BoxShape3D_mbjb5")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthEdgeWest" unique_id=1013147335]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthEdgeWest" unique_id=1377376115]
 mesh = SubResource("BoxMesh_i8li2")
 
-[node name="NorthEndWest" type="StaticBody3D" parent="Gorge" unique_id=856751968]
+[node name="NorthEndWest" type="StaticBody3D" parent="Gorge" unique_id=1689123168]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -9.5, 0.6, -24)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthEndWest" unique_id=846719469]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthEndWest" unique_id=924299388]
 shape = SubResource("BoxShape3D_0qui3")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthEndWest" unique_id=96839175]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthEndWest" unique_id=1076020234]
 mesh = SubResource("BoxMesh_4fchp")
 
-[node name="SouthSideEast" type="StaticBody3D" parent="Gorge" unique_id=934820254]
+[node name="SouthSideEast" type="StaticBody3D" parent="Gorge" unique_id=1478998090]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0.6, 10)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthSideEast" unique_id=524687902]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthSideEast" unique_id=755703661]
 shape = SubResource("BoxShape3D_d8i26")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthSideEast" unique_id=648293350]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthSideEast" unique_id=2024949637]
 mesh = SubResource("BoxMesh_gjfcn")
 
-[node name="NorthSideEast" type="StaticBody3D" parent="Gorge" unique_id=1690061467]
+[node name="NorthSideEast" type="StaticBody3D" parent="Gorge" unique_id=1504142844]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0.6, -18)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthSideEast" unique_id=561562692]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthSideEast" unique_id=1893459445]
 shape = SubResource("BoxShape3D_1ijxs")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthSideEast" unique_id=50447453]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthSideEast" unique_id=1048020173]
 mesh = SubResource("BoxMesh_bxesx")
 
-[node name="SouthEdgeEast" type="StaticBody3D" parent="Gorge" unique_id=1123828868]
+[node name="SouthEdgeEast" type="StaticBody3D" parent="Gorge" unique_id=1986165402]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 9.6, 0.55, 6)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthEdgeEast" unique_id=649587372]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/SouthEdgeEast" unique_id=1325512347]
 shape = SubResource("BoxShape3D_pfsha")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthEdgeEast" unique_id=848219649]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/SouthEdgeEast" unique_id=931164110]
 mesh = SubResource("BoxMesh_bg5vg")
 
-[node name="NorthEdgeEast" type="StaticBody3D" parent="Gorge" unique_id=104515381]
+[node name="NorthEdgeEast" type="StaticBody3D" parent="Gorge" unique_id=92085569]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 9.6, 0.55, -12)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthEdgeEast" unique_id=151558172]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthEdgeEast" unique_id=1844320442]
 shape = SubResource("BoxShape3D_psb0j")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthEdgeEast" unique_id=156416401]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthEdgeEast" unique_id=957965816]
 mesh = SubResource("BoxMesh_osrdm")
 
-[node name="NorthEndEast" type="StaticBody3D" parent="Gorge" unique_id=350400710]
+[node name="NorthEndEast" type="StaticBody3D" parent="Gorge" unique_id=359674258]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 9.5, 0.6, -24)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthEndEast" unique_id=2091291839]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/NorthEndEast" unique_id=1352170457]
 shape = SubResource("BoxShape3D_wm7ti")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthEndEast" unique_id=1916265593]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/NorthEndEast" unique_id=1801961339]
 mesh = SubResource("BoxMesh_p3ns6")
 
-[node name="BridgeDeck" type="StaticBody3D" parent="Gorge" unique_id=1454286515]
+[node name="BridgeDeck" type="StaticBody3D" parent="Gorge" unique_id=1153355408]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, -3)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/BridgeDeck" unique_id=779718927]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/BridgeDeck" unique_id=838365373]
 shape = SubResource("BoxShape3D_kkl5x")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/BridgeDeck" unique_id=358062061]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/BridgeDeck" unique_id=1854730866]
 mesh = SubResource("BoxMesh_bnqta")
 
-[node name="BayWest" type="StaticBody3D" parent="Gorge" unique_id=850004974]
+[node name="BayWest" type="StaticBody3D" parent="Gorge" unique_id=863997010]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.8, -0.2, -6)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/BayWest" unique_id=345492550]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/BayWest" unique_id=2094137651]
 shape = SubResource("BoxShape3D_8clt7")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayWest" unique_id=2075852619]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayWest" unique_id=253304002]
 mesh = SubResource("BoxMesh_yuhij")
 
-[node name="RailWestSouth" type="StaticBody3D" parent="Gorge" unique_id=562484306]
+[node name="RailWestSouth" type="StaticBody3D" parent="Gorge" unique_id=1388329507]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1, 0.55, 1.5)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/RailWestSouth" unique_id=803788349]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/RailWestSouth" unique_id=146240143]
 shape = SubResource("BoxShape3D_rgq6j")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/RailWestSouth" unique_id=1138375735]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/RailWestSouth" unique_id=1201257667]
 mesh = SubResource("BoxMesh_8elxa")
 
-[node name="RailWestNorth" type="StaticBody3D" parent="Gorge" unique_id=1398976503]
+[node name="RailWestNorth" type="StaticBody3D" parent="Gorge" unique_id=1243540561]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1, 0.55, -10.5)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/RailWestNorth" unique_id=62542988]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/RailWestNorth" unique_id=642972130]
 shape = SubResource("BoxShape3D_g77au")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/RailWestNorth" unique_id=837787161]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/RailWestNorth" unique_id=923192096]
 mesh = SubResource("BoxMesh_86e3a")
 
-[node name="BayRailWestOuter" type="StaticBody3D" parent="Gorge" unique_id=774097707]
+[node name="BayRailWestOuter" type="StaticBody3D" parent="Gorge" unique_id=1447172997]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.6, 0.55, -6)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailWestOuter" unique_id=243100385]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailWestOuter" unique_id=2101933044]
 shape = SubResource("BoxShape3D_jqn8q")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailWestOuter" unique_id=611146654]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailWestOuter" unique_id=1365335986]
 mesh = SubResource("BoxMesh_eafow")
 
-[node name="BayRailWestSouth" type="StaticBody3D" parent="Gorge" unique_id=899241501]
+[node name="BayRailWestSouth" type="StaticBody3D" parent="Gorge" unique_id=653252851]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -4.85, 0.55, -3)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailWestSouth" unique_id=515780427]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailWestSouth" unique_id=383255512]
 shape = SubResource("BoxShape3D_7agcj")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailWestSouth" unique_id=644433479]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailWestSouth" unique_id=1283604620]
 mesh = SubResource("BoxMesh_qpv1j")
 
-[node name="BayRailWestNorth" type="StaticBody3D" parent="Gorge" unique_id=1096819513]
+[node name="BayRailWestNorth" type="StaticBody3D" parent="Gorge" unique_id=1913618987]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -4.85, 0.55, -9)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailWestNorth" unique_id=506613925]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailWestNorth" unique_id=462048840]
 shape = SubResource("BoxShape3D_los6w")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailWestNorth" unique_id=888193182]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailWestNorth" unique_id=1837430048]
 mesh = SubResource("BoxMesh_chc2f")
 
-[node name="TrestleWest3" type="MeshInstance3D" parent="Gorge" unique_id=771785571]
+[node name="TrestleWest3" type="MeshInstance3D" parent="Gorge" unique_id=1442463706]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, -12.4, 3)
 mesh = SubResource("BoxMesh_jrnjm")
 
-[node name="TrestleWest-3" type="MeshInstance3D" parent="Gorge" unique_id=1661326585]
+[node name="TrestleWest-3" type="MeshInstance3D" parent="Gorge" unique_id=76921174]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, -12.4, -3)
 mesh = SubResource("BoxMesh_e4mhk")
 
-[node name="TrestleWest-9" type="MeshInstance3D" parent="Gorge" unique_id=1831877207]
+[node name="TrestleWest-9" type="MeshInstance3D" parent="Gorge" unique_id=276548327]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, -12.4, -9)
 mesh = SubResource("BoxMesh_1yrx3")
 
-[node name="BraceWest" type="MeshInstance3D" parent="Gorge" unique_id=797571306]
+[node name="BraceWest" type="MeshInstance3D" parent="Gorge" unique_id=1538731379]
 transform = Transform3D(1, 0, 0, 0, 0.9393727, -0.3428978, 0, 0.3428978, 0.9393727, -2.6, -4, -3)
 mesh = SubResource("BoxMesh_y2wbn")
 
-[node name="BayEast" type="StaticBody3D" parent="Gorge" unique_id=280543180]
+[node name="BayEast" type="StaticBody3D" parent="Gorge" unique_id=1390864619]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.8, -0.2, -6)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/BayEast" unique_id=224378809]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/BayEast" unique_id=7687765]
 shape = SubResource("BoxShape3D_vowwp")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayEast" unique_id=19689595]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayEast" unique_id=522220098]
 mesh = SubResource("BoxMesh_2e8px")
 
-[node name="RailEastSouth" type="StaticBody3D" parent="Gorge" unique_id=1385087277]
+[node name="RailEastSouth" type="StaticBody3D" parent="Gorge" unique_id=1347407932]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.1, 0.55, 1.5)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/RailEastSouth" unique_id=2004788896]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/RailEastSouth" unique_id=1389623395]
 shape = SubResource("BoxShape3D_mpyy4")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/RailEastSouth" unique_id=473358207]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/RailEastSouth" unique_id=1369511359]
 mesh = SubResource("BoxMesh_s84qr")
 
-[node name="RailEastNorth" type="StaticBody3D" parent="Gorge" unique_id=84708427]
+[node name="RailEastNorth" type="StaticBody3D" parent="Gorge" unique_id=489370211]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.1, 0.55, -10.5)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/RailEastNorth" unique_id=748867077]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/RailEastNorth" unique_id=2082827366]
 shape = SubResource("BoxShape3D_fwmdq")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/RailEastNorth" unique_id=1336638971]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/RailEastNorth" unique_id=141673601]
 mesh = SubResource("BoxMesh_jmlsi")
 
-[node name="BayRailEastOuter" type="StaticBody3D" parent="Gorge" unique_id=1272004538]
+[node name="BayRailEastOuter" type="StaticBody3D" parent="Gorge" unique_id=26747143]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.6, 0.55, -6)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailEastOuter" unique_id=1394575162]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailEastOuter" unique_id=1616684070]
 shape = SubResource("BoxShape3D_8twgo")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailEastOuter" unique_id=1317674690]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailEastOuter" unique_id=956871556]
 mesh = SubResource("BoxMesh_gg3iy")
 
-[node name="BayRailEastSouth" type="StaticBody3D" parent="Gorge" unique_id=2095370427]
+[node name="BayRailEastSouth" type="StaticBody3D" parent="Gorge" unique_id=485099431]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.85, 0.55, -3)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailEastSouth" unique_id=1775476078]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailEastSouth" unique_id=632339688]
 shape = SubResource("BoxShape3D_lwmon")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailEastSouth" unique_id=1229992587]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailEastSouth" unique_id=1032879867]
 mesh = SubResource("BoxMesh_yv641")
 
-[node name="BayRailEastNorth" type="StaticBody3D" parent="Gorge" unique_id=1094390052]
+[node name="BayRailEastNorth" type="StaticBody3D" parent="Gorge" unique_id=1694056949]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 4.85, 0.55, -9)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailEastNorth" unique_id=518618390]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/BayRailEastNorth" unique_id=1306804070]
 shape = SubResource("BoxShape3D_qkbwd")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailEastNorth" unique_id=864711024]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/BayRailEastNorth" unique_id=1506134910]
 mesh = SubResource("BoxMesh_jc2co")
 
-[node name="TrestleEast3" type="MeshInstance3D" parent="Gorge" unique_id=1609136266]
+[node name="TrestleEast3" type="MeshInstance3D" parent="Gorge" unique_id=739866102]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, -12.4, 3)
 mesh = SubResource("BoxMesh_pvw82")
 
-[node name="TrestleEast-3" type="MeshInstance3D" parent="Gorge" unique_id=2134010132]
+[node name="TrestleEast-3" type="MeshInstance3D" parent="Gorge" unique_id=509615509]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, -12.4, -3)
 mesh = SubResource("BoxMesh_us4r5")
 
-[node name="TrestleEast-9" type="MeshInstance3D" parent="Gorge" unique_id=828024470]
+[node name="TrestleEast-9" type="MeshInstance3D" parent="Gorge" unique_id=810244576]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, -12.4, -9)
 mesh = SubResource("BoxMesh_kpj85")
 
-[node name="BraceEast" type="MeshInstance3D" parent="Gorge" unique_id=367224739]
+[node name="BraceEast" type="MeshInstance3D" parent="Gorge" unique_id=1986381003]
 transform = Transform3D(1, 0, 0, 0, 0.9393727, -0.3428978, 0, 0.3428978, 0.9393727, 2.6, -4, -3)
 mesh = SubResource("BoxMesh_i6uwj")
 
-[node name="Pier6" type="MeshInstance3D" parent="Gorge" unique_id=729395838]
+[node name="Pier6" type="MeshInstance3D" parent="Gorge" unique_id=302036429]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12.4, 6)
 mesh = SubResource("BoxMesh_f7oc5")
 
-[node name="Pier-12" type="MeshInstance3D" parent="Gorge" unique_id=1923736019]
+[node name="Pier-12" type="MeshInstance3D" parent="Gorge" unique_id=27174372]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12.4, -12)
 mesh = SubResource("BoxMesh_40fns")
 
-[node name="FaceSouth" type="MeshInstance3D" parent="Gorge" unique_id=1477787066]
+[node name="FaceSouth" type="MeshInstance3D" parent="Gorge" unique_id=1310076705]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12, 5.7)
 mesh = SubResource("BoxMesh_ohpvw")
 
-[node name="FaceNorth" type="MeshInstance3D" parent="Gorge" unique_id=1998211478]
+[node name="FaceNorth" type="MeshInstance3D" parent="Gorge" unique_id=493697719]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12, -11.7)
 mesh = SubResource("BoxMesh_ygtef")
 
-[node name="FaceWest" type="MeshInstance3D" parent="Gorge" unique_id=63384297]
+[node name="FaceWest" type="MeshInstance3D" parent="Gorge" unique_id=372878880]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.3, -8, -3)
 mesh = SubResource("BoxMesh_2fo1b")
 
-[node name="FaceEast" type="MeshInstance3D" parent="Gorge" unique_id=1736398152]
+[node name="FaceEast" type="MeshInstance3D" parent="Gorge" unique_id=391417832]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.3, -8, -3)
 mesh = SubResource("BoxMesh_tud2j")
 
-[node name="Waterfall" type="MeshInstance3D" parent="Gorge" unique_id=20117021]
+[node name="Waterfall" type="MeshInstance3D" parent="Gorge" unique_id=558238720]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, -9, -3)
 cast_shadow = 0
 mesh = SubResource("BoxMesh_hga7m")
 
-[node name="TrestleDressing" type="Node3D" parent="Gorge" unique_id=1555922841]
+[node name="TrestleDressing" type="Node3D" parent="Gorge" unique_id=202609672]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
 script = ExtResource("3_s14cx")
 kit_id = &"kit_bridge_carpathian_trestle"
 size = Vector3(6, 24, 18)
 
-[node name="BridgeChimePost" type="Node3D" parent="Gorge" unique_id=1498506530]
+[node name="BridgeChimePost" type="Node3D" parent="Gorge" unique_id=1727429908]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 9.5)
 script = ExtResource("4_bu88h")
 place = "Dover-Slap-Bridge"
 
-[node name="FallMist" type="CPUParticles3D" parent="Gorge" unique_id=1902223769]
+[node name="FallMist" type="CPUParticles3D" parent="Gorge" unique_id=563027125]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, -19.4, -2)
 amount = 24
 lifetime = 3.0
@@ -874,7 +886,7 @@ initial_velocity_min = 0.3
 initial_velocity_max = 0.9
 scale_amount_max = 2.2
 
-[node name="FallSpray" type="CPUParticles3D" parent="Gorge" unique_id=928094392]
+[node name="FallSpray" type="CPUParticles3D" parent="Gorge" unique_id=391274353]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.5, 2.6999998, -2.2)
 amount = 24
 lifetime = 3.0
@@ -888,11 +900,11 @@ initial_velocity_min = 0.3
 initial_velocity_max = 0.9
 scale_amount_max = 2.2
 
-[node name="PaperMillWheel" type="Node3D" parent="Gorge" unique_id=1365873984]
+[node name="PaperMillWheel" type="Node3D" parent="Gorge" unique_id=203159030]
 transform = Transform3D(-6.556708e-08, -1.5, 0, 1.5, -6.556708e-08, 0, 0, 0, 1.5, -10.5, -2.6, -3)
 script = ExtResource("5_j8jfg")
 
-[node name="MillHouse" type="Node3D" parent="Gorge" unique_id=1701683092]
+[node name="MillHouse" type="Node3D" parent="Gorge" unique_id=1228716390]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, -4.6, -3)
 script = ExtResource("3_s14cx")
 kit_id = &"kit_house_stepped_gable"
@@ -900,81 +912,81 @@ size = Vector3(4, 4.2, 5)
 tint = Color(0.7, 0.62, 0.5, 1)
 accent = Color(0.43, 0.49, 0.55, 1)
 
-[node name="MillRace" type="Node3D" parent="Gorge" unique_id=509955934]
+[node name="MillRace" type="Node3D" parent="Gorge" unique_id=1420716790]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -10.5, -2.6, -3)
 script = ExtResource("3_s14cx")
 kit_id = &"kit_watermill_wheel"
 height = 3.3000000000000003
 
-[node name="TowerWest" type="StaticBody3D" parent="Gorge" unique_id=1215838425]
+[node name="TowerWest" type="StaticBody3D" parent="Gorge" unique_id=1970003886]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.2, 3.5, -16)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/TowerWest" unique_id=946830785]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/TowerWest" unique_id=1102677926]
 shape = SubResource("BoxShape3D_w6etq")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/TowerWest" unique_id=2091193644]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/TowerWest" unique_id=1621661192]
 mesh = SubResource("BoxMesh_lp674")
 
-[node name="Turret" type="MeshInstance3D" parent="Gorge/TowerWest" unique_id=908469357]
+[node name="Turret" type="MeshInstance3D" parent="Gorge/TowerWest" unique_id=649850300]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.1, 0)
 mesh = SubResource("CylinderMesh_vy344")
 
-[node name="Finial" type="MeshInstance3D" parent="Gorge/TowerWest" unique_id=892139923]
+[node name="Finial" type="MeshInstance3D" parent="Gorge/TowerWest" unique_id=48552895]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.5, 0)
 mesh = SubResource("CylinderMesh_3p06x")
 
-[node name="Gallery" type="MeshInstance3D" parent="Gorge/TowerWest" unique_id=652860139]
+[node name="Gallery" type="MeshInstance3D" parent="Gorge/TowerWest" unique_id=1336401172]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
 mesh = SubResource("BoxMesh_fw35t")
 
-[node name="GateWallWest" type="StaticBody3D" parent="Gorge" unique_id=1624339791]
+[node name="GateWallWest" type="StaticBody3D" parent="Gorge" unique_id=373625282]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -11, 2.25, -16)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/GateWallWest" unique_id=1565780759]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/GateWallWest" unique_id=1620176616]
 shape = SubResource("BoxShape3D_icilf")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/GateWallWest" unique_id=922027588]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/GateWallWest" unique_id=2053261352]
 mesh = SubResource("BoxMesh_hm375")
 
-[node name="TowerEast" type="StaticBody3D" parent="Gorge" unique_id=675379804]
+[node name="TowerEast" type="StaticBody3D" parent="Gorge" unique_id=1041730342]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.2, 3.5, -16)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/TowerEast" unique_id=1055599310]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/TowerEast" unique_id=1952921502]
 shape = SubResource("BoxShape3D_rbj8m")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/TowerEast" unique_id=747513019]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/TowerEast" unique_id=922672273]
 mesh = SubResource("BoxMesh_kim7q")
 
-[node name="Turret" type="MeshInstance3D" parent="Gorge/TowerEast" unique_id=1878573035]
+[node name="Turret" type="MeshInstance3D" parent="Gorge/TowerEast" unique_id=483719737]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.1, 0)
 mesh = SubResource("CylinderMesh_6pa8d")
 
-[node name="Finial" type="MeshInstance3D" parent="Gorge/TowerEast" unique_id=1191152889]
+[node name="Finial" type="MeshInstance3D" parent="Gorge/TowerEast" unique_id=1380464200]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.5, 0)
 mesh = SubResource("CylinderMesh_uqlbl")
 
-[node name="Gallery" type="MeshInstance3D" parent="Gorge/TowerEast" unique_id=831365467]
+[node name="Gallery" type="MeshInstance3D" parent="Gorge/TowerEast" unique_id=1109357412]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
 mesh = SubResource("BoxMesh_wbniy")
 
-[node name="GateWallEast" type="StaticBody3D" parent="Gorge" unique_id=1759450000]
+[node name="GateWallEast" type="StaticBody3D" parent="Gorge" unique_id=699429807]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 11, 2.25, -16)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Gorge/GateWallEast" unique_id=214107826]
+[node name="Collision" type="CollisionShape3D" parent="Gorge/GateWallEast" unique_id=1029151457]
 shape = SubResource("BoxShape3D_vg77g")
 
-[node name="Mesh" type="MeshInstance3D" parent="Gorge/GateWallEast" unique_id=66777420]
+[node name="Mesh" type="MeshInstance3D" parent="Gorge/GateWallEast" unique_id=274189177]
 mesh = SubResource("BoxMesh_diwe1")
 
-[node name="GateLintel" type="MeshInstance3D" parent="Gorge" unique_id=1210975402]
+[node name="GateLintel" type="MeshInstance3D" parent="Gorge" unique_id=1619074037]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.7, -16)
 mesh = SubResource("BoxMesh_4gckh")
 
-[node name="GateSign" type="Label3D" parent="Gorge" unique_id=2117609914]
+[node name="GateSign" type="Label3D" parent="Gorge" unique_id=1370934786]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.5, -15.4)
 pixel_size = 0.01
 modulate = Color(1, 0.92, 0.75, 1)
@@ -982,7 +994,7 @@ text = "Dover-Slap Gatehouse"
 font_size = 52
 outline_size = 10
 
-[node name="CoopGate" type="Node3D" parent="." unique_id=1715495733 groups=["landblock_entities"]]
+[node name="CoopGate" type="Node3D" parent="." unique_id=1770515089 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -16)
 script = ExtResource("6_0rnub")
 persist_id = &"gate_sinaya"

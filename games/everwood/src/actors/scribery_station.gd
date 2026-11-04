@@ -60,6 +60,8 @@ var _wheel: Node3D
 
 
 func _ready() -> void:
+	# A glyph on the Wayfarer's map (CartographyBaker.GLYPH_GROUP, 18 GDD §7.2).
+	add_to_group(&"map_glyphs")
 	reach = 3.4
 	var oak: Material = StorybookMaterial.make(OAK_COLOR)
 	var timber: Material = StorybookMaterial.make(TIMBER_COLOR)

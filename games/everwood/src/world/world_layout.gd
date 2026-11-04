@@ -10,6 +10,9 @@
 class_name WorldLayout
 extends RefCounted
 
+## What a spot shows on the Wayfarer's map (18 GDD §7.1).
+enum MapFeature { GROUND, ROAD, WATER }
+
 
 ## The id a world's grid manager names its layout by (WorldGridConfig.use_layout).
 func layout_id() -> StringName:
@@ -23,6 +26,23 @@ func bounds_min() -> Vector2i:
 
 func bounds_max() -> Vector2i:
 	return Vector2i.ZERO
+
+
+## The world rectangle the Wayfarer's map shows (x, z): the whole bounded world by default.
+func map_rect() -> Rect2:
+	var low: Vector3 = WorldGridConfig.chunk_to_world_origin(bounds_min())
+	var high: Vector3 = WorldGridConfig.chunk_to_world_origin(bounds_max() + Vector2i.ONE)
+	return Rect2(low.x, low.z, high.x - low.x, high.z - low.z)
+
+
+## What the map shows at (x, z), whose height is `height` (MapFeature).
+func map_feature(_world_x: float, _world_z: float, _height: float) -> int:
+	return MapFeature.GROUND
+
+
+## The footprints and Hush-Cracks the world's level builder listed for the map, or "".
+func cartography_path() -> String:
+	return ""
 
 
 ## The ground's height at world (x, z): continuous everywhere, so chunks meet without seams.

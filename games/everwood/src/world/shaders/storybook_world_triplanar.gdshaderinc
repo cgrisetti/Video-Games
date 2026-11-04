@@ -1,6 +1,7 @@
 // The body of the world triplanar shader (storybook_world_triplanar.gdshader and
 // its two-sided twin, storybook_world_triplanar_double.gdshader).
 
+#define STORYBOOK_CLOUD_POS v_world_pos
 #include "res://src/world/shaders/storybook_world_common.gdshaderinc"
 
 uniform vec4 albedo : source_color = vec4(1.0);
@@ -25,13 +26,19 @@ uniform vec4 rim_color : source_color = vec4(1.0, 0.92, 0.78, 1.0);
 uniform float rim_strength : hint_range(0.0, 3.0) = 0.18;
 uniform float rim_power : hint_range(0.5, 8.0) = 3.0;
 uniform vec4 glow : source_color = vec4(0.0, 0.0, 0.0, 1.0);
+// Multiply by the mesh's vertex colour (a sculpted mesh's baked contact shade: a
+// megalith's or a skirt's darker foot, a cornice's shadowed underside, 18 GDD §4.3).
+uniform bool vertex_shade = false;
 
 varying vec3 v_world_pos;
 varying vec3 v_world_normal;
 varying vec3 v_tex_pos;
 varying vec3 v_tex_normal;
+varying vec3 v_shade;
 
 void vertex() {
+	// Vertex colours are authored in sRGB, like the rest of the palette.
+	v_shade = vertex_shade ? pow(COLOR.rgb, vec3(2.2)) : vec3(1.0);
 	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	v_tex_pos = use_object_space ? VERTEX : v_world_pos;
@@ -42,7 +49,7 @@ void fragment() {
 	if (sightline_fade && sightline_blocked(v_world_pos, CAMERA_POSITION_WORLD, FRAGCOORD.xy)) {
 		discard;
 	}
-	vec3 color = albedo.rgb;
+	vec3 color = albedo.rgb * v_shade;
 	vec3 n = normalize(v_world_normal);
 	if (craft_layer >= 0.0 && atelier_ready > 0.5) {
 		vec3 tex_n = normalize(v_tex_normal);

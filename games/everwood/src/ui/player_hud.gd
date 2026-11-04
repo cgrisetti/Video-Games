@@ -66,6 +66,11 @@ var _rhyme_label: Label
 var _rhyme_left: float = 0.0
 ## The Nursery Rhyme Diagnostic Ribbon's Sign badges (14 GDD §8): one per Sign that cracks the spot now.
 var _rhyme_badges: HBoxContainer
+## The Wayfarer's minimap, top-right (18 GDD §7.2).
+var minimap: WayfarerMinimapWidget
+## The place pinned on the Atlas (x, z), and the firefly trail leading there (18 GDD §7.3).
+var pinned_target_xz: Vector2 = Vector2.INF
+var trail_guide: WayfarerTrailGuideFX
 
 
 func setup(target_actor: ActorBase) -> void:
@@ -125,6 +130,10 @@ func _ready() -> void:
 	cross_grimoire.setup(actor)
 	add_child(cross_grimoire)
 
+	minimap = WayfarerMinimapWidget.new()
+	minimap.setup(actor, _level())
+	add_child(minimap)
+
 	# "FLOW" pops up mid-screen when a buffered follow-up skips the recovery.
 	_flow_label = _label(30)
 	_flow_label.anchor_left = 0.5
@@ -170,12 +179,14 @@ func _ready() -> void:
 		actor.action_queue.flow_link_pulsed.connect(_on_flow_link_pulsed)
 		if actor.input != null:
 			actor.input.binder_requested.connect(toggle_binder)
+			actor.input.atlas_requested.connect(toggle_atlas)
 	add_to_group(GROUP)
 	CombatDirector.current.glimmer_opened.connect(_on_glimmer_opened)
 	CombatDirector.current.bravery_countered.connect(_on_bravery_countered)
 
 
 func _exit_tree() -> void:
+	clear_pin()
 	var director: CombatDirector = CombatDirector.current
 	if director != null and director.glimmer_opened.is_connected(_on_glimmer_opened):
 		director.glimmer_opened.disconnect(_on_glimmer_opened)
@@ -254,6 +265,75 @@ func open_binder() -> bool:
 	_menu = binder
 	add_child(binder)
 	return true
+
+
+## The Wayfarer's Atlas: a tap of M / R3 opens it out of combat and closes it
+## again; inside the Grimoire Binder it turns to the Binder's "Atlas Map" tab.
+func toggle_atlas() -> void:
+	if binder_panel() != null:
+		binder_panel().toggle_atlas_tab()
+	elif atlas_panel() != null:
+		atlas_panel().close()
+	else:
+		open_atlas()
+
+
+## Opens the Atlas over this player's view (never mid-fight). Returns whether it opened.
+func open_atlas() -> bool:
+	if _live_menu() != null or actor == null:
+		return false
+	if actor.sign_flow != null and actor.sign_flow.is_in_combat:
+		AudioCues.play(&"refuse")
+		show_banner("NOT MID-FIGHT", "The Atlas unrolls once the fight is over.", Color(1.0, 0.6, 0.45), 1.5)
+		return false
+	var atlas: CartographyAtlasPanel = CartographyAtlasPanel.new()
+	atlas.setup(actor, _level(), self)
+	_menu = atlas
+	add_child(atlas)
+	return true
+
+
+func atlas_panel() -> CartographyAtlasPanel:
+	return _live_menu() as CartographyAtlasPanel
+
+
+## Pins a place (x, z): a firefly trail leads this hero there, until they arrive.
+func set_pin(target_xz: Vector2) -> void:
+	clear_pin()
+	pinned_target_xz = target_xz
+	if actor == null or not actor.is_inside_tree():
+		return
+	trail_guide = WayfarerTrailGuideFX.new()
+	trail_guide.setup(actor, target_xz, WayfarerMinimapWidget.SEAT_COLORS[clampi(actor.party_slot, 0, WayfarerMinimapWidget.SEAT_COLORS.size() - 1)])
+	trail_guide.arrived.connect(_on_trail_arrived)
+	var holder: Node = CombatDirector.current.effects_root if is_instance_valid(CombatDirector.current.effects_root) else actor.get_parent()
+	holder.add_child(trail_guide)
+
+
+func clear_pin() -> void:
+	pinned_target_xz = Vector2.INF
+	if is_instance_valid(trail_guide):
+		trail_guide.queue_free()
+	trail_guide = null
+
+
+func has_pin() -> bool:
+	return pinned_target_xz.is_finite()
+
+
+func _on_trail_arrived() -> void:
+	pinned_target_xz = Vector2.INF
+	trail_guide = null
+	show_banner("ARRIVED", "The fireflies settle: you're there.", WayfarerMinimapWidget.SAFFRON_GOLD, 1.5)
+
+
+func _level() -> LevelBase:
+	var at: Node = get_parent()
+	while at != null:
+		if at is LevelBase:
+			return at as LevelBase
+		at = at.get_parent()
+	return get_tree().current_scene as LevelBase if is_inside_tree() else null
 
 
 ## Opens the Reed-Light Scribery's counter over this player's view.

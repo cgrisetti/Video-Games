@@ -51,6 +51,8 @@ var _age: float = 0.0
 
 
 func _ready() -> void:
+	# A glyph on the Wayfarer's map (CartographyBaker.GLYPH_GROUP, 18 GDD §7.2).
+	add_to_group(&"map_glyphs")
 	AudioDirector.attach_ambience(self, &"carillon", Vector3(0.0, COIN_HEIGHT, PLINTH_Z), CARILLON_DB)
 	var plinth: StaticBody3D = StaticBody3D.new()
 	plinth.name = "Plinth"

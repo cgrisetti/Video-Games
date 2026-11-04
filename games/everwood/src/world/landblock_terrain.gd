@@ -93,6 +93,10 @@ static func sample_height(world_x: float, world_z: float) -> float:
 	return WorldGridConfig.layout.sample_height(world_x, world_z)
 
 
+## The corridor's dirt trail is troughed this far either side of its middle.
+const TRAIL_TROUGH_HALF: float = 2.6
+
+
 ## The Dover-Slap-Falls corridor's ground height at world (x, z).
 static func corridor_height(world_x: float, world_z: float) -> float:
 	var height: float = LandblockManifest.base_height(world_z) - FLAT_SINK
@@ -104,6 +108,13 @@ static func corridor_height(world_x: float, world_z: float) -> float:
 		var rise: float = 1.0 - (1.0 - t) * (1.0 - t)
 		var crag: float = (NOISE.get_noise_2d(world_x * 1.7, world_z * 1.7) * 0.5 + 0.5) * CRAG_NOISE
 		height += RIDGE_HEIGHT * rise + crag * t
+	else:
+		# The dirt trail and the commons' lane are gently troughed (18 GDD §3.1: -5 cm).
+		if LandblockManifest.trail_at(world_z) != Vector3.ZERO and absf(dx) < TRAIL_TROUGH_HALF:
+			height += OakshireValeLayout.FOOTPATH_TROUGH * (1.0 - pow(absf(dx) / TRAIL_TROUGH_HALF, 2.0))
+		var lane: float = LandblockManifest.lane_gap(world_x, world_z)
+		if lane < LandblockManifest.LANE_HALF_WIDTH:
+			height += OakshireValeLayout.FOOTPATH_TROUGH * (1.0 - pow(lane / LandblockManifest.LANE_HALF_WIDTH, 2.0))
 	return minf(height, LandblockManifest.carve_bottom(world_x, world_z))
 
 
@@ -185,7 +196,10 @@ static func build_chunk_data(chunk: Vector2i, with_collision: bool, terrain3d: b
 			var slope_x: float = (heights[at + 1] - heights[at - 1]) / (2.0 * STEP)
 			var slope_z: float = (heights[at + apron] - heights[at - apron]) / (2.0 * STEP)
 			normals[index] = Vector3(-slope_x, 1.0, -slope_z).normalized()
-			colors[index] = WorldGridConfig.layout.surface_color(x, z, heights[at])
+			var painted: Color = WorldGridConfig.layout.surface_color(x, z, heights[at])
+			var rise: float = maxf(maxf(heights[at + 1], heights[at - 1]), maxf(heights[at + apron], heights[at - apron])) - heights[at]
+			painted.a = 1.0 - cliff_toe(rise, STEP, normals[index].y)
+			colors[index] = painted
 	var indices: PackedInt32Array = PackedInt32Array()
 	indices.resize(QUADS * QUADS * 6)
 	var cursor: int = 0
@@ -489,6 +503,14 @@ static func keep_terrain3d_untextured_view_off(terrain: Node3D) -> void:
 		look.set(&"show_checkered", false)
 
 
+## How much a spot sits in a cliff's dark toe (0 to 1): ground rising more than
+## about 1.2 m within `reach` metres of it (steeper than the 48° cliff contract),
+## while the spot itself is still fairly level (its normal's `up`).
+static func cliff_toe(rise: float, reach: float, up: float) -> float:
+	var steep: float = rise / maxf(reach, 0.01)
+	return smoothstep(1.05, 1.9, steep) * smoothstep(0.55, 0.8, up)
+
+
 ## A landblock's Terrain3D maps from its metre heights (129 to a side): the
 ## height map and the colour map (pure; worker-thread safe).
 static func make_terrain3d_maps(chunk: Vector2i, metre_heights: PackedFloat32Array) -> Array[Image]:
@@ -499,7 +521,15 @@ static func make_terrain3d_maps(chunk: Vector2i, metre_heights: PackedFloat32Arr
 		for column: int in TERRAIN3D_REGION_SIZE:
 			var height: float = metre_heights[row * COLLISION_SIDE + column]
 			height_map.set_pixel(column, row, Color(height, 0.0, 0.0))
-			color_map.set_pixel(column, row, WorldGridConfig.layout.surface_color(origin.x + column, origin.z + row, height))
+			var painted: Color = WorldGridConfig.layout.surface_color(origin.x + column, origin.z + row, height)
+			# A cliff's toe: the highest ground two metres off, against this spot (18 GDD §3.2).
+			var rise: float = 0.0
+			for offset: Vector2i in [Vector2i(2, 0), Vector2i(-2, 0), Vector2i(0, 2), Vector2i(0, -2)]:
+				var nx: int = clampi(column + offset.x, 0, COLLISION_SIDE - 1)
+				var nz: int = clampi(row + offset.y, 0, COLLISION_SIDE - 1)
+				rise = maxf(rise, metre_heights[nz * COLLISION_SIDE + nx] - height)
+			painted.a = 1.0 - cliff_toe(rise, 2.0, 1.0)
+			color_map.set_pixel(column, row, painted)
 	var maps: Array[Image] = [height_map, color_map]
 	return maps
 

@@ -7,6 +7,8 @@ class_name DoverslapLayout
 extends WorldLayout
 
 const LAYOUT_ID: StringName = &"doverslap"
+## The map reaches this far either side of the corridor's line.
+const MAP_HALF_WIDTH: float = 112.0
 
 
 func layout_id() -> StringName:
@@ -27,6 +29,27 @@ func sample_height(world_x: float, world_z: float) -> float:
 
 func surface_color(world_x: float, world_z: float, height: float) -> Color:
 	return LandblockTerrain.corridor_surface_color(world_x, world_z, height)
+
+
+## The map shows the corridor and the near crags either side (18 GDD §7.1).
+func map_rect() -> Rect2:
+	var whole: Rect2 = super.map_rect()
+	return Rect2(LandblockManifest.CORRIDOR_X - MAP_HALF_WIDTH, whole.position.y, MAP_HALF_WIDTH * 2.0, whole.size.y)
+
+
+## The trail and the commons' lane are roads; the gorge's river below the falls is water.
+func map_feature(world_x: float, world_z: float, height: float) -> int:
+	if LandblockManifest.carve_bottom(world_x, world_z) < INF and height < LandblockManifest.base_height(world_z) - 4.0:
+		return MapFeature.WATER
+	if LandblockManifest.trail_at(world_z) != Vector3.ZERO and absf(world_x - LandblockManifest.CORRIDOR_X) < LandblockClutter.TRAIL_PAINT_EDGE:
+		return MapFeature.ROAD
+	if LandblockManifest.lane_gap(world_x, world_z) < LandblockManifest.LANE_HALF_WIDTH:
+		return MapFeature.ROAD
+	return MapFeature.GROUND
+
+
+func cartography_path() -> String:
+	return LandblockManifest.LANDBLOCK_FOLDER + CartographyBaker.CARTOGRAPHY_FILE
 
 
 ## Only the corridor is walked; the crags round it are scenery.

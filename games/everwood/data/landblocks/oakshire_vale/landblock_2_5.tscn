@@ -15,67 +15,71 @@ size = Vector3(1.2, 3.6, 0.8)
 [sub_resource type="BoxShape3D" id="BoxShape3D_twji1"]
 size = Vector3(1.2, 3.6, 0.8)
 
-[node name="Landblock_2_5" type="Node3D" unique_id=1048576365]
+[node name="Landblock_2_5" type="Node3D" unique_id=790604376]
 metadata/chunk = Vector2i(2, 5)
 metadata/buildings = true
 
-[node name="NineStone6" type="StaticBody3D" parent="." unique_id=1095796190]
+[node name="NineStone6" type="StaticBody3D" parent="." unique_id=272649891]
 transform = Transform3D(-0.3420181, 0, -0.9396934, 0, 1, 0, 0.9396934, 0, -0.3420181, 293.25464, 13.615014, 765.6636)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="NineStone6" unique_id=1700930999]
+[node name="Collision" type="CollisionShape3D" parent="NineStone6" unique_id=768062655]
 shape = SubResource("BoxShape3D_pmmdc")
 
-[node name="Kit" type="Node3D" parent="NineStone6" unique_id=923063861]
+[node name="Kit" type="Node3D" parent="NineStone6" unique_id=48996822]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.8, 0)
 script = ExtResource("1_k3f0o")
 kit_id = &"kit_standing_stone"
 size = Vector3(1.2, 4.4, 0.8)
 tint = Color(0.56, 0.58, 0.6, 1)
+seed_value = 75
 
-[node name="NineStone7" type="StaticBody3D" parent="." unique_id=50286614]
+[node name="NineStone7" type="StaticBody3D" parent="." unique_id=266906476]
 transform = Transform3D(-0.866026, 0, -0.49999902, 0, 1, 0, 0.49999902, 0, -0.866026, 296.7722, 12.286467, 761.4715)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="NineStone7" unique_id=383609965]
+[node name="Collision" type="CollisionShape3D" parent="NineStone7" unique_id=211114742]
 shape = SubResource("BoxShape3D_h8pu8")
 
-[node name="Kit" type="Node3D" parent="NineStone7" unique_id=1139670580]
+[node name="Kit" type="Node3D" parent="NineStone7" unique_id=1450182691]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.8, 0)
 script = ExtResource("1_k3f0o")
 kit_id = &"kit_standing_stone"
 size = Vector3(1.2, 3.6, 0.8)
 tint = Color(0.56, 0.58, 0.6, 1)
+seed_value = 76
 
-[node name="NineStone8" type="StaticBody3D" parent="." unique_id=531647495]
+[node name="NineStone8" type="StaticBody3D" parent="." unique_id=909961697]
 transform = Transform3D(-0.98480767, 0, 0.17364852, 0, 1, 0, -0.17364852, 0, -0.98480767, 302.16138, 11.2413435, 760.52124)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="NineStone8" unique_id=118770582]
+[node name="Collision" type="CollisionShape3D" parent="NineStone8" unique_id=1417801313]
 shape = SubResource("BoxShape3D_k063o")
 
-[node name="Kit" type="Node3D" parent="NineStone8" unique_id=1355394057]
+[node name="Kit" type="Node3D" parent="NineStone8" unique_id=322868934]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.8, 0)
 script = ExtResource("1_k3f0o")
 kit_id = &"kit_standing_stone"
 size = Vector3(1.2, 4, 0.8)
 tint = Color(0.56, 0.58, 0.6, 1)
+seed_value = 77
 
-[node name="NineStone9" type="StaticBody3D" parent="." unique_id=107039472]
+[node name="NineStone9" type="StaticBody3D" parent="." unique_id=1492532181]
 transform = Transform3D(-0.64278543, 0, 0.7660463, 0, 1, 0, -0.7660463, 0, -0.64278543, 306.90054, 10.928786, 763.25745)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="NineStone9" unique_id=2110474155]
+[node name="Collision" type="CollisionShape3D" parent="NineStone9" unique_id=776614309]
 shape = SubResource("BoxShape3D_twji1")
 
-[node name="Kit" type="Node3D" parent="NineStone9" unique_id=84330436]
+[node name="Kit" type="Node3D" parent="NineStone9" unique_id=1719736239]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.8, 0)
 script = ExtResource("1_k3f0o")
 kit_id = &"kit_standing_stone"
 size = Vector3(1.2, 4.4, 0.8)
 tint = Color(0.56, 0.58, 0.6, 1)
+seed_value = 78
 
-[node name="Spawner_Toads_300" type="Node3D" parent="." unique_id=663666193 groups=["landblock_entities"]]
+[node name="Spawner_Toads_300" type="Node3D" parent="." unique_id=737278879 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 300, 0.90873015, 699.165)
 script = ExtResource("2_s6kws")
 territory = "The River Basin"

@@ -19,6 +19,7 @@ shader_parameter/craft_layer = 3.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -28,6 +29,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -52,6 +54,7 @@ shader_parameter/craft_layer = 7.0
 shader_parameter/triplanar_scale = 0.2
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -61,6 +64,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -79,6 +83,7 @@ shader_parameter/craft_layer = 7.0
 shader_parameter/triplanar_scale = 0.2
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -88,6 +93,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -518,6 +524,7 @@ shader_parameter/craft_layer = 7.0
 shader_parameter/triplanar_scale = 0.2
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -527,6 +534,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -545,6 +553,7 @@ shader_parameter/craft_layer = 7.0
 shader_parameter/triplanar_scale = 0.2
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -554,6 +563,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -613,6 +623,7 @@ shader_parameter/craft_layer = -1.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -622,6 +633,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = 0.0
 shader_parameter/rim_power = null
 shader_parameter/glow = Color(0.57, 0.468, 0.120000005, 1)
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -653,604 +665,604 @@ size = Vector3(0.5, 0.8, 12)
 [sub_resource type="BoxShape3D" id="BoxShape3D_c0onu"]
 size = Vector3(0.5, 0.8, 11)
 
-[node name="Landblock_0_1" type="Node3D" unique_id=1536022369]
+[node name="Landblock_0_1" type="Node3D" unique_id=706182695]
 metadata/chunk = Vector2i(0, 1)
 
-[node name="Campfire" type="Node3D" parent="." unique_id=1004044983 groups=["landblock_entities"]]
+[node name="Campfire" type="Node3D" parent="." unique_id=2098495910 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 178)
 script = ExtResource("1_xwl8r")
 persist_id = &"campfire_bivouac"
 
-[node name="BivouacOak" type="Node3D" parent="." unique_id=2131820003]
+[node name="BivouacOak" type="Node3D" parent="." unique_id=1856556876]
 transform = Transform3D(0.87118506, 0, -0.49095473, 0, 1, 0, 0.49095473, 0, 0.87118506, 41, 0, 170.5)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_tree_moss_oak"
 height = 9.0
 seed_value = 1
 
-[node name="TrunkBody" type="StaticBody3D" parent="BivouacOak" unique_id=861124673]
+[node name="TrunkBody" type="StaticBody3D" parent="BivouacOak" unique_id=1609297387]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="BivouacOak/TrunkBody" unique_id=2027564482]
+[node name="Collision" type="CollisionShape3D" parent="BivouacOak/TrunkBody" unique_id=565757405]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.475, 0)
 shape = SubResource("CylinderShape3D_rctke")
 
-[node name="Limb" type="MeshInstance3D" parent="BivouacOak" unique_id=2103176834]
+[node name="Limb" type="MeshInstance3D" parent="BivouacOak" unique_id=1856421660]
 transform = Transform3D(-1, 0, 0, 0, 0.042334937, 0.9991035, 0, 0.9991035, -0.042334937, 0, 3.425, 2.949997)
 mesh = SubResource("CylinderMesh_suq4r")
 
-[node name="WindLantern" type="Node3D" parent="." unique_id=1094418885]
+[node name="WindLantern" type="Node3D" parent="." unique_id=2111382476]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41, 3.5, 176.4)
 script = ExtResource("4_11dc5")
 
-[node name="LaneWalls" type="Node3D" parent="." unique_id=216753712]
+[node name="LaneWalls" type="Node3D" parent="." unique_id=853954329]
 
-[node name="LaneWall0" type="StaticBody3D" parent="LaneWalls" unique_id=1441152630]
+[node name="LaneWall0" type="StaticBody3D" parent="LaneWalls" unique_id=15369725]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 38, 0.25, 175)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall0" unique_id=1394105386]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall0" unique_id=225940777]
 shape = SubResource("BoxShape3D_hl5g2")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall0" unique_id=718195929]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall0" unique_id=1732839941]
 mesh = SubResource("BoxMesh_mvaps")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall0" unique_id=1442941388]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall0" unique_id=558093421]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_nmkoh")
 
-[node name="LaneWall1" type="StaticBody3D" parent="LaneWalls" unique_id=1603172304]
+[node name="LaneWall1" type="StaticBody3D" parent="LaneWalls" unique_id=1746039179]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 38, 0.25, 181)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall1" unique_id=1644158626]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall1" unique_id=504793312]
 shape = SubResource("BoxShape3D_670fq")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall1" unique_id=1410486515]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall1" unique_id=520900123]
 mesh = SubResource("BoxMesh_avaar")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall1" unique_id=1749325491]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall1" unique_id=1585310011]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_ibrck")
 
-[node name="LaneWall2" type="StaticBody3D" parent="LaneWalls" unique_id=101597573]
+[node name="LaneWall2" type="StaticBody3D" parent="LaneWalls" unique_id=1933961653]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 42, 0.25, 175)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall2" unique_id=1813085858]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall2" unique_id=1196105461]
 shape = SubResource("BoxShape3D_mge5m")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall2" unique_id=981367563]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall2" unique_id=736253963]
 mesh = SubResource("BoxMesh_3lwdr")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall2" unique_id=586984622]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall2" unique_id=497938939]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_aesn0")
 
-[node name="LaneWall3" type="StaticBody3D" parent="LaneWalls" unique_id=571307082]
+[node name="LaneWall3" type="StaticBody3D" parent="LaneWalls" unique_id=2096542148]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 42, 0.25, 181)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall3" unique_id=1193375219]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall3" unique_id=1252659313]
 shape = SubResource("BoxShape3D_piur3")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall3" unique_id=1359408337]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall3" unique_id=1293938139]
 mesh = SubResource("BoxMesh_bkluf")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall3" unique_id=762071197]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall3" unique_id=559841994]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_7n22g")
 
-[node name="LaneWall4" type="StaticBody3D" parent="LaneWalls" unique_id=623181056]
+[node name="LaneWall4" type="StaticBody3D" parent="LaneWalls" unique_id=397047910]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 46, 0.25, 175)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall4" unique_id=113746564]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall4" unique_id=2068946646]
 shape = SubResource("BoxShape3D_mer8q")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall4" unique_id=1994930955]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall4" unique_id=182347179]
 mesh = SubResource("BoxMesh_1meii")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall4" unique_id=2101106382]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall4" unique_id=1918608753]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_khxds")
 
-[node name="LaneWall5" type="StaticBody3D" parent="LaneWalls" unique_id=715707500]
+[node name="LaneWall5" type="StaticBody3D" parent="LaneWalls" unique_id=1713476583]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 46, 0.25, 181)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall5" unique_id=1090432272]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall5" unique_id=1358390204]
 shape = SubResource("BoxShape3D_ohur2")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall5" unique_id=1990932143]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall5" unique_id=1723394423]
 mesh = SubResource("BoxMesh_kdp6g")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall5" unique_id=977360985]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall5" unique_id=1866057129]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_vw56j")
 
-[node name="LaneWall6" type="StaticBody3D" parent="LaneWalls" unique_id=1016349700]
+[node name="LaneWall6" type="StaticBody3D" parent="LaneWalls" unique_id=1502241532]
 transform = Transform3D(-0.38075134, 0, 0.9246775, 0, 1, 0, -0.9246775, 0, -0.38075134, 48.274414, 0.25, 174.64264)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall6" unique_id=145953284]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall6" unique_id=285631811]
 shape = SubResource("BoxShape3D_aydqs")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall6" unique_id=1891017592]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall6" unique_id=1702996809]
 mesh = SubResource("BoxMesh_al2fd")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall6" unique_id=1072817670]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall6" unique_id=1296728620]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_1ivd3")
 
-[node name="LaneWall7" type="StaticBody3D" parent="LaneWalls" unique_id=969070820]
+[node name="LaneWall7" type="StaticBody3D" parent="LaneWalls" unique_id=868672015]
 transform = Transform3D(-0.38075134, 0, 0.9246775, 0, 1, 0, -0.9246775, 0, -0.38075134, 50.558914, 0.25, 180.1907)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall7" unique_id=463852648]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall7" unique_id=1581157072]
 shape = SubResource("BoxShape3D_wgmc3")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall7" unique_id=415780629]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall7" unique_id=479928314]
 mesh = SubResource("BoxMesh_2vc2m")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall7" unique_id=1897811688]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall7" unique_id=1975690036]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_ub3hu")
 
-[node name="LaneWall8" type="StaticBody3D" parent="LaneWalls" unique_id=1043314764]
+[node name="LaneWall8" type="StaticBody3D" parent="LaneWalls" unique_id=409689089]
 transform = Transform3D(-0.38074672, 0, 0.9246794, 0, 1, 0, -0.9246794, 0, -0.38074672, 51.10775, 0.25, 173.47597)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall8" unique_id=2114878618]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall8" unique_id=589306584]
 shape = SubResource("BoxShape3D_m1mj2")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall8" unique_id=1666307356]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall8" unique_id=1916864138]
 mesh = SubResource("BoxMesh_g8p0u")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall8" unique_id=653383106]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall8" unique_id=1601654236]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_48e1m")
 
-[node name="LaneWall9" type="StaticBody3D" parent="LaneWalls" unique_id=1494288398]
+[node name="LaneWall9" type="StaticBody3D" parent="LaneWalls" unique_id=722824542]
 transform = Transform3D(-0.38074672, 0, 0.9246794, 0, 1, 0, -0.9246794, 0, -0.38074672, 53.39225, 0.25, 179.02403)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall9" unique_id=975366856]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall9" unique_id=825300915]
 shape = SubResource("BoxShape3D_3vkwl")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall9" unique_id=1819846272]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall9" unique_id=644282630]
 mesh = SubResource("BoxMesh_nmlm3")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall9" unique_id=426113247]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall9" unique_id=846325747]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_dbn8v")
 
-[node name="LaneWall10" type="StaticBody3D" parent="LaneWalls" unique_id=1146422110]
+[node name="LaneWall10" type="StaticBody3D" parent="LaneWalls" unique_id=948713878]
 transform = Transform3D(-0.38075134, 0, 0.9246775, 0, 1, 0, -0.9246775, 0, -0.38075134, 53.941086, 0.25, 172.3093)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall10" unique_id=178427836]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall10" unique_id=1808811047]
 shape = SubResource("BoxShape3D_1ge5j")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall10" unique_id=211095534]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall10" unique_id=630915479]
 mesh = SubResource("BoxMesh_pmlcb")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall10" unique_id=752762620]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall10" unique_id=1581443100]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_tnd8a")
 
-[node name="LaneWall11" type="StaticBody3D" parent="LaneWalls" unique_id=773791781]
+[node name="LaneWall11" type="StaticBody3D" parent="LaneWalls" unique_id=322826354]
 transform = Transform3D(-0.38075134, 0, 0.9246775, 0, 1, 0, -0.9246775, 0, -0.38075134, 56.225586, 0.25, 177.85736)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall11" unique_id=1471675289]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall11" unique_id=1974196273]
 shape = SubResource("BoxShape3D_n72k5")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall11" unique_id=1407445152]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall11" unique_id=1276269339]
 mesh = SubResource("BoxMesh_0end3")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall11" unique_id=1450943177]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall11" unique_id=357523013]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_vk2cb")
 
-[node name="LaneWall12" type="StaticBody3D" parent="LaneWalls" unique_id=1323056317]
+[node name="LaneWall12" type="StaticBody3D" parent="LaneWalls" unique_id=557073899]
 transform = Transform3D(-0.8064052, 0, 0.59136343, 0, 1, 0, -0.59136343, 0, -0.8064052, 54.99745, 0.25, 171.4759)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall12" unique_id=496759511]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall12" unique_id=2053885429]
 shape = SubResource("BoxShape3D_w3cyu")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall12" unique_id=1017288221]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall12" unique_id=1145378281]
 mesh = SubResource("BoxMesh_eywjo")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall12" unique_id=536490575]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall12" unique_id=2098204112]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_vffvj")
 
-[node name="LaneWall13" type="StaticBody3D" parent="LaneWalls" unique_id=742306644]
+[node name="LaneWall13" type="StaticBody3D" parent="LaneWalls" unique_id=566273472]
 transform = Transform3D(-0.8064052, 0, 0.59136343, 0, 1, 0, -0.59136343, 0, -0.8064052, 59.835884, 0.25, 175.0241)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall13" unique_id=490033139]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall13" unique_id=2141250295]
 shape = SubResource("BoxShape3D_5q7j3")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall13" unique_id=1340430599]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall13" unique_id=1066152801]
 mesh = SubResource("BoxMesh_2md8s")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall13" unique_id=1947023956]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall13" unique_id=1144968521]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_4afvb")
 
-[node name="LaneWall14" type="StaticBody3D" parent="LaneWalls" unique_id=487178298]
+[node name="LaneWall14" type="StaticBody3D" parent="LaneWalls" unique_id=1118884596]
 transform = Transform3D(-0.8064046, 0, 0.5913642, 0, 1, 0, -0.5913642, 0, -0.8064046, 56.830784, 0.25, 168.9759)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall14" unique_id=167720399]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall14" unique_id=727264983]
 shape = SubResource("BoxShape3D_g0fyo")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall14" unique_id=1081071361]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall14" unique_id=634100724]
 mesh = SubResource("BoxMesh_60yh0")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall14" unique_id=1257018348]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall14" unique_id=1754641236]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_dup3g")
 
-[node name="LaneWall15" type="StaticBody3D" parent="LaneWalls" unique_id=839949495]
+[node name="LaneWall15" type="StaticBody3D" parent="LaneWalls" unique_id=1590974493]
 transform = Transform3D(-0.8064046, 0, 0.5913642, 0, 1, 0, -0.5913642, 0, -0.8064046, 61.669216, 0.25, 172.5241)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall15" unique_id=1184052862]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall15" unique_id=230946574]
 shape = SubResource("BoxShape3D_v5ikm")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall15" unique_id=511639234]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall15" unique_id=1504463383]
 mesh = SubResource("BoxMesh_hnfoq")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall15" unique_id=1370969787]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall15" unique_id=1030212601]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_vm0ws")
 
-[node name="LaneWall16" type="StaticBody3D" parent="LaneWalls" unique_id=1043855144]
+[node name="LaneWall16" type="StaticBody3D" parent="LaneWalls" unique_id=483929206]
 transform = Transform3D(-0.8064052, 0, 0.59136343, 0, 1, 0, -0.59136343, 0, -0.8064052, 58.664116, 0.25, 166.4759)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall16" unique_id=864919446]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall16" unique_id=1169239068]
 shape = SubResource("BoxShape3D_k7wad")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall16" unique_id=209191236]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall16" unique_id=2075416103]
 mesh = SubResource("BoxMesh_wafta")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall16" unique_id=555103266]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall16" unique_id=443153531]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_u2a7a")
 
-[node name="LaneWall17" type="StaticBody3D" parent="LaneWalls" unique_id=857699144]
+[node name="LaneWall17" type="StaticBody3D" parent="LaneWalls" unique_id=1474320372]
 transform = Transform3D(-0.8064057, 0, 0.59136266, 0, 1, 0, -0.59136266, 0, -0.8064057, 63.50255, 0.25, 170.0241)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall17" unique_id=1687842230]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall17" unique_id=1599360086]
 shape = SubResource("BoxShape3D_0c8mh")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall17" unique_id=2022321528]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall17" unique_id=1047922471]
 mesh = SubResource("BoxMesh_wmlws")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall17" unique_id=1082363963]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall17" unique_id=249769112]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_7wsvl")
 
-[node name="LaneWall18" type="StaticBody3D" parent="LaneWalls" unique_id=682374176]
+[node name="LaneWall18" type="StaticBody3D" parent="LaneWalls" unique_id=1048099959]
 transform = Transform3D(-0.9838699, 0, 0.17888553, 0, 1, 0, -0.17888553, 0, -0.9838699, 59.38172, 0.25, 164.63)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall18" unique_id=887843163]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall18" unique_id=301212052]
 shape = SubResource("BoxShape3D_r24gy")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall18" unique_id=229737049]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall18" unique_id=1022546298]
 mesh = SubResource("BoxMesh_4tolv")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall18" unique_id=1354835754]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall18" unique_id=674690777]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_x4tfu")
 
-[node name="LaneWall19" type="StaticBody3D" parent="LaneWalls" unique_id=1120179171]
+[node name="LaneWall19" type="StaticBody3D" parent="LaneWalls" unique_id=1565139801]
 transform = Transform3D(-0.98386973, 0, 0.17888646, 0, 1, 0, -0.17888646, 0, -0.98386973, 65.28494, 0.25, 165.70331)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall19" unique_id=275697000]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall19" unique_id=1685877357]
 shape = SubResource("BoxShape3D_76kh3")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall19" unique_id=21385787]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall19" unique_id=1952805523]
 mesh = SubResource("BoxMesh_5aemu")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall19" unique_id=418367218]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall19" unique_id=1675077869]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_47gil")
 
-[node name="LaneWall20" type="StaticBody3D" parent="LaneWalls" unique_id=483709563]
+[node name="LaneWall20" type="StaticBody3D" parent="LaneWalls" unique_id=1415951534]
 transform = Transform3D(-0.9838699, 0, 0.1788853, 0, 1, 0, -0.1788853, 0, -0.9838699, 65.951614, 0.25, 162.03665)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall20" unique_id=1001490147]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall20" unique_id=1599723338]
 shape = SubResource("BoxShape3D_it0te")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall20" unique_id=1157611171]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall20" unique_id=2012971180]
 mesh = SubResource("BoxMesh_wkxkg")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall20" unique_id=1215950385]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall20" unique_id=1587394861]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_mu6lc")
 
-[node name="LaneWall21" type="StaticBody3D" parent="LaneWalls" unique_id=23361341]
+[node name="LaneWall21" type="StaticBody3D" parent="LaneWalls" unique_id=1556928041]
 transform = Transform3D(-0.9838699, 0, 0.17888553, 0, 1, 0, -0.17888553, 0, -0.9838699, 60.715057, 0.25, 157.29669)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall21" unique_id=915265392]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall21" unique_id=1334365176]
 shape = SubResource("BoxShape3D_a1d4j")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall21" unique_id=1709935797]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall21" unique_id=14609845]
 mesh = SubResource("BoxMesh_fw1d6")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall21" unique_id=1343336693]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall21" unique_id=252523559]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_x18bo")
 
-[node name="LaneWall22" type="StaticBody3D" parent="LaneWalls" unique_id=331167912]
+[node name="LaneWall22" type="StaticBody3D" parent="LaneWalls" unique_id=82611376]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 61, 0.25, 154.0521)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall22" unique_id=511652514]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall22" unique_id=1724888401]
 shape = SubResource("BoxShape3D_fcv0v")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall22" unique_id=31815711]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall22" unique_id=435529616]
 mesh = SubResource("BoxMesh_tlh1m")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall22" unique_id=1512121231]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall22" unique_id=1306469753]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_ww625")
 
-[node name="LaneWall23" type="StaticBody3D" parent="LaneWalls" unique_id=1071486486]
+[node name="LaneWall23" type="StaticBody3D" parent="LaneWalls" unique_id=1734367269]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 61, 0.25, 150.15625)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall23" unique_id=426434543]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall23" unique_id=1344349444]
 shape = SubResource("BoxShape3D_ofnsq")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall23" unique_id=1247670931]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall23" unique_id=224689267]
 mesh = SubResource("BoxMesh_am2sn")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall23" unique_id=188463603]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall23" unique_id=239585855]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_o6f1o")
 
-[node name="LaneWall24" type="StaticBody3D" parent="LaneWalls" unique_id=1159447291]
+[node name="LaneWall24" type="StaticBody3D" parent="LaneWalls" unique_id=382861521]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 67, 0.25, 150.15625)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall24" unique_id=1734909209]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall24" unique_id=1616904905]
 shape = SubResource("BoxShape3D_02cuy")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall24" unique_id=1764473650]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall24" unique_id=496280212]
 mesh = SubResource("BoxMesh_dx00l")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall24" unique_id=1750336869]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall24" unique_id=2011216175]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_ojnlp")
 
-[node name="LaneWall25" type="StaticBody3D" parent="LaneWalls" unique_id=2134044921]
+[node name="LaneWall25" type="StaticBody3D" parent="LaneWalls" unique_id=1687077045]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 61, 0.25, 138.46875)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall25" unique_id=2133684643]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall25" unique_id=1381796206]
 shape = SubResource("BoxShape3D_4whiv")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall25" unique_id=1813188582]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall25" unique_id=1308831083]
 mesh = SubResource("BoxMesh_l3m4v")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall25" unique_id=1069722613]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall25" unique_id=1837352007]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_hd7kx")
 
-[node name="LaneWall26" type="StaticBody3D" parent="LaneWalls" unique_id=1402262743]
+[node name="LaneWall26" type="StaticBody3D" parent="LaneWalls" unique_id=1838719805]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 67, 0.25, 138.46875)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall26" unique_id=2068536476]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall26" unique_id=191487885]
 shape = SubResource("BoxShape3D_cgfxi")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall26" unique_id=1039686661]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall26" unique_id=1371418481]
 mesh = SubResource("BoxMesh_k0s2j")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall26" unique_id=230324291]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall26" unique_id=1118564309]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_nqorb")
 
-[node name="LaneWall27" type="StaticBody3D" parent="LaneWalls" unique_id=144524009]
+[node name="LaneWall27" type="StaticBody3D" parent="LaneWalls" unique_id=761850893]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 61, 0.25, 134.5729)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall27" unique_id=364512168]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall27" unique_id=1827946298]
 shape = SubResource("BoxShape3D_0v6r6")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall27" unique_id=692803229]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall27" unique_id=1343475248]
 mesh = SubResource("BoxMesh_68pdb")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall27" unique_id=864544240]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall27" unique_id=57649409]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_th7fq")
 
-[node name="LaneWall28" type="StaticBody3D" parent="LaneWalls" unique_id=1320265190]
+[node name="LaneWall28" type="StaticBody3D" parent="LaneWalls" unique_id=1257545546]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 67, 0.25, 134.5729)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall28" unique_id=612441779]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall28" unique_id=548106599]
 shape = SubResource("BoxShape3D_x5jak")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall28" unique_id=1767181828]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall28" unique_id=1110970384]
 mesh = SubResource("BoxMesh_s4md2")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall28" unique_id=528520768]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall28" unique_id=1792483087]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_8nevj")
 
-[node name="LaneWall29" type="StaticBody3D" parent="LaneWalls" unique_id=427296968]
+[node name="LaneWall29" type="StaticBody3D" parent="LaneWalls" unique_id=697480046]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 61, 0.25, 130.6771)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall29" unique_id=895622457]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall29" unique_id=672408800]
 shape = SubResource("BoxShape3D_yxvjt")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall29" unique_id=1514822629]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall29" unique_id=1864659210]
 mesh = SubResource("BoxMesh_a8jfq")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall29" unique_id=61365793]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall29" unique_id=1490381700]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_fj3lu")
 
-[node name="LaneWall30" type="StaticBody3D" parent="LaneWalls" unique_id=968783849]
+[node name="LaneWall30" type="StaticBody3D" parent="LaneWalls" unique_id=1657229478]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 67, 0.25, 130.6771)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall30" unique_id=2063099716]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LaneWall30" unique_id=1267180159]
 shape = SubResource("BoxShape3D_w41xe")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall30" unique_id=1545519752]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LaneWall30" unique_id=12361246]
 mesh = SubResource("BoxMesh_y5bt6")
 
-[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall30" unique_id=1873879495]
+[node name="Coping" type="MeshInstance3D" parent="LaneWalls/LaneWall30" unique_id=907835008]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0)
 mesh = SubResource("BoxMesh_663ot")
 
-[node name="LanePost1R" type="StaticBody3D" parent="LaneWalls" unique_id=687871668]
+[node name="LanePost1R" type="StaticBody3D" parent="LaneWalls" unique_id=1016157999]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47.406525, 0.35, 175)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost1R" unique_id=1766252109]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost1R" unique_id=627134692]
 shape = SubResource("BoxShape3D_p0e70")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost1R" unique_id=1595188489]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost1R" unique_id=1335112613]
 mesh = SubResource("BoxMesh_0gx67")
 
-[node name="LanePost1L" type="StaticBody3D" parent="LaneWalls" unique_id=628341991]
+[node name="LanePost1L" type="StaticBody3D" parent="LaneWalls" unique_id=404888535]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48.593475, 0.35, 181)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost1L" unique_id=266833707]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost1L" unique_id=1061535360]
 shape = SubResource("BoxShape3D_qqt3j")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost1L" unique_id=1263259839]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost1L" unique_id=1356673418]
 mesh = SubResource("BoxMesh_xa3sh")
 
-[node name="LanePost2R" type="StaticBody3D" parent="LaneWalls" unique_id=1276768146]
+[node name="LanePost2R" type="StaticBody3D" parent="LaneWalls" unique_id=1050609956]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.57889, 0.35, 172.04668)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost2R" unique_id=1619527829]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost2R" unique_id=1824687751]
 shape = SubResource("BoxShape3D_qbau3")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost2R" unique_id=1800858706]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost2R" unique_id=978215575]
 mesh = SubResource("BoxMesh_0iixv")
 
-[node name="LanePost2L" type="StaticBody3D" parent="LaneWalls" unique_id=1610950030]
+[node name="LanePost2L" type="StaticBody3D" parent="LaneWalls" unique_id=1290135885]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58.42111, 0.35, 176.95332)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost2L" unique_id=1892824468]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost2L" unique_id=463216758]
 shape = SubResource("BoxShape3D_45efo")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost2L" unique_id=761518036]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost2L" unique_id=1096891485]
 mesh = SubResource("BoxMesh_657ii")
 
-[node name="LanePost3R" type="StaticBody3D" parent="LaneWalls" unique_id=963889920]
+[node name="LanePost3R" type="StaticBody3D" parent="LaneWalls" unique_id=1341113377]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 59.172035, 0.35, 165.7833)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost3R" unique_id=535078052]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost3R" unique_id=1845072698]
 shape = SubResource("BoxShape3D_3uq8b")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost3R" unique_id=1357863364]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost3R" unique_id=1453328392]
 mesh = SubResource("BoxMesh_r50do")
 
-[node name="LanePost3L" type="StaticBody3D" parent="LaneWalls" unique_id=1305383047]
+[node name="LanePost3L" type="StaticBody3D" parent="LaneWalls" unique_id=974921341]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64.827965, 0.35, 168.2167)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost3L" unique_id=839272842]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost3L" unique_id=1462665996]
 shape = SubResource("BoxShape3D_7dsqd")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost3L" unique_id=1191630858]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost3L" unique_id=372468422]
 mesh = SubResource("BoxMesh_3kltn")
 
-[node name="LanePost4R" type="StaticBody3D" parent="LaneWalls" unique_id=19645454]
+[node name="LanePost4R" type="StaticBody3D" parent="LaneWalls" unique_id=1507038241]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 61, 0.35, 155.72949)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost4R" unique_id=1277674377]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost4R" unique_id=886987334]
 shape = SubResource("BoxShape3D_mkkim")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost4R" unique_id=824889833]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost4R" unique_id=1969245036]
 mesh = SubResource("BoxMesh_t3iqt")
 
-[node name="LanePost4L" type="StaticBody3D" parent="LaneWalls" unique_id=98970924]
+[node name="LanePost4L" type="StaticBody3D" parent="LaneWalls" unique_id=417556741]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 67, 0.35, 156.27051)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost4L" unique_id=991008931]
+[node name="Collision" type="CollisionShape3D" parent="LaneWalls/LanePost4L" unique_id=1809606173]
 shape = SubResource("BoxShape3D_suhff")
 
-[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost4L" unique_id=651611991]
+[node name="Mesh" type="MeshInstance3D" parent="LaneWalls/LanePost4L" unique_id=1834769216]
 mesh = SubResource("BoxMesh_cnydr")
 
-[node name="LaneCobbles" type="MultiMeshInstance3D" parent="." unique_id=1161613806]
+[node name="LaneCobbles" type="MultiMeshInstance3D" parent="." unique_id=67936660]
 material_override = SubResource("ShaderMaterial_7yq1s")
 cast_shadow = 0
 multimesh = SubResource("MultiMesh_p4cok")
 
-[node name="Homestead" type="StaticBody3D" parent="." unique_id=680298708]
+[node name="Homestead" type="StaticBody3D" parent="." unique_id=3700904]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47, 1.7, 146)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Homestead" unique_id=926663434]
+[node name="Collision" type="CollisionShape3D" parent="Homestead" unique_id=195801397]
 shape = SubResource("BoxShape3D_ncyrv")
 
-[node name="Kit" type="Node3D" parent="Homestead" unique_id=354343000]
+[node name="Kit" type="Node3D" parent="Homestead" unique_id=1458835602]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.7, 0)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_house_stepped_gable"
@@ -1258,111 +1270,111 @@ size = Vector3(7, 3.4, 9)
 tint = Color(0.9, 0.84, 0.7, 1)
 accent = Color(0.4, 0.5, 0.36, 1)
 
-[node name="PathStone0" type="MeshInstance3D" parent="Homestead" unique_id=1399323779]
+[node name="PathStone0" type="MeshInstance3D" parent="Homestead" unique_id=525292733]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.36, -1.72, 0)
 mesh = SubResource("BoxMesh_b4fye")
 
-[node name="PathStone1" type="MeshInstance3D" parent="Homestead" unique_id=942169693]
+[node name="PathStone1" type="MeshInstance3D" parent="Homestead" unique_id=860930689]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.81, -1.72, 0.24088955)
 mesh = SubResource("BoxMesh_3e076")
 
-[node name="PathStone2" type="MeshInstance3D" parent="Homestead" unique_id=1020621759]
+[node name="PathStone2" type="MeshInstance3D" parent="Homestead" unique_id=1546486914]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.26, -1.72, 0.12887534)
 mesh = SubResource("BoxMesh_k3jgp")
 
-[node name="PathStone3" type="MeshInstance3D" parent="Homestead" unique_id=1795637130]
+[node name="PathStone3" type="MeshInstance3D" parent="Homestead" unique_id=1691203731]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.71, -1.72, -0.17194153)
 mesh = SubResource("BoxMesh_shbvi")
 
-[node name="PathStone4" type="MeshInstance3D" parent="Homestead" unique_id=1200428924]
+[node name="PathStone4" type="MeshInstance3D" parent="Homestead" unique_id=997230775]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.16, -1.72, -0.22086367)
 mesh = SubResource("BoxMesh_h6u0w")
 
-[node name="PathStone5" type="MeshInstance3D" parent="Homestead" unique_id=1045291134]
+[node name="PathStone5" type="MeshInstance3D" parent="Homestead" unique_id=1493676577]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.61, -1.72, 0.053779997)
 mesh = SubResource("BoxMesh_bv0r7")
 
-[node name="PathStone6" type="MeshInstance3D" parent="Homestead" unique_id=681968601]
+[node name="PathStone6" type="MeshInstance3D" parent="Homestead" unique_id=1320607407]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.06, -1.72, 0.24963583)
 mesh = SubResource("BoxMesh_x57pr")
 
-[node name="BeeHives" type="Node3D" parent="." unique_id=201860636]
+[node name="BeeHives" type="Node3D" parent="." unique_id=1490570271]
 
-[node name="HiveBodies" type="StaticBody3D" parent="BeeHives" unique_id=1972190750]
+[node name="HiveBodies" type="StaticBody3D" parent="BeeHives" unique_id=29068190]
 collision_layer = 32
 collision_mask = 0
 
-[node name="@CollisionShape3D@13" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=884809532]
+[node name="@CollisionShape3D@13" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=1927787405]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 92.97332, 0.535, 156.23906)
 shape = SubResource("BoxShape3D_nak7q")
 
-[node name="@CollisionShape3D@14" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=1291411736]
+[node name="@CollisionShape3D@14" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=1430006683]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 91.35854, 0.69, 153.75252)
 shape = SubResource("BoxShape3D_2l8oq")
 
-[node name="@CollisionShape3D@15" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=679215410]
+[node name="@CollisionShape3D@15" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=1684689333]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 88.906364, 0.535, 152.08603)
 shape = SubResource("BoxShape3D_wsits")
 
-[node name="@CollisionShape3D@16" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=1375201534]
+[node name="@CollisionShape3D@16" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=1803596412]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 86, 0.69, 151.5)
 shape = SubResource("BoxShape3D_8r0c2")
 
-[node name="@CollisionShape3D@17" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=1373949910]
+[node name="@CollisionShape3D@17" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=788435699]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 83.093636, 0.535, 152.08603)
 shape = SubResource("BoxShape3D_leen8")
 
-[node name="@CollisionShape3D@18" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=2145650177]
+[node name="@CollisionShape3D@18" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=1127803487]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80.64146, 0.69, 153.75252)
 shape = SubResource("BoxShape3D_ish0w")
 
-[node name="@CollisionShape3D@19" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=1311370765]
+[node name="@CollisionShape3D@19" type="CollisionShape3D" parent="BeeHives/HiveBodies" unique_id=2065961415]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 79.02668, 0.535, 156.23906)
 shape = SubResource("BoxShape3D_ga3hj")
 
-[node name="Hive1" type="Node3D" parent="BeeHives" unique_id=636372048]
+[node name="Hive1" type="Node3D" parent="BeeHives" unique_id=381874510]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 92.97332, 0, 156.23906)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_bee_hive"
 height = 2.0
 
-[node name="Hive2" type="Node3D" parent="BeeHives" unique_id=2049317864]
+[node name="Hive2" type="Node3D" parent="BeeHives" unique_id=616684451]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 91.35854, 0, 153.75252)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_bee_hive"
 height = 3.0
 
-[node name="Hive3" type="Node3D" parent="BeeHives" unique_id=984160008]
+[node name="Hive3" type="Node3D" parent="BeeHives" unique_id=1607444836]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 88.906364, 0, 152.08603)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_bee_hive"
 height = 2.0
 
-[node name="Hive4" type="Node3D" parent="BeeHives" unique_id=950216894]
+[node name="Hive4" type="Node3D" parent="BeeHives" unique_id=1085214275]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 86, 0, 151.5)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_bee_hive"
 height = 3.0
 
-[node name="Hive5" type="Node3D" parent="BeeHives" unique_id=782257327]
+[node name="Hive5" type="Node3D" parent="BeeHives" unique_id=881704718]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 83.093636, 0, 152.08603)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_bee_hive"
 height = 2.0
 
-[node name="Hive6" type="Node3D" parent="BeeHives" unique_id=1700623854]
+[node name="Hive6" type="Node3D" parent="BeeHives" unique_id=1740728349]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80.64146, 0, 153.75252)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_bee_hive"
 height = 3.0
 
-[node name="Hive7" type="Node3D" parent="BeeHives" unique_id=389890019]
+[node name="Hive7" type="Node3D" parent="BeeHives" unique_id=2037106361]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 79.02668, 0, 156.23906)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_bee_hive"
 height = 2.0
 
-[node name="Bees" type="CPUParticles3D" parent="BeeHives" unique_id=1138951523]
+[node name="Bees" type="CPUParticles3D" parent="BeeHives" unique_id=1717550468]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 86, 1, 154.5)
 cast_shadow = 0
 amount = 24
@@ -1376,113 +1388,113 @@ gravity = Vector3(0, 0, 0)
 initial_velocity_min = 0.3
 initial_velocity_max = 0.8
 
-[node name="PumpkinPatch1" type="Node3D" parent="." unique_id=737603056]
+[node name="PumpkinPatch1" type="Node3D" parent="." unique_id=1532886244]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48.5, 0, 161.5)
 
-[node name="Pumpkins" type="Node3D" parent="PumpkinPatch1" unique_id=305122805]
+[node name="Pumpkins" type="Node3D" parent="PumpkinPatch1" unique_id=1854072456]
 script = ExtResource("2_hklsi")
 kit_id = &"kit_pumpkin_patch"
 size = Vector3(13, 0.8, 7)
 
-[node name="Wall0" type="StaticBody3D" parent="PumpkinPatch1" unique_id=1719490307]
+[node name="Wall0" type="StaticBody3D" parent="PumpkinPatch1" unique_id=2033601780]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0.4, -4)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch1/Wall0" unique_id=1109009084]
+[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch1/Wall0" unique_id=1240456115]
 shape = SubResource("BoxShape3D_g3eg2")
 
-[node name="Stones" type="Node3D" parent="PumpkinPatch1/Wall0" unique_id=1672278675]
+[node name="Stones" type="Node3D" parent="PumpkinPatch1/Wall0" unique_id=953824101]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, -0.4, 0)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_drystone_wall"
 size = Vector3(14, 0.8, 0.5)
 
-[node name="Wall1" type="StaticBody3D" parent="PumpkinPatch1" unique_id=1007234163]
+[node name="Wall1" type="StaticBody3D" parent="PumpkinPatch1" unique_id=950810495]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0.4, 4)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch1/Wall1" unique_id=201823495]
+[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch1/Wall1" unique_id=1796703775]
 shape = SubResource("BoxShape3D_kjobd")
 
-[node name="Stones" type="Node3D" parent="PumpkinPatch1/Wall1" unique_id=1815760869]
+[node name="Stones" type="Node3D" parent="PumpkinPatch1/Wall1" unique_id=1101765558]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, -0.4, 0)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_drystone_wall"
 size = Vector3(14, 0.8, 0.5)
 seed_value = 1
 
-[node name="Wall2" type="StaticBody3D" parent="PumpkinPatch1" unique_id=1113477073]
+[node name="Wall2" type="StaticBody3D" parent="PumpkinPatch1" unique_id=1623668282]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.4, 0)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch1/Wall2" unique_id=586071959]
+[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch1/Wall2" unique_id=651596229]
 shape = SubResource("BoxShape3D_fjrm0")
 
-[node name="Stones" type="Node3D" parent="PumpkinPatch1/Wall2" unique_id=1973734097]
+[node name="Stones" type="Node3D" parent="PumpkinPatch1/Wall2" unique_id=621961282]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, -0.4, 0)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_drystone_wall"
 size = Vector3(8, 0.8, 0.5)
 seed_value = 2
 
-[node name="PumpkinPatch2" type="Node3D" parent="." unique_id=819905503]
+[node name="PumpkinPatch2" type="Node3D" parent="." unique_id=1247962739]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75.5, 0, 143)
 
-[node name="Pumpkins" type="Node3D" parent="PumpkinPatch2" unique_id=417358042]
+[node name="Pumpkins" type="Node3D" parent="PumpkinPatch2" unique_id=1463152673]
 script = ExtResource("2_hklsi")
 kit_id = &"kit_pumpkin_patch"
 size = Vector3(11, 0.8, 10)
 seed_value = 1
 
-[node name="Wall0" type="StaticBody3D" parent="PumpkinPatch2" unique_id=287274837]
+[node name="Wall0" type="StaticBody3D" parent="PumpkinPatch2" unique_id=1357139160]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0.4, -5.5)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch2/Wall0" unique_id=1521770733]
+[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch2/Wall0" unique_id=190217123]
 shape = SubResource("BoxShape3D_eg235")
 
-[node name="Stones" type="Node3D" parent="PumpkinPatch2/Wall0" unique_id=1334559652]
+[node name="Stones" type="Node3D" parent="PumpkinPatch2/Wall0" unique_id=948512224]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, -0.4, 0)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_drystone_wall"
 size = Vector3(12, 0.8, 0.5)
 seed_value = 3
 
-[node name="Wall1" type="StaticBody3D" parent="PumpkinPatch2" unique_id=2138645521]
+[node name="Wall1" type="StaticBody3D" parent="PumpkinPatch2" unique_id=1756553719]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0.4, 5.5)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch2/Wall1" unique_id=1455160424]
+[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch2/Wall1" unique_id=1216734318]
 shape = SubResource("BoxShape3D_7vrgv")
 
-[node name="Stones" type="Node3D" parent="PumpkinPatch2/Wall1" unique_id=373397884]
+[node name="Stones" type="Node3D" parent="PumpkinPatch2/Wall1" unique_id=1369056632]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, -0.4, 0)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_drystone_wall"
 size = Vector3(12, 0.8, 0.5)
 seed_value = 4
 
-[node name="Wall2" type="StaticBody3D" parent="PumpkinPatch2" unique_id=1420129823]
+[node name="Wall2" type="StaticBody3D" parent="PumpkinPatch2" unique_id=948606915]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.4, 0)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch2/Wall2" unique_id=1585083095]
+[node name="Collision" type="CollisionShape3D" parent="PumpkinPatch2/Wall2" unique_id=143442431]
 shape = SubResource("BoxShape3D_c0onu")
 
-[node name="Stones" type="Node3D" parent="PumpkinPatch2/Wall2" unique_id=419598873]
+[node name="Stones" type="Node3D" parent="PumpkinPatch2/Wall2" unique_id=1749495996]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, -0.4, 0)
 script = ExtResource("2_hklsi")
 kit_id = &"kit_drystone_wall"
 size = Vector3(11, 0.8, 0.5)
 seed_value = 5
 
-[node name="CommonsChimePost" type="Node3D" parent="." unique_id=805617241]
+[node name="CommonsChimePost" type="Node3D" parent="." unique_id=2088399263]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 49, 0, 176)
 script = ExtResource("6_bioyj")
 place = "Honey-Wick"

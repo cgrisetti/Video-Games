@@ -32,6 +32,7 @@ shader_parameter/craft_layer = 5.0
 shader_parameter/triplanar_scale = 0.25
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -41,6 +42,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -66,6 +68,7 @@ shader_parameter/craft_layer = 3.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.3
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -75,6 +78,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -114,77 +118,77 @@ bottom_radius = 0.06
 height = 0.75663733
 radial_segments = 24
 
-[node name="Landblock_7_2" type="Node3D" unique_id=425629547]
+[node name="Landblock_7_2" type="Node3D" unique_id=1191961003]
 metadata/chunk = Vector2i(7, 2)
 metadata/buildings = true
 
-[node name="WillowPool1" type="Node3D" parent="." unique_id=1893080197]
+[node name="WillowPool1" type="Node3D" parent="." unique_id=1172640546]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1013.5685, 19.666666, 289.72333)
 
-[node name="Water" type="MeshInstance3D" parent="WillowPool1" unique_id=1033379795]
+[node name="Water" type="MeshInstance3D" parent="WillowPool1" unique_id=1866682231]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
 cast_shadow = 0
 mesh = SubResource("CylinderMesh_jvrud")
 
-[node name="Bank" type="MeshInstance3D" parent="WillowPool1" unique_id=268044271]
+[node name="Bank" type="MeshInstance3D" parent="WillowPool1" unique_id=1144999412]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
 mesh = SubResource("TorusMesh_pi3x2")
 
-[node name="Willow" type="Node3D" parent="WillowPool1" unique_id=1877251935]
+[node name="Willow" type="Node3D" parent="WillowPool1" unique_id=1300421054]
 transform = Transform3D(0.78382164, 0, 0.620986, 0, 1, 0, -0.620986, 0, 0.78382164, 3.6, 0, 0.8)
 script = ExtResource("3_lbi6p")
 kit_id = &"kit_tree_weeping_willow"
 height = 8.6
 seed_value = 1
 
-[node name="TrunkBody" type="StaticBody3D" parent="WillowPool1/Willow" unique_id=29799897]
+[node name="TrunkBody" type="StaticBody3D" parent="WillowPool1/Willow" unique_id=1349051947]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="WillowPool1/Willow/TrunkBody" unique_id=14673353]
+[node name="Collision" type="CollisionShape3D" parent="WillowPool1/Willow/TrunkBody" unique_id=1840499828]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.365, 0)
 shape = SubResource("CylinderShape3D_wv0yq")
 
-[node name="HollowLantern0" type="Node3D" parent="." unique_id=2099508584]
+[node name="HollowLantern0" type="Node3D" parent="." unique_id=438923765]
 transform = Transform3D(-0.18773553, 0, -0.98221964, 0, 1, 0, 0.98221964, 0, -0.18773553, 1011.47, 20.070707, 305.93585)
 
-[node name="Post" type="MeshInstance3D" parent="HollowLantern0" unique_id=1275509485]
+[node name="Post" type="MeshInstance3D" parent="HollowLantern0" unique_id=1960949410]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
 mesh = SubResource("BoxMesh_2ki6k")
 
-[node name="Bracket" type="MeshInstance3D" parent="HollowLantern0" unique_id=596735614]
+[node name="Bracket" type="MeshInstance3D" parent="HollowLantern0" unique_id=673161213]
 transform = Transform3D(-0.1321639, 0.99122787, 0, 0.99122787, 0.1321639, 0, 0, 0, -1, 0.375, 3.35, 0)
 mesh = SubResource("CylinderMesh_fxv2p")
 
-[node name="WindLantern" type="Node3D" parent="HollowLantern0" unique_id=1698024227]
+[node name="WindLantern" type="Node3D" parent="HollowLantern0" unique_id=11650923]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 3.35, 0)
 script = ExtResource("4_otp3a")
 
-[node name="HollowLantern1" type="Node3D" parent="." unique_id=1822056620]
+[node name="HollowLantern1" type="Node3D" parent="." unique_id=264684155]
 transform = Transform3D(-0.44844738, 0, -0.89380926, 0, 1, 0, 0.89380926, 0, -0.44844738, 1015.5668, 20.680288, 299.06445)
 
-[node name="Post" type="MeshInstance3D" parent="HollowLantern1" unique_id=857352586]
+[node name="Post" type="MeshInstance3D" parent="HollowLantern1" unique_id=286422485]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
 mesh = SubResource("BoxMesh_iw1gj")
 
-[node name="Bracket" type="MeshInstance3D" parent="HollowLantern1" unique_id=111825984]
+[node name="Bracket" type="MeshInstance3D" parent="HollowLantern1" unique_id=1805296360]
 transform = Transform3D(-0.1321639, 0.99122787, 0, 0.99122787, 0.1321639, 0, 0, 0, -1, 0.375, 3.35, 0)
 mesh = SubResource("CylinderMesh_k0v6f")
 
-[node name="WindLantern" type="Node3D" parent="HollowLantern1" unique_id=51284187]
+[node name="WindLantern" type="Node3D" parent="HollowLantern1" unique_id=266775542]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 3.35, 0)
 script = ExtResource("4_otp3a")
 
-[node name="HollowLantern2" type="Node3D" parent="." unique_id=695529005]
+[node name="HollowLantern2" type="Node3D" parent="." unique_id=151852422]
 transform = Transform3D(-0.6637716, 0, -0.7479353, 0, 1, 0, 0.7479353, 0, -0.6637716, 1016.2279, 19.99164, 290.14462)
 
-[node name="Post" type="MeshInstance3D" parent="HollowLantern2" unique_id=1876554986]
+[node name="Post" type="MeshInstance3D" parent="HollowLantern2" unique_id=247550447]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
 mesh = SubResource("BoxMesh_6weqi")
 
-[node name="Bracket" type="MeshInstance3D" parent="HollowLantern2" unique_id=1255247477]
+[node name="Bracket" type="MeshInstance3D" parent="HollowLantern2" unique_id=580102240]
 transform = Transform3D(-0.1321639, 0.99122787, 0, 0.99122787, 0.1321639, 0, 0, 0, -1, 0.375, 3.35, 0)
 mesh = SubResource("CylinderMesh_an3iu")
 
-[node name="WindLantern" type="Node3D" parent="HollowLantern2" unique_id=1455553934]
+[node name="WindLantern" type="Node3D" parent="HollowLantern2" unique_id=1320491358]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 3.35, 0)
 script = ExtResource("4_otp3a")

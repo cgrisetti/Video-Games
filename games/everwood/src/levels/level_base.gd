@@ -82,6 +82,32 @@ func instance_id() -> StringName:
 	return &""
 
 
+## The world rectangle the Wayfarer's map shows (x, z; 18 GDD §7.1): by default
+## the walls' and floors' colliders' reach. Seamless worlds use their layout's.
+func map_rect() -> Rect2:
+	var reach: Rect2 = Rect2()
+	var started: bool = false
+	for node: Node in find_children("*", "CollisionShape3D", true, false):
+		var shape: CollisionShape3D = node as CollisionShape3D
+		var body: CollisionObject3D = shape.get_parent() as CollisionObject3D
+		var box: BoxShape3D = shape.shape as BoxShape3D
+		if body == null or box == null or not body is StaticBody3D or not shape.is_inside_tree():
+			continue
+		if (body.collision_layer & ActorBase.LAYER_WORLD) == 0 or box.size.x > 400.0 or box.size.z > 400.0:
+			continue
+		var at: Vector3 = shape.global_position
+		var piece: Rect2 = Rect2(at.x - box.size.x * 0.5, at.z - box.size.z * 0.5, box.size.x, box.size.z)
+		reach = piece if not started else reach.merge(piece)
+		started = true
+	return reach.grow(4.0) if started else Rect2(-32.0, -32.0, 64.0, 64.0)
+
+
+## The paths the map draws as roads in a walled instance: [{"points": PackedVector2Array (x, z), "half_width": float}].
+func map_paths() -> Array[Dictionary]:
+	var none: Array[Dictionary] = []
+	return none
+
+
 func level_title() -> String:
 	return ""
 
@@ -161,6 +187,8 @@ func _ready() -> void:
 	NetworkManager.current.calling_validator = check_calling
 	grid.set_world(get_world_3d())
 	_setup_level()
+	# Every sign and nameplate reads the same (18 GDD §6.2), built by any script or baked into the scene.
+	WorldLabelStyle.watch(get_tree(), self)
 	NetworkManager.current.player_registered.connect(_on_player_registered)
 	NetworkManager.current.player_updated.connect(_on_player_updated)
 	NetworkManager.current.player_unregistered.connect(_on_player_unregistered)
@@ -182,6 +210,8 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	# A Wayfarer's map still being painted finishes before the level goes.
+	CartographyBaker.finish_pending()
 	var director: CombatDirector = CombatDirector.current
 	if director != null:
 		for connection: Array in [[director.telegraph_cast, _on_telegraph_cast], [director.card_invoked, _on_card_invoked],
@@ -236,6 +266,32 @@ func _unhandled_input(event: InputEvent) -> void:
 	var key: InputEventKey = event as InputEventKey
 	if key != null and key.pressed and key.physical_keycode == KEY_ESCAPE:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+# --- The cameras (18 GDD §6) ----------------------------------------------
+
+## Tilts seat `seat_id`'s camera (its P-number, 1 to 5) to `degrees`, held between -12 and +52.
+func set_camera_pitch_degrees(seat_id: int, degrees: float) -> void:
+	var view: PlayerCamera = camera_for_seat(seat_id)
+	if view != null:
+		view.set_pitch_degrees(degrees)
+
+
+## Seat `seat_id`'s camera pitch in degrees (NAN if that seat has no camera here).
+func get_camera_pitch_degrees(seat_id: int) -> float:
+	var view: PlayerCamera = camera_for_seat(seat_id)
+	return view.pitch_degrees if view != null else NAN
+
+
+## The camera of the local player in seat `seat_id` (its P-number), or null.
+func camera_for_seat(seat_id: int) -> PlayerCamera:
+	for player_id: StringName in actors:
+		var actor: ActorBase = actors[player_id]
+		if is_instance_valid(actor) and actor.party_slot + 1 == seat_id:
+			var view: PlayerCamera = grid.camera_for(player_id)
+			if view != null:
+				return view
+	return null
 
 
 # --- Seating players ------------------------------------------------------

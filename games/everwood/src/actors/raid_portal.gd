@@ -33,6 +33,8 @@ var _status_label: Label3D
 
 
 func _ready() -> void:
+	# A glyph on the Wayfarer's map (CartographyBaker.GLYPH_GROUP, 18 GDD §7.2).
+	add_to_group(&"map_glyphs")
 	var glow: StandardMaterial3D = StandardMaterial3D.new()
 	glow.albedo_color = portal_color
 	glow.emission_enabled = true

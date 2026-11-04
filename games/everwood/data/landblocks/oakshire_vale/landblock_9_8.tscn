@@ -17,69 +17,144 @@ size = Vector3(3, 1.7, 1.5)
 [sub_resource type="BoxShape3D" id="BoxShape3D_hj6fd"]
 size = Vector3(3, 1.7, 1.5)
 
-[node name="Landblock_9_8" type="Node3D" unique_id=1551680471]
+[sub_resource type="BoxShape3D" id="BoxShape3D_qnd02"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_e6n7m"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_eml83"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_a3m1y"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_gbdh6"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ii1ed"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_y61ma"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rt6yy"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_r33tv"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_e6tpt"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tlluc"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_giour"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5w16t"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ulojd"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_i3ajy"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cf6ac"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_g1ufj"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jbcw6"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_08xq8"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_m10ra"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bpxgb"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3wm41"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wlt4n"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_53jfr"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_388gt"]
+size = Vector3(0.18, 0.55, 0.18)
+
+[node name="Landblock_9_8" type="Node3D" unique_id=1014884647]
 metadata/chunk = Vector2i(9, 8)
 metadata/buildings = true
 
-[node name="ChimePost" type="Node3D" parent="." unique_id=1799929381]
+[node name="ChimePost" type="Node3D" parent="." unique_id=475586716]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1186.3073, 19.76923, 1026.4526)
 script = ExtResource("1_lasbj")
 place = "Quarry-Wick"
 
-[node name="Crane0" type="StaticBody3D" parent="." unique_id=1189649055]
+[node name="Crane0" type="StaticBody3D" parent="." unique_id=1557515346]
 transform = Transform3D(0.93921095, 0, -0.3433407, 0, 1, 0, 0.3433407, 0, 0.93921095, 1172.7732, 16.98007, 1043.5958)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Crane0" unique_id=1188396861]
+[node name="Collision" type="CollisionShape3D" parent="Crane0" unique_id=382898081]
 shape = SubResource("BoxShape3D_bgnuq")
 
-[node name="Kit" type="Node3D" parent="Crane0" unique_id=1804309245]
+[node name="Kit" type="Node3D" parent="Crane0" unique_id=1808663030]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.8, 0)
 script = ExtResource("2_kcaej")
 kit_id = &"kit_quarry_crane"
 
-[node name="Ashlar0" type="StaticBody3D" parent="." unique_id=1403353908]
+[node name="Ashlar0" type="StaticBody3D" parent="." unique_id=420125752]
 transform = Transform3D(0.74226767, 0, -0.6701035, 0, 1, 0, 0.6701035, 0, 0.74226767, 1164.4446, 15.750521, 1034.0754)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Ashlar0" unique_id=594894631]
+[node name="Collision" type="CollisionShape3D" parent="Ashlar0" unique_id=1039382783]
 shape = SubResource("BoxShape3D_tb1ho")
 
-[node name="Kit" type="Node3D" parent="Ashlar0" unique_id=2130207113]
+[node name="Kit" type="Node3D" parent="Ashlar0" unique_id=1298336349]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.85, 0)
 script = ExtResource("2_kcaej")
 kit_id = &"kit_ashlar_stack"
 
-[node name="Ashlar1" type="StaticBody3D" parent="." unique_id=1474324447]
+[node name="Ashlar1" type="StaticBody3D" parent="." unique_id=1159143141]
 transform = Transform3D(0.8785013, 0, -0.47773993, 0, 1, 0, 0.47773993, 0, 0.8785013, 1169.4716, 15.496775, 1039.3414)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Ashlar1" unique_id=130787645]
+[node name="Collision" type="CollisionShape3D" parent="Ashlar1" unique_id=1761633180]
 shape = SubResource("BoxShape3D_eyfqa")
 
-[node name="Kit" type="Node3D" parent="Ashlar1" unique_id=2083661943]
+[node name="Kit" type="Node3D" parent="Ashlar1" unique_id=1349736436]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.85, 0)
 script = ExtResource("2_kcaej")
 kit_id = &"kit_ashlar_stack"
 seed_value = 1
 
-[node name="Ashlar2" type="StaticBody3D" parent="." unique_id=1679602516]
+[node name="Ashlar2" type="StaticBody3D" parent="." unique_id=1787456389]
 transform = Transform3D(0.95752853, 0, -0.28833848, 0, 1, 0, 0.28833848, 0, 0.95752853, 1174.4984, 15.083615, 1044.6074)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Ashlar2" unique_id=369002897]
+[node name="Collision" type="CollisionShape3D" parent="Ashlar2" unique_id=203069165]
 shape = SubResource("BoxShape3D_hj6fd")
 
-[node name="Kit" type="Node3D" parent="Ashlar2" unique_id=1203061428]
+[node name="Kit" type="Node3D" parent="Ashlar2" unique_id=456198675]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.85, 0)
 script = ExtResource("2_kcaej")
 kit_id = &"kit_ashlar_stack"
 seed_value = 2
 
-[node name="Guard_Leofric" type="Node3D" parent="." unique_id=825852592 groups=["landblock_entities"]]
+[node name="Guard_Leofric" type="Node3D" parent="." unique_id=176586909 groups=["landblock_entities"]]
 transform = Transform3D(-0.9271836, 0, 0.37460715, 0, 1, 0, -0.37460715, 0, -0.9271836, 1179.0447, 19.76923, 1025.0743)
 script = ExtResource("3_i72fo")
 role = 2
@@ -91,7 +166,371 @@ body_color = Color(0.32, 0.46, 0.72, 1)
 accent_color = Color(0.86, 0.66, 0.3, 1)
 npc_seed = 58
 
-[node name="Spawner_Outlaws_01" type="Node3D" parent="." unique_id=434475876 groups=["landblock_entities"]]
+[node name="TerraceSleepers1" type="Node3D" parent="." unique_id=752206383]
+transform = Transform3D(-0.6383637, 0, -0.76973486, 0, 1, 0, 0.76973486, 0, -0.6383637, 1171.0931, 19.399345, 1026.7605)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_path_sleeper"
+size = Vector3(5.6, 0.05, 12.087062)
+seed_value = 31
+
+[node name="TerracePost1L0" type="StaticBody3D" parent="." unique_id=1155929123]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1168.4097, 18.286276, 1029.659)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1L0" unique_id=13646332]
+shape = SubResource("BoxShape3D_qnd02")
+
+[node name="Kit" type="Node3D" parent="TerracePost1L0" unique_id=732878452]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost1L1" type="StaticBody3D" parent="." unique_id=46135003]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1170.2755, 18.340923, 1031.3628)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1L1" unique_id=2106755857]
+shape = SubResource("BoxShape3D_e6n7m")
+
+[node name="Kit" type="Node3D" parent="TerracePost1L1" unique_id=1735240616]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost1R1" type="StaticBody3D" parent="." unique_id=1424076675]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1175.506, 19.728401, 1025.4421)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1R1" unique_id=70893470]
+shape = SubResource("BoxShape3D_eml83")
+
+[node name="Kit" type="Node3D" parent="TerracePost1R1" unique_id=1148936034]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost1L2" type="StaticBody3D" parent="." unique_id=2141236583]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1172.175, 18.355614, 1033.0175)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1L2" unique_id=540257888]
+shape = SubResource("BoxShape3D_a3m1y")
+
+[node name="Kit" type="Node3D" parent="TerracePost1L2" unique_id=17523416]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost1R2" type="StaticBody3D" parent="." unique_id=1650404977]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1177.2634, 19.721869, 1026.9745)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1R2" unique_id=1099883209]
+shape = SubResource("BoxShape3D_gbdh6")
+
+[node name="Kit" type="Node3D" parent="TerracePost1R2" unique_id=355969744]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost1L3" type="StaticBody3D" parent="." unique_id=190900254]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1174.1096, 18.354647, 1034.6227)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1L3" unique_id=681188746]
+shape = SubResource("BoxShape3D_ii1ed")
+
+[node name="Kit" type="Node3D" parent="TerracePost1L3" unique_id=1825644022]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost1R3" type="StaticBody3D" parent="." unique_id=17631870]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1179.0491, 19.703424, 1028.4574)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1R3" unique_id=386174422]
+shape = SubResource("BoxShape3D_y61ma")
+
+[node name="Kit" type="Node3D" parent="TerracePost1R3" unique_id=664832184]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost1L4" type="StaticBody3D" parent="." unique_id=1761514603]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1176.0797, 18.387796, 1036.1771)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1L4" unique_id=1178368469]
+shape = SubResource("BoxShape3D_rt6yy")
+
+[node name="Kit" type="Node3D" parent="TerracePost1L4" unique_id=335956274]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost1R4" type="StaticBody3D" parent="." unique_id=1257641651]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1180.8636, 19.670586, 1029.8905)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1R4" unique_id=1802392048]
+shape = SubResource("BoxShape3D_r33tv")
+
+[node name="Kit" type="Node3D" parent="TerracePost1R4" unique_id=1664012933]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost1L5" type="StaticBody3D" parent="." unique_id=1942211980]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1178.0862, 18.471539, 1037.6799)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1L5" unique_id=63765395]
+shape = SubResource("BoxShape3D_e6tpt")
+
+[node name="Kit" type="Node3D" parent="TerracePost1L5" unique_id=1758051483]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost1R5" type="StaticBody3D" parent="." unique_id=372649893]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1182.7078, 19.544853, 1031.273)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost1R5" unique_id=284196181]
+shape = SubResource("BoxShape3D_tlluc")
+
+[node name="Kit" type="Node3D" parent="TerracePost1R5" unique_id=500191472]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerraceSleepers2" type="Node3D" parent="." unique_id=1992385677]
+transform = Transform3D(0.20219769, 0, -0.9793447, 0, 1, 0, 0.9793447, 0, 0.20219769, 1259.2712, 23.138605, 1050.0902)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_path_sleeper"
+size = Vector3(5.6, 0.85703087, 15.901321)
+seed_value = 32
+
+[node name="TerracePost2L0" type="StaticBody3D" parent="." unique_id=656659764]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1259.9092, 23.235558, 1053.9884)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2L0" unique_id=2130959314]
+shape = SubResource("BoxShape3D_giour")
+
+[node name="Kit" type="Node3D" parent="TerracePost2L0" unique_id=1002749859]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2R0" type="StaticBody3D" parent="." unique_id=410849505]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1258.6333, 22.882723, 1046.192)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2R0" unique_id=116999804]
+shape = SubResource("BoxShape3D_5w16t")
+
+[node name="Kit" type="Node3D" parent="TerracePost2R0" unique_id=1502119175]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2L1" type="StaticBody3D" parent="." unique_id=1004145067]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1262.5176, 23.365696, 1053.551)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2L1" unique_id=1027928973]
+shape = SubResource("BoxShape3D_ulojd")
+
+[node name="Kit" type="Node3D" parent="TerracePost2L1" unique_id=209856616]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2R1" type="StaticBody3D" parent="." unique_id=536611646]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1261.1223, 22.982096, 1045.7751)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2R1" unique_id=1841770354]
+shape = SubResource("BoxShape3D_i3ajy")
+
+[node name="Kit" type="Node3D" parent="TerracePost2R1" unique_id=375896046]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2L2" type="StaticBody3D" parent="." unique_id=52429459]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1265.1444, 23.471321, 1053.0692)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2L2" unique_id=1438838888]
+shape = SubResource("BoxShape3D_cf6ac")
+
+[node name="Kit" type="Node3D" parent="TerracePost2L2" unique_id=237457347]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2R2" type="StaticBody3D" parent="." unique_id=780293900]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1263.632, 23.091223, 1045.3153)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2R2" unique_id=1624385445]
+shape = SubResource("BoxShape3D_g1ufj")
+
+[node name="Kit" type="Node3D" parent="TerracePost2R2" unique_id=1199317522]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2L3" type="StaticBody3D" parent="." unique_id=723611315]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1267.788, 23.598326, 1052.5432)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2L3" unique_id=1192932189]
+shape = SubResource("BoxShape3D_jbcw6")
+
+[node name="Kit" type="Node3D" parent="TerracePost2L3" unique_id=1229599956]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2R3" type="StaticBody3D" parent="." unique_id=240417255]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1266.1625, 23.254402, 1044.8123)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2R3" unique_id=147339377]
+shape = SubResource("BoxShape3D_08xq8")
+
+[node name="Kit" type="Node3D" parent="TerracePost2R3" unique_id=2098152609]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2L4" type="StaticBody3D" parent="." unique_id=1869860068]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1270.4489, 23.816782, 1051.9733)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2L4" unique_id=140285715]
+shape = SubResource("BoxShape3D_m10ra")
+
+[node name="Kit" type="Node3D" parent="TerracePost2L4" unique_id=15806028]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2R4" type="StaticBody3D" parent="." unique_id=1909404631]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1268.7123, 23.430115, 1044.2665)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2R4" unique_id=578548016]
+shape = SubResource("BoxShape3D_bpxgb")
+
+[node name="Kit" type="Node3D" parent="TerracePost2R4" unique_id=534800654]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2L5" type="StaticBody3D" parent="." unique_id=1365621228]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1273.1261, 23.931969, 1051.3597)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2L5" unique_id=1072818702]
+shape = SubResource("BoxShape3D_3wm41")
+
+[node name="Kit" type="Node3D" parent="TerracePost2L5" unique_id=1596246811]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2R5" type="StaticBody3D" parent="." unique_id=1236242814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1271.2814, 23.521011, 1043.6781)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2R5" unique_id=1920338092]
+shape = SubResource("BoxShape3D_wlt4n")
+
+[node name="Kit" type="Node3D" parent="TerracePost2R5" unique_id=1470322711]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2L6" type="StaticBody3D" parent="." unique_id=1071998082]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1275.8192, 24.036188, 1050.7028)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2L6" unique_id=1192977777]
+shape = SubResource("BoxShape3D_53jfr")
+
+[node name="Kit" type="Node3D" parent="TerracePost2L6" unique_id=1933280933]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="TerracePost2R6" type="StaticBody3D" parent="." unique_id=786644912]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1273.869, 23.654442, 1043.0472)
+collision_layer = 32
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="TerracePost2R6" unique_id=1733514683]
+shape = SubResource("BoxShape3D_388gt")
+
+[node name="Kit" type="Node3D" parent="TerracePost2R6" unique_id=1804238790]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.275, 0)
+script = ExtResource("2_kcaej")
+kit_id = &"kit_guide_post"
+height = 0.55
+
+[node name="Spawner_Outlaws_01" type="Node3D" parent="." unique_id=1503119822 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1177.6625, 19.666666, 1078.5154)
 script = ExtResource("4_r2fnf")
 territory = "Quarry-Wick"

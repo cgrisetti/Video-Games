@@ -20,6 +20,15 @@
 ##   strengthens its wind and flares its lanterns.
 ## - It keeps the HorizonVistaRing (Ring 3, out to 2.5 km) round the party,
 ##   and drifts pollen, hush-motes or fret round the party in the biome's colour.
+## - Phase 18 (18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md §3-5):
+##   every frame it hands the shaders the Lantern's Promise halos (5.5 m round
+##   every Lantern-Bearer and every hero holding a Hearth-Rite Tuck, up to
+##   four, nearest the local players first), which push the First-Quiet's blight
+##   back; it eases the biome's ground palette (turf, road, trodden verge) for
+##   the frayed road edges and its cloud shadows (22% of the sun in drifting 35 m
+##   patches), sets the blight's ashen slate-indigo, hoar-rime and Frozen Wind
+##   from ZONE_HUSHED's look, and lights the fog with warm sun-scatter and
+##   aerial perspective over a low height fog.
 ## Levels say which biome is where; nothing here names a place.
 class_name WorldAtmosphereDirector
 extends Node
@@ -57,6 +66,15 @@ const POLLEN_COLOR: Color = Color(1.0, 0.88, 0.5)
 const GLOBAL_HEROES: Array[StringName] = [&"hero_pos_0", &"hero_pos_1", &"hero_pos_2", &"hero_pos_3"]
 const GLOBAL_CRACKS: Array[StringName] = [&"hush_crack_0", &"hush_crack_1", &"hush_crack_2", &"hush_crack_3"]
 const GLOBAL_BLOOMS: Array[StringName] = [&"bloom_0", &"bloom_1", &"bloom_2", &"bloom_3"]
+const GLOBAL_HALOS: Array[StringName] = [&"lantern_halo_0", &"lantern_halo_1", &"lantern_halo_2", &"lantern_halo_3"]
+const MAX_HALOS: int = 4
+## Sun-scattering air (18 §4.4).
+const FOG_AERIAL_PERSPECTIVE: float = 0.65
+const FOG_SUN_SCATTER: float = 0.38
+const FOG_HEIGHT: float = 2.5
+const FOG_HEIGHT_DENSITY: float = 0.12
+## The clouds drift this way (m/s).
+const CLOUD_DRIFT: Vector2 = Vector2(1.4, 0.9)
 const NO_HERO: Vector4 = Vector4(0.0, -1000.0, 0.0, 0.0)
 
 ## The live autoload node (see NetworkManager.current for why).
@@ -75,6 +93,10 @@ var horizon: HorizonVistaRing
 var hero_globals: Array[Vector4] = [NO_HERO, NO_HERO, NO_HERO, NO_HERO]
 var crack_globals: Array[Vector4] = [Vector4.ZERO, Vector4.ZERO, Vector4.ZERO, Vector4.ZERO]
 var bloom_globals: Array[Vector4] = [Vector4.ZERO, Vector4.ZERO, Vector4.ZERO, Vector4.ZERO]
+## The Lantern's Promise halos handed to the shaders (xyz where, w the radius; 0 when none).
+var halo_globals: Array[Vector4] = [Vector4.ZERO, Vector4.ZERO, Vector4.ZERO, Vector4.ZERO]
+## The ground palette, cloud shadows and blight looks handed to the shaders (what was set, since globals can't be read back).
+var look_globals: Dictionary[StringName, Vector4] = {}
 var wind: Vector4 = BASE_WIND
 
 var _states: Dictionary[StringName, int] = {}
@@ -151,6 +173,7 @@ func _process(delta: float) -> void:
 	_publish_heroes()
 	_publish_cracks()
 	_publish_blooms()
+	_publish_halos()
 	_ease_look(delta)
 
 
@@ -228,6 +251,11 @@ func _attach(level: LevelBase) -> void:
 		_environment.glow_enabled = true
 		_environment.fog_enabled = true
 		_environment.fog_sky_affect = 0.1
+		# Warm sun-scatter and aerial perspective, so far hills glow amber instead of washing grey (18 §4.4).
+		_environment.fog_aerial_perspective = FOG_AERIAL_PERSPECTIVE
+		_environment.fog_sun_scatter = FOG_SUN_SCATTER
+		_environment.fog_height = FOG_HEIGHT
+		_environment.fog_height_density = FOG_HEIGHT_DENSITY
 		_environment.adjustment_enabled = true
 		if _environment.sky != null:
 			_sky = _environment.sky.sky_material as ProceduralSkyMaterial
@@ -283,6 +311,16 @@ func _ease_look(delta: float) -> void:
 	_fog_density = lerpf(_fog_density, look.fog_density * (1.0 + (WEATHER_FOG - 1.0) * weather), t)
 	_saturation = lerpf(_saturation, HUSHED_SATURATION if state == Succession.ZONE_HUSHED else 1.0, t)
 	_mote_color = _mote_color.lerp(Color(mote, 0.8), t)
+	# The ground palette and cloud shadows of the biome, and the blight's look (18 §3.1, §4.4, §5).
+	_set_look_global(&"ground_turf", _linear4(look.turf_albedo, 1.0))
+	_set_look_global(&"ground_road", _linear4(look.road_albedo, 1.0))
+	_set_look_global(&"ground_verge", _linear4(look.verge_loam_albedo, 0.18))
+	_set_look_global(&"cloud_shadow_params", Vector4(look.cloud_shadow_strength * (1.0 - 0.5 * weather), look.cloud_shadow_scale,
+		CLOUD_DRIFT.x, CLOUD_DRIFT.y))
+	var hushed: ZoneSuccessionVisualResource = WorldVisualCatalog.succession(Succession.ZONE_HUSHED)
+	_set_look_global(&"blight_ashen", _linear4(hushed.blight_ashen_albedo, hushed.blight_desaturation))
+	_set_look_global(&"blight_rime", _linear4(hushed.blight_rime_vein_color, ZoneBiomeResource.HUSH_RIME_RING_M))
+	_set_look_global(&"blight_wind", Vector4(hushed.frozen_wind_multiplier, hushed.pressed_grass_height, 0.0, 0.0))
 	var gust: float = 1.6 if biome_id == WorldVisualCatalog.DOVER_SLAP_FALLS else 1.0
 	wind = Vector4(BASE_WIND.x, 0.0, BASE_WIND.z, BASE_WIND.w * gust * lerpf(1.0, WEATHER_WIND, weather))
 	RenderingServer.global_shader_parameter_set(&"world_wind", wind)
@@ -347,6 +385,24 @@ func unregister_crack(crack: HushCrackLandmark) -> void:
 	_cracks.erase(crack)
 
 
+## The Hush-Cracks streamed in now (the Wayfarer's map draws them).
+func cracks() -> Array[HushCrackLandmark]:
+	var live: Array[HushCrackLandmark] = []
+	for crack: HushCrackLandmark in _cracks:
+		if is_instance_valid(crack):
+			live.append(crack)
+	return live
+
+
+## Whether a crack's succession state is known this session (it streamed in, or changed), and what it is.
+func has_crack_state(id: StringName) -> bool:
+	return _states.has(id)
+
+
+func crack_state(id: StringName) -> int:
+	return int(_states.get(id, ZoneSuccessionVisualResource.SuccessionState.ZONE_HUSHED))
+
+
 ## The open (or closing) cracks nearest the local players, up to four.
 func _publish_cracks() -> void:
 	var locals: Array[ActorBase] = _local_players()
@@ -370,6 +426,58 @@ func _publish_cracks() -> void:
 		if value != crack_globals[slot]:
 			crack_globals[slot] = value
 			RenderingServer.global_shader_parameter_set(GLOBAL_CRACKS[slot], value)
+
+
+## The Lantern's Promise (18 §5 layer 4): a warm 5.5 m halo round every
+## Lantern-Bearer (any healer in the party) and every hero holding a Hearth-Rite
+## Tuck, up to four, those nearest a local player first.
+func _publish_halos() -> void:
+	var locals: Array[ActorBase] = _local_players()
+	var bearers: Array[ActorBase] = []
+	var nearest: Dictionary[ActorBase, float] = {}
+	var party: Array[ActorBase] = CombatDirector.current.party_actors() if CombatDirector.current != null else []
+	for member: ActorBase in party:
+		if not is_instance_valid(member) or not member.is_inside_tree() or member.stats == null or member.stats.is_downed:
+			continue
+		var tucked: bool = member.sign_flow != null and member.sign_flow.has_hearth_rite_tuck
+		if member.role() != ClassLoadoutResource.Role.HEALER and not tucked:
+			continue
+		var gap: float = INF
+		for player: ActorBase in locals:
+			gap = minf(gap, player.global_position.distance_to(member.global_position))
+		bearers.append(member)
+		nearest[member] = gap
+	bearers.sort_custom(func(a: ActorBase, b: ActorBase) -> bool: return nearest[a] < nearest[b])
+	for slot: int in MAX_HALOS:
+		var value: Vector4 = Vector4.ZERO
+		if slot < bearers.size():
+			var at: Vector3 = bearers[slot].global_position
+			value = Vector4(at.x, at.y, at.z, ZoneBiomeResource.LANTERN_HALO_RADIUS_M)
+		if value != halo_globals[slot]:
+			halo_globals[slot] = value
+			RenderingServer.global_shader_parameter_set(GLOBAL_HALOS[slot], value)
+
+
+## The halos lit now (tests).
+func halos_lit() -> int:
+	var lit: int = 0
+	for value: Vector4 in halo_globals:
+		if value.w > 0.0:
+			lit += 1
+	return lit
+
+
+## Sets a look global (and remembers it: globals can't be read back outside the editor).
+func _set_look_global(global_name: StringName, value: Vector4) -> void:
+	if look_globals.get(global_name, Vector4(-1.0, -1.0, -1.0, -1.0)) == value:
+		return
+	look_globals[global_name] = value
+	RenderingServer.global_shader_parameter_set(global_name, value)
+
+
+static func _linear4(color: Color, w: float) -> Vector4:
+	var linear: Color = color.srgb_to_linear()
+	return Vector4(linear.r, linear.g, linear.b, w)
 
 
 ## Starts a Reclamation Bloom sweeping out from `at` (a sealed crack, a lulled boss).

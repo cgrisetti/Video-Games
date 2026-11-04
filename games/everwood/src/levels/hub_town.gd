@@ -10,8 +10,10 @@ extends LevelBase
 
 ## Demo bots (--demo) gather on the portal, spread out this far.
 const DEMO_SPREAD: float = 1.1
+## The map's reach either side of the square's middle (the walls are 44 m by 60 m).
+const MAP_HALF_SIZE: Vector2 = Vector2(26.0, 34.0)
 ## The holds that change who you are, named for keyboards and pads alike (the HUD's cross shows the fighting moves).
-const CHANGE_KEYS: String = "Hold Tab / View: Fellowship · hold C / L3: Calling · hold M / R3: assist mode"
+const CHANGE_KEYS: String = "Hold Tab / View: Fellowship · hold C / L3: Calling · hold M / R3: assist mode · tap M / R3: the Atlas · PgUp / PgDn, [ / ] or right stick: tilt the camera · V: mouse-look"
 
 @onready var raid_portal: RaidPortal = $RaidPortal
 @onready var chime_shrine: ChimeShrine = $ChimeShrine
@@ -20,6 +22,17 @@ const CHANGE_KEYS: String = "Hold Tab / View: Fellowship · hold C / L3: Calling
 
 func instance_id() -> StringName:
 	return InstanceManager.HUB_TOWN
+
+
+## The walled village, gate to gate (18 GDD §7.1).
+func map_rect() -> Rect2:
+	return Rect2(-MAP_HALF_SIZE.x, -MAP_HALF_SIZE.y, MAP_HALF_SIZE.x * 2.0, MAP_HALF_SIZE.y * 2.0)
+
+
+## The lane from the south wall over Bramble-Bridge to the Forest Gate.
+func map_paths() -> Array[Dictionary]:
+	var lanes: Array[Dictionary] = [{"points": PackedVector2Array([Vector2(0.0, 30.0), Vector2(0.0, -31.0)]), "half_width": 2.4}]
+	return lanes
 
 
 func level_title() -> String:

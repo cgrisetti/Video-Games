@@ -51,6 +51,12 @@ const HORIZON_PROBE: float = 6.0
 const HORIZON_SINK: float = 1.0
 const HOUSE_RADIUS: float = 48.0
 const STALL_RADIUS: float = 25.0
+## Quarry-Wick's terrace climbs (18 GDD §3.2): sleepers this far either side of each riser, guide-posts this far apart.
+const TERRACE_CLIMB_HALF: float = 6.0
+const TERRACE_POST_SPACING: float = 2.4
+## The Nine-Stones causeway's guide-posts: this far apart, this far off its flags.
+const CAUSEWAY_POST_SPACING: float = 3.2
+const CAUSEWAY_POST_OFFSET: float = 1.15
 const STALL_COLORS: Array[Color] = [Color(0.78, 0.3, 0.26), Color(0.32, 0.5, 0.78), Color(0.9, 0.72, 0.3), Color(0.42, 0.62, 0.36),
 	Color(0.62, 0.42, 0.72)]
 const VALE_HOUSE_COLORS: Array[Color] = [Color(0.93, 0.88, 0.76), Color(0.88, 0.78, 0.62), Color(0.8, 0.84, 0.88), Color(0.92, 0.82, 0.7)]
@@ -129,6 +135,11 @@ func _initialize() -> void:
 	_results.append("%s -> %s" % [OakshireValeLayout.HORIZON_PATH, error_string(_bake_horizon())])
 	_results.append("%s -> %s" % [OAKSHIRE_PATH, error_string(_save(_build_shell(), OAKSHIRE_PATH))])
 	_build_landblocks()
+	var cartography: Dictionary = {"footprints": [], "cracks": []}
+	for chunk: Vector2i in _roots:
+		_record_cartography(_roots[chunk], cartography)
+	var listing: String = OakshireValeLayout.LANDBLOCK_FOLDER + CartographyBaker.CARTOGRAPHY_FILE
+	_results.append("%s -> %s" % [listing, error_string(_save_cartography(cartography, listing))])
 	for chunk: Vector2i in _roots:
 		var path: String = "%slandblock_%s.tscn" % [OakshireValeLayout.LANDBLOCK_FOLDER, WorldGridConfig.chunk_key(chunk)]
 		var error: Error = _save(_roots[chunk], path)
@@ -278,8 +289,45 @@ func _build_landblocks() -> void:
 		_add_camp(petal)
 	_add_orchard()
 	_add_aprons()
+	_add_terrace_climbs()
 	_add_spawners()
 	_add_flocks()
+
+
+## The slope contract on Quarry-Wick's terraces (18 GDD §3.2): where the
+## quarry road climbs past each terrace riser, half-set log sleepers across it
+## and low guide-posts both sides, so the way up reads at a glance.
+func _add_terrace_climbs() -> void:
+	var petal: int = OakshireValeLayout.Petal.QUARRY
+	var step: float = (OakshireValeLayout.TERRACE_TOP - OakshireValeLayout.MEADOW_HEIGHT) / OakshireValeLayout.TERRACE_COUNT
+	var run: float = (OakshireValeLayout.CLIFF_FOOT - OakshireValeLayout.MEADOW_OUTER) / OakshireValeLayout.TERRACE_COUNT
+	for riser: int in range(1, OakshireValeLayout.TERRACE_COUNT):
+		# The riser's middle, as a ring distance: just short of the shelf boundary.
+		var target: float = OakshireValeLayout.MEADOW_OUTER + run * riser - run * OakshireValeLayout.TERRACE_RISER * 0.5
+		var r: float = OakshireValeLayout.ROAD_START
+		while r < _vale.road_end(petal):
+			var point: Vector3 = _vale.road_point(petal, r)
+			if OakshireValeLayout.ring_distance(Vector2(point.x, point.z) - OakshireValeLayout.CENTER) >= target:
+				break
+			r += 0.5
+		if r >= _vale.road_end(petal):
+			continue
+		var foot: Vector3 = _vale.road_point(petal, r - TERRACE_CLIMB_HALF)
+		var top: Vector3 = _vale.road_point(petal, r + TERRACE_CLIMB_HALF)
+		var length: float = Vector2(foot.x, foot.z).distance_to(Vector2(top.x, top.z))
+		_put(WorldKitInstance.make("TerraceSleepers%d" % riser, WorldVisualCatalog.KIT_PATH_SLEEPER, Vector3.ZERO, _facing(foot, Vector3(top.x, foot.y, top.z)),
+			{&"size": Vector3(OakshireValeLayout.ROAD_HALF_WIDTH * 2.0 - 1.4, maxf(top.y - foot.y, 0.05), length), &"seed_value": 30 + riser}), foot, false)
+		var posts: int = int(length / TERRACE_POST_SPACING) + 1
+		for index: int in posts:
+			var t: float = float(index) / maxf(1.0, posts - 1)
+			var along: Vector3 = _vale.road_point(petal, lerpf(r - TERRACE_CLIMB_HALF, r + TERRACE_CLIMB_HALF, t))
+			var ahead: Vector3 = _vale.road_point(petal, lerpf(r - TERRACE_CLIMB_HALF, r + TERRACE_CLIMB_HALF, t) + 1.0)
+			var across: Vector3 = Vector3(ahead.z - along.z, 0.0, along.x - ahead.x).normalized()
+			for side: float in [-1.0, 1.0]:
+				var at: Vector3 = _ground_at(along + across * side * (OakshireValeLayout.ROAD_HALF_WIDTH + 0.45))
+				_put(_guide_post("TerracePost%d%s%d" % [riser, "L" if side < 0.0 else "R", index], Vector3.ZERO), at - Vector3(0.0, 0.04, 0.0), false)
+	if step <= 0.0:
+		push_warning("build_oakshire_vale: the terraces have no rise")
 
 
 ## Puts a node at its world position in the landblock of the chunk it stands in.
@@ -340,7 +388,8 @@ func _add_village() -> void:
 		for slot: int in stalls:
 			var bearing_degrees: float = gaps[index] + 72.0 * (slot + 1.0) / (stalls + 1.0)
 			var spot: Vector3 = _around(center, bearing_degrees, STALL_RADIUS)
-			_put(_stall("Stall%d" % vendor_index, STALL_COLORS[vendor_index % STALL_COLORS.size()], _facing(spot, center)), spot, true)
+			var dye: Color = WorldAssetCatalog.MARKET_DYES[vendor_index % WorldAssetCatalog.MARKET_DYES.size()]
+			_put(_stall("Stall%d" % vendor_index, dye, _facing(spot, center), vendor_index), spot, true)
 			var entry: Array = VENDORS[vendor_index]
 			var behind: Vector3 = _around(center, bearing_degrees, STALL_RADIUS + 1.6)
 			_npc(TownsfolkNPC.Role.VENDOR, entry[0], entry[1], "Oakshire-Wick", PackedStringArray(), entry[2], entry[3], behind, _facing(behind, center),
@@ -366,19 +415,16 @@ func _add_village() -> void:
 		_villager(home, route)
 
 
-func _stall(stall_name: String, color: Color, yaw: float) -> StaticBody3D:
+## A market stall: an artisan timber pavilion under striped linen in one of the
+## market's four heritage dyes (kit_market_pavilion, 18 GDD §4.3), its counter the collider.
+func _stall(stall_name: String, dye: Color, yaw: float, seed_value: int) -> StaticBody3D:
 	var stall: StaticBody3D = StaticBody3D.new()
 	stall.name = stall_name
 	stall.collision_layer = ActorBase.LAYER_LOW_SCENERY
 	stall.collision_mask = 0
 	stall.rotation.y = yaw
-	var wood: Material = _material(Color(0.5, 0.36, 0.22))
-	stall.add_child(ShapeKit.box("Counter", Vector3(2.6, 1.0, 0.9), Vector3(0.0, 0.5, 0.0), wood))
-	for corner: Vector2 in [Vector2(-1.25, -0.4), Vector2(1.25, -0.4), Vector2(-1.25, 0.9), Vector2(1.25, 0.9)]:
-		stall.add_child(ShapeKit.cylinder("Post", 0.06, 0.06, 2.6, Vector3(corner.x, 1.3, corner.y), wood, 6))
-	var canopy: MeshInstance3D = ShapeKit.box("Canopy", Vector3(2.9, 0.12, 1.8), Vector3(0.0, 2.6, 0.25), WorldVisualCatalog.painted(color))
-	canopy.rotation.x = 0.18
-	stall.add_child(canopy)
+	stall.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_MARKET_PAVILION, Vector3.ZERO, 0.0,
+		{&"tint": dye, &"accent": WorldAssetCatalog.MARKET_LINEN, &"seed_value": seed_value}))
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	shape.name = "Collision"
 	var box: BoxShape3D = BoxShape3D.new()
@@ -727,7 +773,7 @@ func _add_petal_landmarks(petal: int, center: Vector3) -> void:
 				var at: Vector3 = _ground_at(ring_at + Vector3(cos(angle), 0.0, sin(angle)) * 8.0)
 				var body: StaticBody3D = _collider("NineStone%d" % (stone + 1), Vector3(1.2, 3.6, 0.8), Vector3(0.0, 1.8, 0.0))
 				body.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_STANDING_STONE, Vector3(0.0, -1.8, 0.0), 0.0,
-					{&"size": Vector3(1.2, 3.6 + float(stone % 3) * 0.4, 0.8), &"tint": Color(0.56, 0.58, 0.6)}))
+					{&"size": Vector3(1.2, 3.6 + float(stone % 3) * 0.4, 0.8), &"tint": Color(0.56, 0.58, 0.6), &"seed_value": 70 + stone}))
 				_put(body, at + Vector3(0.0, 1.8, 0.0), true)
 				body.rotation.y = _facing(at, ring_at)
 			# The Threshold Bell-Frame in the middle, and an old flagged causeway back to the camp.
@@ -747,6 +793,14 @@ func _add_petal_landmarks(petal: int, center: Vector3) -> void:
 					WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.COBBLED_FLAGSTONE, Color(0.74, 0.72, 0.66), false, 0.4))
 				flag.rotation.y = _facing(center, ring_at) + sin(step * 2.3) * 0.15
 				_put(flag, at + Vector3(0.0, 0.0, 0.0), false)
+			# Low guide-posts both sides of the causeway's approach (18 GDD §3.2).
+			var sideways: Vector3 = (ring_at - center).cross(Vector3.UP).normalized()
+			var posts: int = int(center.distance_to(ring_at) / CAUSEWAY_POST_SPACING)
+			for post: int in range(1, posts):
+				var t: float = float(post) / posts
+				for side: float in [-1.0, 1.0]:
+					var at: Vector3 = _ground_at(center.lerp(ring_at, t) + sideways * side * CAUSEWAY_POST_OFFSET)
+					_put(_guide_post("CausewayPost%s%d" % ["L" if side < 0.0 else "R", post], Vector3.ZERO), at - Vector3(0.0, 0.04, 0.0), false)
 
 
 ## A spot `ahead` metres along `outward` and `side` along `across` from `center`,

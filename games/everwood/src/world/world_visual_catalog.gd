@@ -97,6 +97,12 @@ const MUSIC_BIOMES: Dictionary[StringName, StringName] = {
 const SUNKEN_LANE_Z: float = -62.0
 
 ## The kits (§4), in catalog order.
+## The leaf ramp's share of a crown's light, the grass's sunlit tip and its wind-wave (18 GDD §4.1-4.2).
+const LEAF_RAMP_SHARE: float = 0.75
+const GRASS_TIP: Color = Color("#84BD52")
+const GRASS_WAVE_BEND_DEG: float = 28.0
+const GRASS_GUST_SHEEN: float = 0.14
+
 const KIT_HOUSE_STEPPED_GABLE: StringName = &"kit_house_stepped_gable"
 const KIT_WATERMILL_WHEEL: StringName = &"kit_watermill_wheel"
 const KIT_BRIDGE_STONE_ARCH: StringName = &"kit_bridge_stone_arch"
@@ -118,6 +124,12 @@ const KIT_WIND_LANTERN_POST: StringName = &"kit_wind_lantern_post"
 const KIT_WINDMILL: StringName = &"kit_windmill"
 const KIT_QUARRY_CRANE: StringName = &"kit_quarry_crane"
 const KIT_ASHLAR_STACK: StringName = &"kit_ashlar_stack"
+# Phase 18 (18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md §3.2, §4.3).
+const KIT_MARKET_PAVILION: StringName = &"kit_market_pavilion"
+const KIT_CLIFF_CORNICE: StringName = &"kit_cliff_cornice"
+const KIT_PATH_SLEEPER: StringName = &"kit_path_sleeper"
+const KIT_STEPPING_STONE: StringName = &"kit_stepping_stone"
+const KIT_GUIDE_POST: StringName = &"kit_guide_post"
 const TREE_KITS: Array[StringName] = [KIT_TREE_MOSS_OAK, KIT_TREE_ORCHARD_APPLE, KIT_TREE_WEEPING_WILLOW, KIT_TREE_HIGHLAND_PINE]
 
 static var _biomes: Dictionary[StringName, ZoneBiomeResource] = {}
@@ -125,6 +137,8 @@ static var _biome_order: Array[StringName] = []
 static var _kits: Dictionary[StringName, WorldPropKitResource] = {}
 static var _kit_order: Array[StringName] = []
 static var _succession: Dictionary[int, ZoneSuccessionVisualResource] = {}
+static var _map_zones: Dictionary[StringName, WorldMapZoneResource] = {}
+static var _map_zone_order: Array[StringName] = []
 static var _materials: Dictionary[String, Material] = {}
 
 
@@ -161,6 +175,35 @@ static func succession(state: int) -> ZoneSuccessionVisualResource:
 
 
 ## The biome a place wears (&"" for a place we haven't dressed).
+## A place on the Wayfarer's map by id (18 GDD §8.1), or null.
+static func map_zone(id: StringName) -> WorldMapZoneResource:
+	_ensure()
+	return _map_zones.get(id, null)
+
+
+## Every map place in one instance (InstanceManager id), in registration order; every one when `instance` is &"".
+static func map_zones(instance: StringName = &"") -> Array[WorldMapZoneResource]:
+	_ensure()
+	var list: Array[WorldMapZoneResource] = []
+	for id: StringName in _map_zone_order:
+		var zone: WorldMapZoneResource = _map_zones[id]
+		if instance == &"" or zone.instance_id == instance:
+			list.append(zone)
+	return list
+
+
+## The map place a spot (world x, z) is in: the one it lies deepest inside, else the nearest (null in an instance with none).
+static func map_zone_at(instance: StringName, at: Vector2) -> WorldMapZoneResource:
+	var best: WorldMapZoneResource = null
+	var best_share: float = INF
+	for zone: WorldMapZoneResource in map_zones(instance):
+		var share: float = zone.reach_share(at)
+		if share < best_share:
+			best_share = share
+			best = zone
+	return best
+
+
 static func biome_for_place(place: String) -> StringName:
 	return PLACE_BIOMES.get(place, &"")
 
@@ -194,6 +237,20 @@ static func craft(layer: int, tint: Color, fade: bool = false, moss: float = 0.0
 	made.set_shader_parameter(&"shade_color", Color(0.46, 0.38, 0.42))
 	_materials[key] = made
 	return made
+
+
+## The same crafted surface darkened by its mesh's baked vertex shade (ShapeKit's
+## sculpted megaliths, cornices and foundation skirts, 18 GDD §4.3).
+static func shaded(material: Material) -> Material:
+	var crafted: ShaderMaterial = material as ShaderMaterial
+	if crafted == null or (crafted.shader != TRIPLANAR_SHADER and crafted.shader != TRIPLANAR_DOUBLE_SHADER):
+		return material
+	var key: String = "shaded:%d" % crafted.get_instance_id()
+	if not _materials.has(key):
+		var copy: ShaderMaterial = crafted.duplicate() as ShaderMaterial
+		copy.set_shader_parameter(&"vertex_shade", true)
+		_materials[key] = copy
+	return _materials[key]
 
 
 ## The same crafted surface seen from both sides (ramps, decks); any other material goes to StorybookMaterial.double_sided().
@@ -285,6 +342,36 @@ static func foliage(tint: Color = Color.WHITE, sway_height: float = 6.0, flex: f
 	return made
 
 
+## A tree's crown: foliage lit in the three-band leaf ramp with the sun's
+## backlight through it (18 GDD §4.1), otherwise as foliage().
+static func canopy(tint: Color = Color.WHITE, sway_height: float = 6.0, flex: float = 0.2, fade: bool = false,
+		fade_out: float = 0.0) -> ShaderMaterial:
+	var key: String = "canopy:%s:%.2f:%.2f:%s:%.0f" % [tint.to_html(), sway_height, flex, fade, fade_out]
+	if not _materials.has(key):
+		var made: ShaderMaterial = foliage(tint, sway_height, flex, 0.0, fade, fade_out).duplicate() as ShaderMaterial
+		made.set_shader_parameter(&"leaf_ramp", LEAF_RAMP_SHARE)
+		made.set_shader_parameter(&"backlight", 1.0)
+		_materials[key] = made
+	return _materials[key] as ShaderMaterial
+
+
+## Lush grass tufts (18 GDD §4.2): roots in the ground's colour (the instance's),
+## tips ripening to `tip`, bending up to 28 degrees in the rolling wind-waves with
+## a 14% gust sheen, parting from heroes within 1.2 m and shrinking away by `fade_out`.
+static func grass_blades(tip: Color = GRASS_TIP, fade_out: float = 95.0) -> ShaderMaterial:
+	var key: String = "grass:%s:%.0f" % [tip.to_html(), fade_out]
+	if not _materials.has(key):
+		var made: ShaderMaterial = foliage(Color.WHITE, 0.5, 0.9, 1.0, false, fade_out).duplicate() as ShaderMaterial
+		made.set_shader_parameter(&"grass_blades", true)
+		made.set_shader_parameter(&"tip_color", tip)
+		made.set_shader_parameter(&"wave_bend_degrees", GRASS_WAVE_BEND_DEG)
+		made.set_shader_parameter(&"gust_sheen", GRASS_GUST_SHEEN)
+		made.set_shader_parameter(&"backlight", 0.5)
+		made.set_shader_parameter(&"dapple", 0.08)
+		_materials[key] = made
+	return _materials[key] as ShaderMaterial
+
+
 ## Water: &"canal" (a lively flow with foam, over a real bed), &"flat" (painted over a
 ## solid floor: a village canal, a fountain), &"pool" (still and deep), &"shrine"
 ## (clear and sparkling, on a basin's top) or &"falls" (a white curtain).
@@ -330,10 +417,12 @@ static func _ensure() -> void:
 	_build_biomes()
 	_build_kits()
 	_build_succession()
+	_build_map_zones()
 
 
 static func _build_biomes() -> void:
-	var meadow_flowers: Array[Color] = [Color(0.96, 0.95, 0.88), Color(0.98, 0.84, 0.3), Color(0.86, 0.62, 0.78)]
+	# White meadow daisies, golden buttercups and white clover (18 §4.2: no bright magenta blobs).
+	var meadow_flowers: Array[Color] = [Color(0.97, 0.96, 0.9), Color(0.98, 0.82, 0.26), Color(0.93, 0.9, 0.84)]
 	var hollow_flowers: Array[Color] = [Color(0.98, 0.85, 0.5), Color(0.55, 0.72, 0.4), Color(0.62, 0.66, 0.9)]
 	var heather: Array[Color] = [Color(0.62, 0.42, 0.66), Color(0.74, 0.56, 0.78), Color(0.95, 0.92, 0.84)]
 	# The six atlas zones.
@@ -452,6 +541,11 @@ static func _build_kits() -> void:
 	_kit(KIT_WINDMILL, "Hillside Windmill", &"ARCHITECTURE", Vector3(5.0, 11.0, 5.0), false, true)
 	_kit(KIT_QUARRY_CRANE, "Timber Pulley-Crane", &"LANDSCAPE", Vector3(4.0, 6.5, 3.0), false, true)
 	_kit(KIT_ASHLAR_STACK, "Iron-Root Ashlar Stack", &"LANDSCAPE", Vector3(3.0, 1.8, 2.0), false, false)
+	_kit(KIT_MARKET_PAVILION, "Artisan Market Pavilion", &"ARCHITECTURE", Vector3(3.6, 3.3, 3.0), false, true)
+	_kit(KIT_CLIFF_CORNICE, "Crag-Crest Cornice", &"LANDSCAPE", Vector3(6.0, 1.0, 1.8), false, false)
+	_kit(KIT_PATH_SLEEPER, "Hewn Log-Sleeper Steps", &"LANDSCAPE", Vector3(2.2, 0.3, 4.0), true, false)
+	_kit(KIT_STEPPING_STONE, "Mossy Stepping-Stones", &"LANDSCAPE", Vector3(1.8, 0.25, 4.0), true, false)
+	_kit(KIT_GUIDE_POST, "Wayfarer Guide-Post", &"LANDSCAPE", Vector3(0.3, 0.6, 0.3), true, false)
 
 
 static func _kit(id: StringName, label: String, category: StringName, size: Vector3, low: bool, fade: bool) -> void:
@@ -493,6 +587,61 @@ static func _succession_state(state: int, label: String, desaturation: float, wa
 	made.weathering_frost_or_fog_intensity = weather
 	made.mote_color = motes
 	_succession[state] = made
+
+
+# --- The Wayfarer's map (18 GDD §7, §8.1) ----------------------------------------------
+
+## Every map place, per instance, at its world centre. Oakshire Vale's petals
+## centre on their camps (OakshireValeLayout.camp_center_2d); the trail's stops
+## follow LandblockManifest's zone origins along the corridor at x = 64 (north is -Z).
+static func _build_map_zones() -> void:
+	const VALE: StringName = &"oakshire_vale"
+	const WORLD: StringName = &"everwood_world"
+	var petals: PackedStringArray = PackedStringArray(["wayfarer_green", "pippin_green", "quarry_wick", "bramble_hollow", "nine_stones_crossing"])
+	_map_zone(OAKSHIRE_WICK, "Oakshire-Wick", VALE, Vector2(768.0, 768.0), 140.0, petals)
+	_map_zone(WAYFARER_GREEN, "Wayfarer-Green", VALE, Vector2(736.5, 1218.0), 175.0, PackedStringArray(["oakshire_wick", "pippin_green"]))
+	_map_zone(PIPPIN_GREEN, "Pippin-Green", VALE, Vector2(434.9, 378.5), 175.0, PackedStringArray(["oakshire_wick", "bramble_hollow"]))
+	_map_zone(QUARRY_WICK, "Quarry-Wick", VALE, Vector2(1184.3, 1012.1), 175.0, PackedStringArray(["oakshire_wick", "wayfarer_green"]))
+	_map_zone(BRAMBLE_HOLLOW, "Bramble-Hollow", VALE, Vector2(1040.2, 311.4), 175.0, PackedStringArray(["oakshire_wick", "quarry_wick"]))
+	_map_zone(NINE_STONES_CROSSING, "Nine-Stones-Crossing", VALE, Vector2(305.7, 805.1), 175.0, PackedStringArray(["oakshire_wick", "pippin_green"]))
+	_map_zone(HONEY_WICK, "Honey-Wick", WORLD, Vector2(64.0, 192.0), 64.0, PackedStringArray(["bramble_bridge"]))
+	_map_zone(BRAMBLE_BRIDGE, "Bramble-Bridge", WORLD, Vector2(64.0, 64.0), 64.0, PackedStringArray(["honey_wick", "moss_oak_hollow"]))
+	_map_zone(MOSS_OAK_HOLLOW, "Moss-Oak-Hollow", WORLD, Vector2(64.0, -30.0), 40.0, PackedStringArray(["bramble_bridge", "rush_light_hollow"]))
+	_map_zone(RUSH_LIGHT_HOLLOW, "Rush-Light-Hollow", WORLD, Vector2(64.0, -92.0), 32.0, PackedStringArray(["moss_oak_hollow", "dover_slap_bridge"]))
+	_map_zone(&"dover_slap_bridge", "Dover-Slap-Bridge", WORLD, Vector2(64.0, -168.0), 52.0, PackedStringArray(["rush_light_hollow", "ring_of_the_cairnsman"]))
+	_map_zone(RING_OF_THE_CAIRNSMAN, "The Ring of the Cairnsman", WORLD, Vector2(64.0, -262.0), 48.0, PackedStringArray(["dover_slap_bridge"]))
+	# The classic instances: the walled hub, and the expedition with its three zones end to end.
+	_map_zone(&"hub_bramble_bridge", "Bramble-Bridge", &"hub_town", Vector2(0.0, 0.0), 70.0, PackedStringArray())
+	_map_zone(&"expedition_moss_oak_hollow", "Moss-Oak-Hollow", &"dungeon_dojo", Vector2(0.0, 52.0), 40.0,
+		PackedStringArray(["expedition_dover_slap_bridge"]))
+	_map_zone(&"expedition_dover_slap_bridge", "Dover-Slap-Bridge", &"dungeon_dojo", Vector2(0.0, -5.0), 20.0,
+		PackedStringArray(["expedition_moss_oak_hollow", "expedition_ring_of_the_cairnsman"]))
+	_map_zone(&"expedition_ring_of_the_cairnsman", "The Ring of the Cairnsman", &"dungeon_dojo", Vector2(0.0, -52.0), 26.0,
+		PackedStringArray(["expedition_dover_slap_bridge"]))
+
+
+static func _map_zone(id: StringName, label: String, instance: StringName, center: Vector2, radius: float, leads_to: PackedStringArray) -> void:
+	var override: WorldMapZoneResource = _load_override(StringName("map_%s" % id)) as WorldMapZoneResource
+	if override != null:
+		_map_zones[id] = override
+		_map_zone_order.append(id)
+		return
+	var made: WorldMapZoneResource = WorldMapZoneResource.new()
+	made.zone_id = id
+	made.display_name = label
+	made.instance_id = instance
+	made.world_center_xz = center
+	made.world_radius_m = radius
+	made.connects_to_zone_ids = leads_to
+	var look: ZoneBiomeResource = biome(biome_for_place(label)) if biome_for_place(label) != &"" else _biomes.get(id, null)
+	if look == null and label == "Dover-Slap-Bridge":
+		look = _biomes.get(DOVER_SLAP_FALLS, null)
+	if look != null:
+		made.cooper_sign_title = look.cooper_sign_title
+		made.primary_scribe_sign = look.primary_scribe_sign
+	made.landmark_label_offset = Vector2(0.0, -radius * 0.55)
+	_map_zones[id] = made
+	_map_zone_order.append(id)
 
 
 static func _load_override(id: StringName) -> Resource:

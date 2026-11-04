@@ -14,6 +14,7 @@ shader_parameter/craft_layer = 7.0
 shader_parameter/triplanar_scale = 0.2
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -23,6 +24,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -74,6 +76,7 @@ shader_parameter/craft_layer = 7.0
 shader_parameter/triplanar_scale = 0.2
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -83,6 +86,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -96,72 +100,72 @@ bottom_radius = 5.6
 height = 5.4
 radial_segments = 16
 
-[node name="Landblock_5_7" type="Node3D" unique_id=1903493906]
+[node name="Landblock_5_7" type="Node3D" unique_id=979697594]
 metadata/chunk = Vector2i(5, 7)
 metadata/buildings = true
 
-[node name="BridgeWardenSpan" type="Node3D" parent="." unique_id=537648960]
+[node name="BridgeWardenSpan" type="Node3D" parent="." unique_id=1158491357]
 transform = Transform3D(-0.9412542, 0, 0.33769912, 0, 1.0000001, 0, -0.33769912, 0, -0.9412542, 735.51685, 0.4, 905.2073)
 
-[node name="Deck" type="StaticBody3D" parent="BridgeWardenSpan" unique_id=1857834686]
+[node name="Deck" type="StaticBody3D" parent="BridgeWardenSpan" unique_id=433873826]
 collision_layer = 32
 collision_mask = 0
 
-[node name="Middle" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=926148890]
+[node name="Middle" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=2142836420]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
 mesh = SubResource("BoxMesh_ipjoh")
 
-[node name="MiddleCollision" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=747474126]
+[node name="MiddleCollision" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=362310440]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
 shape = SubResource("BoxShape3D_0c5e7")
 
-[node name="Ramp" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=1239602384]
+[node name="Ramp" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=1368877110]
 transform = Transform3D(1, 0, 0, 0, 0.96577656, 0.2593755, 0, -0.2593755, 0.96577656, 0, 1.2757328, -11)
 mesh = SubResource("BoxMesh_j0xqk")
 
-[node name="RampCollision" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=232050552]
+[node name="RampCollision" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=2089219829]
 transform = Transform3D(1, 0, 0, 0, 0.96577656, 0.2593755, 0, -0.2593755, 0.96577656, 0, 1.2757328, -11)
 shape = SubResource("BoxShape3D_uivym")
 
-[node name="@MeshInstance3D@45" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=834866413]
+[node name="@MeshInstance3D@3" type="MeshInstance3D" parent="BridgeWardenSpan/Deck" unique_id=1920979557]
 transform = Transform3D(1, 0, 0, 0, 0.96586907, -0.25903073, 0, 0.25903073, 0.96586907, 0, 1.2772635, 11)
 mesh = SubResource("BoxMesh_hxjem")
 
-[node name="@CollisionShape3D@46" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=1745596616]
+[node name="@CollisionShape3D@4" type="CollisionShape3D" parent="BridgeWardenSpan/Deck" unique_id=1496538489]
 transform = Transform3D(1, 0, 0, 0, 0.96586907, -0.25903073, 0, 0.25903073, 0.96586907, 0, 1.2772635, 11)
 shape = SubResource("BoxShape3D_bgm80")
 
-[node name="Parapet" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=1481077381]
+[node name="Parapet" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=1210032016]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 3, 0)
 mesh = SubResource("BoxMesh_1t74u")
 
-[node name="@MeshInstance3D@44" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=673698189]
+[node name="@MeshInstance3D@2" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=780579718]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, 3, 0)
 mesh = SubResource("BoxMesh_ixlu0")
 
-[node name="@MeshInstance3D@47" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=850168165]
+[node name="@MeshInstance3D@5" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=2103380972]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 3, 0)
 mesh = SubResource("BoxMesh_3qj5t")
 
-[node name="@MeshInstance3D@48" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=1859823153]
+[node name="@MeshInstance3D@6" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=1934697962]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, 3, 0)
 mesh = SubResource("BoxMesh_4v5wp")
 
-[node name="Arch" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=645097050]
+[node name="Arch" type="MeshInstance3D" parent="BridgeWardenSpan" unique_id=28899875]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, -3.3, 0)
 mesh = SubResource("CylinderMesh_lf1pv")
 
-[node name="BridgeLantern" type="Node3D" parent="." unique_id=1163031064]
+[node name="BridgeLantern" type="Node3D" parent="." unique_id=1137383460]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 733.6904, 0.9492129, 921.5506)
 script = ExtResource("2_vf2jv")
 kit_id = &"kit_wind_lantern_post"
 
-[node name="@Node3D@49" type="Node3D" parent="." unique_id=797948275]
+[node name="@Node3D@7" type="Node3D" parent="." unique_id=1485178843]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 726.53687, 0.83975255, 918.9841)
 script = ExtResource("2_vf2jv")
 kit_id = &"kit_wind_lantern_post"
 
-[node name="Guard_Ivo" type="Node3D" parent="." unique_id=1807542672 groups=["landblock_entities"]]
+[node name="Guard_Ivo" type="Node3D" parent="." unique_id=1025207672 groups=["landblock_entities"]]
 transform = Transform3D(0.94125414, 0, -0.33769906, 0, 1, 0, 0.33769906, 0, 0.94125414, 725.6732, 0.9223326, 920.7991)
 script = ExtResource("3_w6s6h")
 role = 2
@@ -173,7 +177,7 @@ body_color = Color(0.32, 0.46, 0.72, 1)
 accent_color = Color(0.86, 0.66, 0.3, 1)
 npc_seed = 625
 
-[node name="Spawner_Vermin_05" type="Node3D" parent="." unique_id=1241790596 groups=["landblock_entities"]]
+[node name="Spawner_Vermin_05" type="Node3D" parent="." unique_id=1703513732 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 678.1777, 4.4869804, 950.5228)
 script = ExtResource("4_igv5y")
 territory = "The Settled Meadow"
@@ -181,7 +185,7 @@ variant_ids = Array[StringName]([&"thorn_tail_scuttler", &"thorn_tail_scuttler",
 leash = 23.93716
 patrol = PackedVector3Array()
 
-[node name="SheepFlock2" type="Node3D" parent="." unique_id=2137517389]
+[node name="SheepFlock2" type="Node3D" parent="." unique_id=972238673]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 674.05817, 3.228448, 942.1831)
 script = ExtResource("5_ujxkh")
 count = 5

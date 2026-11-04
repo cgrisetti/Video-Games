@@ -17,7 +17,7 @@ height = 1.1
 radial_segments = 16
 rings = 8
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_f6unc"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_rk3yc"]
 render_priority = 0
 shader = ExtResource("1_srmki")
 shader_parameter/albedo = Color(0.36, 0.24, 0.14, 1)
@@ -25,6 +25,7 @@ shader_parameter/craft_layer = 3.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -34,6 +35,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -41,28 +43,28 @@ shader_parameter/metal = null
 shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_ccqy0"]
-material = SubResource("ShaderMaterial_f6unc")
+material = SubResource("ShaderMaterial_rk3yc")
 top_radius = 0.12
 bottom_radius = 0.12
 height = 1.4
 radial_segments = 6
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_06vcb"]
-material = SubResource("ShaderMaterial_f6unc")
+material = SubResource("ShaderMaterial_rk3yc")
 top_radius = 0.12
 bottom_radius = 0.12
 height = 1.4
 radial_segments = 6
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_p6dgs"]
-material = SubResource("ShaderMaterial_f6unc")
+material = SubResource("ShaderMaterial_rk3yc")
 top_radius = 0.12
 bottom_radius = 0.12
 height = 1.4
 radial_segments = 6
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_7xtav"]
-material = SubResource("ShaderMaterial_f6unc")
+material = SubResource("ShaderMaterial_rk3yc")
 top_radius = 0.12
 bottom_radius = 0.12
 height = 1.4
@@ -79,6 +81,7 @@ shader_parameter/craft_layer = 0.0
 shader_parameter/triplanar_scale = 0.3333333333333333
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -88,6 +91,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -106,6 +110,7 @@ shader_parameter/craft_layer = 2.0
 shader_parameter/triplanar_scale = 0.3333333333333333
 shader_parameter/normal_strength = 0.3
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -115,6 +120,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -147,80 +153,80 @@ size = Vector3(3.2, 0.2, 3.6)
 material = SubResource("ShaderMaterial_fb20x")
 size = Vector3(3.2, 2.4, 3.6)
 
-[node name="Landblock_3_2" type="Node3D" unique_id=1630369135]
+[node name="Landblock_3_2" type="Node3D" unique_id=938814942]
 metadata/chunk = Vector2i(3, 2)
 metadata/buildings = true
 
-[node name="Campfire" type="Node3D" parent="." unique_id=790381173]
+[node name="Campfire" type="Node3D" parent="." unique_id=1790885126]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 434.8684, 19.76923, 378.50427)
 
-[node name="Flames" type="MeshInstance3D" parent="Campfire" unique_id=506537488]
+[node name="Flames" type="MeshInstance3D" parent="Campfire" unique_id=700913973]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
 cast_shadow = 0
 mesh = SubResource("SphereMesh_86214")
 
-[node name="Log0" type="MeshInstance3D" parent="Campfire" unique_id=464984626]
+[node name="Log0" type="MeshInstance3D" parent="Campfire" unique_id=697630497]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.12, 0)
 mesh = SubResource("CylinderMesh_ccqy0")
 
-[node name="Log1" type="MeshInstance3D" parent="Campfire" unique_id=604238951]
+[node name="Log1" type="MeshInstance3D" parent="Campfire" unique_id=569863625]
 transform = Transform3D(0.70710677, 0.70710677, -3.090862e-08, 0, -4.371139e-08, -1, -0.70710677, 0.70710677, -3.090862e-08, 0, 0.12, 0)
 mesh = SubResource("CylinderMesh_06vcb")
 
-[node name="Log2" type="MeshInstance3D" parent="Campfire" unique_id=1865106689]
+[node name="Log2" type="MeshInstance3D" parent="Campfire" unique_id=1550975258]
 transform = Transform3D(-4.371139e-08, 1, -4.371139e-08, 0, -4.371139e-08, -1, -1, -4.371139e-08, 1.9106855e-15, 0, 0.12, 0)
 mesh = SubResource("CylinderMesh_p6dgs")
 
-[node name="Log3" type="MeshInstance3D" parent="Campfire" unique_id=201223945]
+[node name="Log3" type="MeshInstance3D" parent="Campfire" unique_id=1362650356]
 transform = Transform3D(-0.70710677, 0.70710677, -3.090862e-08, 0, -4.371139e-08, -1, -0.70710677, -0.70710677, 3.090862e-08, 0, 0.12, 0)
 mesh = SubResource("CylinderMesh_7xtav")
 
-[node name="Tent0" type="StaticBody3D" parent="." unique_id=1835583718]
+[node name="Tent0" type="StaticBody3D" parent="." unique_id=1869225032]
 transform = Transform3D(-0.99939084, 0, -0.034899928, 0, 1, 0, 0.034899928, 0, -0.99939084, 434.5194, 19.76923, 368.51038)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Tent0" unique_id=1890516150]
+[node name="Collision" type="CollisionShape3D" parent="Tent0" unique_id=1980065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("BoxShape3D_yhqmd")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tent0" unique_id=731590336]
+[node name="Mesh" type="MeshInstance3D" parent="Tent0" unique_id=1294778090]
 mesh = SubResource("BoxMesh_80fn6")
 
-[node name="Canvas" type="MeshInstance3D" parent="Tent0" unique_id=1119864290]
+[node name="Canvas" type="MeshInstance3D" parent="Tent0" unique_id=180025154]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("PrismMesh_58trp")
 
-[node name="Tent1" type="StaticBody3D" parent="." unique_id=141836383]
+[node name="Tent1" type="StaticBody3D" parent="." unique_id=1554299873]
 transform = Transform3D(0.46947086, 0, 0.882948, 0, 1, 0, -0.882948, 0, 0.46947086, 443.69788, 19.76923, 383.19897)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Tent1" unique_id=1121349260]
+[node name="Collision" type="CollisionShape3D" parent="Tent1" unique_id=55300369]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("BoxShape3D_o6f4d")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tent1" unique_id=1345583039]
+[node name="Mesh" type="MeshInstance3D" parent="Tent1" unique_id=1208230332]
 mesh = SubResource("BoxMesh_1vt16")
 
-[node name="Canvas" type="MeshInstance3D" parent="Tent1" unique_id=1819176649]
+[node name="Canvas" type="MeshInstance3D" parent="Tent1" unique_id=810923123]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("PrismMesh_rocoj")
 
-[node name="Tent2" type="StaticBody3D" parent="." unique_id=614048164]
+[node name="Tent2" type="StaticBody3D" parent="." unique_id=723255648]
 transform = Transform3D(0.52992, 0, -0.8480477, 0, 1, 0, 0.8480477, 0, 0.52992, 426.38794, 19.76923, 383.80347)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Tent2" unique_id=2092065043]
+[node name="Collision" type="CollisionShape3D" parent="Tent2" unique_id=1993279502]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("BoxShape3D_oh2gh")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tent2" unique_id=1827517740]
+[node name="Mesh" type="MeshInstance3D" parent="Tent2" unique_id=2142614563]
 mesh = SubResource("BoxMesh_r56bm")
 
-[node name="Canvas" type="MeshInstance3D" parent="Tent2" unique_id=860499468]
+[node name="Canvas" type="MeshInstance3D" parent="Tent2" unique_id=53138803]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("PrismMesh_exxb7")
 
-[node name="QuestGiver_HobApplegarth" type="Node3D" parent="." unique_id=1237444354 groups=["landblock_entities"]]
+[node name="QuestGiver_HobApplegarth" type="Node3D" parent="." unique_id=816430575 groups=["landblock_entities"]]
 transform = Transform3D(-0.8480478, 0, -0.52991974, 0, 1, 0, 0.52991974, 0, -0.8480478, 437.25305, 19.76923, 382.3205)
 script = ExtResource("2_dy0hc")
 role = 0
@@ -233,7 +239,7 @@ body_color = Color(0.42, 0.32, 0.56, 1)
 accent_color = Color(0.86, 0.7, 0.32, 1)
 npc_seed = 619
 
-[node name="QuestGiver_NellQuince" type="Node3D" parent="." unique_id=116697095 groups=["landblock_entities"]]
+[node name="QuestGiver_NellQuince" type="Node3D" parent="." unique_id=11122406 groups=["landblock_entities"]]
 transform = Transform3D(-0.990268, 0, 0.13917364, 0, 1, 0, -0.13917364, 0, -0.990268, 434.24213, 19.76923, 382.96048)
 script = ExtResource("2_dy0hc")
 role = 0
@@ -246,7 +252,7 @@ body_color = Color(0.42, 0.32, 0.56, 1)
 accent_color = Color(0.86, 0.7, 0.32, 1)
 npc_seed = 587
 
-[node name="QuestGiver_IdaCombe" type="Node3D" parent="." unique_id=1686112646 groups=["landblock_entities"]]
+[node name="QuestGiver_IdaCombe" type="Node3D" parent="." unique_id=1072493861 groups=["landblock_entities"]]
 transform = Transform3D(-0.66912997, 0, 0.7431454, 0, 1, 0, -0.7431454, 0, -0.66912997, 431.52426, 19.76923, 381.51535)
 script = ExtResource("2_dy0hc")
 role = 0
@@ -259,12 +265,12 @@ body_color = Color(0.42, 0.32, 0.56, 1)
 accent_color = Color(0.86, 0.7, 0.32, 1)
 npc_seed = 872
 
-[node name="ChimePost" type="Node3D" parent="." unique_id=435779107]
+[node name="ChimePost" type="Node3D" parent="." unique_id=1756578330]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 441.67575, 19.76923, 365.70154)
 script = ExtResource("3_dy4y4")
 place = "Pippin-Green"
 
-[node name="Guard_Petra" type="Node3D" parent="." unique_id=1543226882 groups=["landblock_entities"]]
+[node name="Guard_Petra" type="Node3D" parent="." unique_id=1721288296 groups=["landblock_entities"]]
 transform = Transform3D(0.5299198, 0, -0.8480478, 0, 1, 0, 0.8480478, 0, 0.5299198, 446.7411, 19.76923, 371.0854)
 script = ExtResource("2_dy0hc")
 role = 2

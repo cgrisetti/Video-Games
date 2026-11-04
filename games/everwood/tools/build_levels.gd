@@ -119,6 +119,9 @@ const HOLLOWAY_TOP_Z: float = 46.0
 const HOLLOWAY_FLOOR_START_Z: float = 38.0
 const HOLLOWAY_FLOOR_END_Z: float = 22.0
 const HOLLOWAY_EXIT_Z: float = 14.0
+## Guide-posts on climbable ramps (18 GDD §3.2): no taller than 0.6 m, this far apart.
+const GUIDE_POST_HEIGHT: float = 0.55
+const GUIDE_POST_SPACING: float = 2.0
 const BANK_WIDTH: float = 4.0
 ## Banks stand this far above the ground beside them.
 const BANK_LIP: float = 0.8
@@ -198,6 +201,8 @@ const BAKERY_HOUSE: int = 2
 const SMOKE_COLOR: Color = Color(0.85, 0.83, 0.8, 0.5)
 ## Drying racks of pigment bundles beside the shrine (saffron, madder, woad, weld, violet).
 const PIGMENT_RACK_POSITION: Vector3 = Vector3(11.0, 0.0, -17.5)
+## Bramble-Bridge's market row: three pavilions east of the lane on the spawn green (18 GDD §4.3).
+const MARKET_ROW_SPOTS: Array[Vector3] = [Vector3(10.5, 0.0, 4.6), Vector3(10.5, 0.0, 8.8), Vector3(10.5, 0.0, 13.0)]
 const PIGMENT_COLORS: Array[Color] = [Color(0.95, 0.68, 0.15), Color(0.72, 0.2, 0.18), Color(0.2, 0.32, 0.7), Color(0.75, 0.78, 0.25),
 	Color(0.5, 0.3, 0.62)]
 ## The canal runs east-west across the village. Knee-high stone banks keep
@@ -316,9 +321,14 @@ func _initialize() -> void:
 	_results.append("%s -> %s" % [DOJO_PATH, error_string(_save(_build_dojo(), DOJO_PATH))])
 	_results.append("%s -> %s" % [WORLD_PATH, error_string(_save(_build_world(), WORLD_PATH))])
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(LandblockManifest.LANDBLOCK_FOLDER))
+	var cartography: Dictionary = {"footprints": [], "cracks": []}
 	for chunk: Vector2i in CORRIDOR_CHUNKS:
 		var path: String = LandblockManifest.landblock_path(chunk)
-		_results.append("%s -> %s" % [path, error_string(_save(_build_landblock(chunk), path))])
+		var block: Node3D = _build_landblock(chunk)
+		_record_cartography(block, cartography)
+		_results.append("%s -> %s" % [path, error_string(_save(block, path))])
+	var listing: String = LandblockManifest.LANDBLOCK_FOLDER + CartographyBaker.CARTOGRAPHY_FILE
+	_results.append("%s -> %s" % [listing, error_string(_save_cartography(cartography, listing))])
 
 
 ## The HLOD proxies are baked on the first frame, once the tree is running, so
@@ -376,6 +386,7 @@ func _build_town(root: Node3D, world_mode: bool) -> void:
 	_add_bridge(town)
 	_add_watermill(town)
 	_add_pigment_rack(town)
+	_add_market_row(town)
 	var portal: Node3D = _portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Dover-Slap-Falls Expedition", RAID_PORTAL_COLOR,
 		WORLD_RAID_PORTAL_POSITION if world_mode else RAID_PORTAL_POSITION)
 	root.add_child(_entity(portal) if world_mode else portal)
@@ -529,6 +540,31 @@ func _planter(planter_name: String, where: Vector3, index: int) -> StaticBody3D:
 
 
 ## Pigment bundles drying on a timber rack: saffron, madder, woad, weld and violet.
+## Bramble-Bridge's market row (18 GDD §4.3): three artisan pavilions on the
+## east side of the spawn green, their counters (LowScenery colliders) facing
+## west to the lane, on the square's cobbles.
+func _add_market_row(parent: Node3D) -> void:
+	for index: int in MARKET_ROW_SPOTS.size():
+		var stall: StaticBody3D = StaticBody3D.new()
+		stall.name = "MarketStall%d" % (index + 1)
+		stall.collision_layer = ActorBase.LAYER_LOW_SCENERY
+		stall.collision_mask = 0
+		stall.position = MARKET_ROW_SPOTS[index]
+		# Its front (local -Z) turned to face west, toward the lane.
+		stall.rotation = Vector3(0.0, PI * 0.5, 0.0)
+		var dye: Color = WorldAssetCatalog.MARKET_DYES[(index + 1) % WorldAssetCatalog.MARKET_DYES.size()]
+		stall.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_MARKET_PAVILION, Vector3.ZERO, 0.0,
+			{&"tint": dye, &"accent": WorldAssetCatalog.MARKET_LINEN, &"seed_value": 20 + index}))
+		var shape: CollisionShape3D = CollisionShape3D.new()
+		shape.name = "Collision"
+		var box: BoxShape3D = BoxShape3D.new()
+		box.size = Vector3(2.6, 1.0, 0.9)
+		shape.shape = box
+		shape.position = Vector3(0.0, 0.5, 0.0)
+		stall.add_child(shape)
+		parent.add_child(stall)
+
+
 func _add_pigment_rack(parent: Node3D) -> void:
 	var rack: Node3D = _node3d("PigmentRack")
 	rack.position = PIGMENT_RACK_POSITION
@@ -936,6 +972,32 @@ func _build_holloway(parent: Node3D) -> void:
 		mushroom.mesh = cap
 		mushroom.position = Vector3(side * (HOLLOWAY_HALF_WIDTH - 0.25), floor_y + 0.1, z)
 		holloway.add_child(mushroom)
+	# The slope contract (18 GDD §3.2): both ramps are dressed with half-set log
+	# sleepers and bordered by low guide-posts, so a child knows they can climb them.
+	var span: float = HOLLOWAY_HALF_WIDTH * 2.0 - 1.4
+	var down: Node3D = WorldKitInstance.make("RampDownSleepers", WorldVisualCatalog.KIT_PATH_SLEEPER, Vector3(0.0, floor_y, HOLLOWAY_FLOOR_START_Z), PI,
+		{&"size": Vector3(span, HOLLOWAY_DEPTH, HOLLOWAY_TOP_Z - HOLLOWAY_FLOOR_START_Z), &"seed_value": 1})
+	holloway.add_child(down)
+	var up: Node3D = WorldKitInstance.make("RampUpSleepers", WorldVisualCatalog.KIT_PATH_SLEEPER, Vector3(0.0, floor_y, HOLLOWAY_FLOOR_END_Z), 0.0,
+		{&"size": Vector3(span, HOLLOWAY_DEPTH, HOLLOWAY_FLOOR_END_Z - HOLLOWAY_EXIT_Z), &"seed_value": 2})
+	holloway.add_child(up)
+	for ramp: Vector4 in [Vector4(HOLLOWAY_TOP_Z, 0.0, HOLLOWAY_FLOOR_START_Z, floor_y), Vector4(HOLLOWAY_FLOOR_END_Z, floor_y, HOLLOWAY_EXIT_Z, 0.0)]:
+		var posts: int = int(absf(ramp.x - ramp.z) / GUIDE_POST_SPACING) + 1
+		for index: int in posts:
+			var t: float = float(index) / maxf(1.0, posts - 1)
+			for side: float in [-1.0, 1.0]:
+				var at: Vector3 = Vector3(side * (HOLLOWAY_HALF_WIDTH - 0.3), lerpf(ramp.y, ramp.w, t), lerpf(ramp.x, ramp.z, t))
+				holloway.add_child(_guide_post("GuidePost%d%s%d" % [int(ramp.x), "W" if side < 0.0 else "E", index], at))
+
+
+## A low wooden guide-post (kit_guide_post, 18 GDD §3.2), its collider on the
+## LowScenery layer: it borders a climbable path but never blocks a camera.
+func _guide_post(post_name: String, at: Vector3) -> StaticBody3D:
+	var post: StaticBody3D = _collider(post_name, Vector3(0.18, GUIDE_POST_HEIGHT, 0.18), at + Vector3(0.0, GUIDE_POST_HEIGHT * 0.5, 0.0),
+		ActorBase.LAYER_LOW_SCENERY)
+	post.add_child(WorldKitInstance.make("Kit", WorldVisualCatalog.KIT_GUIDE_POST, Vector3(0.0, -GUIDE_POST_HEIGHT * 0.5, 0.0), 0.0,
+		{&"height": GUIDE_POST_HEIGHT}))
+	return post
 
 
 ## Zone 2: the cliff edges, the timber-and-stone trestle bridge over the
@@ -1062,10 +1124,13 @@ func _build_ring(parent: Node3D) -> void:
 		var angle: float = TAU * float(index) / PILLAR_COUNT
 		var where: Vector3 = BOSS_POSITION + Vector3(cos(angle), 0.0, sin(angle)) * PILLAR_RING_RADIUS
 		var pillar: StaticBody3D = _pillar("Pillar%d" % (index + 1), where, _material(STONE_COLOR))
-		# Each pillar is a mossy standing stone carved with a spiral Maker-Seal.
-		(pillar.get_node("Mesh") as MeshInstance3D).visible = false
+		# Each pillar is a sculpted, Voronoi-cleaved megalith carved with a spiral
+		# Maker-Seal (18 GDD §4.3); its plain cylinder goes, its collider stays.
+		var plain: Node = pillar.get_node("Mesh")
+		pillar.remove_child(plain)
+		plain.free()
 		pillar.add_child(WorldKitInstance.make("Stone", WorldVisualCatalog.KIT_STANDING_STONE, Vector3(0.0, -PILLAR_HEIGHT * 0.5, 0.0), -angle + PI * 0.5,
-			{&"size": Vector3(PILLAR_RADIUS * 2.0, PILLAR_HEIGHT + 0.6, PILLAR_RADIUS * 1.6)}))
+			{&"size": Vector3(PILLAR_RADIUS * 2.0, PILLAR_HEIGHT + 0.6, PILLAR_RADIUS * 1.6), &"seed_value": index}))
 		ring.add_child(pillar)
 		# Six more round the outside, between the pillars (twelve in all).
 		var outer_angle: float = angle + PI / PILLAR_COUNT
@@ -1073,7 +1138,8 @@ func _build_ring(parent: Node3D) -> void:
 		if absf(outer.x) > CAUSEWAY_HALF_WIDTH + 2.0 or outer.z < BOSS_POSITION.z:
 			var standing: StaticBody3D = _collider("StandingStone%d" % (index + 1), Vector3(1.4, 4.2, 0.9), outer + Vector3(0.0, 2.1, 0.0))
 			standing.rotation.y = -outer_angle + PI * 0.5
-			standing.add_child(WorldKitInstance.make("Stone", WorldVisualCatalog.KIT_STANDING_STONE, Vector3(0.0, -2.1, 0.0)))
+			standing.add_child(WorldKitInstance.make("Stone", WorldVisualCatalog.KIT_STANDING_STONE, Vector3(0.0, -2.1, 0.0), 0.0,
+				{&"seed_value": 40 + index}))
 			ring.add_child(standing)
 	# Wind-bent highland pines in the corners, and heather banked along the north wall.
 	for corner: Vector2 in [Vector2(-1.0, -1.0), Vector2(1.0, -1.0), Vector2(-1.0, 1.0), Vector2(1.0, 1.0)]:
@@ -1625,6 +1691,58 @@ func _portal(portal_name: String, target: StringName, title: String, color: Colo
 	portal.set(&"portal_color", color)
 	portal.position = where
 	return portal
+
+
+## The Wayfarer's map listing (18 GDD §7.1): every building's footprint
+## (x, z, width, depth, yaw, road) and every Hush-Crack (its id, where, its
+## chunk and its camp's persist id) under a landblock's `root`.
+func _record_cartography(root: Node3D, into: Dictionary) -> void:
+	for node: Node in root.find_children("*", "", true, false):
+		var where: Transform3D = _world_transform(node, root)
+		var placed: WorldKitInstance = node as WorldKitInstance
+		if placed != null:
+			var footprint: PackedFloat32Array = CartographyBaker.footprint_of(placed, where)
+			if not footprint.is_empty():
+				(into["footprints"] as Array).append(Array(footprint))
+			continue
+		var crack_id: StringName = &""
+		var persist: StringName = &""
+		var camp: MinionCamp = node as MinionCamp
+		var spawner: MobSpawner = node as MobSpawner
+		if camp != null:
+			persist = camp.persist_id
+			crack_id = persist if persist != &"" else StringName(String(camp.name).to_snake_case())
+		elif spawner != null and spawner.has_hush_crack:
+			crack_id = StringName(String(spawner.name).to_snake_case())
+		if crack_id != &"":
+			var chunk: Vector2i = WorldGridConfig.world_to_chunk(where.origin)
+			(into["cracks"] as Array).append({"id": String(crack_id), "x": snappedf(where.origin.x, 0.01), "z": snappedf(where.origin.z, 0.01),
+				"chunk": [chunk.x, chunk.y], "persist": String(persist)})
+
+
+## A node's transform in the world, from its landblock `root` down (nothing here is in the tree yet).
+func _world_transform(node: Node, root: Node3D) -> Transform3D:
+	var where: Transform3D = Transform3D.IDENTITY
+	var at: Node = node
+	while at != null:
+		var spatial: Node3D = at as Node3D
+		if spatial != null:
+			where = spatial.transform * where
+		if at == root:
+			break
+		at = at.get_parent()
+	return where
+
+
+func _save_cartography(listing: Dictionary, path: String) -> Error:
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return FileAccess.get_open_error()
+	for key: String in ["footprints", "cracks"]:
+		(listing[key] as Array).sort_custom(func(a: Variant, b: Variant) -> bool: return var_to_str(a) < var_to_str(b))
+	file.store_string(JSON.stringify(listing, "\t"))
+	file.close()
+	return OK
 
 
 func _save(root: Node, path: String) -> Error:

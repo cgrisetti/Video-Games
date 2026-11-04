@@ -40,6 +40,11 @@ const FIELD_STEP: float = 2.0
 const RING_POWER: float = 4.0
 const VILLAGE_RADIUS: float = 62.0
 const VILLAGE_HEIGHT: float = 12.0
+## The market ring's cobbled plaza reaches this far from the fountain (its stalls stand at 25 m, 18 GDD §4.3).
+const MARKET_PLAZA_OUTER: float = 31.5
+## Crag-Crest Cornices along the cliff ring's crest (18 GDD §3.2): this far apart, set back this far onto the top.
+const CORNICE_SPACING: float = 5.6
+const CORNICE_SETBACK: float = 0.6
 const BASIN_RADIUS: float = 140.0
 const BASIN_HEIGHT: float = 6.0
 const MEADOW_OUTER: float = 340.0
@@ -76,6 +81,9 @@ const APRON_HEIGHT: float = 28.0
 const ROAD_START: float = VILLAGE_RADIUS
 const ROAD_HALF_WIDTH: float = 3.5
 const ROAD_BLEND: float = 9.0
+## Road camber (18 GDD §3.1).
+const FLAGGED_CROWN: float = 0.04
+const FOOTPATH_TROUGH: float = -0.05
 const VALLEY_WIDTH: float = 44.0
 ## The High Road: a ring through the meadow, wobbling in and out.
 const RING_ROAD_DISTANCE: float = 285.0
@@ -268,6 +276,9 @@ func field_height(world_x: float, world_z: float) -> float:
 		lateral = ring_lateral
 		bed = road_grade(ring_road_distance(theta))
 	h = lerpf(h, bed, _road_weight(lateral))
+	# Camber (18 GDD §3.1): flagged Bale-Ways are crowned, dirt footpaths gently troughed, so they catch the sun.
+	var on_ring: bool = ring_lateral <= road.y
+	h += road_camber(lateral, is_flagged_road(rad_to_deg(theta), d, on_ring))
 	h = _clearings(h, world_x, world_z, r)
 	h = _aprons(h, world_x, world_z)
 	# By the river a road keeps its grade, except where it comes down to its own ford.
@@ -290,7 +301,9 @@ func field_color(world_x: float, world_z: float, height: float) -> Color:
 	if river < RIVER_HALF_WIDTH + RIVER_BANK + 1.0:
 		return BANK_COLOR
 	if r < VILLAGE_RADIUS + 2.0:
-		return COBBLE_COLOR.lerp(VILLAGE_GREEN, smoothstep(14.0, 30.0, r) * (1.0 - smoothstep(44.0, 58.0, r)))
+		# The Cobblestone Plaza Apron under the whole market ring (18 GDD §4.3), its edge frayed into the green.
+		var green: float = smoothstep(MARKET_PLAZA_OUTER - 1.5, MARKET_PLAZA_OUTER + 3.0, r + (patch - 0.5) * 3.0)
+		return COBBLE_COLOR.lerp(VILLAGE_GREEN, green * (1.0 - smoothstep(44.0, 58.0, r)))
 	if road_lateral(world_x, world_z) < ROAD_HALF_WIDTH:
 		var road_degrees: float = rad_to_deg(theta)
 		if d > BASIN_RADIUS and road_degrees > 160.0 and road_degrees < 208.0:
@@ -456,6 +469,20 @@ func _aprons(h: float, world_x: float, world_z: float) -> float:
 
 
 ## How much of a road bed a spot this far from the road's middle is: 1 on it, 0 past its blend.
+## Flagged Bale-Ways (the High Road, the chalk road to Wayfarer-Green and the
+## gravel road to Quarry-Wick) are crowned; the rest are dirt footpaths.
+static func is_flagged_road(degrees: float, d: float, on_ring: bool) -> bool:
+	if on_ring:
+		return true
+	return d > BASIN_RADIUS and ((degrees > 160.0 and degrees < 208.0) or (degrees > 88.0 and degrees < 136.0))
+
+
+## A road's camber `lateral` metres off its middle: +4 cm crown on a flagged way, a -5 cm trough on a footpath.
+static func road_camber(lateral: float, flagged: bool) -> float:
+	var t: float = clampf(lateral / ROAD_HALF_WIDTH, 0.0, 1.0)
+	return (FLAGGED_CROWN if flagged else FOOTPATH_TROUGH) * (1.0 - t * t)
+
+
 static func _road_weight(lateral: float) -> float:
 	return 1.0 - smoothstep(ROAD_HALF_WIDTH + 0.5, ROAD_HALF_WIDTH + ROAD_BLEND, lateral)
 
@@ -765,8 +792,91 @@ func build_clutter_data(chunk: Vector2i) -> Dictionary:
 	packed["trees"] = props["trees"]
 	# The ground's small life (17 GDD §4.3), in the biome of the part of the vale the chunk's middle is in.
 	var middle: Vector3 = WorldGridConfig.chunk_to_world_origin(chunk) + Vector3.ONE * WorldGridConfig.CHUNK_SIZE * 0.5
-	packed["baked"] = ChunkClutterBaker.bake(chunk, WorldVisualCatalog.biome_for_place(region_name_at(middle.x, middle.z)), _grows_at)
+	packed["baked"] = ChunkClutterBaker.bake(chunk, WorldVisualCatalog.biome_for_place(region_name_at(middle.x, middle.z)), _grows_at,
+		surface_color, road_edge, sample_height, crest_pieces(chunk))
 	return packed
+
+
+## Where the Crag-Crest Cornices sit in a chunk (18 GDD §3.2): along the cliff
+## ring's crest, jutting toward the vale, so a child can tell from 60 m away that
+## the cliff is not for climbing; none where a portal apron cuts into it.
+func crest_pieces(chunk: Vector2i) -> Array[Transform3D]:
+	var pieces: Array[Transform3D] = []
+	var origin: Vector3 = WorldGridConfig.chunk_to_world_origin(chunk)
+	var size: float = WorldGridConfig.CHUNK_SIZE
+	var area: Rect2 = Rect2(origin.x, origin.z, size, size)
+	var nearest: float = INF
+	var farthest: float = 0.0
+	for corner: Vector2 in [Vector2(0.0, 0.0), Vector2(size, 0.0), Vector2(0.0, size), Vector2(size, size), Vector2(size, size) * 0.5]:
+		var d: float = ring_distance(Vector2(origin.x, origin.z) + corner - CENTER)
+		nearest = minf(nearest, d)
+		farthest = maxf(farthest, d)
+	if nearest > CLIFF_TOP_RADIUS + 10.0 or farthest < CLIFF_TOP_RADIUS - 10.0:
+		return pieces
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = absi(chunk.x * 7919 + chunk.y * 104729) + 31
+	var step: float = CORNICE_SPACING / CLIFF_TOP_RADIUS
+	var theta: float = step * 0.5
+	while theta < TAU:
+		var r: float = (CLIFF_TOP_RADIUS + CORNICE_SETBACK) / superellipse_factor(theta)
+		var at: Vector2 = CENTER + Vector2(sin(theta), -cos(theta)) * r
+		theta += step * superellipse_factor(theta)
+		if not area.has_point(at):
+			continue
+		var on_apron: bool = false
+		for petal: int in APRON_PETALS:
+			var local: Vector2 = apron_local(petal, at)
+			if local.x > -APRON_INSIDE - 6.0 and local.x < APRON_INTO_CLIFF + 24.0 and absf(local.y) < APRON_HALF_WIDTH + 6.0:
+				on_apron = true
+		if on_apron:
+			continue
+		var inward: Vector2 = (CENTER - at).normalized()
+		var turn: Basis = Basis(Vector3.UP, atan2(-inward.x, -inward.y) + rng.randf_range(-0.06, 0.06))
+		pieces.append(Transform3D(turn.scaled(Vector3(rng.randf_range(0.95, 1.15), rng.randf_range(0.85, 1.25), 1.0)),
+			Vector3(at.x, sample_height(at.x, at.y) - 0.05, at.y)))
+	return pieces
+
+
+## The map shows the whole vale (18 GDD §7.1).
+func map_rect() -> Rect2:
+	return Rect2(0.0, 0.0, SIZE, SIZE)
+
+
+## The river is water; the petal roads, the ring road and Oakshire-Wick's cobbled market are roads.
+func map_feature(world_x: float, world_z: float, _height: float) -> int:
+	if water_depth(world_x, world_z) > 0.05:
+		return MapFeature.WATER
+	if (Vector2(world_x, world_z) - CENTER).length() < MARKET_PLAZA_OUTER or road_lateral(world_x, world_z) < ROAD_HALF_WIDTH:
+		return MapFeature.ROAD
+	return MapFeature.GROUND
+
+
+func cartography_path() -> String:
+	return LANDBLOCK_FOLDER + CartographyBaker.CARTOGRAPHY_FILE
+
+
+## How far past the nearest road's painted edge a spot lies (18 GDD §3.1: where
+## its curb-stones and verges grow; negative on the road), or INF where no verge
+## grows: the cobbled village, the river and its fords, the camps, the portal
+## aprons and the mill.
+func road_edge(world_x: float, world_z: float) -> float:
+	var at: Vector2 = Vector2(world_x, world_z)
+	if (at - CENTER).length() < VILLAGE_RADIUS + 4.0:
+		return INF
+	if world_x > RIVER_POINTS[0].x - 10.0 and world_x < RIVER_POINTS[RIVER_POINTS.size() - 1].x + 10.0 \
+			and river_distance(world_x, world_z) < RIVER_HALF_WIDTH + RIVER_BANK + 1.5:
+		return INF
+	for petal: int in PETAL_BEARINGS.size():
+		var radius: float = GLADE_RADIUS if petal == Petal.GLADE else CAMP_RADIUS
+		if at.distance_to(camp_center_2d(petal)) < radius:
+			return INF
+	for petal: int in APRON_PETALS:
+		var local: Vector2 = apron_local(petal, at)
+		if local.x > -APRON_INSIDE - 4.0 and local.x < APRON_INTO_CLIFF and absf(local.y) < APRON_HALF_WIDTH + 1.0:
+			return INF
+	if at.distance_to(MILL_SITE) < MILL_RADIUS + 2.0:
+		return INF
+	return road_lateral(world_x, world_z) - ROAD_HALF_WIDTH
 
 
 ## Where grass, flowers and pebbles may grow: off the roads, river, clearings and cliffs.

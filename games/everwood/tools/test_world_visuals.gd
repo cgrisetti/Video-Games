@@ -15,7 +15,7 @@
 ##   6  draw distance: cameras' far planes at 2.5 km or more, the
 ##      HorizonVistaRing round the party with its four landmarks, low-poly HLODs
 ##   7  Ecological Succession: a camp cleared earlier streams back as a Lulled
-##      Cairn; an open Hush-Crack greys its 18 m and dims the Wind-Lanterns in
+##      Cairn; an open Hush-Crack greys its 22 m (18 GDD §5) and dims the Wind-Lanterns in
 ##      it; clearing its camp sweeps a Reclamation Bloom, seals it into a cairn
 ##      and lights the lanterns again; a weathering biome thickens its fog
 ##   8  streaming: the kit queue builds a slice a frame inside the 2 ms budget,
@@ -35,10 +35,10 @@ const REQUIRED_KITS: Array[StringName] = [&"kit_house_stepped_gable", &"kit_wate
 	&"kit_tree_moss_oak", &"kit_tree_orchard_apple", &"kit_tree_weeping_willow", &"kit_tree_highland_pine"]
 const SHADERS: Dictionary[String, Array] = {
 	"res://src/world/shaders/storybook_world_triplanar.gdshaderinc": ["craft_layer", "triplanar_scale", "moss_amount", "sightline_fade", "texture_chroma"],
-	"res://src/world/shaders/storybook_terrain_splat.gdshader": ["detail_strength", "min_value", "max_value", "terrain_class_weights"],
+	"res://src/world/shaders/storybook_terrain_splat.gdshader": ["detail_strength", "min_value", "max_value", "storybook_ground"],
 	"res://src/world/shaders/storybook_foliage_wind.gdshader": ["sway_height", "brush", "sightline_fade", "fade_out_distance"],
 	"res://src/world/shaders/storybook_water_stream.gdshader": ["shallow_color", "deep_color", "flow", "waterfall", "fixed_depth"],
-	"res://src/world/landblock_terrain3d.gdshader": ["storybook_world_common", "terrain_class_weights", "apply_succession"],
+	"res://src/world/landblock_terrain3d.gdshader": ["storybook_world_common", "storybook_ground", "apply_succession"],
 	"res://src/world/shaders/storybook_world_common.gdshaderinc": ["atelier_albedo", "hero_pos_0", "hush_crack_0", "bloom_0", "world_wind", "sightline_blocked"],
 }
 const GLOBALS: Array[String] = ["atelier_albedo", "atelier_normal", "atelier_roughness", "atelier_ready", "hero_pos_0", "hero_pos_3", "hush_crack_0",
@@ -97,7 +97,7 @@ func _check_catalog() -> void:
 	var looks: ZoneBiomeResource = WorldVisualCatalog.biome(&"tizzi_wed_green")
 	check.call(looks.turf_albedo.to_html(false) == "5b8c4a" and looks.road_albedo.to_html(false) == "c8bfa8" and looks.hollow_albedo.to_html(false) == "594636"
 		and looks.crag_albedo.to_html(false) == "7a8086" and looks.sky_top_color.to_html(false) == "3b78b8" and looks.cooper_sign_title == "Sign of Wood"
-		and ZoneBiomeResource.CAMERA_EYELINE_HEIGHT_M == 4.8 and ZoneBiomeResource.DEFAULT_HUSH_RADIUS_M == 18.0,
+		and ZoneBiomeResource.CAMERA_EYELINE_HEIGHT_M == 4.8 and ZoneBiomeResource.DEFAULT_HUSH_RADIUS_M == 22.0,
 		"Tizzi-Wed-Green wears the master palette (turf #5B8C4A, flagstone #C8BFA8, loam #594636, granite #7A8086, sky #3B78B8) under the Sign of Wood")
 	var missing: Array[String] = []
 	var bad_flags: Array[String] = []
@@ -362,9 +362,9 @@ func _check_succession(world: EverwoodWorld) -> void:
 	var slot: int = _crack_slot(crack.global_position)
 	var lantern: WindLantern = _nearest_lantern(world, crack.global_position)
 	var dim: float = (lantern.get_node("Pivot/Light") as OmniLight3D).light_energy if lantern != null else -1.0
-	check.call(crack.is_hushed() and is_equal_approx(crack.hush_radius, 18.0) and slot >= 0 and is_equal_approx(director.crack_globals[slot].w, 18.0)
+	check.call(crack.is_hushed() and is_equal_approx(crack.hush_radius, 22.0) and slot >= 0 and is_equal_approx(director.crack_globals[slot].w, 22.0)
 		and lantern != null and dim < 0.5 and director.succession_state(LandblockManifest.CAMP_HOLLOWAY) == Succession.ZONE_HUSHED,
-		"the Rush-Light Hush-Crack is open: its 18 m hush goes to every world shader, and the Wind-Lantern in it burns dim (%.2f)" % dim)
+		"the Rush-Light Hush-Crack is open: its 22 m blight goes to every world shader, and the Wind-Lantern in it burns dim (%.2f)" % dim)
 	for minion: WoodlandMinion in camp.minions:
 		minion.stats.take_damage(minion.stats.health + 100.0)
 	var bloomed: bool = false

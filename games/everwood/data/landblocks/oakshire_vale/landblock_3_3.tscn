@@ -16,6 +16,7 @@ shader_parameter/craft_layer = 3.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -25,6 +26,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -113,18 +115,18 @@ radius = 0.34
 height = 2.64
 radius = 0.34
 
-[node name="Landblock_3_3" type="Node3D" unique_id=494746395]
+[node name="Landblock_3_3" type="Node3D" unique_id=187039471]
 metadata/chunk = Vector2i(3, 3)
 metadata/buildings = true
 
-[node name="CiderMill" type="StaticBody3D" parent="." unique_id=1361527749]
+[node name="CiderMill" type="StaticBody3D" parent="." unique_id=124531758]
 transform = Transform3D(0.99997866, 0, -0.00653418, 0, 1, 0, 0.00653418, 0, 0.99997866, 434.609, 15.7, 418.20227)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="CiderMill" unique_id=592076624]
+[node name="Collision" type="CollisionShape3D" parent="CiderMill" unique_id=1875172013]
 shape = SubResource("BoxShape3D_66y8t")
 
-[node name="Kit" type="Node3D" parent="CiderMill" unique_id=2133981987]
+[node name="Kit" type="Node3D" parent="CiderMill" unique_id=1049005232]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, -1.7, 0)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_house_stepped_gable"
@@ -132,222 +134,222 @@ size = Vector3(5, 3.4, 5)
 tint = Color(0.86, 0.78, 0.6, 1)
 accent = Color(0.62, 0.36, 0.27, 1)
 
-[node name="CiderBarrels" type="Node3D" parent="." unique_id=1345605601]
+[node name="CiderBarrels" type="Node3D" parent="." unique_id=115031861]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 438.0288, 14.849988, 415.27737)
 
-[node name="Barrel0" type="MeshInstance3D" parent="CiderBarrels" unique_id=341292891]
+[node name="Barrel0" type="MeshInstance3D" parent="CiderBarrels" unique_id=316185949]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
 mesh = SubResource("CylinderMesh_5gfyw")
 
-[node name="Barrel1" type="MeshInstance3D" parent="CiderBarrels" unique_id=168130900]
+[node name="Barrel1" type="MeshInstance3D" parent="CiderBarrels" unique_id=1435579418]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 0.4, 0)
 mesh = SubResource("CylinderMesh_yde7t")
 
-[node name="Barrel2" type="MeshInstance3D" parent="CiderBarrels" unique_id=1768165466]
+[node name="Barrel2" type="MeshInstance3D" parent="CiderBarrels" unique_id=1562574349]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0.8)
 mesh = SubResource("CylinderMesh_xd8h5")
 
-[node name="Barrel3" type="MeshInstance3D" parent="CiderBarrels" unique_id=1734023086]
+[node name="Barrel3" type="MeshInstance3D" parent="CiderBarrels" unique_id=1294139645]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 0.4, 0.8)
 mesh = SubResource("CylinderMesh_osrr6")
 
-[node name="OrchardWall" type="StaticBody3D" parent="." unique_id=1990624588]
+[node name="OrchardWall" type="StaticBody3D" parent="." unique_id=712347519]
 transform = Transform3D(0.6499893, 0, -0.75994337, 0, 1, 0, 0.75994337, 0, 0.6499893, 443.50848, 16.742891, 413.22238)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="OrchardWall" unique_id=229857639]
+[node name="Collision" type="CollisionShape3D" parent="OrchardWall" unique_id=1480404306]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
 shape = SubResource("BoxShape3D_idlvm")
 
-[node name="Stones" type="Node3D" parent="OrchardWall" unique_id=13744331]
+[node name="Stones" type="Node3D" parent="OrchardWall" unique_id=806390836]
 script = ExtResource("1_8v23l")
 kit_id = &"kit_drystone_wall"
 size = Vector3(20, 0.8, 0.6)
 seed_value = 20
 
-[node name="@StaticBody3D@79" type="StaticBody3D" parent="." unique_id=305952654]
+[node name="@StaticBody3D@37" type="StaticBody3D" parent="." unique_id=714816484]
 transform = Transform3D(0.6499893, 0, -0.75994337, 0, 1, 0, 0.75994337, 0, 0.6499893, 467.82697, 14, 392.42307)
 collision_layer = 32
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="@StaticBody3D@79" unique_id=951704990]
+[node name="Collision" type="CollisionShape3D" parent="@StaticBody3D@37" unique_id=1818742174]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
 shape = SubResource("BoxShape3D_ow2je")
 
-[node name="Stones" type="Node3D" parent="@StaticBody3D@79" unique_id=1524699154]
+[node name="Stones" type="Node3D" parent="@StaticBody3D@37" unique_id=165522729]
 script = ExtResource("1_8v23l")
 kit_id = &"kit_drystone_wall"
 size = Vector3(20, 0.8, 0.6)
 seed_value = 20
 
-[node name="PearTree0" type="Node3D" parent="." unique_id=676857779]
+[node name="PearTree0" type="Node3D" parent="." unique_id=300649091]
 transform = Transform3D(-0.7848097, 0, -0.6197368, 0, 1, 0, 0.6197368, 0, -0.7848097, 459.5873, 14.087655, 388.9434)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 seed_value = 2
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree0" unique_id=399740032]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree0" unique_id=950530636]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree0/TrunkBody" unique_id=1767046191]
+[node name="Collision" type="CollisionShape3D" parent="PearTree0/TrunkBody" unique_id=1304230349]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_8hc58")
 
-[node name="PearTree1" type="Node3D" parent="." unique_id=659714283]
+[node name="PearTree1" type="Node3D" parent="." unique_id=1082644018]
 transform = Transform3D(-0.7785732, 0, -0.62755376, 0, 1, 0, 0.62755376, 0, -0.7785732, 455.02762, 14.834502, 392.84326)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree1" unique_id=1141566872]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree1" unique_id=360077255]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree1/TrunkBody" unique_id=1080911831]
+[node name="Collision" type="CollisionShape3D" parent="PearTree1/TrunkBody" unique_id=1788672272]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_m63xu")
 
-[node name="PearTree2" type="Node3D" parent="." unique_id=192874170]
+[node name="PearTree2" type="Node3D" parent="." unique_id=873212173]
 transform = Transform3D(-0.7722589, 0, -0.63530797, 0, 1, 0, 0.63530797, 0, -0.7722589, 450.4679, 15.352279, 396.74313)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 seed_value = 1
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree2" unique_id=924884176]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree2" unique_id=2063508740]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree2/TrunkBody" unique_id=1829982451]
+[node name="Collision" type="CollisionShape3D" parent="PearTree2/TrunkBody" unique_id=688049370]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_0ikxt")
 
-[node name="PearTree3" type="Node3D" parent="." unique_id=374014420]
+[node name="PearTree3" type="Node3D" parent="." unique_id=1500746952]
 transform = Transform3D(-0.7658673, 0, -0.6429987, 0, 1, 0, 0.6429987, 0, -0.7658673, 445.90817, 16.948664, 400.643)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 seed_value = 2
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree3" unique_id=1552096632]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree3" unique_id=1377666008]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree3/TrunkBody" unique_id=423581194]
+[node name="Collision" type="CollisionShape3D" parent="PearTree3/TrunkBody" unique_id=256375222]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_yjin8")
 
-[node name="PearTree4" type="Node3D" parent="." unique_id=343399906]
+[node name="PearTree4" type="Node3D" parent="." unique_id=1177860582]
 transform = Transform3D(-0.7593991, 0, -0.65062505, 0, 1, 0, 0.65062505, 0, -0.7593991, 463.48718, 14, 393.50308)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree4" unique_id=630101463]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree4" unique_id=361129297]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree4/TrunkBody" unique_id=1976574497]
+[node name="Collision" type="CollisionShape3D" parent="PearTree4/TrunkBody" unique_id=312348601]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_7ftgw")
 
-[node name="PearTree5" type="Node3D" parent="." unique_id=1983763683]
+[node name="PearTree5" type="Node3D" parent="." unique_id=1343759509]
 transform = Transform3D(-0.752855, 0, -0.6581864, 0, 1, 0, 0.6581864, 0, -0.752855, 458.9275, 14, 397.40295)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 seed_value = 1
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree5" unique_id=678398272]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree5" unique_id=14596560]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree5/TrunkBody" unique_id=1461425478]
+[node name="Collision" type="CollisionShape3D" parent="PearTree5/TrunkBody" unique_id=1550214837]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_w6i7d")
 
-[node name="PearTree6" type="Node3D" parent="." unique_id=991865704]
+[node name="PearTree6" type="Node3D" parent="." unique_id=79688405]
 transform = Transform3D(-0.7462356, 0, -0.6656819, 0, 1, 0, 0.6656819, 0, -0.7462356, 454.36777, 14.641283, 401.30283)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 seed_value = 2
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree6" unique_id=2145679450]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree6" unique_id=1438322269]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree6/TrunkBody" unique_id=81212600]
+[node name="Collision" type="CollisionShape3D" parent="PearTree6/TrunkBody" unique_id=1919378815]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_ieb4n")
 
-[node name="PearTree7" type="Node3D" parent="." unique_id=2041405352]
+[node name="PearTree7" type="Node3D" parent="." unique_id=1934950971]
 transform = Transform3D(-0.7395415, 0, -0.673111, 0, 1, 0, 0.673111, 0, -0.7395415, 467.38705, 14, 398.0628)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree7" unique_id=1683978344]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree7" unique_id=1372357190]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree7/TrunkBody" unique_id=396601564]
+[node name="Collision" type="CollisionShape3D" parent="PearTree7/TrunkBody" unique_id=198441853]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_qkt4k")
 
-[node name="PearTree8" type="Node3D" parent="." unique_id=1572700241]
+[node name="PearTree8" type="Node3D" parent="." unique_id=2142912218]
 transform = Transform3D(-0.7327735, 0, -0.6804727, 0, 1, 0, 0.6804727, 0, -0.7327735, 462.82736, 14, 401.96268)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 seed_value = 1
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree8" unique_id=285419643]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree8" unique_id=82021033]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree8/TrunkBody" unique_id=1344992000]
+[node name="Collision" type="CollisionShape3D" parent="PearTree8/TrunkBody" unique_id=652042598]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_g6pay")
 
-[node name="PearTree9" type="Node3D" parent="." unique_id=1277151398]
+[node name="PearTree9" type="Node3D" parent="." unique_id=1496523712]
 transform = Transform3D(-0.72593224, 0, -0.68776625, 0, 1, 0, 0.68776625, 0, -0.72593224, 458.26764, 15.75235, 405.86255)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 seed_value = 2
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree9" unique_id=1822525189]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree9" unique_id=26674078]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree9/TrunkBody" unique_id=183421672]
+[node name="Collision" type="CollisionShape3D" parent="PearTree9/TrunkBody" unique_id=125024764]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_c8de0")
 
-[node name="PearTree10" type="Node3D" parent="." unique_id=1910063368]
+[node name="PearTree10" type="Node3D" parent="." unique_id=738716735]
 transform = Transform3D(0.30278265, 0, -0.9530596, 0, 1, 0, 0.9530596, 0, 0.30278265, 471.28696, 14, 402.62253)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 seed_value = 1
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree10" unique_id=1288009568]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree10" unique_id=456782885]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree10/TrunkBody" unique_id=258993800]
+[node name="Collision" type="CollisionShape3D" parent="PearTree10/TrunkBody" unique_id=649470212]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_unowk")
 
-[node name="PearTree11" type="Node3D" parent="." unique_id=1188368703]
+[node name="PearTree11" type="Node3D" parent="." unique_id=1507098642]
 transform = Transform3D(0.31229815, 0, -0.94998413, 0, 1, 0, 0.94998413, 0, 0.31229815, 466.72726, 14.466937, 406.5224)
 script = ExtResource("1_8v23l")
 kit_id = &"kit_tree_orchard_apple"
 height = 4.8
 seed_value = 2
 
-[node name="TrunkBody" type="StaticBody3D" parent="PearTree11" unique_id=1092238587]
+[node name="TrunkBody" type="StaticBody3D" parent="PearTree11" unique_id=944647162]
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="PearTree11/TrunkBody" unique_id=2108236380]
+[node name="Collision" type="CollisionShape3D" parent="PearTree11/TrunkBody" unique_id=1011785488]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 shape = SubResource("CylinderShape3D_i6r70")
 
-[node name="Villager_Yolande" type="Node3D" parent="." unique_id=630269953 groups=["landblock_entities"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 451.07678, 16.83713, 411.81778)
+[node name="Villager_Yolande" type="Node3D" parent="." unique_id=942992211 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 451.07678, 16.792091, 411.81778)
 script = ExtResource("3_lxyfj")
 npc_name = "Yolande"
 quests = PackedStringArray()
@@ -356,17 +358,17 @@ body_color = Color(0.66275996, 0.7, 0.45499998, 1)
 accent_color = Color(0.35, 0.4172, 0.5, 1)
 npc_seed = 882
 
-[node name="Villager_Abel" type="Node3D" parent="." unique_id=1264963111 groups=["landblock_entities"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 444.84897, 17.291988, 405.07843)
+[node name="Villager_Abel" type="Node3D" parent="." unique_id=1395534312 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 444.84897, 17.268059, 405.07843)
 script = ExtResource("3_lxyfj")
 npc_name = "Abel"
 quests = PackedStringArray()
-route = PackedVector3Array(452.0364, 16.683567, 415.03024)
+route = PackedVector3Array(452.0364, 16.671307, 415.03024)
 body_color = Color(0.46137002, 0.7, 0.45499998, 1)
 accent_color = Color(0.40609995, 0.35, 0.5, 1)
 npc_seed = 288
 
-[node name="Villager_Bess" type="Node3D" parent="." unique_id=1363375861 groups=["landblock_entities"]]
+[node name="Villager_Bess" type="Node3D" parent="." unique_id=1866316231 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 462.90976, 14.049044, 402.50388)
 script = ExtResource("3_lxyfj")
 npc_name = "Bess"
@@ -376,17 +378,17 @@ body_color = Color(0.45499998, 0.7, 0.65002, 1)
 accent_color = Color(0.5, 0.35, 0.47059998, 1)
 npc_seed = 81
 
-[node name="Villager_Col" type="Node3D" parent="." unique_id=68450260 groups=["landblock_entities"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 449.33463, 17.041542, 407.83054)
+[node name="Villager_Col" type="Node3D" parent="." unique_id=1432758863 groups=["landblock_entities"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 449.33463, 17.008726, 407.83054)
 script = ExtResource("3_lxyfj")
 npc_name = "Col"
 quests = PackedStringArray()
-route = PackedVector3Array(450.5821, 16.78249, 413.7486)
+route = PackedVector3Array(450.5821, 16.767237, 413.7486)
 body_color = Color(0.45499998, 0.54859, 0.7, 1)
 accent_color = Color(0.5, 0.3527, 0.35, 1)
 npc_seed = 836
 
-[node name="Foxes0" type="Node3D" parent="." unique_id=1797133016]
+[node name="Foxes0" type="Node3D" parent="." unique_id=87124418]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 448.90015, 14, 476.13028)
 script = ExtResource("4_b0pjy")
 kind = 1

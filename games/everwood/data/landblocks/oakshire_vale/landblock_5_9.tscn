@@ -20,7 +20,7 @@ height = 1.1
 radial_segments = 16
 rings = 8
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_f6unc"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_rk3yc"]
 render_priority = 0
 shader = ExtResource("1_lbdns")
 shader_parameter/albedo = Color(0.36, 0.24, 0.14, 1)
@@ -28,6 +28,7 @@ shader_parameter/craft_layer = 3.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -37,6 +38,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -44,28 +46,28 @@ shader_parameter/metal = null
 shader_parameter/sheen_roughness = null
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_8mx0p"]
-material = SubResource("ShaderMaterial_f6unc")
+material = SubResource("ShaderMaterial_rk3yc")
 top_radius = 0.12
 bottom_radius = 0.12
 height = 1.4
 radial_segments = 6
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_32b1l"]
-material = SubResource("ShaderMaterial_f6unc")
+material = SubResource("ShaderMaterial_rk3yc")
 top_radius = 0.12
 bottom_radius = 0.12
 height = 1.4
 radial_segments = 6
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_xp7lc"]
-material = SubResource("ShaderMaterial_f6unc")
+material = SubResource("ShaderMaterial_rk3yc")
 top_radius = 0.12
 bottom_radius = 0.12
 height = 1.4
 radial_segments = 6
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_iafvm"]
-material = SubResource("ShaderMaterial_f6unc")
+material = SubResource("ShaderMaterial_rk3yc")
 top_radius = 0.12
 bottom_radius = 0.12
 height = 1.4
@@ -82,6 +84,7 @@ shader_parameter/craft_layer = 0.0
 shader_parameter/triplanar_scale = 0.3333333333333333
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.25
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -91,6 +94,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -109,6 +113,7 @@ shader_parameter/craft_layer = 2.0
 shader_parameter/triplanar_scale = 0.3333333333333333
 shader_parameter/normal_strength = 0.3
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -118,6 +123,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -153,7 +159,7 @@ size = Vector3(3.2, 2.4, 3.6)
 [sub_resource type="BoxShape3D" id="BoxShape3D_my7x8"]
 size = Vector3(4.2, 8, 4.2)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_6hprm"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_e3uxm"]
 render_priority = 0
 shader = ExtResource("1_lbdns")
 shader_parameter/albedo = Color(0.43137255, 0.29411766, 0.18039216, 1)
@@ -161,6 +167,7 @@ shader_parameter/craft_layer = 3.0
 shader_parameter/triplanar_scale = 0.5
 shader_parameter/normal_strength = 0.55
 shader_parameter/keep_tint_value = null
+shader_parameter/texture_chroma = null
 shader_parameter/moss_amount = 0.0
 shader_parameter/moss_color = Color(0.2901961, 0.4509804, 0.24313726, 1)
 shader_parameter/use_object_space = false
@@ -170,6 +177,7 @@ shader_parameter/rim_color = null
 shader_parameter/rim_strength = null
 shader_parameter/rim_power = null
 shader_parameter/glow = null
+shader_parameter/vertex_shade = null
 shader_parameter/shade_color = Color(0.46, 0.38, 0.42, 1)
 shader_parameter/band_edge = null
 shader_parameter/band_softness = null
@@ -177,127 +185,127 @@ shader_parameter/metal = null
 shader_parameter/sheen_roughness = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_o5crb"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_612f2"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_5t7rb"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_tnpa4"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_b8upd"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_mtxfh"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_vjlse"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_6dekg"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_0kwev"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_wr5wg"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_camgd"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_7ajx2"]
-material = SubResource("ShaderMaterial_6hprm")
+material = SubResource("ShaderMaterial_e3uxm")
 size = Vector3(0.9, 0.08, 0.35)
 
-[node name="Landblock_5_9" type="Node3D" unique_id=1003189029]
+[node name="Landblock_5_9" type="Node3D" unique_id=716295306]
 metadata/chunk = Vector2i(5, 9)
 metadata/buildings = true
 
-[node name="Campfire" type="Node3D" parent="." unique_id=1431477461]
+[node name="Campfire" type="Node3D" parent="." unique_id=807232107]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 736.53314, 19.76923, 1217.9973)
 
-[node name="Flames" type="MeshInstance3D" parent="Campfire" unique_id=90633848]
+[node name="Flames" type="MeshInstance3D" parent="Campfire" unique_id=255153320]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
 cast_shadow = 0
 mesh = SubResource("SphereMesh_mctl5")
 
-[node name="Log0" type="MeshInstance3D" parent="Campfire" unique_id=433124901]
+[node name="Log0" type="MeshInstance3D" parent="Campfire" unique_id=1963814625]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.12, 0)
 mesh = SubResource("CylinderMesh_8mx0p")
 
-[node name="Log1" type="MeshInstance3D" parent="Campfire" unique_id=1700025517]
+[node name="Log1" type="MeshInstance3D" parent="Campfire" unique_id=1727220954]
 transform = Transform3D(0.70710677, 0.70710677, -3.090862e-08, 0, -4.371139e-08, -1, -0.70710677, 0.70710677, -3.090862e-08, 0, 0.12, 0)
 mesh = SubResource("CylinderMesh_32b1l")
 
-[node name="Log2" type="MeshInstance3D" parent="Campfire" unique_id=1907976620]
+[node name="Log2" type="MeshInstance3D" parent="Campfire" unique_id=306894323]
 transform = Transform3D(-4.371139e-08, 1, -4.371139e-08, 0, -4.371139e-08, -1, -1, -4.371139e-08, 1.9106855e-15, 0, 0.12, 0)
 mesh = SubResource("CylinderMesh_xp7lc")
 
-[node name="Log3" type="MeshInstance3D" parent="Campfire" unique_id=1407758258]
+[node name="Log3" type="MeshInstance3D" parent="Campfire" unique_id=31091258]
 transform = Transform3D(-0.70710677, 0.70710677, -3.090862e-08, 0, -4.371139e-08, -1, -0.70710677, -0.70710677, 3.090862e-08, 0, 0.12, 0)
 mesh = SubResource("CylinderMesh_iafvm")
 
-[node name="Tent0" type="StaticBody3D" parent="." unique_id=2030252816]
+[node name="Tent0" type="StaticBody3D" parent="." unique_id=256992082]
 transform = Transform3D(0.82903767, 0, -0.5591927, 0, 1, 0, 0.5591927, 0, 0.82903767, 728.14526, 19.76923, 1230.4329)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Tent0" unique_id=1639067679]
+[node name="Collision" type="CollisionShape3D" parent="Tent0" unique_id=690457986]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("BoxShape3D_5yf8s")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tent0" unique_id=848520579]
+[node name="Mesh" type="MeshInstance3D" parent="Tent0" unique_id=1975439270]
 mesh = SubResource("BoxMesh_yfayk")
 
-[node name="Canvas" type="MeshInstance3D" parent="Tent0" unique_id=833139958]
+[node name="Canvas" type="MeshInstance3D" parent="Tent0" unique_id=698371056]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("PrismMesh_fxudi")
 
-[node name="Tent1" type="StaticBody3D" parent="." unique_id=1600252914]
+[node name="Tent1" type="StaticBody3D" parent="." unique_id=606878722]
 transform = Transform3D(-0.8987945, 0, -0.43837026, 0, 1, 0, 0.43837026, 0, -0.8987945, 729.9576, 19.76923, 1204.5154)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Tent1" unique_id=1424042968]
+[node name="Collision" type="CollisionShape3D" parent="Tent1" unique_id=253877031]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("BoxShape3D_3ym1i")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tent1" unique_id=711829268]
+[node name="Mesh" type="MeshInstance3D" parent="Tent1" unique_id=1034347264]
 mesh = SubResource("BoxMesh_5mhk8")
 
-[node name="Canvas" type="MeshInstance3D" parent="Tent1" unique_id=417039491]
+[node name="Canvas" type="MeshInstance3D" parent="Tent1" unique_id=168903538]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("PrismMesh_26xa1")
 
-[node name="Tent2" type="StaticBody3D" parent="." unique_id=115312259]
+[node name="Tent2" type="StaticBody3D" parent="." unique_id=916384419]
 transform = Transform3D(0.06975925, 0, 0.99756384, 0, 1, 0, -0.99756384, 0, 0.06975925, 751.4966, 19.76923, 1219.0437)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Tent2" unique_id=418855243]
+[node name="Collision" type="CollisionShape3D" parent="Tent2" unique_id=1165017142]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("BoxShape3D_i7n2p")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tent2" unique_id=1638594338]
+[node name="Mesh" type="MeshInstance3D" parent="Tent2" unique_id=920048748]
 mesh = SubResource("BoxMesh_msgu0")
 
-[node name="Canvas" type="MeshInstance3D" parent="Tent2" unique_id=1802409581]
+[node name="Canvas" type="MeshInstance3D" parent="Tent2" unique_id=2073601605]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("PrismMesh_shk06")
 
-[node name="QuestGiver_TamsinHale" type="Node3D" parent="." unique_id=1093463988 groups=["landblock_entities"]]
+[node name="QuestGiver_TamsinHale" type="Node3D" parent="." unique_id=1849569279 groups=["landblock_entities"]]
 transform = Transform3D(0.997564, 0, -0.06975678, 0, 1, 0, 0.06975678, 0, 0.997564, 736.84705, 19.76923, 1213.5083)
 script = ExtResource("2_b6p7l")
 role = 0
@@ -310,7 +318,7 @@ body_color = Color(0.42, 0.32, 0.56, 1)
 accent_color = Color(0.86, 0.7, 0.32, 1)
 npc_seed = 723
 
-[node name="QuestGiver_JossBrindle" type="Node3D" parent="." unique_id=1843375475 groups=["landblock_entities"]]
+[node name="QuestGiver_JossBrindle" type="Node3D" parent="." unique_id=687187378 groups=["landblock_entities"]]
 transform = Transform3D(0.71934164, 0, -0.6946565, 0, 1, 0, 0.6946565, 0, 0.71934164, 739.6591, 19.76923, 1214.7603)
 script = ExtResource("2_b6p7l")
 role = 0
@@ -323,7 +331,7 @@ body_color = Color(0.42, 0.32, 0.56, 1)
 accent_color = Color(0.86, 0.7, 0.32, 1)
 npc_seed = 259
 
-[node name="QuestGiver_WrenAshby" type="Node3D" parent="." unique_id=322846931 groups=["landblock_entities"]]
+[node name="QuestGiver_WrenAshby" type="Node3D" parent="." unique_id=115642525 groups=["landblock_entities"]]
 transform = Transform3D(0.10451953, 0, -0.9945228, 0, 1, 0, 0.9945228, 0, 0.10451953, 741.0085, 19.76923, 1217.527)
 script = ExtResource("2_b6p7l")
 role = 0
@@ -336,89 +344,89 @@ body_color = Color(0.42, 0.32, 0.56, 1)
 accent_color = Color(0.86, 0.7, 0.32, 1)
 npc_seed = 393
 
-[node name="ChimePost" type="Node3D" parent="." unique_id=626938873]
+[node name="ChimePost" type="Node3D" parent="." unique_id=2078661484]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 717.20905, 19.76923, 1227.4222)
 script = ExtResource("3_1r736")
 place = "Wayfarer-Green"
 
-[node name="Windmill" type="StaticBody3D" parent="." unique_id=1354337695]
+[node name="Windmill" type="StaticBody3D" parent="." unique_id=1698530360]
 transform = Transform3D(-0.06970285, 0, -0.9975678, 0, 1, 0, 0.9975678, 0, -0.06970285, 700.8999, 23.666666, 1211.4958)
 collision_mask = 0
 
-[node name="Collision" type="CollisionShape3D" parent="Windmill" unique_id=241992468]
+[node name="Collision" type="CollisionShape3D" parent="Windmill" unique_id=1266645096]
 shape = SubResource("BoxShape3D_my7x8")
 
-[node name="Kit" type="Node3D" parent="Windmill" unique_id=59122763]
+[node name="Kit" type="Node3D" parent="Windmill" unique_id=1396332319]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4, 0)
 script = ExtResource("4_ep8fd")
 kit_id = &"kit_windmill"
 spin_speed = 0.45
 
-[node name="SheepStile0" type="Node3D" parent="." unique_id=1908739588]
+[node name="SheepStile0" type="Node3D" parent="." unique_id=12170667]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 706.1877, 19.694427, 1221.89)
 
-[node name="Wall" type="Node3D" parent="SheepStile0" unique_id=1682196570]
+[node name="Wall" type="Node3D" parent="SheepStile0" unique_id=1886652917]
 script = ExtResource("4_ep8fd")
 kit_id = &"kit_drystone_wall"
 size = Vector3(4, 0.8, 0.6)
 
-[node name="Step0" type="MeshInstance3D" parent="SheepStile0" unique_id=331715613]
+[node name="Step0" type="MeshInstance3D" parent="SheepStile0" unique_id=1554399037]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, -0.75)
 mesh = SubResource("BoxMesh_o5crb")
 
-[node name="@MeshInstance3D@51" type="MeshInstance3D" parent="SheepStile0" unique_id=1060725154]
+[node name="@MeshInstance3D@9" type="MeshInstance3D" parent="SheepStile0" unique_id=255708823]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0.75)
 mesh = SubResource("BoxMesh_612f2")
 
-[node name="Step1" type="MeshInstance3D" parent="SheepStile0" unique_id=276378305]
+[node name="Step1" type="MeshInstance3D" parent="SheepStile0" unique_id=59118236]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58, -0.53)
 mesh = SubResource("BoxMesh_5t7rb")
 
-[node name="@MeshInstance3D@52" type="MeshInstance3D" parent="SheepStile0" unique_id=1736630518]
+[node name="@MeshInstance3D@10" type="MeshInstance3D" parent="SheepStile0" unique_id=2092823910]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58, 0.53)
 mesh = SubResource("BoxMesh_tnpa4")
 
-[node name="Step2" type="MeshInstance3D" parent="SheepStile0" unique_id=854272365]
+[node name="Step2" type="MeshInstance3D" parent="SheepStile0" unique_id=1007807033]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86, -0.31)
 mesh = SubResource("BoxMesh_b8upd")
 
-[node name="@MeshInstance3D@53" type="MeshInstance3D" parent="SheepStile0" unique_id=1619172599]
+[node name="@MeshInstance3D@11" type="MeshInstance3D" parent="SheepStile0" unique_id=1938812324]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86, 0.31)
 mesh = SubResource("BoxMesh_mtxfh")
 
-[node name="SheepStile1" type="Node3D" parent="." unique_id=1006365145]
+[node name="SheepStile1" type="Node3D" parent="." unique_id=1177537350]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 702.63696, 19.666666, 1229.6613)
 
-[node name="Wall" type="Node3D" parent="SheepStile1" unique_id=1365537589]
+[node name="Wall" type="Node3D" parent="SheepStile1" unique_id=922646700]
 script = ExtResource("4_ep8fd")
 kit_id = &"kit_drystone_wall"
 size = Vector3(4, 0.8, 0.6)
 
-[node name="Step0" type="MeshInstance3D" parent="SheepStile1" unique_id=559659977]
+[node name="Step0" type="MeshInstance3D" parent="SheepStile1" unique_id=1439143648]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, -0.75)
 mesh = SubResource("BoxMesh_vjlse")
 
-[node name="@MeshInstance3D@54" type="MeshInstance3D" parent="SheepStile1" unique_id=1767518149]
+[node name="@MeshInstance3D@12" type="MeshInstance3D" parent="SheepStile1" unique_id=1869344367]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0.75)
 mesh = SubResource("BoxMesh_6dekg")
 
-[node name="Step1" type="MeshInstance3D" parent="SheepStile1" unique_id=1249445425]
+[node name="Step1" type="MeshInstance3D" parent="SheepStile1" unique_id=1475757806]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58, -0.53)
 mesh = SubResource("BoxMesh_0kwev")
 
-[node name="@MeshInstance3D@55" type="MeshInstance3D" parent="SheepStile1" unique_id=883682136]
+[node name="@MeshInstance3D@13" type="MeshInstance3D" parent="SheepStile1" unique_id=1403240413]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58, 0.53)
 mesh = SubResource("BoxMesh_wr5wg")
 
-[node name="Step2" type="MeshInstance3D" parent="SheepStile1" unique_id=2012644594]
+[node name="Step2" type="MeshInstance3D" parent="SheepStile1" unique_id=1533941396]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86, -0.31)
 mesh = SubResource("BoxMesh_camgd")
 
-[node name="@MeshInstance3D@56" type="MeshInstance3D" parent="SheepStile1" unique_id=1065569605]
+[node name="@MeshInstance3D@14" type="MeshInstance3D" parent="SheepStile1" unique_id=226063465]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86, 0.31)
 mesh = SubResource("BoxMesh_7ajx2")
 
-[node name="Guard_Mildred" type="Node3D" parent="." unique_id=121657211 groups=["landblock_entities"]]
+[node name="Guard_Mildred" type="Node3D" parent="." unique_id=872891649 groups=["landblock_entities"]]
 transform = Transform3D(0.06975449, 0, 0.9975642, 0, 1, 0, -0.9975642, 0, 0.06975449, 715.5843, 19.76923, 1216.5325)
 script = ExtResource("2_b6p7l")
 role = 2
@@ -430,7 +438,7 @@ body_color = Color(0.32, 0.46, 0.72, 1)
 accent_color = Color(0.86, 0.66, 0.3, 1)
 npc_seed = 40
 
-[node name="Guard_Norbert" type="Node3D" parent="." unique_id=1892021788 groups=["landblock_entities"]]
+[node name="Guard_Norbert" type="Node3D" parent="." unique_id=2068992547 groups=["landblock_entities"]]
 transform = Transform3D(-0.06975446, 0, -0.9975642, 0, 1, 0, 0.9975642, 0, -0.06975446, 757.482, 19.76923, 1219.4622)
 script = ExtResource("2_b6p7l")
 role = 2
@@ -442,14 +450,14 @@ body_color = Color(0.32, 0.46, 0.72, 1)
 accent_color = Color(0.86, 0.66, 0.3, 1)
 npc_seed = 79
 
-[node name="WayfarersArch" type="Node3D" parent="." unique_id=553695713 groups=["landblock_entities"]]
+[node name="WayfarersArch" type="Node3D" parent="." unique_id=593136549 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 735.5566, 19.76923, 1231.9633)
 script = ExtResource("5_fu1nd")
 goes_home = true
 title = "Wayfarer's Arch: home to Bramble-Bridge"
 portal_color = Color(0.95, 0.8, 0.4, 1)
 
-[node name="Spawner_Prowlers_03" type="Node3D" parent="." unique_id=1282069855 groups=["landblock_entities"]]
+[node name="Spawner_Prowlers_03" type="Node3D" parent="." unique_id=1969587641 groups=["landblock_entities"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 712.6495, 14, 1179.4131)
 script = ExtResource("6_11xfw")
 territory = "The Weald"

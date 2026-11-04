@@ -31,6 +31,8 @@ extends LevelBase
 
 # Demo bots (--demo) stand on a ring in front of their foe.
 const DEMO_RING_RADIUS: float = 3.0
+## The expedition's map: the Moss-Oaks (z 90) to the Ring's north wall (z -74), the gorge's cliffs either side.
+const MAP_RECT: Rect2 = Rect2(-28.0, -78.0, 56.0, 172.0)
 const VICTORY_TIME_SCALE: float = 0.2
 ## Real seconds of slow motion (not slowed down themselves).
 const VICTORY_SLOWMO_TIME: float = 2.0
@@ -87,6 +89,17 @@ static func chest_chimes(players: int) -> int:
 
 func instance_id() -> StringName:
 	return InstanceManager.DUNGEON_DOJO
+
+
+## The expedition end to end: the Moss-Oaks, the gorge and the Ring (18 GDD §7.1).
+func map_rect() -> Rect2:
+	return MAP_RECT
+
+
+## The trail from the Moss-Oaks through the holloway, over the trestle and up the causeway.
+func map_paths() -> Array[Dictionary]:
+	var trail: Array[Dictionary] = [{"points": PackedVector2Array([Vector2(0.0, 90.0), Vector2(0.0, -34.0)]), "half_width": 2.0}]
+	return trail
 
 
 func level_title() -> String:

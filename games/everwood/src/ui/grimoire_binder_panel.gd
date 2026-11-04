@@ -15,12 +15,18 @@
 ## them, light picks, dodge (or Tab again) closes. The mouse works too: click a
 ## diamond, then a card. A change the kit's rules allow is equipped at once
 ## through the host, as the Scribe Desk does; otherwise the binder says why.
+##
+## Its "Atlas Map" tab (18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md §7.3)
+## turns the spread into the Wayfarer's Atlas (a tap of M / R3, or a click on the
+## tab); dodge there turns back to the Grimoire.
 class_name GrimoireBinderPanel
 extends Control
 
 signal closed
 
 enum Column { LEAVES, DIAMONDS, PLACES }
+enum Tab { GRIMOIRE, ATLAS }
+const TAB_NAMES: Array[String] = ["Grimoire", "Atlas Map"]
 
 const PAGE_WIDTH: float = 330.0
 const TITLE_SIZE: int = 24
@@ -49,6 +55,9 @@ var leaf_row: int = 0
 var place_row: int = 0
 var diamond_row: int = 2
 var folio_open: bool = false
+var tab: int = Tab.GRIMOIRE
+var atlas: CartographyAtlasPanel
+var _tab_labels: Array[Label] = []
 
 var _root: Control
 var _title: Label
@@ -122,8 +131,26 @@ func _ready() -> void:
 	_root.add_child(_note)
 	_hint = _label(SMALL_FONT_SIZE, Color(0.82, 0.84, 0.9))
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint.text = "←/→ pages and diamonds · ↑/↓ choose · light picks · dodge or Tab closes"
+	_hint.text = "←/→ pages and diamonds · ↑/↓ choose · light picks · M: the Atlas Map · dodge or Tab closes"
 	_root.add_child(_hint)
+	# The tabs, top middle: Grimoire and Atlas Map.
+	var tabs: HBoxContainer = HBoxContainer.new()
+	tabs.name = "Tabs"
+	tabs.anchor_left = 0.5
+	tabs.anchor_right = 0.5
+	tabs.offset_top = 8.0
+	tabs.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
+	tabs.add_theme_constant_override(&"separation", 22)
+	add_child(tabs)
+	for index: int in TAB_NAMES.size():
+		var tab_label: Label = _label(FONT_SIZE + 2, ROW_COLOR)
+		tab_label.text = TAB_NAMES[index]
+		tab_label.mouse_filter = Control.MOUSE_FILTER_STOP
+		tab_label.gui_input.connect(_on_tab_clicked.bind(index))
+		tabs.add_child(tab_label)
+		_tab_labels.append(tab_label)
+	_refresh_tabs()
 	if actor != null and actor.input != null:
 		actor.input.menu_open = true
 		actor.input.menu_input.connect(_on_menu_input)
@@ -207,6 +234,12 @@ static func _owned_copies(listed: ScribeCardResource) -> Array[StringName]:
 # --- Moving and picking ---------------------------------------------------------
 
 func _on_menu_input(action: StringName) -> void:
+	if tab == Tab.ATLAS and is_instance_valid(atlas):
+		if action == InputComponent.MENU_BACK:
+			show_grimoire_tab()
+		else:
+			atlas.handle_menu(action)
+		return
 	match action:
 		InputComponent.MENU_LEFT:
 			column = maxi(Column.LEAVES, column - 1)
@@ -235,6 +268,58 @@ func _move(step: int) -> void:
 			diamond_row = wrapi(diamond_row + step, 0, DIAMOND_ROWS.size())
 			if DIAMOND_ROWS[diamond_row] >= 0:
 				_select_socket(DIAMOND_ROWS[diamond_row])
+
+
+## The Atlas Map tab: the Wayfarer's Atlas in place of the spread.
+func show_atlas_tab() -> void:
+	if tab == Tab.ATLAS:
+		return
+	tab = Tab.ATLAS
+	_root.visible = false
+	var hud: PlayerHUD = PlayerHUD.for_actor(get_tree(), actor) if is_inside_tree() else null
+	var level: LevelBase = get_tree().current_scene as LevelBase if is_inside_tree() else null
+	if hud != null:
+		level = hud._level()
+	atlas = CartographyAtlasPanel.new()
+	atlas.setup(actor, level, hud, true)
+	add_child(atlas)
+	move_child(get_node("Tabs"), -1)
+	_refresh_tabs()
+	AudioCues.play(&"menu_move")
+
+
+func show_grimoire_tab() -> void:
+	if tab == Tab.GRIMOIRE:
+		return
+	tab = Tab.GRIMOIRE
+	if is_instance_valid(atlas):
+		atlas.queue_free()
+	atlas = null
+	_root.visible = true
+	_refresh_tabs()
+	AudioCues.play(&"menu_move")
+
+
+func toggle_atlas_tab() -> void:
+	if tab == Tab.ATLAS:
+		show_grimoire_tab()
+	else:
+		show_atlas_tab()
+
+
+func _on_tab_clicked(event: InputEvent, index: int) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+		if index == Tab.ATLAS:
+			show_atlas_tab()
+		else:
+			show_grimoire_tab()
+
+
+func _refresh_tabs() -> void:
+	for index: int in _tab_labels.size():
+		_tab_labels[index].modulate = SELECTED_COLOR if index == tab else DIM_COLOR
+		_tab_labels[index].text = ("◆ %s" if index == tab else "%s") % TAB_NAMES[index]
 
 
 ## Light: slot the highlighted leaf or place into the chosen diamond, or pick a diamond, or open the Folio.

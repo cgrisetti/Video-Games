@@ -16,6 +16,12 @@
 ## out of combat, R and L+R wait to see if they're held; held 120 frames they're
 ## the Hearth-Rite (hearth_rite_held), let go sooner they fire as usual. A tap
 ## of Tab / View (whose hold changes Fellowship) opens the Grimoire Binder.
+##
+## The camera (18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md §6):
+## the right stick's Y (deadzone 0.15), PageUp / [ and PageDown / ] pitch it
+## (camera_pitch_input, +1 looks up); the mouse's Y pitches it while the right
+## button is held or mouse-look is on (V toggles it). A tap of M / R3 (whose
+## hold changes assist mode) opens the Wayfarer's Atlas.
 class_name InputComponent
 extends Node
 
@@ -28,6 +34,8 @@ signal calling_cycle_requested
 signal hearth_rite_held(command: int)
 ## A tap of the Fellowship button: the Grimoire Binder opens (or closes).
 signal binder_requested
+## A tap of the assist-mode button (M / R3): the Wayfarer's Atlas opens (or closes).
+signal atlas_requested
 ## Up / down / accept / back for an open menu (MENU_* below).
 signal menu_input(action: StringName)
 
@@ -55,6 +63,14 @@ const ACTION_CHANGE_CLASS: StringName = &"player_change_class"
 const ACTION_CHANGE_MODE: StringName = &"player_change_mode"
 const ACTION_CHANGE_CALLING: StringName = &"player_change_calling"
 const ACTION_JOIN: StringName = &"player_join"
+## Camera pitch and mouse-look (18 GDD §6).
+const ACTION_CAMERA_PITCH_UP: StringName = &"cam_pitch_up"
+const ACTION_CAMERA_PITCH_DOWN: StringName = &"cam_pitch_down"
+const ACTION_MOUSE_LOOK: StringName = &"cam_mouse_look"
+## The right stick's Y has its own, finer deadzone.
+const PITCH_STICK_DEADZONE: float = 0.15
+## Radians of pitch per pixel of mouse movement.
+const MOUSE_PITCH_SENSITIVITY: float = 0.0035
 ## D-Pad Up / Right / Down / Left: Soul Tether slots 0..3.
 const TETHER_ACTIONS: Array[StringName] = [ACTION_TETHER_UP, ACTION_TETHER_RIGHT, ACTION_TETHER_DOWN, ACTION_TETHER_LEFT]
 const BUTTON_ACTIONS: Array[StringName] = [
@@ -125,6 +141,10 @@ var actor: ActorBase
 ## Stick or WASD, x = right, y = forward, relative to this player's camera.
 var move_input: Vector2 = Vector2.ZERO
 var camera_orbit_input: float = 0.0
+## The camera's pitch: +1 looks up, -1 down (stick, or the pitch keys).
+var camera_pitch_input: float = 0.0
+## Invert-Y (18 GDD §6.1, optional): the stick's and the mouse's pitch turn the other way.
+var invert_pitch: bool = false
 ## A menu is open on this player's screen: buttons go to menu_input instead.
 var menu_open: bool = false
 
@@ -143,6 +163,8 @@ var _squire_primer_turn: int = 0
 var _last_forward_at: float = -INF
 var _last_back_at: float = -INF
 var _mouse_yaw: float = 0.0
+var _mouse_pitch: float = 0.0
+var _mouse_look_held: bool = false
 var _menu_stick: int = 0
 var _menu_stick_x: int = 0
 ## False on the first tick a menu is open: whatever is already held then
@@ -333,6 +355,18 @@ func take_mouse_yaw() -> float:
 	return yaw
 
 
+## Camera pitch from mouse movement since the last call, radians (+ tilts the view down).
+func take_mouse_pitch() -> float:
+	var pitch: float = _mouse_pitch
+	_mouse_pitch = 0.0
+	return pitch
+
+
+## Whether the mouse steers the camera now: mouse-look on (the mouse captured) or the right button held.
+static func mouse_looking() -> bool:
+	return Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+
+
 # --- Scripted input -------------------------------------------------------
 
 func inject_command(command: int) -> void:
@@ -395,6 +429,8 @@ func _input(event: InputEvent) -> void:
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_mouse_yaw -= motion.relative.x * MOUSE_SENSITIVITY
+	if motion != null and not menu_open and mouse_looking():
+		_mouse_pitch += motion.relative.y * MOUSE_PITCH_SENSITIVITY * (-1.0 if invert_pitch else 1.0)
 
 
 func poll(dt: float) -> void:
@@ -403,9 +439,12 @@ func poll(dt: float) -> void:
 	if _scripted:
 		move_input = _scripted_move
 		camera_orbit_input = 0.0
+		camera_pitch_input = 0.0
 	else:
 		move_input = _read_move()
 		camera_orbit_input = _read_orbit()
+		camera_pitch_input = _read_pitch()
+		_poll_mouse_look()
 	_remember_stick_direction()
 	if menu_open:
 		if _menu_armed:
@@ -414,6 +453,7 @@ func poll(dt: float) -> void:
 			_arm_menu()
 		move_input = Vector2.ZERO
 		camera_orbit_input = 0.0
+		camera_pitch_input = 0.0
 		return
 	_menu_armed = false
 	_update_auto_guard()
@@ -422,6 +462,8 @@ func poll(dt: float) -> void:
 		binder_requested.emit()
 	if _held_for(ACTION_CHANGE_CLASS, dt):
 		class_cycle_requested.emit()
+	if _tapped(ACTION_CHANGE_MODE):
+		atlas_requested.emit()
 	if _held_for(ACTION_CHANGE_MODE, dt):
 		mode_cycle_requested.emit()
 	if _held_for(ACTION_CHANGE_CALLING, dt):
@@ -490,6 +532,13 @@ func _poll_menu() -> void:
 		menu_input.emit(MENU_BACK)
 	if _tapped(ACTION_CHANGE_CLASS):
 		binder_requested.emit()
+	if _tapped(ACTION_CHANGE_MODE):
+		atlas_requested.emit()
+	# The assist-mode button's hold time still counts while a menu is open (so its tap reads).
+	if not _held.get(ACTION_CHANGE_MODE, false):
+		_hold_time[ACTION_CHANGE_MODE] = 0.0
+	else:
+		_hold_time[ACTION_CHANGE_MODE] = _hold_time.get(ACTION_CHANGE_MODE, 0.0) + get_physics_process_delta_time()
 
 
 func _issue(command: int) -> void:
@@ -855,6 +904,26 @@ func _read_orbit() -> float:
 	if device_id == KEYBOARD_DEVICE:
 		return orbit
 	return _apply_deadzone(Vector2(orbit, 0.0)).x
+
+
+## The camera's pitch input: +1 looks up (stick up, PageUp or [), -1 down.
+func _read_pitch() -> float:
+	var pitch: float = action_strength(ACTION_CAMERA_PITCH_UP, device_id) - action_strength(ACTION_CAMERA_PITCH_DOWN, device_id)
+	if device_id == KEYBOARD_DEVICE:
+		return clampf(pitch, -1.0, 1.0)
+	if absf(pitch) < PITCH_STICK_DEADZONE:
+		return 0.0
+	return signf(pitch) * minf(1.0, inverse_lerp(PITCH_STICK_DEADZONE, 1.0, absf(pitch))) * (-1.0 if invert_pitch else 1.0)
+
+
+## V toggles mouse-look (keyboard player): the mouse is captured and steers the camera, or let go.
+func _poll_mouse_look() -> void:
+	if device_id != KEYBOARD_DEVICE:
+		return
+	var held: bool = action_strength(ACTION_MOUSE_LOOK, device_id) >= PRESS_THRESHOLD
+	if held and not _mouse_look_held and not menu_open:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else Input.MOUSE_MODE_CAPTURED
+	_mouse_look_held = held
 
 
 func _apply_deadzone(stick: Vector2) -> Vector2:

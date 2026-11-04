@@ -33,6 +33,8 @@ var _age: float = 0.0
 
 
 func _ready() -> void:
+	# A glyph on the Wayfarer's map (CartographyBaker.GLYPH_GROUP, 18 GDD §7.2).
+	add_to_group(&"map_glyphs")
 	var desk: StaticBody3D = StaticBody3D.new()
 	desk.name = "Desk"
 	desk.position = Vector3(0.0, DESK_SIZE.y * 0.5, DESK_Z)

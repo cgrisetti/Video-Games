@@ -36,6 +36,13 @@ const GRAVITY: float = 22.0
 const ACCELERATION: float = 40.0
 const BODY_RADIUS: float = 0.45
 const BODY_HEIGHT: float = 1.7
+## Nameplates (18 GDD §6.2): 2.25 m up, staggered 0.22 m by seat; companions' fade to 35% near the leader out of combat.
+const NAMEPLATE_BASE_HEIGHT: float = 2.25
+const NAMEPLATE_STAGGER: float = 0.22
+const COMPANION_PLATE_FADED_ALPHA: float = 0.35
+const COMPANION_PLATE_FADE_RADIUS: float = 4.0
+## Plates stagger by seat only while another hero stands this close.
+const NAMEPLATE_CROWD_RADIUS: float = 3.0
 ## Players soft-lock onto an enemy already in the fight within this distance...
 const SOFT_LOCK_RANGE: float = 30.0
 ## ...and onto one still asleep (a quiet camp, a boss not yet woken) only this close.
@@ -346,7 +353,7 @@ func _build_visual() -> void:
 	_name_label.outline_size = 10
 	_name_label.pixel_size = 0.006 * (body_height() / BODY_HEIGHT)
 	_name_label.modulate = loadout.body_color.lightened(0.35)
-	_name_label.position = Vector3(0.0, body_height() + 0.45, 0.0)
+	_name_label.position = Vector3(0.0, nameplate_height(false), 0.0)
 	add_child(_name_label)
 
 
@@ -494,13 +501,43 @@ func is_local_player() -> bool:
 	return input != null
 
 
+## A hero's nameplate (18 GDD §6.2): "P2 · Bell-Keeper", companion or not.
 func display_name() -> String:
-	return "P%d %s%s" % [party_slot + 1, loadout.display_name, " (bot)" if is_companion else ""]
+	return "P%d · %s" % [party_slot + 1, loadout.display_name]
 
 
 func refresh_name_label() -> void:
 	if _name_label != null:
 		_name_label.text = display_name()
+
+
+## How high a hero's nameplate floats (18 GDD §6.2): 2.25 m for a hero of the
+## standard build, and while another hero stands within 3 m (`crowded`)
+## staggered 0.22 m by seat (seat % 3), so a huddled party's plates never overlap.
+func nameplate_height(crowded: bool = true) -> float:
+	return NAMEPLATE_BASE_HEIGHT * (body_height() / BODY_HEIGHT) + (float(party_slot % 3) * NAMEPLATE_STAGGER if crowded else 0.0)
+
+
+## A hero's nameplate staggers by seat while the party crowds round; out of
+## combat, a companion's fades to 35% within 4 m of the party's leader, so a
+## crowd at the shrine stays readable (18 GDD §6.2).
+func _update_nameplate(delta: float) -> void:
+	if _name_label == null or (input == null and not is_companion):
+		return
+	var leader: ActorBase = null
+	var crowded: bool = false
+	for member: ActorBase in CombatDirector.current.alive_party():
+		if leader == null and not member.is_companion:
+			leader = member
+		if member != self and member.global_position.distance_to(global_position) <= NAMEPLATE_CROWD_RADIUS:
+			crowded = true
+	_name_label.position.y = move_toward(_name_label.position.y, nameplate_height(crowded), delta * 1.5)
+	if not is_companion:
+		return
+	var calm: bool = sign_flow == null or not sign_flow.is_in_combat
+	var close: bool = leader != null and leader.global_position.distance_to(global_position) <= COMPANION_PLATE_FADE_RADIUS
+	var wanted: float = COMPANION_PLATE_FADED_ALPHA if calm and close else 1.0
+	_name_label.modulate.a = move_toward(_name_label.modulate.a, wanted, delta * 3.0)
 
 
 ## Teleports the actor (its spawn point stays where it was).
@@ -519,6 +556,7 @@ func spawn_at(where: Transform3D) -> void:
 # --- Ticking --------------------------------------------------------------
 
 func _physics_process(delta: float) -> void:
+	_update_nameplate(delta)
 	if not is_multiplayer_authority():
 		# Someone else's actor: follow what its owner sends.
 		net_sync.tick_copy(delta)

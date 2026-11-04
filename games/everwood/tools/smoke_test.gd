@@ -115,6 +115,9 @@ const MYTHOPOETIC_LENS_CHECKS: GDScript = preload("res://tools/test_mythopoetic_
 const ADAPTIVE_AUDIO_CHECKS: GDScript = preload("res://tools/test_adaptive_audio.gd")
 ## The Living Storybook Atelier's checks (tools/test_world_visuals.gd): the world's in the seamless world, the vale's in Oakshire Vale.
 const WORLD_VISUALS_CHECKS: GDScript = preload("res://tools/test_world_visuals.gd")
+## Phase 18's checks (tools/test_pastoral_cartography.gd): the camera, labels, sculpted world and the Wayfarer's map, in every instance.
+const PASTORAL_CHECKS: GDScript = preload("res://tools/test_pastoral_cartography.gd")
+var _pastoral: RefCounted = PASTORAL_CHECKS.new()
 
 
 func _initialize() -> void:
@@ -147,6 +150,7 @@ func _run() -> void:
 	_check_callings()
 	await _check_keyboard_is_player_one()
 	await _check_walk_over_bramblebridge()
+	await _pastoral.run_hub(self, _check)
 	await _check_hot_join_and_pad_mapping()
 	await _seat_trinity()
 	await _check_party_caps()
@@ -157,6 +161,7 @@ func _run() -> void:
 	_stage_party()
 	await _seconds(0.3)
 	await _check_cross_grimoire_hud()
+	await _pastoral.run_dojo(self, _check)
 	await _check_storybook_art()
 	await _check_flow_cancel_and_hit_stop()
 	await _check_flow_windows()
@@ -191,8 +196,10 @@ func _run() -> void:
 	await audio.run_corridor(self, _check)
 	var visuals: RefCounted = WORLD_VISUALS_CHECKS.new()
 	await visuals.run_world(self, _check)
+	await _pastoral.run_world(self, _check)
 	await OAKSHIRE_VALE_CHECKS.new().run(self, _check)
 	await visuals.run_vale(self, _check)
+	await _pastoral.run_vale(self, _check)
 	await MYTHOPOETIC_LENS_CHECKS.new().run(self, _check)
 	await audio.run_vale(self, _check)
 	_remove_file(TEST_SAVE_PATH)
@@ -1647,8 +1654,8 @@ func _check_companion_backfill() -> void:
 	_check(dojo.grid.view_count() == 1 and dojo.huds.size() == 1, "companions get no split-screen view or HUD")
 	var driven: bool = true
 	for bot: ActorBase in _companions():
-		driven = driven and bot.companion != null and bot.input == null and bot.display_name().ends_with("(bot)")
-	_check(driven, "each is driven by a CompanionAIComponent and labelled as a bot")
+		driven = driven and bot.companion != null and bot.input == null and bot.is_companion and bot.display_name().begins_with("P%d · " % (bot.party_slot + 1)) and not bot.display_name().contains("(bot)")
+	_check(driven, "each is driven by a CompanionAIComponent, its nameplate \"P# · <Fellowship>\" like any hero's (18 GDD §6.2: no \"(bot)\")")
 	_check(network.local_player_count() == 1 and network.party_size() == 3, "they fill the party without taking a screen's player places")
 
 	# A fight: the tank holds the boss while the companions do their jobs.
@@ -3306,7 +3313,7 @@ func _check_calling_shortcut_and_fellowship() -> void:
 	_check(lantern != keyboard and lantern.loadout.class_id == ClassLoadouts.SOUL_TETHER_HEALER and lantern.tether != null
 		and reopened != null and reopened.selected == ScribeDeskMenu.ROW_FELLOWSHIP,
 		"on the desk's Fellowship row, D makes P1 a Lantern-Bearer: a new character, and the desk reopens on their screen")
-	_check(lantern.loadout.display_name == "Lantern-Scribe" and lantern.display_name() == "P1 Lantern-Scribe", "a new Lantern-Bearer starts as a Lantern-Scribe")
+	_check(lantern.loadout.display_name == "Lantern-Scribe" and lantern.display_name() == "P1 · Lantern-Scribe", "a new Lantern-Bearer starts as a Lantern-Scribe")
 	await _tap_key(KEY_A)
 	await _seconds(0.1)
 	var back: ActorBase = hub.actors[&"1_0"]

@@ -57,6 +57,7 @@ group_uniforms general_uniforms;
 uniform bool flat_terrain_normals = false;
 group_uniforms;
 
+#define STORYBOOK_CLOUD_POS v_vertex
 #include "res://src/world/shaders/storybook_world_common.gdshaderinc"
 
 // Varyings & Types
@@ -272,24 +273,21 @@ void fragment() {
 	}
 
 	// The colour map, blended like the heights (a corner outside every region, at a streamed edge, takes the nearest one in).
-	vec3 color = vec3(0.0);
+	vec4 color = vec4(0.0);
 	float found = 0.0;
 	for (int corner = 0; corner < 4; corner++) {
 		if (index[corner].z >= 0) {
-			color += texelFetch(_color_maps, index[corner], 0).rgb * weights[corner];
+			color += texelFetch(_color_maps, index[corner], 0) * weights[corner];
 			found += weights[corner];
 		}
 	}
-	vec3 painted = found > 0.0 ? color / found : vec3(0.4, 0.5, 0.3);
-	vec3 ground = painted;
-	// The atelier's crafts over the painted colour (17 GDD §3.3, shared with Mode B's splat shader).
-	if (atelier_ready > 0.5) {
-		vec3 bent;
-		vec4 classes = terrain_class_weights(pow(painted, vec3(1.0 / 2.2)), w_normal);
-		vec3 detail = terrain_detail(v_vertex, w_normal, classes, 0.5, bent);
-		ground = painted * mix(vec3(1.0), detail, 0.85);
-		NORMAL = mat3(VIEW_MATRIX) * bent;
-	}
+	vec3 painted = found > 0.0 ? color.rgb / found : vec3(0.4, 0.5, 0.3);
+	// The colour map's alpha is 1 minus a cliff toe's contact shadow (18 GDD §3.2), as Mode B's vertex alpha.
+	float toe = found > 0.0 ? clamp(1.0 - color.a / found, 0.0, 1.0) : 0.0;
+	// The atelier's crafts, the frayed road edge and the slope contract (shared with Mode B's splat shader).
+	vec3 bent;
+	vec3 ground = storybook_ground(pow(painted, vec3(1.0 / 2.2)), painted, w_normal, v_vertex, toe, 0.85, 0.5, bent);
+	NORMAL = mat3(VIEW_MATRIX) * bent;
 	vec3 emission = vec3(0.0);
 	apply_succession(v_vertex, ground, emission, 1.0);
 	ALBEDO = ground;

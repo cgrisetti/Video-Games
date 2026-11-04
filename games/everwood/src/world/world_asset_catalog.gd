@@ -168,6 +168,16 @@ static func _build_parts(kit_id: StringName, options: Dictionary, parts: Parts) 
 			_crane(parts, options)
 		WorldVisualCatalog.KIT_ASHLAR_STACK:
 			_ashlar(parts, options)
+		WorldVisualCatalog.KIT_MARKET_PAVILION:
+			_market_pavilion(parts, options)
+		WorldVisualCatalog.KIT_CLIFF_CORNICE:
+			_cornice(parts, options)
+		WorldVisualCatalog.KIT_PATH_SLEEPER:
+			_sleepers(parts, options)
+		WorldVisualCatalog.KIT_STEPPING_STONE:
+			_stepping_stones(parts, options)
+		WorldVisualCatalog.KIT_GUIDE_POST:
+			_guide_post(parts, options)
 
 
 ## The living bits a merged mesh can't be: lights, smoke and glows.
@@ -227,6 +237,7 @@ static func _house(parts: Parts, options: Dictionary) -> void:
 	var stone: Material = WorldVisualCatalog.craft(Craft.COBBLED_FLAGSTONE, FIELDSTONE, false, 0.35)
 	var shingle: Material = WorldVisualCatalog.craft(Craft.SCALLOP_SHINGLE, roof_tint, true, 0.25)
 	_house_block(parts, Vector3.ZERO, w, h, d, storey, plaster, plaster_high, timber, timber_high, stone)
+	_skirt(parts, Vector2(w + 0.1, d + 0.1), Vector3.ZERO)
 	_stepped_gables(parts, Vector3.ZERO, w, h, d, brick, coping)
 	_gable_roof(parts, Vector3.ZERO, w, h, d, shingle, timber_high)
 	var rise: float = _roof_rise(size)
@@ -500,6 +511,7 @@ static func _pavilion(parts: Parts, options: Dictionary) -> void:
 	var shingle: Material = WorldVisualCatalog.craft(Craft.SCALLOP_SHINGLE, SHINGLE_SLATE, true, 0.2)
 	var stone: Material = WorldVisualCatalog.craft(Craft.COBBLED_FLAGSTONE, WorldVisualCatalog.FLAGSTONE, false, 0.2)
 	parts.box(Vector3(size.x + 0.6, 0.16, size.z + 0.6), Vector3(0.0, 0.08, 0.35), stone)
+	_skirt(parts, Vector2(size.x + 0.6, size.z + 0.6), Vector3(0.0, -0.3, 0.35))
 	for x_side: float in [-1.0, 1.0]:
 		for z_side: float in [-1.0, 1.0]:
 			parts.box(Vector3(0.22, size.y, 0.22), Vector3(x_side * size.x * 0.5, size.y * 0.5, 0.35 + z_side * size.z * 0.5), timber)
@@ -546,6 +558,7 @@ static func _pagoda(parts: Parts, options: Dictionary) -> void:
 	var shingle: Material = WorldVisualCatalog.craft(Craft.SCALLOP_SHINGLE, SHINGLE_MOSS, true, 0.3)
 	parts.cylinder(size.x * 0.56, size.x * 0.6, 0.3, Vector3(0.0, 0.15, 0.4), stone, 8)
 	parts.cylinder(size.x * 0.5, size.x * 0.52, 0.12, Vector3(0.0, 0.36, 0.4), stone, 8)
+	_skirt(parts, Vector2(size.x * 1.08, size.x * 1.08), Vector3(0.0, -0.22, 0.4), PI / 8.0)
 	for side: float in [-1.0, 1.0]:
 		parts.box(Vector3(0.24, size.y, 0.24), Vector3(side * size.x * 0.46, size.y * 0.5 + 0.3, 0.4), cedar)
 		parts.beam(Vector3(side * size.x * 0.46, size.y - 0.5, 0.4), Vector3(side * size.x * 0.26, size.y + 0.25, 0.4), 0.14, cedar_high)
@@ -605,6 +618,7 @@ static func _oasis(parts: Parts, _options: Dictionary) -> void:
 	var shingle: Material = WorldVisualCatalog.craft(Craft.SCALLOP_SHINGLE, Color(0.38, 0.44, 0.36), false, 0.45)
 	var moss: Material = WorldVisualCatalog.craft(Craft.MEADOW_TURF, WorldVisualCatalog.MOSS)
 	parts.cylinder(0.95, 1.05, 0.62, Vector3(0.0, 0.31, 0.0), stone, 12)
+	_skirt(parts, Vector2(1.9, 1.9), Vector3(0.0, -0.12, 0.0), PI * 0.25)
 	parts.torus(0.82, 1.02, Vector3(0.0, 0.6, 0.0), moss, 16)
 	for index: int in 5:
 		var angle: float = TAU * float(index) / 5.0 + 0.3
@@ -629,35 +643,52 @@ static func _oasis(parts: Parts, _options: Dictionary) -> void:
 
 ## A Hush-Crack (§4.2, ZONE_HUSHED): a 3.5 m jagged root-and-earth fissure in the turf.
 static func _crack(parts: Parts, _options: Dictionary) -> void:
-	var loam: Material = WorldVisualCatalog.craft(Craft.HOLLOW_LOAM, Color(0.3, 0.25, 0.22))
-	var dark: Material = WorldVisualCatalog.glowing(Color(0.1, 0.12, 0.16), 0.0)
-	var slate: Material = WorldVisualCatalog.glowing(Color(0.55, 0.62, 0.7), 0.35)
-	var root: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, BARK)
+	# The First-Quiet made visible (18 GDD §5 layer 3): a dark sunken trench, 7 to
+	# 11 jagged slate shards leaning out from it at 15° to 32°, and six pale
+	# weeping root-tendrils arching out of the fissure.
+	var dark: Material = WorldVisualCatalog.glowing(Color(0.06, 0.07, 0.1), 0.0)
+	var loam: Material = WorldVisualCatalog.craft(Craft.HOLLOW_LOAM, Color(0.26, 0.25, 0.27))
+	var slate: Material = WorldVisualCatalog.craft(Craft.CRAG_GRANITE, Color(0.3, 0.33, 0.4), false, 0.0)
+	var rime: Material = WorldVisualCatalog.glowing(Color(0.62, 0.72, 0.86), 0.25)
+	var root: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, Color(0.66, 0.66, 0.68))
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 1717
-	var length: float = 3.5
-	var segments: int = 7
-	for index: int in segments:
-		var t: float = float(index) / (segments - 1) - 0.5
-		var x: float = t * length
-		var z: float = sin(t * 7.0) * 0.28
-		var gap: float = 0.32 * (1.0 - absf(t) * 1.5) + 0.06
-		parts.box(Vector3(length / segments + 0.12, 0.04, gap), Vector3(x, 0.02, z), dark, Vector3(0.0, rng.randf_range(-0.4, 0.4), 0.0))
-		parts.box(Vector3(length / segments, 0.05, gap * 0.35), Vector3(x, 0.03, z), slate, Vector3(0.0, rng.randf_range(-0.3, 0.3), 0.0))
-		for side: float in [-1.0, 1.0]:
-			parts.box(Vector3(length / segments + 0.2, rng.randf_range(0.18, 0.34), 0.34), Vector3(x, 0.08, z + side * (gap * 0.5 + 0.17)), loam,
-				Vector3(rng.randf_range(-0.25, 0.25) * side, rng.randf_range(-0.3, 0.3), side * 0.35))
-	for index: int in 4:
-		var t: float = rng.randf_range(-0.4, 0.4)
-		parts.beam(Vector3(t * length, 0.05, -0.5), Vector3(t * length + rng.randf_range(-0.4, 0.4), 0.32, 0.5), 0.08, root)
+	var length: float = 3.6
+	# The trench: a dark pit 0.35 m down, its lips of torn loam.
+	parts.box(Vector3(length, 0.04, 0.9), Vector3(0.0, -0.33, 0.0), dark)
+	for side: float in [-1.0, 1.0]:
+		parts.box(Vector3(length + 0.3, 0.42, 0.5), Vector3(0.0, -0.12, side * 0.62), loam, Vector3(side * 0.22, 0.0, 0.0))
+		parts.box(Vector3(length * 0.92, 0.06, 0.1), Vector3(0.0, 0.02, side * 0.42), rime)
+	var shards: int = 7 + rng.randi() % 5
+	for index: int in shards:
+		var angle: float = TAU * float(index) / shards + rng.randf_range(-0.25, 0.25)
+		var out: Vector3 = Vector3(cos(angle) * 1.6, 0.0, sin(angle) * 0.9)
+		var tilt: float = deg_to_rad(rng.randf_range(15.0, 32.0))
+		var tall: float = rng.randf_range(0.9, 1.9)
+		var lean: Basis = Basis(Vector3(-out.z, 0.0, out.x).normalized(), tilt) * Basis(Vector3.UP, rng.randf() * TAU)
+		parts.add_mesh(ShapeKit.make_slate_shard(tall, index * 7 + 3), Transform3D(lean, out * rng.randf_range(0.75, 1.05) + Vector3(0.0, -0.2, 0.0)),
+			[WorldVisualCatalog.shaded(slate)])
+	for index: int in 6:
+		var angle: float = TAU * float(index) / 6.0 + rng.randf_range(-0.3, 0.3)
+		var from: Vector3 = Vector3(rng.randf_range(-1.2, 1.2), -0.25, rng.randf_range(-0.2, 0.2))
+		var reach: Vector3 = Vector3(cos(angle), 0.0, sin(angle))
+		var tendril: PackedVector3Array = PackedVector3Array([from, from + reach * 0.5 + Vector3(0.0, 0.75, 0.0),
+			from + reach * 1.2 + Vector3(0.0, 0.55, 0.0), from + reach * 1.6 + Vector3(0.0, -0.1, 0.0)])
+		for step: int in tendril.size() - 1:
+			parts.beam(tendril[step], tendril[step + 1], 0.07 - step * 0.015, root)
 
 
-## A Lulled Cairn (§4.2, ZONE_RECLAIMED): a mossy, heather-crowned stewardship cairn ringed by golden wildflowers.
+## A Lulled Cairn (§4.2, ZONE_RECLAIMED): a mossy, heather-crowned stewardship
+## cairn with a warm Saffron-Gold Way-Lantern on its crook (18 GDD §5), ringed by
+## forty-two golden and white wildflowers that bloom as it rises.
 static func _cairn(parts: Parts, _options: Dictionary) -> void:
 	var granite: Material = WorldVisualCatalog.craft(Craft.CRAG_GRANITE, WorldVisualCatalog.GRANITE, false, 0.7)
 	var heather: Material = WorldVisualCatalog.painted(Color(0.62, 0.42, 0.66))
 	var gold: Material = WorldVisualCatalog.glowing(Color(0.98, 0.82, 0.3), 0.3)
+	var daisy: Material = WorldVisualCatalog.glowing(Color(0.97, 0.96, 0.9), 0.15)
 	var stem: Material = WorldVisualCatalog.painted(Color(0.36, 0.55, 0.28))
+	var timber: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, WorldVisualCatalog.TIMBER)
+	var lantern: Material = WorldVisualCatalog.glowing(WorldVisualCatalog.WARM_HEARTH, 2.2)
 	var sizes: Array[float] = [0.7, 0.58, 0.46, 0.34, 0.24]
 	var y: float = 0.0
 	for index: int in sizes.size():
@@ -665,11 +696,43 @@ static func _cairn(parts: Parts, _options: Dictionary) -> void:
 		parts.sphere(radius, Vector3(sin(index * 1.9) * 0.08, y + radius * 0.55, cos(index * 1.9) * 0.08), granite, Vector3(1.0, 0.62, 1.0), 10)
 		y += radius * 1.05
 	parts.sphere(0.18, Vector3(0.0, y + 0.08, 0.0), heather, Vector3(1.3, 0.6, 1.3), 8)
-	for index: int in 14:
-		var angle: float = TAU * float(index) / 14.0
-		var at: Vector3 = Vector3(cos(angle), 0.0, sin(angle)) * (1.2 + 0.25 * float(index % 3))
+	_heather_mound(parts, Vector2(1.9, 1.9), 3)
+	# The Way-Lantern on a crook beside the cairn, under 2.6 m.
+	parts.box(Vector3(0.1, 2.2, 0.1), Vector3(0.95, 1.1, 0.0), timber)
+	parts.beam(Vector3(0.95, 2.2, 0.0), Vector3(0.6, 2.35, 0.0), 0.08, timber)
+	parts.box(Vector3(0.22, 0.28, 0.22), Vector3(0.6, 2.12, 0.0), lantern)
+	for index: int in 42:
+		var angle: float = TAU * float(index) / 42.0 + 0.3 * sin(index * 1.7)
+		var at: Vector3 = Vector3(cos(angle), 0.0, sin(angle)) * (1.15 + 0.35 * float(index % 4) + 0.1 * sin(index * 2.3))
 		parts.box(Vector3(0.03, 0.3, 0.03), at + Vector3(0.0, 0.15, 0.0), stem)
-		parts.sphere(0.08, at + Vector3(0.0, 0.32, 0.0), gold, Vector3(1.0, 0.6, 1.0), 6)
+		parts.sphere(0.08, at + Vector3(0.0, 0.32, 0.0), gold if index % 3 != 0 else daisy, Vector3(1.0, 0.6, 1.0), 6)
+
+
+## A low mossy mound with heather tufts, `footprint` across (a standing stone's or a cairn's foot).
+static func _heather_mound(parts: Parts, footprint: Vector2, seed_value: int) -> void:
+	var moss: Material = WorldVisualCatalog.craft(Craft.MEADOW_TURF, WorldVisualCatalog.MOSS)
+	var heather: Material = WorldVisualCatalog.foliage(Color.WHITE, 1.0, 0.1, 0.4)
+	parts.sphere(1.0, Vector3.ZERO, moss, Vector3(footprint.x * 0.55, 0.32, footprint.y * 0.55), 10)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 6100 + seed_value
+	for tuft: int in 7:
+		var angle: float = TAU * float(tuft) / 7.0 + rng.randf_range(-0.3, 0.3)
+		var at: Vector3 = Vector3(cos(angle) * footprint.x * 0.42, 0.12, sin(angle) * footprint.y * 0.42)
+		parts.foliage_sphere(at, rng.randf_range(0.12, 0.2), Color(0.42, 0.3, 0.45), Color(0.72, 0.52, 0.76), heather, Vector3(1.2, 0.8, 1.2))
+
+
+## A building's mossy foundation collar (ShapeKit.make_ground_contact_skirt) with fern tufts at its corners (18 GDD §4.3).
+static func _skirt(parts: Parts, footprint: Vector2, at: Vector3, yaw: float = 0.0) -> void:
+	var collar: Material = WorldVisualCatalog.shaded(WorldVisualCatalog.craft(Craft.MEADOW_TURF, WorldVisualCatalog.MOSS.lerp(Color(0.42, 0.4, 0.33), 0.35)))
+	var ferns: Material = WorldVisualCatalog.foliage(Color.WHITE, 0.6, 0.5, 1.0)
+	var where: Transform3D = Transform3D(Basis(Vector3.UP, yaw), at)
+	parts.add_mesh(ShapeKit.make_ground_contact_skirt(footprint), where, [collar])
+	for corner: Vector2 in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
+		var spot: Vector3 = where * Vector3(corner.x * (footprint.x * 0.5 + 0.35), 0.0, corner.y * (footprint.y * 0.5 + 0.35))
+		for frond: int in 5:
+			var angle: float = TAU * float(frond) / 5.0 + corner.x
+			var out: Vector3 = Vector3(cos(angle), 0.0, sin(angle))
+			parts.blade(spot + out * 0.04, spot + out * 0.38 + Vector3(0.0, 0.34, 0.0), 0.11, Color(0.22, 0.36, 0.18), Color(0.45, 0.62, 0.3), ferns)
 
 
 # --- Landscape and garden ----------------------------------------------------------------
@@ -689,6 +752,10 @@ static func _drystone(parts: Parts, options: Dictionary) -> void:
 				Vector3(x + length * 0.5, (course + 0.5) * size.y / courses, rng.randf_range(-0.04, 0.04)), stone, Vector3(0.0, rng.randf_range(-0.05, 0.05), 0.0))
 			x += length
 	parts.box(Vector3(size.x, 0.1, size.z * 1.08), Vector3(0.0, size.y + 0.03, 0.0), stone)
+	# Its foot sinks into a low mossy collar, so it never floats on a slope (18 GDD §4.3).
+	parts.add_mesh(ShapeKit.make_ground_contact_skirt(Vector2(size.x, size.z * 0.9)),
+		Transform3D(Basis.from_scale(Vector3(1.0, 0.45, 1.0)), Vector3(0.0, -0.04, 0.0)),
+		[WorldVisualCatalog.shaded(WorldVisualCatalog.craft(Craft.MEADOW_TURF, WorldVisualCatalog.MOSS.lerp(FIELDSTONE, 0.3)))])
 
 
 ## A cedar bee-hive on its stand (two or three boxes and a lid).
@@ -734,16 +801,21 @@ static func _pumpkins(parts: Parts, options: Dictionary) -> void:
 			x += rng.randf_range(1.1, 1.7)
 
 
-## A standing stone carved with a spiral Maker-Seal in the Star-Tide's violet, mossy at its foot.
+## A sculpted standing stone (18 GDD §4.3): a Voronoi-cleaved menhir tapering to
+## its top (ShapeKit.make_sculpted_megalith), a spiral Maker-Seal recessed into
+## its front face glowing in the Star-Tide's violet, on a mossy heather mound.
 static func _standing_stone(parts: Parts, options: Dictionary) -> void:
 	var size: Vector3 = options.get("size", Vector3(1.4, 4.2, 0.9))
 	var granite: Material = WorldVisualCatalog.craft(Craft.CRAG_GRANITE, options.get("color", WorldVisualCatalog.GRANITE), true, 0.6)
 	var seal: Material = WorldVisualCatalog.glowing(options.get("accent", WorldVisualCatalog.STAR_TIDE), 1.2)
-	parts.box(Vector3(size.x, size.y * 0.7, size.z), Vector3(0.0, size.y * 0.35, 0.0), granite)
-	parts.box(Vector3(size.x * 0.82, size.y * 0.32, size.z * 0.9), Vector3(0.04, size.y * 0.84, 0.0), granite, Vector3(0.0, 0.0, 0.06))
+	var stone: ArrayMesh = ShapeKit.make_sculpted_megalith(size, int(options.get("seed", 0)) + int(size.y * 10.0))
+	parts.add_mesh(stone, Transform3D.IDENTITY, [WorldVisualCatalog.shaded(granite)])
+	# The seal sits just proud of the face's cleaved front, part-sunk into it.
+	var face: float = stone.get_aabb().end.z * 0.55
 	for turn: int in 3:
-		parts.torus(0.16 + turn * 0.13, 0.2 + turn * 0.13, Vector3(0.0, size.y * 0.55, size.z * 0.5 + 0.01), seal, 14, Vector3(PI * 0.5, 0.0, 0.0))
-	parts.sphere(size.x * 0.7, Vector3(0.0, 0.0, 0.0), WorldVisualCatalog.craft(Craft.MEADOW_TURF, WorldVisualCatalog.MOSS), Vector3(1.0, 0.35, 0.9), 8)
+		parts.torus(0.1 + turn * 0.09, 0.13 + turn * 0.09, Vector3(0.0, size.y * 0.5, face), seal, 14, Vector3(PI * 0.5, 0.0, 0.0))
+	parts.sphere(0.06, Vector3(0.0, size.y * 0.5, face + 0.02), seal)
+	_heather_mound(parts, Vector2(size.x * 1.3, size.z * 1.6), int(options.get("seed", 0)))
 
 
 ## A Wind-Lantern on its post and bracket (the light is a child of the kit).
@@ -830,78 +902,295 @@ static func _lantern_post_parts(parts: Parts, at: Vector3, side: float) -> void:
 ## swaying in the wind and dithering out of a camera's sightline. `height` 0
 ## picks the kind's usual height.
 static func tree_parts(parts: Parts, kind: StringName, height: float, seed_value: int, blossom: bool, fade: bool) -> void:
+	# Phase 18 (18 GDD §4.1): one continuous gnarled trunk with five flared root-buttresses and
+	# boughs forking upward at 32° to 48° above the 3.2 m sightline, under a crown of
+	# overlapping icosahedral leaf-cloud lobes whose normals point out from its middle.
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 9000 + seed_value * 31 + kind.hash() % 1000
-	var bark: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, BARK, false, 0.45)
-	var bark_high: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, BARK, fade, 0.3)
+	var bark: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, BARK, fade, 0.35)
 	var colors: Array = LEAF_COLORS.get(kind, LEAF_COLORS[WorldVisualCatalog.KIT_TREE_MOSS_OAK])
 	var dark: Color = colors[0]
 	var light_leaf: Color = colors[1]
+	var shape_seed: int = seed_value * 13 + kind.hash() % 97
 	match kind:
 		WorldVisualCatalog.KIT_TREE_HIGHLAND_PINE:
 			var tall: float = height if height > 0.0 else rng.randf_range(9.0, 12.5)
-			_roots(parts, Vector3.ZERO, 0.32, 4, bark, rng)
-			parts.cylinder(0.12, 0.34, tall * 0.92, Vector3(0.0, tall * 0.46, 0.0), bark_high, 8)
-			var leaves: Material = WorldVisualCatalog.foliage(Color.WHITE, tall, 0.12, 0.0, fade)
-			var tiers: int = 4
+			parts.add_mesh(ShapeKit.make_gnarled_trunk_mesh(tall * 0.94, 0.36, 0.08, 0, shape_seed), Transform3D.IDENTITY, [bark])
+			var needles: Material = WorldVisualCatalog.canopy(Color.WHITE, tall, 0.12, fade)
+			# Five drooping tiers of needle-clouds, wide and low to narrow and high, all above the sightline.
+			var tiers: int = 5
 			for tier: int in tiers:
-				var t: float = float(tier) / tiers
-				var base: float = lerpf(3.6, tall * 0.8, t)
-				var radius: float = lerpf(2.1, 0.8, t) * rng.randf_range(0.9, 1.1)
-				parts.foliage_cone(Vector3(0.0, base, 0.0), radius, lerpf(2.6, 1.8, t), dark.lerp(light_leaf, t * 0.6), dark.lerp(light_leaf, 0.5 + t * 0.5), leaves)
+				var t: float = float(tier) / (tiers - 1)
+				var base: float = lerpf(3.9, tall * 0.86, t)
+				var radius: float = lerpf(2.2, 0.75, t) * rng.randf_range(0.9, 1.1)
+				var crown: ArrayMesh = ShapeKit.make_leaf_cloud_crown(Vector3.ZERO, radius, 11 + tier % 3, shape_seed + tier,
+					dark.lerp(light_leaf, t * 0.5), dark.lerp(light_leaf, 0.55 + t * 0.45))
+				parts.add_mesh(crown, Transform3D(Basis.from_scale(Vector3(1.0, 0.42, 1.0)), Vector3(0.0, base, 0.0)), [needles])
 		WorldVisualCatalog.KIT_TREE_ORCHARD_APPLE:
 			var tall: float = height if height > 0.0 else rng.randf_range(4.6, 5.6)
-			parts.cylinder(0.14, 0.22, 2.2, Vector3(0.0, 1.1, 0.0), bark, 8)
-			var crown: Vector3 = Vector3(0.0, tall * 0.68, 0.0)
-			for fork: int in 3:
-				var angle: float = TAU * float(fork) / 3.0 + rng.randf() * 0.5
-				parts.beam(Vector3(0.0, 2.0, 0.0), crown + Vector3(cos(angle), -0.3, sin(angle)) * 1.0, 0.12, bark_high)
-			var leaves: Material = WorldVisualCatalog.foliage(Color.WHITE, tall, 0.18, 0.0, fade)
-			parts.puff_crown(crown, tall * 0.34, 6, dark, light_leaf, leaves, rng, 0.8)
+			var trunk: ArrayMesh = ShapeKit.make_gnarled_trunk_mesh(maxf(3.6, tall * 0.72), 0.24, 0.12, 3, shape_seed)
+			parts.add_mesh(trunk, Transform3D.IDENTITY, [bark])
+			var crown_at: Vector3 = trunk.get_meta(ShapeKit.META_CROWN_CENTER) + Vector3(0.0, 0.3, 0.0)
+			var radius: float = tall * 0.36
+			crown_at.y = maxf(crown_at.y, ZoneBiomeResource.MAX_OBSTACLE_SIGHTLINE_M + radius * 0.5)
+			var leaves: Material = WorldVisualCatalog.canopy(Color.WHITE, tall, 0.18, fade)
+			parts.add_mesh(ShapeKit.make_leaf_cloud_crown(crown_at, radius, 12, shape_seed, dark, light_leaf), Transform3D.IDENTITY, [leaves])
 			var dots: Array[Color] = [Color(0.82, 0.18, 0.15), Color(0.9, 0.62, 0.2)]
 			if blossom:
 				dots = [Color(0.98, 0.96, 0.95), Color(0.97, 0.78, 0.84)]
-			for index: int in 16:
-				var direction: Vector3 = Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-0.2, 1.0), rng.randf_range(-1.0, 1.0)).normalized()
-				parts.foliage_sphere(crown + direction * tall * 0.36, 0.09, dots[index % 2], dots[index % 2], leaves)
+			for index: int in 18:
+				var direction: Vector3 = Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-0.1, 1.0), rng.randf_range(-1.0, 1.0)).normalized()
+				parts.foliage_sphere(crown_at + direction * radius * 0.92, 0.09, dots[index % 2], dots[index % 2], leaves)
 		WorldVisualCatalog.KIT_TREE_WEEPING_WILLOW:
 			var tall: float = height if height > 0.0 else rng.randf_range(7.5, 9.0)
-			_roots(parts, Vector3.ZERO, 0.5, 5, bark, rng)
-			parts.cylinder(0.32, 0.5, 4.2, Vector3(0.0, 2.1, 0.0), bark, 10)
-			var crown: Vector3 = Vector3(0.0, tall * 0.68, 0.0)
-			for fork: int in 3:
-				var angle: float = TAU * float(fork) / 3.0 + rng.randf()
-				parts.beam(Vector3(0.0, 3.9, 0.0), crown + Vector3(cos(angle), 0.0, sin(angle)) * 1.6, 0.2, bark_high)
-			var leaves: Material = WorldVisualCatalog.foliage(Color.WHITE, tall, 0.3, 0.0, fade)
-			parts.puff_crown(crown, tall * 0.36, 7, dark, light_leaf, leaves, rng, 0.7)
-			# Fronds trailing down round the crown's rim, down to about 3.4 m.
-			for index: int in 22:
-				var angle: float = TAU * float(index) / 22.0 + rng.randf_range(-0.08, 0.08)
-				var reach: float = tall * rng.randf_range(0.3, 0.4)
-				var length: float = rng.randf_range(1.0, 1.4)
-				var hang: Vector3 = crown + Vector3(cos(angle) * reach, -tall * 0.12 - length, sin(angle) * reach)
-				parts.foliage_sphere(hang, 0.2, dark.lerp(light_leaf, 0.2), dark.lerp(light_leaf, 0.55), leaves, Vector3(1.0, length / 0.2, 1.0))
+			var trunk: ArrayMesh = ShapeKit.make_gnarled_trunk_mesh(tall * 0.6, 0.56, 0.26, 4, shape_seed)
+			parts.add_mesh(trunk, Transform3D.IDENTITY, [bark])
+			var crown_at: Vector3 = trunk.get_meta(ShapeKit.META_CROWN_CENTER) + Vector3(0.0, 0.4, 0.0)
+			var leaves: Material = WorldVisualCatalog.canopy(Color.WHITE, tall, 0.3, fade)
+			# Hanging fronds trail down round the rim, but never below about 3.4 m.
+			var radius: float = tall * 0.36
+			var frond: float = clampf(crown_at.y - radius * 0.25 - 3.4, 0.6, 2.2)
+			parts.add_mesh(ShapeKit.make_leaf_cloud_crown(crown_at, radius, 15, shape_seed, dark, light_leaf, 26, frond), Transform3D.IDENTITY, [leaves])
 		_:
 			var tall: float = height if height > 0.0 else rng.randf_range(8.5, 11.0)
-			var girth: float = 0.32 + tall * 0.03
-			_roots(parts, Vector3.ZERO, girth, 5, bark, rng)
-			var fork_y: float = maxf(3.5, tall * 0.42)
-			parts.cylinder(girth * 0.78, girth, fork_y, Vector3(0.0, fork_y * 0.5, 0.0), bark, 10)
-			var crown: Vector3 = Vector3(0.0, tall * 0.68, 0.0)
-			var limbs: int = 3
-			for fork: int in limbs:
-				var angle: float = TAU * float(fork) / limbs + rng.randf_range(-0.3, 0.3)
-				parts.beam(Vector3(0.0, fork_y - 0.3, 0.0), crown + Vector3(cos(angle), -0.4, sin(angle)) * tall * 0.2, girth * 0.42, bark_high)
-			var leaves: Material = WorldVisualCatalog.foliage(Color.WHITE, tall, 0.16, 0.0, fade)
-			parts.puff_crown(crown, tall * 0.34, 7 + seed_value % 3, dark, light_leaf, leaves, rng, 0.82)
+			var girth: float = 0.34 + tall * 0.032
+			var trunk: ArrayMesh = ShapeKit.make_gnarled_trunk_mesh(tall * 0.7, girth, girth * 0.42, 4 + seed_value % 2, shape_seed)
+			parts.add_mesh(trunk, Transform3D.IDENTITY, [bark])
+			var crown_at: Vector3 = trunk.get_meta(ShapeKit.META_CROWN_CENTER) + Vector3(0.0, 0.5, 0.0)
+			var leaves: Material = WorldVisualCatalog.canopy(Color.WHITE, tall, 0.16, fade)
+			# A moss-oak's crown, with a few short fronds of hanging moss.
+			parts.add_mesh(ShapeKit.make_leaf_cloud_crown(crown_at, tall * 0.34, 15 + seed_value % 4, shape_seed, dark, light_leaf, 7, 0.9),
+				Transform3D.IDENTITY, [leaves])
 
 
-## Buttress roots flaring from a trunk's foot.
-static func _roots(parts: Parts, at: Vector3, girth: float, count: int, bark: Material, rng: RandomNumberGenerator) -> void:
+# --- Phase 18 kits (18 GDD §3.2, §4.3) ------------------------------------------------------
+
+## The four heritage dyes of the market's linen (18 GDD §4.3): Saffron-Ochre,
+## Madder-Terracotta, Woad-Azure and Sage-Green, never neon primaries.
+const MARKET_DYES: Array[Color] = [Color("#D99B38"), Color("#B85A40"), Color("#46789C"), Color("#5C8558")]
+const MARKET_LINEN: Color = Color("#EFE6D2")
+
+
+## An artisan market pavilion (kit_market_pavilion, 18 GDD §4.3): four chamfered
+## timber posts with diagonal knee-braces under a striped linen awning that sags
+## in catenary curves and ends in a scalloped valance, over a plank counter
+## (the stall's 2.6 x 1.0 x 0.9 m collider) with woven baskets of produce, a
+## barrel at each end and herb bundles hung from the front beam. Its front (-z)
+## faces the green; its vendor stands behind (+z).
+static func _market_pavilion(parts: Parts, options: Dictionary) -> void:
+	var dye: Color = options.get("color", MARKET_DYES[0])
+	var stripe: Color = options.get("accent", MARKET_LINEN)
+	var seed_value: int = int(options.get("seed", 0))
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 4400 + seed_value
+	var timber: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, WorldVisualCatalog.TIMBER, true, 0.15)
+	var plank: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, Color(0.56, 0.41, 0.26))
+	var linen: Material = WorldVisualCatalog.shaded(WorldVisualCatalog.double_sided(WorldVisualCatalog.craft(Craft.LIME_PLASTER, Color.WHITE, true)))
+	var wicker: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, Color(0.72, 0.57, 0.34))
+	var iron: Material = WorldVisualCatalog.painted(IRON)
+	var front_z: float = -0.45
+	var back_z: float = 0.95
+	var half_x: float = 1.32
+	var front_top: float = 2.3
+	var back_top: float = 2.75
+	# Chamfered (octagonal) posts on stone pads, braced at the knee to their head beams.
+	var pad: Material = WorldVisualCatalog.craft(Craft.COBBLED_FLAGSTONE, WorldVisualCatalog.FLAGSTONE, false, 0.3)
+	for x_side: float in [-1.0, 1.0]:
+		for z_at: float in [front_z, back_z]:
+			var top: float = front_top if z_at == front_z else back_top
+			var foot: Vector3 = Vector3(x_side * half_x, 0.0, z_at)
+			parts.box(Vector3(0.28, 0.12, 0.28), foot + Vector3(0.0, 0.06, 0.0), pad)
+			parts.cylinder(0.075, 0.09, top, foot + Vector3(0.0, top * 0.5, 0.0), timber, 8, Vector3(0.0, PI / 8.0, 0.0))
+			parts.beam(foot + Vector3(0.0, top - 0.55, 0.0), foot + Vector3(-x_side * 0.5, top - 0.06, 0.0), 0.07, timber)
+	for z_at: float in [front_z, back_z]:
+		var top: float = front_top if z_at == front_z else back_top
+		parts.box(Vector3(half_x * 2.0 + 0.3, 0.14, 0.14), Vector3(0.0, top, z_at), timber)
+	for x_side: float in [-1.0, 1.0]:
+		parts.beam(Vector3(x_side * half_x, front_top, front_z), Vector3(x_side * half_x, back_top, back_z), 0.1, timber)
+	# The awning: a sheet of linen over the frame, sagging between its beams and its posts.
+	var columns: int = 16
+	var rows: int = 7
+	var reach_front: float = front_z - 0.5
+	var reach_back: float = back_z + 0.25
+	var grid: Array[PackedVector3Array] = []
+	var shades: Array[PackedColorArray] = []
+	for row: int in rows + 1:
+		var v: float = float(row) / rows
+		var line: PackedVector3Array = PackedVector3Array()
+		var tones: PackedColorArray = PackedColorArray()
+		for column: int in columns + 1:
+			var u: float = float(column) / columns
+			var x: float = lerpf(-half_x - 0.22, half_x + 0.22, u)
+			var z: float = lerpf(reach_back, reach_front, v)
+			var y: float = lerpf(back_top + 0.12, front_top + 0.02, (z - back_z) / (front_z - back_z))
+			# Catenary sag: deepest midway between the posts and midway between the beams.
+			var between: float = clampf((z - front_z) / (back_z - front_z), 0.0, 1.0)
+			y -= 0.11 * sin(PI * u) + 0.09 * sin(PI * between) * (0.6 + 0.4 * sin(PI * u))
+			line.append(Vector3(x, y, z))
+			var band: int = int(u * 8.0 - 0.001)
+			tones.append(dye if band % 2 == 0 else stripe)
+		grid.append(line)
+		shades.append(tones)
+	_sheet(parts, grid, shades, linen)
+	# The scalloped valance hanging from the awning's front edge.
+	var valance: Array[PackedVector3Array] = []
+	var valance_tones: Array[PackedColorArray] = []
+	var edge: PackedVector3Array = grid[rows]
+	for drop: int in 3:
+		var line: PackedVector3Array = PackedVector3Array()
+		var tones: PackedColorArray = PackedColorArray()
+		for column: int in columns + 1:
+			var u: float = float(column) / columns
+			var scallop: float = absf(sin(u * PI * 8.0))
+			var depth: float = 0.16 + 0.12 * scallop
+			line.append(edge[column] + Vector3(0.0, -depth * float(drop) / 2.0, -0.01 * drop))
+			tones.append(dye.darkened(0.08 * drop))
+		valance.append(line)
+		valance_tones.append(tones)
+	_sheet(parts, valance, valance_tones, linen)
+	# The counter: a plank top on boarded sides, filling the stall's collider.
+	parts.box(Vector3(2.66, 0.08, 0.96), Vector3(0.0, 0.98, 0.0), plank)
+	parts.box(Vector3(2.5, 0.9, 0.06), Vector3(0.0, 0.47, -0.42), plank)
+	for x_side: float in [-1.0, 1.0]:
+		parts.box(Vector3(0.06, 0.9, 0.84), Vector3(x_side * 1.24, 0.47, 0.0), plank)
+	for index: int in 5:
+		parts.box(Vector3(0.03, 0.82, 0.02), Vector3(-1.0 + index * 0.5, 0.47, -0.455), timber)
+	# Woven baskets of produce on the counter.
+	var produce: Array[Color] = [Color(0.8, 0.22, 0.17), Color(0.92, 0.66, 0.24), Color(0.47, 0.6, 0.27), Color(0.6, 0.36, 0.55)]
+	for index: int in 3:
+		var at: Vector3 = Vector3(-0.8 + index * 0.8, 1.02, -0.08 + rng.randf_range(-0.08, 0.08))
+		parts.cylinder(0.24, 0.19, 0.18, at + Vector3(0.0, 0.09, 0.0), wicker, 10)
+		parts.torus(0.22, 0.27, at + Vector3(0.0, 0.18, 0.0), wicker, 12)
+		var fruit: Material = WorldVisualCatalog.painted(produce[(index + seed_value) % produce.size()])
+		for piece: int in 5:
+			var angle: float = TAU * float(piece) / 5.0
+			parts.sphere(0.07, at + Vector3(cos(angle) * 0.1, 0.2, sin(angle) * 0.1), fruit)
+		parts.sphere(0.075, at + Vector3(0.0, 0.25, 0.0), fruit)
+	# A hooped barrel at each end of the counter.
+	for x_side: float in [-1.0, 1.0]:
+		var at: Vector3 = Vector3(x_side * 1.62, 0.0, -0.1)
+		parts.cylinder(0.27, 0.27, 0.78, at + Vector3(0.0, 0.39, 0.0), plank, 12)
+		parts.cylinder(0.31, 0.31, 0.12, at + Vector3(0.0, 0.39, 0.0), plank, 12)
+		for hoop: float in [0.12, 0.66]:
+			parts.torus(0.27, 0.3, at + Vector3(0.0, hoop, 0.0), iron, 12)
+		parts.cylinder(0.25, 0.25, 0.02, at + Vector3(0.0, 0.79, 0.0), timber, 12)
+	# Herb bundles hung upside down from the front beam.
+	var herbs: Material = WorldVisualCatalog.foliage(Color.WHITE, 0.6, 0.12, 0.0)
+	var twine: Material = WorldVisualCatalog.painted(Color(0.7, 0.62, 0.45))
+	for index: int in 4:
+		var at: Vector3 = Vector3(-0.95 + index * 0.63, front_top - 0.06, front_z - 0.02)
+		var hang: float = rng.randf_range(0.18, 0.3)
+		parts.box(Vector3(0.015, hang, 0.015), at + Vector3(0.0, -hang * 0.5, 0.0), twine)
+		parts.foliage_sphere(at + Vector3(0.0, -hang - 0.12, 0.0), 0.1, Color(0.3, 0.42, 0.22), Color(0.55, 0.66, 0.36), herbs, Vector3(0.8, 1.6, 0.8))
+
+
+## A sheet of cloth through `grid` (rows of points), its vertex colours `shades`, normals from its own curve.
+static func _sheet(parts: Parts, grid: Array[PackedVector3Array], shades: Array[PackedColorArray], material: Material) -> void:
+	var points: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var uvs: PackedVector2Array = PackedVector2Array()
+	var colors: PackedColorArray = PackedColorArray()
+	var order: PackedInt32Array = PackedInt32Array()
+	var rows: int = grid.size()
+	var columns: int = grid[0].size()
+	for row: int in rows:
+		for column: int in columns:
+			var across: Vector3 = grid[row][mini(column + 1, columns - 1)] - grid[row][maxi(column - 1, 0)]
+			var down: Vector3 = grid[mini(row + 1, rows - 1)][column] - grid[maxi(row - 1, 0)][column]
+			var normal: Vector3 = down.cross(across).normalized()
+			if normal.y < 0.0:
+				normal = -normal
+			points.append(grid[row][column])
+			normals.append(normal if normal.length() > 0.5 else Vector3.UP)
+			uvs.append(Vector2(float(column) / (columns - 1), float(row) / maxi(rows - 1, 1)))
+			colors.append(shades[row][column])
+	for row: int in rows - 1:
+		for column: int in columns - 1:
+			var a: int = row * columns + column
+			var b: int = a + columns
+			for corner: int in [a, b, b + 1, a, b + 1, a + 1]:
+				order.append(corner)
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = points
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = order
+	parts.add_arrays(arrays, Transform3D.IDENTITY, material)
+
+
+## A Crag-Crest Cornice (kit_cliff_cornice, 18 GDD §3.2): a ragged rock lip,
+## `size.x` long, jutting `size.z` out over -z from an impassable crest, its
+## overhanging turf trailing moss and fern fronds so a child can tell from 60 m
+## that no one walks up it.
+static func _cornice(parts: Parts, options: Dictionary) -> void:
+	var size: Vector3 = options.get("size", Vector3(6.0, 1.0, 1.8))
+	var seed_value: int = int(options.get("seed", 0))
+	var rock: Material = WorldVisualCatalog.shaded(WorldVisualCatalog.craft(Craft.CRAG_GRANITE, options.get("color", WorldVisualCatalog.GRANITE)))
+	var turf: Material = WorldVisualCatalog.shaded(WorldVisualCatalog.craft(Craft.MEADOW_TURF, WorldVisualCatalog.MOSS.lerp(Color(0.36, 0.55, 0.28), 0.4)))
+	parts.add_mesh(ShapeKit.make_cliff_cornice(size.x, size.z, seed_value), Transform3D.IDENTITY, [rock, turf])
+	var fronds: Material = WorldVisualCatalog.foliage(Color.WHITE, 0.8, 0.25, 0.0)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 7300 + seed_value
+	var count: int = maxi(4, int(size.x / 0.7))
 	for index: int in count:
-		var angle: float = TAU * float(index) / count + rng.randf_range(-0.25, 0.25)
-		var out: Vector3 = Vector3(cos(angle), 0.0, sin(angle))
-		parts.beam(at + Vector3(0.0, girth * 1.6, 0.0), at + out * girth * 2.4 + Vector3(0.0, -0.05, 0.0), girth * 0.38, bark)
+		var x: float = -size.x * 0.5 + (index + 0.5) * size.x / count + rng.randf_range(-0.2, 0.2)
+		var lip: Vector3 = Vector3(x, 0.0, -size.z * rng.randf_range(0.8, 1.0))
+		# Trailing moss hangs over the lip; a fern stands up on the crest.
+		parts.blade(lip, lip + Vector3(rng.randf_range(-0.1, 0.1), -rng.randf_range(0.35, 0.7), -0.12), 0.16,
+			Color(0.24, 0.36, 0.2), Color(0.42, 0.56, 0.3), fronds)
+		parts.blade(lip + Vector3(0.0, 0.05, 0.4), lip + Vector3(rng.randf_range(-0.2, 0.2), 0.45, 0.25), 0.14,
+			Color(0.24, 0.38, 0.2), Color(0.5, 0.66, 0.34), fronds)
+
+
+## Hewn log sleepers half-set into a climbable slope (kit_path_sleeper, 18 GDD §3.2):
+## `steps` logs across a `size.x`-wide path, `size.z` long up its rise of `size.y`
+## (its foot at the origin, climbing toward -z), each with a packed-loam tread behind it.
+static func _sleepers(parts: Parts, options: Dictionary) -> void:
+	var size: Vector3 = options.get("size", Vector3(2.2, 0.3, 4.0))
+	var steps: int = maxi(2, int(size.z / 0.75))
+	var bark: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, BARK.lightened(0.15))
+	var cut: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, Color(0.72, 0.58, 0.38))
+	var loam: Material = WorldVisualCatalog.craft(Craft.HOLLOW_LOAM, Color(0.62, 0.48, 0.33))
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 5200 + int(options.get("seed", 0))
+	for step: int in steps:
+		var t: float = (step + 0.5) / steps
+		var at: Vector3 = Vector3(rng.randf_range(-0.06, 0.06), size.y * t, -size.z * t)
+		var radius: float = rng.randf_range(0.11, 0.14)
+		parts.cylinder(radius, radius, size.x, at + Vector3(0.0, radius * 0.25, 0.0), bark, 8, Vector3(0.0, rng.randf_range(-0.06, 0.06), PI * 0.5))
+		for x_side: float in [-1.0, 1.0]:
+			parts.cylinder(radius * 0.92, radius * 0.92, 0.02, at + Vector3(x_side * size.x * 0.5, radius * 0.25, 0.0), cut, 8,
+				Vector3(0.0, 0.0, PI * 0.5))
+		parts.box(Vector3(size.x * 0.92, 0.05, size.z / steps * 0.8), at + Vector3(0.0, -0.02, -size.z / steps * 0.45), loam)
+
+
+## Flat limestone stepping-stones up a climbable slope (kit_stepping_stone, 18 GDD §3.2):
+## a staggered double file of mossy flags, `size.z` long up a rise of `size.y`.
+static func _stepping_stones(parts: Parts, options: Dictionary) -> void:
+	var size: Vector3 = options.get("size", Vector3(1.8, 0.25, 4.0))
+	var flag: Material = WorldVisualCatalog.craft(Craft.COBBLED_FLAGSTONE, WorldVisualCatalog.FLAGSTONE, false, 0.55)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 5600 + int(options.get("seed", 0))
+	var steps: int = maxi(3, int(size.z / 0.55))
+	for step: int in steps:
+		var t: float = (step + 0.5) / steps
+		var x: float = (size.x * 0.22) * (1.0 if step % 2 == 0 else -1.0) + rng.randf_range(-0.08, 0.08)
+		var radius: float = rng.randf_range(0.3, 0.42)
+		parts.cylinder(radius * 0.92, radius, 0.12, Vector3(x, size.y * t + 0.02, -size.z * t), flag, 9,
+			Vector3(rng.randf_range(-0.04, 0.04), rng.randf() * TAU, rng.randf_range(-0.04, 0.04)))
+
+
+## A low hewn guide-post with a lantern-ochre band (kit_guide_post, 18 GDD §3.2),
+## no taller than 0.6 m, bordering a climbable path (LowScenery: it never blocks a camera).
+static func _guide_post(parts: Parts, options: Dictionary) -> void:
+	var tall: float = minf(float(options.get("height", 0.55)), 0.6)
+	var timber: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, WorldVisualCatalog.TIMBER)
+	var band: Material = WorldVisualCatalog.painted(Color("#D99B38"))
+	parts.cylinder(0.07, 0.085, tall - 0.06, Vector3(0.0, (tall - 0.06) * 0.5, 0.0), timber, 8)
+	parts.cylinder(0.0, 0.08, 0.06, Vector3(0.0, tall - 0.03, 0.0), timber, 8)
+	parts.cylinder(0.088, 0.088, 0.06, Vector3(0.0, tall * 0.72, 0.0), band, 8)
 
 
 # --- Far stand-ins (the HLOD bakes, §6.1 Ring 2) -------------------------------------------
@@ -937,8 +1226,10 @@ static func hlod_parts(kit_id: StringName, options: Dictionary, parts: Parts) ->
 			parts.sphere(tall * 0.38, Vector3(0.0, tall * 0.68, 0.0), leaf, Vector3(1.15, 0.8, 1.15), 6)
 			return true
 		WorldVisualCatalog.KIT_STANDING_STONE:
+			# A far menhir: five-sided, tapering to 0.55x like the sculpted stone it stands in for.
 			var size: Vector3 = options.get("size", Vector3(1.4, 4.2, 0.9))
-			parts.box(size, Vector3(0.0, size.y * 0.5, 0.0), WorldVisualCatalog.painted(options.get("color", WorldVisualCatalog.GRANITE)))
+			parts.cylinder(size.x * 0.5 * 0.55, size.x * 0.5, size.y, Vector3(0.0, size.y * 0.5, 0.0),
+				WorldVisualCatalog.painted(options.get("color", WorldVisualCatalog.GRANITE)), 5)
 			return true
 		WorldVisualCatalog.KIT_WINDMILL:
 			parts.cylinder(1.6, 2.4, 8.0, Vector3(0.0, 4.0, 0.0), WorldVisualCatalog.painted(WorldVisualCatalog.LIME_WASH), 6)
@@ -959,23 +1250,19 @@ static func _hlod_house(parts: Parts, at: Vector3, size: Vector3, walls: Materia
 
 # --- Clutter pieces (MultiMesh instances, scaled per instance) -----------------------------
 
-## A clutter tree's 6 m trunk (centred on its middle) with flared roots.
+## A clutter tree's 6 m gnarled trunk (centred on its middle) with its five root-buttresses (18 GDD §4.1).
 static func clutter_trunk_mesh() -> ArrayMesh:
 	return shared_mesh("clutter_trunk", func(parts: Parts) -> void:
 		var bark: Material = WorldVisualCatalog.craft(Craft.HEWN_TIMBER, BARK, false, 0.4)
-		parts.cylinder(0.3, 0.45, 6.0, Vector3.ZERO, bark, 8)
-		for index: int in 5:
-			var angle: float = TAU * float(index) / 5.0 + 0.4
-			parts.beam(Vector3(0.0, -2.2, 0.0), Vector3(cos(angle) * 1.1, -3.05, sin(angle) * 1.1), 0.22, bark)
+		parts.add_mesh(ShapeKit.make_gnarled_trunk_mesh(6.2, 0.46, 0.22, 3, 41), Transform3D(Basis.IDENTITY, Vector3(0.0, -3.0, 0.0)), [bark])
 	)
 
 
-## A clutter tree's crown of leaf-puffs (unit size, centred), shaded grey to white for the instance colour to tint.
+## A clutter tree's leaf-cloud crown (unit size, centred), shaded grey to white for the instance colour to tint.
 static func clutter_crown_mesh() -> ArrayMesh:
 	return shared_mesh("clutter_crown", func(parts: Parts) -> void:
-		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-		rng.seed = 505
-		parts.puff_crown(Vector3.ZERO, 1.0, 7, Color(0.6, 0.6, 0.6), Color.WHITE, WorldVisualCatalog.foliage(Color.WHITE, 1.0, 0.25, 0.0, true), rng, 0.85)
+		parts.add_mesh(ShapeKit.make_leaf_cloud_crown(Vector3.ZERO, 1.0, 13, 505, Color(0.6, 0.6, 0.6), Color.WHITE), Transform3D.IDENTITY,
+			[WorldVisualCatalog.canopy(Color.WHITE, 1.0, 0.25, true)])
 	)
 
 
@@ -1088,19 +1375,27 @@ class Parts:
 		var directions: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
 		var coords: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV] if arrays[Mesh.ARRAY_TEX_UV] != null else PackedVector2Array()
 		var order: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+		var shades: PackedColorArray = arrays[Mesh.ARRAY_COLOR] if arrays.size() > Mesh.ARRAY_COLOR and arrays[Mesh.ARRAY_COLOR] != null else PackedColorArray()
 		var turn: Basis = where.basis.inverse().transposed()
 		var base: int = surface.vertices.size()
 		for index: int in points.size():
 			surface.vertices.append(where * points[index])
 			surface.normals.append((turn * directions[index]).normalized())
 			surface.uvs.append(coords[index] if index < coords.size() else Vector2.ZERO)
-			surface.colors.append(tint)
+			surface.colors.append(tint * shades[index] if index < shades.size() else tint)
 		if order.is_empty():
 			for index: int in points.size():
 				surface.indices.append(base + index)
 		else:
 			for index: int in order:
 				surface.indices.append(base + index)
+
+	## A sculpted mesh's surfaces (ShapeKit's trunks, crowns, megaliths, cornices, skirts), moved by `where`,
+	## each with its material from `materials` (the last one for any beyond), its vertex shading kept.
+	func add_mesh(mesh: ArrayMesh, where: Transform3D, materials: Array[Material], tint: Color = Color.WHITE) -> void:
+		for surface: int in mesh.get_surface_count():
+			var material: Material = materials[mini(surface, materials.size() - 1)]
+			add_arrays(mesh.surface_get_arrays(surface), where, material, tint)
 
 	func box(size: Vector3, at: Vector3, material: Material, rotation: Vector3 = Vector3.ZERO) -> void:
 		var arrays: Array = WorldAssetCatalog.primitive_arrays("box", func() -> PrimitiveMesh: return BoxMesh.new())

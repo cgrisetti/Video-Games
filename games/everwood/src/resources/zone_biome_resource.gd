@@ -10,7 +10,11 @@ extends Resource
 const CAMERA_EYELINE_HEIGHT_M: float = 4.8
 const MAX_OBSTACLE_SIGHTLINE_M: float = 3.2
 const MAX_WALKABLE_RAMP_DEG: float = 25.0
-const DEFAULT_HUSH_RADIUS_M: float = 18.0
+## How far an open Hush-Crack's blight reaches (18 §5: 22 m), and its rim of hoar-rime.
+const DEFAULT_HUSH_RADIUS_M: float = 22.0
+const HUSH_RIME_RING_M: float = 2.5
+## A Lantern-Bearer's (or a Hearth-Rite holder's) warm halo pushes the blight back this far (18 §5 layer 4).
+const LANTERN_HALO_RADIUS_M: float = 5.5
 
 @export var biome_id: StringName = &"tizzi_wed_green"
 @export var display_name: String = "Tizzi-Wed-Green"
@@ -23,6 +27,11 @@ const DEFAULT_HUSH_RADIUS_M: float = 18.0
 @export var hollow_albedo: Color = Color(0.349, 0.275, 0.212)    ## #594636
 @export var crag_albedo: Color = Color(0.478, 0.502, 0.525)      ## #7A8086
 @export var hush_desaturate_tint: Color = Color(0.431, 0.471, 0.502) ## #6E7880
+## The trodden loam-and-clover verge along a road's edge (18 §3.1).
+@export var verge_loam_albedo: Color = Color(0.306, 0.365, 0.220)  ## #4E5D38
+## Rolling cloud shadows (18 §4.4): how much of the sun a cloud takes, and how big the patches are (cycles per metre).
+@export var cloud_shadow_strength: float = 0.22
+@export var cloud_shadow_scale: float = 0.028
 
 ## Lighting & Atmosphere Envelope
 @export var sun_color: Color = Color(1.0, 0.95, 0.86)
