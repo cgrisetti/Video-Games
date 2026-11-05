@@ -392,7 +392,7 @@ func _check_atlas_and_trail() -> void:
 	var tabbed: bool = binder != null and binder.tab == GrimoireBinderPanel.Tab.ATLAS and is_instance_valid(binder.atlas) and binder.atlas.embedded
 	hud.toggle_atlas()
 	await _frames(1)
-	var back: bool = binder != null and binder.tab == GrimoireBinderPanel.Tab.GRIMOIRE
+	var back: bool = binder != null and binder.tab == GrimoireBinderPanel.Tab.CARDS
 	if binder != null:
 		binder.close()
 	await _frames(2)

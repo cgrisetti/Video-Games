@@ -13,8 +13,10 @@
 ##   K3  the cross HUD is the four diamonds alone: no slot grid and no words on
 ##       it, the hero's keys on the diamonds, a swing's flash and its combo pips
 ##       on the weapon diamond, health and stamina as the arcs round them
-##   K4  the Grimoire's tabs: Gear & Weapon, Quick Magic-Ink Cards, Combo
-##       Moves (and the Atlas Map), each with its tooltip, and the live preview
+##   K4  the Grimoire Binder's tabs, stepped with Q / E: 1. Gear & Weapon (the
+##       live hero in a lit preview window: its own camera, sky and two lights
+##       on the hero alone), 2. Quick Magic-Ink Cards (where it opens), 3. Combo
+##       Moves, and the Atlas Map, each with its tooltip box
 ##   K5  the 70-20-10 Playground Linter: none of the retired words on screen,
 ##       and the new playground names in their places
 extends RefCounted
@@ -43,6 +45,7 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	await _check_sprint()
 	await _check_menu_back()
 	await _check_minimal_hud()
+	await _check_binder_tabs()
 	await _check_playtest_switcher()
 
 
@@ -306,6 +309,77 @@ func _check_minimal_hud() -> void:
 	check.call(flashed and pips == Vector2i(hero.combo.step_index, hero.combo.max_steps) and pips.x >= 1 and pips.y >= 2,
 		"a light swing flashes the weapon diamond and lights its first combo pip (%d of %d: o - o - >)" % [pips.x, pips.y])
 	await _seconds(1.2)
+	_stand(hero, 0)
+
+
+# --- K4: the Grimoire Binder's tabs -----------------------------------------------------------
+
+func _check_binder_tabs() -> void:
+	var hero: ActorBase = _keyboard_hero()
+	var hud: PlayerHUD = level.huds.get(hero.player_id) as PlayerHUD if hero != null else null
+	if hud == null:
+		check.call(false, "the keyboard hero has a HUD for the K4 checks")
+		return
+	_stand(hero, 0)
+	await _frames(4)
+	var opened: bool = hud.open_binder()
+	await _frames(3)
+	var binder: GrimoireBinderPanel = hud.binder_panel()
+	if not opened or binder == null:
+		check.call(false, "the Grimoire Binder opens on the green")
+		return
+	var Tab: Dictionary = GrimoireBinderPanel.Tab
+	var names_ok: bool = "|".join(GrimoireBinderPanel.TAB_NAMES) == "1. Gear & Weapon|2. Quick Magic-Ink Cards|3. Combo Moves|Atlas Map"
+	var tips: int = 0
+	for index: int in GrimoireBinderPanel.TAB_TOOLTIPS.size():
+		tips += 1 if GrimoireBinderPanel.TAB_TOOLTIPS[index].length() > 30 else 0
+	var on_cards: bool = binder.tab == Tab.CARDS and binder.tooltip_text_now().contains(GrimoireBinderPanel.TAB_TOOLTIPS[Tab.CARDS])
+	check.call(names_ok and tips == 4 and on_cards and not binder.preview_live(),
+		"the Binder has the tabs 1. Gear & Weapon, 2. Quick Magic-Ink Cards, 3. Combo Moves and the Atlas Map, each with a tooltip, and opens on the cards")
+	await _tap_key(KEY_E)
+	await _frames(2)
+	var forms: Array[ComboChainResource] = ArsenalCatalog.current.combos()
+	var tip: String = binder.tooltip_text_now()
+	check.call(binder.tab == Tab.COMBOS and binder._combo_rows.size() == forms.size() and tip.begins_with("Press %s in a row" % forms[0].glyphs())
+		and tip.contains("hits"), "E turns to Combo Moves: a row per form, and the tooltip says how to play the first (%s)" % tip.get_slice("\n", 0))
+	await _tap_key(KEY_E)
+	await _frames(3)
+	var on_atlas: bool = binder.tab == Tab.ATLAS and is_instance_valid(binder.atlas)
+	await _tap_key(KEY_Q)
+	await _tap_key(KEY_Q)
+	await _tap_key(KEY_Q)
+	await _frames(3)
+	check.call(on_atlas and binder.tab == Tab.GEAR and binder.atlas == null, "E again opens the Atlas Map; Q steps back through Combo Moves and the cards to Gear & Weapon")
+	var lit: bool = true
+	for node: Node in hero.find_children("*", "MeshInstance3D", true, false):
+		lit = lit and (node as MeshInstance3D).get_layer_mask_value(GrimoireBinderPanel.PREVIEW_LAYER)
+	var camera: Camera3D = binder.preview_camera
+	var start_angle: float = binder._preview_angle
+	await _seconds(0.5)
+	var to_hero: float = camera.global_position.distance_to(hero.global_position)
+	var looking: float = (-camera.global_basis.z).dot((hero.global_position + Vector3.UP * GrimoireBinderPanel.PREVIEW_LOOK_HEIGHT - camera.global_position).normalized())
+	check.call(binder.preview_live() and lit and camera.current and camera.get_viewport() == binder.preview_viewport
+		and binder.preview_viewport.world_3d == hero.get_world_3d() and absf(to_hero - Vector2(GrimoireBinderPanel.PREVIEW_DISTANCE, GrimoireBinderPanel.PREVIEW_HEIGHT).length()) < 0.05
+		and looking > 0.999 and binder._preview_angle > start_angle,
+		"Gear & Weapon shows the live hero in its own window, the camera circling %.1f m off at chest height" % to_hero)
+	var sky: Environment = hero.get_world_3d().environment
+	check.call(binder.key_light.visible and binder.rim_light.visible and binder.key_light.light_cull_mask == 1 << (GrimoireBinderPanel.PREVIEW_LAYER - 1)
+		and binder.rim_light.light_cull_mask == binder.key_light.light_cull_mask and not camera.get_cull_mask_value(WorldLabelStyle.STATION_LABEL_LAYER)
+		and camera.environment != null and camera.environment != sky and (sky == null or camera.environment.fog_density <= sky.fog_density)
+		and (camera.attributes as CameraAttributesPractical).dof_blur_far_enabled,
+		"the preview has its own lighting: a warm key and a cool rim light that reach only the hero, a clearer sky, and the far world softly blurred")
+	var weapon_tip: String = binder.tooltip_text_now()
+	await _tap_key(KEY_S)
+	await _frames(2)
+	check.call(binder._gear_rows[0].text.contains(hero.loadout.weapon.display_name) and weapon_tip.contains(GrimoireBinderPanel.TAB_TOOLTIPS[Tab.GEAR])
+		and binder.gear_row == GrimoireBinderPanel.GearRow.OFF_HAND and binder.tooltip_text_now().begins_with(binder.gear_tooltip(GrimoireBinderPanel.GearRow.OFF_HAND)),
+		"its rows name the weapon (%s), off-hand, armour and Calling; ↓ moves the tooltip to the off-hand" % hero.loadout.weapon.display_name)
+	await _tap_key(KEY_L)
+	await _frames(3)
+	var unlit: bool = true
+	for node: Node in hero.find_children("*", "MeshInstance3D", true, false):
+		unlit = unlit and not (node as MeshInstance3D).get_layer_mask_value(GrimoireBinderPanel.PREVIEW_LAYER)
+	check.call(hud.binder_panel() == null and unlit and not hero.input.menu_open, "roll closes the Binder, and the hero's meshes leave the preview's light layer")
 	_stand(hero, 0)
 
 

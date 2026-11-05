@@ -97,6 +97,9 @@ const MENU_ACCEPT: StringName = &"accept"
 const MENU_BACK: StringName = &"back"
 const MENU_LEFT: StringName = &"left"
 const MENU_RIGHT: StringName = &"right"
+## L / R (Q / E on the keyboard) in a menu: the previous and next tab (the Grimoire Binder's).
+const MENU_TAB_PREV: StringName = &"tab_prev"
+const MENU_TAB_NEXT: StringName = &"tab_next"
 
 const MODE_NAMES: Array[String] = ["Master", "Adventurer", "Squire Gambit"]
 const KEYBOARD_DEVICE: int = 0
@@ -568,6 +571,10 @@ func _poll_menu() -> void:
 		menu_input.emit(MENU_RIGHT)
 	if _pressed(ACTION_LIGHT):
 		menu_input.emit(MENU_ACCEPT)
+	if _pressed(ACTION_TRIGGER_L):
+		menu_input.emit(MENU_TAB_PREV)
+	if _pressed(ACTION_TRIGGER_R):
+		menu_input.emit(MENU_TAB_NEXT)
 	if _pressed(ACTION_DODGE) or _pressed(ACTION_JUMP):
 		menu_input.emit(MENU_BACK)
 	if _tapped(ACTION_CHANGE_CLASS):
