@@ -22,6 +22,9 @@ extends CharacterBody3D
 
 signal went_down(actor: ActorBase)
 signal got_up(actor: ActorBase)
+## Off the ground on a jump, and back down (K1).
+signal jumped(actor: ActorBase)
+signal landed(actor: ActorBase)
 
 # Physics layers (bit values). Names are in project.godot.
 const LAYER_WORLD: int = 1
@@ -34,6 +37,16 @@ const LAYER_BOSS_HURTBOX: int = 16
 const LAYER_LOW_SCENERY: int = 32
 
 const GRAVITY: float = 22.0
+## Phase 12 Kaizen (K1): a jump leaves the ground at this many metres a second
+## (about 0.96 m high and 0.6 s in the air under GRAVITY).
+const JUMP_VELOCITY: float = 6.5
+## Holding sprint while moving runs this much faster and drains this much stamina a second.
+const SPRINT_SPEED_SCALE: float = 1.5
+const SPRINT_STAMINA_PER_SEC: float = 12.0
+## Stamina doesn't start coming back until sprinting has stopped this long.
+const SPRINT_REGEN_HOLD: float = 0.4
+## The stick has to be this far over to sprint.
+const SPRINT_MIN_STICK: float = 0.2
 ## How quickly actors reach their wanted speed, in metres per second per second.
 const ACCELERATION: float = 40.0
 const BODY_RADIUS: float = 0.45
@@ -131,6 +144,11 @@ var interactable: Interactable
 
 ## Where this actor wants to go this tick (world space, length 0..1).
 var move_intent: Vector3 = Vector3.ZERO
+## Running half again as fast on sprint (K1); jumps made this session.
+var sprinting: bool = false
+var jumps: int = 0
+var _sprint_spent: bool = false
+var _launching: bool = false
 ## Seconds between this actor's AI thoughts (0: every physics tick). The world's
 ## AI tick scaler slows far-off enemies (ChunkNavBuilder); the body still moves every tick.
 var ai_tick_interval: float = 0.0
@@ -288,6 +306,7 @@ func _build_components() -> void:
 		add_child(input)
 		input.command_issued.connect(_on_command)
 		input.tether_slot_pressed.connect(_on_tether_slot)
+		input.jump_requested.connect(_on_jump_requested)
 		apply_assist_mode()
 
 	if not is_boss():
@@ -308,7 +327,7 @@ func _build_components() -> void:
 	add_child(state_machine)
 	var state_list: Array[ActorState] = [
 		IdleState.new(), LocomotionState.new(), AttackState.new(), GuardState.new(),
-		DodgeState.new(), StaggerState.new(), DownedState.new(),
+		DodgeState.new(), StaggerState.new(), DownedState.new(), JumpState.new(),
 	]
 	state_machine.setup(self, state_list, &"idle")
 
@@ -589,6 +608,7 @@ func _physics_process(delta: float) -> void:
 			_ai_clock = 0.0
 	if not is_inside_tree():
 		return # Something this tick's input did removed the actor (leaving the party).
+	_update_sprint(delta)
 	stats.tick(delta, _can_regen_stamina())
 	if sign_flow != null:
 		sign_flow.tick(delta)
@@ -600,11 +620,13 @@ func _physics_process(delta: float) -> void:
 		action_queue.tick(delta)
 		hitbox.poll()
 		state_machine.physics_update(delta)
-		if is_on_floor():
+		# The frame a jump launches, the floor doesn't hold the hero down.
+		if is_on_floor() and not _launching:
 			velocity.y = minf(velocity.y, 0.0)
-		else:
+		elif not is_on_floor():
 			velocity.y -= GRAVITY * delta
 		move_and_slide()
+		_launching = false
 	if tether != null:
 		tether.update_beam()
 	net_sync.tick_owner(delta)
@@ -632,7 +654,57 @@ func _gather_intent(delta: float) -> void:
 
 
 func _can_regen_stamina() -> bool:
-	return (state_machine.is_in(&"idle") or state_machine.is_in(&"locomotion")) and not stats.guarding
+	return (state_machine.is_in(&"idle") or state_machine.is_in(&"locomotion") or state_machine.is_in(&"jump")) and not stats.guarding and not sprinting
+
+
+# --- Jump and sprint (Phase 12 Kaizen, K1) --------------------------------
+
+## How fast this actor runs right now: its stats' pace, half again while sprinting.
+func locomotion_speed() -> float:
+	return loadout.stats.move_speed * (SPRINT_SPEED_SCALE if sprinting else 1.0)
+
+
+## A hero on the ground, standing or running, and free to act can jump.
+func can_jump() -> bool:
+	return is_on_floor() and can_act() and (state_machine.is_in(&"idle") or state_machine.is_in(&"locomotion"))
+
+
+func _on_jump_requested() -> void:
+	if can_jump():
+		state_machine.transition(&"jump")
+
+
+## JumpState: up she goes.
+func launch_jump() -> void:
+	velocity.y = JUMP_VELOCITY
+	_launching = true
+	jumps += 1
+	jumped.emit(self)
+
+
+## JumpState: feet back on the ground.
+func land_jump() -> void:
+	landed.emit(self)
+
+
+## Sprint while it's held, the hero is moving on their feet and there's stamina;
+## run dry and it stops until sprint is let go.
+func _update_sprint(delta: float) -> void:
+	var held: bool = input != null and input.sprint_held
+	if not held:
+		_sprint_spent = false
+	var on_feet: bool = state_machine.is_in(&"locomotion") or state_machine.is_in(&"jump")
+	var wants: bool = held and not _sprint_spent and on_feet and move_intent.length() > SPRINT_MIN_STICK and not stats.is_downed
+	if not wants or stats.stamina <= 0.0:
+		if wants:
+			_sprint_spent = true
+		sprinting = false
+		return
+	sprinting = true
+	stats.drain_stamina(SPRINT_STAMINA_PER_SEC * delta, SPRINT_REGEN_HOLD)
+	if stats.stamina <= 0.0:
+		sprinting = false
+		_sprint_spent = true
 
 
 func can_act() -> bool:

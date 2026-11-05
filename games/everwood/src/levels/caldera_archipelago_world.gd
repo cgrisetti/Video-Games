@@ -28,7 +28,7 @@ const BOOT_ZONE_ARG: String = "--boot-zone="
 const ZONE_OAKSHIRE: StringName = &"oakshire"
 const ZONE_NORTH_QUAY: StringName = &"north_quay"
 const ZONE_CROWN: StringName = &"crown"
-const CHANGE_KEYS: String = "Hold Tab / View: Fellowship · hold C / L3: Calling · hold M / R3: assist mode · tap M / R3: the Atlas · PgUp / PgDn or right stick: tilt the camera · F9: playtest warp"
+const CHANGE_KEYS: String = "Space / ✕: jump · Shift / L3: sprint · hold Tab / View: Fellowship · hold C: Calling · hold M / R3: assist mode · tap M / R3: the Atlas · PgUp / PgDn or right stick: tilt the camera · F2 / Share + D-Pad →: debug hero · F9: playtest warp"
 ## Far enough to see every island's landmark from North Quay and The Crown.
 const CAMERA_FAR: float = 4600.0
 ## The biomes' fog is for valleys; over open water it's thinned so the far isles show.

@@ -73,6 +73,11 @@ var callings: Dictionary[StringName, StringName] = {}
 var pattern_seen: Dictionary[StringName, int] = {}
 ## The Caldera Isles' eight world-state booleans as bits (CalderaWorldState.FLAGS order).
 var caldera_flags: int = 0
+## The playtest switcher (PlaytestSwitcher, K2) is in use: nothing more is saved this session.
+var playtest: bool = false
+## While playtesting, the trail level and Grimoire level the switcher chose (0: the party's own).
+var playtest_level: int = 0
+var playtest_grimoire: int = 0
 ## The host rolls chest cards with this (the smoke test seeds it).
 var drop_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## The host rolls the expedition's finds (the Wayfarer's Chest) with this, so they never shift the boss's drops.
@@ -175,7 +180,25 @@ func _request_purchase(id: StringName) -> void:
 # --- Scribe Cards and the Grimoire ----------------------------------------
 
 func grimoire_level() -> int:
+	if playtest_grimoire > 0:
+		return playtest_grimoire
 	return LoadoutComposer.grimoire_level(victories)
+
+
+## The playtest switcher's level and Grimoire for this session (nothing more is saved).
+func start_playtest(level: int, grimoire: int) -> void:
+	playtest = true
+	playtest_level = maxi(1, level)
+	playtest_grimoire = clampi(grimoire, 1, LoadoutComposer.MAX_GRIMOIRE_LEVEL)
+	progress_changed.emit()
+
+
+## Tests only: the party's own level and Grimoire again, and saving back on.
+func end_playtest() -> void:
+	playtest = false
+	playtest_level = 0
+	playtest_grimoire = 0
+	progress_changed.emit()
 
 
 func copies_of(copy_key: StringName) -> int:
@@ -346,6 +369,8 @@ func _request_gild(copy_key: StringName) -> void:
 
 ## The party's trail level, 1 to 10.
 func trail_level() -> int:
+	if playtest_level > 0:
+		return mini(playtest_level, LEVEL_XP.size())
 	return level_for_xp(xp)
 
 
@@ -474,6 +499,9 @@ func load_save() -> void:
 
 
 func save() -> Error:
+	# A playtest session (the switcher) never writes the family's save.
+	if playtest:
+		return OK
 	var file: ConfigFile = ConfigFile.new()
 	file.set_value("party", "chimes", chimes)
 	file.set_value("party", "victories", victories)

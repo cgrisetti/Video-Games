@@ -54,6 +54,9 @@
 ##     grids and four seams, the eight world-state booleans, the boot zones,
 ##     walking the causeways and gliding the skiff lanes, the Beacons, The
 ##     Crown's seven areas and three trials, and the Harmonic Bell's Ebb
+##   - then the Phase 12 Combat Kaizen refinement (tools/test_phase12_kaizen.gd):
+##     jump on ✕, roll on ○, sprint on L3, the Share-button playtest switcher,
+##     the diamond-only HUD, the Grimoire's tabs and the playground names
 ## Run from games/everwood:
 ##   godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd
 ## Exits 0 when every check passes, 1 otherwise.
@@ -127,6 +130,8 @@ var _pastoral: RefCounted = PASTORAL_CHECKS.new()
 const HERO_RIG_CHECKS: GDScript = preload("res://tools/test_hero_rig.gd")
 ## The Caldera Isles' checks (tools/test_caldera_isles.gd), last: the game's world since docs/20.
 const CALDERA_CHECKS: GDScript = preload("res://tools/test_caldera_isles.gd")
+## The Phase 12 Combat Kaizen refinement's checks (tools/test_phase12_kaizen.gd): jump, sprint, the playtest switcher, the diamond HUD, the Grimoire's tabs, the playground names.
+const KAIZEN_CHECKS: GDScript = preload("res://tools/test_phase12_kaizen.gd")
 var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
 
@@ -219,6 +224,8 @@ func _run() -> void:
 	await _hero_rig.run_vale(self, _check)
 	# The Caldera Isles last (docs/20): the boot, the seams, the Beacons, The Crown's seven areas, the trials and the Ebb.
 	await CALDERA_CHECKS.new().run(self, _check)
+	# The Phase 12 Combat Kaizen refinement (K1 to K5) on Hearthstead Market's green.
+	await KAIZEN_CHECKS.new().run(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
@@ -877,36 +884,33 @@ func _face_point(actor: ActorBase, target: Vector3, offset: Vector3) -> void:
 
 # --- The Cross-Grimoire HUD (07 GDD §2) -----------------------------------
 
-## Each player's cross: the right card in each slot, tinted by its Sign, dipped
-## until there are pips for it and popping up gold when there are, pulsing when
-## pressed; no line of control help along the bottom.
+## Each player's cross is the four diamonds (K3): their own kit and weapon,
+## their own keys, dimmed until there are pips, flashing when pressed, L lit
+## while guarding; no line of control help along the bottom.
 func _check_cross_grimoire_hud() -> void:
 	var hud: PlayerHUD = dojo.huds[tank.player_id]
 	var cross: CrossGrimoireHUD = hud.cross_grimoire
 	_check(cross != null and not hud.has_method("controls_text"), "the HUD is a Cross-Grimoire, and the old line of control help is gone")
-	var north: CrossSlot = cross.slot_for_command(Cmd.FORWARD_HEAVY)
-	var south: CrossSlot = cross.slot_for_command(Cmd.BACK_HEAVY)
-	var east: CrossSlot = cross.slot_for_command(Cmd.TRIGGER_R_SKILL)
-	var crown: CrossSlot = cross.slot_for_command(Cmd.TRIGGER_BOTH_ULT)
-	var catalog: ArsenalCatalog = ArsenalCatalog.current
-	var forward: CombatActionResource = tank.loadout.card_action(ScribeCardResource.GrimoireSlot.FORWARD)
-	_check(north.title == forward.display_name and south.title == tank.loadout.card_action(1).display_name
-		and east.title == tank.loadout.card_action(2).display_name and crown.title == tank.loadout.card_action(3).display_name,
-		"north, south, east and the crown hold the Forward, Back, Signature and Ultimate cards")
-	_check(north.key_text == "W+K" and south.key_text == "S+K" and east.key_text == "E" and crown.key_text.contains("Q+E"),
-		"each slot names its keys: W+K, S+K, E, and R or Q+E for the ultimate")
-	_check(north.sign_color == catalog.sign_seal(forward.scribe_sign).color and north.tag_text == "IRON-ROOT" and east.pip_cost == 1 and crown.pip_cost == 3,
-		"each card frame is tinted by its Sign (Shield Charge in Iron-Root amber), with its pip cost as gems")
-	_check(cross.guard_slot.title == "Guard" and cross.slot_for_command(Cmd.LIGHT).title == tank.loadout.weapon.display_name
-		and cross.slot_for_command(Cmd.LIGHT).subtitle.contains("Greatshield"), "the west wing is the Guard, the centre the weapon and the Shield-Sworn's greatshield")
+	var diamonds: CrossGrimoireDiamondWidget = cross.diorama
+	var kit: EquipmentLoadoutResource = tank.loadout.kit
+	_check(diamonds.follow == tank and diamonds.weapon == tank.loadout.weapon
+		and diamonds.socket_view(Diorama.SKILL)["leaf"] == kit.socket_leaf_id(Diorama.SKILL)
+		and diamonds.socket_view(Diorama.ULT)["leaf"] == kit.socket_leaf_id(Diorama.ULT),
+		"the diamonds follow the tank: their weapon at the foot, and R and L+R hold the kit's cards")
+	_check(",".join(diamonds.key_texts) == "Q,E,R", "each diamond carries its own key on the keyboard: Q, E, and R for the ultimate")
+	_check(CrossGrimoireHUD.diamond_for_command(Cmd.FORWARD_HEAVY) == CrossGrimoireDiamondWidget.WEAPON
+		and CrossGrimoireHUD.diamond_for_command(Cmd.TRIGGER_L_SKILL) == Diorama.GUARD
+		and CrossGrimoireHUD.diamond_for_command(Cmd.TRIGGER_R_SKILL) == Diorama.SKILL
+		and CrossGrimoireHUD.diamond_for_command(Cmd.TRIGGER_BOTH_ULT) == Diorama.ULT
+		and CrossGrimoireHUD.diamond_for_command(Cmd.DODGE) == -1,
+		"every swing lights the weapon diamond, L, R and L+R their own, and a roll none")
 	var pips_before: float = tank.stats.resonance_charge
 	tank.stats.resonance_charge = 0.0
-	await _seconds(0.5)
-	_check(not east.is_ready and is_equal_approx(east.lift(), CrossSlot.UNREADY_DROP) and is_equal_approx(east.modulate.a, CrossSlot.UNREADY_ALPHA)
-		and north.is_ready and is_equal_approx(north.lift(), 0.0), "without a pip, Taunt sits dimmed and 6 px low while the free Shield Charge stands ready")
+	await _seconds(0.2)
+	_check(not diamonds.socket_ready(Diorama.SKILL) and not diamonds.socket_ready(Diorama.ULT), "without a pip, R and L+R sit dimmed")
 	tank.stats.add_resonance(1.0)
-	await _seconds(0.5)
-	_check(east.is_ready and east.lift() < 0.1 and not crown.is_ready, "one pip earned: Taunt slides up gold, the 3-pip ultimate still waits")
+	await _seconds(0.2)
+	_check(diamonds.socket_ready(Diorama.SKILL) and not diamonds.socket_ready(Diorama.ULT), "one pip earned: R brightens, the 3-pip L+R still waits")
 	tank.stats.resonance_charge = pips_before
 	var dps_cross: CrossGrimoireHUD = (dojo.huds[dps.player_id] as PlayerHUD).cross_grimoire
 	await _until_idle(dps)
@@ -914,14 +918,13 @@ func _check_cross_grimoire_hud() -> void:
 	dps.input.inject_command(Cmd.FORWARD_HEAVY)
 	await physics_frame
 	await physics_frame
-	_check(dps_cross.slot_for_command(Cmd.FORWARD_HEAVY).is_pulsing(), "pressing Forward + heavy pulses the DPS's north slot")
+	_check(dps_cross.diorama.is_pulsing(CrossGrimoireDiamondWidget.WEAPON), "pressing Forward + heavy flashes the DPS's weapon diamond")
 	tank.input.inject_guard(true)
 	await _seconds(0.15)
-	_check(cross.guard_slot.lit, "raising the guard lights the Guard wing")
+	_check(diamonds.guard_lit, "raising the guard lights the L diamond")
 	tank.input.inject_guard(false)
 	var healer_cross: CrossGrimoireHUD = (dojo.huds[healer.player_id] as PlayerHUD).cross_grimoire
-	_check(healer_cross.actor.tether != null and healer_cross.slot_for_command(Cmd.LIGHT).subtitle.contains("Tether-Lantern"),
-		"a Lantern-Bearer's cross carries the Tether-Lantern and the Soul Tether compass")
+	_check(healer_cross.shows_tether_compass() and not cross.shows_tether_compass(), "a Lantern-Bearer's cross carries the Soul Tether compass")
 	_check(is_equal_approx(CrossGrimoireHUD.scale_for(Vector2(1600.0, 900.0)), CrossGrimoireHUD.BASE_SCALE)
 		and is_equal_approx(CrossGrimoireHUD.scale_for(Vector2(800.0, 450.0)), CrossGrimoireHUD.MIN_SCALE),
 		"the cross scales with the split-screen cell, down to a floor for four players")
@@ -1831,11 +1834,11 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 		and healer.loadout.weapon.item_id == ArsenalCatalog.REED_WAYSTAFF and dps.loadout.weapon.item_id == ArsenalCatalog.WILLOW_LONGBOW
 		and tank.loadout.kit.lead_ids[2] == &"" and tank.loadout.kit.lead_ids[3] == &"" and tank.loadout.display_name == "Shield-Sworn",
 		"at Level 1 the party carries Tier 1 timber in the Bramble-Spun Jerkin, Unsworn, with R and L+R empty")
-	var hud_r: CrossSlot = dojo.huds[&"1_0"].cross_grimoire.slots[Cmd.TRIGGER_R_SKILL]
+	var hud_r: CrossGrimoireDiamondWidget = dojo.huds[&"1_0"].cross_grimoire.diorama
 	_check(tank_r.uninked and tank_r.display_name == "Timber-Cross Slash" and tank_r.resonance_cost == 1 and tank_ult.display_name == "Bramble-Whirl Flurry"
-		and tank_ult.resonance_cost == 3 and hud_r.title == "Timber-Cross Slash" and dps.loadout.opener_for(Cmd.TRIGGER_R_SKILL).pierces
+		and tank_ult.resonance_cost == 3 and hud_r.socket_view(Diorama.SKILL)["leaf"] == &"" and dps.loadout.opener_for(Cmd.TRIGGER_R_SKILL).pierces
 		and is_equal_approx(healer.loadout.opener_for(Cmd.TRIGGER_R_SKILL).heal_amount, LoadoutComposer.STAFF_FLOURISH_HEAL),
-		"an empty R is the weapon's Un-Inked Martial Flourish (1 pip; L+R 3 pips), shown on the Cross-Grimoire: a bow's pierces, a staff's mends")
+		"an empty R is the weapon's Un-Inked Martial Flourish (1 pip; L+R 3 pips), an empty diamond on the Cross-Grimoire: a bow's pierces, a staff's mends")
 	var stops: Array[float] = []
 	var stop_hook: Callable = func(duration: float) -> void: stops.append(duration)
 	director.hit_stop_applied.connect(stop_hook)
@@ -1998,8 +2001,8 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 	var no_pip: bool = not cross.detonate_prompt()
 	tank.stats.resonance_charge = 1.0
 	await _seconds(0.05)
-	_check(no_pip and cross.detonate_prompt() and cross.slots[Cmd.TRIGGER_R_SKILL].detonate_ready,
-		"with a pip in hand the tank's R slot rings gold: R: DETONATE SIGN!")
+	_check(no_pip and cross.detonate_prompt() and cross.diorama.detonate_ready,
+		"with a pip in hand the tank's R diamond rings gold: detonate the sign")
 	stops.clear()
 	tank.input.inject_command(Cmd.TRIGGER_R_SKILL)
 	await _seconds(0.6)

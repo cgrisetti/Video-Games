@@ -475,6 +475,8 @@ func _on_player_registered(seat: PartyMember) -> void:
 		# Deferred: the request fires inside the actor's own physics step, and a
 		# class change replaces that actor.
 		actor.input.class_cycle_requested.connect(_on_class_cycle.bind(seat.device_id), CONNECT_DEFERRED)
+		# Deferred too: a playtest switch can change class, which replaces this actor.
+		actor.input.playtest_cycle_requested.connect(_on_playtest_cycle.bind(seat.device_id), CONNECT_DEFERRED)
 		actor.input.mode_cycle_requested.connect(_on_mode_cycle.bind(seat.device_id))
 		actor.input.calling_cycle_requested.connect(_on_calling_cycle.bind(seat.device_id))
 		var overlay: Control = grid.add_player_view(actor)
@@ -572,7 +574,7 @@ func _on_class_cycle(device_id: int) -> void:
 		NetworkManager.current.update_local_player(device_id, ClassLoadouts.next_class(seat.class_id), seat.assist_mode)
 
 
-## Hold C / L3: the next Secondary Calling (Stout Heart, Swift Foot, Wise Hand).
+## Hold C (or pick at the Scribe Desk): the next Secondary Calling (Stout Heart, Swift Foot, Wise Hand).
 func _on_calling_cycle(device_id: int) -> void:
 	var seat: PartyMember = _local_seat(device_id)
 	if seat != null and not PartyProgress.current.callings_unlocked():
@@ -586,6 +588,23 @@ func _on_calling_cycle(device_id: int) -> void:
 		for calling: CallingResource in ArsenalCatalog.current.callings():
 			if calling.fellowship_class_id == seat.class_id and calling.secondary_id == secondary and AudioDirector.current != null:
 				AudioDirector.current.play_calling_motif(calling.calling_id)
+
+
+## F2, or Share held and the D-Pad tapped: the playtest switcher's next (or previous) class and level (K2).
+func _on_playtest_cycle(step: int, device_id: int) -> void:
+	var toast: String = PlaytestSwitcher.step_hero(self, device_id, step)
+	if toast == "":
+		return
+	_show_notice(toast + (" · playtest: nothing is saved" if PartyProgress.current.playtest else ""))
+	var capped: bool = PartyProgress.current.playtest_level > PartyProgress.LEVEL_XP.size()
+	var seat: PartyMember = _local_seat(device_id)
+	var hud: PlayerHUD = huds.get(seat.player_id) as PlayerHUD if seat != null else null
+	if hud != null:
+		var line: String = toast.trim_prefix("Debug Switch: ")
+		if capped:
+			line += " (the trail tops out at Lv %d: its gear)" % PartyProgress.LEVEL_XP.size()
+		hud.show_banner("DEBUG SWITCH", line, PlaytestSwitcher.TOAST_COLOR, PlaytestSwitcher.TOAST_TIME)
+	AudioCues.play(&"equip")
 
 
 func _on_mode_cycle(device_id: int) -> void:

@@ -16,7 +16,7 @@
 ## (Plain Vellum ivory, Gilded Leaf gold, Star-Inked Vellum violet and gold with
 ## stars). A gold star on the frame marks Home-Ground Harmony.
 ##
-## set_presentation_mode(1.0, false) is the HUD's compact cross; (2.2, true) is
+## set_presentation_mode(1.3, false) is the HUD's compact cross; (2.2, true) is
 ## the Binder's and the Scribery's, where a diamond can be picked with the mouse
 ## (socket_picked). Everything is drawn at the display scale, so text stays
 ## sharp; the Binder grows it there from the HUD's size over 220 ms
@@ -25,6 +25,12 @@
 ## The bottom weapon diamond (14 GDD §8) shows the weapon's tier (I to IV) and,
 ## for a hero, the live combo-chain pips: one per step of the form they're
 ## playing, a gold arrow for its finisher (o - o - >).
+##
+## Since the Phase 12 Kaizen pass (K3) the diamonds are the whole combat HUD, so
+## following a hero they also carry what the old slot grid did, without words:
+## a press (or a buffered one) flashes its diamond, a card whose pips aren't
+## there yet sits dimmed, L glows shield-blue while guarding, and R rings gold
+## while a teammate's seal waits nearby to be detonated.
 class_name CrossGrimoireDiamondWidget
 extends Control
 
@@ -40,7 +46,8 @@ const SPREAD: float = 40.0
 const BASE_SIZE: Vector2 = Vector2(172.0, 172.0)
 ## The portrait is this share of the frame.
 const PORTRAIT_SHARE: float = 0.58
-const HUD_SCALE: float = 1.0
+## The combat HUD draws it a little larger than the base since K3, when it became the whole HUD.
+const HUD_SCALE: float = 1.3
 const BINDER_SCALE: float = 2.2
 const KEY_FONT_SIZE: int = 11
 const FRAME_BORDER: float = 2.0
@@ -58,7 +65,10 @@ const PIP_RADIUS: float = 3.4
 const PIP_GAP: float = 11.0
 const PIP_EMPTY: Color = Color(0.32, 0.3, 0.28, 0.95)
 const TIER_NUMERALS: Array[String] = ["", "I", "II", "III", "IV"]
-## Socket key badges and pip costs, in DioramaSocket order.
+const PULSE_TIME: float = 0.28
+const UNREADY_DIM: Color = Color(0.02, 0.02, 0.04, 0.5)
+const GUARD_GLOW: Color = Color(0.7, 0.82, 1.0)
+## Socket key badges, in DioramaSocket order (the HUD swaps in the hero's own keys).
 const KEYS: Array[String] = ["L", "R", "L+R"]
 
 const Socket = ScribeCardResource.DioramaSocket
@@ -66,7 +76,13 @@ const Mode = ScribeCardResource.ManifestationMode
 const Variant = ScribeCardResource.CardVariant
 
 var display_scale: float = HUD_SCALE
+## What each socket's badge says: KEYS, or the followed hero's own buttons ("Q", "E", "R" on the keyboard).
+var key_texts: Array[String] = KEYS.duplicate()
 var interactive: bool = false
+## The HUD's live marks (K3): R's gold detonate ring and L's guard glow.
+var detonate_ready: bool = false
+var guard_lit: bool = false
+var _pulses: Array[float] = [0.0, 0.0, 0.0, 0.0]
 ## The socket the Binder or Scribery is working on (a bright breathing outline when interactive).
 var selected_socket: int = Socket.SKILL
 ## What it shows: a kit and a weapon, or (with follow) a hero's own, read every frame.
@@ -110,6 +126,23 @@ func draw_scale() -> float:
 	return lerpf(_grow_from, display_scale, ease(clampf(t, 0.0, 1.0), 0.4))
 
 
+## Flashes a diamond (a socket, or WEAPON) for a press or a buffered press.
+func pulse(index: int) -> void:
+	if index >= 0 and index < _pulses.size():
+		_pulses[index] = PULSE_TIME
+
+
+func is_pulsing(index: int) -> bool:
+	return index >= 0 and index < _pulses.size() and _pulses[index] > 0.0
+
+
+## Whether the followed hero has the pips for a socket's card (always, with no hero).
+func socket_ready(socket: int) -> bool:
+	if not is_instance_valid(follow) or follow.stats == null:
+		return true
+	return follow.stats.resonance_charge >= ScribeCardResource.SOCKET_PIP_COSTS[socket]
+
+
 ## The combo-chain pips the weapon diamond shows now: steps played and the form's length (0, 0 for none).
 func combo_pips() -> Vector2i:
 	if is_instance_valid(follow) and follow.combo != null:
@@ -147,6 +180,8 @@ func clear_preview() -> void:
 func _process(delta: float) -> void:
 	_age += delta
 	_grow_left = maxf(0.0, _grow_left - delta)
+	for index: int in _pulses.size():
+		_pulses[index] = maxf(0.0, _pulses[index] - delta)
 	if is_instance_valid(follow) and follow.loadout != null:
 		kit = follow.loadout.kit
 		weapon = follow.loadout.weapon
@@ -260,6 +295,7 @@ func _draw_socket(socket: int) -> void:
 	# The key badge, and the live state of the HUD's hero.
 	_draw_key(socket, center, outer)
 	_draw_live(socket, center, outer)
+	_draw_hud_marks(socket, center, outer)
 	if interactive and socket == selected_socket:
 		var breath: float = 0.5 + 0.5 * sin(_age * 5.0)
 		_outline(center, outer + 4.0 * _ds, Color(SELECT_COLOR, 0.65 + 0.35 * breath), (2.0 + breath) * _ds)
@@ -289,6 +325,24 @@ func _draw_live(socket: int, center: Vector2, outer: float) -> void:
 	if _counters_open_glimmer(socket):
 		var beat: float = 0.5 + 0.5 * sin(_age * 9.0)
 		_outline(center, outer + 6.0 * _ds, Color(GOLD, beat), line)
+
+
+## The HUD's own marks on a diamond (K3): dimmed until its pips are there, L's guard glow, R's detonate ring, a press's flash.
+func _draw_hud_marks(index: int, center: Vector2, outer: float) -> void:
+	if not is_instance_valid(follow) or interactive:
+		return
+	var line: float = 3.0 * _ds
+	if index < WEAPON and not socket_ready(index):
+		draw_colored_polygon(_diamond(center, outer), UNREADY_DIM)
+	if index == Socket.GUARD and guard_lit:
+		_outline(center, outer + 2.0 * _ds, GUARD_GLOW, line)
+	if index == Socket.SKILL and detonate_ready:
+		var beat: float = 0.55 + 0.45 * sin(_age * 8.0)
+		_outline(center, outer + 5.0 * _ds, Color(GOLD.lightened(0.2), beat), line * 1.4)
+		_star(center + Vector2(outer * 0.62, outer * 0.62), outer * 0.18, GOLD)
+	if is_pulsing(index):
+		var t: float = _pulses[index] / PULSE_TIME
+		_outline(center, outer + (1.0 - t) * 9.0 * _ds, Color(1.0, 0.97, 0.86, t), line)
 
 
 ## Whether a foe near the HUD's hero has an open Glimmer-Spot this socket's Sign cracks.
@@ -322,6 +376,7 @@ func _draw_weapon() -> void:
 		draw_string_outline(font, at, numeral, HORIZONTAL_ALIGNMENT_CENTER, outer * 0.9, font_size, roundi(3 * _ds), OUTLINE)
 		draw_string(font, at, numeral, HORIZONTAL_ALIGNMENT_CENTER, outer * 0.9, font_size, tier_trim.lightened(0.3))
 	_draw_combo_pips(center, outer)
+	_draw_hud_marks(WEAPON, center, outer)
 
 
 ## The live combo-chain pips under the weapon diamond: o - o - > (steps played lit gold, the finisher an arrow).
@@ -349,7 +404,7 @@ func _draw_combo_pips(center: Vector2, outer: float) -> void:
 func _draw_key(socket: int, center: Vector2, outer: float) -> void:
 	var font: Font = ThemeDB.fallback_font
 	var font_size: int = roundi(KEY_FONT_SIZE * _ds)
-	var text: String = KEYS[socket]
+	var text: String = key_texts[socket] if socket < key_texts.size() else KEYS[socket]
 	# In the frame's top corner, where every diamond keeps it clear of the landscape.
 	var at: Vector2 = center + Vector2(-outer, -outer * 0.5)
 	draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, outer * 2.0, font_size, roundi(4 * _ds), OUTLINE)

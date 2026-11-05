@@ -54,7 +54,10 @@ func _bindings() -> Dictionary[StringName, Array]:
 	map[InputComponent.ACTION_MOUSE_LOOK] = [_key(KEY_V)]
 	map[InputComponent.ACTION_LIGHT] = [_key(KEY_J), _mouse(MOUSE_BUTTON_LEFT), _button(JOY_BUTTON_X)]
 	map[InputComponent.ACTION_HEAVY] = [_key(KEY_K), _mouse(MOUSE_BUTTON_RIGHT), _button(JOY_BUTTON_Y)]
-	map[InputComponent.ACTION_DODGE] = [_key(KEY_SPACE), _button(JOY_BUTTON_A), _button(JOY_BUTTON_B)]
+	# Phase 12 Kaizen (K1): jump on ✕ / A, roll on ○ / B, sprint on L3 / LS (held while moving).
+	map[InputComponent.ACTION_JUMP] = [_key(KEY_SPACE), _button(JOY_BUTTON_A)]
+	map[InputComponent.ACTION_DODGE] = [_key(KEY_L), _button(JOY_BUTTON_B)]
+	map[InputComponent.ACTION_SPRINT] = [_key(KEY_SHIFT), _button(JOY_BUTTON_LEFT_STICK)]
 	map[InputComponent.ACTION_TRIGGER_L] = [_key(KEY_Q), _axis(JOY_AXIS_TRIGGER_LEFT, 1.0), _button(JOY_BUTTON_LEFT_SHOULDER)]
 	map[InputComponent.ACTION_TRIGGER_R] = [_key(KEY_E), _axis(JOY_AXIS_TRIGGER_RIGHT, 1.0), _button(JOY_BUTTON_RIGHT_SHOULDER)]
 	map[InputComponent.ACTION_ULT] = [_key(KEY_R)]
@@ -64,7 +67,10 @@ func _bindings() -> Dictionary[StringName, Array]:
 	map[InputComponent.ACTION_TETHER_LEFT] = [_key(KEY_4), _button(JOY_BUTTON_DPAD_LEFT)]
 	map[InputComponent.ACTION_CHANGE_CLASS] = [_key(KEY_TAB), _button(JOY_BUTTON_BACK)]
 	map[InputComponent.ACTION_CHANGE_MODE] = [_key(KEY_M), _button(JOY_BUTTON_RIGHT_STICK)]
-	map[InputComponent.ACTION_CHANGE_CALLING] = [_key(KEY_C), _button(JOY_BUTTON_LEFT_STICK)]
+	# L3 sprints now: on a pad the Calling is changed at the Calling Tutor, the Scribe Desk or the Grimoire.
+	map[InputComponent.ACTION_CHANGE_CALLING] = [_key(KEY_C)]
+	# The playtest switcher (K2): F2; on a pad, hold Share and tap the D-Pad (read in InputComponent).
+	map[InputComponent.ACTION_PLAYTEST_CYCLE] = [_key(KEY_F2)]
 	map[InputComponent.ACTION_JOIN] = [_key(KEY_ENTER), _button(JOY_BUTTON_START)]
 	return map
 

@@ -61,6 +61,8 @@ const CLOAK_SPEED_FLARE: Array[float] = [0.42, 0.22, 0.16]
 ## The hero's velocity in world space, and its full run speed.
 var velocity: Vector3 = Vector3.ZERO
 var move_speed: float = 6.0
+## How far past a run the lean may go (1 a run; ActorVisuals raises it while sprinting).
+var lean_reach: float = 1.0
 var stamina_ratio: float = 1.0
 var winded: bool = false
 ## Ground heights under each foot, relative to the hero's origin, and whether it stands on the ground.
@@ -182,7 +184,7 @@ func _solve(dt: float) -> void:
 	var run: float = clampf(Vector2(local_velocity.x, local_velocity.z).length() / maxf(move_speed, 0.1), 0.0, 1.0)
 
 	# Lean into the run, bank into the turn.
-	_lean = spring_step(_lean, -LEAN_MAX * clampf(forward_speed / maxf(move_speed, 0.1), -0.5, 1.0) * lean_weight, BODY_OMEGA, 1.0, dt)
+	_lean = spring_step(_lean, -LEAN_MAX * clampf(forward_speed / maxf(move_speed, 0.1), -0.5, lean_reach) * lean_weight, BODY_OMEGA, 1.0, dt)
 	_bank = spring_step(_bank, clampf(yaw_rate * 0.1 * run, -BANK_MAX, BANK_MAX) * lean_weight, BODY_OMEGA, 1.0, dt)
 	lean = _lean.x
 	bank = _bank.x

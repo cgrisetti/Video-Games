@@ -17,6 +17,10 @@
 ## the Hearth-Rite (hearth_rite_held), let go sooner they fire as usual. A tap
 ## of Tab / View (whose hold changes Fellowship) opens the Grimoire Binder.
 ##
+## Moving about (Phase 12 Kaizen, K1): ✕ / A (Space) jumps, ○ / B (L) rolls, and
+## holding L3 / LS (Left Shift) while moving sprints. In a menu, jump and roll
+## both back out, as the roll alone used to.
+##
 ## The camera (18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md §6):
 ## the right stick's Y (deadzone 0.15), PageUp / [ and PageDown / ] pitch it
 ## (camera_pitch_input, +1 looks up); the mouse's Y pitches it while the right
@@ -30,6 +34,10 @@ signal tether_slot_pressed(slot: int)
 signal class_cycle_requested
 signal mode_cycle_requested
 signal calling_cycle_requested
+## Jump was pressed (out of a menu).
+signal jump_requested
+## The playtest switcher's next (+1) or previous (-1) class and level (F2, or hold Share and tap D-Pad → / ←).
+signal playtest_cycle_requested(step: int)
 ## R or L+R held out of combat for the Hearth-Rite's time (the command names which).
 signal hearth_rite_held(command: int)
 ## A tap of the Fellowship button: the Grimoire Binder opens (or closes).
@@ -52,6 +60,10 @@ const ACTION_CAMERA_RIGHT: StringName = &"player_camera_right"
 const ACTION_LIGHT: StringName = &"player_light"
 const ACTION_HEAVY: StringName = &"player_heavy"
 const ACTION_DODGE: StringName = &"player_dodge"
+const ACTION_JUMP: StringName = &"player_jump"
+const ACTION_SPRINT: StringName = &"player_sprint"
+## The playtest switcher (K2): F2 on the keyboard; on a pad it's the Share chord.
+const ACTION_PLAYTEST_CYCLE: StringName = &"player_playtest_cycle"
 const ACTION_TRIGGER_L: StringName = &"player_trigger_l"
 const ACTION_TRIGGER_R: StringName = &"player_trigger_r"
 const ACTION_ULT: StringName = &"player_ult"
@@ -76,7 +88,7 @@ const TETHER_ACTIONS: Array[StringName] = [ACTION_TETHER_UP, ACTION_TETHER_RIGHT
 const BUTTON_ACTIONS: Array[StringName] = [
 	ACTION_LIGHT, ACTION_HEAVY, ACTION_DODGE, ACTION_TRIGGER_L, ACTION_TRIGGER_R, ACTION_ULT,
 	ACTION_TETHER_UP, ACTION_TETHER_RIGHT, ACTION_TETHER_DOWN, ACTION_TETHER_LEFT,
-	ACTION_CHANGE_CLASS, ACTION_CHANGE_MODE, ACTION_CHANGE_CALLING,
+	ACTION_CHANGE_CLASS, ACTION_CHANGE_MODE, ACTION_CHANGE_CALLING, ACTION_JUMP, ACTION_SPRINT, ACTION_PLAYTEST_CYCLE,
 ]
 
 const MENU_UP: StringName = &"up"
@@ -140,6 +152,8 @@ var assist_mode: AssistMode = AssistMode.ADVENTURER
 var actor: ActorBase
 ## Stick or WASD, x = right, y = forward, relative to this player's camera.
 var move_input: Vector2 = Vector2.ZERO
+## Sprint is held (L3 / LS, Left Shift) and no menu is open.
+var sprint_held: bool = false
 var camera_orbit_input: float = 0.0
 ## The camera's pitch: +1 looks up, -1 down (stick, or the pitch keys).
 var camera_pitch_input: float = 0.0
@@ -184,6 +198,11 @@ var _rite_command: int = -1
 var _rite_buttons: Array[StringName] = []
 var _rite_time: float = 0.0
 var _rite_fired: bool = false
+## Share was used for the playtest chord this press.
+var _share_chorded: bool = false
+var _primed: bool = false
+## Buttons that were already down when this controller was made: no tap or hold from them until they're let go.
+var _spent: Dictionary[StringName, bool] = {}
 
 
 func setup(owner_actor: ActorBase, for_device: int, mode: AssistMode) -> void:
@@ -436,6 +455,14 @@ func _input(event: InputEvent) -> void:
 func poll(dt: float) -> void:
 	_was_held = _held
 	_held = _read_buttons()
+	if not _primed:
+		# A fresh controller (a new seat, or the same player re-seated by a class change)
+		# takes buttons already down as held, not pressed, so one press never fires twice.
+		_primed = true
+		_was_held = _held.duplicate()
+		for action: StringName in _held:
+			if _held[action]:
+				_spent[action] = true
 	if _scripted:
 		move_input = _scripted_move
 		camera_orbit_input = 0.0
@@ -446,6 +473,7 @@ func poll(dt: float) -> void:
 		camera_pitch_input = _read_pitch()
 		_poll_mouse_look()
 	_remember_stick_direction()
+	sprint_held = false
 	if menu_open:
 		if _menu_armed:
 			_poll_menu()
@@ -457,10 +485,22 @@ func poll(dt: float) -> void:
 		return
 	_menu_armed = false
 	_update_auto_guard()
-
-	if _tapped(ACTION_CHANGE_CLASS):
+	sprint_held = _held.get(ACTION_SPRINT, false)
+	if _pressed(ACTION_JUMP):
+		jump_requested.emit()
+	if _pressed(ACTION_PLAYTEST_CYCLE):
+		playtest_cycle_requested.emit(1)
+	# Share (Create / View) held, the D-Pad's → and ← step the playtest switcher, and the press is spent:
+	# no Binder on its release, no Fellowship change at its hold.
+	var share_held: bool = _held.get(ACTION_CHANGE_CLASS, false)
+	if share_held and (_pressed(ACTION_TETHER_RIGHT) or _pressed(ACTION_TETHER_LEFT)):
+		playtest_cycle_requested.emit(1 if _pressed(ACTION_TETHER_RIGHT) else -1)
+		_share_chorded = true
+	if not share_held and not _was_held.get(ACTION_CHANGE_CLASS, false):
+		_share_chorded = false
+	if _tapped(ACTION_CHANGE_CLASS) and not _share_chorded:
 		binder_requested.emit()
-	if _held_for(ACTION_CHANGE_CLASS, dt):
+	if _held_for(ACTION_CHANGE_CLASS, dt) and not _share_chorded:
 		class_cycle_requested.emit()
 	if _tapped(ACTION_CHANGE_MODE):
 		atlas_requested.emit()
@@ -469,7 +509,7 @@ func poll(dt: float) -> void:
 	if _held_for(ACTION_CHANGE_CALLING, dt):
 		calling_cycle_requested.emit()
 	for slot: int in TETHER_ACTIONS.size():
-		if _pressed(TETHER_ACTIONS[slot]):
+		if _pressed(TETHER_ACTIONS[slot]) and not share_held:
 			tether_slot_pressed.emit(slot)
 	if _pressed(ACTION_LIGHT):
 		_issue_attack(CombatActionResource.Command.LIGHT)
@@ -528,7 +568,7 @@ func _poll_menu() -> void:
 		menu_input.emit(MENU_RIGHT)
 	if _pressed(ACTION_LIGHT):
 		menu_input.emit(MENU_ACCEPT)
-	if _pressed(ACTION_DODGE):
+	if _pressed(ACTION_DODGE) or _pressed(ACTION_JUMP):
 		menu_input.emit(MENU_BACK)
 	if _tapped(ACTION_CHANGE_CLASS):
 		binder_requested.emit()
@@ -865,11 +905,26 @@ func _pressed(action: StringName) -> bool:
 
 ## Let go this tick after a press shorter than a hold (the Fellowship button's tap).
 func _tapped(action: StringName) -> bool:
+	if _is_spent(action):
+		return false
 	return _was_held.get(action, false) and not _held.get(action, false) and _hold_time.get(action, 0.0) < MENU_HOLD_TIME
+
+
+## Whether `action` is still the press this controller started with (clears once it's let go).
+func _is_spent(action: StringName) -> bool:
+	if not _spent.has(action):
+		return false
+	if not _held.get(action, false) and not _was_held.get(action, false):
+		_spent.erase(action)
+		return false
+	return true
 
 
 ## True once, the moment `action` has been held for MENU_HOLD_TIME.
 func _held_for(action: StringName, dt: float) -> bool:
+	if _is_spent(action):
+		_hold_time[action] = 0.0
+		return false
 	if not _held.get(action, false):
 		_hold_time[action] = 0.0
 		return false

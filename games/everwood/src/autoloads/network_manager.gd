@@ -199,7 +199,7 @@ func update_local_player(device_id: int, class_id: StringName, assist_mode: int)
 		request_local_player(device_id, class_id, assist_mode)
 
 
-## Asks for a different Secondary Calling (hold C / L3, or the Scribe Desk).
+## Asks for a different Secondary Calling (hold C, or the Scribe Desk).
 ## The host makes the switch and swaps out any gear the new Calling can't use.
 func update_local_calling(device_id: int, calling: StringName) -> void:
 	if not _local_wishes.has(device_id):

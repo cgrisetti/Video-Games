@@ -56,6 +56,15 @@ const RUN_CYCLE_METRES: float = 2.8
 const FOOT_PLANT_FRAMES: Array[int] = [4, 18]
 ## Below this speed the hero stands; above it the run cycle blends in.
 const WALK_START_SPEED: float = 0.4
+## The jump (Phase 12 Kaizen, K1): a stride frozen mid-leap, stretched up to
+## JUMP_STRETCH tall on the way up and down, and squashed JUMP_LAND_SQUASH
+## short (and that much lower) for JUMP_LAND_TIME as the feet land.
+const JUMP_RISE_FRAME: float = 7.0
+const JUMP_FALL_FRAME: float = 21.0
+const JUMP_STRETCH: float = 0.12
+const JUMP_LAND_SQUASH: float = 0.16
+const JUMP_LAND_DROP: float = 0.08
+const JUMP_LAND_TIME: float = 0.18
 const B = HeroRigBuilder.Bone
 const Weapon = EquipmentItemResource.WeaponType
 const Cmd = CombatActionResource.Command
@@ -102,6 +111,11 @@ var feet_planted: int = 0
 var pose_rotations: Array[Quaternion] = []
 var hips_offset: Vector3 = Vector3.ZERO
 var hips_scale: Vector3 = Vector3.ONE
+## How fast the hero is rising (+) or falling (-), fed by ActorVisuals from how it moved (so copies on other peers jump too).
+var vertical_speed: float = 0.0
+## The landing squash still to play (1 just landed, 0 done), and whether the hero was in the air last tick.
+var land_squash: float = 0.0
+var airborne: bool = false
 
 var _from_clip: StringName = &""
 var _from_frame: float = 0.0
@@ -324,6 +338,7 @@ func update(delta: float, frozen: bool = false) -> void:
 				rotations[bone] = rotations[bone].slerp(over[bone], fade_in)
 			if _overlay == &"offhand_pocket_draw" or _overlay == &"overhead_pocket_blessing":
 				grip_weight = 0.0
+	_apply_jump(offset, step)
 	pose_rotations = rotations
 	hips_offset = offset[0]
 	hips_scale = offset[1]
@@ -331,6 +346,22 @@ func update(delta: float, frozen: bool = false) -> void:
 		skeleton.set_bone_pose_rotation(bone, rotations[bone])
 	skeleton.set_bone_pose_position(B.HIPS, HeroRigBuilder.local_rests()[B.HIPS].origin + hips_offset)
 	skeleton.set_bone_pose_scale(B.HIPS, hips_scale)
+
+
+## Stretch in the air, squash on landing (on the hips, so the whole hero follows).
+func _apply_jump(offset: Array[Vector3], step: float) -> void:
+	var state: StringName = actor.state_machine.current_name() if actor.is_multiplayer_authority() else actor.net_sync.remote_state
+	var in_air: bool = state == &"jump"
+	if in_air:
+		var stretch: float = JUMP_STRETCH * clampf(absf(vertical_speed) / ActorBase.JUMP_VELOCITY, 0.25, 1.0)
+		offset[1] = offset[1] * Vector3(1.0 - stretch * 0.5, 1.0 + stretch, 1.0 - stretch * 0.5)
+	elif airborne:
+		land_squash = 1.0
+	airborne = in_air
+	if land_squash > 0.0:
+		offset[1] = offset[1] * Vector3(1.0 + JUMP_LAND_SQUASH * 0.6 * land_squash, 1.0 - JUMP_LAND_SQUASH * land_squash, 1.0 + JUMP_LAND_SQUASH * 0.6 * land_squash)
+		offset[0] = offset[0] - Vector3(0.0, JUMP_LAND_DROP * land_squash, 0.0)
+		land_squash = maxf(0.0, land_squash - step / JUMP_LAND_TIME)
 
 
 ## [clip, frame] for this tick, and the grip, draw and foot weights.
@@ -368,6 +399,9 @@ func _choose_clip(step: float) -> Array:
 		&"guard":
 			picked = &"guard_hold"
 			frame = _loop_frame(picked, step)
+		&"jump":
+			picked = &"locomotion_run_cycle"
+			frame = JUMP_RISE_FRAME if vertical_speed > 0.0 else JUMP_FALL_FRAME
 		_:
 			var rite: float = actor.input.hearth_rite_progress() if actor.input != null else 0.0
 			if rite > 0.0:
@@ -382,7 +416,7 @@ func _choose_clip(step: float) -> Array:
 					picked = &"idle_steward_calm" if calm else family[4]
 					frame = _loop_frame(picked, step)
 	var info: Dictionary = clip_info(picked)
-	foot_ik_weight = 1.0 if info.get("foot_ik", true) else 0.0
+	foot_ik_weight = 1.0 if info.get("foot_ik", true) and state != &"jump" else 0.0
 	var two_handed: bool = HeroMeshAtelier.is_two_handed(weapon_type)
 	# On the run the weapon rides one-handed in the low port, so the off hand swings free.
 	grip_weight = 1.0 if two_handed and not calm and info.get("grip", false) else 0.0

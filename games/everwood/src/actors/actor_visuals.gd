@@ -49,6 +49,9 @@ const MODEL_FOLDER: String = "res://assets/models/"
 const LANTERN_GLOW: Color = Color(1.0, 0.78, 0.4)
 const VELLUM_COLOR: Color = Color(0.97, 0.93, 0.8)
 const LANTERN_SWAY: float = 0.25
+## Sprinting (K1): past this share of the hero's run pace, the lean may reach this far past a run's.
+const SPRINT_LEAN_FROM: float = 1.2
+const SPRINT_LEAN_REACH: float = 1.5
 ## The five skinned surfaces' nodes, in HeroMeshAtelier.REGIONS order.
 const REGION_NODES: Array[String] = ["HeadHeritage", "TorsoCoat", "PauldronsTabard", "LimbsBoots", "BeltCloak"]
 ## Martial Imbuement's silhouette (11 GDD §4.2, Layer 2): R swells the weapon to
@@ -407,6 +410,7 @@ func update_rig(delta: float, moved: Vector3, frozen: bool = false) -> void:
 	_hit_stop_left = maxf(0.0, _hit_stop_left - delta)
 	if frozen and _hit_stop_left <= 0.0:
 		_hit_stop_left = delta
+	animator.vertical_speed = moved.y
 	animator.update(delta, frozen)
 	_stow(animator.calm)
 	_feed_kinematics(delta, moved, frozen)
@@ -419,6 +423,9 @@ func _feed_kinematics(delta: float, moved: Vector3, frozen: bool) -> void:
 	var k: StorybookKinematicsModifier3D = kinematics
 	k.velocity = Vector3.ZERO if frozen else moved
 	k.move_speed = actor.loadout.stats.move_speed
+	# Sprinting (K1) leans the hero further into the run, worked out from speed so a networked copy leans too.
+	var flat_speed: float = Vector2(moved.x, moved.z).length()
+	k.lean_reach = SPRINT_LEAN_REACH if not frozen and flat_speed > actor.loadout.stats.move_speed * SPRINT_LEAN_FROM else 1.0
 	k.stamina_ratio = actor.stats.stamina / maxf(actor.stats.stats.max_stamina, 1.0) if actor.stats != null else 1.0
 	k.winded = actor.is_multiplayer_authority() and actor.action_queue != null and actor.action_queue.winded
 	k.hit_stop_left = _hit_stop_left if frozen else 0.0
