@@ -204,3 +204,29 @@ A second Phase 12 brief arrived with its spec named `12_SIGN_FLOW_AND_GRIMOIRE_U
 **Still to come**
 - Bodies for Scree-Worm henchmen, and the bosses past the Cairnsman (their four gates are data only).
 - The items still open from §7: the 3-Echo trail build-up, Chime-Post engravings, Place-Cards charted at landmark Chime-Posts, and live Tier 2 foes beyond the Crag-Back.
+
+## 9. Build Notes (the Phase 12 Combat Kaizen Refinement: jump, sprint, debug switch, diamond HUD, Binder tabs, Gate 6)
+
+The third Phase 12 brief (2026-11-04) asked for six increments, K1 to K6. This section says what each built and where the build differs on purpose. `tools/test_phase12_kaizen.gd` checks all of it (27 checks, run by the smoke test after the Caldera Isles').
+
+**In the code now**
+- **K1: jump, roll and sprint.** Jump is ✕ / A (Space), roll is ○ / B (L), sprint is L3 / LS (Left Shift), all through `tools/build_input_map.gd`. `JumpState` launches at 6.5 m/s (about 1 m high); the rig stretches up to 12% on the way up and squashes 16% for 0.18 s on landing (`HeroCombatAnimator`). Sprint is 1.5x the run, drains 12 stamina a second (no regen while sprinting), stops at 0 and waits for a fresh press. The run's lean reaches 1.5x further at a sprint (`StorybookKinematicsModifier3D.lean_reach`). In menus, jump backs out like roll.
+- **K2: the debug hero switch.** F2, or holding Share (Create / View) and tapping D-Pad → or ←, steps `PlaytestSwitcher` through Bridge-Warden, Hedge-Runner and Bell-Keeper at Levels 3, 7 and 12: Fellowship, Calling, the trail kit for that level (weapon tier included) and the Grimoire level (1, 2 or 4), with a toast ("Debug Switch: Bridge-Warden Lv 7") and a banner. The session becomes a playtest: `PartyProgress.save()` and the Caldera's flags write nothing afterwards. The chord spends the Share press, so it never also opens the Binder or changes Fellowship.
+- **K3: the minimal cross.** `CrossSlot` and its slot grid are deleted. `CrossGrimoireHUD` is the diamond widget at 1.3x plus two arcs (health left, stamina right), the pip gems on top, a small Chimes coin, the floating verb and the downed / staggered line, and the Lantern-Bearer's tether compass. The widget took over the slot grid's live marks: a press or buffered press flashes its diamond, a socket without its pips is dimmed, L glows while guarding, R rings gold (with a star) for a detonation, and each socket wears the hero's own key (Q / E / R; L2 / R2 / L2+R2). The combo pips (o - o - >) were already on the weapon diamond.
+- **K4: the Binder's tabs.** `GrimoireBinderPanel.Tab` is GEAR, CARDS, COMBOS, ATLAS, labelled "1. Gear & Weapon", "2. Quick Magic-Ink Cards", "3. Combo Moves" and "Atlas Map", stepped with L / R in any menu (`InputComponent.MENU_TAB_PREV` / `MENU_TAB_NEXT`). It opens on the cards. A tooltip box under the title gives the tab's purpose and the highlighted row's meaning (a card's description, a combo's buttons and finisher, a gear row), and rows and tabs carry the same text as mouse tooltips. Gear & Weapon shows the live hero in a 300 x 380 window: a camera circling 3.2 m out at chest height in the shared world, a brighter copy of the sky with a quarter of the fog, a far-depth blur, and a warm key and cool rim light whose cull mask reaches only render layer 13, which the hero's meshes wear while the tab shows.
+- **K5: the 70-20-10 Playground Linter (08 Gate 6).** On screen: *Plain Ink, Gilded Leaf, Star-Ink* (finishes); *Ink Blade, Ink Shield, Lantern-Tether* (how a card shows itself, and its cast's shout); *PARRY & STRIKE!* (the Bravery Counter); *INK READY* (the Hearth-Rite Tuck's shout); *Ink Cards: What You Do*, *the Ink Card Collection*, *Make Ink Cards*; *the Four Ink-Signs*. A source scan fails the smoke test if a retired word comes back in a string that can reach the screen.
+
+**Where the build differs on purpose**
+- **Button numbers.** The brief's `joy_button_8` (L3) and `joy_button_10` (Share) are not Godot's numbers. Godot numbers L3 as 7 and Share / Create / View as 4 (`JOY_BUTTON_LEFT_STICK`, `JOY_BUTTON_BACK`); the bindings use the named constants, so the buttons are the ones the brief means.
+- **Keyboard roll moved from Space to L**, so Space can jump (and J / K / L sit under one hand). Space still closes menus.
+- **Hold C / L3 for Calling is C only now**; L3 is sprint. A pad changes Calling at the Scribe Desk.
+- **Share is a chord, not a cycle on its own.** A plain tap of Share still opens the Binder and its hold still changes Fellowship, so cycling needs Share held with a D-Pad tap. F2 is the keyboard's single press.
+- **Level 12 is past the trail's top (Level 10).** The switcher's Level 12 wears Level 10's gear; the toast still says Lv 12 and the banner says why.
+- **The cross keeps its arcs, pips and verb.** The brief asked for the diamonds alone; health, stamina and pips have no other home, so they stay as shapes with no numbers. The floating verb and "Downed" line are feedback, not labels.
+- **Gear & Weapon shows gear; it doesn't change it.** The Scribe Desk stays the one place to change weapon and armour (Gate 2); light on a gear row says so.
+- **The preview lights the live hero, not a copy.** A copy would need a second rig; the cost is that the key and rim light also touch that hero in other players' split-screen views while the tab is open.
+- **Glimmer-Spot, Sign-Coat Grimoire Combat and the Four-Sign Ink-Wheel** weren't on screen anywhere, so there was nothing to rename; the README says *Glowing Spot*. Ids, class names, node names and save keys keep their old spellings, so old saves and network messages still read (the old finish names still read back too).
+
+**Still to come**
+- A pad shortcut for Calling if the Scribe Desk proves too far away.
+- Jump has no gameplay use yet beyond getting over low things: no ledges, jump attacks or air dodges.

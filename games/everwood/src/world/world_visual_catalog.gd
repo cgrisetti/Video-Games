@@ -521,7 +521,7 @@ static func _biome(id: StringName, label: String, sign: int, turf: Color, road: 
 
 static func _build_kits() -> void:
 	_kit(KIT_HOUSE_STEPPED_GABLE, "Stepped-Gable House", &"ARCHITECTURE", Vector3(8.0, 9.0, 6.0), false, true)
-	_kit(KIT_WATERMILL_WHEEL, "Vellum-Mill Watermill Wheel", &"ARCHITECTURE", Vector3(2.2, 5.0, 5.0), false, true)
+	_kit(KIT_WATERMILL_WHEEL, "Ink-Mill Watermill Wheel", &"ARCHITECTURE", Vector3(2.2, 5.0, 5.0), false, true)
 	_kit(KIT_BRIDGE_STONE_ARCH, "Bramble-Bridge Stone Arch", &"BRIDGE", Vector3(5.0, 2.4, 12.0), false, false)
 	_kit(KIT_BRIDGE_CARPATHIAN_TRESTLE, "Dover-Slap Timber Trestle", &"BRIDGE", Vector3(8.0, 24.0, 30.0), false, false)
 	_kit(KIT_SCRIBE_DESK_PAVILION, "Scribe-Desk Pavilion", &"STATION", Vector3(5.0, 3.6, 4.0), false, true)

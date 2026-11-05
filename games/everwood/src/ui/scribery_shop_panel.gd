@@ -20,7 +20,7 @@ signal closed
 
 enum Tab { INSCRIBE, CHART, GILD }
 
-const TAB_NAMES: Array[String] = ["Inscribe Action-Leaves", "Chart Place-Cards", "The Gilding Press"]
+const TAB_NAMES: Array[String] = ["Make Ink Cards", "Chart Place-Cards", "The Gilding Press"]
 const LIST_WIDTH: float = 620.0
 const TITLE_SIZE: int = 24
 const FONT_SIZE: int = 15
@@ -304,7 +304,7 @@ func _slot_new_copy(copy_key: StringName, replaces: StringName) -> void:
 	elif draft.socket_leaf_id(Socket.SKILL) == &"" and LoadoutComposer.fits_slot(player_class, listed, ScribeCardResource.GrimoireSlot.SIGNATURE):
 		draft.set_socket_leaf(Socket.SKILL, listed.card_id, variant)
 		changed = true
-	var verb: String = "Pressed" if replaces != &"" else ("Charted" if listed.is_place_card() else "Inscribed")
+	var verb: String = "Pressed" if replaces != &"" else ("Charted" if listed.is_place_card() else "Made")
 	_show_note("%s %s" % [verb, catalog.copy_name(copy_key)], GOOD_COLOR)
 	if not changed:
 		return
@@ -370,7 +370,7 @@ func _refresh() -> void:
 			_rows[index].text = ("> " if index == row else "  ") + _row_text(listed[index])
 			_rows[index].modulate = SELECTED_COLOR if index == row else ROW_COLOR
 	if listed.is_empty():
-		_detail.text = "Nothing to press yet: inscribe or chart a card first."
+		_detail.text = "Nothing to press yet: make or chart a card first."
 		widget.clear_preview()
 		return
 	_preview(listed[row])

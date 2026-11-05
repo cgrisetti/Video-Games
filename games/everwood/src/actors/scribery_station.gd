@@ -80,7 +80,7 @@ func _ready() -> void:
 	_build_stand_ring()
 	var sign_label: Label3D = Label3D.new()
 	sign_label.name = "Sign"
-	sign_label.text = "The Reed-Light Scribery\nAction-Leaves · Place-Cards · Gilding"
+	sign_label.text = "The Reed-Light Scribery\nInk Cards · Place-Cards · Gilding"
 	sign_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign_label.font_size = 40
 	sign_label.outline_size = 10
@@ -96,7 +96,7 @@ func _process(delta: float) -> void:
 
 
 func prompt_for(actor: ActorBase) -> String:
-	return "%s: The Reed-Light Scribery (Action-Leaves, Place-Cards, the Gilding Press)" % actor.input.label(InputComponent.ACTION_LIGHT)
+	return "%s: The Reed-Light Scribery (Ink Cards, Place-Cards, the Gilding Press)" % actor.input.label(InputComponent.ACTION_LIGHT)
 
 
 ## Opens the counter on the player's own screen.

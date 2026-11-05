@@ -987,7 +987,7 @@ static func _folio_text() -> String:
 		else:
 			found += 1
 			lines.append("  %s: %s" % [card.display_name, " · ".join(finishes)])
-	return "COLLECTION FOLIO: %d of %d found\n%s" % [found, listed.size(), "\n".join(lines)]
+	return "INK CARD COLLECTION: %d of %d found\n%s" % [found, listed.size(), "\n".join(lines)]
 
 
 func _player_class() -> PlayerClassResource:

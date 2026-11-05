@@ -400,7 +400,7 @@ func _check_arsenal_catalog() -> void:
 		rare_seen = rare_seen or dropped.rarity >= ScribeCardResource.CardRarity.RARE
 		plain_starter = plain_starter or (dropped.starter and variant == ScribeCardResource.CardVariant.STANDARD)
 	_check(seen_variants.has(ScribeCardResource.CardVariant.GILDED_LEAF) and seen_variants.has(ScribeCardResource.CardVariant.STAR_INKED_VELLUM) and rare_seen and not plain_starter,
-		"boss chests drop Rare and Legendary cards and Gilded Leaf or Star-Inked Vellum copies (never a Plain Vellum starter card)")
+		"boss chests drop Rare and Legendary cards and Gilded Leaf or Star-Ink copies (never a Plain Ink starter card)")
 
 
 ## The 3x3 Callings (06 §3, 07 GDD §1.3), without actors: the nine names,
@@ -500,9 +500,9 @@ func _check_four_signs_and_finishes() -> void:
 	for under: ScribeCardResource in catalog.under_cards():
 		linked[under.scribe_sign] = true
 	_check(linked.size() == 4, "one under-card for each Sign: Iron-Root, Rime-Gale, Warm-Hearth and Star-Tide Links")
-	_check(ScribeCardResource.VARIANT_NAMES == ["Plain Vellum", "Gilded Leaf", "Star-Inked Vellum"]
+	_check("|".join(ScribeCardResource.VARIANT_NAMES) == "Plain Ink|Gilded Leaf|Star-Ink"
 		and catalog.copy_name(&"moonfall_cleave:shiny_foil") == "Moonfall Cleave (Rare, Gilded Leaf)",
-		"card finishes read as Plain Vellum, Gilded Leaf and Star-Inked Vellum")
+		"card finishes read as Plain Ink, Gilded Leaf and Star-Ink")
 	_check(ScribeCardResource.copy_variant(&"gale_rush:astral_prism") == ScribeCardResource.CardVariant.STAR_INKED_VELLUM,
 		"save files keep the Phase 7 finish keys, so existing binders still load")
 
@@ -2070,15 +2070,16 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 		and mill.scribe_sign == Sign.SIGN_WARM_HEARTH and is_equal_approx(mill.location_bonus_heal, 10.0)
 		and tor.scribe_sign == Sign.SIGN_STAR_TIDE and is_equal_approx(tor.location_stamina_refund, 8.0) and oaks.chime_cost == 25
 		and not oaks.is_lead() and not oaks.is_under() and catalog.under_cards().size() == 4,
-		"every Sign has a Weapon-Coat, Ward-Mantle and Lantern-Tether Action-Leaf; the four Place-Cards carry their Signs and bonuses")
+		"every Sign has an Ink Blade, Ink Shield and Lantern-Tether Ink Card; the four Place-Cards carry their Signs and bonuses")
 	var old_kit: Dictionary = {"armor": "ironwood_plate", "weapon": "light_sword", "leads": ["shield_charge", "shadow_sanctuary", "taunt", "bulwark_quake"],
 		"variants": [1, 0, 0, 0], "unders": ["", "", "", ""]}
 	var read_back: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(old_kit)
 	_check(ScribeCardResource.variant_for_key("shiny_foil") == ScribeCardResource.CardVariant.GILDED_LEAF
 		and ScribeCardResource.copy_variant(&"taunt:astral_prism") == ScribeCardResource.CardVariant.STAR_INKED_VELLUM
-		and ScribeCardResource.VARIANT_NAMES == ["Plain Vellum", "Gilded Leaf", "Star-Inked Vellum"]
+		and "|".join(ScribeCardResource.VARIANT_NAMES) == "Plain Ink|Gilded Leaf|Star-Ink"
+		and ScribeCardResource.variant_for_key("Star-Inked Vellum") == ScribeCardResource.CardVariant.STAR_INKED_VELLUM
 		and read_back.lead_variants[0] == 1 and read_back.guard_leaf_id == &"" and read_back.place_ids == [&"", &"", &""],
-		"old saves still read: standard / shiny_foil / astral_prism are Plain Vellum, Gilded Leaf and Star-Inked Vellum, and old kits get empty dioramas")
+		"old saves still read: standard / shiny_foil / astral_prism (and the old finish names) are Plain Ink, Gilded Leaf and Star-Ink, and old kits get empty dioramas")
 
 	# Diorama synergy: Iron-Root on Iron-Root ground is Home-Ground Harmony.
 	var harmony: Dictionary = catalog.compute_diorama_synergy(ArsenalCatalog.RISING_DRIVE, ArsenalCatalog.ARIUNDLE_MOSS_OAKS)
@@ -2296,9 +2297,9 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	var saved_seen: int = int((saved.get_value("glimmer", "seen", {}) as Dictionary).get("gale_bucca", 0))
 	_check(first_frames == 180 and absf(first_left - 3.0) < 0.05 and first_rhyme == bucca.hud_rhyme_couplet and progress.pattern_seen_count(ArsenalCatalog.GALE_BUCCA) == 1
 		and saved_seen == 1, "the Gale-Bucca's first wing-spread opens a 180-frame (3.0 s) Star-Tide Glimmer-Spot, the rhyme on the HUD, the sighting saved")
-	_check(not countered.is_empty() and countered.back().begins_with("BRAVERY COUNTER") and countered.back().contains("ASTRAL CHORUS") and not glimmer.is_open()
+	_check(not countered.is_empty() and countered.back().begins_with("PARRY & STRIKE") and countered.back().contains("ASTRAL CHORUS") and not glimmer.is_open()
 		and not resolved.is_empty() and is_equal_approx(resolved.back().poise_damage, 105.0 * bucca.get_impact_multiplier()),
-		"a Star-Tide strike in it is a Bravery Counter: (60 + 45) x %.2f = %.0f poise, Astral Chorus, and the spot shuts" % [bucca.get_impact_multiplier(),
+		"a Star-Tide strike in it is a Parry & Strike: (60 + 45) x %.2f = %.0f poise, Astral Chorus, and the spot shuts" % [bucca.get_impact_multiplier(),
 			resolved.back().poise_damage if not resolved.is_empty() else 0.0])
 	var tightening: Array[int] = [first_frames]
 	var rhymes: Array[String] = [first_rhyme]
@@ -2408,7 +2409,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 		and hud_widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.GILDED_LEAF
 		and shop.widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.STAR_INKED_VELLUM
 		and PartyProgress.gilding_cost(&"taunt:shiny_foil") == 120,
-		"the Gilding Press turns the worn Taunt from Plain Vellum to Gilded Leaf for 50 Chimes: saved, worn, gold-trimmed on the HUD, and the press now previews Star-Inked (120)")
+		"the Gilding Press turns the worn Taunt from Plain Ink to Gilded Leaf for 50 Chimes: saved, worn, gold-trimmed on the HUD, and the press now previews Star-Ink (120)")
 	shop.close()
 	await _seconds(0.05)
 	_check(hud.scribery_panel() == null and not tank.input.menu_open, "closing the counter hands the controller back")
@@ -2427,7 +2428,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	var guard_view: Dictionary = binder.widget.socket_view(Diorama.GUARD)
 	_check(placed and binder.place_options().has(ArsenalCatalog.BARROW_CRAG_TOR) and binder.leaf_options().has(ArsenalCatalog.SHADOW_SANCTUARY)
 		and guard_view["place"] == ArsenalCatalog.BARROW_CRAG_TOR and guard_view["synergy"]["is_home_ground_harmony"]
-		and hud_widget.socket_view(Diorama.GUARD)["synergy"]["is_home_ground_harmony"] and GrimoireBinderPanel._folio_text().begins_with("COLLECTION FOLIO"),
+		and hud_widget.socket_view(Diorama.GUARD)["synergy"]["is_home_ground_harmony"] and GrimoireBinderPanel._folio_text().begins_with("INK CARD COLLECTION"),
 		"from the Place-Cards page the Star-Tor frames L behind Shadow Sanctuary: Star-Tide on Star-Tide, Home-Ground Harmony in the Binder and on the HUD")
 	hud.toggle_binder()
 	await _seconds(0.05)
@@ -2521,7 +2522,7 @@ func test_phase_12_miyamoto_posture_trinity_and_grimoire_ux() -> void:
 	var heal_leaf: ScribeCardResource = catalog.card(ArsenalCatalog.HOMING_HEAL)
 	_check(roles and heal_leaf.shares_ink() and is_equal_approx(heal_leaf.ward_damage_mitigation_pct, 0.8) and is_equal_approx(heal_leaf.ward_reflected_poise, 60.0)
 		and is_equal_approx(heal_leaf.one_and_done_finisher_mult, 3.2) and catalog.card(ArsenalCatalog.TAUNT).role_delivery == ScribeCardResource.RoleDelivery.TANK_WARD_MANTLE,
-		"every Sign has a DPS Weapon-Coat, a stun-immune Tank Ward-Mantle and a Support Ink-Share leaf; leaves carry the 80% ward, 60 reflected poise and 3.2x One-and-Done")
+		"every Sign has a DPS Ink Blade, a stun-immune Tank Ink Shield and a Support Ink-Share card; leaves carry the 80% ward, 60 reflected poise and 3.2x One-and-Done")
 	var worm: BossEncounterResource = catalog.encounter(ArsenalCatalog.SCREE_WORM)
 	var iron_kin: BossEncounterResource = catalog.encounter(ArsenalCatalog.IRON_MAN_KIN)
 	var drake_kin: BossEncounterResource = catalog.encounter(ArsenalCatalog.CRAG_BACK_DRAKE)

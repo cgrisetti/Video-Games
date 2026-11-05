@@ -17,8 +17,12 @@
 ##       live hero in a lit preview window: its own camera, sky and two lights
 ##       on the hero alone), 2. Quick Magic-Ink Cards (where it opens), 3. Combo
 ##       Moves, and the Atlas Map, each with its tooltip box
-##   K5  the 70-20-10 Playground Linter: none of the retired words on screen,
-##       and the new playground names in their places
+##   K5  the 70-20-10 Playground Linter (08 Gate 6): no string in src/ that
+##       could reach the screen uses a retired word (Vellum, Folio, Weapon-Coat,
+##       Ward-Mantle, Bravery Counter, Hearth-Rite Tuck, Four-Sign, Sign-Coat,
+##       Ink-Wheel, Glimmer-Spot, Action-Leaves), and the playground names
+##       stand in their places (Plain Ink, Star-Ink, Ink Blade, Ink Shield,
+##       PARRY & STRIKE!, INK READY, the Ink Card Collection, Make Ink Cards)
 extends RefCounted
 
 const LENS: GDScript = preload("res://tools/test_mythopoetic_lens.gd")
@@ -46,6 +50,7 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	await _check_menu_back()
 	await _check_minimal_hud()
 	await _check_binder_tabs()
+	_check_playground_linter()
 	await _check_playtest_switcher()
 
 
@@ -381,6 +386,61 @@ func _check_binder_tabs() -> void:
 		unlit = unlit and not (node as MeshInstance3D).get_layer_mask_value(GrimoireBinderPanel.PREVIEW_LAYER)
 	check.call(hud.binder_panel() == null and unlit and not hero.input.menu_open, "roll closes the Binder, and the hero's meshes leave the preview's light layer")
 	_stand(hero, 0)
+
+
+# --- K5: the 70-20-10 Playground Linter ------------------------------------------------------
+
+## Words Gate 6 retired from the screen (ids, class names, node names and save keys keep theirs).
+const RETIRED_WORDS: Array[String] = ["Vellum", "VELLUM", "Folio", "FOLIO", "Weapon-Coat", "WEAPON-COAT", "Ward-Mantle", "WARD-MANTLE",
+	"Bravery Counter", "BRAVERY COUNTER", "Bravery-Counter", "Hearth-Rite Tuck", "HEARTH-RITE TUCK", "Four-Sign", "Four Signs", "Sign-Coat",
+	"Ink-Wheel", "Mantle & Tuck", "Glimmer-Spot", "GLIMMER-SPOT", "Action-Leaves", "Action-Leaf"]
+## A line that names the old words on purpose (to read old saves back) is let through.
+const LINTER_ALLOWED: Array[String] = ["OLD_VARIANT_NAMES"]
+
+
+func _check_playground_linter() -> void:
+	var literal: RegEx = RegEx.create_from_string("\"(?:[^\"\\\\]|\\\\.)*\"")
+	var offenders: PackedStringArray = PackedStringArray()
+	var scanned: int = 0
+	for path: String in _scripts_under("res://src"):
+		var lines: PackedStringArray = FileAccess.get_file_as_string(path).split("\n")
+		scanned += 1
+		for number: int in lines.size():
+			var line: String = lines[number]
+			if line.strip_edges().begins_with("#") or LINTER_ALLOWED.any(func(word: String) -> bool: return line.contains(word)):
+				continue
+			for found: RegExMatch in literal.search_all(line):
+				var start: int = found.get_start()
+				var text: String = found.get_string()
+				# &"ids", ^"node paths", res:// paths and bare node names (no space) never reach the screen.
+				if (start > 0 and line[start - 1] in ["&", "^"]) or text.contains("res://") or not text.contains(" "):
+					continue
+				for word: String in RETIRED_WORDS:
+					if text.contains(word):
+						offenders.append("%s:%d %s" % [path.get_file(), number + 1, text])
+	check.call(scanned > 100 and offenders.is_empty(),
+		"Gate 6: no on-screen string in %d scripts uses a retired word%s" % [scanned, "" if offenders.is_empty() else ": " + ", ".join(offenders)])
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var subtitles: PackedStringArray = PackedStringArray()
+	for calling: CallingResource in catalog.callings():
+		subtitles.append(calling.subtitle)
+	check.call("|".join(ScribeCardResource.VARIANT_NAMES) == "Plain Ink|Gilded Leaf|Star-Ink"
+		and "|".join(ScribeCardResource.MODE_NAMES) == "Ink Blade|Ink Shield|Lantern-Tether"
+		and ScriberyShopPanel.TAB_NAMES[0] == "Make Ink Cards" and GrimoireBinderPanel._folio_text().begins_with("INK CARD COLLECTION")
+		and GrimoireBinderPanel.TAB_NAMES[1] == "2. Quick Magic-Ink Cards" and "|".join(subtitles).contains("Journeyman of the Four Ink-Signs")
+		and ScribeCardResource.variant_for_key("Plain Vellum") == ScribeCardResource.CardVariant.STANDARD
+		and ScribeCardResource.variant_for_key("Star-Inked Vellum") == ScribeCardResource.CardVariant.STAR_INKED_VELLUM,
+		"the playground names stand in: Plain Ink, Gilded Leaf, Star-Ink; Ink Blade and Ink Shield; Make Ink Cards; the Ink Card Collection; the Four Ink-Signs (old finish names still read back)")
+
+
+static func _scripts_under(folder: String) -> Array[String]:
+	var found: Array[String] = []
+	for file: String in DirAccess.get_files_at(folder):
+		if file.ends_with(".gd"):
+			found.append(folder.path_join(file))
+	for sub: String in DirAccess.get_directories_at(folder):
+		found.append_array(_scripts_under(folder.path_join(sub)))
+	return found
 
 
 # --- K2: the playtest switcher --------------------------------------------------------------

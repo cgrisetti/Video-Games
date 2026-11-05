@@ -284,7 +284,7 @@ func begin_hearth_rite(socket: int) -> bool:
 		active_location_card_id, 0.0)
 	CombatDirector.current.show_sign_coat(actor, CoatLook.TRAIL_TUCK, active_trail_coat_sign, synergy["manifestation_mode"],
 		active_location_card_id, 0.0)
-	var label: String = "HEARTH-RITE TUCK"
+	var label: String = "INK READY"
 	if active_trail_coat_sign != NO_SIGN:
 		label += ": %s" % ArsenalCatalog.current.sign_seal(active_trail_coat_sign).display_name.to_upper()
 	CombatDirector.current.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.6), label,
@@ -579,7 +579,7 @@ func _ward(attacker: ActorBase) -> void:
 	director.reflect_poise(actor, attacker, float(coat_synergy.get("ward_reflected_poise", 0.0)))
 	if not director.has_zone_from(actor.player_id):
 		director.spawn_shelter(actor, WARD_MANTLE_CONE_RADIUS, WARD_MANTLE_CONE_TIME)
-	director.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.5), "WARD-MANTLE!",
+	director.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.5), "INK SHIELD!",
 		ArsenalCatalog.current.sign_seal(coat_sign).color, 30)
 	ward_mantle_held.emit(attacker.player_id)
 

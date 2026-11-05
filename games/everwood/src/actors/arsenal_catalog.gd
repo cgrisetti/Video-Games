@@ -1367,7 +1367,7 @@ func _build_callings() -> void:
 	_calling(&"hearth_guard", "Hearth-Guard", "Watcher of the Kindled Stone", ClassLoadouts.SHIELD_TANK, WISE_HAND)
 	_calling(&"iron_woodsman", "Iron-Woodsman", "Hewn-Hand of the High Pines", ClassLoadouts.DIRECTIONAL_FLOW_DPS, STOUT_HEART)
 	_calling(&"hedge_runner", "Hedge-Runner", "Outrider of the Bramble-Ways", ClassLoadouts.DIRECTIONAL_FLOW_DPS, SWIFT_FOOT)
-	_calling(&"sign_seeker", "Sign-Seeker", "Journeyman of the Four Signs", ClassLoadouts.DIRECTIONAL_FLOW_DPS, WISE_HAND)
+	_calling(&"sign_seeker", "Sign-Seeker", "Journeyman of the Four Ink-Signs", ClassLoadouts.DIRECTIONAL_FLOW_DPS, WISE_HAND)
 	_calling(&"bell_keeper", "Bell-Keeper", "Ringer of the Sanctuary Chime", ClassLoadouts.SOUL_TETHER_HEALER, STOUT_HEART)
 	_calling(&"wind_mender", "Wind-Mender", "Weather-Worker of the Sound", ClassLoadouts.SOUL_TETHER_HEALER, SWIFT_FOOT)
 	_calling(&"lantern_scribe", "Lantern-Scribe", "Bearer of the Reed-Light", ClassLoadouts.SOUL_TETHER_HEALER, WISE_HAND)

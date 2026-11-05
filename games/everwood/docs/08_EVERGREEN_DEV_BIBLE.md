@@ -1,12 +1,12 @@
 # 08_EVERGREEN_DEV_BIBLE.md — The Binding Design, Lore, & Engineering Protocol
 
-> **SYSTEM DIRECTIVE FOR GEMINI & CLAUDE CODE:** This document is the authoritative production contract for *Everwood*. Every time a new feature, zone, heritage, card folio, dungeon, profession, or game mode is proposed, it MUST pass through all five stages and all five mandatory gates defined below before code is committed.
+> **SYSTEM DIRECTIVE FOR GEMINI & CLAUDE CODE:** This document is the authoritative production contract for *Everwood*. Every time a new feature, zone, heritage, card folio, dungeon, profession, or game mode is proposed, it MUST pass through all five stages and all six mandatory gates defined below before code is committed.
 
 ---
 
-## 1. The Five Mandatory Design Gates (Enforced on Every Request)
+## 1. The Six Mandatory Design Gates (Enforced on Every Request)
 
-Whenever a new feature or content expansion is requested, Gemini must automatically evaluate the concept against these five non-negotiable gates:
+Whenever a new feature or content expansion is requested, Gemini must automatically evaluate the concept against these six non-negotiable gates:
 
 | Gate ID | Name & Studio Pedigree | Mandatory Rule | Hard Rejection Trigger (Auto-Cut) |
 |---|---|---|---|
@@ -15,6 +15,9 @@ Whenever a new feature or content expansion is requested, Gemini must automatica
 | **GATE 3** | **Philological Linter & The Single-Origin Antagonist Rule**<br>*(Tolkien, Le Guin, Cooper, Miyazaki — [15_THE_MYTHOPOETIC_LENS.md](15_THE_MYTHOPOETIC_LENS.md))* | Every proper noun passes **The Four Linter Rules**: **(1) 8-Year-Old Read-Aloud** — it rolls off a child's tongue on the first read, with a smile; **(2) Map-Sense Compound** — every settlement and zone pairs a warm syllable with one of seven geographical nouns: `-bridge`, `-green`, `-hollow`, `-falls`, `-haven`, `-wick`, `-crossing`; **(3) Hyphens & Cadence** — keep bouncy compounds hyphenated (`Tizzi-Wed-Green`, `Bramble-Bridge`, `Dover-Slap-Falls`, `Old-Hob-of-the-Hill`, `Hedge-Runner`), never flattened; **(4) Ban Grimy/Textbook Words** — no *Wharf, Silt, Polder, Lamellar, Hauberk, Cuirass, Rubric, Aspect, Construct, Rune, Vermin, Trash Mob, Dojo Shards*; use *Green, Bridge, Meadow, Mantle, Coat, Ring-Coat, Kettle-Cap, Sign, Ink, Deep-Ink, Seal, Maker-Seal, Iron-Man, Weald-Wight, Hedgerow-Hob, Boggart-Kin, Chimes*. **The Single-Origin Antagonist Rule:** every foe is a spirit of **The First-Quiet** (the Deep-Hush) rising through a crack in the land, stirred by **Old-Hob-of-the-Hill**; it sits on the Hob-to-Boggart Spectrum and is un-boggarted, never slain. | Clinical or corporate words, harsh guttural clusters, grimdark clichés, a name that fails the read-aloud smile, a place name with no Map-Sense noun, or any foe from a second origin: orc, goblin or lizard races, bandit or cultist factions, the undead, mob spam, or a disembodied dark lord. |
 | **GATE 4** | **Schema-First Registry**<br>*(Chris Wilson — GGG)* | New content is added as typed `Resource` data registered in central catalogs (`ArsenalCatalog`, `InstanceManager`). Actors and `CombatDirector` resolve behavior polymorphically. | Adding hardcoded `match` branches inside `ActorBase` or `CombatDirector` for specific item IDs, card IDs, or boss names. |
 | **GATE 5** | **Code-First & Multi-Age Safe**<br>*(Yoshi-P & CLAUDE.md)* | All scenes build deterministically in GDScript (`tools/build_levels.gd`), maintain $4.8\text{ m}$ camera / $3.2\text{ m}$ max obstacle sightlines, and support all 3 player assist tiers (Master, Adventurer, Squire/Apprentice). | Hand-editing `.tscn` sub-resources, placing tall visual blockers in combat lanes, or designing boss mechanics that an assisted 4-year-old cannot survive. |
+| **GATE 6** | **The 70-20-10 Linguistic Linter**<br>*(Clay Grisetti — Oakshire Farms Studio)* | Every feature name, proper noun, and combat mechanic must satisfy the 70-20-10 linguistic ratio:<br>• **70% — The 8-Year-Old Joy Test:** Grounded, visceral English words that evoke immediate emotional or physical understanding.<br>• **20% — Gamer Shorthand:** Established industry-standard video game lexicons that cross-pollinate from co-op RPGs.<br>• **10% — Everwood Originality:** Custom, invented heritage terminology anchored in world-building lore and family motifs (*Þegn-Wedd*, vellum, ink, cairns, hearths), used sparingly.<br>*(Living Room Test: If you would feel slightly silly saying it out loud to a friend while sitting on the couch eating pizza, it fails the linter. Strip it down until it sounds like something from an 89-minute classic family adventure movie.)* | Over-crafted pseudo-archaic folklore pastiche, clinical Greco-Latin textbook terms, or unpronounceable high-fantasy jargon that breaks playground clarity. |
+
+> **Gate 6 in the build (Phase 12 Kaizen, 2026-11-04):** the on-screen words it retired are gone from `src/`, and `tools/test_phase12_kaizen.gd` fails the smoke test if one comes back in a string that can reach the screen: *Vellum, Folio, Weapon-Coat, Ward-Mantle, Bravery Counter, Hearth-Rite Tuck, Four-Sign, Sign-Coat, Ink-Wheel, Glimmer-Spot, Action-Leaves*. Players now read *Plain Ink, Gilded Leaf, Star-Ink* (finishes), *Ink Blade, Ink Shield* (how a card shows itself), *PARRY & STRIKE!* (the old Bravery Counter), *INK READY* (the old Hearth-Rite Tuck), *the Ink Card Collection*, *Make Ink Cards* and *the Four Ink-Signs*. Ids, class names, node names and save keys keep their old spellings, so saves and network messages are unchanged.
 
 ---
 
@@ -24,7 +27,7 @@ Every feature, from ideation to `main` branch commit, follows this strict five-s
 
 ### Stage 1: Ideation, Research Counter-Argument, & Musk Razor (Gemini + Producer)
 1. **Industry Post-Mortem Audit:** Gemini researches how comparable RPG/MMO systems succeeded or failed, presenting counter-arguments against potential design traps.
-2. **Harmonization & Linter Pass:** Gemini applies Gates 1–3, aligning mechanics with the Four Signs (`Sign of Iron-Root`, `Sign of Rime-Gale`, `Sign of Warm-Hearth`, `Sign of Star-Tide`) and linting all proper nouns.
+2. **Harmonization & Linter Pass:** Gemini applies Gates 1–3 and Gate 6, aligning mechanics with the Four Signs (`Sign of Iron-Root`, `Sign of Rime-Gale`, `Sign of Warm-Hearth`, `Sign of Star-Tide`) and linting all proper nouns.
 3. **Mathematical Pre-Check:** Gemini verifies numbers against `docs/04_BALANCE.md` (ensuring boss poise staggers occur every $35\text{–}45\text{ s}$ and TTK stays within target raid windows).
 4. **Deliverable:** A self-contained `docs/0X_[FEATURE]_GDD.md` artifact + a staged `ultrathink` Claude Code prompt.
 

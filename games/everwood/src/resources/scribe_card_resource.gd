@@ -55,14 +55,17 @@ const SLOT_COMMANDS: Array[int] = [
 ]
 const SLOT_NAMES: Array[String] = ["Forward", "Back", "Signature", "Ultimate"]
 const RARITY_NAMES: Array[String] = ["Basic", "Common", "Uncommon", "Rare", "Legendary"]
-## The finishes' display names (06 GDD §2).
-const VARIANT_NAMES: Array[String] = ["Plain Vellum", "Gilded Leaf", "Star-Inked Vellum"]
+## The finishes' display names (06 GDD §2), by the 70-20-10 Playground Linter (08 Gate 6) since Phase 12.
+const VARIANT_NAMES: Array[String] = ["Plain Ink", "Gilded Leaf", "Star-Ink"]
+## The names they had before Phase 12, still read back from anything that spelled a finish by name.
+const OLD_VARIANT_NAMES: Array[String] = ["Plain Vellum", "Gilded Leaf", "Star-Inked Vellum"]
 ## How variants are spelled in copy keys and save files (kept from Phase 7, so old binders load).
 const VARIANT_KEYS: Array[String] = ["standard", "shiny_foil", "astral_prism"]
 ## Grimoire Memory each rarity takes up.
 const MEMORY_COST: Array[int] = [1, 2, 3, 4, 5]
 const COPY_KEY_SEPARATOR: String = ":"
-const MODE_NAMES: Array[String] = ["Weapon-Coat", "Ward-Mantle", "Lantern-Tether"]
+## How each Action-Leaf shows itself, on screen (the enum keeps the old ids).
+const MODE_NAMES: Array[String] = ["Ink Blade", "Ink Shield", "Lantern-Tether"]
 const SOCKET_NAMES: Array[String] = ["L Guard", "R Skill", "L+R Ult"]
 ## The Grimoire slot whose lead card is each socket's Action-Leaf (L has a leaf of its own, -1).
 const SOCKET_GRIMOIRE_SLOTS: Array[int] = [-1, GrimoireSlot.SIGNATURE, GrimoireSlot.ULTIMATE]
@@ -72,7 +75,7 @@ const SOCKET_PIP_COSTS: Array[float] = [1.0, 1.0, 3.0]
 const GILDING_COSTS: Array[int] = [0, 50, 120]
 ## What each finish adds to a card's potency (damage, poise, heals, a Place-Card's bonuses): +10% and +20%.
 const FINISH_POTENCY: Array[float] = [1.0, 1.1, 1.2]
-const ROLE_DELIVERY_NAMES: Array[String] = ["Weapon-Coat", "Ward-Mantle", "Ink-Share"]
+const ROLE_DELIVERY_NAMES: Array[String] = ["Ink Blade", "Ink Shield", "Ink-Share"]
 
 @export var card_id: StringName = &""
 @export var display_name: String = ""
@@ -202,4 +205,6 @@ static func variant_for_key(key: String) -> CardVariant:
 	var index: int = VARIANT_KEYS.find(key)
 	if index < 0:
 		index = VARIANT_NAMES.find(key)
+	if index < 0:
+		index = OLD_VARIANT_NAMES.find(key)
 	return CardVariant.STANDARD if index < 0 else index as CardVariant

@@ -92,7 +92,7 @@ static func _ensure() -> void:
 		["Count the stones upon the hill,", "Nine stand up and one lies still;",
 			"If the tenth begins to crawl,", "Stack the cairn and mend the wall!"],
 		{"Count the stones": Sign.SIGN_STAR_TIDE, "Stack the cairn": Sign.SIGN_IRON_ROOT, "mend the wall": Sign.SIGN_WARM_HEARTH},
-		"Answer the 45-frame Challenge-Roar with a Bravery Counter; a broken drake curls into a mossy cairn.")
+		"Answer the 45-frame Challenge-Roar with a Parry & Strike; a broken drake curls into a mossy cairn.")
 	_add(SUNKEN_CROWN_FALLS, "Sunken-Crown-Falls", "Sign of Bronze",
 		[Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE],
 		"The First-Crevice at the Great Cataract.", "Old-Hob-of-the-Hill, the Un-Named and the Deep-Hush Hunën",
@@ -100,7 +100,7 @@ static func _ensure() -> void:
 			"Speak the name that warms the stone,", "None shall go into the dark alone."],
 		{"Six Signs joined": Sign.SIGN_IRON_ROOT, "warms the stone": Sign.SIGN_STAR_TIDE, "Un-Making back": Sign.SIGN_RIME_GALE,
 			"None shall go": Sign.SIGN_WARM_HEARTH},
-		"A full-party Four-Sign Detonation along the Soul Tether gives Old-Hob his true hearth-name back.")
+		"All Four Ink-Signs bursting together along the Soul Tether give Old-Hob his true hearth-name back.")
 
 
 static func _add(id: StringName, label: String, cooper: String, signs: Array[int], crack: String, kin: String,
