@@ -20,10 +20,13 @@ const DUNGEON_DOJO: StringName = &"dungeon_dojo"
 ## The seamless Landblock world (10_WORLD_ARCHITECTURE.md): Bramble-Bridge and the
 ## expedition in one streamed world (start it with --instance=bramblebridge).
 const EVERWOOD_WORLD: StringName = &"everwood_world"
-## Oakshire Vale (12_WORLD_OAKSHIRE_VALE_GDD.md): the 12 x 12 Landblock starting
-## zone, and the game's main scene: every launch arrives at Wayfarer-Green
-## unless --instance= names somewhere else.
+## Oakshire Vale (12_WORLD_OAKSHIRE_VALE_GDD.md): the old landlocked 12 x 12
+## Landblock starting zone, retired to deprecated/legacy_maps/ (--instance=oakshire_vale).
 const OAKSHIRE_VALE: StringName = &"oakshire_vale"
+## The Caldera Isles (20_CALDERA_ATLAS_AND_CROWN_BIBLE.md): five island grids in
+## a drowned caldera, and the game's main scene: every launch arrives on
+## Oakshire Holm (or where --boot-zone= says) unless --instance= names a legacy map.
+const CALDERA_ISLES: StringName = &"caldera_isles"
 const FADE_TIME: float = 0.35
 const FADE_LAYER: int = 100
 
@@ -31,8 +34,10 @@ const FADE_LAYER: int = 100
 static var current: InstanceManager
 
 var instance_id: StringName = &""
-## Where "home" is: the last Bramble-Bridge loaded (hub_town or everwood_world).
-var home_instance: StringName = EVERWOOD_WORLD
+## Where "home" is: the last home loaded (the Caldera Isles, or a legacy Bramble-Bridge).
+var home_instance: StringName = CALDERA_ISLES
+## The instance the party was in before this one (the Caldera Isles bring a party home from the Root-Sanctum to its door).
+var previous_instance: StringName = &""
 ## Peers known to have the current instance loaded (the host shares this list).
 var live_peers: PackedInt32Array = PackedInt32Array()
 
@@ -46,26 +51,31 @@ var _fade: ColorRect
 static func scene_path(id: StringName) -> String:
 	match id:
 		HUB_TOWN:
-			return "res://src/levels/hub_town.tscn"
+			return "res://deprecated/legacy_maps/hub_town/hub_town.tscn"
 		DUNGEON_DOJO:
 			return "res://src/levels/dungeon_dojo.tscn"
 		EVERWOOD_WORLD:
-			return "res://src/levels/everwood_world.tscn"
+			return "res://deprecated/legacy_maps/bramble_bridge_corridor/everwood_world.tscn"
 		OAKSHIRE_VALE:
-			return "res://scenes/worlds/oakshire_vale.tscn"
+			return "res://deprecated/legacy_maps/oakshire_vale/oakshire_vale.tscn"
+		CALDERA_ISLES:
+			return "res://scenes/worlds/caldera_isles.tscn"
 	return ""
 
 
 ## The instance a --instance= name means: an id, or a friendly name
-## ("bramblebridge" or "world" for the seamless world, "hub" for the classic
-## Bramble-Bridge hub, "oakshire", "expedition"); &"" when it names none.
+## ("caldera" or "isles" for the Caldera Isles; the legacy maps: "bramblebridge"
+## or "world" for the old seamless corridor, "hub" for the classic Bramble-Bridge
+## hub, "oakshire_vale"; "expedition"); &"" when it names none.
 static func instance_for_name(name: String) -> StringName:
 	match name.strip_edges().to_lower():
+		"caldera", "isles", "caldera_isles", "oakshire", "crown":
+			return CALDERA_ISLES
 		"bramblebridge", "world", "everwood_world":
 			return EVERWOOD_WORLD
 		"hub", "hub_town":
 			return HUB_TOWN
-		"oakshire", "oakshire_vale":
+		"oakshire_vale", "vale":
 			return OAKSHIRE_VALE
 		"expedition", "dojo", "dungeon_dojo":
 			return DUNGEON_DOJO
@@ -146,6 +156,8 @@ func change_instance(id: StringName) -> void:
 @rpc("authority", "call_local", "reliable")
 func _begin_change(id: StringName) -> void:
 	_changing = true
+	if instance_id != id:
+		previous_instance = instance_id
 	instance_id = id
 	_announced_live = &""
 	live_peers = PackedInt32Array()
@@ -165,7 +177,7 @@ func _begin_change(id: StringName) -> void:
 func level_ready(id: StringName) -> void:
 	instance_id = id
 	_changing = false
-	if id == HUB_TOWN or id == EVERWOOD_WORLD:
+	if id == HUB_TOWN or id == EVERWOOD_WORLD or id == CALDERA_ISLES:
 		home_instance = id
 	var fade_in: Tween = create_tween()
 	fade_in.tween_property(_fade, "color:a", 0.0, FADE_TIME)

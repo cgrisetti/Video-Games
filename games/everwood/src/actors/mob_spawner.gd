@@ -79,6 +79,17 @@ func _spawn(index: int) -> void:
 	mobs[index] = mob
 
 
+## Lets the pack go at once (its landblock streamed out of the Caldera window);
+## spawn_mobs() grows it afresh.
+func despawn_mobs() -> void:
+	for mob: WildMob in mobs:
+		if is_instance_valid(mob):
+			remove_child(mob)
+			mob.queue_free()
+	mobs.clear()
+	_respawn_left.clear()
+
+
 func standing_count() -> int:
 	var standing: int = 0
 	for mob: WildMob in mobs:

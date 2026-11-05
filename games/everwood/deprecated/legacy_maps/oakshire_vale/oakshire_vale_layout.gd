@@ -29,10 +29,10 @@ const LAYOUT_ID: StringName = &"oakshire_vale"
 const CHUNKS: int = 12
 const SIZE: float = 1536.0
 const CENTER: Vector2 = Vector2(768.0, 768.0)
-const LANDBLOCK_FOLDER: String = "res://data/landblocks/oakshire_vale/"
+const LANDBLOCK_FOLDER: String = "res://deprecated/legacy_maps/oakshire_vale/landblocks/"
 ## The baked field (OakshireValeField) and the whole-zone horizon mesh.
-const FIELD_PATH: String = "res://data/landblocks/oakshire_vale/field.res"
-const HORIZON_PATH: String = "res://data/landblocks/oakshire_vale/horizon.res"
+const FIELD_PATH: String = "res://deprecated/legacy_maps/oakshire_vale/landblocks/field.res"
+const HORIZON_PATH: String = "res://deprecated/legacy_maps/oakshire_vale/landblocks/horizon.res"
 ## Metres between the baked field's samples (769 to a side).
 const FIELD_STEP: float = 2.0
 

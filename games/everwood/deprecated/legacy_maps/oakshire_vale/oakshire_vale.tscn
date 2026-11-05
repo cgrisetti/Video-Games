@@ -1,9 +1,9 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/levels/oakshire_vale.gd" id="1_b2ddv"]
+[ext_resource type="Script" path="res://deprecated/legacy_maps/oakshire_vale/oakshire_vale.gd" id="1_b2ddv"]
 [ext_resource type="Script" path="res://src/world/world_grid_manager.gd" id="2_gm6rm"]
 [ext_resource type="Shader" path="res://src/actors/storybook_cel_vertex.gdshader" id="3_mp2yd"]
-[ext_resource type="ArrayMesh" path="res://data/landblocks/oakshire_vale/horizon.res" id="4_4cpp1"]
+[ext_resource type="ArrayMesh" path="res://deprecated/legacy_maps/oakshire_vale/landblocks/horizon.res" id="4_4cpp1"]
 [ext_resource type="Shader" path="res://src/world/shaders/storybook_world_triplanar.gdshader" id="5_qpfqk"]
 [ext_resource type="Script" path="res://src/ui/split_screen_viewport_grid.gd" id="6_7vl6m"]
 

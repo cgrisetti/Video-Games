@@ -23,7 +23,8 @@
 ##
 ## Keys: F5 host · F6 join · F7 leave · click to steer the camera with the mouse, Esc to let go.
 ## Command line (after --): --players=N --mode=master|adventurer|squire
-##   --instance=bramblebridge|hub|oakshire|expedition (or an instance id; without it the game starts in Oakshire Vale)
+##   --instance=caldera|bramblebridge|hub|oakshire_vale|expedition (or an instance id; without it the game starts in the Caldera Isles)
+##   --boot-zone=oakshire|north_quay|crown (where in the Caldera Isles: Oakshire Holm's orchards, North Quay, or The Crown's landing)
 ##   --host --join=ADDRESS --demo --screenshot=PATH --screenshot-delay=S --quit-after=S
 ##   --with-companions (AI companions fill the missing trinity roles in raids and the wilds)
 ##   --kit=saved (Player 1 boots in the Wayfarers' saved kit rather than the Wool-Mantle and Broad-Axe)
@@ -156,6 +157,32 @@ func visual_biome_at(position: Vector3) -> StringName:
 ## A spot's z on the Bramble-Bridge trail, for a profile's depth blend (the expedition shifts its own).
 func music_world_z(position: Vector3) -> float:
 	return position.z
+
+
+## Whether the HorizonVistaRing's far hills stand round this level (the Caldera Isles have the open sea and their own horizon silhouettes).
+func wants_horizon_ring() -> bool:
+	return true
+
+
+## Whether the Wayfarer's minimap shows (the Caldera Isles navigate by landmarks: the Musk Razor).
+func wants_minimap() -> bool:
+	return true
+
+
+## The sky's colour below the horizon here (alpha 0: the biome's ground). The Caldera's is the sea's,
+## so a high camera never sees a green band between the sea's far edge and the horizon.
+func sky_ground_color() -> Color:
+	return Color(0.0, 0.0, 0.0, 0.0)
+
+
+## Where the low height-fog lies here (metres; it thickens below this).
+func fog_height() -> float:
+	return WorldAtmosphereDirector.FOG_HEIGHT
+
+
+## The biomes' fog density is scaled by this here (the Caldera thins it over open water so the far isles show).
+func fog_density_scale() -> float:
+	return 1.0
 
 
 ## Whether AI companions fill missing roles here (raids yes, Hub Town no),

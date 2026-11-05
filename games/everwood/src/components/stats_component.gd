@@ -92,6 +92,16 @@ func spend_for(action: CombatActionResource) -> bool:
 	return true
 
 
+## Stamina drained by the world (the Tide Grottos' blight-mist), holding its
+## regen off for `hold` seconds so it can't simply refill while you stand in it.
+func drain_stamina(amount: float, hold: float = 0.0) -> void:
+	if amount <= 0.0 or is_downed:
+		return
+	stamina = maxf(0.0, stamina - amount)
+	_regen_delay_left = maxf(_regen_delay_left, hold)
+	stamina_changed.emit(stamina, stats.max_stamina)
+
+
 ## Stamina handed back by a card or a sanctuary (Astral Chorus, Hearth Echo).
 func restore_stamina(amount: float) -> void:
 	if amount <= 0.0 or is_downed:

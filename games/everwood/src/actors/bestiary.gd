@@ -24,11 +24,29 @@
 ## that Warm-Hearth melts, the Spriggans' shields that Iron-Root cracks), and
 ## the Crag-Back locks at every gate. Each hostile family's blow carries a Sign
 ## (its limb glows through the wind-up), which a Tank's Ward-Mantle can soak.
+##   7 The Crown's Trial-Kin (docs/20 Part II, Lv 15-18): the three open-air
+##     trials' guards and capstones. The Trial of the Anvil's Forge-Clad
+##     Sentinels and the Anvil-Warden Colossus (poise 180, shrugging off nine
+##     tenths of every blow until its poise breaks, then taking it all); the
+##     Trial of the Gale's Rime-Wing Harriers and Storm-Caller Vaelen (a
+##     Breach-wind spirit in a Wayfarer's shape whose long wind-shear charge
+##     leaves a wide window); the Trial of the Tide's Tarnished Scribe-Wights
+##     and the Siphon-Prelate. Kin of the First-Quiet like the rest: bowed into
+##     stewards, released as sea-swallows or lulled into cairns.
 class_name Bestiary
 extends RefCounted
 
 const FAMILY_NAMES: Array[String] = ["Curious Weald-Wights", "Padfoot Boggarts", "Furrow Iron-Men", "Bramble-Hobs", "Crag-Spriggans",
-	"Ambient Wildlife"]
+	"Ambient Wildlife", "The Crown's Trial-Kin"]
+## The Crown's Trial-Kin, by id (docs/20 Part II areas 3 to 5).
+const FORGE_CLAD_SENTINEL: StringName = &"forge_clad_sentinel"
+const ANVIL_WARDEN_COLOSSUS: StringName = &"anvil_warden_colossus"
+const RIME_WING_HARRIER: StringName = &"rime_wing_harrier"
+const STORM_CALLER_VAELEN: StringName = &"storm_caller_vaelen"
+const TARNISHED_SCRIBE_WIGHT: StringName = &"tarnished_scribe_wight"
+const SIPHON_PRELATE: StringName = &"siphon_prelate"
+## The starting zone's creatures (families 1 to 6); the Crown's kin come after them.
+const STARTING_ZONE_COUNT: int = 16
 ## Ambient critters (AmbientFlock), by kind.
 const CRITTER_NAMES: Array[String] = ["Golden-Fleece Sheep", "Red Fox"]
 const Family = MobVariantResource.Family
@@ -273,6 +291,89 @@ static func _ensure() -> void:
 	for kin: MobVariantResource in [cutthroat, slinger, foreman, behemoth]:
 		kin.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
 	for kin: MobVariantResource in [husk, knell]:
+		kin.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
+	_add_crown_trial_kin()
+
+
+## Family 7: the guards and capstones of The Crown's three trials (Lv 15-18).
+static func _add_crown_trial_kin() -> void:
+	var sentinel: MobVariantResource = _make(FORGE_CLAD_SENTINEL, "Forge-Clad Sentinel", Family.CROWN_TRIAL_KIN, 16, Body.HUMANOID, 900.0, 90.0, 28.0)
+	_hostile(sentinel, 12.0, 1.0, 1.2)
+	sentinel.mitigation = 0.35
+	sentinel.radius = 0.6
+	sentinel.height = 2.2
+	sentinel.reach = 2.0
+	sentinel.hit_radius = 1.5
+	sentinel.main_color = Color(0.42, 0.3, 0.24)
+	sentinel.accent_color = Color(0.95, 0.52, 0.18)
+	sentinel.eye_color = Color(1.0, 0.62, 0.2)
+	var colossus: MobVariantResource = _make(ANVIL_WARDEN_COLOSSUS, "The Anvil-Warden Colossus", Family.CROWN_TRIAL_KIN, 18, Body.HULK, 5200.0, 180.0, 42.0)
+	_hostile(colossus, 14.0, 1.4, 1.6)
+	colossus.rank = Rank.BOSS
+	# Its molten-iron carapace: nine tenths of every blow glance off until its poise breaks; then it takes it all.
+	colossus.mitigation = 0.88
+	colossus.knockdown_damage_taken = 7.5
+	colossus.radius = 1.4
+	colossus.height = 3.6
+	colossus.reach = 2.8
+	colossus.hit_radius = 2.4
+	colossus.move_speed = 2.4
+	colossus.turn_speed = 2.6
+	colossus.stomps = true
+	colossus.main_color = Color(0.3, 0.24, 0.22)
+	colossus.accent_color = Color(1.0, 0.5, 0.14)
+	colossus.eye_color = Color(1.0, 0.72, 0.3)
+	var harrier: MobVariantResource = _make(RIME_WING_HARRIER, "Rime-Wing Harrier", Family.CROWN_TRIAL_KIN, 16, Body.WOLF, 700.0, 50.0, 22.0)
+	_hostile(harrier, 16.0, 0.7, 6.0)
+	harrier.move_speed = 6.0
+	harrier.main_color = Color(0.84, 0.9, 0.96)
+	harrier.accent_color = Color(0.4, 0.62, 0.86)
+	harrier.eye_color = Color(0.5, 0.86, 1.0)
+	var vaelen: MobVariantResource = _make(STORM_CALLER_VAELEN, "Storm-Caller Vaelen", Family.CROWN_TRIAL_KIN, 18, Body.WIGHT, 4600.0, 120.0, 36.0)
+	_hostile(vaelen, 18.0, 0.9, 9.0)
+	vaelen.rank = Rank.BOSS
+	vaelen.move_speed = 6.2
+	# The wind-shear charge's long recovery is the Glacial Rupture window.
+	vaelen.recovery = 1.6
+	vaelen.radius = 0.7
+	vaelen.height = 2.6
+	vaelen.reach = 2.2
+	vaelen.hit_radius = 1.8
+	vaelen.main_color = Color(0.7, 0.8, 0.9)
+	vaelen.accent_color = Color(0.3, 0.52, 0.8)
+	vaelen.eye_color = Color(0.7, 0.95, 1.0)
+	var wight: MobVariantResource = _make(TARNISHED_SCRIBE_WIGHT, "Tarnished Scribe-Wight", Family.CROWN_TRIAL_KIN, 16, Body.WIGHT, 650.0, 45.0, 20.0)
+	_hostile(wight, 15.0, 1.0, 0.0)
+	wight.mitigation = 0.25
+	wight.ranged = true
+	wight.projectile_look = ArsenalCatalog.SCRIBE_STAFF
+	wight.projectile_range = 16.0
+	wight.main_color = Color(0.4, 0.34, 0.48)
+	wight.accent_color = Color(0.62, 0.4, 0.92)
+	wight.eye_color = Color(0.78, 0.55, 1.0)
+	var prelate: MobVariantResource = _make(SIPHON_PRELATE, "The Siphon-Prelate", Family.CROWN_TRIAL_KIN, 18, Body.HULK, 5000.0, 140.0, 38.0)
+	_hostile(prelate, 14.0, 1.2, 1.4)
+	prelate.rank = Rank.BOSS
+	prelate.mitigation = 0.3
+	prelate.radius = 1.2
+	prelate.height = 3.2
+	prelate.reach = 2.6
+	prelate.hit_radius = 2.2
+	prelate.move_speed = 2.8
+	prelate.main_color = Color(0.26, 0.2, 0.32)
+	prelate.accent_color = Color(0.6, 0.32, 0.9)
+	prelate.eye_color = Color(0.82, 0.6, 1.0)
+	_spirit(sentinel, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_STEWARD_HELPER, Form.SINK_TO_SLEEP)
+	_spirit(colossus, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_STEWARD_HELPER, Form.SINK_TO_SLEEP)
+	_spirit(harrier, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_UNBOGGART_RELEASE, Form.SEA_SWALLOW)
+	_spirit(vaelen, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_UNBOGGART_RELEASE, Form.SEA_SWALLOW)
+	_spirit(wight, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_LULLED_CAIRN, Form.HEDGE_WREN)
+	_spirit(prelate, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_LULLED_CAIRN, Form.HEDGE_WREN)
+	for kin: MobVariantResource in [sentinel, colossus]:
+		kin.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
+	for kin: MobVariantResource in [harrier, vaelen]:
+		kin.blow_sign = ScribeSignResource.Sign.SIGN_RIME_GALE
+	for kin: MobVariantResource in [wight, prelate]:
 		kin.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
 
 

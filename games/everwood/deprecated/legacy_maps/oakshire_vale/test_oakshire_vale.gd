@@ -233,7 +233,7 @@ func _check_landblocks() -> void:
 	for flock: AmbientFlock in flocks:
 		sheep = sheep or flock.kind == AmbientFlock.Kind.SHEEP
 		foxes = foxes or flock.kind == AmbientFlock.Kind.FOX
-	check.call(families.size() == 6 and leashes_ok and behemoth_patrol >= 24 and sheep and foxes and Bestiary.all().size() == 16,
+	check.call(families.size() == 6 and leashes_ok and behemoth_patrol >= 24 and sheep and foxes and Bestiary.all().size() == Bestiary.STARTING_ZONE_COUNT + 6,
 		"%d spawners for all six families (18–25 m leashes, 45–90 s respawns), sheep and foxes, and the Crag-Back Cairn-Drake walking a %d-stop round of the High Road" % [
 			spawners.size(), behemoth_patrol])
 	for landblock: Node in scenes:

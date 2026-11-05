@@ -1,10 +1,10 @@
 ## Builds Oakshire Vale from code (12_WORLD_OAKSHIRE_VALE_GDD.md,
 ## 13_STARTING_ZONE_ENCOUNTER_DESIGN.md; Code-First Scene Safety). Re-run after
 ## changing OakshireValeLayout or anything here:
-##   godot --headless --path . --script res://tools/build_oakshire_vale.gd
+##   godot --headless --path . --script res://deprecated/legacy_maps/oakshire_vale/build_oakshire_vale.gd
 ##
 ## It bakes the vale's ground (OakshireValeLayout's field and colours every
-## 2 m: data/landblocks/oakshire_vale/field.res) and its horizon (horizon.res:
+## 2 m: deprecated/legacy_maps/oakshire_vale/landblocks/field.res) and its horizon (horizon.res:
 ## the whole zone in under 4,000 triangles, sitting just under the real ground,
 ## with the hero trees standing on it), writes the level's shell
 ## (scenes/worlds/oakshire_vale.tscn: the sky and sun, the WorldGridManager on
@@ -36,8 +36,8 @@
 ## outlaws' camp and the barrow wights sit on Hush-Cracks.
 extends "res://tools/build_levels.gd"
 
-const OAKSHIRE_PATH: String = "res://scenes/worlds/oakshire_vale.tscn"
-const OAKSHIRE_SCRIPT: String = "res://src/levels/oakshire_vale.gd"
+const OAKSHIRE_PATH: String = "res://deprecated/legacy_maps/oakshire_vale/oakshire_vale.tscn"
+const OAKSHIRE_SCRIPT: String = "res://deprecated/legacy_maps/oakshire_vale/oakshire_vale.gd"
 const NPC_SCRIPT: String = "res://src/actors/townsfolk_npc.gd"
 const APRON_SCRIPT: String = "res://src/actors/portal_apron.gd"
 const SPAWNER_SCRIPT: String = "res://src/actors/mob_spawner.gd"

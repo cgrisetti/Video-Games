@@ -1,5 +1,6 @@
-## Headless smoke test for Everwood. It starts where the game starts, in Hub
-## Town, and checks every system end to end:
+## Headless smoke test for Everwood. It starts in the legacy Hub Town
+## (deprecated/legacy_maps/, where the classic combat checks live) and checks
+## every system end to end, finishing in the game's world, the Caldera Isles:
 ##   - the Arsenal (Phase 7): the catalog, armor weights, the four weapons,
 ##     under-card mutations, kit round trips and the Grimoire's rules
 ##   - the Input Map, the keyboard as Player 1 and pads hot-joining (faked
@@ -21,10 +22,10 @@
 ##   - the Armory & Scribe Desk: weapon, armor and card swaps in place, the
 ##     chest's card, under-card links and the Grimoire's memory and levels,
 ##     saved kits; card drops; no orphaned nodes after the round trip
-##   - then the seamless Landblock world (tools/test_world_grid.gd): grid
+##   - then the legacy seamless Landblock world (deprecated/legacy_maps/bramble_bridge_corridor/test_world_grid.gd): grid
 ##     maths, streaming layers and HLOD swaps up the corridor, the 2 ms queue,
 ##     WorldStateDB persistence and snapshots, navigation across a seam
-##   - then Oakshire Vale (tools/test_oakshire_vale.gd): its rings, roads,
+##   - then legacy Oakshire Vale (deprecated/legacy_maps/oakshire_vale/test_oakshire_vale.gd): its rings, roads,
 ##     trees and boulders, townsfolk, portal aprons and spawners, then walking
 ##     it from Wayfarer-Green into the village, through the ford and up to a
 ##     sealed portal
@@ -49,12 +50,16 @@
 ##     Hob-to-Boggart Spectrum (parley, turning boggart, the three
 ##     un-boggartings, the Maker-Seal, the Challenge-Roar) and the Chime-Post
 ##     ribbon and Hearth-Rite border
+##   - and last the Caldera Isles (tools/test_caldera_isles.gd): five island
+##     grids and four seams, the eight world-state booleans, the boot zones,
+##     walking the causeways and gliding the skiff lanes, the Beacons, The
+##     Crown's seven areas and three trials, and the Harmonic Bell's Ebb
 ## Run from games/everwood:
 ##   godot --headless --path . --fixed-fps 60 -s res://tools/smoke_test.gd
 ## Exits 0 when every check passes, 1 otherwise.
 extends SceneTree
 
-const HUB_SCENE: String = "res://src/levels/hub_town.tscn"
+const HUB_SCENE: String = "res://deprecated/legacy_maps/hub_town/hub_town.tscn"
 ## Hosting on a spare port, so a game left running on 7777 doesn't clash.
 const TEST_PORT: int = 7791
 ## Fake pads use high indices so a real pad plugged into this machine can't collide.
@@ -106,9 +111,9 @@ var _invocations: Array[int] = []
 var _dropped_card: StringName = &""
 var _orphans_before: int = 0
 ## The seamless world's checks (tools/test_world_grid.gd), run last.
-const WORLD_GRID_CHECKS: GDScript = preload("res://tools/test_world_grid.gd")
+const WORLD_GRID_CHECKS: GDScript = preload("res://deprecated/legacy_maps/bramble_bridge_corridor/test_world_grid.gd")
 ## Oakshire Vale's checks (tools/test_oakshire_vale.gd), after the seamless world's.
-const OAKSHIRE_VALE_CHECKS: GDScript = preload("res://tools/test_oakshire_vale.gd")
+const OAKSHIRE_VALE_CHECKS: GDScript = preload("res://deprecated/legacy_maps/oakshire_vale/test_oakshire_vale.gd")
 ## The Mythopoetic Lens's checks (tools/test_mythopoetic_lens.gd), last, in Oakshire Vale.
 const MYTHOPOETIC_LENS_CHECKS: GDScript = preload("res://tools/test_mythopoetic_lens.gd")
 ## The adaptive score's checks (tools/test_adaptive_audio.gd): the trail's in the seamless world, the rest in Oakshire Vale.
@@ -120,6 +125,8 @@ const PASTORAL_CHECKS: GDScript = preload("res://tools/test_pastoral_cartography
 var _pastoral: RefCounted = PASTORAL_CHECKS.new()
 ## Phase 19's checks (tools/test_hero_rig.gd): the solo Iron-Woodsman boot first, the hero rig in the expedition, companions in Oakshire Vale.
 const HERO_RIG_CHECKS: GDScript = preload("res://tools/test_hero_rig.gd")
+## The Caldera Isles' checks (tools/test_caldera_isles.gd), last: the game's world since docs/20.
+const CALDERA_CHECKS: GDScript = preload("res://tools/test_caldera_isles.gd")
 var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
 
@@ -210,6 +217,8 @@ func _run() -> void:
 	await MYTHOPOETIC_LENS_CHECKS.new().run(self, _check)
 	await audio.run_vale(self, _check)
 	await _hero_rig.run_vale(self, _check)
+	# The Caldera Isles last (docs/20): the boot, the seams, the Beacons, The Crown's seven areas, the trials and the Ebb.
+	await CALDERA_CHECKS.new().run(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
@@ -224,13 +233,14 @@ func _run() -> void:
 
 func _check_hub_and_input_map() -> void:
 	_check(current_scene is HubTown, "the smoke test starts in Bramble-Bridge (Hub Town)")
-	_check(ProjectSettings.get_setting("application/run/main_scene") == InstanceManager.scene_path(InstanceManager.OAKSHIRE_VALE)
-		and InstanceManager.scene_path(InstanceManager.HUB_TOWN) == HUB_SCENE,
-		"the game starts in Oakshire Vale, and Hub Town is still an instance of its own (the tests start there)")
+	_check(ProjectSettings.get_setting("application/run/main_scene") == InstanceManager.scene_path(InstanceManager.CALDERA_ISLES)
+		and InstanceManager.scene_path(InstanceManager.HUB_TOWN) == HUB_SCENE and HUB_SCENE.begins_with("res://deprecated/legacy_maps/"),
+		"the game starts in the Caldera Isles; legacy Hub Town is still an instance of its own in deprecated/legacy_maps/ (the tests start there)")
 	_check(InstanceManager.instance_for_name("bramblebridge") == InstanceManager.EVERWOOD_WORLD and InstanceManager.instance_for_name("Hub") == InstanceManager.HUB_TOWN
-		and InstanceManager.instance_for_name("hub_town") == InstanceManager.HUB_TOWN and InstanceManager.instance_for_name("oakshire") == InstanceManager.OAKSHIRE_VALE
+		and InstanceManager.instance_for_name("hub_town") == InstanceManager.HUB_TOWN and InstanceManager.instance_for_name("oakshire_vale") == InstanceManager.OAKSHIRE_VALE
+		and InstanceManager.instance_for_name("caldera") == InstanceManager.CALDERA_ISLES and InstanceManager.instance_for_name("oakshire") == InstanceManager.CALDERA_ISLES
 		and InstanceManager.instance_for_name("expedition") == InstanceManager.DUNGEON_DOJO and InstanceManager.instance_for_name("nowhere") == &"",
-		"--instance=bramblebridge starts the seamless world, --instance=hub the classic hub; a name it doesn't know leaves the start in Oakshire Vale")
+		"--instance=caldera (or oakshire) is the Caldera Isles; the legacy maps answer to bramblebridge, hub and oakshire_vale; a name it doesn't know leaves the start in the Caldera Isles")
 	_check(InstanceManager.current.instance_id == InstanceManager.HUB_TOWN and InstanceManager.current.is_live(), "Hub Town is the live instance")
 	var hub: HubTown = current_scene as HubTown
 	_check(hub.level_title() == "Bramble-Bridge" and hub.raid_portal.title.contains("Dover-Slap-Falls Expedition"),

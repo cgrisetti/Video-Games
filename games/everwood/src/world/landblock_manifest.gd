@@ -26,7 +26,7 @@ enum Zone { BORDER = -1, BRAMBLEBRIDGE, MOSS_OAKS, GORGE, RING, OAKSHIRE_COMMONS
 const ZONE_NAMES: Array[String] = ["Bramble-Bridge", "Moss-Oak-Hollow", "Dover-Slap-Bridge", "The Ring of the Cairnsman",
 	"Honey-Wick"]
 const BORDER_NAME: String = "The Tizzi-Wed-Green crags"
-const LANDBLOCK_FOLDER: String = "res://data/landblocks/"
+const LANDBLOCK_FOLDER: String = "res://deprecated/legacy_maps/bramble_bridge_corridor/landblocks/"
 ## The corridor runs north along this line, the middle of the chunk column x = 0.
 const CORRIDOR_X: float = 64.0
 

@@ -269,6 +269,14 @@ func unregister_zone(zone: SanctuaryZone) -> void:
 	_zones.erase(zone)
 
 
+## Whether a spot is inside any sanctuary that's up (a Shadow Sanctuary cone or a ground ring).
+func in_sanctuary(point: Vector3) -> bool:
+	for zone: SanctuaryZone in _zones:
+		if is_instance_valid(zone) and zone.contains(point):
+			return true
+	return false
+
+
 ## Behind a shield: inside someone's Shadow Sanctuary cone, or holding one up
 ## yourself. The Gorge Gale-Jet and the Gale-Beam can't touch you there.
 func is_sheltered(actor: ActorBase) -> bool:

@@ -7,7 +7,7 @@ extends Resource
 
 ## The six starting-zone families: five kin of the First-Quiet, and the wildlife
 ## (sheep, foxes and the roaming Crag-Back Cairn-Drake).
-enum Family { CURIOUS_WEALD_WIGHTS, PADFOOT_BOGGARTS, FURROW_IRON_MEN, BRAMBLE_HOBS, CRAG_SPRIGGANS, WILDLIFE }
+enum Family { CURIOUS_WEALD_WIGHTS, PADFOOT_BOGGARTS, FURROW_IRON_MEN, BRAMBLE_HOBS, CRAG_SPRIGGANS, WILDLIFE, CROWN_TRIAL_KIN }
 ## How it's ranked: a common mob, a rare, an elite, or the roaming mini-boss.
 enum Rank { COMMON, RARE, ELITE, BOSS }
 ## Which code-built body it wears (WildMob).

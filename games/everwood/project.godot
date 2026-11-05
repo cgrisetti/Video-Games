@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Everwood"
 config/description="A cooperative raid action-RPG for a family party: up to 4 on the couch, 5 across the network."
-run/main_scene="res://scenes/worlds/oakshire_vale.tscn"
+run/main_scene="res://scenes/worlds/caldera_isles.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
@@ -25,6 +25,7 @@ Audio="*res://src/autoloads/audio_cues.gd"
 Score="*res://src/core/audio_director.gd"
 Atmosphere="*res://src/world/world_atmosphere_director.gd"
 Progress="*res://src/autoloads/party_progress.gd"
+Caldera="*res://src/world/caldera/caldera_world_state.gd"
 
 [debug]
 

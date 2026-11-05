@@ -133,6 +133,10 @@ func _ready() -> void:
 	minimap = WayfarerMinimapWidget.new()
 	minimap.setup(actor, _level())
 	add_child(minimap)
+	if _level() != null and not _level().wants_minimap():
+		# The Caldera Isles navigate by landmarks alone (the Musk Razor): no minimap there.
+		minimap.visible = false
+		minimap.process_mode = Node.PROCESS_MODE_DISABLED
 
 	# "FLOW" pops up mid-screen when a buffered follow-up skips the recovery.
 	_flow_label = _label(30)

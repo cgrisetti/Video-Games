@@ -1,6 +1,6 @@
 [gd_scene format=4]
 
-[ext_resource type="Script" path="res://src/levels/hub_town.gd" id="1_3d4lb"]
+[ext_resource type="Script" path="res://deprecated/legacy_maps/hub_town/hub_town.gd" id="1_3d4lb"]
 [ext_resource type="Shader" path="res://src/world/shaders/storybook_world_triplanar.gdshader" id="2_wbka0"]
 [ext_resource type="Script" path="res://src/world/world_kit_instance.gd" id="3_g1d26"]
 [ext_resource type="Shader" path="res://src/world/shaders/storybook_water_stream.gdshader" id="4_1opya"]

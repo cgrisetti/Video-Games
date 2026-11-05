@@ -75,6 +75,9 @@ const FOG_HEIGHT: float = 2.5
 const FOG_HEIGHT_DENSITY: float = 0.12
 ## The clouds drift this way (m/s).
 const CLOUD_DRIFT: Vector2 = Vector2(1.4, 0.9)
+## A Caldera seam's sea-fog at its thickest (seam_mist 1): dense, pale and close.
+const SEAM_MIST_DENSITY: float = 0.045
+const SEAM_MIST_COLOR: Color = Color(0.84, 0.86, 0.85)
 const NO_HERO: Vector4 = Vector4(0.0, -1000.0, 0.0, 0.0)
 
 ## The live autoload node (see NetworkManager.current for why).
@@ -98,6 +101,8 @@ var halo_globals: Array[Vector4] = [Vector4.ZERO, Vector4.ZERO, Vector4.ZERO, Ve
 ## The ground palette, cloud shadows and blight looks handed to the shaders (what was set, since globals can't be read back).
 var look_globals: Dictionary[StringName, Vector4] = {}
 var wind: Vector4 = BASE_WIND
+## A Caldera seam's sea-fog (0 clear, 1 thick), set by its SeamTransitionController.
+var seam_mist: float = 0.0
 
 var _states: Dictionary[StringName, int] = {}
 var _cracks: Array[HushCrackLandmark] = []
@@ -232,7 +237,7 @@ func _attach(level: LevelBase) -> void:
 	_environment = null
 	_sky = null
 	_sun = null
-	horizon.visible = level != null
+	horizon.visible = level != null and level.wants_horizon_ring()
 	_motes.emitting = level != null
 	_snap_look = true
 	biome_id = &""
@@ -328,14 +333,16 @@ func _ease_look(delta: float) -> void:
 		_sun.light_color = _sun_color
 		_sun.light_energy = _sun_energy
 	if _environment != null:
-		_environment.fog_light_color = _fog_color
-		_environment.fog_density = _fog_density
+		_environment.fog_light_color = _fog_color.lerp(SEAM_MIST_COLOR, seam_mist)
+		_environment.fog_density = lerpf(_fog_density * _level.fog_density_scale(), SEAM_MIST_DENSITY, seam_mist)
+		_environment.fog_height = _level.fog_height()
 		_environment.adjustment_saturation = _saturation
 	if _sky != null:
 		_sky.sky_top_color = _sky_top
 		_sky.sky_horizon_color = _sky_horizon
-		_sky.ground_horizon_color = _sky_horizon.lerp(look.turf_albedo, 0.45)
-		_sky.ground_bottom_color = look.turf_albedo.darkened(0.35)
+		var below: Color = _level.sky_ground_color()
+		_sky.ground_horizon_color = _sky_horizon.lerp(below if below.a > 0.0 else look.turf_albedo, 0.45 if below.a <= 0.0 else 0.7)
+		_sky.ground_bottom_color = below if below.a > 0.0 else look.turf_albedo.darkened(0.35)
 	horizon.set_tint(_sky_horizon, _fog_color)
 	_mote_material.albedo_color = _mote_color
 	_mote_material.emission = Color(_mote_color.r, _mote_color.g, _mote_color.b)
@@ -350,6 +357,8 @@ func look_snapshot() -> Dictionary:
 
 ## Settles the sky, sun and fog on the current biome at once (tests, and arriving through a portal).
 func settle() -> void:
+	if _level == null:
+		return
 	_evaluate()
 	_snap_look = true
 	_ease_look(0.0)

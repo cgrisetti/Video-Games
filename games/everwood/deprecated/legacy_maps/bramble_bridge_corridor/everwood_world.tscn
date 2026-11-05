@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/levels/everwood_world.gd" id="1_8kr0l"]
+[ext_resource type="Script" path="res://deprecated/legacy_maps/bramble_bridge_corridor/everwood_world.gd" id="1_8kr0l"]
 [ext_resource type="Script" path="res://src/world/world_grid_manager.gd" id="2_mrx18"]
 [ext_resource type="Script" path="res://src/ui/split_screen_viewport_grid.gd" id="3_newwp"]
 

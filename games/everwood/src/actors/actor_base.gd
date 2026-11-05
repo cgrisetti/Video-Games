@@ -53,6 +53,10 @@ const GUARD_BREAK_STAGGER: float = 0.9
 const DOWNED_RESPAWN_TIME: float = 8.0
 const RESPAWN_HEALTH_RATIO: float = 0.5
 const FALL_RESPAWN_HEIGHT: float = -10.0
+## Below this an actor has fallen out of the world and gets back up at its spawn
+## point. A level whose ground goes deeper (the Caldera's Sap Galleries at -15 m)
+## lowers it while it's loaded.
+static var fall_respawn_height: float = FALL_RESPAWN_HEIGHT
 ## Walking over Bramble-Bridge's arch and the expedition's ramps (07 GDD §1.1).
 const FLOOR_SNAP_LENGTH: float = 0.35
 const FLOOR_MAX_ANGLE_DEGREES: float = 50.0
@@ -605,7 +609,7 @@ func _physics_process(delta: float) -> void:
 		tether.update_beam()
 	net_sync.tick_owner(delta)
 	_update_pose(delta)
-	if global_position.y < FALL_RESPAWN_HEIGHT:
+	if global_position.y < fall_respawn_height:
 		respawn()
 
 

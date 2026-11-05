@@ -71,6 +71,8 @@ var kits: Dictionary[StringName, Dictionary] = {}
 var callings: Dictionary[StringName, StringName] = {}
 ## Encounter id -> Glimmer-Spot openings the party has seen (14 GDD §3, N_seen).
 var pattern_seen: Dictionary[StringName, int] = {}
+## The Caldera Isles' eight world-state booleans as bits (CalderaWorldState.FLAGS order).
+var caldera_flags: int = 0
 ## The host rolls chest cards with this (the smoke test seeds it).
 var drop_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## The host rolls the expedition's finds (the Wayfarer's Chest) with this, so they never shift the boss's drops.
@@ -445,6 +447,7 @@ func load_save() -> void:
 	kits.clear()
 	callings.clear()
 	pattern_seen.clear()
+	caldera_flags = 0
 	var file: ConfigFile = ConfigFile.new()
 	if file.load(save_path) == OK:
 		# Saves from before the Chimes were called Dojo Shards keep their pouch.
@@ -466,6 +469,7 @@ func load_save() -> void:
 			# A column number from the first Callings build reads back as its id.
 			callings[StringName(str(class_id))] = Callings.id_of(int(saved)) if saved is int else StringName(str(saved))
 		_read_pattern_seen(file.get_value("glimmer", "seen", {}) as Dictionary)
+		caldera_flags = maxi(0, int(file.get_value("caldera", "flags", 0)))
 	progress_changed.emit()
 
 
@@ -486,6 +490,7 @@ func save() -> Error:
 		plain_callings[String(class_id)] = String(callings[class_id])
 	file.set_value("callings", "by_class", plain_callings)
 	file.set_value("glimmer", "seen", _plain_pattern_seen())
+	file.set_value("caldera", "flags", caldera_flags)
 	return file.save(save_path)
 
 

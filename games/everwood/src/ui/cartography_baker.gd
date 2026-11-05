@@ -212,7 +212,7 @@ static func _key(level: LevelBase) -> StringName:
 
 
 static func _is_streamed(level: LevelBase) -> bool:
-	return level is EverwoodWorld or level is OakshireVale
+	return level is EverwoodWorld or level is OakshireVale or level is CalderaArchipelagoWorld
 
 
 static func _cartography_path(level: LevelBase) -> String:

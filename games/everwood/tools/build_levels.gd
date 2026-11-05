@@ -17,7 +17,7 @@
 ##   the Ring of the Cairnsman, six pillars round the boss.
 ## - The seamless world (everwood_world.tscn, 10_WORLD_ARCHITECTURE.md): the
 ##   same village and zones as Landblocks, one scene per chunk in
-##   data/landblocks/ (landblock_0_1 the Kindle-Fire, where the party
+##   deprecated/legacy_maps/bramble_bridge_corridor/landblocks/ (landblock_0_1 the Kindle-Fire, where the party
 ##   wakes by a campfire, and Honey-Wick along the walled lane north,
 ##   landblock_0_0 Bramble-Bridge with its Forest Gate open and a south gate,
 ##   landblock_0_-1 the Moss-Oaks and holloway with a gap in the clearing's
@@ -37,12 +37,12 @@
 ## carry their Hush-Cracks. Colliders and positions are unchanged.
 extends SceneTree
 
-const HUB_PATH: String = "res://src/levels/hub_town.tscn"
+const HUB_PATH: String = "res://deprecated/legacy_maps/hub_town/hub_town.tscn"
 const DOJO_PATH: String = "res://src/levels/dungeon_dojo.tscn"
-const HUB_SCRIPT: String = "res://src/levels/hub_town.gd"
+const HUB_SCRIPT: String = "res://deprecated/legacy_maps/hub_town/hub_town.gd"
 const DOJO_SCRIPT: String = "res://src/levels/dungeon_dojo.gd"
-const WORLD_PATH: String = "res://src/levels/everwood_world.tscn"
-const WORLD_SCRIPT: String = "res://src/levels/everwood_world.gd"
+const WORLD_PATH: String = "res://deprecated/legacy_maps/bramble_bridge_corridor/everwood_world.tscn"
+const WORLD_SCRIPT: String = "res://deprecated/legacy_maps/bramble_bridge_corridor/everwood_world.gd"
 const GRID_MANAGER_SCRIPT: String = "res://src/world/world_grid_manager.gd"
 ## The corridor's Landblocks, south to north.
 const CORRIDOR_CHUNKS: Array[Vector2i] = [Vector2i(0, 1), Vector2i(0, 0), Vector2i(0, -1), Vector2i(0, -2), Vector2i(0, -3)]
