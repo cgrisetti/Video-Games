@@ -1,12 +1,15 @@
 ## The adaptive score and mix (autoload "Score"; 16_ADAPTIVE_AUDIO_ARCHITECTURE.md).
 ##
-## - The bus layout is built here in code (§7.3): Master (hard limiter), Music
-##   (low-pass, a 3.2 kHz carve, a compressor keyed by SignTelegraphs),
-##   Ambience3D, SignTelegraphs and CombatSFX (hard limiter).
+## - The bus layout is built here in code (§5.1): Master (hard limiter), Music
+##   (low-pass, a warm EQ: +1.5 dB round 250 Hz and -2 dB at 3.2 kHz, the warm
+##   wooden chamber hall's reverb, a compressor keyed by SignTelegraphs),
+##   Ambience3D, SignTelegraphs (the same hall, a touch wetter) and CombatSFX
+##   (hard limiter).
 ## - Two decks (Deck A and Deck B) each play one zone's four phase-locked stems
-##   as an AudioStreamSynchronized (§5.1): a curated .tres when one is dropped
-##   in (res://assets/audio/music/<profile_id>.tres), else ProceduralChamberSynth's
-##   code-built stems, rendered on a worker thread. A new zone or a boss suite
+##   as an AudioStreamSynchronized: the acoustic stems tools/build_audio_stems.py
+##   bakes (res://assets/audio/music/<profile_id>_sync.tres, or the four .ogg
+##   stems beside it), else ProceduralChamberSynth's physical-model rendition of
+##   the same score, rendered on a worker thread. A new zone or a boss suite
 ##   loads into the back deck and crossfades; the stems never restart in a fight.
 ## - Every 0.4 s (2.5 Hz, two beats of the world grid's 0.2 s streaming
 ##   heartbeat) it resolves one party state from the local players (§5.2): the
@@ -18,8 +21,14 @@
 ##   Restoration Exhale (1.5 s hold, a cadence on the next bar, a 3.6 s fade,
 ##   then 10 s of breath). Out of a fight, each music cycle is followed by a
 ##   Brower silence breath.
-## - Four-Sign detonations play a chord over the zone's tonic on SignTelegraphs
-##   and duck the Music bus (§3.2); bosses' stagger flourishes go there too.
+## - Four-Sign detonations play their acoustic chord (baked in G) re-pitched to
+##   the zone's tonic on SignTelegraphs and duck the Music bus 4.5 dB for 300 ms;
+##   bosses' stagger flourishes go there too. The cadences, the skirmish accent,
+##   the gate's fanfare and the portal's chord are baked acoustic stingers as
+##   well; ProceduralChamberSynth plays any that are missing.
+## - By a water-shrine or wind-lantern (an oasis) the Holloway discord drops
+##   12 dB under a Lydian harp glissando in the zone's key; coming home through
+##   a portal plays the Sanctuary Cadence.
 ## - A pool of 32 AudioStreamPlayer3D voices made once at start (§1.2): combat
 ##   sounds beyond 45 m of every local player are culled, each kind of sound
 ##   waits 50 ms between plays, and every 3D player gets area_mask = 1.
@@ -81,10 +90,32 @@ const MAX_DISTANCE: float = 60.0
 const FAR_FILTER_HZ: float = 5000.0
 const FAR_FILTER_DB: float = -9.5
 const STINGER_VOICES: int = 6
+const MUSIC_FOLDER: String = "res://assets/audio/music/"
+## A zone's four baked stems, in its folder under MUSIC_FOLDER.
+const STEM_FILES: Array[String] = ["stem_0_folk_base.ogg", "stem_1_pastoral_lead.ogg", "stem_2_holloway_discord.ogg",
+	"stem_3_skirmish_drive.ogg"]
+## The key the Sign chords and most stingers are baked in (G4): they're re-pitched to the zone's tonic.
+const BAKED_TONIC: int = 67
+## The warm wooden chamber hall (16 §5.1, §4.2): room size, damping, spread, wet.
+const MUSIC_HALL: Array[float] = [0.38, 0.68, 0.85, 0.18]
+const SIGN_HALL: Array[float] = [0.42, 0.65, 0.85, 0.22]
+## The Music bus's warm EQ: +1.5 dB in the 320 Hz band (the bassoon and cello's warmth round
+## 250 Hz; EQ6's nearest band) and -2 dB at 3.2 kHz, carving room for combat sounds.
+const WARMTH_DB: float = 1.5
+const CARVE_DB: float = -2.0
+## By an oasis the Holloway discord drops this far.
+const OASIS_DISCORD_DB: float = -12.0
+## The baked acoustic stingers by id: [file in ProceduralChamberSynth.SAMPLES_FOLDER, the tonic
+## it was baked over (re-pitched to the zone's), or 0 to play it as baked].
+const STINGER_FILES: Dictionary[StringName, Array] = {&"sanctuary_cadence": ["stinger_sanctuary_cadence.wav", 67],
+	&"restoration_exhale": ["stinger_restoration_exhale.wav", 67], &"skirmish_accent": ["stinger_skirmish_accent.wav", 67],
+	&"gate_fanfare": ["stinger_gate_fanfare.wav", 0], &"wayfarers_threshold": ["stinger_wayfarers_threshold.wav", 0],
+	&"oasis_glissando": ["sample_harp_lydian_gliss.wav", 67]}
 ## Instrument words in a profile's timbre name, and the code-built voice for each.
 const TIMBRE_WORDS: Dictionary[String, ProceduralChamberSynth.Timbre] = {"BASSOON": ProceduralChamberSynth.Timbre.REED,
-	"OBOE": ProceduralChamberSynth.Timbre.REED, "DULCIMER": ProceduralChamberSynth.Timbre.DULCIMER,
-	"ACCORDION": ProceduralChamberSynth.Timbre.ACCORDION, "MANDOLIN": ProceduralChamberSynth.Timbre.PLUCK,
+	"OBOE": ProceduralChamberSynth.Timbre.OBOE, "DULCIMER": ProceduralChamberSynth.Timbre.DULCIMER,
+	"CELLO": ProceduralChamberSynth.Timbre.PIZZ, "PIZZ": ProceduralChamberSynth.Timbre.PIZZ,
+	"ACCORDION": ProceduralChamberSynth.Timbre.ACCORDION, "MANDOLIN": ProceduralChamberSynth.Timbre.MANDOLIN,
 	"GUITAR": ProceduralChamberSynth.Timbre.PLUCK, "HARP": ProceduralChamberSynth.Timbre.HARP, "BRONZE": ProceduralChamberSynth.Timbre.BELL,
 	"CARILLON": ProceduralChamberSynth.Timbre.BELL, "WHISTLE": ProceduralChamberSynth.Timbre.WHISTLE, "VIOLIN": ProceduralChamberSynth.Timbre.VIOLIN}
 ## The Bramble-Bridge Sanctuary Cadence (16 §4.2): e minor, Cmaj7, D6, Gmaj9(#11).
@@ -111,6 +142,11 @@ var boss_phase_two: bool = false
 var zone_profile_id: StringName = &""
 var last_stinger_id: StringName = &""
 var last_stinger_notes: PackedInt32Array = PackedInt32Array()
+## The last stinger's stream and the pitch it played at (a baked one is re-pitched to the zone's tonic).
+var last_stinger_stream: AudioStream
+var last_stinger_pitch: float = 1.0
+## True while a local player stands by an oasis (a water-shrine or wind-lantern) in a depth-blend zone.
+var oasis: bool = false
 ## Combat sounds turned away for being too far from everyone.
 var culled_count: int = 0
 
@@ -148,7 +184,7 @@ var _next_stinger: int = 0
 ## Stingers waiting for their beat: {"at": clock, "id", "stream", "bus", "notes"}.
 var _pending: Array[Dictionary] = []
 var _stinger_cache: Dictionary[String, AudioStreamWAV] = {}
-var _ambience_cache: Dictionary[StringName, AudioStreamWAV] = {}
+var _ambience_cache: Dictionary[StringName, AudioStream] = {}
 var _emitters: Array[AudioStreamPlayer3D] = []
 var _renders: Dictionary[StringName, RenderJob] = {}
 var _rendered: Dictionary[StringName, Array] = {}
@@ -261,12 +297,13 @@ func _ready() -> void:
 	CombatDirector.current.synergy_detonated.connect(_on_synergy_detonated)
 	InstanceManager.current.instance_changing.connect(_on_instance_changing)
 	InstanceManager.current.instance_live.connect(_on_instance_live)
-	# Every zone renders in the background from the start, so a new zone never waits.
+	# Any zone without baked stems renders in the background from the start, so a new zone never waits.
 	for profile: ZoneMusicProfileResource in AudioCatalog.zones():
-		_request_render(profile)
+		if not has_baked_stems(profile.profile_id):
+			_request_render(profile)
 
 
-# --- Buses (16 §7.3) ---------------------------------------------------------------
+# --- Buses (16 §5.1) ---------------------------------------------------------------
 
 func _build_buses() -> void:
 	for index: int in BUS_NAMES.size():
@@ -287,10 +324,12 @@ func _build_buses() -> void:
 	low_pass.cutoff_hz = LPF_OPEN_HZ
 	low_pass.resonance = 0.5
 	AudioServer.add_bus_effect(_bus(MUSIC_BUS), low_pass)
-	var carve: AudioEffectEQ6 = AudioEffectEQ6.new()
-	# Bands: 32, 100, 320, 1000, 3200 and 10000 Hz. The 3.2 kHz band carves room for telegraphs.
-	carve.set_band_gain_db(4, -2.5)
-	AudioServer.add_bus_effect(_bus(MUSIC_BUS), carve)
+	var warmth: AudioEffectEQ6 = AudioEffectEQ6.new()
+	# Bands: 32, 100, 320, 1000, 3200 and 10000 Hz: warmth for the bassoon and cello, room at 3.2 kHz for combat.
+	warmth.set_band_gain_db(2, WARMTH_DB)
+	warmth.set_band_gain_db(4, CARVE_DB)
+	AudioServer.add_bus_effect(_bus(MUSIC_BUS), warmth)
+	AudioServer.add_bus_effect(_bus(MUSIC_BUS), _hall(MUSIC_HALL))
 	var squeeze: AudioEffectCompressor = AudioEffectCompressor.new()
 	squeeze.ratio = 4.0
 	squeeze.threshold = -18.0
@@ -301,6 +340,7 @@ func _build_buses() -> void:
 	var ambience_pass: AudioEffectLowPassFilter = AudioEffectLowPassFilter.new()
 	ambience_pass.cutoff_hz = LPF_OPEN_HZ
 	AudioServer.add_bus_effect(_bus(AMBIENCE_BUS), ambience_pass)
+	AudioServer.add_bus_effect(_bus(SIGN_BUS), _hall(SIGN_HALL))
 	var sfx_limit: AudioEffectHardLimiter = AudioEffectHardLimiter.new()
 	sfx_limit.ceiling_db = -1.5
 	AudioServer.add_bus_effect(_bus(SFX_BUS), sfx_limit)
@@ -308,6 +348,17 @@ func _build_buses() -> void:
 
 func _bus(index: int) -> int:
 	return AudioServer.get_bus_index(BUS_NAMES[index])
+
+
+## The warm wooden chamber hall: [room size, damping, spread, wet].
+static func _hall(settings: Array[float]) -> AudioEffectReverb:
+	var hall: AudioEffectReverb = AudioEffectReverb.new()
+	hall.room_size = settings[0]
+	hall.damping = settings[1]
+	hall.spread = settings[2]
+	hall.wet = settings[3]
+	hall.dry = 1.0
+	return hall
 
 
 # --- Each frame -----------------------------------------------------------------
@@ -428,6 +479,8 @@ func _resolve_zone(level: LevelBase, locals: Array[ActorBase]) -> void:
 			_queue_cadence(&"sanctuary_cadence", SANCTUARY_CADENCE)
 	var profile: ZoneMusicProfileResource = AudioCatalog.zone(chosen)
 	discord_depth = 0.0
+	var was_oasis: bool = oasis
+	oasis = false
 	if profile.enable_z_depth_discord_blend:
 		var total: float = 0.0
 		var inside: int = 0
@@ -437,12 +490,22 @@ func _resolve_zone(level: LevelBase, locals: Array[ActorBase]) -> void:
 				inside += 1
 		var mean: float = total / maxi(1, inside)
 		discord_depth = clampf((mean - profile.discord_blend_z_start) / (profile.discord_blend_z_full - profile.discord_blend_z_start), 0.0, 1.0)
-		# A Miyazaki oasis: by a water-shrine or a wind-lantern the hush lifts.
-		for oasis: Node in get_tree().get_nodes_in_group(OASIS_GROUP):
-			var spot: Node3D = oasis as Node3D
+		# A Miyazaki oasis: by a water-shrine or a wind-lantern the hush drops 12 dB under a harp glissando.
+		for node: Node in get_tree().get_nodes_in_group(OASIS_GROUP):
+			var spot: Node3D = node as Node3D
 			if spot != null and spot.is_inside_tree() and _nearest(spot.global_position, locals) <= OASIS_RADIUS:
-				discord_depth = 0.0
+				oasis = true
 				break
+	if oasis and not was_oasis:
+		# A two-octave Lydian glissando in the zone's key (E Lydian in Moss-Oak-Hollow).
+		var shift: int = key_semitones(profile.root_pitch_midi, BAKED_TONIC)
+		var notes: PackedInt32Array = PackedInt32Array()
+		for step: int in [0, 2, 4, 6, 7, 9, 11]:
+			notes.append(BAKED_TONIC + shift + step)
+		var glissando: Array = _acoustic_stinger(&"oasis_glissando", profile.root_pitch_midi)
+		var stream: AudioStream = glissando[0] if glissando[0] != null else _cached_chord("oasis:%d" % notes[0], notes, 0.06, 1.6,
+			ProceduralChamberSynth.Timbre.HARP)
+		_play_now(&"oasis_glissando", stream, SIGN_BUS, notes, float(glissando[1]))
 
 
 func _local_players() -> Array[ActorBase]:
@@ -477,7 +540,9 @@ func _enter_skirmish() -> void:
 			var note: int = profile.root_pitch_midi - 12 + SKIRMISH_ACCENT_SEMITONES[index]
 			notes.append(note)
 			events.append([0.02 + index * 0.03, note, 0.3, ProceduralChamberSynth.Timbre.DULCIMER, 0.6])
-		_queue(&"skirmish_accent", _cached_phrase("skirmish:%d" % profile.root_pitch_midi, events), MUSIC_BUS, notes, _next_subdivision(0.5))
+		var accent: Array = _acoustic_stinger(&"skirmish_accent", profile.root_pitch_midi)
+		var stream: AudioStream = accent[0] if accent[0] != null else _cached_phrase("skirmish:%d" % profile.root_pitch_midi, events)
+		_queue(&"skirmish_accent", stream, MUSIC_BUS, notes, _next_subdivision(0.5), float(accent[1]))
 
 
 func _enter_boss(boss: ActorBase) -> void:
@@ -497,8 +562,12 @@ func _enter_boss(boss: ActorBase) -> void:
 		var notes: PackedInt32Array = PackedInt32Array()
 		for interval: int in _boss_profile.stagger_flourish_intervals:
 			notes.append(root + interval)
-		_play_now(&"poise_stagger_flourish", _cached_chord("stagger:%d" % root, notes, 0.045, 1.6, ProceduralChamberSynth.Timbre.HARP),
-			SIGN_BUS, notes)
+		# The acoustic flourish (harp, musette accordion and carillon, baked in the suite's key), else a modelled harp.
+		var path: String = _boss_profile.stagger_stinger_path
+		var stream: AudioStream = load(path) as AudioStream if path != "" and ResourceLoader.exists(path) else null
+		if stream == null:
+			stream = _cached_chord("stagger:%d" % root, notes, 0.045, 1.6, ProceduralChamberSynth.Timbre.HARP)
+		_play_now(&"poise_stagger_flourish", stream, SIGN_BUS, notes)
 	stagger_window = staggered
 
 
@@ -589,6 +658,8 @@ func _retarget_stems() -> void:
 				targets[1] += PREWARM_LEAD_DIP_DB * proximity
 				targets[2] = maxf(targets[2], maxf(MUTED_DB, PREWARM_DISCORD_DB + linear_to_db(sin(proximity * PI * 0.5))))
 				seconds = HEARTBEAT
+			if oasis:
+				targets[2] = maxf(MUTED_DB, targets[2] + OASIS_DISCORD_DB)
 		AcousticState.SKIRMISH:
 			for layer: int in ZoneMusicProfileResource.STEM_COUNT:
 				targets[layer] = SKIRMISH_DB[layer] if layer > 0 else profile.explore_db(0)
@@ -598,6 +669,7 @@ func _retarget_stems() -> void:
 				targets[2] = 0.0
 			if stagger_window:
 				targets[1] = 0.0
+				targets[2] = maxf(MUTED_DB, targets[2] + (_boss_profile.stagger_discord_duck_db if _boss_profile != null else -18.0))
 				targets[3] = profile.explore_db(3) + (_boss_profile.stagger_percussion_duck_db if _boss_profile != null else -14.0)
 			seconds = STAGGER_RAMP_SEC if stagger_window else STATE_RAMP_SEC
 		AcousticState.EXHALE:
@@ -649,7 +721,8 @@ func _play_wanted_deck() -> void:
 	# Same tempo: start in step with the deck already playing (phase-locked across zones).
 	var offset: float = 0.0
 	if old_profile != null and is_equal_approx(old_profile.bpm, profile.bpm) and _deck_profiles[_front] != &"":
-		offset = fposmod(_clock - _deck_started_at[_front], profile.loop_sec())
+		var loop: float = sync.get_length() if sync.get_length() > 0.0 else profile.loop_sec()
+		offset = fposmod(_clock - _deck_started_at[_front], loop)
 	_deck_started_at[back] = _clock - offset
 	for layer: int in ZoneMusicProfileResource.STEM_COUNT:
 		(_stems[back][layer] as Ramp).snap(profile.explore_db(layer))
@@ -664,26 +737,77 @@ func _play_wanted_deck() -> void:
 	profile_changed.emit(wanted)
 
 
-## A four-stem AudioStreamSynchronized for a profile: a curated one if it's there,
-## else its code-built stems (null while they're still rendering).
+## A four-stem AudioStreamSynchronized for a profile: its curated or baked .tres, else one built
+## from its four baked .ogg stems, else its code-built stems (null while they're still rendering).
 func _stream_for(profile: ZoneMusicProfileResource) -> AudioStreamSynchronized:
 	if profile == null:
 		return null
-	for path: String in [profile.synchronized_stream_path, "res://assets/audio/music/%s.tres" % profile.profile_id]:
+	for path: String in [profile.synchronized_stream_path, sync_path(profile.profile_id)]:
 		if path != "" and ResourceLoader.exists(path):
 			var curated: AudioStreamSynchronized = load(path) as AudioStreamSynchronized
 			if curated != null:
 				return curated.duplicate() as AudioStreamSynchronized
-	if not _rendered.has(profile.profile_id):
-		_request_render(profile)
-		return null
+	var stems: Array[AudioStream] = baked_stems(profile.profile_id)
+	if stems.is_empty():
+		if not _rendered.has(profile.profile_id):
+			_request_render(profile)
+			return null
+		stems.assign(_rendered[profile.profile_id])
 	var sync: AudioStreamSynchronized = AudioStreamSynchronized.new()
 	sync.stream_count = ZoneMusicProfileResource.STEM_COUNT
-	var stems: Array = _rendered[profile.profile_id]
 	for layer: int in ZoneMusicProfileResource.STEM_COUNT:
-		sync.set_sync_stream(layer, stems[layer] as AudioStream)
+		sync.set_sync_stream(layer, stems[layer])
 		sync.set_sync_stream_volume(layer, MUTED_DB)
 	return sync
+
+
+## Where a zone's baked AudioStreamSynchronized lives (tools/build_audio_resources.gd writes it).
+static func sync_path(profile_id: StringName) -> String:
+	return MUSIC_FOLDER + "%s_sync.tres" % profile_id
+
+
+## A zone's four baked acoustic stems, in layer order (empty unless all four are there).
+static func baked_stems(profile_id: StringName) -> Array[AudioStream]:
+	var stems: Array[AudioStream] = []
+	for file: String in STEM_FILES:
+		var path: String = MUSIC_FOLDER + "%s/%s" % [profile_id, file]
+		var stream: AudioStream = load(path) as AudioStream if ResourceLoader.exists(path) else null
+		if stream == null:
+			return []
+		stems.append(stream)
+	return stems
+
+
+static func has_baked_stems(profile_id: StringName) -> bool:
+	for file: String in STEM_FILES:
+		if not ResourceLoader.exists(MUSIC_FOLDER + "%s/%s" % [profile_id, file]):
+			return false
+	return true
+
+
+## A baked acoustic one-shot or loop in ProceduralChamberSynth.SAMPLES_FOLDER (null when it isn't there).
+static func acoustic(file: String) -> AudioStream:
+	var path: String = ProceduralChamberSynth.SAMPLES_FOLDER + file
+	return load(path) as AudioStream if ResourceLoader.exists(path) else null
+
+
+## Semitones from `baked` to `root` the nearer way (-6 to +5): how far a baked stinger moves.
+static func key_semitones(root: int, baked: int) -> int:
+	return posmod(root - baked + 6, 12) - 6
+
+
+## The playback rate that puts a stinger baked over `baked` into the key of `root`.
+static func key_shift(root: int, baked: int) -> float:
+	return pow(2.0, key_semitones(root, baked) / 12.0)
+
+
+## A baked stinger by id (STINGER_FILES) and the rate that puts it in the key of `root`: [stream or null, pitch].
+func _acoustic_stinger(id: StringName, root: int) -> Array:
+	if not STINGER_FILES.has(id):
+		return [null, 1.0]
+	var entry: Array = STINGER_FILES[id]
+	var baked: int = int(entry[1])
+	return [acoustic(String(entry[0])), key_shift(root, baked) if baked > 0 else 1.0]
 
 
 func _request_render(profile: ZoneMusicProfileResource) -> void:
@@ -729,23 +853,29 @@ func _next_subdivision(fraction: float) -> float:
 	return ceilf(played / step - 0.0001) * step - played
 
 
-# --- Stingers (16 §3.2, §5.3, §6.3) ------------------------------------------------
+# --- Stingers (16 §3, §4.1, §5.3) -------------------------------------------------
 
 func _on_synergy_detonated(_target: ActorBase, primer: int, _cross_class: bool, _label: String) -> void:
 	play_sign_stinger(primer)
 
 
-## A Four-Sign detonation: its chord over the zone's tonic on SignTelegraphs, and the Music bus ducks.
+## A Four-Sign detonation: its acoustic chord (baked in G, re-pitched to the zone's tonic) on
+## SignTelegraphs, and the Music bus ducks under it.
 func play_sign_stinger(scribe_sign: int) -> void:
 	var profile: SignHarmonicProfileResource = AudioCatalog.sign_profile(scribe_sign)
 	if profile == null:
 		return
 	var zone: ZoneMusicProfileResource = _front_profile()
-	var root: int = zone.root_pitch_midi if zone != null else 67
+	var root: int = zone.root_pitch_midi if zone != null else BAKED_TONIC
 	var notes: PackedInt32Array = profile.notes_over(root)
 	var stream: AudioStream = null
-	if profile.custom_stinger_path != "" and ResourceLoader.exists(profile.custom_stinger_path):
-		stream = load(profile.custom_stinger_path) as AudioStream
+	var pitch: float = 1.0
+	for path: String in [profile.custom_stinger_path, ProceduralChamberSynth.SAMPLES_FOLDER + String(profile.sign_id).to_lower() + ".wav"]:
+		if path != "" and ResourceLoader.exists(path):
+			stream = load(path) as AudioStream
+			if stream != null:
+				pitch = key_shift(root, BAKED_TONIC)
+				break
 	if stream == null:
 		var events: Array[Array] = []
 		var timbre: ProceduralChamberSynth.Timbre = timbre_for(profile.instrument_timbre)
@@ -754,18 +884,19 @@ func play_sign_stinger(scribe_sign: int) -> void:
 		# Every Sign rings out on a chime an octave over its top note.
 		events.append([profile.arpeggio_step_sec * notes.size(), notes[notes.size() - 1] + 12, 1.1, ProceduralChamberSynth.Timbre.BELL, 0.45])
 		stream = _cached_phrase("%s:%d" % [profile.sign_id, root], events)
-	_play_now(StringName(profile.sign_id), stream, SIGN_BUS, notes)
+	_play_now(StringName(profile.sign_id), stream, SIGN_BUS, notes, pitch)
 	_duck.retarget(profile.sidechain_duck_db, DUCK_ATTACK_SEC)
 	_duck_left = profile.sidechain_duration_sec
 
 
-## A Calling's posture motif over the zone's tonic (a hero taking up a Calling).
+## A Calling's posture motif over the zone's tonic (a hero taking up a Calling), played on the
+## baked acoustic samples by ProceduralChamberSynth.
 func play_calling_motif(calling_id: StringName) -> void:
 	var profile: CallingAudioProfileResource = AudioCatalog.calling(calling_id)
 	if profile == null:
 		return
 	var zone: ZoneMusicProfileResource = _front_profile()
-	var root: int = (zone.root_pitch_midi if zone != null else 67) + profile.octave_shift * 12
+	var root: int = (zone.root_pitch_midi if zone != null else BAKED_TONIC) + profile.octave_shift * 12
 	var notes: PackedInt32Array = PackedInt32Array()
 	for interval: int in profile.posture_motif_intervals:
 		notes.append(root + interval)
@@ -773,10 +904,12 @@ func play_calling_motif(calling_id: StringName) -> void:
 		_cached_chord("calling:%s:%d" % [profile.calling_id, root], notes, 0.09, 0.8, timbre_for(profile.lead_instrument)), MUSIC_BUS, notes)
 
 
-## A named chord stinger on the Music or SignTelegraphs bus (the Co-Op Gate's fanfare).
+## A named chord stinger on the Music or SignTelegraphs bus (the Co-Op Gate's fanfare): its baked
+## recording if there is one, else the chord on a modelled voice.
 func play_chord_stinger(id: StringName, notes: PackedInt32Array, step: float, timbre_name: StringName, on_sign_bus: bool = false) -> void:
-	_play_now(id, _cached_chord("%s:%s" % [id, str(notes)], notes, step, 1.4, timbre_for(timbre_name)),
-		SIGN_BUS if on_sign_bus else MUSIC_BUS, notes)
+	var baked: Array = _acoustic_stinger(id, BAKED_TONIC)
+	var stream: AudioStream = baked[0] if baked[0] != null else _cached_chord("%s:%s" % [id, str(notes)], notes, step, 1.4, timbre_for(timbre_name))
+	_play_now(id, stream, SIGN_BUS if on_sign_bus else MUSIC_BUS, notes, float(baked[1]))
 
 
 ## The code-built voice for a profile's instrument name (its first word that names one).
@@ -787,25 +920,37 @@ static func timbre_for(instrument: StringName) -> ProceduralChamberSynth.Timbre:
 	return ProceduralChamberSynth.Timbre.HARP
 
 
+## A cadence on the next bar line of the playing deck: its baked recording re-pitched to the
+## zone's tonic, else `chords` on a modelled harp and accordion.
 func _queue_cadence(id: StringName, chords: Array[Array]) -> void:
 	var profile: ZoneMusicProfileResource = _front_profile()
 	var beat: float = profile.beat_sec() if profile != null else 0.55
+	var root: int = profile.root_pitch_midi if profile != null else BAKED_TONIC
+	var baked: Array = _acoustic_stinger(id, root)
+	var shift: int = key_semitones(root, BAKED_TONIC) if baked[0] != null and int(STINGER_FILES[id][1]) > 0 else 0
 	var events: Array[Array] = []
 	var notes: PackedInt32Array = PackedInt32Array()
 	for chord: int in chords.size():
 		var tones: Array = chords[chord]
 		for tone: int in tones.size():
 			var note: int = int(tones[tone])
-			notes.append(note)
+			notes.append(note + shift)
 			var timbre: ProceduralChamberSynth.Timbre = ProceduralChamberSynth.Timbre.HARP if tone > 0 else ProceduralChamberSynth.Timbre.ACCORDION
 			events.append([chord * beat + tone * 0.03, note, beat * (2.0 if chord == chords.size() - 1 else 1.1), timbre, 0.5])
-	# On the next bar line of the playing deck.
+	var stream: AudioStream = baked[0] if baked[0] != null else _cached_phrase("%s:%d" % [id, int(beat * 1000.0)], events)
 	var bar_wait: float = _next_subdivision(float(profile.beats_per_bar)) if profile != null else 0.0
-	_queue(id, _cached_phrase("%s:%d" % [id, int(beat * 1000.0)], events), MUSIC_BUS, notes, bar_wait)
+	_queue(id, stream, MUSIC_BUS, notes, bar_wait, float(baked[1]))
 
 
-func _queue(id: StringName, stream: AudioStream, bus: int, notes: PackedInt32Array, wait: float) -> void:
-	_pending.append({"at": _clock + wait, "id": id, "stream": stream, "bus": bus, "notes": notes})
+func _queue(id: StringName, stream: AudioStream, bus: int, notes: PackedInt32Array, wait: float, pitch: float = 1.0) -> void:
+	_pending.append({"at": _clock + wait, "id": id, "stream": stream, "bus": bus, "notes": notes, "pitch": pitch})
+
+
+func _is_pending(id: StringName) -> bool:
+	for item: Dictionary in _pending:
+		if item["id"] == id:
+			return true
+	return false
 
 
 func _fire_pending() -> void:
@@ -814,21 +959,24 @@ func _fire_pending() -> void:
 		var item: Dictionary = _pending[index]
 		if _clock >= float(item["at"]):
 			_pending.remove_at(index)
-			_play_now(item["id"], item["stream"], int(item["bus"]), item["notes"])
+			_play_now(item["id"], item["stream"], int(item["bus"]), item["notes"], float(item["pitch"]))
 		else:
 			index += 1
 
 
-func _play_now(id: StringName, stream: AudioStream, bus: int, notes: PackedInt32Array) -> void:
+func _play_now(id: StringName, stream: AudioStream, bus: int, notes: PackedInt32Array, pitch: float = 1.0) -> void:
 	var voice: AudioStreamPlayer = _stinger_voices[_next_stinger]
 	_next_stinger = (_next_stinger + 1) % _stinger_voices.size()
 	voice.stop()
 	voice.stream = stream
 	voice.bus = BUS_NAMES[bus]
+	voice.pitch_scale = pitch
 	if not _silent:
 		voice.play()
 	last_stinger_id = id
 	last_stinger_notes = notes
+	last_stinger_stream = stream
+	last_stinger_pitch = pitch
 	stinger_played.emit(id, notes)
 
 
@@ -844,21 +992,28 @@ func _cached_chord(key: String, notes: PackedInt32Array, step: float, ring: floa
 	return _stinger_cache[key]
 
 
-# --- Portals (16 §6.3) -------------------------------------------------------------
+# --- Portals (16 §3.2) -------------------------------------------------------------
 
 func _on_instance_changing(_instance_id: StringName) -> void:
 	_lpf.retarget(LPF_PORTAL_HZ, PORTAL_SWEEP_SEC)
 	var notes: PackedInt32Array = PackedInt32Array(THRESHOLD_CHORD)
-	_play_now(&"wayfarers_threshold", _cached_chord("threshold", notes, 0.06, 2.4, ProceduralChamberSynth.Timbre.BELL), MUSIC_BUS, notes)
+	var baked: Array = _acoustic_stinger(&"wayfarers_threshold", BAKED_TONIC)
+	var stream: AudioStream = baked[0] if baked[0] != null else _cached_chord("threshold", notes, 0.06, 2.4, ProceduralChamberSynth.Timbre.BELL)
+	_play_now(&"wayfarers_threshold", stream, MUSIC_BUS, notes)
 	_set_state(AcousticState.EXPLORATION)
 	_calm_for = 0.0
 	_exhale_left = 0.0
 	_breath_left = 0.0
 
 
-func _on_instance_live(_instance_id: StringName) -> void:
+func _on_instance_live(instance_id: StringName) -> void:
 	_lpf.retarget(LPF_OPEN_HZ, PORTAL_SWEEP_SEC)
 	evaluate_now()
+	# Home again through a portal (the gold portal after a raid): the Sanctuary Cadence, "coming home".
+	var instances: InstanceManager = InstanceManager.current
+	if instances != null and instance_id == instances.home_instance and instances.previous_instance != &"" \
+			and instances.previous_instance != instance_id and not _is_pending(&"sanctuary_cadence"):
+		_queue_cadence(&"sanctuary_cadence", SANCTUARY_CADENCE)
 
 
 # --- The 3D voice pool (16 §1.2, §6.2) ---------------------------------------------
@@ -954,9 +1109,12 @@ static func attach_ambience(host: Node3D, kind: StringName, offset: Vector3 = Ve
 	return player
 
 
-func ambience_stream(kind: StringName) -> AudioStreamWAV:
+## A station's loop: its baked recording (assets/audio/samples/ambience_<kind>.ogg) if there is
+## one, else ProceduralChamberSynth's.
+func ambience_stream(kind: StringName) -> AudioStream:
 	if not _ambience_cache.has(kind):
-		_ambience_cache[kind] = ProceduralChamberSynth.render_ambience(kind)
+		var baked: AudioStream = acoustic("ambience_%s.ogg" % kind)
+		_ambience_cache[kind] = baked if baked != null else ProceduralChamberSynth.render_ambience(kind)
 	return _ambience_cache[kind]
 
 

@@ -2,8 +2,9 @@
 ## key, mode and tempo, the four phase-locked stems' resting volumes, the
 ## optional depth blend into the Holloway discord, and the Brower silence
 ## breath between music cycles. Pure data; AudioCatalog registers them and
-## AudioDirector plays them, from a curated AudioStreamSynchronized when one is
-## dropped in, otherwise from ProceduralChamberSynth's code-built stems.
+## AudioDirector plays them: the acoustic stems tools/build_audio_stems.py bakes
+## (res://assets/audio/music/<profile_id>/), otherwise ProceduralChamberSynth's
+## physical-model rendition of the same score.
 class_name ZoneMusicProfileResource
 extends Resource
 
@@ -38,9 +39,9 @@ const STEM_COUNT: int = 4
 ## A 6/8 lilt: the code-built stems group eighths in threes.
 @export var compound_meter: bool = false
 
-## Optional path to curated 4-stem AudioStreamSynchronized (.tres wrapping 4 .ogg streams)
-## Falls back automatically to ProceduralChamberSynth when empty or in headless CI.
-## (res://assets/audio/music/<profile_id>.tres is found without setting this.)
+## Optional path to a curated 4-stem AudioStreamSynchronized (.tres wrapping 4 .ogg streams).
+## Without it AudioDirector finds res://assets/audio/music/<profile_id>_sync.tres, then the four
+## baked .ogg stems beside it, then falls back to ProceduralChamberSynth.
 @export_file("*.tres") var synchronized_stream_path: String = ""
 
 ## Default exploration stem volumes (in dB) when out of combat
@@ -62,6 +63,9 @@ const STEM_COUNT: int = 4
 @export var music_cycle_sec: float = 90.0
 ## Arriving here plays the Sanctuary Cadence (minor to Lydian: "coming home").
 @export var sanctuary_cadence_on_arrival: bool = false
+## Bars in the baked acoustic arrangement (tools/build_audio_stems.py); 0 means one per chord
+## of the progression. Every tier of the score loops this many bars.
+@export var arrangement_bars: int = 0
 
 @export_group("Code-built stems (ProceduralChamberSynth)")
 ## Semitones above the root of the sunny lead and base stems' mode.
@@ -85,9 +89,14 @@ func bar_sec() -> float:
 	return beat_sec() * beats_per_bar
 
 
-## The code-built loop's length: one bar per chord of the progression.
+## Bars in one loop of the score: the baked arrangement's, else one per chord of the progression.
+func loop_bars() -> int:
+	return arrangement_bars if arrangement_bars > 0 else maxi(1, progression.size())
+
+
+## One loop of the score, in seconds.
 func loop_sec() -> float:
-	return bar_sec() * maxi(1, progression.size())
+	return bar_sec() * loop_bars()
 
 
 ## Resting volume of a stem.

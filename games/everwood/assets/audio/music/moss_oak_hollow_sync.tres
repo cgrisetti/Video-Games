@@ -1,0 +1,17 @@
+[gd_resource type="AudioStreamSynchronized" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/music/moss_oak_hollow/stem_0_folk_base.ogg" id="1_5yh1t"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/moss_oak_hollow/stem_1_pastoral_lead.ogg" id="2_dswyh"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/moss_oak_hollow/stem_2_holloway_discord.ogg" id="3_20s08"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/moss_oak_hollow/stem_3_skirmish_drive.ogg" id="4_ql06q"]
+
+[resource]
+stream_count = 4
+stream_0/stream = ExtResource("1_5yh1t")
+stream_0/volume = 0.0
+stream_1/stream = ExtResource("2_dswyh")
+stream_1/volume = 0.0
+stream_2/stream = ExtResource("3_20s08")
+stream_2/volume = -80.0
+stream_3/stream = ExtResource("4_ql06q")
+stream_3/volume = -80.0

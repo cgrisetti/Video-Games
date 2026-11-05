@@ -6,15 +6,19 @@
 ## res://data/audio/ is registered by its type, and replaces a built-in of the
 ## same id. AudioDirector and the levels only ever name profiles by id.
 ##
-## The Bramble-Bridge trail (one regional tonic of G at 108 BPM, 16 §4):
-##   honey_wick              the Kindle-Fire at Honey-Wick, Chunk (0, 1)  G Ionian, 6/8
-##   bramble_bridge_square   Bramble-Bridge, Chunk (0, 0)                  G Lydian waltz
+## The Bramble-Bridge trail (one regional tonic of G at 108 BPM, 16 §3), with the
+## bars of each baked arrangement (tools/build_audio_stems.py composes them):
+##   honey_wick              the Kindle-Fire at Honey-Wick, Chunk (0, 1)  G Ionian, 6/8 sway, 16 bars
+##   bramble_bridge_square   Bramble-Bridge, Chunk (0, 0)                  G Lydian 3/4 flying waltz, 24 bars
 ##   moss_oak_hollow         Moss-Oak-Hollow, Chunk (0, -1), sinking into Rush-Light-Hollow's
-##                           E harmonic minor on the sunken lane            E Dorian, 6/8
-##   dover_slap_falls        Dover-Slap-Bridge and the falls, Chunk (0, -2) A Dorian march
-##   ring_of_the_cairnsman   the causeway and the Ring, Chunk (0, -3)      D Dorian
-##   cairnsmans_vigil        the Cairnsman's suite                         D Dorian / Lydian, 6/8 gallop
-## and oakshire_vale, the starting vale (F Lydian waltz, 104 BPM).
+##                           E harmonic-minor invention on the sunken lane  E Dorian 3/4 waltz, 16 bars
+##   dover_slap_falls        Dover-Slap-Bridge and the falls, Chunk (0, -2) A Dorian 4/4 march, 16 bars
+##   ring_of_the_cairnsman   the causeway and the Ring, Chunk (0, -3)      D Dorian 3/4, 16 bars
+##   cairnsmans_vigil        the Cairnsman's suite                         D Dorian / Lydian 6/8 gallop at 132, 16 bars
+## and oakshire_vale, Oakshire Holm's F Lydian waltz (104 BPM, 16 bars), where every launch begins.
+## (The audio doc's suite names map on: kindled_bivouac is honey_wick, bramblebridge_square
+## bramble_bridge_square, ariundle_holloway moss_oak_hollow, doverslap_gorge dover_slap_falls,
+## cairnsman_sanctum ring_of_the_cairnsman and boss_cairnsman_vigil cairnsmans_vigil.)
 class_name AudioCatalog
 extends RefCounted
 
@@ -119,36 +123,43 @@ static func _load_folder() -> void:
 # --- Zones (16 §4) -----------------------------------------------------------
 
 static func _build_zones() -> void:
-	var commons: ZoneMusicProfileResource = _zone(&"honey_wick", "The Kindle-Fire at Honey-Wick", 67, &"G_IONIAN", 96.0, 3, true,
+	var commons: ZoneMusicProfileResource = _zone(&"honey_wick", "The Kindle-Fire at Honey-Wick", 67, &"G_IONIAN", 108.0, 3, true,
 		[0, 2, 4, 6, 7, 9, 11], HARMONIC_MINOR, [0, 3, 4, 0], &"WHISTLE")
 	commons.melody_skips_degrees = PackedInt32Array([3])
 	commons.lead_scale = PackedInt32Array(IONIAN)
 	commons.silence_interval_range_sec = Vector2(15.0, 25.0)
+	commons.arrangement_bars = 16
 	var square: ZoneMusicProfileResource = _zone(&"bramble_bridge_square", "Bramble-Bridge Waltz", 67, &"G_LYDIAN", 108.0, 3, false,
 		LYDIAN, HARMONIC_MINOR, [0, 1, 6, 0], &"ACCORDION")
 	square.silence_interval_range_sec = Vector2(12.0, 20.0)
 	square.sanctuary_cadence_on_arrival = true
-	var hollow: ZoneMusicProfileResource = _zone(&"moss_oak_hollow", "Moss-Oak-Hollow into Rush-Light-Hollow", 64, &"E_DORIAN", 108.0, 3, true,
+	square.arrangement_bars = 24
+	var hollow: ZoneMusicProfileResource = _zone(&"moss_oak_hollow", "Moss-Oak-Hollow into Rush-Light-Hollow", 64, &"E_DORIAN", 108.0, 3, false,
 		DORIAN, HARMONIC_MINOR, [0, 3, 6, 0], &"REED")
 	hollow.enable_z_depth_discord_blend = true
 	hollow.discord_blend_z_start = -54.0
 	hollow.discord_blend_z_full = -74.0
 	hollow.silence_interval_range_sec = Vector2(20.0, 35.0)
+	hollow.arrangement_bars = 16
 	var falls: ZoneMusicProfileResource = _zone(&"dover_slap_falls", "Dover-Slap-Falls March", 69, &"A_DORIAN", 108.0, 4, false,
 		DORIAN, AEOLIAN, [0, 6, 3, 0], &"VIOLIN")
 	falls.silence_interval_range_sec = Vector2(15.0, 30.0)
+	falls.arrangement_bars = 16
 	var ring: ZoneMusicProfileResource = _zone(&"ring_of_the_cairnsman", "The Ring of the Cairnsman", 62, &"D_DORIAN", 108.0, 3, false,
 		DORIAN, HARMONIC_MINOR, [0, 6, 0, 3], &"WHISTLE")
 	# Wind-swept solitude: a low whistle and a harp harmonic over the gorge wind.
 	ring.explore_stem_volumes_db = PackedFloat32Array([-14.0, -3.0, -80.0, -80.0])
+	ring.arrangement_bars = 16
 	var vigil: ZoneMusicProfileResource = _zone(&"cairnsmans_vigil", "The Cairnsman's Vigil", 62, &"D_DORIAN", 132.0, 3, true,
 		LYDIAN, HARMONIC_MINOR, [0, 6, 3, 4], &"ACCORDION")
 	# The boss deck: Stem 1 is the D Lydian flourish, held back for the Poise-Stagger window.
 	vigil.explore_stem_volumes_db = PackedFloat32Array([0.0, -80.0, -6.0, 0.0])
 	vigil.music_cycle_sec = INF
+	vigil.arrangement_bars = 16
 	var vale: ZoneMusicProfileResource = _zone(&"oakshire_vale", "Oakshire Vale Pastoral", 65, &"F_LYDIAN", 104.0, 3, false,
 		LYDIAN, HARMONIC_MINOR, [0, 1, 4, 0], &"VIOLIN")
 	vale.silence_interval_range_sec = Vector2(15.0, 30.0)
+	vale.arrangement_bars = 16
 	for made: ZoneMusicProfileResource in [commons, square, hollow, falls, ring, vigil, vale]:
 		register(made)
 
@@ -170,7 +181,7 @@ static func _zone(id: StringName, title: String, root: int, mode: StringName, te
 	return made
 
 
-# --- The Four Signs (16 §3.2) ------------------------------------------------
+# --- The Four Signs (16 §4.1) ------------------------------------------------
 
 static func _build_signs() -> void:
 	# Shatterpoint: root and open fifth on bassoon, cello and an anvil-chime.
@@ -231,4 +242,5 @@ static func _build_bosses() -> void:
 	cairnsman.boss_id = ArsenalCatalog.CAIRNSMAN
 	cairnsman.display_title = "The Cairnsman's Vigil"
 	cairnsman.suite_profile_id = &"cairnsmans_vigil"
+	cairnsman.stagger_stinger_path = ProceduralChamberSynth.SAMPLES_FOLDER + "stinger_poise_stagger_lydian.ogg"
 	register(cairnsman)

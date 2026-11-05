@@ -1312,9 +1312,13 @@ func _check_poise_and_knockdown() -> void:
 	var score: AudioDirector = AudioDirector.current
 	score.wait_for_renders()
 	score.evaluate_now()
+	var flourish_path: String = AudioCatalog.boss(ArsenalCatalog.CAIRNSMAN).stagger_stinger_path
+	var flourish: AudioStreamOggVorbis = load(flourish_path) as AudioStreamOggVorbis if ResourceLoader.exists(flourish_path) else null
 	_check(score.state == AudioDirector.AcousticState.BOSS and score.stagger_window and score.get_active_profile_id() == &"cairnsmans_vigil"
-		and is_zero_approx(score.get_stem_target_db(1)) and is_equal_approx(score.get_stem_target_db(3), -14.0) and _stingers_heard.has(&"poise_stagger_flourish"),
-		"knocked down, the Cairnsman's Vigil opens its Poise-Stagger window: the D Lydian harp flourish swells to 0 dB and the percussion drops 14 dB (boss engaged: %s)" % boss.engaged)
+		and is_zero_approx(score.get_stem_target_db(1)) and is_equal_approx(score.get_stem_target_db(3), -14.0) and score.get_stem_target_db(2) <= -17.9
+		and _stingers_heard.has(&"poise_stagger_flourish") and flourish != null and not flourish.loop,
+		"knocked down, the Cairnsman's Vigil opens its Poise-Stagger window: the D Lydian triumph stem swells to 0 dB, the minor counterpoint drops to %.0f dB and the percussion 14 dB, under the acoustic harp, accordion and carillon flourish (boss engaged: %s)" % [
+			score.get_stem_target_db(2), boss.engaged])
 	_reset_boss_poise()
 
 
@@ -3150,10 +3154,14 @@ func _check_victory_and_loot() -> void:
 
 func _check_audio_cues() -> void:
 	var silent: PackedStringArray = PackedStringArray()
+	var acoustic: int = 0
 	for cue: StringName in AudioCues.CUES:
 		if AudioCues.current.stream_for(cue).data.size() < 200:
 			silent.append(cue)
-	_check(silent.is_empty(), "every audio cue synthesizes %s" % ("" if silent.is_empty() else str(silent)))
+		acoustic += 1 if AudioCues.baked_stream(cue) != null else 0
+	# The musical cues are baked acoustic recordings; hits, shots, the gale, the beam and splashes stay synthesized.
+	_check(silent.is_empty() and acoustic >= 28, "every audio cue sounds, %d of %d of them acoustic recordings %s" % [acoustic, AudioCues.CUES.size(),
+		"" if silent.is_empty() else str(silent)])
 	var expected: Array[StringName] = [&"flow", &"hit", &"perfect_guard", &"telegraph", &"heal", &"join", &"portal", &"portal_charge",
 		&"victory", &"chest", &"chime", &"purchase", &"refuse", &"menu_move", &"shot", &"card_chime", &"card_chime_foil", &"card_chime_astral"]
 	var unheard: PackedStringArray = PackedStringArray()

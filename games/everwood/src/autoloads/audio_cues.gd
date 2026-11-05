@@ -1,5 +1,8 @@
-## Audio cues (autoload "Audio"): short sounds synthesized in code the first
-## time each is played, so the game ships no audio files. Most cues are
+## Audio cues (autoload "Audio"): short sounds for the big moments. The musical
+## ones (card chimes, rewards, the victory, bells, the Signs' seals, warnings) are
+## acoustic recordings baked by tools/build_audio_stems.py
+## (assets/audio/samples/cue_<name>.wav); the rest (hits, shots, the gale, the
+## beam, splashes) are synthesized in code the first time each is played. Most cues are
 ## non-positional, so every couch player hears the big moments equally; Sign
 ## and telegraph cues go out on the SignTelegraphs bus, the rest on CombatSFX
 ## (AudioDirector builds the buses). Hits and shots play where they happen,
@@ -111,11 +114,18 @@ func play_cue(cue: StringName, pitch: float = 1.0, volume_db: float = 0.0) -> vo
 	cue_played.emit(cue)
 
 
-## The synthesized sound for a cue, built the first time it's asked for.
+## The sound for a cue: its baked acoustic recording, else synthesized the first time it's asked for.
 func stream_for(cue: StringName) -> AudioStreamWAV:
 	if not _streams.has(cue):
-		_streams[cue] = _render(_notes_for(cue))
+		var baked: AudioStreamWAV = baked_stream(cue)
+		_streams[cue] = baked if baked != null else _render(_notes_for(cue))
 	return _streams[cue]
+
+
+## A cue's acoustic recording (null if it has none).
+static func baked_stream(cue: StringName) -> AudioStreamWAV:
+	var path: String = ProceduralChamberSynth.SAMPLES_FOLDER + "cue_%s.wav" % cue
+	return load(path) as AudioStreamWAV if ResourceLoader.exists(path) else null
 
 
 func _notes_for(cue: StringName) -> Array[Note]:

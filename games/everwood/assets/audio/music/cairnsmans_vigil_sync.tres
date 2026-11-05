@@ -1,0 +1,17 @@
+[gd_resource type="AudioStreamSynchronized" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/music/cairnsmans_vigil/stem_0_folk_base.ogg" id="1_s4ffn"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/cairnsmans_vigil/stem_1_pastoral_lead.ogg" id="2_5pody"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/cairnsmans_vigil/stem_2_holloway_discord.ogg" id="3_xswjp"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/cairnsmans_vigil/stem_3_skirmish_drive.ogg" id="4_sl4rc"]
+
+[resource]
+stream_count = 4
+stream_0/stream = ExtResource("1_s4ffn")
+stream_0/volume = 0.0
+stream_1/stream = ExtResource("2_5pody")
+stream_1/volume = -80.0
+stream_2/stream = ExtResource("3_xswjp")
+stream_2/volume = -6.0
+stream_3/stream = ExtResource("4_sl4rc")
+stream_3/volume = 0.0

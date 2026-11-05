@@ -1,18 +1,23 @@
-## The adaptive score's checks (16_ADAPTIVE_AUDIO_ARCHITECTURE.md §7.4), run by
+## The adaptive score's checks (16_ADAPTIVE_AUDIO_ARCHITECTURE.md §5.2), run by
 ## tools/smoke_test.gd in two parts:
 ##   run_corridor(), in the seamless world after its own checks:
 ##     1  the five buses in order with their effects (the Music bus's low-pass,
-##        3.2 kHz carve and SignTelegraphs-keyed compressor; the limiters)
+##        warm EQ, chamber-hall reverb and SignTelegraphs-keyed compressor; the
+##        SignTelegraphs hall; the limiters)
 ##     2  the catalog: seven zone profiles, the Four Signs' chords, nine Callings,
-##        the Cairnsman's suite, and every zone's four code-built looping stems
-##        in a four-stem AudioStreamSynchronized
+##        the Cairnsman's suite; every zone's four baked acoustic stems (looping
+##        Ogg Vorbis, its arrangement's length) in its _sync.tres; and the
+##        fallback: ProceduralChamberSynth playing Moss-Oak-Hollow's score, and a
+##        profile with no score, on its physical models
 ##     3  walking the trail picks each chunk's score: Honey-Wick, Bramble-Bridge
-##        (with the Sanctuary Cadence on arrival), Moss-Oak-Hollow blending into
-##        Rush-Light-Hollow's discord as the lane sinks (lifted again by the
-##        water-shrine), Dover-Slap-Falls and the Ring; the majority of local
-##        players wins, a tie going up the trail
-##     4  the stations' ambience: every emitter on Ambience3D with area_mask = 1,
-##        and the campfire's crackle dropping 6 dB while it burns low
+##        (both on acoustic stems with the folk base and lead at 0 dB, and the
+##        Sanctuary Cadence on arrival), Moss-Oak-Hollow blending into
+##        Rush-Light-Hollow's discord as the lane sinks (dropped 12 dB under an
+##        E Lydian harp glissando by the water-shrine), Dover-Slap-Falls and the
+##        Ring; the majority of local players wins, a tie going up the trail
+##     4  the stations' ambience: every emitter on Ambience3D with area_mask = 1
+##        (the carillon and the gate's plates acoustic), and the campfire's
+##        crackle dropping 6 dB while it burns low
 ##   run_vale(), in Oakshire Vale after the Lens's checks:
 ##     5  the 32-voice pool: 64 sounds at 10 m never sound more than 32 voices or
 ##        make a node, a second sound of a kind within 50 ms is turned away, one
@@ -22,8 +27,9 @@
 ##        stream, the accent on the next eighth note), and the Restoration
 ##        Exhale (1.5 s hold, the cadence, stems 2 and 3 gone after 3.6 s, a 10 s
 ##        breath at -24 dB, then exploring again)
-##     7  each Sign's stinger is its chord over the vale's tonic and ducks the
-##        Music bus 6 dB for 0.8 s; a Calling's motif sits an octave under
+##     7  each Sign's stinger is its acoustic chord re-pitched to the vale's tonic
+##        and ducks the Music bus 4.5 dB for 0.3 s; a Calling's motif sits an
+##        octave under
 ## (The Cairnsman's Poise-Stagger window and the Co-Op Gate's plate harmonies
 ## are checked in the expedition, in smoke_test.gd.)
 extends RefCounted
@@ -63,17 +69,23 @@ func _check_buses() -> void:
 	for index: int in AudioDirector.BUS_NAMES.size():
 		names.append(AudioServer.get_bus_name(index))
 	var music: int = AudioServer.get_bus_index(&"Music")
-	var squeeze: AudioEffectCompressor = AudioServer.get_bus_effect(music, 2) as AudioEffectCompressor if AudioServer.get_bus_effect_count(music) > 2 else null
+	var warmth: AudioEffectEQ6 = AudioServer.get_bus_effect(music, 1) as AudioEffectEQ6
+	var hall: AudioEffectReverb = AudioServer.get_bus_effect(music, 2) as AudioEffectReverb
+	var squeeze: AudioEffectCompressor = AudioServer.get_bus_effect(music, 3) as AudioEffectCompressor if AudioServer.get_bus_effect_count(music) > 3 else null
+	var sign_hall: AudioEffectReverb = AudioServer.get_bus_effect(AudioServer.get_bus_index(&"SignTelegraphs"), 0) as AudioEffectReverb
 	var effects: bool = AudioServer.get_bus_effect(0, 0) is AudioEffectHardLimiter and AudioServer.get_bus_effect(music, 0) is AudioEffectLowPassFilter \
-		and AudioServer.get_bus_effect(music, 1) is AudioEffectEQ6 and squeeze != null and squeeze.sidechain == &"SignTelegraphs" \
+		and warmth != null and is_equal_approx(warmth.get_band_gain_db(2), 1.5) and is_equal_approx(warmth.get_band_gain_db(4), -2.0) \
+		and hall != null and is_equal_approx(hall.room_size, 0.38) and is_equal_approx(hall.damping, 0.68) and is_equal_approx(hall.spread, 0.85) \
+		and is_equal_approx(hall.wet, 0.18) and squeeze != null and squeeze.sidechain == &"SignTelegraphs" \
 		and is_equal_approx(squeeze.ratio, 4.0) and is_equal_approx(squeeze.threshold, -18.0) \
+		and sign_hall != null and is_equal_approx(sign_hall.room_size, 0.42) and is_equal_approx(sign_hall.wet, 0.22) \
 		and AudioServer.get_bus_effect(AudioServer.get_bus_index(&"Ambience3D"), 0) is AudioEffectLowPassFilter \
 		and AudioServer.get_bus_effect(AudioServer.get_bus_index(&"CombatSFX"), 0) is AudioEffectHardLimiter
 	var routed: bool = true
 	for index: int in range(1, AudioDirector.BUS_NAMES.size()):
 		routed = routed and AudioServer.get_bus_send(index) == &"Master"
 	check.call(AudioServer.bus_count >= 5 and ", ".join(names) == "Master, Music, Ambience3D, SignTelegraphs, CombatSFX" and effects and routed,
-		"five buses built in code, in order (%s), each sending to Master: limiters on Master and CombatSFX; Music low-passed, carved at 3.2 kHz and compressed 4:1 from -18 dB keyed by SignTelegraphs" % ", ".join(names))
+		"five buses built in code, in order (%s), each sending to Master: limiters on Master and CombatSFX; Music low-passed, warmed (+1.5 dB round 250 Hz, -2 dB at 3.2 kHz), in a warm wooden chamber hall (room 0.38, damping 0.68, spread 0.85, wet 0.18) and compressed 4:1 from -18 dB keyed by SignTelegraphs, which has its own hall" % ", ".join(names))
 
 
 func _check_catalog() -> void:
@@ -82,16 +94,30 @@ func _check_catalog() -> void:
 	for zone: ZoneMusicProfileResource in AudioCatalog.zones():
 		ids.append(String(zone.profile_id))
 		var sync: AudioStreamSynchronized = director._stream_for(zone)
-		stems_ok = stems_ok and sync != null and sync.stream_count == 4
+		stems_ok = stems_ok and sync != null and sync.stream_count == 4 and ResourceLoader.exists(AudioDirector.sync_path(zone.profile_id))
 		if sync == null:
 			continue
 		for layer: int in 4:
-			var wav: AudioStreamWAV = sync.get_sync_stream(layer) as AudioStreamWAV
-			stems_ok = stems_ok and wav != null and wav.loop_mode == AudioStreamWAV.LOOP_FORWARD \
-				and absf(float(wav.loop_end) / wav.mix_rate - zone.loop_sec()) < 0.01 and wav.data.size() > 1000
+			var ogg: AudioStreamOggVorbis = sync.get_sync_stream(layer) as AudioStreamOggVorbis
+			stems_ok = stems_ok and ogg != null and ogg.loop and absf(ogg.get_length() - zone.loop_sec()) < 0.02 \
+				and is_equal_approx(ogg.bpm, zone.bpm) and ogg.beat_count == zone.loop_bars() * zone.beats_per_bar
 	ids.sort()
 	check.call(", ".join(ids) == "bramble_bridge_square, cairnsmans_vigil, dover_slap_falls, honey_wick, moss_oak_hollow, oakshire_vale, ring_of_the_cairnsman" and stems_ok,
-		"seven zone profiles, each with four phase-locked code-built stems (ProceduralChamberSynth) looping exactly one progression in an AudioStreamSynchronized")
+		"seven zone profiles, each with four phase-locked acoustic stems (looping Ogg Vorbis rendered from the SoundFont by tools/build_audio_stems.py, each exactly its arrangement's bars) in its baked AudioStreamSynchronized")
+	# Tier 2: without the stems, ProceduralChamberSynth plays the same score on its physical models.
+	var hollow: ZoneMusicProfileResource = AudioCatalog.zone(&"moss_oak_hollow")
+	var snap: Dictionary = ProceduralChamberSynth.snapshot(hollow)
+	var modelled: Array[PackedByteArray] = ProceduralChamberSynth.render_stems(snap)
+	var bare: ZoneMusicProfileResource = ZoneMusicProfileResource.new()
+	bare.profile_id = &"no_score_here"
+	var generated: Array[PackedByteArray] = ProceduralChamberSynth.render_stems(ProceduralChamberSynth.snapshot(bare))
+	var fallback_ok: bool = (snap["score"] as Dictionary).has("stems") and modelled.size() == 4 and generated.size() == 4
+	for pcm: PackedByteArray in modelled:
+		fallback_ok = fallback_ok and absf(pcm.size() / 2.0 / ProceduralChamberSynth.MIX_RATE - hollow.loop_sec()) < 0.01 and _loudest(pcm) > 12000
+	for pcm: PackedByteArray in generated:
+		fallback_ok = fallback_ok and absf(pcm.size() / 2.0 / ProceduralChamberSynth.MIX_RATE - bare.loop_sec()) < 0.01 and _loudest(pcm) > 12000
+	check.call(fallback_ok, "the fallback plays Moss-Oak-Hollow's baked score (%d notes) on Karplus-Strong strings, formant reeds, musette reeds and bowed strings, and builds a waltz for a profile with no score" % [
+		(snap["score"]["stems"][0] as Array).size() + (snap["score"]["stems"][1] as Array).size() + (snap["score"]["stems"][2] as Array).size() + (snap["score"]["stems"][3] as Array).size()])
 	var chords: Array[String] = []
 	for sign_id: int in [ScribeSignResource.Sign.SIGN_IRON_ROOT, ScribeSignResource.Sign.SIGN_RIME_GALE, ScribeSignResource.Sign.SIGN_WARM_HEARTH,
 			ScribeSignResource.Sign.SIGN_STAR_TIDE]:
@@ -114,13 +140,15 @@ func _check_trail(world: EverwoodWorld) -> void:
 	_move(people, Vector3(40.0, 0.5, 178.0))
 	director.evaluate_now()
 	var commons: StringName = director.get_active_profile_id()
+	var commons_up: bool = _acoustic_and_up()
 	_move(people, LandblockManifest.TOWN_SQUARE_SPAWN)
 	director.evaluate_now()
 	var square: StringName = director.get_active_profile_id()
+	var square_up: bool = _acoustic_and_up()
 	for frame: int in 130:
 		await tree.process_frame
-	check.call(commons == &"honey_wick" and square == &"bramble_bridge_square" and heard.has(&"sanctuary_cadence"),
-		"the Kindle-Fire plays Honey-Wick's G Ionian sway; crossing into Bramble-Bridge brings its G Lydian waltz and the Sanctuary Cadence on the next bar")
+	check.call(commons == &"honey_wick" and square == &"bramble_bridge_square" and commons_up and square_up and heard.has(&"sanctuary_cadence"),
+		"the Kindle-Fire (Chunk (0, 1)) plays Honey-Wick's G Ionian sway and Bramble-Bridge (Chunk (0, 0)) its G Lydian waltz, both on four acoustic stems with the folk base and the pastoral lead at 0 dB, and crossing in brings the Sanctuary Cadence on the next bar")
 	# Down the sunken lane (clear of the water-shrine at z -64.5, whose oasis would lift the hush).
 	var depths: Array[float] = []
 	var heard_ok: Array[bool] = []
@@ -138,11 +166,16 @@ func _check_trail(world: EverwoodWorld) -> void:
 	for node: Node in tree.get_nodes_in_group(AudioDirector.OASIS_GROUP):
 		if node is WaterShrine and (node as Node3D).is_inside_tree():
 			oasis = node as Node3D
+	var lifted: float = 0.0
 	if oasis != null:
+		heard.clear()
 		_move(people, oasis.global_position + Vector3(1.5, 0.0, 0.0))
 		director.evaluate_now()
-	check.call(oasis != null and is_zero_approx(director.discord_depth) and director.get_stem_target_db(1) > -1.0 + AudioDirector.PREWARM_LEAD_DIP_DB,
-		"by the Wayfarer's Water-Shrine the hush lifts (a Miyazaki oasis): the lead stays up at %.1f dB" % director.get_stem_target_db(1))
+		lifted = _expected_lead_discord(director.discord_depth).y + AudioDirector.OASIS_DISCORD_DB
+	check.call(oasis != null and director.oasis and director.discord_depth > 0.0 and absf(director.get_stem_target_db(2) - maxf(-80.0, lifted)) < 0.1
+		and heard.has(&"oasis_glissando") and director.last_stinger_stream is AudioStreamWAV
+		and is_equal_approx(director.last_stinger_pitch, AudioDirector.key_shift(64, AudioDirector.BAKED_TONIC)),
+		"by the Wayfarer's Water-Shrine (a Miyazaki oasis) the hush drops 12 dB, to %.1f dB, under the harp's two-octave Lydian glissando moved into E" % director.get_stem_target_db(2))
 	_move(people, Vector3(64.0, 3.0, -150.0))
 	director.evaluate_now()
 	var falls: StringName = director.get_active_profile_id()
@@ -188,7 +221,11 @@ func _check_station_ambience(world: EverwoodWorld) -> void:
 	var emitters: Array[AudioStreamPlayer3D] = director.ambience_emitters()
 	var masked: bool = not emitters.is_empty()
 	for emitter: AudioStreamPlayer3D in emitters:
-		masked = masked and emitter.area_mask == 1 and emitter.bus == &"Ambience3D" and emitter.stream is AudioStreamWAV
+		masked = masked and emitter.area_mask == 1 and emitter.bus == &"Ambience3D" and emitter.stream != null
+	var baked: int = 0
+	for kind: StringName in [&"carillon", &"gate_drone", &"gate_counter"]:
+		var loop: AudioStreamOggVorbis = director.ambience_stream(kind) as AudioStreamOggVorbis
+		baked += 1 if loop != null and loop.loop else 0
 	var fire: HearthCampfire = _find(world, func(node: Node) -> bool: return node is HearthCampfire) as HearthCampfire
 	var crackle: AudioStreamPlayer3D = fire.get_node_or_null(^"Ambience_hearth_fire") as AudioStreamPlayer3D if fire != null else null
 	var lit: float = crackle.volume_db if crackle != null else 1.0
@@ -199,8 +236,8 @@ func _check_station_ambience(world: EverwoodWorld) -> void:
 	var low: float = crackle.volume_db if crackle != null else 1.0
 	if fire != null:
 		fire.resting_left = 0.0
-	check.call(masked and crackle != null and is_zero_approx(lit) and is_equal_approx(low, HearthCampfire.LOW_CRACKLE_DB),
-		"the stations sing in 3D on Ambience3D with area_mask = 1 (%d emitters), and the Kindle-Fire's crackle drops 6 dB while it burns low" % emitters.size())
+	check.call(masked and baked == 3 and crackle != null and is_zero_approx(lit) and is_equal_approx(low, HearthCampfire.LOW_CRACKLE_DB),
+		"the stations sing in 3D on Ambience3D with area_mask = 1 (%d emitters; the carillon and the gate's plate harmonies are acoustic loops), and the Kindle-Fire's crackle drops 6 dB while it burns low" % emitters.size())
 
 
 # --- In Oakshire Vale ---------------------------------------------------------------
@@ -310,6 +347,7 @@ func _check_stingers() -> void:
 	var root: int = AudioCatalog.zone(OakshireVale.MUSIC_PROFILE).root_pitch_midi
 	var chords: Array[String] = []
 	var ducked: bool = true
+	var acoustic: bool = true
 	var expected: Array[String] = []
 	var p1: ActorBase = _people()[0]
 	for sign_id: int in [ScribeSignResource.Sign.SIGN_IRON_ROOT, ScribeSignResource.Sign.SIGN_RIME_GALE, ScribeSignResource.Sign.SIGN_WARM_HEARTH,
@@ -317,19 +355,41 @@ func _check_stingers() -> void:
 		CombatDirector.current.synergy_detonated.emit(p1, sign_id, true, "TEST")
 		chords.append(str(director.last_stinger_notes))
 		expected.append(str(AudioCatalog.sign_profile(sign_id).notes_over(root)))
+		acoustic = acoustic and director.last_stinger_stream is AudioStreamWAV and (director.last_stinger_stream as AudioStreamWAV).data.size() > 10000 \
+			and is_equal_approx(director.last_stinger_pitch, AudioDirector.key_shift(root, AudioDirector.BAKED_TONIC))
 		for frame: int in 6:
 			await tree.process_frame
-		ducked = ducked and director.music_duck_db() < -5.5 and AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"Music")) < -9.5
+		ducked = ducked and director.music_duck_db() < -4.0 and AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"Music")) < -8.0
 	await _seconds(1.4)
 	var released: bool = director.music_duck_db() > -0.5
-	check.call(chords == expected and int(director.last_stinger_notes[0]) == root and ducked and released,
-		"every Four-Sign detonation plays its chord over the vale's tonic (F = %d: %s) and ducks the Music bus 6 dB for 0.8 s" % [root, chords[0]])
+	check.call(chords == expected and int(director.last_stinger_notes[0]) == root and acoustic and ducked and released,
+		"every Four-Sign detonation plays its acoustic chord baked in G, moved down to the vale's tonic (F = %d: %s, at x%.3f), and ducks the Music bus 4.5 dB for 0.3 s" % [
+			root, chords[0], AudioDirector.key_shift(root, AudioDirector.BAKED_TONIC)])
 	director.play_calling_motif(&"bridge_warden")
 	check.call(director.last_stinger_id == &"calling_bridge_warden" and director.last_stinger_notes == PackedInt32Array([root - 12, root - 5, root]),
 		"a Bridge-Warden's posture motif is a low root, fifth and octave under the zone's tonic")
 
 
 # --- Helpers ----------------------------------------------------------------------
+
+## The playing deck is the four acoustic stems, with the folk base and the pastoral lead at 0 dB.
+func _acoustic_and_up() -> bool:
+	var sync: AudioStreamSynchronized = director.front_stream()
+	if sync == null or sync.stream_count != 4:
+		return false
+	for layer: int in 4:
+		if not sync.get_sync_stream(layer) is AudioStreamOggVorbis:
+			return false
+	return is_zero_approx(director.get_stem_volume_db(0)) and is_zero_approx(director.get_stem_volume_db(1))
+
+
+## The loudest sample in 16-bit PCM.
+static func _loudest(pcm: PackedByteArray) -> int:
+	var loudest: int = 0
+	for index: int in range(0, pcm.size() - 1, 8):
+		loudest = maxi(loudest, absi(pcm.decode_s16(index)))
+	return loudest
+
 
 func _people() -> Array[ActorBase]:
 	var people: Array[ActorBase] = []
