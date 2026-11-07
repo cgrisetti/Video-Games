@@ -355,12 +355,19 @@ func _check_music_and_skies() -> void:
 		modes.append(String(profile.modal_signature).replace("_", " "))
 		for step: int in profile.lead_scale:
 			unity = unity and (profile.root_pitch_midi + step) % 12 in d_major
-	# The level plays them, and the skies follow the zones.
-	var level_ok: bool = level.music_profile_at(crown.zone_label_at(Zone.IRON_SHORE) + Vector3(0.0, 20.0, 0.0)) in [&"crown_iron_shore"]
+	# The level plays The Crown's Audio Mosaic all over the isle (docs/16 §7, chosen over the suites), or the
+	# suites if its atlas entry names one; the skies follow the zones either way.
+	var shore_spot: Vector3 = crown.zone_label_at(Zone.IRON_SHORE) + Vector3(0.0, 20.0, 0.0)
+	var isle: IslandGridResource = CalderaAtlas.isle(CalderaAtlas.ISLE_THE_CROWN)
+	var mosaic_on: bool = level.music_profile_at(shore_spot) == &"crown_island" and isle.music_profile == &"crown_island"
+	isle.music_profile = &"crown_south_bay"
+	var suites_back: bool = level.music_profile_at(shore_spot) == &"crown_iron_shore"
+	isle.music_profile = &"crown_island"
+	var level_ok: bool = mosaic_on and suites_back
 	var skies: bool = level.visual_biome_at(crown.zone_label_at(Zone.GALE_CLIFFS) + Vector3(0.0, 20.0, 0.0)) == WorldVisualCatalog.GULL_WICK_HAVEN \
 		and level.visual_biome_at(crown.zone_label_at(Zone.IRON_SHORE) + Vector3(0.0, 20.0, 0.0)) == WorldVisualCatalog.QUARRY_WICK
 	check.call(ok and holds and unity and level_ok and skies,
-		"the music: a suite for each zone (%s), every one in D major's notes so a crossfade never clashes, the Tide's under the ground too; at a spring the tune playing holds, ten degrees on the shore's own takes over; the skies follow the shores"
+		"the music: The Crown plays its Audio Mosaic all over the isle, and keeps a suite for each zone ready (%s), every one in D major's notes so a crossfade never clashes, the Tide's under the ground too; at a spring the tune playing holds, ten degrees on the shore's own takes over; the skies follow the shores"
 		% ", ".join(modes))
 
 

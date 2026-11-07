@@ -137,6 +137,8 @@ Each blow carries its shore's Sign (Iron-Root, Rime-Gale, Star-Tide). Beaten, th
 
 ## 7. Music
 
+> **Now (docs/16 §7, 2026-11-06):** The Crown plays the **Crown Island Audio Mosaic** all over the isle, Clay's choice over these suites: twelve four-bar phrases in G (D major's relative key, so the same sharps) walking six moods, leaning wild on the three outer shores, to Wonder on high ground and to Curiosity and Anxiousness in the galleries. The five suites below stay registered and baked, `music_at()` still maps them, and naming one on The Crown's `CalderaAtlas` entry instead of `crown_island` brings them back.
+
 **One key signature, five modes.** Every Crown suite uses only the notes of D major, so a crossfade at a spring never clashes. Each one states **Miller's Oak's hymn** in its own mode: the fifth below, the tonic, a step up to the third and back (5 1 2 3 2 1 5). The island sounds like one place with five moods.
 
 | Profile | Title | Mode · meter · tempo | Voices |

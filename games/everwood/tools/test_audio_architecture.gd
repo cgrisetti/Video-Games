@@ -2,9 +2,9 @@
 ## tools/smoke_test.gd after the Caldera Isles' (and alone by tools/run_audio_architecture_checks.gd):
 ##   1  the catalog: Crown Island (crown_island) and Miller's Holm (millers_holm, Oakshire
 ##      Holm, the mill-isle) are mosaics of twelve four-bar cells, two in each of the six moods
-##      on different Hisaishi Quartet voicings, in their own tempo, key and meter; Oakshire
-##      Holm's grid names its mosaic, and The Crown's keeps its five shore suites (docs/23)
-##      until its entry names crown_island; every cell's four baked stems are one-shot Ogg
+##      on different Hisaishi Quartet voicings, in their own tempo, key and meter, and each
+##      island grid names its own (The Crown's instead of its five shore suites, docs/23);
+##      every cell's four baked stems are one-shot Ogg
 ##      Vorbis tagged with its beats, holding the cell and its tail; the baked score.json lists
 ##      the same cells; each mosaic is one AudioStreamInteractive of twelve four-stem clips
 ##   2  sample-accurate chaining, mixed offline: a cell asked for half a cell ahead starts on
@@ -23,8 +23,8 @@
 ##      the next phrase to Anxiousness; its aggro locks the Skirmish (0 / -18 / -3 / 0 dB) on
 ##      the same cell and deck within 0.4 s, the grid running on (no restart), and the fight's
 ##      phrases keep to the driving moods; after the exhale no Anxiousness; The Crown plays
-##      its shore suites, and crown_island all over it once its atlas entry names it; and no
-##      bus, effect, director node or orphan node is left over
+##      crown_island all over it (its shore suites back if its atlas entry names one); and
+##      no bus, effect, director node or orphan node is left over
 extends RefCounted
 
 const CALDERA_SCENE: String = "res://scenes/worlds/caldera_isles.tscn"
@@ -64,7 +64,7 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 
 func _check_catalog() -> void:
 	# [its island, tempo, beats, 6/8, tonic, mode, whether the island plays it by default].
-	var expected: Dictionary[StringName, Array] = {&"crown_island": [CalderaAtlas.ISLE_THE_CROWN, 110.0, 3, false, 67, &"G_LYDIAN", false],
+	var expected: Dictionary[StringName, Array] = {&"crown_island": [CalderaAtlas.ISLE_THE_CROWN, 110.0, 3, false, 67, &"G_LYDIAN", true],
 		&"millers_holm": [CalderaAtlas.ISLE_OAKSHIRE_HOLM, 104.0, 3, true, 65, &"F_LYDIAN", true]}
 	for id: StringName in expected:
 		var want: Array = expected[id]
@@ -432,26 +432,27 @@ func _check_caldera() -> void:
 	check.call(driving and calm_again and relieved != null and relieved.mood != Mood.ANXIOUSNESS,
 		"the fight's phrases keep to the driving moods (%s); beaten, the exhale and its breath pass and the walk resumes in %s"
 		% [", ".join(fight_moods), ZoneMusicProfileResource.mood_name(relieved.mood) if relieved != null else "nothing"])
-	# The Crown: its shore suites (docs/23), then crown_island all over it once its atlas entry names it.
+	# The Crown: crown_island all over it, opening in Wonder; its shore suites (docs/23) if its atlas entry names one.
 	for phrase: int in AudioDirector.RELIEF_PHRASES:
 		await _tick_to_next_phrase()
 	level.playtest_warp()
 	await _frames(12)
 	director.evaluate_now()
-	var shore: StringName = director.get_active_profile_id()
-	var shore_classic: bool = not director.is_mosaic_playing() and String(shore).begins_with("crown_") and shore != &"crown_island"
-	var crown: IslandGridResource = CalderaAtlas.isle(CalderaAtlas.ISLE_THE_CROWN)
-	var kept: StringName = crown.music_profile
-	crown.music_profile = &"crown_island"
-	director.evaluate_now()
 	var crown_line: String = director.telemetry_line()
 	var mosaic_on: bool = director.get_active_profile_id() == &"crown_island" and director.is_mosaic_playing() and crown_line.begins_with("Audio: crown_island [") \
 		and crown_line.contains(" 110BPM] · Mood: ")
-	crown.music_profile = kept
+	var opened: MosaicCellResource = director.current_cell()
+	var crown: IslandGridResource = CalderaAtlas.isle(CalderaAtlas.ISLE_THE_CROWN)
+	crown.music_profile = &"crown_south_bay"
 	director.evaluate_now()
-	check.call(shore_classic and mosaic_on and director.get_active_profile_id() == shore,
-		"The Crown plays its shore suite (%s at the landing); with its atlas entry naming crown_island it plays the sea-wind mosaic all over the isle (%s), and back"
-		% [shore, crown_line])
+	var shore: StringName = director.get_active_profile_id()
+	var shore_classic: bool = not director.is_mosaic_playing() and String(shore).begins_with("crown_") and shore != &"crown_island"
+	crown.music_profile = &"crown_island"
+	director.evaluate_now()
+	check.call(mosaic_on and opened != null and (opened.mood == Mood.WONDER or director.state != AudioDirector.AcousticState.EXPLORATION)
+		and shore_classic and director.get_active_profile_id() == &"crown_island",
+		"The Crown plays crown_island, its G Lydian sea-wind mosaic, all over the isle, opening in %s (%s); with a suite on its atlas entry the shores' own come back (%s at the landing), and the mosaic again"
+		% [ZoneMusicProfileResource.mood_name(opened.mood) if opened != null else "nothing", crown_line, shore])
 	level.playtest_warp()
 	await _frames(12)
 	# Nothing left over.
