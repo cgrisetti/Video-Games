@@ -318,12 +318,12 @@ func _check_zone_map() -> void:
 	if panel == null or panel.map == null:
 		check.call(false, "K2: the map opens and its Zone Map is painted")
 		return
-	var half: float = CalderaAtlas.isle(CalderaAtlas.ISLE_OAKSHIRE_HOLM).grid_size_m() * 0.5
+	var half: Vector2 = CalderaAtlas.isle(CalderaAtlas.ISLE_EMBERSHORE).half_size()
 	var inks: Dictionary[String, int] = _inks(panel.map.get_image())
 	var title: String = CartographyBaker.map_title(level, panel.scope, Vector2(hero.global_position.x, hero.global_position.z))
-	check.call(CartographyBaker.world_rect(panel.map) == Rect2(-half, -half, half * 2.0, half * 2.0) and inks["water"] > 200 and inks["shore"] > 50
-		and inks["road"] > 30 and inks["footprint"] > 4 and title.begins_with("Miller's Oak · Lv 1–6 · "),
-		"K2: the Zone Map is Miller's Oak itself, painted from its island: the sea and its inked shore, the roads and the huts (%s); the header reads \"%s\""
+	check.call(CartographyBaker.world_rect(panel.map) == Rect2(-half, half * 2.0) and inks["water"] > 200 and inks["shore"] > 50
+		and inks["road"] > 30 and inks["footprint"] > 4 and title.begins_with("Embershore · Lv 1–6 · "),
+		"K2: the Zone Map is Embershore itself (2,048 x 1,024 m), painted from its island: the sea and its inked shore, the roads and the huts (%s); the header reads \"%s\""
 		% [inks, title])
 	var market: Dictionary = _node_named(panel, "Hearthstead Market")
 	var sanctum: Dictionary = _node_named(panel, "The Root-Sanctum")
@@ -686,16 +686,17 @@ func _check_atelier_foliage() -> void:
 	if mismatched > 0:
 		problems.append("%d landblock species without a matching near and far pair" % mismatched)
 	if willows == 0:
-		problems.append("no weeping willows on Miller's Oak")
+		problems.append("no weeping willows on Embershore")
 	check.call(problems.is_empty() and near_far > 0 and heaviest <= TREE_TRIANGLES and lowest_crown >= CROWN_CLEARANCE,
-		"K4: oak clumps, ash, weeping willows (%d on Oakshire), orchard apples and tiered pines are sculpted (at most %d triangles, crowns from %.1f m up), with layered ferns; %d landblock stands swap to one-draw stand-ins past %.0f m%s"
+		"K4: oak clumps, ash, weeping willows (%d on Embershore), orchard apples and tiered pines are sculpted (at most %d triangles, crowns from %.1f m up), with layered ferns; %d landblock stands swap to one-draw stand-ins past %.0f m%s"
 		% [willows, heaviest, lowest_crown, near_far, CalderaKit.ATELIER_RANGE, "" if problems.is_empty() else ": " + "; ".join(problems)])
 
 
 func _check_organic_coasts() -> void:
 	var problems: PackedStringArray = PackedStringArray()
 	var summary: PackedStringArray = PackedStringArray()
-	for isle_id: StringName in [CalderaAtlas.ISLE_OAKSHIRE_HOLM, CalderaAtlas.ISLE_IRON_NESS, CalderaAtlas.ISLE_BARROW_EYOT, CalderaAtlas.ISLE_RIME_FIRTH]:
+	# Embershore's coast is its heightmap's own (docs/27), so only the three procedural outer isles grow an organic coast.
+	for isle_id: StringName in [CalderaAtlas.ISLE_IRON_NESS, CalderaAtlas.ISLE_BARROW_EYOT, CalderaAtlas.ISLE_RIME_FIRTH]:
 		var builder: IslandBuilder = CalderaAtlas.builder_for(isle_id)
 		var shape: Dictionary = builder._coast_shape()
 		if not builder.has_organic_coast() or shape.is_empty():

@@ -7,12 +7,13 @@
 ## the party's roots, the split-screen grid and banner) is built here in code.
 ##
 ## Where the party starts:
-##   --boot-zone=oakshire (the default): the Lee-Shore Orchards on Miller's Oak
+##   --boot-zone=embershore (the default; "oakshire" still works): Bramblebridge's
+##       green on Embershore, the chime-post where the party spawns (docs/27)
 ##   --boot-zone=north_quay: North Quay, facing The Sound
 ##   --boot-zone=crown: The Crown's South Bay Landing (a playtest: its landing
 ##       counts as open and nothing changed there is saved)
 ##   coming home from the Root-Sanctum's expedition: the Root-Sanctum's door
-## In play, F9 jumps the party between Miller's Oak and The Crown (a playtest
+## In play, F9 jumps the party between Embershore and The Crown (a playtest
 ## warp, unsaved), and the Crown Landing's Chime-Bell at North Quay glides there
 ## once its lane is open.
 ##
@@ -25,6 +26,8 @@ extends LevelBase
 
 const TITLE: String = "The Caldera Isles"
 const BOOT_ZONE_ARG: String = "--boot-zone="
+const ZONE_EMBERSHORE: StringName = &"embershore"
+## The starting zone's old name, the same place.
 const ZONE_OAKSHIRE: StringName = &"oakshire"
 const ZONE_NORTH_QUAY: StringName = &"north_quay"
 const ZONE_CROWN: StringName = &"crown"
@@ -37,8 +40,9 @@ const FOG_SCALE: float = 0.28
 const FOG_OUT_OF_REACH: float = -200.0
 ## Below the horizon the sky is the sea's colour.
 const SEA_SKY_GROUND: Color = Color(0.36, 0.52, 0.56)
-## Feet this far under the sea for this long, and the tide carries you back to the last dry ground.
-const DEEP_WATER: float = 1.3
+## Feet this far under the water for this long, and the tide carries you back to the last dry ground
+## (docs/27 §2: rivers wade at 0.4 to 0.8 m; deeper water is a wall).
+const DEEP_WATER: float = 0.9
 const DEEP_WATER_TIME: float = 1.2
 const REGION_COLOR: Color = Color(0.86, 0.94, 0.7)
 const QUEST_COLOR: Color = Color(1.0, 0.82, 0.25)
@@ -50,10 +54,20 @@ const FALL_OUT_HEIGHT: float = -40.0
 ## A falling hero with no ground streamed in under them gets it at once.
 const CATCH_FALL_SPEED: float = -4.0
 ## The Audio Mosaics' places (music_mood_context): where folk live, and the wild ones.
-const SETTLED_PLACES: Array[String] = ["The Lee-Shore Orchards", "The Windmill", "Hearthstead Market", "North Quay", "The Old Quay Market",
-	"South Bay Landing", "The Lantern-Bearers' Waypost", "Old King's Town"]
-const WILD_PLACES: Array[String] = ["The Root-Sanctum", "The West Strait", "Eel Spit", "The Breach Point", "The Weeping Arch",
-	"The Trial of the Anvil", "The Trial of the Gale", "The Trial of the Tide", "The Sea-Door", "The Sap Galleries"]
+const SETTLED_PLACES: Array[String] = ["Bramblebridge", "The Heirloom Orchards", "Hearthstead", "North Quay", "The Old Quay", "Mill-Downs",
+	"The Doverslap Gatehouse", "South Bay Landing", "The Lantern-Bearers' Waypost", "Old King's Town"]
+const WILD_PLACES: Array[String] = ["The Root-Sanctum", "The West Strait", "Eel Spit", "The South Cliffs", "The First-Quiet Crags", "Doverslap Gorge",
+	"Bramblemouth", "The Breach Point", "The Weeping Arch", "The Trial of the Anvil", "The Trial of the Gale", "The Trial of the Tide", "The Sea-Door",
+	"The Sap Galleries"]
+## Embershore's light arc (docs/27 §10): each stage of the corridor wears a biome's sky and fog.
+const EMBERSHORE_BIOMES: Dictionary[String, StringName] = {"Bramblebridge": WorldVisualCatalog.OAKSHIRE_WICK, "The Heirloom Orchards": WorldVisualCatalog.OAKSHIRE_WICK,
+	"Bramblemouth": WorldVisualCatalog.OAKSHIRE_WICK, "The Ariundle Moss-Oaks": WorldVisualCatalog.MOSS_OAK_HOLLOW, "The Elder Oak": WorldVisualCatalog.MOSS_OAK_HOLLOW,
+	"The Root-Sanctum": WorldVisualCatalog.MOSS_OAK_HOLLOW, "The Bramble Spring": WorldVisualCatalog.MOSS_OAK_HOLLOW, "The Dover Spring": WorldVisualCatalog.MOSS_OAK_HOLLOW,
+	"The Sunken Holloway": WorldVisualCatalog.RUSH_LIGHT_HOLLOW, "The Rim Shoulder": WorldVisualCatalog.DOVER_SLAP_FALLS,
+	"Doverslap Gorge Bridge": WorldVisualCatalog.DOVER_SLAP_FALLS, "Doverslap Gorge": WorldVisualCatalog.DOVER_SLAP_FALLS,
+	"The Doverslap Gatehouse": WorldVisualCatalog.DOVER_SLAP_FALLS, "The Coast Road": WorldVisualCatalog.GULL_WICK_HAVEN, "Seal Cove": WorldVisualCatalog.GULL_WICK_HAVEN,
+	"Sunward Cove": WorldVisualCatalog.GULL_WICK_HAVEN, "The Eel Junction": WorldVisualCatalog.GULL_WICK_HAVEN, "Eel Spit": WorldVisualCatalog.GULL_WICK_HAVEN,
+	"The South Cliffs": WorldVisualCatalog.DOVER_SLAP_FALLS, "The First-Quiet Crags": WorldVisualCatalog.DOVER_SLAP_FALLS}
 ## The Crown's outer shores (docs/23) lean this wild anywhere on them.
 const CROWN_WILD_SHORES: Array[int] = [CrownHeartCragBuilder.Zone.IRON_SHORE, CrownHeartCragBuilder.Zone.GALE_CLIFFS,
 	CrownHeartCragBuilder.Zone.TIDE_GROTTOS]
@@ -68,7 +82,7 @@ const HEIGHT_SPAN: float = 30.0
 const UNDERGROUND_DEPTH: float = 2.5
 
 ## The --boot-zone this run asked for (read once per launch).
-static var boot_zone: StringName = ZONE_OAKSHIRE
+static var boot_zone: StringName = ZONE_EMBERSHORE
 static var _boot_zone_read: bool = false
 
 var streamer: ArchipelagoStreamer
@@ -178,7 +192,7 @@ func level_hint() -> String:
 
 
 func home_place() -> String:
-	return "Miller's Oak"
+	return "Embershore"
 
 
 ## Each island plays its score; on The Crown each shore and the World-Tree play
@@ -208,7 +222,8 @@ func music_mood_context(position: Vector3, context: MusicMoodEngine.Context) -> 
 	var builder: IslandBuilder = streamer.builder
 	var place: String = builder.place_name_at(position)
 	context.settled = 1.0 if SETTLED_PLACES.has(place) else 0.0
-	var reach: float = Vector2(position.x, position.z).length() / maxf(builder.isle.half_size_m(), 1.0)
+	var half: Vector2 = builder.isle.half_size()
+	var reach: float = Vector2(position.x / maxf(half.x, 1.0), position.z / maxf(half.y, 1.0)).length()
 	context.wild = 1.0 if WILD_PLACES.has(place) else smoothstep(EDGE_FROM, EDGE_TO, reach)
 	# The Crown's three outer shores lean wild everywhere on them (docs/23).
 	var crown: CrownHeartCragBuilder = builder as CrownHeartCragBuilder
@@ -232,6 +247,8 @@ func visual_biome_at(position: Vector3) -> StringName:
 				return WorldVisualCatalog.GULL_WICK_HAVEN
 			CrownHeartCragBuilder.Zone.TIDE_GROTTOS, CrownHeartCragBuilder.Zone.SAP_GALLERIES:
 				return WorldVisualCatalog.NINE_STONES_CROSSING
+	if streamer.builder is EmbershoreBuilder:
+		return EMBERSHORE_BIOMES.get(streamer.builder.place_name_at(position), streamer.builder.isle.visual_biome)
 	return streamer.builder.isle.visual_biome
 
 
@@ -331,21 +348,23 @@ func _report_extra() -> String:
 static func _read_boot_zone() -> void:
 	if _boot_zone_read:
 		return
-	var zone: StringName = ZONE_OAKSHIRE
+	var zone: StringName = ZONE_EMBERSHORE
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with(BOOT_ZONE_ARG):
 			var asked: StringName = StringName(arg.trim_prefix(BOOT_ZONE_ARG).strip_edges().to_lower())
-			if asked in [ZONE_OAKSHIRE, ZONE_NORTH_QUAY, ZONE_CROWN]:
+			if asked == ZONE_OAKSHIRE:
+				asked = ZONE_EMBERSHORE
+			if asked in [ZONE_EMBERSHORE, ZONE_NORTH_QUAY, ZONE_CROWN]:
 				zone = asked
 			else:
-				push_warning("CalderaArchipelagoWorld: no boot zone is called '%s' (oakshire, north_quay, crown)" % asked)
+				push_warning("CalderaArchipelagoWorld: no boot zone is called '%s' (embershore, north_quay, crown)" % asked)
 	use_boot_zone(zone)
 
 
 ## Where the next load of the Caldera starts (--boot-zone; tests). The Crown is a playtest: its landing opens, nothing is saved.
 static func use_boot_zone(zone: StringName) -> void:
 	_boot_zone_read = true
-	boot_zone = zone
+	boot_zone = ZONE_EMBERSHORE if zone == ZONE_OAKSHIRE else zone
 	var crown: bool = zone == ZONE_CROWN
 	CalderaWorldState.current.playtest = crown
 	CalderaWorldState.current.playtest_crown_landing = crown
@@ -354,13 +373,13 @@ static func use_boot_zone(zone: StringName) -> void:
 ## [isle id, arrival id] this load starts at.
 func _start_point() -> Array[StringName]:
 	if InstanceManager.current.previous_instance == InstanceManager.DUNGEON_DOJO:
-		return [CalderaAtlas.ISLE_OAKSHIRE_HOLM, CalderaAtlas.ARRIVE_ROOT_SANCTUM]
+		return [CalderaAtlas.ISLE_EMBERSHORE, CalderaAtlas.ARRIVE_ROOT_SANCTUM]
 	match boot_zone:
 		ZONE_CROWN:
 			return [CalderaAtlas.ISLE_THE_CROWN, CalderaAtlas.ARRIVE_SOUTH_BAY]
 		ZONE_NORTH_QUAY:
-			return [CalderaAtlas.ISLE_OAKSHIRE_HOLM, CalderaAtlas.ARRIVE_NORTH_QUAY]
-	return [CalderaAtlas.ISLE_OAKSHIRE_HOLM, CalderaAtlas.ARRIVE_ORCHARDS]
+			return [CalderaAtlas.ISLE_EMBERSHORE, CalderaAtlas.ARRIVE_NORTH_QUAY]
+	return [CalderaAtlas.ISLE_EMBERSHORE, CalderaAtlas.ARRIVE_START]
 
 
 func _place_spawn_points(arrival: StringName) -> void:
@@ -546,13 +565,13 @@ func telemetry_badge() -> WorldTelemetryBadge:
 	return _badge
 
 
-## F9: between Miller's Oak's orchards and The Crown's landing (a playtest: unsaved).
+## F9: between Bramblebridge's green on Embershore and The Crown's landing (a playtest: unsaved).
 func playtest_warp() -> void:
 	var state: CalderaWorldState = CalderaWorldState.current
 	state.playtest = true
 	state.playtest_crown_landing = true
 	if streamer.active_isle == CalderaAtlas.ISLE_THE_CROWN:
-		travel_to(CalderaAtlas.ISLE_OAKSHIRE_HOLM, CalderaAtlas.ARRIVE_ORCHARDS)
+		travel_to(CalderaAtlas.ISLE_EMBERSHORE, CalderaAtlas.ARRIVE_START)
 	else:
 		travel_to(CalderaAtlas.ISLE_THE_CROWN, CalderaAtlas.ARRIVE_SOUTH_BAY)
 

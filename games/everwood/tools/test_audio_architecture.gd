@@ -16,7 +16,7 @@
 ##      the wild edges to Curiosity, Interest and Anxiousness, high ground to Wonder; a threat
 ##      turns the next phrase to Anxiousness from any cell; a fight keeps to the driving moods;
 ##      the Peace breath takes the melody away and fades the harp over two to four cells
-##   4  in the Caldera: Miller's Oak plays millers_holm on the mosaic deck; 24 simulated bars
+##   4  in the Caldera: Embershore plays millers_holm on the mosaic deck; 24 simulated bars
 ##      of exploring walk at least four moods with no two identical consecutive phrases or
 ##      eight-bar signatures, on the same deck; the F4 badge reads the score line; Mellow
 ##      softens the Music bus's top end 3 dB; a padfoot 20 m away swells the discord and turns
@@ -320,7 +320,7 @@ static func _moods_named(profile: ZoneMusicProfileResource, history: PackedInt32
 # --- 4: in the Caldera ------------------------------------------------------------------
 
 func _check_caldera() -> void:
-	CalderaArchipelagoWorld.use_boot_zone(CalderaArchipelagoWorld.ZONE_OAKSHIRE)
+	CalderaArchipelagoWorld.use_boot_zone(CalderaArchipelagoWorld.ZONE_EMBERSHORE)
 	InstanceManager.current.previous_instance = &""
 	tree.change_scene_to_file(CALDERA_SCENE)
 	await _frames(12)
@@ -332,7 +332,7 @@ func _check_caldera() -> void:
 	var music_effects: int = AudioServer.get_bus_effect_count(AudioServer.get_bus_index(&"Music"))
 	var director_nodes: int = director.get_child_count()
 	var orphans: int = int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
-	# A plain spot on Miller's Oak, clear of its places, hearths, edges and kin.
+	# A plain spot on Embershore, clear of its places, hearths, edges and kin.
 	var spot: Vector3 = _plain_spot()
 	await _place(spot)
 	director.evaluate_now()
@@ -340,7 +340,7 @@ func _check_caldera() -> void:
 	var deck: AudioStream = director.front_deck_stream()
 	check.call(director.get_active_profile_id() == &"millers_holm" and deck is AudioStreamInteractive and director.is_mosaic_playing()
 		and director.current_cell() != null and director.state == AudioDirector.AcousticState.EXPLORATION,
-		"Miller's Oak plays millers_holm, its F Lydian mill-wheel mosaic, as one AudioStreamInteractive on the front deck (exploring, at %s)" % str(spot.round()))
+		"Embershore plays millers_holm, its F Lydian mill-wheel mosaic, as one AudioStreamInteractive on the front deck (exploring, at %s)" % str(spot.round()))
 	# 24 simulated bars of walking.
 	var before: int = director.phrase_log.size()
 	var opening: Dictionary = director.phrase_log[before - 1] if before > 0 else {}
@@ -365,7 +365,7 @@ func _check_caldera() -> void:
 			eight_bar_repeats += 1 if pair == previous else 0
 	check.call(director.clock.bar - bar_from == SIMULATED_BARS and played.size() == int(SIMULATED_BARS / float(holm.phrase_bars)) + 1 and moods.size() >= 4
 		and repeats == 0 and eight_bar_repeats == 0 and voice_kept == 0 and director.front_deck_stream() == deck,
-		"24 simulated bars of walking Miller's Oak walk %d moods (%s): no two consecutive phrases or eight-bar pairs alike, the lead voice traded every phrase, on the same deck"
+		"24 simulated bars of walking Embershore walk %d moods (%s): no two consecutive phrases or eight-bar pairs alike, the lead voice traded every phrase, on the same deck"
 		% [moods.size(), " > ".join(named)])
 	# The F4 badge reads the score's line.
 	level.set_telemetry_visible(true)

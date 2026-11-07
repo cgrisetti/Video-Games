@@ -570,7 +570,7 @@ class MapSource:
 	var rect: Rect2 = Rect2(0.0, 0.0, 64.0, 64.0)
 	## A legacy seamless world's layout (thread-safe), or null.
 	var layout: WorldLayout
-	## The Caldera's islands in this map's frame: [{"builder": IslandBuilder, "offset": Vector2, "half": float}].
+	## The Caldera's islands in this map's frame: [{"builder": IslandBuilder, "offset": Vector2, "half": Vector2 (x by z)}].
 	var isles: Array[Dictionary] = []
 	var sea_level: float = 0.0
 	## A walled instance's heights on a grid across `rect` (grid_size.x by grid_size.y), NAN where nothing was hit.
@@ -609,17 +609,17 @@ class MapSource:
 		sea_level = CalderaWorldState.current.sea_level_y if CalderaWorldState.current != null else 0.0
 		if scope == MapScope.ZONE:
 			var builder: IslandBuilder = world.streamer.builder
-			var half: float = builder.isle.grid_size_m() * 0.5
+			var half: Vector2 = builder.isle.half_size()
 			isles.append({"builder": builder, "offset": Vector2.ZERO, "half": half})
-			rect = Rect2(-half, -half, half * 2.0, half * 2.0)
+			rect = Rect2(-half, half * 2.0)
 			footprints = CartographyBaker.collider_footprints(world.streamer.structures)
 			return
 		var reach: Rect2 = Rect2()
 		var started: bool = false
 		for isle: IslandGridResource in CalderaAtlas.isles():
-			var half: float = isle.grid_size_m() * 0.5
+			var half: Vector2 = isle.half_size()
 			isles.append({"builder": CalderaAtlas.builder_for(isle.isle_id), "offset": isle.sound_position, "half": half})
-			var block: Rect2 = Rect2(isle.sound_position - Vector2.ONE * half, Vector2.ONE * half * 2.0)
+			var block: Rect2 = Rect2(isle.sound_position - half, half * 2.0)
 			reach = block if not started else reach.merge(block)
 			started = true
 		rect = reach.grow(CartographyBaker.WORLD_MARGIN_M)
@@ -657,8 +657,8 @@ class MapSource:
 		for index: int in isles.size():
 			var entry: Dictionary = isles[index]
 			var local: Rect2 = Rect2(tile.position - (entry["offset"] as Vector2), tile.size)
-			var half: float = entry["half"]
-			if not local.intersects(Rect2(-half, -half, half * 2.0, half * 2.0)):
+			var half: Vector2 = entry["half"]
+			if not local.intersects(Rect2(-half, half * 2.0)):
 				continue
 			_near[index] = (entry["builder"] as IslandBuilder)._features_near(local.grow(8.0))
 
@@ -669,8 +669,8 @@ class MapSource:
 		for index: int in _near:
 			var entry: Dictionary = isles[index]
 			var local: Vector2 = Vector2(x, z) - (entry["offset"] as Vector2)
-			var half: float = entry["half"]
-			if absf(local.x) <= half and absf(local.y) <= half and local.length() < best_distance:
+			var half: Vector2 = entry["half"]
+			if absf(local.x) <= half.x and absf(local.y) <= half.y and local.length() < best_distance:
 				best = index
 				best_distance = local.length()
 		return best

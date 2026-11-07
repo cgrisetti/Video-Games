@@ -431,6 +431,25 @@ static func species_mesh(species: int) -> ArrayMesh:
 				var leaf: BoxMesh = BoxMesh.new()
 				leaf.size = Vector3(0.3, 0.05, 1.0)
 				into.add_arrays(leaf.get_mesh_arrays(), Transform3D(Basis(Vector3.UP, angle) * Basis(Vector3.RIGHT, -0.5), Vector3(sin(angle) * 0.4, 0.35, cos(angle) * 0.4)), Color(0.32, 0.5, 0.26))
+		IslandBuilder.Species.GORSE_BUSH:
+			# A dark, dense bush flecked with yellow flowers (Embershore's rim and crags, docs/27 §6).
+			add_sphere(into, Vector3(0.0, 0.55, 0.0), 0.9, Color(0.22, 0.34, 0.16), 0.7, 7)
+			add_sphere(into, Vector3(0.5, 0.45, 0.3), 0.6, Color(0.26, 0.38, 0.18), 0.7, 6)
+			for fleck: Vector3 in [Vector3(0.3, 0.95, 0.4), Vector3(-0.5, 0.9, 0.1), Vector3(0.1, 1.05, -0.5), Vector3(0.7, 0.75, -0.2), Vector3(-0.3, 0.7, 0.7)]:
+				add_sphere(into, fleck, 0.12, Color(0.98, 0.84, 0.2), 1.0, 4)
+		IslandBuilder.Species.HEATHER_CLUMP:
+			# Low purple heather in a loose mat.
+			for tuft: int in 4:
+				var angle: float = TAU * float(tuft) / 4.0 + 0.4
+				add_sphere(into, Vector3(cos(angle) * 0.35, 0.22, sin(angle) * 0.35), 0.34, Color(0.46, 0.3, 0.5), 0.6, 5)
+			add_sphere(into, Vector3(0.0, 0.26, 0.0), 0.36, Color(0.56, 0.36, 0.58), 0.6, 5)
+		IslandBuilder.Species.ROWAN_TREE:
+			# A slim rowan with hanging clusters of red berries (walking sticks and bows come from here).
+			add_post(into, Vector3.ZERO, 0.12, 0.2, 3.6, Color(0.5, 0.46, 0.4), 6)
+			add_sphere(into, Vector3(0.0, 4.4, 0.0), 1.6, Color(0.44, 0.6, 0.3), 0.8, 7)
+			add_sphere(into, Vector3(0.9, 3.9, 0.4), 1.0, Color(0.4, 0.56, 0.28), 0.8, 6)
+			for berry: Vector3 in [Vector3(0.8, 3.6, 0.9), Vector3(-0.9, 4.0, 0.5), Vector3(0.2, 3.5, -1.1), Vector3(-0.4, 4.6, -0.8)]:
+				add_sphere(into, berry, 0.22, Color(0.86, 0.18, 0.12), 1.0, 5)
 	_species[species] = into.commit()
 	return _species[species]
 
@@ -692,7 +711,8 @@ static func has_atelier(species: int) -> bool:
 
 ## Whether a species is small scatter (no stand-in past SMALL_RANGE, no shadow).
 static func is_small(species: int) -> bool:
-	return species in [IslandBuilder.Species.ROCK, IslandBuilder.Species.REED_CLUMP, IslandBuilder.Species.FERN_TUFT]
+	return species in [IslandBuilder.Species.ROCK, IslandBuilder.Species.REED_CLUMP, IslandBuilder.Species.FERN_TUFT, IslandBuilder.Species.GORSE_BUSH,
+		IslandBuilder.Species.HEATHER_CLUMP]
 
 
 static func _bark() -> Material:

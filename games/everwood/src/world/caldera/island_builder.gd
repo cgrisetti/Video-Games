@@ -21,10 +21,11 @@ class_name IslandBuilder
 extends RefCounted
 
 ## What the scatter grows (one MultiMesh per species per landblock).
-enum Species { ORCHARD_TREE, OAK_TREE, PINE_TREE, SNOW_PINE, REED_CLUMP, ROCK, BOULDER, BASALT_SPIRE, FERN_TUFT, ASH_TREE, WILLOW_TREE }
-const SPECIES_COUNT: int = 11
+enum Species { ORCHARD_TREE, OAK_TREE, PINE_TREE, SNOW_PINE, REED_CLUMP, ROCK, BOULDER, BASALT_SPIRE, FERN_TUFT, ASH_TREE, WILLOW_TREE,
+	GORSE_BUSH, HEATHER_CLUMP, ROWAN_TREE }
+const SPECIES_COUNT: int = 14
 ## Trunk and stone radii that block the way inside the loaded window (0: walk through).
-const SOLID_RADIUS: Array[float] = [0.3, 0.55, 0.35, 0.35, 0.0, 0.0, 0.9, 0.8, 0.0, 0.4, 0.6]
+const SOLID_RADIUS: Array[float] = [0.3, 0.55, 0.35, 0.35, 0.0, 0.0, 0.9, 0.8, 0.0, 0.4, 0.6, 0.0, 0.0, 0.3]
 
 ## Landblock mesh resolutions: the loaded window (2 m) and the whole-island stand-in (8 m).
 const NEAR_QUADS: int = 64
@@ -175,6 +176,32 @@ func _init(grid: IslandGridResource) -> void:
 ## Lays out the island's pads, ramps, paths, places and arrivals (called once from _init).
 func _define() -> void:
 	pass
+
+
+## The ground's three levels of detail, as quads along a 128 m landblock: the
+## window's (near), a ring round it (mid; 0 for none) and the far stand-in's.
+## Procedural isles sample their field, so they keep 2 m near and 8 m far;
+## Embershore reads a 1 m heightmap and shows 1 m, 2 m and 4 m (docs/27 §4).
+func lod_quads() -> PackedInt32Array:
+	return PackedInt32Array([NEAR_QUADS, 0, FAR_QUADS])
+
+
+## Whether every landblock keeps its collider from the moment the island is
+## live (Embershore: the heightmap already holds it), or only the window does.
+func collision_resident() -> bool:
+	return false
+
+
+## A landblock's collider heights (COLLISION_SIDE a side, every metre) straight
+## from the island's data, or empty to sample them from the ground mesh.
+func collision_heights_for(_chunk: Vector2i) -> PackedFloat32Array:
+	return PackedFloat32Array()
+
+
+## A laid road's surface at a spot: 0 cobbled setts, 1 packed earth, or -1 to go
+## by its width (narrow roads are earthen). Embershore cobbles only its villages.
+func road_surface_at(_x: float, _z: float, _half_width: float) -> int:
+	return -1
 
 
 ## The island's ground before pads and ramps.
@@ -723,30 +750,33 @@ func road_textures() -> Dictionary:
 	for road: Dictionary in laid_roads:
 		var points: PackedVector2Array = road["points"]
 		var half: float = float(road["half_width"])
-		var kind: float = 1.0 if half <= DIRT_HALF_WIDTH else 0.0
 		var along: float = 0.0
 		for index: int in points.size() - 1:
+			var middle: Vector2 = (points[index] + points[index + 1]) * 0.5
+			var surface: int = road_surface_at(middle.x, middle.y, half)
+			var kind: float = float(surface) if surface >= 0 else (1.0 if half <= DIRT_HALF_WIDTH else 0.0)
 			segs.append_array(PackedFloat32Array([points[index].x, points[index].y, points[index + 1].x, points[index + 1].y, half, along, kind, 0.0]))
 			along += points[index].distance_to(points[index + 1])
 	@warning_ignore("integer_division")
 	var count: int = segs.size() / 8
-	var half_side: float = isle.grid_size_m() * 0.5 + ROAD_CELL
-	var origin: Vector2 = Vector2(-half_side, -half_side)
-	var dims: int = int(ceil(half_side * 2.0 / ROAD_CELL))
+	var half_side: Vector2 = isle.half_size() + Vector2.ONE * ROAD_CELL
+	var origin: Vector2 = -half_side
+	var dims_x: int = int(ceil(half_side.x * 2.0 / ROAD_CELL))
+	var dims_z: int = int(ceil(half_side.y * 2.0 / ROAD_CELL))
 	var lists: Array[PackedInt32Array] = []
-	lists.resize(dims * dims)
+	lists.resize(dims_x * dims_z)
 	for index: int in count:
 		var a: Vector2 = Vector2(segs[index * 8], segs[index * 8 + 1])
 		var b: Vector2 = Vector2(segs[index * 8 + 2], segs[index * 8 + 3])
 		var reach: Rect2 = Rect2(a, Vector2.ZERO).expand(b).grow(segs[index * 8 + 4] + ROAD_REACH)
-		var c0: int = clampi(int(floor((reach.position.x - origin.x) / ROAD_CELL)), 0, dims - 1)
-		var c1: int = clampi(int(floor((reach.end.x - origin.x) / ROAD_CELL)), 0, dims - 1)
-		var r0: int = clampi(int(floor((reach.position.y - origin.y) / ROAD_CELL)), 0, dims - 1)
-		var r1: int = clampi(int(floor((reach.end.y - origin.y) / ROAD_CELL)), 0, dims - 1)
+		var c0: int = clampi(int(floor((reach.position.x - origin.x) / ROAD_CELL)), 0, dims_x - 1)
+		var c1: int = clampi(int(floor((reach.end.x - origin.x) / ROAD_CELL)), 0, dims_x - 1)
+		var r0: int = clampi(int(floor((reach.position.y - origin.y) / ROAD_CELL)), 0, dims_z - 1)
+		var r1: int = clampi(int(floor((reach.end.y - origin.y) / ROAD_CELL)), 0, dims_z - 1)
 		for row: int in range(r0, r1 + 1):
 			for col: int in range(c0, c1 + 1):
-				if lists[row * dims + col].size() < ROAD_MAX_PER_CELL:
-					lists[row * dims + col].append(index)
+				if lists[row * dims_x + col].size() < ROAD_MAX_PER_CELL:
+					lists[row * dims_x + col].append(index)
 	var seg_image: Image = Image.create_empty(512, maxi(1, int(ceil(float(count) / 256.0))), false, Image.FORMAT_RGBAF)
 	for index: int in count:
 		@warning_ignore("integer_division")
@@ -755,10 +785,10 @@ func road_textures() -> Dictionary:
 		seg_image.set_pixel(x, y, Color(segs[index * 8], segs[index * 8 + 1], segs[index * 8 + 2], segs[index * 8 + 3]))
 		seg_image.set_pixel(x + 1, y, Color(segs[index * 8 + 4], segs[index * 8 + 5], segs[index * 8 + 6], 0.0))
 	var listed: PackedFloat32Array = PackedFloat32Array()
-	var cell_image: Image = Image.create_empty(dims, dims, false, Image.FORMAT_RGF)
-	for row: int in dims:
-		for col: int in dims:
-			var list: PackedInt32Array = lists[row * dims + col]
+	var cell_image: Image = Image.create_empty(dims_x, dims_z, false, Image.FORMAT_RGF)
+	for row: int in dims_z:
+		for col: int in dims_x:
+			var list: PackedInt32Array = lists[row * dims_x + col]
 			cell_image.set_pixel(col, row, Color(float(listed.size()), float(list.size()), 0.0))
 			for each: int in list:
 				listed.append(float(each))
@@ -767,7 +797,7 @@ func road_textures() -> Dictionary:
 		@warning_ignore("integer_division")
 		index_image.set_pixel(index % 1024, index / 1024, Color(listed[index], 0.0, 0.0))
 	_road_textures = {"segs": ImageTexture.create_from_image(seg_image), "cells": ImageTexture.create_from_image(cell_image),
-		"index": ImageTexture.create_from_image(index_image), "grid": Vector4(origin.x, origin.y, ROAD_CELL, 1.0), "dims": Vector2i(dims, dims),
+		"index": ImageTexture.create_from_image(index_image), "grid": Vector4(origin.x, origin.y, ROAD_CELL, 1.0), "dims": Vector2i(dims_x, dims_z),
 		"segments": count}
 	return _road_textures
 
@@ -799,8 +829,8 @@ func _coast_push(x: float, z: float, angle: float) -> float:
 	push += COAST_COVE_AMP * _noise.get_noise_2d(x * 1.7 + 311.0, z * 1.7 - 97.0)
 	push += COAST_RAGGED_AMP * (_detail.get_noise_2d(x * 0.7, z * 0.7) + 0.2 * _detail.get_noise_2d(x * 2.1 + 50.0, z * 2.1 - 20.0))
 	if push < 0.0:
-		var half: float = isle.half_size_m()
-		push *= COAST_HEADLAND_SHARE * (1.0 - smoothstep(half - 190.0, half - 70.0, maxf(absf(x), absf(z))))
+		var half: Vector2 = isle.half_size()
+		push *= COAST_HEADLAND_SHARE * (1.0 - smoothstep(-190.0, -70.0, maxf(absf(x) - half.x, absf(z) - half.y)))
 	return push
 
 
@@ -808,9 +838,9 @@ func _coast_push(x: float, z: float, angle: float) -> float:
 func coast_kept(x: float, z: float) -> float:
 	if _keep_side == 0:
 		return 1.0
-	var half: float = isle.half_size_m()
-	var fx: float = clampf((x + half) / COAST_KEEP_CELL, 0.0, float(_keep_side - 1) - 0.001)
-	var fz: float = clampf((z + half) / COAST_KEEP_CELL, 0.0, float(_keep_side - 1) - 0.001)
+	var half: Vector2 = isle.half_size()
+	var fx: float = clampf((x + half.x) / COAST_KEEP_CELL, 0.0, float(_keep_side - 1) - 0.001)
+	var fz: float = clampf((z + half.y) / COAST_KEEP_CELL, 0.0, float(_keep_side - 1) - 0.001)
 	var x0: int = int(fx)
 	var z0: int = int(fz)
 	var tx: float = fx - x0
@@ -1050,7 +1080,7 @@ func detail(x: float, z: float) -> float:
 ## One landblock's ground at `quads` cells a side: vertices, normals, colours,
 ## indices (skirts included), and when asked the collider's heights (every
 ## metre) and the scatter (Species -> Array of Transform3D).
-func build_chunk_data(chunk: Vector2i, quads: int, with_collision: bool, with_scatter: bool) -> Dictionary:
+func build_chunk_data(chunk: Vector2i, quads: int, with_collision: bool, with_scatter: bool, with_meadow: bool = false) -> Dictionary:
 	var size: float = IslandGridResource.CHUNK_SIZE
 	var origin: Vector2 = Vector2(chunk.x * size, chunk.y * size)
 	var step: float = size / float(quads)
@@ -1119,7 +1149,7 @@ func build_chunk_data(chunk: Vector2i, quads: int, with_collision: bool, with_sc
 		data["collision_heights"] = _collision_heights(heights, apron, quads)
 	if with_scatter:
 		data["scatter"] = _scatter(chunk, origin, pads, ramps, paths)
-	if with_collision:
+	if with_collision or with_meadow:
 		data["meadow"] = _meadow(chunk, origin, pads, ramps, paths)
 	return data
 

@@ -97,8 +97,9 @@ func _check_drawn() -> void:
 		% ", ".join(counts))
 
 
+## Checked on Iron-Ness: its roads are routed (Embershore's are drawn from its generator, never re-routed).
 func _check_read() -> void:
-	var builder: IslandBuilder = CalderaAtlas.builder_for(CalderaAtlas.ISLE_OAKSHIRE_HOLM)
+	var builder: IslandBuilder = CalderaAtlas.builder_for(CalderaAtlas.ISLE_IRON_NESS)
 	var plans: Array[Dictionary] = builder.get("_road_plans")
 	# Find a stretch where a routed road wandered well off its straight line.
 	var off_line: Vector2 = Vector2.INF
@@ -122,7 +123,7 @@ func _check_read() -> void:
 	var map_follows: bool = on_road != Vector2.INF and off_line != Vector2.INF and builder.on_path(on_road.x, on_road.y) \
 		and not builder.on_path(off_line.x, off_line.y) and layout.map_feature(on_road.x, on_road.y, builder.height_at(on_road.x, on_road.y)) == WorldLayout.MapFeature.ROAD
 	check.call(map_follows,
-		"the Zone Map and the scatter read the laid roads: a bend of the North Quay or orchard road 12 m off its old straight line is road, and the old line there is open ground")
+		"the Zone Map and the scatter read the laid roads: a bend of an Iron-Ness road 12 m off its old straight line is road, and the old line there is open ground")
 
 
 static func _distance_to_line(at: Vector2, line: PackedVector2Array) -> float:

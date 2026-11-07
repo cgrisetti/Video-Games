@@ -272,7 +272,7 @@ func mark_spot(map_at: Vector2) -> void:
 	if scope == MapScope.WORLD and CartographyBaker.is_archipelago(level):
 		for each: IslandGridResource in CalderaAtlas.isles():
 			var offset: Vector2 = map_at - each.sound_position
-			if absf(offset.x) <= each.grid_size_m() * 0.5 and absf(offset.y) <= each.grid_size_m() * 0.5:
+			if each.contains_point(offset.x, offset.y):
 				isle = each.isle_id
 				local = offset
 	hud.set_waymarker("Marked spot", isle, local)

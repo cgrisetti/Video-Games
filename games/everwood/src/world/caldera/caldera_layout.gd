@@ -17,16 +17,16 @@ func layout_id() -> StringName:
 
 
 func bounds_min() -> Vector2i:
-	return Vector2i(builder.isle.chunk_min(), builder.isle.chunk_min())
+	return Vector2i(builder.isle.chunk_min(), builder.isle.chunk_min_z())
 
 
 func bounds_max() -> Vector2i:
-	return Vector2i(builder.isle.chunk_max(), builder.isle.chunk_max())
+	return Vector2i(builder.isle.chunk_max(), builder.isle.chunk_max_z())
 
 
 func map_rect() -> Rect2:
-	var half: float = builder.isle.half_size_m()
-	return Rect2(-half, -half, half * 2.0, half * 2.0)
+	var half: Vector2 = builder.isle.half_size()
+	return Rect2(-half, half * 2.0)
 
 
 func map_feature(world_x: float, world_z: float, height: float) -> int:
