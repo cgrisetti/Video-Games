@@ -58,7 +58,10 @@ const SLOT_OPEN_STAGES: Array[int] = [2, 1, 3, 1, 3, 2, 4]
 @export var calling_id: StringName = &"CALLING_SHIELD_SWORN"
 @export var weapon_archetype: int = EquipmentTierResource.WeaponArchetype.WEAPON_SWORD_BOARD
 @export var armor_weight_class: int = EquipmentTierResource.ArmorWeightClass.ARMOR_HEAVY_SHIELD_SWORN
+## The weapon's (and its offhand's) material tier, promoted at the Forge.
 @export var equipped_tier_id: StringName = &"TIER_1_HOMESTEAD"
+## The armour's material tier, promoted on its own (22 GDD §2). Empty reads as the weapon's.
+@export var armor_tier_id: StringName = &""
 
 @export_group("Layer 1: 3 Pre-Battle Equipment Seals")
 @export var weapon_seal_card_id: StringName = &""
@@ -349,6 +352,7 @@ func to_network_dict() -> Dictionary:
 		"weapon_archetype": int(weapon_archetype),
 		"armor_weight_class": int(armor_weight_class),
 		"equipped_tier_id": String(equipped_tier_id),
+		"armor_tier_id": String(armor_tier_id),
 		"weapon_seal": String(weapon_seal_card_id),
 		"offhand_seal": String(offhand_seal_card_id),
 		"mantle_seal": String(mantle_seal_card_id),
@@ -366,6 +370,7 @@ func from_network_dict(data: Dictionary) -> void:
 	weapon_archetype = clampi(int(data.get("weapon_archetype", 0)), 0, EquipmentTierResource.WeaponArchetype.size() - 1)
 	armor_weight_class = clampi(int(data.get("armor_weight_class", 0)), 0, EquipmentTierResource.ArmorWeightClass.size() - 1)
 	equipped_tier_id = StringName(str(data.get("equipped_tier_id", "TIER_1_HOMESTEAD")))
+	armor_tier_id = StringName(str(data.get("armor_tier_id", "")))
 	weapon_seal_card_id = StringName(str(data.get("weapon_seal", "")))
 	offhand_seal_card_id = StringName(str(data.get("offhand_seal", "")))
 	mantle_seal_card_id = StringName(str(data.get("mantle_seal", "")))

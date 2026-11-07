@@ -276,7 +276,8 @@ func _derive_hand() -> void:
 		var calling: CallingResource = Callings.calling(compiled.class_id, compiled.calling)
 		var calling_id: StringName = calling.calling_id if calling != null else compiled.class_id
 		var kept_body: int = loadout.body_type if loadout != null else -1
-		loadout = catalog.default_seal_loadout(compiled.class_id, actor.role(), weapon_type, calling_id, true_level, actor.party_slot, debug_stage_override)
+		loadout = catalog.default_seal_loadout(compiled.class_id, actor.role(), weapon_type, calling_id, true_level, actor.party_slot,
+			debug_stage_override, true)
 		if kept_body >= 0:
 			loadout.body_type = kept_body as PlayerLoadoutResource.YouthBodyType
 		# The cards chosen at the stamping bench (the seat's, host-checked) on the tier and frame the level forged.

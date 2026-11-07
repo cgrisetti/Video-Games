@@ -72,9 +72,9 @@ the raid board read as one book.
 | Step | What | Status |
 |---|---|---|
 | M0 | Merge the two Seal-and-Tuck branches onto main (after the Level 1 youth); fix the boot flag the youth retired. | done |
-| M1 | R8 renames in strings and docs; the bible's amendment; the Lens linter's exceptions; R7 words in the Gate 6 linter. | |
-| M2 | Character Level per hero (1 to 20) and Steward Threat. | |
-| M3 | The Google Doc's 7-tier ladder; promotion at the Forge; the Pommel-Knot. | |
+| M1 | R8 renames in strings and docs; the bible's amendment; the Lens linter's exceptions. (R7's words join the Gate 6 linter in M7, when the menus that print them change.) | done |
+| M2 | Character Level per hero (1 to 20) and Steward Threat. | done |
+| M3 | The Google Doc's 7-tier ladder; promotion at the Forge; the Pommel-Knot. | done |
 | M4 | The seven-card hand: L, R, L+R and one Tuck; level unlocks; one card per slot; the hand's actives become the socket leaves. | |
 | M5 | The Ink-Well: costs, well sizes, refills; pips and Memory retired. | |
 | M6 | Finishes by Ink-Binding Marks and the press. | |
@@ -82,4 +82,31 @@ the raid board read as one book.
 | M8 | Build notes, README, doc 03 and the doc index. | |
 
 Status is kept in this table as each step lands, so a fresh session can pick
-up from the first empty row.
+up from the first empty row. The work lives on the branch
+`everwood/grimoire-overhaul` (worktree `.claude/worktrees/grimoire-overhaul`).
+
+## 5. Build notes (as each increment lands)
+
+**M2, per-hero levels.** `PartyProgress.hero_xp` keeps each Fellowship's XP; every
+seated hero (never a companion) earns what the party earns. `character_level(class_id)`
+reads 1 to 20; `trail_level()` stays the party's 1 to 10 and still paces the trail's
+milestones and the foes' badges, so nothing on the Bramble-Bridge trail moved. The
+hand's slots and the host's hand check read the hero's own level. A save from before
+this phase seeds all three Fellowships with the party's XP. `steward_threat()` is
+Character Level plus the weapon tier's rank. Levels 11 to 20 cost 1,300 to 5,800 XP
+[tuning TBD: 04_BALANCE has no Stage 3 or 4 pacing yet].
+
+**M3, the ladder.** The seven tiers now carry the Google Doc's names, bands, Light
+and Heavy (as decimals, rounded per blow), ranks, Armor Guard by weight (an explicit
+table, not a scale of one number), four arms and four offhands each (the maul seals a
+Pommel-Knot: R6) and the recipe table. The Seal-and-Tuck branch's tier ids for 4 to 7
+read back as the tier now at their place (`LEGACY_TIER_IDS`). `PartyProgress.promoted_tiers`
+keeps each Fellowship's weapon tier and armour tier; `request_promotion` promotes one
+step at the Forge when the hero's level opens it (host-checked). A live hero wears
+its promoted tiers, capped by its level; the catalog's planning hands (a "Level 20
+hero") still read the level's tier. Deliberate differences: no Chime cost yet
+(`PROMOTE_CHIME_COST` is all 0, the docs give none); the "after the Rime-Firth
+milestone" gate isn't wired (the level gate is); the trail's four weapon tiers
+(Apprentice Timber to the Doverslap Relic) still set the combat numbers of the
+Bramble-Bridge trail weapons, and folding them onto the ladder is the next step
+after this phase.

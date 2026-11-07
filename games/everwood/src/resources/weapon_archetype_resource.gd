@@ -37,18 +37,27 @@ func is_ranged() -> bool:
 
 ## The arm's name at a tier: the homestead name at Tier 1, the material on the frame after.
 func tier_weapon_name(tier: EquipmentTierResource) -> String:
-	if tier == null or tier.tier_index <= 1:
+	if tier == null:
+		return homestead_name
+	if not tier.weapon_names.is_empty():
+		return tier.weapon_name(archetype)
+	if tier.tier_index <= 1:
 		return homestead_name
 	return "%s %s" % [tier.weapon_material_name, frame_noun]
+
+
+## The offhand this frame seals at a tier (the maul's is its Pommel-Knot).
+func tier_offhand_name(tier: EquipmentTierResource) -> String:
+	return tier.offhand_name(archetype) if tier != null else "Offhand"
 
 
 ## "2-3 dmg (Light: 2, Heavy: 3)" at a tier.
 func damage_label(tier: EquipmentTierResource) -> String:
 	if tier == null:
 		return ""
-	var light: int = tier.get_weapon_damage(false, archetype)
-	var heavy: int = tier.get_weapon_damage(true, archetype)
-	var mend: int = tier.get_lantern_mend(archetype)
-	if mend > 0:
-		return "%d dmg + %d Hearth-Mend" % [light, mend]
-	return "%d-%d dmg (%s: %d, %s: %d)" % [light, heavy, light_label, light, heavy_label, heavy]
+	var light: float = tier.get_weapon_damage(false, archetype)
+	var heavy: float = tier.get_weapon_damage(true, archetype)
+	var mend: float = tier.get_lantern_mend(archetype)
+	if mend > 0.0:
+		return "%.1f dmg + %.1f Hearth-Mend" % [light, mend]
+	return "%.1f-%.1f dmg (%s: %.1f, %s: %.1f)" % [light, heavy, light_label, light, heavy_label, heavy]

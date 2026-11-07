@@ -25,25 +25,29 @@ extends RefCounted
 
 const Slot = PlayerLoadoutResource.TriggerSlot
 const Arch = EquipmentTierResource.WeaponArchetype
-## The master table (§3.1): weapon material, Shield-Sworn heavy, Wayfarer medium, Lantern-Bearer light.
+## The Google Doc's master table (§2): weapon material, then heavy, medium and light armour.
 const TIER_NAMES: Array[Array] = [
 	["Orchard-Wood", "Oak-Bark & Boiled-Hide", "Bracken-Pelt Jerkin", "Mended-Linen Smock"],
-	["Bog-Bronze", "Bog-Bronze Rim & Layered-Hide", "Mire-Cured Buckskin", "Orchard-Wool Mantle"],
-	["Forge-Iron", "Kettle-Link & Iron-Buckler", "Riveted Crag-Coat", "Nettle-Weave Vestment"],
-	["Rime-Silver", "Frost-Folded Forge-Plate", "Hoar-Stag Scale-Coat", "Moth-Silk Habit"],
-	["Saffron-Gold", "Gilded Weir-Plate", "Tide-Drake Brigandine", "Gossamer-Spun Shroud"],
-	["Cairn-Heart", "Cairn-Scale Great-Plate", "Elder-Wyrm Hide-Coat", "Cloud-Fleece Raiment"],
-	["Star-Glass & Ember-Iron", "Heart-Crag & Star-Clad Plate", "Star-Woven Wyrm-Coat", "Star-Ink Great-Mantle"],
+	["Bog-Bronze", "Kettle-Link Coat", "Boiled-Buckskin Coat", "Orchard-Wool Mantle"],
+	["Forge-Iron", "Forge-Plate Harness", "Briar-Studded Brigandine", "Nettle-Weave Mantle"],
+	["Barrow-Steel", "Barrow-Mail & Pauldrons", "Firth-Seal Coat", "Moth-Silk Mantle"],
+	["Rime-Silver", "Rime-Clad Plate", "Frost-Stag Pelt-Coat", "Gossamer-Spun Mantle"],
+	["Saffron-Gold", "Cairn-Scale Great-Plate", "Wyrm-Hide Coat", "Sun-Loomed Mantle"],
+	["Star-Glass & Heart-Crag", "Heart-Crag & Ember-Clad Plate", "Gale-Drake Scale-Coat", "Star-Ink Great-Mantle"],
 ]
-## The recipe table (§3.2): albedo, metallic, roughness, rim strength, rim tint, emissive pulse.
+## Armor Guard by weight (heavy, medium, light) and the tier's Light blow and rank.
+const TIER_GUARDS: Array[Array] = [[8, 5, 3], [16, 12, 8], [24, 18, 13], [32, 24, 18], [40, 30, 23], [46, 35, 27], [52, 40, 32]]
+const TIER_LIGHTS: Array[float] = [2.4, 5.5, 9.5, 14.5, 20.5, 27.5, 36.0]
+const TIER_RANKS: Array[int] = [0, 3, 6, 10, 13, 16, 20]
+## The recipe table (§2): albedo, metallic, roughness, rim strength, rim tint, emissive pulse.
 const TIER_RECIPES: Array[Array] = [
-	["#8B5A2B", 0.00, 0.88, 0.15, "#D2B48C", 0.00],
-	["#CD7F32", 0.68, 0.52, 0.30, "#F4A460", 0.00],
-	["#707B84", 0.82, 0.42, 0.40, "#B0C4DE", 0.00],
-	["#D8E6F2", 0.92, 0.24, 0.65, "#E0FFFF", 0.08],
-	["#F2B732", 0.95, 0.20, 0.75, "#FFFACD", 0.15],
-	["#3B444B", 0.60, 0.32, 0.85, "#FF7F50", 0.28],
-	["#1E243B", 0.96, 0.14, 1.00, "#9370DB", 0.55],
+	["#7A5438", 0.00, 0.88, 0.18, "#D2B48C", 0.00],
+	["#9E6B3B", 0.72, 0.46, 0.25, "#F4A460", 0.00],
+	["#5E666E", 0.85, 0.38, 0.30, "#B0C4DE", 0.00],
+	["#8A99AD", 0.90, 0.28, 0.38, "#C9D6E3", 0.04],
+	["#C9E2F2", 0.94, 0.20, 0.52, "#E0FFFF", 0.08],
+	["#E5B546", 0.96, 0.16, 0.65, "#FFFACD", 0.15],
+	["#3D355E", 0.98, 0.12, 0.85, "#9370DB", 0.55],
 ]
 const HOMESTEAD_NAMES: Array[String] = ["Orchard-Stick & Bark-Buckler", "Cooper's Cider-Mallet", "Bent-Twig Bough & Reed-Shafts", "Rowan-Crook & Tallow-Jar"]
 const SEAL_NAMES: Array[String] = ["Seal of the Quiet Weir", "Seal of the Ember-Bough", "Seal of the Old-Root", "Seal of the West-Wind"]
@@ -105,7 +109,7 @@ static func _hand(tier_id: StringName, archetype: int = Arch.WEAPON_SWORD_BOARD)
 
 ## The doc's endgame raid hand: three seals and four invocations.
 static func _raid_hand() -> PlayerLoadoutResource:
-	var hand: PlayerLoadoutResource = _hand(ArsenalCatalog.TIER_7_STAR_HEART)
+	var hand: PlayerLoadoutResource = _hand(ArsenalCatalog.TIER_7_STAR_GLASS)
 	hand.weapon_seal_card_id = ArsenalCatalog.CARD_EMBER_BOUGH
 	hand.offhand_seal_card_id = ArsenalCatalog.CARD_QUIET_WEIR
 	hand.mantle_seal_card_id = ArsenalCatalog.CARD_OLD_ROOT_BASTION
@@ -127,13 +131,19 @@ func _stage_1_philological_linter_gate() -> void:
 	for index: int in mini(tiers.size(), TIER_NAMES.size()):
 		var tier: EquipmentTierResource = tiers[index]
 		ids_ok = ids_ok and tier.tier_id == ArsenalCatalog.MATERIAL_TIER_IDS[index] and tier.tier_index == index + 1
-		names_ok = names_ok and Array(tier.display_names()) == TIER_NAMES[index]
+		names_ok = names_ok and Array(tier.display_names()).slice(0, 4) == TIER_NAMES[index] and tier.weapon_names.size() == 4 \
+			and tier.offhand_names.size() == 4 and is_equal_approx(tier.base_light_damage, TIER_LIGHTS[index]) \
+			and tier.gear_threat_rank == TIER_RANKS[index] and tier.armor_guard_percent(0) == TIER_GUARDS[index][0] \
+			and tier.armor_guard_percent(1) == TIER_GUARDS[index][1] and tier.armor_guard_percent(2) == TIER_GUARDS[index][2]
 		bands_ok = bands_ok and tier.min_true_level <= tier.max_true_level and tier.min_renown_rank <= tier.max_renown_rank \
 			and tier.max_renown_rank <= ArsenalCatalog.MAX_RENOWN_RANK
-	check.call(ids_ok, "exactly seven material tiers, TIER_1_HOMESTEAD to TIER_7_STAR_HEART, numbered 1 to 7")
-	check.call(names_ok, "the 28 names of the master table stand on the seven tiers (Tier 7's mantle reads Star-Ink, by Gate 6)")
-	check.call(bands_ok and tiers[0].true_level_band() == Vector2i(1, 3) and tiers[6].true_level_band() == Vector2i(20, 20)
-		and tiers[6].renown_rank_band() == Vector2i(38, 40), "every tier's level and rank bands run Lv 1-3 / Rank 1-5 up to Lv 20 / Rank 38-40")
+	check.call(ids_ok, "exactly seven material tiers, TIER_1_HOMESTEAD to TIER_7_STAR_GLASS, numbered 1 to 7")
+	check.call(names_ok, "the Google Doc's ladder stands on the seven tiers: its 28 material and armour names (Tier 7's mantle reads Star-Ink, by Gate 6), four arms and four offhands a tier (the maul's Pommel-Knot), Light 2.4 to 36.0, ranks +0 to +20, Armor Guard 8/5/3% to 52/40/32%")
+	check.call(bands_ok and tiers[0].true_level_band() == Vector2i(1, 4) and tiers[3].true_level_band() == Vector2i(11, 13)
+		and tiers[6].true_level_band() == Vector2i(20, 20) and tiers[6].renown_rank_band() == Vector2i(38, 40)
+		and tiers[6].weapon_name(Arch.WEAPON_SWORD_BOARD) == "Star-Glass Steward-Blade & Heart-Crag Bulwark"
+		and tiers[0].offhand_name(Arch.WEAPON_GREAT_MALLET) == "Oak-Knot Pommel",
+		"every tier's level and Threat bands run Lv 1-4 / Threat 1-7 up to Lv 20 / Threat 38-40; Tier 7's shield is the Heart-Crag Bulwark, the Orchard maul seals its Oak-Knot Pommel")
 	var arms: Array[WeaponArchetypeResource] = catalog.weapon_archetypes()
 	var arms_ok: bool = arms.size() == 4
 	for index: int in mini(arms.size(), 4):
@@ -194,12 +204,13 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	var bough: PlayerLoadoutResource = _hand(ArsenalCatalog.TIER_1_HOMESTEAD, Arch.WEAPON_BOUGH_BOW)
 	var crook: PlayerLoadoutResource = _hand(ArsenalCatalog.TIER_1_HOMESTEAD, Arch.WEAPON_LANTERN_STAFF)
 	var tier_1: EquipmentTierResource = catalog.get_tier(ArsenalCatalog.TIER_1_HOMESTEAD)
-	check.call(catalog.evaluate_hit_damage(stick, false, false) == 2 and catalog.evaluate_hit_damage(stick, true, false) == 3,
-		"a Lv 1 Orchard-Stick deals 2 light and 3 heavy")
-	check.call(catalog.evaluate_hit_damage(mallet, false, false) == 3 and catalog.evaluate_hit_damage(mallet, true, false) == 4
-		and catalog.evaluate_hit_damage(bough, false, false) == 2 and catalog.evaluate_hit_damage(bough, true, false) == 3
-		and catalog.evaluate_hit_damage(crook, false, false) == 2 and tier_1.get_lantern_mend(Arch.WEAPON_LANTERN_STAFF) == 3,
-		"the Cider-Mallet 3 and 4, the Bent-Twig Bough 2 and 3, the Rowan-Crook 2 and a 3 Hearth-Mend")
+	check.call(is_equal_approx(tier_1.get_weapon_damage(false, Arch.WEAPON_SWORD_BOARD), 2.4) and is_equal_approx(tier_1.get_weapon_damage(true, Arch.WEAPON_SWORD_BOARD), 3.5)
+		and catalog.evaluate_hit_damage(stick, false, false) == 2 and catalog.evaluate_hit_damage(stick, true, false) == 4,
+		"a Lv 1 Orchard-Wood Stick deals 2.4 light and 3.5 heavy (2 and 4 a blow)")
+	check.call(is_equal_approx(tier_1.get_weapon_damage(false, Arch.WEAPON_GREAT_MALLET), 3.0) and catalog.evaluate_hit_damage(mallet, false, false) == 3
+		and catalog.evaluate_hit_damage(bough, false, false) == 2 and catalog.evaluate_hit_damage(crook, false, false) == 2
+		and is_equal_approx(tier_1.get_lantern_mend(Arch.WEAPON_LANTERN_STAFF), 3.5),
+		"the Cooper's Mallet hits 3.0 (the maul's heft), the Bent-Twig Bow and the Rowan Walking-Stick 2, with a 3.5 Hearth-Mend")
 	var mite: float = catalog.estimate_time_to_beat(stick, ArsenalCatalog.BRAMBLE_MITE_HP)
 	check.call(mite >= ArsenalCatalog.HOMESTEAD_FIGHT_MIN_SEC and mite <= ArsenalCatalog.HOMESTEAD_FIGHT_MAX_SEC
 		and catalog.estimate_time_to_beat(stick, ArsenalCatalog.BOULDER_BADGER_HP) > mite,
@@ -209,8 +220,8 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	warden.offhand_seal_card_id = ArsenalCatalog.CARD_QUIET_WEIR
 	var star_hit: Dictionary = catalog.evaluate_incoming_hit(warden, 100, &"SIGN_STAR_TIDE")
 	var root_hit: Dictionary = catalog.evaluate_incoming_hit(warden, 100, &"SIGN_IRON_ROOT")
-	check.call(bool(star_hit["stun_immune"]) and int(star_hit["final_damage"]) <= 50 and int(star_hit["final_damage"]) == 46
-		and not bool(root_hit["stun_immune"]) and int(root_hit["final_damage"]) == 81,
+	check.call(bool(star_hit["stun_immune"]) and int(star_hit["final_damage"]) <= 50 and int(star_hit["final_damage"]) == 41
+		and not bool(root_hit["stun_immune"]) and int(root_hit["final_damage"]) == 76,
 		"a Forge-Iron buckler stamped with the Quiet Weir takes a 100 Star-Tide blow for %d, unstunned, and an Iron-Root one for %d"
 		% [int(star_hit["final_damage"]), int(root_hit["final_damage"])])
 	var controller: EquipmentSealComponent = EquipmentSealComponent.new()
@@ -224,9 +235,9 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	check.call(ArsenalCatalog.compute_true_level_from_renown(40) == 20 and ArsenalCatalog.compute_true_level_from_renown(1) == 1
 		and ArsenalCatalog.compute_true_level_from_renown(7) == 4 and ArsenalCatalog.compute_true_level_from_renown(39) == 20
 		and ArsenalCatalog.compute_renown_from_true_level(20) == 40 and ArsenalCatalog.compute_renown_from_true_level(1) == 2
-		and catalog.tier_for_renown(40).tier_id == ArsenalCatalog.TIER_7_STAR_HEART and catalog.tier_for_true_level(10).tier_id == ArsenalCatalog.TIER_3_FORGE_IRON
-		and catalog.tier_for_true_level(4).tier_id == ArsenalCatalog.TIER_2_BOG_BRONZE and catalog.tier_for_true_level(1).tier_id == ArsenalCatalog.TIER_1_HOMESTEAD,
-		"Renown Rank 40 is True Level 20 (and Rank 1 Level 1, 7 Level 4, 39 Level 20); Level 20 reads Rank 40; Lv 4 wears Bog-Bronze, Lv 10 Forge-Iron, Rank 40 Star-Glass")
+		and catalog.tier_for_renown(40).tier_id == ArsenalCatalog.TIER_7_STAR_GLASS and catalog.tier_for_true_level(10).tier_id == ArsenalCatalog.TIER_3_FORGE_IRON
+		and catalog.tier_for_true_level(5).tier_id == ArsenalCatalog.TIER_2_BOG_BRONZE and catalog.tier_for_true_level(4).tier_id == ArsenalCatalog.TIER_1_HOMESTEAD and catalog.tier_for_true_level(1).tier_id == ArsenalCatalog.TIER_1_HOMESTEAD,
+		"Renown Rank 40 is True Level 20 (and Rank 1 Level 1, 7 Level 4, 39 Level 20); Level 20 reads Rank 40; Lv 4 still wears Orchard-Wood, Lv 5 Bog-Bronze, Lv 10 Forge-Iron, Rank 40 Star-Glass")
 	# The recipe table (§3.2), float for float.
 	var recipes_ok: bool = true
 	var tiers: Array[EquipmentTierResource] = catalog.get_all_tiers()
@@ -268,7 +279,7 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 		and at_4.seal_count() == 1 and at_4.offhand_seal_card_id == ArsenalCatalog.CARD_QUIET_WEIR and at_4.active_count() == 1
 		and at_6.seal_count() == 2 and at_6.active_count() == 2 and at_6.slot_l_tuck_id == &"" and at_6.slot_r_tuck_id == &""
 		and at_11.seal_count() == 3 and at_11.active_count() == 3 and at_11.slot_l_tuck_id != &"" and at_11.slot_r_tuck_id == &""
-		and at_20.seal_count() == 3 and at_20.active_count() == 4 and at_20.equipped_tier_id == ArsenalCatalog.TIER_7_STAR_HEART
+		and at_20.seal_count() == 3 and at_20.active_count() == 4 and at_20.equipped_tier_id == ArsenalCatalog.TIER_7_STAR_GLASS
 		and at_1.validate_loadout_for_stage(1) and at_6.validate_loadout_for_stage(2) and at_11.validate_loadout_for_stage(3) and at_20.validate_loadout_for_stage(4),
 		"a Shield-Sworn's default hand grows up the ladder: nothing at Lv 1, the L card at 3, the buckler seal at 4, two and two at 6, three and three at 11, all seven at 20")
 	check.call(at_1.body_type == PlayerLoadoutResource.YouthBodyType.BODY_MALE_YOUTH and at_3.body_type == PlayerLoadoutResource.YouthBodyType.BODY_FEMALE_YOUTH
@@ -282,9 +293,8 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	var apex_heavy: int = catalog.evaluate_hit_damage(apex, true, true, ArsenalCatalog.CARD_EMBER_BOUGH, false)
 	var apex_tucked: int = catalog.evaluate_hit_damage(apex, true, true, ArsenalCatalog.CARD_EMBER_BOUGH, true)
 	var apex_plain: int = catalog.evaluate_hit_damage(apex, true, false)
-	check.call(apex.weapon_seal_card_id == ArsenalCatalog.CARD_EMBER_BOUGH and apex_light == 78 and apex_heavy == 90 and apex_tucked == 108 and apex_plain == 58
-		and apex_light >= 75 and apex_tucked <= 115,
-		"a Tier 7 Star-Glass blade with the Ember-Bough pressed on it strikes for 58, and under its Pocket-Pull coat 78, 90 and 108 with a tuck (75 to 115)")
+	check.call(apex.weapon_seal_card_id == ArsenalCatalog.CARD_EMBER_BOUGH and apex_light == 62 and apex_heavy == 87 and apex_tucked == 105 and apex_plain == 56,
+		"a Tier 7 Star-Glass blade (36.0 light, 52.2 heavy) with the Ember-Bough pressed on it strikes for 56, and under its Pocket-Pull coat 62, 87 and 105 with a tuck")
 	# The stagger cadence (§5.1): four Tier 7 heroes on the Elder Cairn-Drake's 1,200 posture.
 	var party: Array[PlayerLoadoutResource] = [
 		at_20,
@@ -342,7 +352,10 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	hero.seal.clear_custom_loadout()
 	await _frames(2)
 	var hand: PlayerLoadoutResource = hero.seal.loadout
-	var expected_tier: EquipmentTierResource = catalog.tier_for_true_level(PartyProgress.current.character_level(hero.loadout.class_id))
+	# The live hero wears the tier its Fellowship was promoted to at the Forge, never past its level's.
+	var hero_class: StringName = hero.loadout.class_id
+	var expected_tier: EquipmentTierResource = catalog.tier_at(mini(PartyProgress.current.promoted_tier(hero_class, PartyProgress.PIECE_WEAPON),
+		catalog.tier_for_true_level(PartyProgress.current.character_level(hero_class)).tier_index))
 	var expected_stage: int = PlayerLoadoutResource.stage_for_true_level(PartyProgress.current.character_level(hero.loadout.class_id))
 	check.call(hand != null and hand.equipped_tier_id == expected_tier.tier_id and hero.seal.progression_stage == expected_stage
 		and hand.validate_loadout_for_stage(expected_stage) and hand.seal_count() == PlayerLoadoutResource.seals_open_at_stage(expected_stage)
@@ -541,7 +554,7 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	# Network (Gate 4): the hand as Strings and ints, the RPCs there, a JSON round trip.
 	var raid: PlayerLoadoutResource = _raid_hand()
 	var data: Dictionary = raid.to_network_dict()
-	var primitives: bool = data.size() == 12
+	var primitives: bool = data.size() == 13
 	for value: Variant in data.values():
 		primitives = primitives and typeof(value) in [TYPE_INT, TYPE_STRING]
 	var json_back: PlayerLoadoutResource = PlayerLoadoutResource.from_dict(JSON.parse_string(JSON.stringify(data)) as Dictionary)
@@ -550,7 +563,7 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	check.call(primitives and json_back.same_as(raid) and json_back.get_total_equipped_card_count() == 7 and copy_back.same_as(hand)
 		and hero.seal.has_method(&"sync_loadout_rpc") and hero.seal.has_method(&"trigger_pocket_pull_rpc")
 		and ScribeSignResource.from_id(ScribeSignResource.id_of(ScribeSignResource.Sign.SIGN_RIME_GALE)) == ScribeSignResource.Sign.SIGN_RIME_GALE,
-		"a hand crosses the network as 12 Strings and ints (a JSON round trip keeps all 7 cards), on sync_loadout_rpc and trigger_pocket_pull_rpc; Signs travel as ids")
+		"a hand crosses the network as 13 Strings and ints (a JSON round trip keeps all 7 cards), on sync_loadout_rpc and trigger_pocket_pull_rpc; Signs travel as ids")
 	var pulled_copy: int = hero.visuals.pocket_pull_count()
 	hero.seal.trigger_pocket_pull_rpc(ArsenalCatalog.CARD_QUIET_WEIR, Slot.L, 0)
 	check.call(hero.visuals.pocket_pull_count() == pulled_copy + 1 and hero.visuals.is_flourishing(),

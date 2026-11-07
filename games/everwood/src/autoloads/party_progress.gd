@@ -58,6 +58,11 @@ const LEVEL_XP: Array[int] = [0, 70, 105, 230, 320, 560, 700, 800, 850, 1050,
 const TRAIL_TOP_LEVEL: int = 10
 ## The top Character Level (the Google Doc's Character Level 1-20).
 const MAX_CHARACTER_LEVEL: int = 20
+## The two pieces the Forge promotes: the weapon with its offhand, and the armour.
+const PIECE_WEAPON: StringName = &"weapon"
+const PIECE_ARMOR: StringName = &"armor"
+## What a promotion costs in Chimes, by the tier it reaches (index 1 to 7) [CD: the Google Doc gives no costs].
+const PROMOTE_CHIME_COST: Array[int] = [0, 0, 0, 0, 0, 0, 0, 0]
 
 ## The live autoload node (see NetworkManager.current for why).
 static var current: PartyProgress
@@ -75,6 +80,9 @@ var xp: int = 0
 ## from it). Each seated hero earns what the party earns, so heroes played apart
 ## drift apart: a sibling's fresh Fellowship starts at Level 1 (22 GDD §2).
 var hero_xp: Dictionary[StringName, int] = {}
+## Class id -> the material tier (1 to 7) each piece has been promoted to at the
+## Forge (22 GDD §2): PIECE_WEAPON is the weapon and its offhand, PIECE_ARMOR the armour.
+var promoted_tiers: Dictionary[StringName, Dictionary] = {}
 ## Tests only (apply_full_endgame_kit_for_testing): new seats wear the classic
 ## full kits. Survives load_save, so a test that reloads its save keeps it.
 var endgame_kits_for_testing: bool = false
@@ -453,6 +461,63 @@ func callings_unlocked_for(class_id: StringName) -> bool:
 	return character_level(class_id) >= ArsenalCatalog.CALLING_LEVEL
 
 
+## The material tier (1 to 7) a Fellowship's piece has been promoted to.
+func promoted_tier(class_id: StringName, piece: StringName) -> int:
+	var tiers: Dictionary = promoted_tiers.get(class_id, {})
+	return clampi(int(tiers.get(piece, 1)), 1, EquipmentTierResource.TIER_COUNT)
+
+
+## The highest tier a Fellowship's hero is old enough for (its level's band).
+func tier_open_for(class_id: StringName) -> int:
+	return ArsenalCatalog.current.tier_for_true_level(character_level(class_id)).tier_index
+
+
+## The tier a piece may be promoted to next, or 0 when the hero's level hasn't opened it.
+func next_promotion(class_id: StringName, piece: StringName) -> int:
+	var now: int = promoted_tier(class_id, piece)
+	return now + 1 if now < tier_open_for(class_id) else 0
+
+
+## Why a piece can't be promoted ("" when it can): the next tier's level, or the Chimes.
+func promotion_problem(class_id: StringName, piece: StringName) -> String:
+	var now: int = promoted_tier(class_id, piece)
+	if now >= EquipmentTierResource.TIER_COUNT:
+		return "Already Star-Glass, the top of the ladder"
+	var next_tier: EquipmentTierResource = ArsenalCatalog.current.tier_at(now + 1)
+	if character_level(class_id) < next_tier.min_true_level:
+		return "%s opens at Lv %d" % [next_tier.weapon_material_name, next_tier.min_true_level]
+	if chimes < PROMOTE_CHIME_COST[now + 1]:
+		return "Needs %d Chimes" % PROMOTE_CHIME_COST[now + 1]
+	return ""
+
+
+## Asks the host to promote a Fellowship's piece one tier at the Forge.
+func request_promotion(class_id: StringName, piece: StringName) -> void:
+	if NetworkManager.current.is_host():
+		_server_promote(class_id, piece)
+	else:
+		_request_promote.rpc_id(1, String(class_id), String(piece))
+
+
+## Host only: promotes the piece one tier if the hero's level allows it. True when it did.
+func _server_promote(class_id: StringName, piece: StringName) -> bool:
+	if promotion_problem(class_id, piece) != "":
+		return false
+	var reached: int = promoted_tier(class_id, piece) + 1
+	chimes -= PROMOTE_CHIME_COST[reached]
+	var tiers: Dictionary = promoted_tiers.get(class_id, {}).duplicate()
+	tiers[piece] = reached
+	promoted_tiers[class_id] = tiers
+	_commit()
+	return true
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_promote(class_id: String, piece: String) -> void:
+	if multiplayer.is_server():
+		_server_promote(StringName(class_id), StringName(piece))
+
+
 ## Steward Threat (the Google Doc's 1-40): Character Level plus the material rank
 ## of the weapon the hero wears (+0 at Orchard-Wood to +20 at Star-Glass).
 func steward_threat(class_id: StringName, weapon_rank: int) -> int:
@@ -510,6 +575,8 @@ func apply_full_endgame_kit_for_testing() -> void:
 	xp = LEVEL_XP[TRAIL_TOP_LEVEL - 1]
 	for class_id: StringName in ClassLoadouts.PLAYER_CLASSES:
 		hero_xp[class_id] = xp
+		var reached: int = tier_open_for(class_id)
+		promoted_tiers[class_id] = {PIECE_WEAPON: reached, PIECE_ARMOR: reached}
 	_commit()
 
 
@@ -537,6 +604,7 @@ func load_save() -> void:
 	victories = 0
 	xp = 0
 	hero_xp.clear()
+	promoted_tiers.clear()
 	levels.clear()
 	collection.clear()
 	kits.clear()
@@ -560,6 +628,13 @@ func load_save() -> void:
 				hero_xp[class_id] = xp
 		else:
 			_read_hero_xp(saved_heroes)
+		# A save from before the Forge: every piece stands at the tier its hero's level reached.
+		var saved_tiers: Dictionary = file.get_value("heroes", "tiers", {}) as Dictionary
+		_read_promoted_tiers(saved_tiers)
+		for class_id: StringName in ClassLoadouts.PLAYER_CLASSES:
+			if not promoted_tiers.has(class_id):
+				var reached: int = tier_open_for(class_id)
+				promoted_tiers[class_id] = {PIECE_WEAPON: reached, PIECE_ARMOR: reached}
 		for id: StringName in UPGRADES:
 			levels[id] = clampi(int(file.get_value("upgrades", String(id), 0)), 0, MAX_UPGRADE_LEVEL)
 		_read_collection(file.get_value("cards", "collection", {}) as Dictionary)
@@ -590,6 +665,7 @@ func save() -> Error:
 	file.set_value("party", "victories", victories)
 	file.set_value("trail", "xp", xp)
 	file.set_value("heroes", "xp", _plain_hero_xp())
+	file.set_value("heroes", "tiers", _plain_promoted_tiers())
 	for id: StringName in UPGRADES:
 		file.set_value("upgrades", String(id), level_of(id))
 	file.set_value("cards", "collection", _plain_collection())
@@ -615,6 +691,25 @@ func _plain_hero_xp() -> Dictionary:
 	for class_id: StringName in hero_xp:
 		plain[String(class_id)] = hero_xp[class_id]
 	return plain
+
+
+func _plain_promoted_tiers() -> Dictionary:
+	var plain: Dictionary = {}
+	for class_id: StringName in promoted_tiers:
+		var tiers: Dictionary = promoted_tiers[class_id]
+		plain[String(class_id)] = {"weapon": int(tiers.get(PIECE_WEAPON, 1)), "armor": int(tiers.get(PIECE_ARMOR, 1))}
+	return plain
+
+
+func _read_promoted_tiers(plain: Dictionary) -> void:
+	promoted_tiers.clear()
+	for class_id: Variant in plain:
+		var saved: Variant = plain[class_id]
+		if saved is Dictionary:
+			var tiers: Dictionary = saved as Dictionary
+			promoted_tiers[StringName(str(class_id))] = {
+				PIECE_WEAPON: clampi(int(tiers.get("weapon", 1)), 1, EquipmentTierResource.TIER_COUNT),
+				PIECE_ARMOR: clampi(int(tiers.get("armor", 1)), 1, EquipmentTierResource.TIER_COUNT)}
 
 
 func _read_hero_xp(plain: Dictionary) -> void:
@@ -668,7 +763,7 @@ func _snapshot() -> Dictionary:
 	var bought: Dictionary = {}
 	for id: StringName in UPGRADES:
 		bought[String(id)] = level_of(id)
-	return {"chimes": chimes, "levels": bought, "victories": victories, "xp": xp, "hero_xp": _plain_hero_xp(), "collection": _plain_collection(),
+	return {"chimes": chimes, "levels": bought, "victories": victories, "xp": xp, "hero_xp": _plain_hero_xp(), "tiers": _plain_promoted_tiers(), "collection": _plain_collection(),
 		"glimmer_seen": _plain_pattern_seen()}
 
 
@@ -691,6 +786,7 @@ func _receive_progress(data: Dictionary) -> void:
 	victories = maxi(0, int(data.get("victories", 0)))
 	xp = clampi(int(data.get("xp", 0)), 0, LEVEL_XP.back())
 	_read_hero_xp(data.get("hero_xp", {}) as Dictionary)
+	_read_promoted_tiers(data.get("tiers", {}) as Dictionary)
 	_read_collection(data.get("collection", {}) as Dictionary)
 	_read_pattern_seen(data.get("glimmer_seen", {}) as Dictionary)
 	progress_changed.emit()

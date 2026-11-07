@@ -215,12 +215,17 @@ const BANNED_LINTER_WORDS: PackedStringArray = [
 const TIER_1_HOMESTEAD: StringName = &"TIER_1_HOMESTEAD"
 const TIER_2_BOG_BRONZE: StringName = &"TIER_2_BOG_BRONZE"
 const TIER_3_FORGE_IRON: StringName = &"TIER_3_FORGE_IRON"
-const TIER_4_RIME_SILVER: StringName = &"TIER_4_RIME_SILVER"
-const TIER_5_SAFFRON_GOLD: StringName = &"TIER_5_SAFFRON_GOLD"
-const TIER_6_CAIRN_HEART: StringName = &"TIER_6_CAIRN_HEART"
-const TIER_7_STAR_HEART: StringName = &"TIER_7_STAR_HEART"
-const MATERIAL_TIER_IDS: Array[StringName] = [TIER_1_HOMESTEAD, TIER_2_BOG_BRONZE, TIER_3_FORGE_IRON, TIER_4_RIME_SILVER,
-	TIER_5_SAFFRON_GOLD, TIER_6_CAIRN_HEART, TIER_7_STAR_HEART]
+const TIER_4_BARROW_STEEL: StringName = &"TIER_4_BARROW_STEEL"
+const TIER_5_RIME_SILVER: StringName = &"TIER_5_RIME_SILVER"
+const TIER_6_SAFFRON_GOLD: StringName = &"TIER_6_SAFFRON_GOLD"
+const TIER_7_STAR_GLASS: StringName = &"TIER_7_STAR_GLASS"
+## The Seal-and-Tuck branch's tier ids, read back as the tier now at their place on the ladder.
+const LEGACY_TIER_IDS: Dictionary[StringName, StringName] = {
+	&"TIER_4_RIME_SILVER": TIER_4_BARROW_STEEL, &"TIER_5_SAFFRON_GOLD": TIER_5_RIME_SILVER,
+	&"TIER_6_CAIRN_HEART": TIER_6_SAFFRON_GOLD, &"TIER_7_STAR_HEART": TIER_7_STAR_GLASS,
+}
+const MATERIAL_TIER_IDS: Array[StringName] = [TIER_1_HOMESTEAD, TIER_2_BOG_BRONZE, TIER_3_FORGE_IRON, TIER_4_BARROW_STEEL,
+	TIER_5_RIME_SILVER, TIER_6_SAFFRON_GOLD, TIER_7_STAR_GLASS]
 ## The four base armaments (§2.2), in EquipmentTierResource.WeaponArchetype order.
 const WEAPON_SWORD_BOARD: StringName = &"WEAPON_SWORD_BOARD"
 const WEAPON_GREAT_MALLET: StringName = &"WEAPON_GREAT_MALLET"
@@ -253,7 +258,7 @@ const HOMESTEAD_FIGHT_MIN_SEC: float = 12.0
 const HOMESTEAD_FIGHT_MAX_SEC: float = 15.0
 ## Posture-bearing heavies a raiding hero lands a second (one every eleven, between roars and rolls), and a child's honest stick swings.
 const RAID_POSTURE_STRIKES_PER_SEC: float = 0.09
-const HOMESTEAD_STRIKES_PER_SEC: float = 0.8
+const HOMESTEAD_STRIKES_PER_SEC: float = 0.65
 ## What the Reed-Light Scribery asks for a seal card (bought once, it fits every slot).
 const SEAL_CHIME_COST: int = 40
 ## Each role's default hand, auto-stamped by stage until a player chooses their own at the Binder's
@@ -376,7 +381,12 @@ func card(id: StringName) -> ScribeCardResource:
 
 ## A material tier by id (&"TIER_3_FORGE_IRON"), or null.
 func get_tier(tier_id: StringName) -> EquipmentTierResource:
-	return _tiers.get(tier_id, null)
+	return _tiers.get(LEGACY_TIER_IDS.get(tier_id, tier_id), null)
+
+
+## The tier at a place on the ladder (1 to 7), or null.
+func tier_at(index: int) -> EquipmentTierResource:
+	return _tiers.get(_tier_order[index - 1], null) if index >= 1 and index <= _tier_order.size() else null
 
 
 ## The seven tiers, Tier 1 first.
@@ -845,7 +855,9 @@ func evaluate_hit_damage(loadout: PlayerLoadoutResource, is_heavy_attack: bool, 
 ## the stun off. A Forge-Iron buckler stamped with the Quiet Weir takes a
 ## 100-damage Star-Tide blow for 46, unstunned.
 func evaluate_incoming_hit(loadout: PlayerLoadoutResource, raw_damage: int, incoming_sign: StringName) -> Dictionary:
-	var tier: EquipmentTierResource = get_tier(loadout.equipped_tier_id) if loadout != null else null
+	var tier: EquipmentTierResource = null
+	if loadout != null:
+		tier = get_tier(loadout.armor_tier_id if loadout.armor_tier_id != &"" else loadout.equipped_tier_id)
 	var mitigation: float = 0.04
 	if tier != null:
 		mitigation = tier.get_mitigation_for_class(loadout.armor_weight_class as EquipmentTierResource.ArmorWeightClass)
@@ -894,7 +906,10 @@ func estimate_stagger_seconds(loadouts: Array[PlayerLoadoutResource], posture_po
 
 ## Seconds of honest swings a hand takes to beat `hit_points` (a Bramble-Mite's 25): light and heavy blows in turn.
 func estimate_time_to_beat(loadout: PlayerLoadoutResource, hit_points: float, strikes_per_sec: float = HOMESTEAD_STRIKES_PER_SEC) -> float:
-	var per_blow: float = float(evaluate_hit_damage(loadout, false, false) + evaluate_hit_damage(loadout, true, false)) * 0.5
+	# The tier's own decimals (2.4 and 3.5 on the Orchard-Stick), not the rounded blows.
+	var tier: EquipmentTierResource = get_tier(loadout.equipped_tier_id) if loadout != null else null
+	var arch: EquipmentTierResource.WeaponArchetype = loadout.weapon_archetype as EquipmentTierResource.WeaponArchetype if loadout != null else EquipmentTierResource.WeaponArchetype.WEAPON_SWORD_BOARD
+	var per_blow: float = (tier.get_weapon_damage(false, arch) + tier.get_weapon_damage(true, arch)) * 0.5 if tier != null else 2.0
 	return hit_points / maxf(per_blow * strikes_per_sec, 0.001)
 
 
@@ -904,7 +919,7 @@ func estimate_time_to_beat(loadout: PlayerLoadoutResource, hit_points: float, st
 ## Odd seats are Female Youths, even seats Male, until a hero picks. A playtest's
 ## `stage_override` (1 to 4) opens the ladder's slots regardless of the level.
 func default_seal_loadout(class_id: StringName, role: int, weapon_type: int, calling_id: StringName, true_level: int,
-		party_slot: int = 0, stage_override: int = 0) -> PlayerLoadoutResource:
+		party_slot: int = 0, stage_override: int = 0, use_promotions: bool = false) -> PlayerLoadoutResource:
 	var hand: PlayerLoadoutResource = PlayerLoadoutResource.new()
 	var level: int = clampi(true_level, 1, MAX_TRUE_LEVEL)
 	var archetype: WeaponArchetypeResource = archetype_for_weapon_type(weapon_type)
@@ -912,7 +927,16 @@ func default_seal_loadout(class_id: StringName, role: int, weapon_type: int, cal
 	hand.calling_id = calling_id if calling_id != &"" else class_id
 	hand.weapon_archetype = archetype.archetype if archetype != null else EquipmentTierResource.WeaponArchetype.WEAPON_SWORD_BOARD
 	hand.armor_weight_class = weight_class_for_role(role)
-	hand.equipped_tier_id = tier_for_true_level(level).tier_id
+	# The tiers the Forge promoted this Fellowship's pieces to, never past what its level opens.
+	var level_tier: int = tier_for_true_level(level).tier_index
+	var progress: PartyProgress = PartyProgress.current
+	var weapon_tier: int = level_tier
+	var armor_tier: int = level_tier
+	if use_promotions and progress != null and stage_override <= 0:
+		weapon_tier = mini(progress.promoted_tier(class_id, PartyProgress.PIECE_WEAPON), level_tier)
+		armor_tier = mini(progress.promoted_tier(class_id, PartyProgress.PIECE_ARMOR), level_tier)
+	hand.equipped_tier_id = tier_at(weapon_tier).tier_id
+	hand.armor_tier_id = tier_at(armor_tier).tier_id
 	var picks: Array = ROLE_SEAL_HANDS.get(role, ROLE_SEAL_HANDS[ClassLoadoutResource.Role.DPS])
 	hand.weapon_seal_card_id = picks[0]
 	hand.offhand_seal_card_id = picks[1]
@@ -2070,37 +2094,55 @@ func _place(id: StringName, label: String, scribe_sign: Sign, landmark: StringNa
 
 # --- The seven material tiers and four armaments (docs/everwood_equipment_grimoire_architecture.md §2-§3) ---
 
-## Each tier's names, bands, flat numbers and shader recipe, straight from the
-## master table (§3.1) and the recipe table (§3.2). Tier 7's light mantle reads
-## "Star-Ink" on screen, by Gate 6's playground rename of the old finish word.
+## Each tier's names, bands, flat numbers and shader recipe, from the Google
+## Doc's master table (§2): weapons in archetype order (sword and buckler, maul,
+## bow, staff), the offhand each seals (the maul's Pommel-Knot, 22 GDD R6),
+## armour by weight, Armor Guard by weight, and the recipe. Tier 7's light
+## mantle reads "Star-Ink Great-Mantle" (Gate 6 retired "Vellum"), and its
+## shield the Heart-Crag Bulwark (the Creative Director's ruling for "Aegis").
 func _build_material_tiers() -> void:
 	_register_tier(TIER_1_HOMESTEAD, 1, "Orchard-Wood", "Oak-Bark & Boiled-Hide", "Bracken-Pelt Jerkin", "Mended-Linen Smock",
-		&"ISLAND_OAKSHIRE_HOLM", "Miller's Oak (Homestead Start)", 1, 3, 1, 5, 2, 3, 14.0, 0.04, 0,
-		Color("#8B5A2B"), 0.00, 0.88, 0.15, Color("#D2B48C"), 0.00)
-	_register_tier(TIER_2_BOG_BRONZE, 2, "Bog-Bronze", "Bog-Bronze Rim & Layered-Hide", "Mire-Cured Buckskin", "Orchard-Wool Mantle",
-		&"ISLAND_BARROW_EYOT", "Barrow-Eyot Marshes & Early Oakshire", 4, 6, 6, 10, 5, 7, 20.0, 0.09, 25,
-		Color("#CD7F32"), 0.68, 0.52, 0.30, Color("#F4A460"), 0.00)
-	_register_tier(TIER_3_FORGE_IRON, 3, "Forge-Iron", "Kettle-Link & Iron-Buckler", "Riveted Crag-Coat", "Nettle-Weave Vestment",
-		&"ISLAND_IRON_NESS", "Iron-Ness Foundries (BeaconIron Stall)", 7, 10, 11, 18, 10, 13, 28.0, 0.15, 65,
-		Color("#707B84"), 0.82, 0.42, 0.40, Color("#B0C4DE"), 0.00)
-	_register_tier(TIER_4_RIME_SILVER, 4, "Rime-Silver", "Frost-Folded Forge-Plate", "Hoar-Stag Scale-Coat", "Moth-Silk Habit",
-		&"ISLAND_RIME_FIRTH", "Rime-Firth Peaks (BeaconGale Stall)", 11, 13, 19, 25, 16, 20, 36.0, 0.22, 120,
-		Color("#D8E6F2"), 0.92, 0.24, 0.65, Color("#E0FFFF"), 0.08)
-	_register_tier(TIER_5_SAFFRON_GOLD, 5, "Saffron-Gold", "Gilded Weir-Plate", "Tide-Drake Brigandine", "Gossamer-Spun Shroud",
-		&"ISLAND_CONVERGENCE", "Three Isles Convergence (BeaconTide Stall)", 14, 16, 26, 32, 24, 29, 46.0, 0.30, 190,
-		Color("#F2B732"), 0.95, 0.20, 0.75, Color("#FFFACD"), 0.15)
-	_register_tier(TIER_6_CAIRN_HEART, 6, "Cairn-Heart", "Cairn-Scale Great-Plate", "Elder-Wyrm Hide-Coat", "Cloud-Fleece Raiment",
-		&"ISLAND_THE_CROWN", "The Crown (Caldera Rim Delves)", 17, 19, 33, 37, 34, 40, 58.0, 0.38, 280,
-		Color("#3B444B"), 0.60, 0.32, 0.85, Color("#FF7F50"), 0.28)
-	_register_tier(TIER_7_STAR_HEART, 7, "Star-Glass & Ember-Iron", "Heart-Crag & Star-Clad Plate", "Star-Woven Wyrm-Coat", "Star-Ink Great-Mantle",
-		&"ISLAND_OLD_QUAY_EBB", "Old Quay Market (-6 m Ebb-Tide Raid Artificers)", 20, 20, 38, 40, 46, 54, 72.0, 0.46, 400,
-		Color("#1E243B"), 0.96, 0.14, 1.00, Color("#9370DB"), 0.55)
+		&"ISLAND_OAKSHIRE_HOLM", "Miller's Oak (homestead chests)", 1, 4, 1, 7, 0, 2.4, 3.5, 1.00, 14.0, [0.08, 0.05, 0.03], 0,
+		["Orchard-Wood Stick & Bark-Buckler", "Cooper's Split-Rail Mallet", "Bent-Twig Bow & Reed-Shafts", "Rowan Walking-Stick & Tallow-Jar"],
+		["Bark-Buckler", "Oak-Knot Pommel", "Reed-Shaft Quiver", "Tallow-Jar"],
+		Color("#7A5438"), 0.00, 0.88, 0.18, Color("#D2B48C"), 1.40, 0.00)
+	_register_tier(TIER_2_BOG_BRONZE, 2, "Bog-Bronze", "Kettle-Link Coat", "Boiled-Buckskin Coat", "Orchard-Wool Mantle",
+		&"ISLAND_BARROW_EYOT", "the Miller's Oak Barrows and the Hearthstead stall", 5, 7, 8, 13, 3, 5.5, 8.0, 1.20, 20.0, [0.16, 0.12, 0.08], 25,
+		["Bog-Bronze Short-Blade & Bossed-Buckler", "Peat-Cutter's Bronze Broad-Axe", "Ash-Bough Bow & Goose-Fletch", "Hazel-Crook & Brass-Lantern"],
+		["Bossed-Buckler", "Bog-Bronze Pommel-Knot", "Goose-Fletch Quiver", "Brass-Lantern"],
+		Color("#9E6B3B"), 0.72, 0.46, 0.25, Color("#F4A460"), 1.15, 0.00)
+	_register_tier(TIER_3_FORGE_IRON, 3, "Forge-Iron", "Forge-Plate Harness", "Briar-Studded Brigandine", "Nettle-Weave Mantle",
+		&"ISLAND_IRON_NESS", "Iron-Ness (Cinder-Hollow smelters)", 8, 10, 14, 19, 6, 9.5, 13.8, 1.45, 28.0, [0.24, 0.18, 0.13], 65,
+		["Forge-Iron Broad-Sword & Rim-Shield", "Iron-Ness Felling Greataxe", "Yew-Stave Longbow & Bodkin-Quiver", "Iron-Shod Staff & Beacon-Glass"],
+		["Rim-Shield", "Forge-Iron Pommel-Knot", "Bodkin-Quiver", "Beacon-Glass"],
+		Color("#5E666E"), 0.85, 0.38, 0.30, Color("#B0C4DE"), 1.00, 0.00)
+	_register_tier(TIER_4_BARROW_STEEL, 4, "Barrow-Steel", "Barrow-Mail & Pauldrons", "Firth-Seal Coat", "Moth-Silk Mantle",
+		&"ISLAND_BARROW_EYOT", "Barrow-Eyot (standing-stone vaults)", 11, 13, 20, 25, 10, 14.5, 21.0, 1.75, 36.0, [0.32, 0.24, 0.18], 120,
+		["Barrow-Steel Long-Blade & Heater-Shield", "Cairn-Cleaver Greataxe", "Horn-Backed Recurve & Broad-Head", "Cairn-Ash Staff & Hearth-Vessel"],
+		["Heater-Shield", "Barrow-Steel Pommel-Knot", "Broad-Head Quiver", "Hearth-Vessel"],
+		Color("#8A99AD"), 0.90, 0.28, 0.38, Color("#C9D6E3"), 0.85, 0.04)
+	_register_tier(TIER_5_RIME_SILVER, 5, "Rime-Silver", "Rime-Clad Plate", "Frost-Stag Pelt-Coat", "Gossamer-Spun Mantle",
+		&"ISLAND_RIME_FIRTH", "Rime-Firth (Gale-Haven looms)", 14, 16, 26, 31, 13, 20.5, 29.7, 2.10, 46.0, [0.40, 0.30, 0.23], 190,
+		["Rime-Silver Knight-Blade & Kite-Buckler", "Firth-Frost Bearded Greataxe", "Frost-Whale Baleen Bow", "Silver-Bough Crook & Rime-Lantern"],
+		["Kite-Buckler", "Rime-Silver Pommel-Knot", "Frost-Fletch Quiver", "Rime-Lantern"],
+		Color("#C9E2F2"), 0.94, 0.20, 0.52, Color("#E0FFFF"), 0.70, 0.08)
+	_register_tier(TIER_6_SAFFRON_GOLD, 6, "Saffron-Gold", "Cairn-Scale Great-Plate", "Wyrm-Hide Coat", "Sun-Loomed Mantle",
+		&"ISLAND_THE_CROWN", "The Crown (Sun-Crossing guilds)", 17, 19, 32, 37, 16, 27.5, 39.9, 2.50, 58.0, [0.46, 0.35, 0.27], 280,
+		["Saffron-Gold Sun-Blade & Crest-Shield", "Gilded-Crag Great-Halberd", "Golden-Yew Greatbow", "Saffron-Gilded Staff & Sun-Censer"],
+		["Crest-Shield", "Saffron-Gold Pommel-Knot", "Golden-Fletch Quiver", "Sun-Censer"],
+		Color("#E5B546"), 0.96, 0.16, 0.65, Color("#FFFACD"), 0.65, 0.15)
+	_register_tier(TIER_7_STAR_GLASS, 7, "Star-Glass & Heart-Crag", "Heart-Crag & Ember-Clad Plate", "Gale-Drake Scale-Coat", "Star-Ink Great-Mantle",
+		&"ISLAND_OLD_QUAY_EBB", "the Old Quay Market (Ebb-Tide raid artificers)", 20, 20, 38, 40, 20, 36.0, 52.2, 3.00, 72.0, [0.52, 0.40, 0.32], 400,
+		["Star-Glass Steward-Blade & Heart-Crag Bulwark", "World-Root Sundering Greataxe", "Star-Chord Wind-Bow", "First-Tree Bough & Star-Tide Lantern"],
+		["Heart-Crag Bulwark", "Heart-Crag Pommel-Stone", "Star-Chord Quiver", "Star-Tide Lantern"],
+		Color("#3D355E"), 0.98, 0.12, 0.85, Color("#9370DB"), 0.50, 0.55)
 
 
 func _register_tier(t_id: StringName, idx: int, w_name: String, h_name: String, m_name: String, l_name: String,
-		island: StringName, source: String, min_lv: int, max_lv: int, min_rnk: int, max_rnk: int,
-		l_dmg: int, h_dmg: int, p_dmg: float, mitig: float, hp_bonus: int,
-		albedo: Color, metal: float, rough: float, rim_s: float, rim_c: Color, emissive: float) -> void:
+		island: StringName, source: String, min_lv: int, max_lv: int, min_threat: int, max_threat: int, rank: int,
+		l_dmg: float, h_dmg: float, posture_mult: float, p_dmg: float, guard: Array, hp_bonus: int,
+		weapons: Array, offhands: Array,
+		albedo: Color, metal: float, rough: float, rim_s: float, rim_c: Color, normal: float, emissive: float) -> void:
 	var tier: EquipmentTierResource = EquipmentTierResource.new()
 	tier.tier_id = t_id
 	tier.tier_index = idx
@@ -2112,18 +2154,24 @@ func _register_tier(t_id: StringName, idx: int, w_name: String, h_name: String, 
 	tier.unlock_source = source
 	tier.min_true_level = min_lv
 	tier.max_true_level = max_lv
-	tier.min_renown_rank = min_rnk
-	tier.max_renown_rank = max_rnk
+	tier.min_renown_rank = min_threat
+	tier.max_renown_rank = max_threat
+	tier.gear_threat_rank = rank
 	tier.base_light_damage = l_dmg
 	tier.base_heavy_damage = h_dmg
+	tier.posture_multiplier = posture_mult
 	tier.base_posture_damage = p_dmg
-	tier.base_damage_mitigation = mitig
+	tier.armor_guard = PackedFloat32Array(guard)
+	tier.base_damage_mitigation = float(guard[1])
 	tier.bonus_max_hp = hp_bonus
+	tier.weapon_names = PackedStringArray(weapons)
+	tier.offhand_names = PackedStringArray(offhands)
 	tier.albedo_tint = albedo
 	tier.metallic = metal
 	tier.roughness = rough
 	tier.rim_strength = rim_s
 	tier.rim_tint = rim_c
+	tier.normal_scale = normal
 	tier.emissive_pulse_strength = emissive
 	register_tier(tier)
 
