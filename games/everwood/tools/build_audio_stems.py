@@ -10,6 +10,9 @@ it with ffmpeg and oggenc into:
       seamless at the loop
   assets/audio/music/<profile_id>/score.json
       the same arrangement as notes; ProceduralChamberSynth plays it if the stems are missing
+  assets/audio/music/<profile_id>/<cell_id>/stem_0_folk_base.ogg ... (the Audio Mosaics, docs/16 §7)
+      a mosaic zone's twelve four-bar phrase cells, four stems each, not looping: the four bars,
+      then TAIL_SEC of ringing that AudioDirector lets sound under the next cell
   assets/audio/samples/
       acoustic one-shots: instrument samples, the Four Signs' chords, the cadences and
       stingers, the stations' loops, and the musical cues AudioCues plays
@@ -74,6 +77,9 @@ BAKED_TONIC = 67
 # Samples crossfaded at each loop's seam (fluidsynth's 64-sample blocks land differently each cycle).
 SEAM_FADE = 2048
 OGG_QUALITY = "6"
+# A mosaic's cells by stem: the folk base and lead at q5, the rarely heard discord and drive at q3
+# (they sit under the others), which keeps both mosaics near 11 MB.
+MOSAIC_OGG_QUALITY = ["5", "5", "3", "3"]
 OGG_SERIAL = "1916"
 FLUID_SETTINGS = {
     # GeneralUser GS's recommended effects (documentation §3.0.2).
@@ -975,6 +981,365 @@ SUITES = [oakshire_vale, honey_wick, bramble_bridge_square, moss_oak_hollow, dov
           cairnsmans_vigil, crown_south_bay, crown_iron_shore, crown_gale_cliffs, crown_tide_grottos, crown_millers_oak]
 
 
+# --- The Audio Mosaics (docs/16 §7) ----------------------------------------------------
+#
+# A mosaic zone has twelve four-bar phrase cells instead of one loop: two in each of six moods,
+# each carrying its lead on a different Hisaishi Quartet voicing (A: accordion over pizzicato,
+# bassoon counter; B: violin or cello in sixths over guitar and harp; C: oboe and bassoon in
+# dialogue over mandolin; D: low whistle or recorder over harp and cello fifths). AudioDirector
+# chains them on the bar line and MusicMoodEngine picks the next one, so every cell starts on
+# a tonic-family chord and ends on one that leads anywhere (I, IV or V). Each cell is its own
+# four stems; its notes ring on past the bar line for TAIL_SEC under the next cell.
+
+TAIL_SEC = 1.5
+TAIL_FADE_SEC = 0.6
+# Each mood's exploration mix, as MusicMoodEngine.MOOD_STEMS_DB has it (for the listening copy).
+MOOD_STEMS_DB = {"wonder": [0.0, 0.0], "interest": [0.0, -1.0], "mellow": [-1.5, -1.0], "peace": [-2.0, -1.5],
+                 "curiosity": [-1.0, 0.0], "anxious": [-2.0, -2.5]}
+
+
+class Mosaic:
+    """A zone's twelve cells, in suite order: Peace, Wonder, Interest, Curiosity, Anxiousness, Mellow."""
+
+    def __init__(self, profile_id: str, bpm: float, meter: str) -> None:
+        self.profile_id = profile_id
+        self.bpm = bpm
+        self.meter = meter
+        self.cells: list[Suite] = []
+
+    def cell(self, cell_id: str, voice: str, chords: list[str], key: list[int]) -> Suite:
+        made = Suite("%s/%s" % (self.profile_id, cell_id), self.bpm, self.meter, chords, key, [0.0, 0.0, -80.0, -80.0])
+        made.cell_id = cell_id
+        made.mood = cell_id.rsplit("_", 1)[0]
+        made.voice = voice
+        self.cells.append(made)
+        return made
+
+
+def parallel(source: Part, part: Part, s: Suite, below: bool = True, sizes: tuple[int, ...] = (9, 8), drop: int = 12) -> None:
+    """A second voice moving with `source` a sixth (sizes 8, 9) or a third (3, 4) away, in the cell's
+    mode bent to each bar's chord, a chord tone when it can be."""
+    for note in list(source.notes):
+        if note["beats"] < 0.2:
+            continue
+        bar = min(int(note["start"] // s.beats), len(s.chords) - 1)
+        chord = s.chords[bar]
+        pcs = chord.scale(s.key)
+        options = [note["pitch"] + (-size if below else size) for size in sizes]
+        fitting = [pitch for pitch in options if pitch % 12 in pcs]
+        tones = [pitch for pitch in fitting if pitch % 12 in chord.pcs]
+        pitch = (tones or fitting or options)[0]
+        part.note(note["start"], note["beats"], pitch, note["vel"] - drop, gate=note["gate"])
+
+
+def harp_gliss(part: Part, s: Suite, bar: int, names: str, vel: int = 60) -> None:
+    """A harp glissando over beats 2 and 3 of `bar` (1-based)."""
+    gliss = [n(name) for name in names.split()]
+    for step, pitch in enumerate(gliss):
+        part.note((bar - 1) * s.beats + 1 + step * (2.0 / len(gliss)), 0.25, pitch, vel + step * 2, gate=4.0)
+
+
+def peace_bed(s: Suite) -> None:
+    """Shore's hearth: a Celtic harp climbing the chord in eighths over a cello's open-fifth drone,
+    with a high harp harmonic every other bar."""
+    harp = s.part(0, "harp", 88)
+    drone = s.part(0, "cello", 66)
+    for index, at, chord in s.each_bar():
+        low = chord.bass(41)
+        for pitch in (low, low + 7):
+            drone.note(at, s.beats, pitch, 52, gate=1.03)
+        for step, pitch in enumerate(chord.arp(55, 6)):
+            harp.note(at + step * 0.5, 0.5, pitch, 54 + step * 3, gate=3.0)
+        if index % 2 == 1:
+            harp.note(at + 2, 1, chord.arp(79, 1)[0], 42, gate=3.0)
+
+
+def soar_bed(s: Suite) -> None:
+    """The Sky Soar's ground: fingerpicked guitar rolling root, fifth, octave, tenth; a harp rising
+    through the chord on the last two beats; a soft pizzicato root on the downbeat."""
+    guitar = s.part(0, "guitar", 92)
+    harp = s.part(0, "harp", 84)
+    bass = s.part(0, "pizz", 88)
+    for index, at, chord in s.each_bar():
+        root = chord.root_at(50)
+        above = chord.arp(root + 13, 2)
+        voicing = [root, root + chord.fifth(), root + 12, above[0], above[1]]
+        for step, slot in enumerate([0, 1, 2, 3, 4, 2]):
+            guitar.note(at + step * 0.5, 0.5, voicing[slot], 74 if step == 0 else 60, gate=1.8)
+        bass.note(at, 1, chord.bass(40), 84, gate=0.6)
+        for step, pitch in enumerate(chord.arp(62, 6)):
+            harp.note(at + 1 + step * (2.0 / 6), 0.33, pitch, 52 + step * 3, gate=2.4)
+
+
+def walking(s: Suite, chops: bool = True) -> None:
+    """Ocean View's bustle: a pizzicato walking bass in quarters (root, a chord tone, then a step
+    into the next bar's bass) under mandolin and guitar chops on beats 2 and 3."""
+    bass = s.part(0, "pizz", 100)
+    mandolin = s.part(0, "mandolin", 84) if chops else None
+    guitar = s.part(0, "guitar", 86) if chops else None
+    for index, at, chord in s.each_bar():
+        low = chord.bass(40)
+        nxt = s.chords[(index + 1) % len(s.chords)].bass(40)
+        middle = chord.arp(low + 3, 1)[0]
+        approach = nxt - 1 if (nxt - 1) % 12 in chord.scale(s.key) or index == len(s.chords) - 1 else nxt + 2
+        approach = approach if approach > low - 6 else approach + 12
+        for beat, pitch, vel in [(0, low, 98), (1, middle, 78), (2, approach, 82)]:
+            bass.note(at + beat, 1, pitch, vel, gate=0.5)
+        if mandolin is not None and guitar is not None:
+            for beat in (1, 2):
+                for strum, pitch in enumerate(chord.upper(66, 3)):
+                    mandolin.note(at + beat, 0.5, pitch, 70 if beat == 1 else 62, gate=0.3, strum=strum)
+                for strum, pitch in enumerate(chord.upper(55, 3)):
+                    guitar.note(at + beat + 0.5, 0.5, pitch, 56, gate=0.35, strum=strum)
+
+
+def tiptoe(s: Suite) -> None:
+    """Into the Unknown's tiptoe: a pizzicato cello creeping round the root with its lower neighbour,
+    a low harp chord on the bar, and a soft mandolin tremolo on the chord's top."""
+    bass = s.part(0, "pizz", 92)
+    harp = s.part(0, "harp", 70)
+    mandolin = s.part(0, "mandolin", 58)
+    for index, at, chord in s.each_bar():
+        low = chord.bass(40)
+        for offset, pitch, vel in [(0, low, 90), (0.5, low - 1, 58), (1, low, 72), (1.5, low + chord.fifth(), 66), (2.5, low - 1, 60)]:
+            bass.note(at + offset, 0.5, pitch, vel, gate=0.4)
+        for strum, pitch in enumerate(chord.upper(48, 3)):
+            harp.note(at, 2, pitch, 50, gate=1.6, strum=strum)
+        top = chord.arp(74, 1)[0]
+        for step in range(6):
+            mandolin.note(at + 1 + step * (1.0 / 3), 0.33, top, 40 + (step % 2) * 6, gate=0.7)
+
+
+def waterwheel(s: Suite) -> None:
+    """The mill-isle's turning wheel (6/8): guitar rolling the chord in eighths, a hammered dulcimer
+    striking root and fifth on each dotted quarter, and a pizzicato bass on 1 and 4."""
+    guitar = s.part(0, "guitar", 94)
+    dulcimer = s.part(0, "dulcimer", 76)
+    bass = s.part(0, "pizz", 92)
+    for index, at, chord in s.each_bar():
+        root = chord.root_at(50)
+        above = chord.arp(root + 13, 2)
+        voicing = [root, root + chord.fifth(), root + 12, above[0], above[1]]
+        for step, slot in enumerate([0, 1, 2, 3, 4, 2]):
+            guitar.note(at + step * 0.5, 0.5, voicing[slot], 76 if step in (0, 3) else 58, gate=1.6)
+        for beat in (0, 1.5):
+            for pitch in (chord.root_at(62), chord.root_at(62) + chord.fifth()):
+                dulcimer.note(at + beat, 0.75, pitch, 64 if beat == 0 else 54, gate=1.2)
+        low = chord.bass(40)
+        bass.note(at, 0.5, low, 90, gate=0.6)
+        bass.note(at + 1.5, 0.5, low + 7 if (low + 7) % 12 in chord.pcs else low, 68, gate=0.6)
+
+
+def jig(s: Suite) -> None:
+    """A 6/8 jig's bustle: pizzicato bass on 1 and 4 with a pickup into the next bar, mandolin and
+    guitar chopping the off-eighths."""
+    bass = s.part(0, "pizz", 98)
+    mandolin = s.part(0, "mandolin", 84)
+    guitar = s.part(0, "guitar", 84)
+    for index, at, chord in s.each_bar():
+        low = chord.bass(40)
+        nxt = s.chords[(index + 1) % len(s.chords)].bass(40)
+        bass.note(at, 0.5, low, 96, gate=0.5)
+        bass.note(at + 1.5, 0.5, low + 7 if (low + 7) % 12 in chord.pcs else low + 12, 76, gate=0.5)
+        bass.note(at + 2.5, 0.5, nxt - 1 if (nxt - 1) % 12 in chord.scale(s.key) else nxt + 2, 70, gate=0.45)
+        for eighth in (1, 2, 4, 5):
+            for strum, pitch in enumerate(chord.upper(66, 3)):
+                mandolin.note(at + eighth * 0.5, 0.5, pitch, 66 if eighth in (1, 4) else 56, gate=0.3, strum=strum)
+        for eighth in (2, 5):
+            for strum, pitch in enumerate(chord.upper(55, 3)):
+                guitar.note(at + eighth * 0.5, 0.5, pitch, 58, gate=0.35, strum=strum)
+
+
+def shadow(s: Suite) -> None:
+    """Anxiousness's Holloway stem (docs/16 §7.1): reedy bassoon and oboe trading minor seconds and
+    tritones, musette bellows breathing a cluster with the chord's minor ninth, and a sul ponticello
+    string shimmer high above."""
+    reed = s.part(2, "bassoon", 96)
+    oboe = s.part(2, "oboe", 84)
+    bellows = s.part(2, "accordion", 70)
+    shimmer = s.part(2, "tremolo", 56)
+    for index, at, chord in s.each_bar():
+        low = chord.bass(40)
+        for offset, pitch, vel in [(0, low, 82), (0.5, low + 1, 70), (1.5, low, 74), (2, low + 6, 66)]:
+            reed.note(at + offset, 0.5, pitch, vel, gate=0.7)
+        top = chord.arp(67, 1)[0]
+        if index % 2 == 0:
+            for offset, pitch in [(1, top), (1.5, top + 1), (2, top + 6 if (top + 6) % 12 in chord.scale(s.key) else top + 5)]:
+                oboe.note(at + offset, 0.5, pitch, 68, gate=0.9)
+        cluster = chord.upper(55, 3) + [chord.root_at(55) + 1]
+        for pitch in cluster:
+            bellows.note(at, s.beats * 0.9, pitch, 46, gate=1.0)
+        for pitch in chord.arp(83, 2):
+            shimmer.note(at, s.beats, pitch, 40, gate=1.02)
+
+
+def mosaic_layers(s: Suite, anxious: bool = False) -> None:
+    """Stems 2 and 3 of a cell: the Holloway discord (Anxiousness's shadow, or the gentle reed
+    invention every other cell holds for the Pre-Warm) and the Skirmish drive."""
+    if anxious:
+        shadow(s)
+    else:
+        invention(s)
+    skirmish(s)
+
+
+def crown_island() -> Mosaic:
+    """The Crown: Joe Hisaishi's Town With An Ocean View by the sea, G Lydian and Ionian in 3/4 at 110,
+    turning to misty E Dorian and E harmonic-minor bassoon along the cliffs and grottos."""
+    m = Mosaic("crown_island", 110.0, "3/4")
+    g_lydian, g_ionian, g_mixo = mode("G", LYDIAN), mode("G", IONIAN), mode("G", MIXOLYDIAN)
+    e_dorian, e_minor = mode("E", DORIAN), mode("E", HARMONIC_MINOR)
+    # Peace (cell F): pentatonic tunes over a G drone; a fiddle, then a recorder.
+    s = m.cell("peace_a", "B", ["Gadd9", "C/G", "Em7/G", "D/G"], g_ionian)
+    peace_bed(s)
+    line(s.part(1, "violin", 92), 1, "D5:1 E5:.5 G5:.5 A5:1 | B5:2 A5:1 | G5:1 E5:.5 D5:.5 E5:1 | D5:2 r:1", vel=80)
+    mosaic_layers(s)
+    s = m.cell("peace_b", "D", ["Gadd9", "Em7/G", "C/G", "Gadd9"], g_ionian)
+    peace_bed(s)
+    line(s.part(1, "recorder", 96), 1, "B5:1.5 A5:.5 G5:1 | E5:2 D5:1 | E5:1 G5:.5 A5:.5 B5:1 | A5:2 r:1", vel=82)
+    mosaic_layers(s)
+    # Wonder (cell B, I II7 IVmaj7 I): the accordion's skyward leaps over the waltz, then the violin soaring in sixths.
+    s = m.cell("wonder_a", "A", ["G", "A7", "Cmaj7", "G"], g_lydian)
+    oompah(s, bassoon=False)
+    line(s.part(1, "accordion", 100), 1, "D5:1 B5:1.5 A5:.5 | G5:1 C#6:1 E6:1 | D6:1.5 B5:.5 G5:1 | A5:2 r:1", vel=90)
+    line(s.part(1, "bassoon", 92), 1, "G2:.5 r:.5 D3:.5 G3:.5 B3:.5 r:.5 | A2:.5 r:.5 E3:.5 G3:.5 C#4:.5 r:.5 |"
+                                      "C3:.5 r:.5 G3:.5 B3:.5 E4:.5 D4:.5 | G3:.5 F#3:.5 E3:.5 D3:.5 B2:.5 A2:.5", vel=82, gate=STACCATO)
+    mosaic_layers(s)
+    s = m.cell("wonder_b", "B", ["Gmaj7", "A9", "Cmaj7#11", "Gadd9"], g_lydian)
+    soar_bed(s)
+    violin = s.part(1, "violin", 100)
+    line(violin, 1, "G5:1 G6:1.5 F#6:.5 | E6:1 C#6:1 A5:1 | B5:1.5 E6:.5 G6:1 | F#6:1 D6:1 r:1", vel=88)
+    parallel(violin, s.part(1, "violin", 78), s)
+    harp_gliss(s.part(1, "harp", 90), s, 3, "G4 A4 B4 C#5 D5 E5 F#5 G5 A5 B5 C#6 D6")
+    mosaic_layers(s)
+    # Interest (cell A, I VI7 ii7 V7): the oboe's bouncy tune with the bassoon's answers, then the accordion.
+    s = m.cell("interest_a", "C", ["G", "E7", "Am7", "D7"], g_ionian)
+    walking(s)
+    line(s.part(1, "oboe", 98), 1, "B4:.5 D5:.5 G5:1 F#5:.5 E5:.5 | G#5:1 E5:.5 D5:.5 B4:1 | C5:.5 E5:.5 A5:1 G5:.5 E5:.5 | F#5:1.5 r:1.5", vel=88)
+    line(s.part(1, "bassoon", 94), 1, "r:3 | r:2 E3:.5 G#3:.5 | r:3 | r:1.5 D3:.5 F#3:.5 C4:.5", vel=86, gate=STACCATO)
+    mosaic_layers(s)
+    s = m.cell("interest_b", "A", ["G", "E7/G#", "Am7", "D7"], g_ionian)
+    walking(s)
+    line(s.part(1, "accordion", 100), 1, "G5:.5 A5:.5 B5:.5 D6:1 B5:.5 | G#5:1.5 E5:.5 D5:1 | E5:.5 F#5:.5 G5:.5 A5:1 C6:.5 | B5:1 A5:1 F#5:1", vel=88)
+    line(s.part(1, "bassoon", 90), 1, "G2:.5 r:.5 B2:.5 D3:.5 G3:.5 r:.5 | G#2:.5 r:.5 B2:.5 D3:.5 E3:.5 r:.5 |"
+                                      "A2:.5 C3:.5 E3:.5 G3:.5 A3:.5 r:.5 | D3:.5 r:.5 F#3:.5 A3:.5 C4:.5 A3:.5", vel=80, gate=STACCATO)
+    mosaic_layers(s)
+    # Curiosity (cell C, i IV i7 v in E Dorian): two-bar questions and answers, ending on a half-cadence.
+    s = m.cell("curiosity_a", "C", ["Em", "A", "Em7", "Bm"], e_dorian)
+    weave(s)
+    line(s.part(1, "oboe", 96), 1, "E5:.5 F#5:.5 G5:.5 r:.5 B5:1 | C#6:.5 B5:.5 A5:1 r:1 | r:3 | r:1.5 D5:.5 E5:.5 F#5:.5", vel=86)
+    line(s.part(1, "bassoon", 96), 1, "r:3 | r:3 | E3:.5 G3:.5 B3:.5 r:.5 D4:1 | C#4:.5 B3:.5 F#3:1 r:1", vel=88, gate=STACCATO)
+    mosaic_layers(s)
+    s = m.cell("curiosity_b", "D", ["Em", "A/E", "Em7", "Bm7"], e_dorian)
+    weave(s)
+    line(s.part(1, "whistle", 94), 1, "B5:.5 A5:.5 G5:.5 F#5:.5 E5:1 | C#6:1 B5:.5 A5:.5 E5:1 | r:3 | D6:.5 C#6:.5 B5:.5 A5:.5 F#5:1", vel=84)
+    line(s.part(1, "bassoon", 94), 1, "r:3 | r:3 | E3:.5 B2:.5 E3:.5 G3:.5 B3:.5 D4:.5 | B2:1 r:2", vel=86, gate=STACCATO)
+    mosaic_layers(s)
+    # Anxiousness (cell E, i bVI #vii°7 V7b9 in E harmonic minor): a tiptoe under the musette, then the reeds' tritones.
+    s = m.cell("anxious_a", "A", ["Em", "C", "D#dim7", "B7b9"], e_minor)
+    tiptoe(s)
+    line(s.part(1, "accordion", 94), 1, "E5:1 D#5:.5 E5:.5 G5:1 | E5:1.5 C5:.5 B4:1 | A4:1 F#4:.5 A4:.5 C5:1 | B4:2 r:1", vel=84)
+    line(s.part(1, "bassoon", 92), 1, "E3:.5 r:.5 D#3:.5 E3:.5 r:1 | C3:.5 r:.5 G2:.5 C3:.5 r:1 |"
+                                      "D#3:.5 F#3:.5 A3:.5 C4:.5 r:1 | B2:.5 C3:.5 B2:.5 A2:.5 F#2:.5 D#2:.5", vel=80, gate=STACCATO)
+    mosaic_layers(s, anxious=True)
+    s = m.cell("anxious_b", "C", ["Em", "C", "D#dim7", "B7b9"], e_minor)
+    tiptoe(s)
+    line(s.part(1, "oboe", 94), 1, "B5:.5 C6:.5 B5:1 G5:1 | E5:1 C5:.5 E5:.5 G5:1 | F#5:.5 A5:.5 C6:1 D#5:1 | D#5:1 C6:1 B5:1", vel=84)
+    line(s.part(1, "bassoon", 94), 1, "E3:1 r:.5 A#2:.5 B2:1 | C3:1 r:.5 F#3:.5 G3:1 | A2:1 C3:.5 D#3:.5 F#3:1 | B2:2 r:1", vel=84, gate=0.7)
+    mosaic_layers(s, anxious=True)
+    # Mellow (cell D, vi iii IV I6 in G Mixolydian): a cello with a violin a sixth above, then a low whistle and English horn.
+    s = m.cell("mellow_a", "B", ["Em", "Bm", "C", "G/B"], g_mixo)
+    rolling_sixths(s)
+    cello = s.part(1, "cello", 100)
+    line(cello, 1, "B3:1.5 A3:.5 G3:1 | F#3:2 D3:1 | E3:1 F3:.5 G3:.5 C4:1 | B3:2 r:1", vel=88)
+    parallel(cello, s.part(1, "violin", 76), s, below=False)
+    mosaic_layers(s)
+    s = m.cell("mellow_b", "D", ["Em7", "Bm7", "Cmaj7", "G/B"], g_mixo)
+    rolling_sixths(s)
+    flute = s.part(1, "flute", 100)
+    line(flute, 1, "G5:1.5 F#5:.5 E5:1 | D5:2 B4:1 | C5:1 E5:1 G5:1 | F5:1 E5:.5 D5:.5 B4:1", vel=86)
+    parallel(flute, s.part(1, "english_horn", 80), s)
+    mosaic_layers(s)
+    return m
+
+
+def millers_holm() -> Mosaic:
+    """Oakshire Holm, the mill-isle (the brief's Miller's Holm): Howard Shore's Concerning Hobbits and
+    Hisaishi's Mother's Broom, F Lydian and D Dorian in 6/8 at 104 over a waterwheel's guitar and dulcimer."""
+    m = Mosaic("millers_holm", 104.0, "6/8")
+    f_lydian, f_ionian, f_mixo = mode("F", LYDIAN), mode("F", IONIAN), mode("F", MIXOLYDIAN)
+    d_dorian, d_minor = mode("D", DORIAN), mode("D", HARMONIC_MINOR)
+    s = m.cell("peace_a", "B", ["Fadd9", "Bb/F", "Dm7/F", "C/F"], f_ionian)
+    peace_bed(s)
+    line(s.part(1, "violin", 92), 1, "C5:1 D5:.5 F5:.5 G5:1 | A5:1.5 G5:1.5 | F5:1 D5:.5 C5:.5 D5:1 | C5:1.5 r:1.5", vel=80)
+    mosaic_layers(s)
+    s = m.cell("peace_b", "D", ["Fadd9", "Dm7/F", "Bb/F", "Fadd9"], f_ionian)
+    peace_bed(s)
+    line(s.part(1, "recorder", 96), 1, "A5:1.5 G5:.5 F5:1 | D5:1.5 C5:1.5 | D5:1 F5:.5 G5:.5 A5:1 | G5:1.5 r:1.5", vel=82)
+    mosaic_layers(s)
+    s = m.cell("wonder_a", "A", ["F", "G7", "Bbmaj7", "F"], f_lydian)
+    waterwheel(s)
+    line(s.part(1, "accordion", 100), 1, "C5:1.5 A5:1.5 | B5:1 G5:.5 D6:1.5 | D6:1 A5:.5 F5:1.5 | G5:1.5 r:1.5", vel=90)
+    line(s.part(1, "bassoon", 90), 1, "F2:.5 r:1 C3:.5 F3:.5 A3:.5 | G2:.5 r:1 D3:.5 F3:.5 B3:.5 |"
+                                      "Bb2:.5 r:1 F3:.5 A3:.5 D4:.5 | C3:.5 A2:.5 F2:.5 r:1.5", vel=82, gate=STACCATO)
+    mosaic_layers(s)
+    s = m.cell("wonder_b", "B", ["Fmaj7", "G9", "Bbmaj7#11", "Fadd9"], f_lydian)
+    soar_bed(s)
+    violin = s.part(1, "violin", 100)
+    line(violin, 1, "F5:1.5 C6:1.5 | B5:1 D6:.5 G6:1.5 | F6:1 D6:.5 A5:1.5 | C6:1.5 A5:1.5", vel=88)
+    parallel(violin, s.part(1, "violin", 78), s)
+    harp_gliss(s.part(1, "harp", 90), s, 3, "F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6")
+    mosaic_layers(s)
+    s = m.cell("interest_a", "C", ["F", "D7", "Gm7", "C7"], f_ionian)
+    jig(s)
+    line(s.part(1, "oboe", 98), 1, "A5:.5 G5:.5 F5:.5 C5:1.5 | F#5:1 A5:.5 D6:1 C6:.5 | Bb5:.5 A5:.5 G5:.5 D5:1.5 | r:3", vel=88)
+    line(s.part(1, "bassoon", 94), 1, "r:3 | r:3 | r:1.5 G2:.5 Bb2:.5 D3:.5 | C3:.5 E3:.5 G3:.5 Bb3:.5 G3:.5 E3:.5", vel=86, gate=STACCATO)
+    mosaic_layers(s)
+    s = m.cell("interest_b", "A", ["F", "D7/F#", "Gm7", "C7"], f_ionian)
+    jig(s)
+    line(s.part(1, "accordion", 100), 1, "F5:1 A5:.5 C6:1 A5:.5 | D6:1 C6:.5 A5:1 F#5:.5 | G5:1 Bb5:.5 D6:1 F5:.5 | E5:1.5 G5:1.5", vel=88)
+    line(s.part(1, "bassoon", 90), 1, "F2:.5 r:.5 A2:.5 C3:1 r:.5 | F#2:.5 r:.5 A2:.5 D3:1 r:.5 |"
+                                      "G2:.5 r:.5 Bb2:.5 D3:1 r:.5 | C3:.5 E3:.5 G3:.5 Bb3:.5 G3:.5 E3:.5", vel=80, gate=STACCATO)
+    mosaic_layers(s)
+    s = m.cell("curiosity_a", "C", ["Dm", "G", "Dm7", "Am"], d_dorian)
+    weave(s)
+    line(s.part(1, "oboe", 96), 1, "D5:.5 E5:.5 F5:.5 A5:1.5 | B5:.5 A5:.5 G5:.5 D5:1.5 | r:3 | r:1.5 C5:.5 D5:.5 E5:.5", vel=86)
+    line(s.part(1, "bassoon", 96), 1, "r:3 | r:3 | D3:.5 F3:.5 A3:.5 C4:1.5 | A2:1.5 r:1.5", vel=88, gate=STACCATO)
+    mosaic_layers(s)
+    s = m.cell("curiosity_b", "D", ["Dm", "G/D", "Dm7", "Am7"], d_dorian)
+    weave(s)
+    line(s.part(1, "whistle", 94), 1, "A5:.5 G5:.5 F5:.5 E5:.5 D5:1 | B5:1 A5:.5 G5:.5 D5:1 | r:3 | C6:.5 B5:.5 A5:.5 G5:.5 E5:1", vel=84)
+    line(s.part(1, "bassoon", 94), 1, "r:3 | r:3 | D3:.5 A2:.5 D3:.5 F3:.5 A3:.5 C4:.5 | A2:1 r:2", vel=86, gate=STACCATO)
+    mosaic_layers(s)
+    s = m.cell("anxious_a", "A", ["Dm", "Bb", "C#dim7", "A7b9"], d_minor)
+    tiptoe(s)
+    line(s.part(1, "accordion", 94), 1, "D5:1 C#5:.5 D5:.5 F5:1 | D5:1.5 Bb4:.5 A4:1 | G4:1 E4:.5 G4:.5 Bb4:1 | A4:1.5 r:1.5", vel=84)
+    line(s.part(1, "bassoon", 92), 1, "D3:.5 r:.5 C#3:.5 D3:.5 r:1 | Bb2:.5 r:.5 F2:.5 Bb2:.5 r:1 |"
+                                      "C#3:.5 E3:.5 G3:.5 Bb3:.5 r:1 | A2:.5 Bb2:.5 A2:.5 G2:.5 E2:.5 C#2:.5", vel=80, gate=STACCATO)
+    mosaic_layers(s, anxious=True)
+    s = m.cell("anxious_b", "C", ["Dm", "Bb", "C#dim7", "A7b9"], d_minor)
+    tiptoe(s)
+    line(s.part(1, "oboe", 94), 1, "A5:.5 Bb5:.5 A5:1 F5:1 | D5:1 Bb4:.5 D5:.5 F5:1 | E5:.5 G5:.5 Bb5:1 C#5:1 | C#5:1 Bb5:1 A5:1", vel=84)
+    line(s.part(1, "bassoon", 94), 1, "D3:1 r:.5 G#2:.5 A2:1 | Bb2:1 r:.5 E3:.5 F3:1 | G2:1 Bb2:.5 C#3:.5 E3:1 | A2:2 r:1", vel=84, gate=0.7)
+    mosaic_layers(s, anxious=True)
+    s = m.cell("mellow_a", "B", ["Dm", "Am", "Bb", "F/A"], f_mixo)
+    rolling_sixths(s)
+    cello = s.part(1, "cello", 100)
+    line(cello, 1, "A3:1.5 G3:.5 F3:1 | E3:1.5 C3:1.5 | D3:1 Eb3:.5 F3:.5 Bb3:1 | A3:1.5 r:1.5", vel=88)
+    parallel(cello, s.part(1, "violin", 76), s, below=False)
+    mosaic_layers(s)
+    s = m.cell("mellow_b", "D", ["Dm7", "Am7", "Bbmaj7", "F/A"], f_mixo)
+    rolling_sixths(s)
+    flute = s.part(1, "flute", 100)
+    line(flute, 1, "F5:1.5 E5:.5 D5:1 | C5:1.5 A4:1.5 | Bb4:1 D5:1 F5:1 | Eb5:1 D5:.5 C5:.5 A4:1", vel=86)
+    parallel(flute, s.part(1, "english_horn", 80), s)
+    mosaic_layers(s)
+    return m
+
+
+MOSAICS = [millers_holm, crown_island]
+
+
 # --- One-shots (docs/16 §3, §4.1; AudioCues' musical cues) ---------------------------
 
 def chord_shot(shot: Shot, inst: str, notes: list[int], step: float, ring: float, vel: int, start: float = 0.0,
@@ -1318,7 +1683,7 @@ def peak_db(samples: array.array) -> float:
     return 20.0 * math.log10(peak) if peak > 1e-9 else -120.0
 
 
-def encode(samples: array.array, channels: int, gain_db: float, out: Path, codec: str) -> None:
+def encode(samples: array.array, channels: int, gain_db: float, out: Path, codec: str, quality: str = OGG_QUALITY) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     source = ["ffmpeg", "-v", "error", "-y", "-f", "f32le", "-ar", str(RATE), "-ac", str(channels), "-i", "-",
               "-af", "volume=%.3fdB" % gain_db, "-map_metadata", "-1", "-fflags", "+bitexact", "-flags:a", "+bitexact"]
@@ -1328,7 +1693,7 @@ def encode(samples: array.array, channels: int, gain_db: float, out: Path, codec
     with tempfile.TemporaryDirectory() as folder:
         master = Path(folder) / "master.wav"
         run(source + ["-c:a", "pcm_s24le", str(master)], samples.tobytes())
-        run(["oggenc", "-Q", "-q", OGG_QUALITY, "-s", OGG_SERIAL, "-o", str(out), str(master)])
+        run(["oggenc", "-Q", "-q", quality, "-s", OGG_SERIAL, "-o", str(out), str(master)])
 
 
 def fold_seam(render: array.array, channels: int, start: int, end: int) -> array.array:
@@ -1402,6 +1767,93 @@ def bake_suite(suite: Suite, work: Path, pool: concurrent.futures.Executor) -> l
     (MUSIC / suite.profile_id / "score.json").write_text(json.dumps(score, separators=(",", ":")) + "\n")
     preview(suite)
     return reports
+
+
+def render_cell(cell: Suite, layer: int, work: Path) -> array.array:
+    """One cell's stem: its four bars and TAIL_SEC of the notes and room ringing on, faded at the end."""
+    name = cell.profile_id.replace("/", "_")
+    mid = work / ("%s_%d.mid" % (name, layer))
+    wav = work / ("%s_%d.wav" % (name, layer))
+    write_midi(mid, cell, cell.stems[layer], 1, cell.loop_beats, 4.0 * cell.bpm / 60.0)
+    fluid_render(mid, wav)
+    samples = read_f32(wav, 2)
+    body = int(round(cell.loop_beats * tempo_sec(cell.bpm) * RATE))
+    total = body + int(TAIL_SEC * RATE)
+    if len(samples) < total * 2:
+        samples.extend([0.0] * (total * 2 - len(samples)))
+    cut = samples[:total * 2]
+    fade = int(TAIL_FADE_SEC * RATE)
+    for frame in range(fade):
+        weight = frame / fade
+        cut[(total - 1 - frame) * 2] *= weight
+        cut[(total - 1 - frame) * 2 + 1] *= weight
+    return cut
+
+
+def bake_mosaic(mosaic: Mosaic, work: Path, pool: concurrent.futures.Executor) -> list[dict]:
+    """Every cell's four stems (one loudness per stem across the zone, so the moods keep their
+    relative dynamics), the zone's score.json and its listening copy."""
+    jobs = [(cell, layer) for cell in mosaic.cells for layer in range(4)]
+    rendered = dict(zip(jobs, pool.map(lambda job: render_cell(job[0], job[1], work), jobs)))
+    reports: list[dict] = []
+    for layer in range(4):
+        bodies = array.array("f")
+        peak = -120.0
+        for cell in mosaic.cells:
+            samples = rendered[(cell, layer)]
+            body = int(round(cell.loop_beats * tempo_sec(cell.bpm) * RATE))
+            bodies.extend(samples[:body * 2])
+            peak = max(peak, loudness(samples, 2)[1])
+        integrated = loudness(bodies, 2)[0]
+        gain = STEM_LUFS[layer] - integrated if math.isfinite(integrated) else 0.0
+        gain = min(gain, TRUE_PEAK - peak)
+        for cell in mosaic.cells:
+            samples = rendered[(cell, layer)]
+            out = MUSIC / cell.profile_id / (STEM_FILES[layer] + ".ogg")
+            encode(samples, 2, gain, out, "ogg", MOSAIC_OGG_QUALITY[layer])
+            write_import(out, "oggvorbisstr", "AudioStreamOggVorbis", {"loop": "false", "loop_offset": "0", "bpm": _num(cell.bpm),
+                         "beat_count": str(int(cell.loop_beats)), "bar_beats": str(cell.beats)})
+            reports.append({"file": str(out.relative_to(EVERWOOD)), "lufs": round(integrated + gain, 1), "true_peak": round(peak + gain, 1),
+                            "seconds": round(len(samples) / 2 / RATE, 3), "notes": sum(len(part.notes) for part in cell.stems[layer])})
+    # The score, cells end to end in suite order (ProceduralChamberSynth's fallback plays it as one loop).
+    first = mosaic.cells[0]
+    score = {"profile_id": mosaic.profile_id, "bpm": mosaic.bpm, "beats_per_bar": first.beats, "compound": mosaic.meter == "6/8",
+             "bars": sum(cell.bars for cell in mosaic.cells), "stems": [[], [], [], []], "cells": []}
+    offset = 0.0
+    for cell in mosaic.cells:
+        score["cells"].append({"id": cell.cell_id, "mood": cell.mood, "voice": cell.voice, "bars": cell.bars,
+                               "chords": [chord.symbol for chord in cell.chords]})
+        for layer, parts in enumerate(cell.stems):
+            for part in parts:
+                for note in part.notes:
+                    score["stems"][layer].append([round(note["start"] + offset, 4), round(note["beats"] * note["gate"], 4), note["pitch"],
+                                                  note["vel"], part.inst.voice])
+        offset += cell.loop_beats
+    for notes in score["stems"]:
+        notes.sort(key=lambda item: (item[0], item[2]))
+    (MUSIC / mosaic.profile_id / "score.json").write_text(json.dumps(score, separators=(",", ":")) + "\n")
+    preview_mosaic(mosaic)
+    return reports
+
+
+def preview_mosaic(mosaic: Mosaic) -> None:
+    """A listening copy (git-ignored): the twelve cells in suite order at their moods' mixes, each
+    cell's tail ringing under the next, as the game chains them."""
+    PREVIEWS.mkdir(parents=True, exist_ok=True)
+    command = ["ffmpeg", "-v", "error", "-y"]
+    chains = []
+    slot = 0
+    at = 0.0
+    for cell in mosaic.cells:
+        for layer in (0, 1):
+            command += ["-i", str(MUSIC / cell.profile_id / (STEM_FILES[layer] + ".ogg"))]
+            delay = int(round(at * 1000))
+            chains.append("[%d]adelay=%d|%d,volume=%.1fdB[s%d]" % (slot, delay, delay, MOOD_STEMS_DB[cell.mood][layer], slot))
+            slot += 1
+        at += cell.loop_beats * tempo_sec(cell.bpm)
+    mix = ";".join(chains) + ";" + "".join("[s%d]" % index for index in range(slot)) + "amix=inputs=%d:normalize=0[out]" % slot
+    run(command + ["-filter_complex", mix, "-map", "[out]", "-c:a", "aac", "-b:a", "192k",
+                   str(PREVIEWS / ("%s_suite_order.m4a" % mosaic.profile_id))])
 
 
 def bake_shot(shot: Shot, work: Path) -> dict:
@@ -1560,14 +2012,20 @@ def main() -> None:
     args = parser.parse_args()
     ensure_tools()
     suites = [build() for build in SUITES]
+    mosaics = [build() for build in MOSAICS]
     if args.only:
         suites = [suite for suite in suites if suite.profile_id in args.only]
+        mosaics = [mosaic for mosaic in mosaics if mosaic.profile_id in args.only]
     reports: list[dict] = []
     with tempfile.TemporaryDirectory() as folder, concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         work = Path(folder)
         for suite in suites:
             print("Baking %s (%d bars of %s at %s BPM) ..." % (suite.profile_id, suite.bars, suite.meter, _num(suite.bpm)))
             reports += bake_suite(suite, work, pool)
+        for mosaic in mosaics:
+            print("Baking the %s mosaic (%d four-bar cells of %s at %s BPM) ..." % (mosaic.profile_id, len(mosaic.cells), mosaic.meter,
+                                                                                  _num(mosaic.bpm)))
+            reports += bake_mosaic(mosaic, work, pool)
         if not args.only:
             shots = one_shots()
             print("Baking %d one-shots and loops ..." % len(shots))

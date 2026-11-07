@@ -1,10 +1,14 @@
-## The F4 Landblock telemetry badge (10_WORLD_ARCHITECTURE.md §5): a small
-## corner readout of the world's streaming, for checking it works:
+## The F4 telemetry badge (10_WORLD_ARCHITECTURE.md §5, 16 §7.4): a small
+## corner readout of the world's streaming and the live score, for checking
+## they work:
 ##   Landblock (0, -1) · Active: 9 · Clutter: 15 · HLOD: 2 · Queue: 0 · Deltas: 3
+##   Audio: crown_island [G_LYDIAN 110BPM] · Mood: WONDER (Var B: Violin/Harp) · State: EXPLORE · Stems: 0.0/0.0/-80.0/-80.0 dB · Voices: 4/32
 ## Landblock is Player 1's chunk; Active the chunks with gameplay loaded,
 ## Clutter those with clutter, HLOD the proxies on show, Queue the attach jobs
-## waiting for frame time, Deltas the WorldStateDB entries. Hidden until F4 (or
-## WorldGridManager.set_telemetry_visible).
+## waiting for frame time, Deltas the WorldStateDB entries (only on a landblock
+## world; the Caldera Isles show the score line alone). The score line is
+## AudioDirector.telemetry_line(). Hidden until F4 (or
+## WorldGridManager.set_telemetry_visible, CalderaArchipelagoWorld.set_telemetry_visible).
 class_name WorldTelemetryBadge
 extends PanelContainer
 
@@ -56,12 +60,22 @@ func _process(delta: float) -> void:
 
 
 func refresh() -> void:
-	if _label == null or not is_instance_valid(grid):
+	if _label == null:
 		return
-	_label.text = text_for(grid.get_streaming_metrics())
+	_label.text = readout()
 	# Snug round the text, in the top-right corner.
 	reset_size()
 	position = Vector2(get_viewport_rect().size.x - size.x - MARGIN, TOP)
+
+
+## What the badge shows: the streaming line on a landblock world, then the score's line.
+func readout() -> String:
+	var lines: PackedStringArray = PackedStringArray()
+	if is_instance_valid(grid):
+		lines.append(text_for(grid.get_streaming_metrics()))
+	if AudioDirector.current != null:
+		lines.append(AudioDirector.current.telemetry_line())
+	return "\n".join(lines)
 
 
 ## The badge's line for a metrics snapshot (WorldGridManager.get_streaming_metrics).

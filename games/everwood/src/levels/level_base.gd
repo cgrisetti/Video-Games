@@ -157,6 +157,13 @@ func music_world_z(position: Vector3) -> float:
 	return position.z
 
 
+## How a spot leans an Audio Mosaic's moods (16 GDD §7.1): sets `context`'s settled, wild, height
+## and underground, each 0 to 1. AudioDirector adds the hearths nearby, whether the party is
+## standing still or sprinting, and the threat and the fight itself. By default a spot leans nowhere.
+func music_mood_context(_position: Vector3, _context: MusicMoodEngine.Context) -> void:
+	pass
+
+
 ## Whether the HorizonVistaRing's far hills stand round this level (the Caldera Isles have the open sea and their own horizon silhouettes).
 func wants_horizon_ring() -> bool:
 	return true

@@ -54,6 +54,10 @@
 ##     grids and four seams, the eight world-state booleans, the boot zones,
 ##     walking the causeways and gliding the skiff lanes, the Beacons, The
 ##     Crown's seven areas and three trials, and the Harmonic Bell's Ebb
+##   - then the Audio Mosaics (tools/test_audio_architecture.gd, docs/16 §7):
+##     Oakshire Holm's and The Crown's twelve-cell mosaics, chained on the bar
+##     line, the six-mood walk, the Pre-Warm turning to Anxiousness, the Skirmish
+##     on the same cell, the Mellow shelf and the F4 score line
 ##   - then the Phase 12 Combat Kaizen refinement (tools/test_phase12_kaizen.gd):
 ##     jump on ✕, roll on ○, sprint on L3, the Share-button playtest switcher,
 ##     the diamond-only HUD, the Grimoire's tabs and the playground names
@@ -130,6 +134,8 @@ var _pastoral: RefCounted = PASTORAL_CHECKS.new()
 const HERO_RIG_CHECKS: GDScript = preload("res://tools/test_hero_rig.gd")
 ## The Caldera Isles' checks (tools/test_caldera_isles.gd), last: the game's world since docs/20.
 const CALDERA_CHECKS: GDScript = preload("res://tools/test_caldera_isles.gd")
+## The Chamber-Folk Audio Mosaic's checks (tools/test_audio_architecture.gd, docs/16 §7), in the Caldera after its own.
+const AUDIO_MOSAIC_CHECKS: GDScript = preload("res://tools/test_audio_architecture.gd")
 ## The Phase 12 Combat Kaizen refinement's checks (tools/test_phase12_kaizen.gd): jump, sprint, the playtest switcher, the diamond HUD, the Grimoire's tabs, the playground names.
 const KAIZEN_CHECKS: GDScript = preload("res://tools/test_phase12_kaizen.gd")
 ## Phase 12.5's playtest-feedback checks (tools/test_playtest_feedback.gd), last: options, the map, arms, foliage, coasts, badges.
@@ -232,6 +238,8 @@ func _run() -> void:
 	await _hero_rig.run_vale(self, _check)
 	# The Caldera Isles last (docs/20): the boot, the seams, the Beacons, The Crown's seven areas, the trials and the Ebb.
 	await CALDERA_CHECKS.new().run(self, _check)
+	# The Audio Mosaics of Oakshire Holm and The Crown (docs/16 §7): six moods, phrase cells, the F4 line.
+	await AUDIO_MOSAIC_CHECKS.new().run(self, _check)
 	# The Phase 12 Combat Kaizen refinement (K1 to K5) on Hearthstead Market's green.
 	await KAIZEN_CHECKS.new().run(self, _check)
 	await PLAYTEST_CHECKS.new().run(self, _check)

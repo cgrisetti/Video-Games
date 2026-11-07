@@ -32,8 +32,19 @@
 ## - A pool of 32 AudioStreamPlayer3D voices made once at start (§1.2): combat
 ##   sounds beyond 45 m of every local player are culled, each kind of sound
 ##   waits 50 ms between plays, and every 3D player gets area_mask = 1.
-## Levels say which profile plays where (LevelBase.music_profile_at()); nothing
-## here names a zone or a boss. Headless runs keep every state and volume but
+## - A zone with mosaic cells (16 §7, the Chamber-Folk Audio Mosaic) plays them
+##   as one AudioStreamInteractive: twelve four-bar cells, each its own four
+##   phase-locked stems, chained sample-accurately at each cell's end while its
+##   tail rings under the next. MusicalClock keeps the phrase grid; in the last
+##   bar of each phrase MusicMoodEngine picks the next cell (a weighted Markov
+##   walk through six moods, nudged by the party's surroundings and the threat
+##   round it) and the director queues it. Each mood sets the stems' resting mix
+##   (Anxiousness swells the Holloway discord, Mellow softens the top end 3 dB,
+##   Peace opens the Emergent Silence breath); the four stages work on the cell
+##   playing exactly as on a classic loop, and a fight never restarts it.
+## Levels say which profile plays where (LevelBase.music_profile_at()) and how a
+## spot leans the moods (LevelBase.music_mood_context()); nothing here names a
+## zone or a boss. Headless runs keep every state, volume, phrase and mood but
 ## start no playback, so nothing is left sounding at quit.
 class_name AudioDirector
 extends Node
@@ -126,6 +137,33 @@ const EXHALE_CADENCE: Array[Array] = [[52, 55, 59], [48, 55, 57, 64]]
 const THRESHOLD_CHORD: Array[int] = [55, 57, 62, 69, 74]
 ## The skirmish accent: a bodhran rim-hit, a dulcimer roll and a mandolin slash.
 const SKIRMISH_ACCENT_SEMITONES: Array[int] = [0, 7, 12, 7, 12]
+## The F4 line's names for the four stages (and the Pre-Warm).
+const STATE_LABELS: Array[String] = ["EXPLORE", "PREWARM", "SKIRMISH", "BOSS", "EXHALE"]
+
+# --- The Audio Mosaic (16 §7) ---
+## A cell's stems move to its mood's mix this fast at the bar line.
+const MOSAIC_RAMP_SEC: float = 0.6
+## The Peace breath takes the melody away this fast.
+const BREATH_LEAD_FADE_SEC: float = 0.3
+## Layers the next cell needs louder start rising this long before the bar line, so its downbeat speaks.
+const ANTICIPATE_SEC: float = 0.1
+## No re-choosing the next cell this close to the bar line (the audio may already be starting it).
+const SWITCH_LOCK_SEC: float = 0.12
+## Mellow's late-afternoon warmth: a high shelf at 3.5 kHz down 3 dB (linear 0.708), eased over 2 s.
+const WARMTH_SHELF_HZ: float = 3500.0
+const MELLOW_SHELF_GAIN: float = 0.708
+const SHELF_RAMP_SEC: float = 2.0
+## Hearths lean the moods to Peace within this reach: campfires and warm springs (and the oases).
+const HEARTH_GROUP: StringName = &"audio_hearth"
+const HEARTH_RADIUS: float = 14.0
+## Standing this long counts as standing still; running this fast counts as hurrying.
+const STILL_AFTER_SEC: float = 6.0
+const STILL_SPEED: float = 0.4
+const HURRY_SPEED: float = 6.5
+## After a fight's exhale, this many phrases lean to Mellow and Peace.
+const RELIEF_PHRASES: int = 2
+## How many phrases the director remembers (the F4 line and tests read them).
+const PHRASE_LOG_SIZE: int = 64
 
 ## The live autoload node (see NetworkManager.current for why).
 static var current: AudioDirector
@@ -149,12 +187,32 @@ var last_stinger_pitch: float = 1.0
 var oasis: bool = false
 ## Combat sounds turned away for being too far from everyone.
 var culled_count: int = 0
+## The playing mosaic's mood walk, its phrase grid and the party's surroundings as it last read them.
+var mood_engine: MusicMoodEngine = MusicMoodEngine.new()
+var clock: MusicalClock = MusicalClock.new()
+var mood_context: MusicMoodEngine.Context = MusicMoodEngine.Context.new()
+## Every phrase a mosaic has played, newest last: {"phrase", "cell", "cell_id", "mood", "voice", "breath", "targets", "signature"}.
+var phrase_log: Array[Dictionary] = []
 
 var _silent: bool = false
 var _clock: float = 0.0
 var _heartbeat_left: float = 0.0
 var _decks: Array[AudioStreamPlayer] = []
-var _deck_streams: Array[AudioStreamSynchronized] = [null, null]
+## Each deck's stream: an AudioStreamSynchronized, or a mosaic's AudioStreamInteractive.
+var _deck_streams: Array[AudioStream] = [null, null]
+## Each deck's four-stem streams whose volumes the stems' ramps set (a mosaic's: one per cell).
+var _deck_cells: Array[Array] = [[], []]
+var _phrase_at: int = 0
+var _mosaic_decided: bool = false
+var _anticipated: bool = false
+## Whether the threat and the fight were round the party when the next cell was chosen.
+var _decided_threat: bool = false
+var _decided_fight: bool = false
+var _relief_phrases: int = 0
+var _post_fight_return: bool = false
+var _still_for: float = 0.0
+var _shelf: Ramp = Ramp.new(1.0)
+var _shelf_effect: AudioEffectFilter
 var _deck_profiles: Array[StringName] = [&"", &""]
 var _deck_started_at: Array[float] = [0.0, 0.0]
 var _deck_gain: Array[Ramp] = []
@@ -257,6 +315,7 @@ func _exit_tree() -> void:
 		voice.stop()
 		voice.stream = null
 	_deck_streams = [null, null]
+	_deck_cells = [[], []]
 	_rendered.clear()
 	_stinger_cache.clear()
 	_ambience_cache.clear()
@@ -337,6 +396,11 @@ func _build_buses() -> void:
 	squeeze.release_ms = 450.0
 	squeeze.sidechain = BUS_NAMES[SIGN_BUS]
 	AudioServer.add_bus_effect(_bus(MUSIC_BUS), squeeze)
+	# Mellow's warmth (16 §7.1): a high shelf, flat until a Mellow phrase softens it 3 dB.
+	_shelf_effect = AudioEffectHighShelfFilter.new()
+	_shelf_effect.cutoff_hz = WARMTH_SHELF_HZ
+	_shelf_effect.gain = 1.0
+	AudioServer.add_bus_effect(_bus(MUSIC_BUS), _shelf_effect)
 	var ambience_pass: AudioEffectLowPassFilter = AudioEffectLowPassFilter.new()
 	ambience_pass.cutoff_hz = LPF_OPEN_HZ
 	AudioServer.add_bus_effect(_bus(AMBIENCE_BUS), ambience_pass)
@@ -364,6 +428,12 @@ static func _hall(settings: Array[float]) -> AudioEffectReverb:
 # --- Each frame -----------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	tick_score(delta)
+
+
+## One step of the score: the heartbeat, the four stages, the mosaic's phrases, the volumes and
+## any stinger whose beat has come. _process runs it each frame; tests run it to move time on.
+func tick_score(delta: float) -> void:
 	_clock += delta
 	_poll_renders()
 	_heartbeat_left -= delta
@@ -371,6 +441,7 @@ func _process(delta: float) -> void:
 		_heartbeat_left = HEARTBEAT
 		_evaluate()
 	_tick_stages(delta)
+	_conduct(delta)
 	_apply_volumes(delta)
 	_fire_pending()
 
@@ -381,12 +452,15 @@ func _apply_volumes(delta: float) -> void:
 		var gain: Ramp = _deck_gain[deck]
 		gain.tick(delta)
 		_decks[deck].volume_db = maxf(MUTED_DB, gain.value() + _silence.value())
-		var sync: AudioStreamSynchronized = _deck_streams[deck]
 		for layer: int in ZoneMusicProfileResource.STEM_COUNT:
 			var ramp: Ramp = _stems[deck][layer]
 			ramp.tick(delta)
-			if sync != null:
-				sync.set_sync_stream_volume(layer, ramp.value())
+			var level: float = ramp.value()
+			for each: AudioStreamSynchronized in _deck_cells[deck]:
+				each.set_sync_stream_volume(layer, level)
+	_shelf.tick(delta)
+	if _shelf_effect != null:
+		_shelf_effect.gain = _shelf.value()
 	_duck_left = maxf(0.0, _duck_left - delta)
 	if _duck_left == 0.0:
 		_duck.retarget(0.0, DUCK_RELEASE_SEC)
@@ -451,7 +525,9 @@ func _evaluate() -> void:
 		_set_state(AcousticState.PROXIMITY)
 	else:
 		_set_state(AcousticState.EXPLORATION)
+	_sample_mood_context(level, locals)
 	_play_wanted_deck()
+	_rechoose_if_the_threat_changed()
 	_retarget_stems()
 
 
@@ -588,9 +664,13 @@ func _tick_stages(delta: float) -> void:
 				_breath_left = maxf(0.0, _breath_left - delta)
 				if _breath_left == 0.0:
 					_set_state(AcousticState.EXPLORATION)
+					_post_fight_return = true
+					_relief_phrases = RELIEF_PHRASES
 					_retarget_stems()
 		AcousticState.EXPLORATION:
-			_tick_silence(delta)
+			# A mosaic breathes in its Peace phrases instead (the Emergent Silence breath).
+			if not _front_is_mosaic():
+				_tick_silence(delta)
 
 
 func _enter_exhale() -> void:
@@ -639,20 +719,22 @@ func _set_state(next: AcousticState) -> void:
 	state_changed.emit(next)
 
 
-## The stems' target volumes for the state (16 §5.3's table), on the front deck.
+## The stems' target volumes for the state (16 §5.3's table), on the front deck. A mosaic's
+## exploration mix is its playing cell's mood (16 §7.1).
 func _retarget_stems() -> void:
 	var profile: ZoneMusicProfileResource = _front_profile()
 	if profile == null:
 		return
-	var targets: PackedFloat32Array = PackedFloat32Array()
-	for layer: int in ZoneMusicProfileResource.STEM_COUNT:
-		targets.append(profile.explore_db(layer))
-	var seconds: float = STATE_RAMP_SEC
+	var mosaic: bool = _front_is_mosaic()
+	var exploring: bool = state == AcousticState.EXPLORATION or state == AcousticState.PROXIMITY
+	var resting: PackedFloat32Array = mood_engine.stem_targets(proximity) if mosaic else _explore_levels(profile)
+	var targets: PackedFloat32Array = resting.duplicate()
+	var seconds: float = MOSAIC_RAMP_SEC if mosaic else STATE_RAMP_SEC
 	var shaped: bool = false
 	match state:
 		AcousticState.EXPLORATION, AcousticState.PROXIMITY:
 			if discord_depth > 0.0:
-				targets[1] = maxf(MUTED_DB, profile.explore_db(1) + linear_to_db(cos(discord_depth * PI * 0.5)))
+				targets[1] = maxf(MUTED_DB, resting[1] + linear_to_db(cos(discord_depth * PI * 0.5)))
 				targets[2] = maxf(MUTED_DB, linear_to_db(sin(discord_depth * PI * 0.5)))
 			if state == AcousticState.PROXIMITY:
 				targets[1] += PREWARM_LEAD_DIP_DB * proximity
@@ -683,14 +765,36 @@ func _retarget_stems() -> void:
 				targets[1] = BREATH_DB
 				targets[2] = MUTED_DB
 				targets[3] = MUTED_DB
-	if state == AcousticState.EXPLORATION and _was_breathing():
+	# Back from a fight's breath, the stems take 3 s to come home.
+	if state == AcousticState.EXPLORATION and _post_fight_return:
 		seconds = EXPLORE_RETURN_SEC
+		_post_fight_return = false
+	var quick: Array[bool] = [false, false, false, false]
+	if mosaic and exploring and _anticipated and mood_engine.chosen_cell >= 0:
+		# The next cell's louder layers are already rising, so its downbeat speaks on the bar line.
+		var coming: PackedFloat32Array = mood_engine.stem_targets_for(mood_engine.chosen_cell, mood_engine.chosen_breath_step(), proximity)
+		for layer: int in ZoneMusicProfileResource.STEM_COUNT:
+			if coming[layer] > targets[layer] + 0.5:
+				targets[layer] = coming[layer]
+				quick[layer] = true
 	for layer: int in ZoneMusicProfileResource.STEM_COUNT:
-		(_stems[_front][layer] as Ramp).retarget(targets[layer], seconds, shaped)
+		var ramp_sec: float = seconds
+		if quick[layer]:
+			ramp_sec = ANTICIPATE_SEC
+		elif mosaic and exploring and mood_engine.in_breath() and layer == ZoneMusicProfileResource.StemLayer.PASTORAL_LEAD:
+			ramp_sec = BREATH_LEAD_FADE_SEC
+		(_stems[_front][layer] as Ramp).retarget(targets[layer], ramp_sec, shaped)
+	# Mellow's late-afternoon warmth: the top end 3 dB softer.
+	var warm: bool = mosaic and exploring and mood_engine.mood() == ZoneMusicProfileResource.MoodState.MELLOW and not mood_engine.in_breath()
+	_shelf.retarget(MELLOW_SHELF_GAIN if warm else 1.0, SHELF_RAMP_SEC)
 
 
-func _was_breathing() -> bool:
-	return (_stems[_front][0] as Ramp).to <= BREATH_DB + 0.1
+## A classic profile's resting mix (its explore_stem_volumes_db).
+static func _explore_levels(profile: ZoneMusicProfileResource) -> PackedFloat32Array:
+	var levels: PackedFloat32Array = PackedFloat32Array()
+	for layer: int in ZoneMusicProfileResource.STEM_COUNT:
+		levels.append(profile.explore_db(layer))
+	return levels
 
 
 # --- Decks (16 §1.3, §5.1) ---------------------------------------------------------
@@ -707,26 +811,45 @@ func _play_wanted_deck() -> void:
 		crossfade = ZoneMusicProfileResource.RESTORATION_EXHALE_SEC
 	if wanted == &"" or wanted == _deck_profiles[_front]:
 		return
-	var sync: AudioStreamSynchronized = _stream_for(AudioCatalog.zone(wanted))
-	if sync == null:
+	var profile: ZoneMusicProfileResource = AudioCatalog.zone(wanted)
+	# A mosaic opens on the cell its walk starts from (Anxiousness under a threat, Mellow after a fight).
+	var walk: MusicMoodEngine = null
+	var opening: int = -1
+	if profile.is_mosaic() and has_baked_stems(profile.profile_id):
+		walk = MusicMoodEngine.new()
+		opening = walk.reset(profile, _rng.randi(), _mood_context_now())
+	var stream: AudioStream = _stream_for(profile, opening)
+	if stream == null:
 		return
 	var back: int = 1 - _front
 	var old_profile: ZoneMusicProfileResource = _front_profile()
-	_deck_streams[back] = sync
+	var mosaic: bool = stream is AudioStreamInteractive
+	_deck_streams[back] = stream
+	_deck_cells[back] = _cells_of(stream)
 	_deck_profiles[back] = wanted
 	var deck: AudioStreamPlayer = _decks[back]
 	deck.stop()
-	deck.stream = sync
-	var profile: ZoneMusicProfileResource = AudioCatalog.zone(wanted)
-	# Same tempo: start in step with the deck already playing (phase-locked across zones).
+	deck.stream = stream
+	# Same tempo: start in step with the deck already playing (phase-locked across zones). A mosaic
+	# always starts on its opening cell's downbeat.
 	var offset: float = 0.0
-	if old_profile != null and is_equal_approx(old_profile.bpm, profile.bpm) and _deck_profiles[_front] != &"":
-		var loop: float = sync.get_length() if sync.get_length() > 0.0 else profile.loop_sec()
+	if not mosaic and not _front_is_mosaic() and old_profile != null and is_equal_approx(old_profile.bpm, profile.bpm) \
+			and _deck_profiles[_front] != &"":
+		var loop: float = stream.get_length() if stream.get_length() > 0.0 else profile.loop_sec()
 		offset = fposmod(_clock - _deck_started_at[_front], loop)
 	_deck_started_at[back] = _clock - offset
+	clock.setup(profile.bpm, profile.beats_per_bar, profile.phrase_bars)
+	clock.advance(offset)
+	var resting: PackedFloat32Array = walk.stem_targets(proximity) if mosaic else _explore_levels(profile)
 	for layer: int in ZoneMusicProfileResource.STEM_COUNT:
-		(_stems[back][layer] as Ramp).snap(profile.explore_db(layer))
-		sync.set_sync_stream_volume(layer, profile.explore_db(layer))
+		(_stems[back][layer] as Ramp).snap(resting[layer])
+		for each: AudioStreamSynchronized in _deck_cells[back]:
+			each.set_sync_stream_volume(layer, resting[layer])
+	if mosaic:
+		mood_engine = walk
+		_phrase_at = 0
+		_mosaic_decided = false
+		_anticipated = false
 	if not _silent:
 		deck.play(offset)
 	var first: bool = _deck_profiles[_front] == &""
@@ -734,14 +857,22 @@ func _play_wanted_deck() -> void:
 	(_deck_gain[_front] as Ramp).retarget(MUTED_DB, crossfade)
 	_front = back
 	_cycle_left = profile.music_cycle_sec
+	if mosaic:
+		_log_phrase()
 	profile_changed.emit(wanted)
 
 
-## A four-stem AudioStreamSynchronized for a profile: its curated or baked .tres, else one built
-## from its four baked .ogg stems, else its code-built stems (null while they're still rendering).
-func _stream_for(profile: ZoneMusicProfileResource) -> AudioStreamSynchronized:
+## A profile's stream: a mosaic's AudioStreamInteractive of its baked cells (opening on `opening`,
+## or its opening cell), else a four-stem AudioStreamSynchronized: its curated or baked .tres, one
+## built from its four baked .ogg stems, or its code-built stems (null while they're still
+## rendering). A mosaic with no baked cells plays its score end to end that last way.
+func _stream_for(profile: ZoneMusicProfileResource, opening: int = -1) -> AudioStream:
 	if profile == null:
 		return null
+	if profile.is_mosaic():
+		var interactive: AudioStreamInteractive = mosaic_stream(profile, opening if opening >= 0 else profile.opening_cell)
+		if interactive != null:
+			return interactive
 	for path: String in [profile.synchronized_stream_path, sync_path(profile.profile_id)]:
 		if path != "" and ResourceLoader.exists(path):
 			var curated: AudioStreamSynchronized = load(path) as AudioStreamSynchronized
@@ -761,6 +892,54 @@ func _stream_for(profile: ZoneMusicProfileResource) -> AudioStreamSynchronized:
 	return sync
 
 
+## A mosaic as one AudioStreamInteractive (16 §7.3): a clip per cell, each the cell's four baked
+## stems in an AudioStreamSynchronized (muted until the director sets them). Every transition
+## waits for the end of the cell playing (its beat count) and starts the next from its top with
+## no fade, so cells chain on the bar line while the old cell's tail (it doesn't loop) rings on
+## under the new one. A cell nobody chooses for goes on to its fallback (the suite order).
+## Null unless every cell is baked.
+static func mosaic_stream(profile: ZoneMusicProfileResource, opening: int) -> AudioStreamInteractive:
+	var interactive: AudioStreamInteractive = AudioStreamInteractive.new()
+	interactive.clip_count = profile.mosaic_cells.size()
+	for index: int in profile.mosaic_cells.size():
+		var made: MosaicCellResource = profile.mosaic_cells[index]
+		var stems: Array[AudioStream] = baked_stems(cell_folder(profile.profile_id, made.cell_id))
+		if stems.size() != ZoneMusicProfileResource.STEM_COUNT:
+			return null
+		var sync: AudioStreamSynchronized = AudioStreamSynchronized.new()
+		sync.stream_count = ZoneMusicProfileResource.STEM_COUNT
+		for layer: int in ZoneMusicProfileResource.STEM_COUNT:
+			sync.set_sync_stream(layer, stems[layer])
+			sync.set_sync_stream_volume(layer, MUTED_DB)
+		interactive.set_clip_name(index, made.cell_id)
+		interactive.set_clip_stream(index, sync)
+		interactive.set_clip_auto_advance(index, AudioStreamInteractive.AUTO_ADVANCE_ENABLED)
+		interactive.set_clip_auto_advance_next_clip(index, profile.fallback_after(index))
+	interactive.add_transition(AudioStreamInteractive.CLIP_ANY, AudioStreamInteractive.CLIP_ANY, AudioStreamInteractive.TRANSITION_FROM_TIME_END,
+		AudioStreamInteractive.TRANSITION_TO_TIME_START, AudioStreamInteractive.FADE_DISABLED, 1.0)
+	interactive.initial_clip = clampi(opening, 0, profile.mosaic_cells.size() - 1)
+	return interactive
+
+
+## A mosaic cell's folder id under MUSIC_FOLDER ("crown_island/wonder_a").
+static func cell_folder(profile_id: StringName, cell_id: StringName) -> StringName:
+	return StringName("%s/%s" % [profile_id, cell_id])
+
+
+## The four-stem streams inside a deck's stream (a mosaic's, one per cell), whose volumes the stems' ramps set.
+static func _cells_of(stream: AudioStream) -> Array[AudioStreamSynchronized]:
+	var cells: Array[AudioStreamSynchronized] = []
+	if stream is AudioStreamInteractive:
+		var interactive: AudioStreamInteractive = stream as AudioStreamInteractive
+		for index: int in interactive.clip_count:
+			var sync: AudioStreamSynchronized = interactive.get_clip_stream(index) as AudioStreamSynchronized
+			if sync != null:
+				cells.append(sync)
+	elif stream is AudioStreamSynchronized:
+		cells.append(stream as AudioStreamSynchronized)
+	return cells
+
+
 ## Where a zone's baked AudioStreamSynchronized lives (tools/build_audio_resources.gd writes it).
 static func sync_path(profile_id: StringName) -> String:
 	return MUSIC_FOLDER + "%s_sync.tres" % profile_id
@@ -778,9 +957,20 @@ static func baked_stems(profile_id: StringName) -> Array[AudioStream]:
 	return stems
 
 
+## Whether a zone's stems are all baked (a mosaic's: every cell's four).
 static func has_baked_stems(profile_id: StringName) -> bool:
+	var profile: ZoneMusicProfileResource = AudioCatalog.zone(profile_id)
+	if profile != null and profile.is_mosaic():
+		for made: MosaicCellResource in profile.mosaic_cells:
+			if not _has_stem_files(cell_folder(profile_id, made.cell_id)):
+				return false
+		return true
+	return _has_stem_files(profile_id)
+
+
+static func _has_stem_files(folder: StringName) -> bool:
 	for file: String in STEM_FILES:
-		if not ResourceLoader.exists(MUSIC_FOLDER + "%s/%s" % [profile_id, file]):
+		if not ResourceLoader.exists(MUSIC_FOLDER + "%s/%s" % [folder, file]):
 			return false
 	return true
 
@@ -848,9 +1038,147 @@ func _next_subdivision(fraction: float) -> float:
 	var profile: ZoneMusicProfileResource = _front_profile()
 	if profile == null:
 		return 0.0
+	# A mosaic's grid follows the audio (it's lined up as each cell starts).
+	if _front_is_mosaic():
+		return clock.seconds_to_next(fraction)
 	var step: float = profile.beat_sec() * fraction
 	var played: float = _clock - _deck_started_at[_front]
 	return ceilf(played / step - 0.0001) * step - played
+
+
+# --- The Audio Mosaic's phrases (16 §7) ---------------------------------------------
+
+func _front_is_mosaic() -> bool:
+	return _deck_streams[_front] is AudioStreamInteractive
+
+
+## Moves the phrase grid on, follows the cell the audio is playing (or, with nothing playing,
+## the grid's own phrase boundaries), chooses the next cell in each phrase's last bar, and lets
+## the next cell's louder layers rise just before its downbeat.
+func _conduct(delta: float) -> void:
+	clock.advance(delta)
+	if not _front_is_mosaic():
+		return
+	var profile: ZoneMusicProfileResource = _front_profile()
+	var live: int = _live_cell()
+	if live >= 0:
+		if live != mood_engine.current_cell:
+			# The audio has begun a new cell: line the grid up with its downbeat.
+			var boundary: float = roundf(clock.elapsed / clock.phrase_sec()) * clock.phrase_sec()
+			clock.nudge(boundary - clock.elapsed)
+			_begin_phrase(live, clock.phrase)
+	else:
+		while clock.phrase > _phrase_at:
+			if not _mosaic_decided:
+				_choose_next_cell()
+			var next: int = mood_engine.chosen_cell if mood_engine.chosen_cell >= 0 else profile.fallback_after(mood_engine.current_cell)
+			_begin_phrase(next, _phrase_at + 1)
+	if not _mosaic_decided and clock.bar_in_phrase() >= profile.phrase_bars - 1:
+		_choose_next_cell()
+	if _mosaic_decided and not _anticipated and clock.seconds_to_phrase_end() <= ANTICIPATE_SEC:
+		_anticipated = true
+		_retarget_stems()
+
+
+## Asks the mood walk for the next cell and queues it on the playing mosaic (it starts on the bar line).
+func _choose_next_cell() -> void:
+	var context: MusicMoodEngine.Context = _mood_context_now()
+	var next: int = mood_engine.choose_next(context)
+	_mosaic_decided = true
+	_anticipated = false
+	_decided_threat = context.threat
+	_decided_fight = context.fighting
+	var playback: AudioStreamPlaybackInteractive = _live_playback()
+	if playback != null and next >= 0:
+		playback.switch_to_clip(next)
+
+
+## A threat or a fight that began (or ended) after the next cell was chosen chooses again, unless
+## the bar line is too close.
+func _rechoose_if_the_threat_changed() -> void:
+	if not _front_is_mosaic() or not _mosaic_decided:
+		return
+	var context: MusicMoodEngine.Context = _mood_context_now()
+	if (context.threat != _decided_threat or context.fighting != _decided_fight) and clock.seconds_to_phrase_end() > SWITCH_LOCK_SEC:
+		_choose_next_cell()
+
+
+func _begin_phrase(index: int, phrase: int) -> void:
+	mood_engine.commit(index)
+	_phrase_at = phrase
+	_mosaic_decided = false
+	_anticipated = false
+	if _relief_phrases > 0 and state == AcousticState.EXPLORATION:
+		_relief_phrases -= 1
+	_retarget_stems()
+	_log_phrase()
+
+
+func _log_phrase() -> void:
+	var made: MosaicCellResource = mood_engine.cell()
+	if made == null:
+		return
+	var targets: PackedFloat32Array = mood_engine.stem_targets(proximity)
+	phrase_log.append({"phrase": _phrase_at, "cell": mood_engine.current_cell, "cell_id": made.cell_id, "mood": made.mood,
+		"voice": made.lead_voice, "breath": mood_engine.breath_step, "targets": targets, "signature": mood_engine.signature(targets),
+		"state": state})
+	if phrase_log.size() > PHRASE_LOG_SIZE:
+		phrase_log.pop_front()
+
+
+## The front deck's mosaic playback while it's really sounding (null headless or before it plays).
+func _live_playback() -> AudioStreamPlaybackInteractive:
+	if _silent or not _front_is_mosaic():
+		return null
+	var deck: AudioStreamPlayer = _decks[_front]
+	if not deck.playing or not deck.has_stream_playback():
+		return null
+	return deck.get_stream_playback() as AudioStreamPlaybackInteractive
+
+
+## The cell the audio is playing (-1 when nothing is sounding).
+func _live_cell() -> int:
+	var playback: AudioStreamPlaybackInteractive = _live_playback()
+	return playback.get_current_clip_index() if playback != null else -1
+
+
+## The mood walk's context with the stages' flags: the Pre-Warm is a threat, Skirmish and the boss a fight,
+## the exhale and the phrases after it relief.
+func _mood_context_now() -> MusicMoodEngine.Context:
+	mood_context.threat = state == AcousticState.PROXIMITY
+	mood_context.fighting = state == AcousticState.SKIRMISH or state == AcousticState.BOSS
+	mood_context.relief = state == AcousticState.EXHALE or _relief_phrases > 0
+	return mood_context
+
+
+## Reads where the local players are for the moods (each heartbeat): hearths near any of them, the
+## level's say on each spot (towns, wild edges, height, underground), and whether Player 1 is standing
+## still or sprinting.
+func _sample_mood_context(level: LevelBase, locals: Array[ActorBase]) -> void:
+	var context: MusicMoodEngine.Context = mood_context
+	context.hearth = 0.0
+	context.settled = 0.0
+	context.wild = 0.0
+	context.height = 0.0
+	context.underground = 0.0
+	var hearths: Array[Node] = get_tree().get_nodes_in_group(HEARTH_GROUP)
+	hearths.append_array(get_tree().get_nodes_in_group(OASIS_GROUP))
+	for player: ActorBase in locals:
+		var spot: MusicMoodEngine.Context = MusicMoodEngine.Context.new()
+		level.music_mood_context(player.global_position, spot)
+		context.settled += spot.settled / locals.size()
+		context.wild += spot.wild / locals.size()
+		context.height += spot.height / locals.size()
+		context.underground += spot.underground / locals.size()
+		for node: Node in hearths:
+			var hearth: Node3D = node as Node3D
+			if hearth != null and hearth.is_inside_tree():
+				context.hearth = maxf(context.hearth, clampf(1.0 - hearth.global_position.distance_to(player.global_position) / HEARTH_RADIUS, 0.0, 1.0))
+	var first: ActorBase = locals[0]
+	var speed: float = Vector2(first.velocity.x, first.velocity.z).length()
+	_still_for = _still_for + HEARTBEAT if speed < STILL_SPEED else 0.0
+	context.still = clampf(_still_for / STILL_AFTER_SEC, 0.0, 1.0)
+	context.hurry = clampf((speed - HURRY_SPEED * 0.8) / (HURRY_SPEED * 0.3), 0.0, 1.0)
 
 
 # --- Stingers (16 §3, §4.1, §5.3) -------------------------------------------------
@@ -1136,7 +1464,7 @@ func get_active_profile_id() -> StringName:
 
 ## A stem's volume on the playing deck right now (dB), as the AudioStreamSynchronized holds it.
 func get_stem_volume_db(layer: int) -> float:
-	var sync: AudioStreamSynchronized = _deck_streams[_front]
+	var sync: AudioStreamSynchronized = front_stream()
 	return sync.get_sync_stream_volume(layer) if sync != null else MUTED_DB
 
 
@@ -1145,9 +1473,62 @@ func get_stem_target_db(layer: int) -> float:
 	return (_stems[_front][layer] as Ramp).to
 
 
-## The playing deck's stream (unchanged through a skirmish: the stems never restart).
+## The playing deck's four stems (a mosaic's: the cell playing). Unchanged through a skirmish: the stems never restart.
 func front_stream() -> AudioStreamSynchronized:
+	var cells: Array = _deck_cells[_front]
+	if cells.is_empty():
+		return null
+	return cells[clampi(mood_engine.current_cell, 0, cells.size() - 1)] if _front_is_mosaic() else cells[0]
+
+
+## The playing deck's whole stream (a mosaic's AudioStreamInteractive, else its four stems).
+func front_deck_stream() -> AudioStream:
 	return _deck_streams[_front]
+
+
+## Whether the playing deck is a mosaic (16 §7).
+func is_mosaic_playing() -> bool:
+	return _front_is_mosaic()
+
+
+## The mood playing (ZoneMusicProfileResource.MoodState), or -1 on a classic loop.
+func current_mood() -> int:
+	return mood_engine.mood() if _front_is_mosaic() else -1
+
+
+## The mosaic cell playing (null on a classic loop).
+func current_cell() -> MosaicCellResource:
+	return mood_engine.cell() if _front_is_mosaic() else null
+
+
+## How far Mellow has softened the top end (the Music bus's high shelf, linear: 1 is flat).
+func warmth_shelf_gain() -> float:
+	return _shelf.value()
+
+
+## The F4 line (16 §7.4):
+##   Audio: crown_island [G_LYDIAN 110BPM] · Mood: WONDER (Var B: Violin/Harp) · State: EXPLORE · Stems: 0.0/0.0/-60.0/-80.0 dB · Voices: 4/32
+## The key and mode are the playing cell's (a classic loop's: the zone's); a Peace breath shows as "PEACE breath 2/3".
+func telemetry_line() -> String:
+	var profile: ZoneMusicProfileResource = _front_profile()
+	var voices: String = "%d/%d" % [active_voice_count(), VOICE_POOL_SIZE]
+	if profile == null:
+		return "Audio: (no score) · State: %s · Voices: %s" % [STATE_LABELS[state], voices]
+	var mode_label: String = String(profile.modal_signature)
+	var mood_text: String = "-"
+	var playing: MosaicCellResource = current_cell()
+	if playing != null:
+		mode_label = String(playing.mode_label)
+		var mood_word: String = ZoneMusicProfileResource.mood_name(playing.mood)
+		if mood_engine.in_breath():
+			mood_word += " breath %d" % (mood_engine.breath_step + 1)
+		mood_text = "%s (%s)" % [mood_word, ZoneMusicProfileResource.voice_name(playing.lead_voice, playing.voice_label)]
+	var levels: PackedStringArray = PackedStringArray()
+	for layer: int in ZoneMusicProfileResource.STEM_COUNT:
+		levels.append("%.1f" % get_stem_volume_db(layer))
+	var tempo: String = str(int(profile.bpm)) if is_equal_approx(profile.bpm, roundf(profile.bpm)) else "%.1f" % profile.bpm
+	return "Audio: %s [%s %sBPM] · Mood: %s · State: %s · Stems: %s dB · Voices: %s" % [profile.profile_id, mode_label, tempo, mood_text,
+		STATE_LABELS[state], "/".join(levels), voices]
 
 
 ## How far the Music bus is ducked under a Sign stinger right now (dB).

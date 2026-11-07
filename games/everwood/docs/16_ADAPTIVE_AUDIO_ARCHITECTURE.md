@@ -146,3 +146,106 @@ All $36$ cues in `AudioCues.CUES` keep their exact `StringName` identifiers and 
 12. **Noise stays code-built.** The campfire's crackle and the water-shrine's trickle are noise and resonators, and AudioCues' hits, shots, gale, beam, clank and wade stay synthesized.
 13. **`test_world_grid.gd`** lives in `deprecated/legacy_maps/bramble_bridge_corridor/` and runs inside the smoke test, not by itself.
 14. **Size.** About 18 MB of stems and 14 MB of samples are committed. The SoundFont is not.
+
+---
+
+## 7. The Chamber-Folk Audio Mosaic (Phase 16.2, 2026-11-06)
+
+**The problem.** Every zone's score was one loop of 16 to 24 bars, so the same tune, chords and lead came round every 27 to 40 seconds. Oakshire Holm, where every launch begins, now plays an **Audio Mosaic** instead: a set of short phrase cells that the game strings together differently every time, in six moods. The brief's second mosaic, Crown Island, is composed, baked and checked too, but The Crown keeps the five shore suites of its redesign (docs/23 §7) until Clay chooses (note 13 below). The four-stem contract stays: every cell is its own four phase-locked stems, and the four stages work on whichever cell is playing.
+
+### 7.1 The six moods
+
+| Mood | Harmony | Texture | Resting mix (dB, stems 0/1/2/3) | Leaned to by |
+|---|---|---|---|---|
+| **Wonder** | Lydian, I II7 IVmaj7 I, sixth and octave leaps | accordion over the pizzicato waltz, then a violin soaring in sixths with a harp glissando | 0 / 0 / -80 / -80 | high ground, towns, the phrase after a breath |
+| **Interest** | I VI7 ii7 V7 over a walking bass | oboe and bassoon trading a bouncy tune, then the accordion over the walking pizzicato and mandolin chops | 0 / -1 / -80 / -80 | sprinting, the wild edges |
+| **Mellow** | vi iii IV I6, Mixolydian b7 | a cello with a violin a sixth above, then a low whistle and English horn in sixths, over fingerpicked guitar; the Music bus's top end 3 dB softer | -1.5 / -1 / -80 / -80 | hearths, towns, standing still, after a fight |
+| **Peace** | pentatonic over an open-fifth drone | a fiddle, then a recorder, over Celtic harp arpeggios and a cello drone; opens the Emergent Silence breath | -2 / -1.5 / -80 / -80 | hearths, towns, standing still, after a fight |
+| **Curiosity** | Dorian, i IV i7 v, ending on a question | two-bar questions and answers: oboe or whistle asks, staccato bassoon answers, over a plucked weave | -1 / 0 / -24 / -80 | the wild edges, under ground |
+| **Anxiousness** | harmonic minor, i bVI #vii°7 V7b9 | a tiptoeing pizzicato and musette, or oboe and bassoon in tritones; the Holloway stem's minor seconds, bellows cluster and sul ponticello shimmer | -2 / -2.5 / -12 to -4 / -80 | the Pre-Warm (any awake foe within 35 m), under ground, the wild edges |
+
+The Holloway discord in Anxiousness swells from -12 dB at 35 m to -4 dB at 14 m, on top of the Pre-Warm's own lift.
+
+### 7.2 Choosing the next phrase
+
+`MusicMoodEngine` walks a weighted Markov chain through the six moods. Its main path is Peace, Wonder, Interest, Curiosity, Mellow and back to Peace, with Curiosity and Anxiousness branching to each other (about 15% from Curiosity). It decides in the last bar of every four-bar phrase, under five rules:
+
+1. Never the same cell twice in a row.
+2. The lead voicing changes every phrase (the Hisaishi Quartet trading the tune: A accordion over pizzicato with a bassoon counter, B violin or cello in sixths over guitar and harp, C oboe and bassoon in dialogue over mandolin, D low whistle or recorder over harp and cello fifths).
+3. No mood plays more than two phrases in a row.
+4. A mood heard in the last four phrases comes back at an eighth of its weight.
+5. Two phrases never repeat as an eight-bar pair (A B A B).
+
+The context nudges the weights each heartbeat: towns, markets, quays, landings and orchards and any hearth within 14 m (campfires, warm springs, water-shrines, wind-lanterns) favour Peace, Mellow and Wonder; the strait shores, the Root-Sanctum, The Crown's cliffs, grottos, galleries and Ring Path, and any island's outer edge favour Curiosity, Interest and Anxiousness; high ground lifts Wonder; sprinting quickens Interest; standing still settles into Peace and Mellow. The stages override it: the Pre-Warm turns the next phrase to Anxiousness (Curiosity when the rules forbid it), a fight keeps to Interest, Curiosity and Anxiousness, and the two phrases after a fight's exhale never play Anxiousness and favour Mellow and Peace.
+
+About every 80 seconds of music a Peace phrase opens the **Emergent Silence breath** (Brower): two to four more Peace cells (12 to 25 s) with the melody, discord and drive gone and the harp falling from -14 dB by 6 dB a cell, then the music re-emerges, most likely in Wonder. In a mosaic zone this replaces the classic loop's silence between cycles.
+
+### 7.3 The two mosaics
+
+Each island has twelve four-bar cells, two per mood, and each mood's two cells carry the lead on different voicings. All twelve start on a chord of the tonic family and end on I, IV or V, so any cell can follow any other.
+
+| | **Crown Island** (`crown_island`, The Crown) | **Miller's Holm** (`millers_holm`, Oakshire Holm) |
+|---|---|---|
+| Feel | Hisaishi's *Town With An Ocean View* by the sea | Shore's *Concerning Hobbits* and Hisaishi's *Mother's Broom* on the mill-isle |
+| Key, meter, tempo | G Lydian / Ionian, E Dorian and E harmonic minor; 3/4 at 110 | F Lydian / Ionian, D Dorian and D harmonic minor; 6/8 at 104 |
+| Ground | the oom-pah-pah waltz, a walking pizzicato bass with mandolin chops, a plucked weave | the waterwheel (guitar rolling in eighths, hammered dulcimer on each dotted quarter), a jig's chops |
+| Opens in | Wonder (arriving at South Bay with Miller's Oak ahead) | Peace (every launch begins in its orchards) |
+| Plays | ready, not yet on (The Crown keeps its shore suites) | all over Oakshire Holm |
+| A cell | 6.55 s | 6.92 s |
+
+| Cell | Mood | Voicing | Crown chords | Holm chords |
+|---|---|---|---|---|
+| peace_a | Peace | B Fiddle/Harp | Gadd9 C/G Em7/G D/G | Fadd9 Bb/F Dm7/F C/F |
+| peace_b | Peace | D Recorder/Harp | Gadd9 Em7/G C/G Gadd9 | Fadd9 Dm7/F Bb/F Fadd9 |
+| wonder_a | Wonder | A Accordion/Pizz | G A7 Cmaj7 G | F G7 Bbmaj7 F |
+| wonder_b | Wonder | B Violin/Harp | Gmaj7 A9 Cmaj7#11 Gadd9 | Fmaj7 G9 Bbmaj7#11 Fadd9 |
+| interest_a | Interest | C Oboe/Bassoon | G E7 Am7 D7 | F D7 Gm7 C7 |
+| interest_b | Interest | A Accordion/Pizz | G E7/G# Am7 D7 | F D7/F# Gm7 C7 |
+| curiosity_a | Curiosity | C Oboe/Bassoon | Em A Em7 Bm | Dm G Dm7 Am |
+| curiosity_b | Curiosity | D Whistle/Harp | Em A/E Em7 Bm7 | Dm G/D Dm7 Am7 |
+| anxious_a | Anxiousness | A Accordion/Bassoon | Em C D#dim7 B7b9 | Dm Bb C#dim7 A7b9 |
+| anxious_b | Anxiousness | C Oboe/Bassoon | Em C D#dim7 B7b9 | Dm Bb C#dim7 A7b9 |
+| mellow_a | Mellow | B Cello/Violin | Em Bm C G/B | Dm Am Bb F/A |
+| mellow_b | Mellow | D Low Whistle/English Horn | Em7 Bm7 Cmaj7 G/B | Dm7 Am7 Bbmaj7 F/A |
+
+**How the cells chain.** `AudioDirector.mosaic_stream()` makes one `AudioStreamInteractive` per zone: a clip per cell, each clip an `AudioStreamSynchronized` of that cell's four baked stems. The stems don't loop: each holds its four bars and then 1.5 s of its last notes and the room ringing on, faded. Every transition waits for the end of the playing cell (its beat count), starts the next from its top with no fade, and lets the old cell's tail sound out under it. So the cells meet exactly on the bar line, the way a player hears a through-composed piece. The director queues its choice in the phrase's last bar; a cell nobody chooses for goes on to its fallback (the suite order, with Curiosity and Anxiousness easing into Mellow). Stem volumes are set on all twelve clips at once, so the four stages' levels follow the music across cells, and a fight never restarts it.
+
+`MusicalClock` keeps the phrase grid from the director's own time (so headless runs keep the same bars) and lines it up with the audio each time a new cell starts.
+
+### 7.4 The F4 line
+
+F4 (or the Developer Tools' new **Telemetry** row) shows the live score in the corner, also in the Caldera now:
+
+`Audio: crown_island [G_LYDIAN 110BPM] · Mood: WONDER (Var B: Violin/Harp) · State: EXPLORE · Stems: 0.0/0.0/-80.0/-80.0 dB · Voices: 4/32`
+
+The key and mode are the playing cell's (E_DORIAN in a Crown Curiosity phrase), a breath shows as `PEACE breath 2`, the state is EXPLORE, PREWARM, SKIRMISH, BOSS or EXHALE, the stems are the four layers' live volumes, and Voices is the 32-voice pool in use. On the legacy landblock maps the Landblock line still comes first.
+
+### 7.5 Build notes
+
+**What's built.**
+* **Data:** `ZoneMusicProfileResource` gained `MoodState`, `LeadVoice`, `mosaic_cells`, `phrase_bars` and `opening_cell`; `MosaicCellResource` (new) is one cell (id, mood, half, voicing and its label, chord cell, chords, mode, fallback). `AudioCatalog` registers `crown_island` and `millers_holm`. `CalderaAtlas` gives `millers_holm` to Oakshire Holm (it played the legacy vale's waltz, which the legacy Oakshire Vale still plays). `CalderaArchipelagoWorld.music_profile_at()` plays an island's mosaic all over it when its atlas entry names one; The Crown's entry doesn't, so its shores keep their own suites, and naming `crown_island` there is the one change that turns its mosaic on.
+* **Logic:** `MusicMoodEngine` (the walk, its rules, the breath, each mood's mix) and `MusicalClock` (the grid) are new in `src/core/`. `AudioDirector` builds mosaic decks, conducts the phrases (`_conduct`), samples the context (`LevelBase.music_mood_context()`, which `CalderaArchipelagoWorld` fills from its places, the island's edge, height and the ground; hearths join `AudioDirector.HEARTH_GROUP`), adds a high shelf at 3.5 kHz to the Music bus for Mellow, and writes the F4 line. `tick_score(delta)` is the frame step, so tests can move the score's time on.
+* **Baking:** `tools/build_audio_stems.py` composes all 24 cells by hand (each lead and counter-melody written out, the sixths derived in the cell's mode) over six new grounds (`peace_bed`, `soar_bed`, `walking`, `tiptoe`, `waterwheel`, `jig`) plus the existing waltz, sway and weave, and the new Anxiousness `shadow` for the Holloway stem. Each cell renders once with its tail; each stem is set to one loudness across the zone's twelve cells, so the moods keep their relative dynamics. It writes `music/<zone>/<cell>/stem_*.ogg`, a `score.json` listing the cells (the fallback plays them end to end) and a git-ignored listening copy, `tools/audio_previews/<zone>_suite_order.m4a`. `tools/build_audio_resources.gd` checks every cell.
+* **Checks:** the smoke test now checks 775 things. `tools/test_audio_architecture.gd` (18 checks; `tools/run_audio_architecture_checks.gd` runs it alone in about ten seconds) runs in the smoke test after the Caldera's: the catalog and the cells, the chaining mixed offline (a cell asked for half a cell ahead starts inside the 256-frame mix chunk holding the bar line, no gap, the old tail ringing under it), the walk (repeatable; 24 bars reach at least four moods, and 192 of 200 seeds do; no seed breaks rules 1, 2 or 5; context leans it; a threat turns the next phrase anxious from all twelve cells; a fight keeps to the driving moods; the breath fades), and in the Caldera: 24 simulated bars on Oakshire Holm, the F4 line, the Mellow shelf, a padfoot 20 m away turning the next phrase anxious, its aggro locking the Skirmish on the same cell and deck within 0.4 s, the exhale, The Crown's shore suite and its mosaic switched on and off again, and no leaked buses, effects, director nodes or orphan nodes.
+
+**Deliberate differences from the brief.**
+1. **Names.** "Miller's Holm" is **Oakshire Holm**, the windmill island where every launch begins (already F Lydian at 104). "Crown Island" is **The Crown**. The brief's ids `crown_island` and `millers_holm` are kept as profile ids only; players never see them (the F4 line is a test tool).
+2. **Files the brief named that don't exist.** There is no `src/audio/chamber_synth_builder.gd`: the stems are composed and baked by `tools/build_audio_stems.py` (Tier 1) and `ProceduralChamberSynth` is the runtime fallback, so the cells were built there. `MusicalClock` didn't exist and is new (`src/core/musical_clock.gd`). The brief's `docs/16_AUDIO_ARCHITECTURE_GDD.md` is this file. `tools/test_world_grid.gd` lives in `deprecated/legacy_maps/bramble_bridge_corridor/` and runs inside the smoke test (§6 note 13).
+3. **Four-bar cells, not a 32-48-bar loop.** The brief allowed either. Short cells, re-ordered live, give far more variety per megabyte than a long loop: each mosaic is 48 bars of music in twelve cells, and the walk never plays them in the same order twice.
+4. **Two phrases a mood, at most.** The brief's test asks for four moods in 24 bars (six phrases), so a mood moves on after one or two phrases. Rule 3 and the recency rule make that reliable (192 of 200 seeds). A held threat may keep Anxiousness longer, alternating with Curiosity.
+5. **The threat radius.** The brief gives 35 m (Stage A) and, in its test, 20 m. Both hold: Anxiousness follows the Pre-Warm, which starts at 35 m, and the test grows its padfoot 20 m away.
+6. **"Stems: 0.0/0.0/-60.0/-80.0".** The line shows the four stems' live volumes, so a muted stem reads -80.0.
+7. **Godot's auto-advance quirk.** An `AudioStreamInteractive` clip that advances on its own to a clip with a higher index starts about one mix chunk (5-12 ms) early, because the new clip's wait is counted down in the chunk that queued it. The director always queues the next cell itself in the phrase's last bar, which Godot times exactly, so the fallback chain only plays if the director misses a phrase.
+8. **The other three isles** (Iron-Ness, Barrow-Eyot, Rime-Firth) still play the Bramble-Bridge trail's loops, and every legacy map keeps its classic loop. The mood engine only runs on mosaic zones.
+9. **Size.** The two mosaics are about 11 MB of Ogg Vorbis (96 files): the folk base and lead at q5, the discord and drive, which mostly sit under the others, at q3.
+10. **Miller's Holm in 6/8.** The brief gives its tempo, not its meter; 6/8 gives the waterwheel its roll and keeps it apart from The Crown's 3/4 waltz.
+11. **One key per island.** Each mosaic's relative minor shares its key signature (E Dorian with G Lydian's notes, D Dorian with F Lydian's), so a Curiosity or Anxiousness phrase can follow any other without a jarring modulation.
+12. **Mellow's warmth** is a 3.5 kHz high shelf at -3 dB (linear 0.708) eased in over 2 s, the last-but-one effect on the Music bus (the Options menu's volume amplifier stays last).
+13. **The Crown keeps its shore suites.** While this was built, The Crown's redesign (docs/23, pushed the same evening) gave each of its five zones its own suite in D major's notes, crossfading at the springs. One Crown Island mosaic all over the isle would replace that, so it isn't switched on: The Crown's atlas entry still names its shores (via `cairnsmans_vigil`, as docs/23 left it), and the checks prove the switch both ways. "Miller's Holm" is also not docs/23's Miller's Oak (The Crown's World-Tree, G Lydian at 88): the brief's mill-isle, F Lydian at 104 with a waterwheel, is Oakshire Holm.
+
+* **Listening copies:** `tools/preview_audio_mosaic.gd` renders a mosaic the way the game plays it (the walk choosing each phrase through a town, the wild edge, a sleeping foe, the exhale and a hearth, chained by Godot's own `AudioStreamInteractive`) to `tools/audio_previews/<zone>_mood_walk.wav`. The two 30-phrase walks (about 3.5 minutes each) measure -16 LUFS with peaks under -1.9 dBFS, phrases between -17 and -25 dB RMS, and the breath dipping to -34 and -40 dB. They leave out the Music bus's effects (hall, warm EQ, Mellow shelf).
+
+**Open calls for Clay.**
+* **The Crown's music:** keep its five shore suites (docs/23), turn on the Crown Island mosaic all over the isle, or make each shore a small mosaic of its own in its mode? Turning the mosaic on is one word in `CalderaAtlas` (The Crown's music profile to `crown_island`).
+* Listen to `tools/audio_previews/crown_island_mood_walk.m4a` and `millers_holm_mood_walk.m4a` (the game's walk) and the `_suite_order` copies (all twelve cells in a fixed order), then walk Oakshire Holm with F4 on.
+* Should Iron-Ness, Barrow-Eyot and Rime-Firth get mosaics of their own next (about 5.5 MB each)?

@@ -15,7 +15,10 @@
 ##   dover_slap_falls        Dover-Slap-Bridge and the falls, Chunk (0, -2) A Dorian 4/4 march, 16 bars
 ##   ring_of_the_cairnsman   the causeway and the Ring, Chunk (0, -3)      D Dorian 3/4, 16 bars
 ##   cairnsmans_vigil        the Cairnsman's suite                         D Dorian / Lydian 6/8 gallop at 132, 16 bars
-## and oakshire_vale, Oakshire Holm's F Lydian waltz (104 BPM, 16 bars), where every launch begins.
+## and oakshire_vale, the legacy Oakshire Vale's F Lydian waltz (104 BPM, 16 bars). The Caldera
+## Isles' two Audio Mosaics (16 §7), twelve four-bar phrase cells each in six moods:
+##   millers_holm            Oakshire Holm, the mill-isle where every launch begins  F Lydian / D Dorian 6/8 at 104
+##   crown_island            The Crown                                            G Lydian / E Dorian 3/4 at 110
 ## (The audio doc's suite names map on: kindled_bivouac is honey_wick, bramblebridge_square
 ## bramble_bridge_square, ariundle_holloway moss_oak_hollow, doverslap_gorge dover_slap_falls,
 ## cairnsman_sanctum ring_of_the_cairnsman and boss_cairnsman_vigil cairnsmans_vigil.)
@@ -164,6 +167,7 @@ static func _build_zones() -> void:
 	for made: ZoneMusicProfileResource in [commons, square, hollow, falls, ring, vigil, vale]:
 		register(made)
 	_build_crown_zones()
+	_build_mosaics()
 
 
 ## The Crown's five suites (docs/23 §7): one key signature (D major's notes), five modes, and
@@ -179,6 +183,102 @@ static func _build_crown_zones() -> void:
 		profile.arrangement_bars = 16
 		profile.silence_interval_range_sec = Vector2(18.0, 32.0)
 		register(profile)
+
+
+
+# --- The Audio Mosaics (16 §7) -----------------------------------------------
+#
+# Twelve four-bar cells a zone, two in each mood, in suite order: Peace, Wonder, Interest,
+# Curiosity, Anxiousness, Mellow. Each mood's two cells carry the lead on different Hisaishi
+# Quartet voicings, and the suite order never puts one voicing twice in a row.
+# tools/build_audio_stems.py composes the same cells (same ids, chords and voices); the
+# checks fail if the two drift apart.
+
+const MOOD_PEACE: int = ZoneMusicProfileResource.MoodState.PEACE
+const MOOD_WONDER: int = ZoneMusicProfileResource.MoodState.WONDER
+const MOOD_INTEREST: int = ZoneMusicProfileResource.MoodState.INTEREST
+const MOOD_CURIOSITY: int = ZoneMusicProfileResource.MoodState.CURIOSITY
+const MOOD_ANXIOUS: int = ZoneMusicProfileResource.MoodState.ANXIOUSNESS
+const MOOD_MELLOW: int = ZoneMusicProfileResource.MoodState.MELLOW
+const VAR_A: int = ZoneMusicProfileResource.LeadVoice.OCEAN_VIEW
+const VAR_B: int = ZoneMusicProfileResource.LeadVoice.SKY_SOAR
+const VAR_C: int = ZoneMusicProfileResource.LeadVoice.WOODWIND_DIALOGUE
+const VAR_D: int = ZoneMusicProfileResource.LeadVoice.PASTORAL_HEARTH
+## Where an unchosen cell goes next: Curiosity and Anxiousness both ease into Mellow.
+const MOSAIC_FALLBACKS: Dictionary[int, int] = {7: 10, 9: 10}
+
+
+static func _build_mosaics() -> void:
+	# The Crown: Hisaishi's Town With An Ocean View by the sea. G Lydian and Ionian at 110 in 3/4,
+	# a crisp mandolin, pizzicato walking bass, button accordion and a soaring seaside violin,
+	# turning to misty E Dorian and E harmonic-minor bassoon along the cliffs and grottos.
+	var crown: ZoneMusicProfileResource = _zone(&"crown_island", "The Crown's Sea-Wind Mosaic", 67, &"G_LYDIAN", 110.0, 3, false,
+		LYDIAN, HARMONIC_MINOR, [0, 1, 3, 0], &"ACCORDION")
+	_mosaic(crown, [
+		[&"peace_a", MOOD_PEACE, VAR_B, "Fiddle/Harp", &"F", &"G_PENTATONIC", ["Gadd9", "C/G", "Em7/G", "D/G"]],
+		[&"peace_b", MOOD_PEACE, VAR_D, "Recorder/Harp", &"F", &"G_PENTATONIC", ["Gadd9", "Em7/G", "C/G", "Gadd9"]],
+		[&"wonder_a", MOOD_WONDER, VAR_A, "Accordion/Pizz", &"B", &"G_LYDIAN", ["G", "A7", "Cmaj7", "G"]],
+		[&"wonder_b", MOOD_WONDER, VAR_B, "Violin/Harp", &"B", &"G_LYDIAN", ["Gmaj7", "A9", "Cmaj7#11", "Gadd9"]],
+		[&"interest_a", MOOD_INTEREST, VAR_C, "Oboe/Bassoon", &"A", &"G_IONIAN", ["G", "E7", "Am7", "D7"]],
+		[&"interest_b", MOOD_INTEREST, VAR_A, "Accordion/Pizz", &"A", &"G_IONIAN", ["G", "E7/G#", "Am7", "D7"]],
+		[&"curiosity_a", MOOD_CURIOSITY, VAR_C, "Oboe/Bassoon", &"C", &"E_DORIAN", ["Em", "A", "Em7", "Bm"]],
+		[&"curiosity_b", MOOD_CURIOSITY, VAR_D, "Whistle/Harp", &"C", &"E_DORIAN", ["Em", "A/E", "Em7", "Bm7"]],
+		[&"anxious_a", MOOD_ANXIOUS, VAR_A, "Accordion/Bassoon", &"E", &"E_HARMONIC_MINOR", ["Em", "C", "D#dim7", "B7b9"]],
+		[&"anxious_b", MOOD_ANXIOUS, VAR_C, "Oboe/Bassoon", &"E", &"E_HARMONIC_MINOR", ["Em", "C", "D#dim7", "B7b9"]],
+		[&"mellow_a", MOOD_MELLOW, VAR_B, "Cello/Violin", &"D", &"G_MIXOLYDIAN", ["Em", "Bm", "C", "G/B"]],
+		[&"mellow_b", MOOD_MELLOW, VAR_D, "Low Whistle/English Horn", &"D", &"G_MIXOLYDIAN", ["Em7", "Bm7", "Cmaj7", "G/B"]],
+	])
+	# Arriving by skiff at South Bay with the World-Tree ahead: it opens in Wonder.
+	crown.opening_cell = 2
+	register(crown)
+	# Oakshire Holm, the mill-isle (the brief's Miller's Holm): Howard Shore's Concerning Hobbits
+	# and Hisaishi's Mother's Broom. F Lydian and D Dorian at 104 in 6/8, a guitar and hammered
+	# dulcimer turning like the waterwheel, a warm low whistle, cello, and oboe-and-bassoon
+	# inventions. Every launch begins in its orchards, so it opens in Peace.
+	var holm: ZoneMusicProfileResource = _zone(&"millers_holm", "Oakshire Holm's Mill-Wheel Mosaic", 65, &"F_LYDIAN", 104.0, 3, true,
+		LYDIAN, HARMONIC_MINOR, [0, 1, 3, 0], &"WHISTLE")
+	_mosaic(holm, [
+		[&"peace_a", MOOD_PEACE, VAR_B, "Fiddle/Harp", &"F", &"F_PENTATONIC", ["Fadd9", "Bb/F", "Dm7/F", "C/F"]],
+		[&"peace_b", MOOD_PEACE, VAR_D, "Recorder/Harp", &"F", &"F_PENTATONIC", ["Fadd9", "Dm7/F", "Bb/F", "Fadd9"]],
+		[&"wonder_a", MOOD_WONDER, VAR_A, "Accordion/Pizz", &"B", &"F_LYDIAN", ["F", "G7", "Bbmaj7", "F"]],
+		[&"wonder_b", MOOD_WONDER, VAR_B, "Violin/Harp", &"B", &"F_LYDIAN", ["Fmaj7", "G9", "Bbmaj7#11", "Fadd9"]],
+		[&"interest_a", MOOD_INTEREST, VAR_C, "Oboe/Bassoon", &"A", &"F_IONIAN", ["F", "D7", "Gm7", "C7"]],
+		[&"interest_b", MOOD_INTEREST, VAR_A, "Accordion/Pizz", &"A", &"F_IONIAN", ["F", "D7/F#", "Gm7", "C7"]],
+		[&"curiosity_a", MOOD_CURIOSITY, VAR_C, "Oboe/Bassoon", &"C", &"D_DORIAN", ["Dm", "G", "Dm7", "Am"]],
+		[&"curiosity_b", MOOD_CURIOSITY, VAR_D, "Whistle/Harp", &"C", &"D_DORIAN", ["Dm", "G/D", "Dm7", "Am7"]],
+		[&"anxious_a", MOOD_ANXIOUS, VAR_A, "Accordion/Bassoon", &"E", &"D_HARMONIC_MINOR", ["Dm", "Bb", "C#dim7", "A7b9"]],
+		[&"anxious_b", MOOD_ANXIOUS, VAR_C, "Oboe/Bassoon", &"E", &"D_HARMONIC_MINOR", ["Dm", "Bb", "C#dim7", "A7b9"]],
+		[&"mellow_a", MOOD_MELLOW, VAR_B, "Cello/Violin", &"D", &"F_MIXOLYDIAN", ["Dm", "Am", "Bb", "F/A"]],
+		[&"mellow_b", MOOD_MELLOW, VAR_D, "Low Whistle/English Horn", &"D", &"F_MIXOLYDIAN", ["Dm7", "Am7", "Bbmaj7", "F/A"]],
+	])
+	holm.opening_cell = 0
+	register(holm)
+
+
+## Fills a zone's mosaic from [id, mood, voice, voice label, chord cell, mode, chords] rows;
+## each mood's first row is its FIRST half.
+static func _mosaic(zone: ZoneMusicProfileResource, rows: Array[Array]) -> void:
+	var seen: Dictionary[int, bool] = {}
+	for index: int in rows.size():
+		var row: Array = rows[index]
+		var made: MosaicCellResource = MosaicCellResource.new()
+		made.cell_id = row[0]
+		made.mood = int(row[1]) as ZoneMusicProfileResource.MoodState
+		made.half = MosaicCellResource.Half.SECOND if seen.has(made.mood) else MosaicCellResource.Half.FIRST
+		seen[made.mood] = true
+		made.lead_voice = int(row[2]) as ZoneMusicProfileResource.LeadVoice
+		made.voice_label = row[3]
+		made.chord_cell = row[4]
+		made.mode_label = row[5]
+		made.chords = PackedStringArray(row[6])
+		made.bars = 4
+		made.fallback_next = MOSAIC_FALLBACKS.get(index, (index + 1) % rows.size())
+		zone.mosaic_cells.append(made)
+	zone.phrase_bars = 4
+	zone.arrangement_bars = zone.phrase_bars * rows.size()
+	# The Emergent Silence breath (Brower): 12-25 s of fading harp after about 80 s of music.
+	zone.silence_interval_range_sec = Vector2(12.0, 25.0)
+	zone.music_cycle_sec = 80.0
 
 
 static func _zone(id: StringName, title: String, root: int, mode: StringName, tempo: float, beats: int, compound: bool,

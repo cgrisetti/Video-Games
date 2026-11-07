@@ -57,6 +57,8 @@ var _age: float = 0.0
 
 
 func _ready() -> void:
+	# A hearth: an Audio Mosaic nearby leans to Peace (16 §7.1).
+	add_to_group(AudioDirector.HEARTH_GROUP)
 	_crackle = AudioDirector.attach_ambience(self, &"hearth_fire", Vector3(0.0, 0.5, 0.0))
 	_build_ring()
 	_build_fire()

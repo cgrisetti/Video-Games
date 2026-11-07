@@ -29,6 +29,8 @@ func _ready() -> void:
 	add_to_group(&"map_glyphs")
 	if not show_pool:
 		return
+	# A hearth by the Ring Path: The Crown's mosaic leans to Peace here (16 §7.1).
+	add_to_group(AudioDirector.HEARTH_GROUP)
 	var pool: LandblockTerrain.MeshMerge = CalderaKit.merge()
 	for index: int in 14:
 		var angle: float = TAU * float(index) / 14.0

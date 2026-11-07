@@ -120,7 +120,7 @@ static func _ensure() -> void:
 	if not _isles.is_empty():
 		return
 	_isle(ISLE_OAKSHIRE_HOLM, "Oakshire Holm", "South", 1, 6, ScribeSignResource.Sign.SIGN_WARM_HEARTH, "", 12, Vector2(0.0, 1600.0),
-		"Hearthstead Market", "Windmill", "Old Quay Market", &"", "", WorldVisualCatalog.OAKSHIRE_WICK, &"oakshire_vale",
+		"Hearthstead Market", "Windmill", "Old Quay Market", &"", "", WorldVisualCatalog.OAKSHIRE_WICK, &"millers_holm",
 		Color(0.96, 0.78, 0.36))
 	_isle(ISLE_IRON_NESS, "Iron-Ness", "West", 6, 10, ScribeSignResource.Sign.SIGN_IRON_ROOT, "Shield-Sworn", 12, Vector2(-1650.0, 350.0),
 		"Forge-Gorge", "Forge Stacks", "Raid Gate A: the Under-Forge Abyss", CalderaWorldState.BEACON_IRON, "Iron Current",

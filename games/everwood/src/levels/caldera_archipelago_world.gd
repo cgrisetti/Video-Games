@@ -28,7 +28,7 @@ const BOOT_ZONE_ARG: String = "--boot-zone="
 const ZONE_OAKSHIRE: StringName = &"oakshire"
 const ZONE_NORTH_QUAY: StringName = &"north_quay"
 const ZONE_CROWN: StringName = &"crown"
-const CHANGE_KEYS: String = "Space / ✕: jump · Shift / L3: sprint · hold Tab / View: Fellowship · hold C: Calling · hold M / R3: assist mode\ntap M / R3: the Atlas · PgUp / PgDn or right stick: tilt the camera · F2 / Share + D-Pad →: debug hero · F9: playtest warp"
+const CHANGE_KEYS: String = "Space / ✕: jump · Shift / L3: sprint · hold Tab / View: Fellowship · hold C: Calling · hold M / R3: assist mode\ntap M / R3: the Atlas · PgUp / PgDn or right stick: tilt the camera · F2 / Share + D-Pad →: debug hero · F4: telemetry · F9: playtest warp"
 ## Far enough to see every island's landmark from North Quay and The Crown.
 const CAMERA_FAR: float = 4600.0
 ## The biomes' fog is for valleys; over open water it's thinned so the far isles show.
@@ -49,6 +49,23 @@ const WORLD_BANNER_TIME: float = 6.5
 const FALL_OUT_HEIGHT: float = -40.0
 ## A falling hero with no ground streamed in under them gets it at once.
 const CATCH_FALL_SPEED: float = -4.0
+## The Audio Mosaics' places (music_mood_context): where folk live, and the wild ones.
+const SETTLED_PLACES: Array[String] = ["The Lee-Shore Orchards", "The Windmill", "Hearthstead Market", "North Quay", "The Old Quay Market",
+	"South Bay Landing", "The Lantern-Bearers' Waypost", "Old King's Town"]
+const WILD_PLACES: Array[String] = ["The Root-Sanctum", "The West Strait", "Eel Spit", "The Breach Point", "The Weeping Arch",
+	"The Trial of the Anvil", "The Trial of the Gale", "The Trial of the Tide", "The Sea-Door", "The Sap Galleries"]
+## The Crown's outer shores (docs/23) lean this wild anywhere on them.
+const CROWN_WILD_SHORES: Array[int] = [CrownHeartCragBuilder.Zone.IRON_SHORE, CrownHeartCragBuilder.Zone.GALE_CLIFFS,
+	CrownHeartCragBuilder.Zone.TIDE_GROTTOS]
+const CROWN_SHORE_WILD: float = 0.6
+## An island's outer edge leans wild from this share of its half-width to this one.
+const EDGE_FROM: float = 0.55
+const EDGE_TO: float = 0.85
+## High ground lifts Wonder from this far above the sea, fully this much higher.
+const HEIGHT_FROM: float = 8.0
+const HEIGHT_SPAN: float = 30.0
+## This far under the island's ground is a holloway (the Sap Galleries).
+const UNDERGROUND_DEPTH: float = 2.5
 
 ## The --boot-zone this run asked for (read once per launch).
 static var boot_zone: StringName = ZONE_OAKSHIRE
@@ -61,6 +78,7 @@ var ebb_cinematic: EbbCinematic
 var last_world_banner: String = ""
 var tide_returns: int = 0
 
+var _badge: WorldTelemetryBadge
 var _regions: Dictionary[StringName, String] = {}
 var _isles_named: Dictionary[StringName, StringName] = {}
 var _deep: Dictionary[StringName, float] = {}
@@ -160,15 +178,40 @@ func home_place() -> String:
 
 ## Each island plays its score; on The Crown each shore and Miller's Oak play
 ## their own suite (docs/23 §7), holding the one playing now for a few degrees
-## past an edge so a party at a spring hears one tune.
+## past an edge so a party at a spring hears one tune. An island whose score is an
+## Audio Mosaic (16 §7) plays it everywhere on it: Oakshire Holm's millers_holm,
+## and The Crown's crown_island if its atlas entry names it instead of the shores.
 func music_profile_at(position: Vector3) -> StringName:
 	if streamer == null or streamer.builder == null:
-		return &"oakshire_vale"
+		return &"millers_holm"
+	var isle: IslandGridResource = streamer.builder.isle
+	var score: ZoneMusicProfileResource = AudioCatalog.zone(isle.music_profile)
 	var crown: CrownHeartCragBuilder = streamer.builder as CrownHeartCragBuilder
-	if crown != null:
+	if crown != null and (score == null or not score.is_mosaic()):
 		var playing: StringName = AudioDirector.current.zone_profile_id if AudioDirector.current != null else &""
 		return crown.music_at(position, playing)
-	return streamer.builder.isle.music_profile
+	return isle.music_profile
+
+
+## The mosaics' moods by place (16 GDD §7.1): the towns, markets, quays and orchards lean to Peace,
+## Mellow and Wonder; the strait shores, the Root-Sanctum, The Crown's outer shores, arches, trials
+## and galleries, and any island's outer edge, lean to Curiosity, Interest and Anxiousness; high
+## ground lifts Wonder; under the ground is a holloway.
+func music_mood_context(position: Vector3, context: MusicMoodEngine.Context) -> void:
+	if streamer == null or streamer.builder == null:
+		return
+	var builder: IslandBuilder = streamer.builder
+	var place: String = builder.place_name_at(position)
+	context.settled = 1.0 if SETTLED_PLACES.has(place) else 0.0
+	var reach: float = Vector2(position.x, position.z).length() / maxf(builder.isle.half_size_m(), 1.0)
+	context.wild = 1.0 if WILD_PLACES.has(place) else smoothstep(EDGE_FROM, EDGE_TO, reach)
+	# The Crown's three outer shores lean wild everywhere on them (docs/23).
+	var crown: CrownHeartCragBuilder = builder as CrownHeartCragBuilder
+	if crown != null and CROWN_WILD_SHORES.has(crown.zone_at(position)):
+		context.wild = maxf(context.wild, CROWN_SHORE_WILD)
+	var ground: float = streamer.height_at(position.x, position.z)
+	context.underground = 1.0 if position.y < ground - UNDERGROUND_DEPTH else 0.0
+	context.height = clampf((position.y - CalderaWorldState.current.sea_level_y - HEIGHT_FROM) / HEIGHT_SPAN, 0.0, 1.0)
 
 
 ## Each island wears its biome's sky and fog; The Crown's shores take on the isles they face.
@@ -243,6 +286,11 @@ func _setup_level() -> void:
 	var focus: Array[Vector3] = [builder.arrival_spot(start[1])]
 	streamer.activate_island(start[0], focus)
 	_place_spawn_points(start[1])
+	# F4: the telemetry badge, here the live score (16 GDD §7.4).
+	_badge = WorldTelemetryBadge.new()
+	get_node(^"Screens").add_child(_badge)
+	if OS.get_cmdline_user_args().has("--telemetry"):
+		set_telemetry_visible(true)
 
 
 func _exit_tree() -> void:
@@ -474,6 +522,23 @@ func _process(delta: float) -> void:
 	super._process(delta)
 	if _key_pressed(KEY_F9) and may_decide():
 		playtest_warp()
+	if _key_pressed(KEY_F4):
+		set_telemetry_visible(not is_telemetry_visible())
+
+
+## F4's badge: the live score's line (its zone, mode, tempo, mood and voicing, stage, stems and voices).
+func set_telemetry_visible(shown: bool) -> void:
+	if _badge != null:
+		_badge.visible = shown
+		_badge.refresh()
+
+
+func is_telemetry_visible() -> bool:
+	return _badge != null and _badge.visible
+
+
+func telemetry_badge() -> WorldTelemetryBadge:
+	return _badge
 
 
 ## F9: between Oakshire Holm's orchards and The Crown's landing (a playtest: unsaved).
