@@ -100,15 +100,15 @@ Screenshots of the seven stages, the orthographic plate beside `terrain.jpg`, an
 
 | Stage | FPS | process ms | physics ms | draw calls | primitives | near / mid / far landblocks |
 | :-- | --: | --: | --: | --: | --: | :-- |
-| Bramblebridge | 58 | 15.5 | 2.8 | 7,957 | 7.6 M | 12 / 19 / 128 |
-| the Moss-Oaks | 38 | 23.6 | 2.8 | 2,882 | 22.3 M | 14 / 23 / 128 |
-| the Sunken Holloway | 65 | 15.5 | 2.1 | 1,714 | 4.3 M | 9 / 21 / 128 |
-| Doverslap bridge | 74 | 13.7 | 1.9 | 1,458 | 4.0 M | 11 / 20 / 128 |
-| the Coast Road | 55 | 17.1 | 2.0 | 7,978 | 6.5 M | 12 / 17 / 128 |
-| Hearthstead | 67 | 15.1 | 1.7 | 5,372 | 6.4 M | 12 / 23 / 128 |
-| Mill-Downs | 65 | 15.5 | 2.5 | 3,000 | 5.3 M | 14 / 30 / 128 |
+| Bramblebridge | 59 | 16.9 | 2.8 | 8,225 | 7.5 M | 12 / 19 / 128 |
+| the Moss-Oaks | 49 | 18.0 | 2.7 | 3,931 | 6.6 M | 14 / 23 / 128 |
+| the Sunken Holloway | 63 | 16.0 | 2.3 | 1,901 | 4.7 M | 9 / 21 / 128 |
+| Doverslap bridge | 71 | 28.7 | 2.3 | 1,753 | 4.9 M | 11 / 20 / 128 |
+| the Coast Road | 55 | 19.9 | 2.0 | 8,443 | 7.4 M | 12 / 17 / 128 |
+| Hearthstead | 65 | 15.8 | 1.7 | 5,955 | 8.2 M | 12 / 23 / 128 |
+| Mill-Downs | 60 | 16.7 | 2.3 | 3,156 | 5.8 M | 14 / 30 / 128 |
 
-The Moss-Oaks are the heavy stage: four cameras inside 1,308 sculpted oaks draw 22 M triangles a frame (the atelier oak within `CalderaKit.ATELIER_RANGE` of any camera). A density-aware stand-in range for the oaks is the next step if 60 is wanted there with four players.
+The Moss-Oaks were the heavy stage: four cameras inside 1,308 sculpted oaks drew 22.3 M triangles a frame at 38 FPS, every atelier oak within `CalderaKit.ATELIER_RANGE` (200 m) of any camera. A landblock with `CalderaKit.DENSE_STAND` (32) trees of one species or more is now a dense stand: `ArchipelagoStreamer._add_scatter` groups it into `DENSE_CELL` (32 m) cells, each handing over from the sculpted oak to its one-draw stand-in at `DENSE_ATELIER_RANGE` (96 m) from a camera, so only the cells round each hero draw sculpted (183 cells on Embershore; the orchards, 29 trees at most, and the wood's edges keep the full 200 m), and every sculpted tree carries the engine's mesh LODs (`CalderaKit._with_lods`). Nothing moved and nothing within a few metres looks different; the stage now draws 6.6 M triangles in 3,931 draw calls at 49 FPS. What is left there is per pixel, not per triangle: measured at the stage, a hand-over at 80, 64 or 48 m, 16 m cells, two shadow splits or a 60 m shadow reach change nothing, while the sculpted oaks casting no shadow gives 57 FPS, stand-ins only 62 and no oaks at all 67. So 60 in the wood with four players means a lighter near look (the dithered canopy, or its shadows in the sun's 4,096 atlas), which is a design call, not a streaming one. `tools/embershore_screenshots.gd` measures in a 1920 x 1080 window with vsync off whatever the family's Options say (their fullscreen had it rendering the whole Retina screen), and only with no other Godot window open: one fullscreen in front throttles the tool's own.
 
 ## 9. Assumptions (where the brief was silent)
 

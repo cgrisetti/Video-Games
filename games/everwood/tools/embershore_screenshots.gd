@@ -37,11 +37,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	print("Everwood: Embershore's screenshots and performance report")
-	# The same 1920 x 1080 frame on any screen and whatever the family's Options say: a window
-	# (not their fullscreen), and no vsync, so the frame rate isn't pinned to the monitor's refresh.
-	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-	DisplayServer.window_set_size(Vector2i(1920, 1080))
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	await _windowed_1080p()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	PartyProgress.current.use_save_file(SAVE_PATH)
@@ -59,9 +55,6 @@ func _run() -> void:
 	for pad: int in FAKE_PADS:
 		NetworkManager.current.request_local_player(pad, NetworkManager.ANY_CLASS, InputComponent.AssistMode.ADVENTURER)
 	await _frames(30)
-	# Sized again now the window mode has settled (leaving fullscreen takes macOS a moment, and undoes a size set during it).
-	DisplayServer.window_set_size(Vector2i(1920, 1080))
-	await _frames(5)
 	_report.append("# Embershore: four-player split-screen performance\n")
 	_report.append("Measured by tools/embershore_screenshots.gd at %s, window %s (vsync off), %d local players, %d frames a stage after %d to settle.\n"
 		% [Time.get_datetime_string_from_system(), str(DisplayServer.window_get_size()), _party().size(), SAMPLE_FRAMES, SETTLE_FRAMES])
@@ -83,6 +76,29 @@ func _run() -> void:
 	print("\n".join(_report))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	quit(0)
+
+
+## The same 1920 x 1080 frame on any screen and whatever the family's Options say, and no
+## vsync, so the frame rate isn't pinned to the monitor's refresh. Leaving their fullscreen
+## takes macOS a moment: the window reads as windowed while it animates out, settles back into
+## desktop fullscreen, and a size set meanwhile is lost, so this keeps asking until the window
+## has read windowed at 1920 x 1080 for forty frames. Nothing here is saved to the Options.
+func _windowed_1080p() -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	var steady: int = 0
+	for attempt: int in 120:
+		if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+			steady = 0
+		elif DisplayServer.window_get_size() != Vector2i(1920, 1080):
+			DisplayServer.window_set_size(Vector2i(1920, 1080))
+			steady = 0
+		else:
+			steady += 1
+			if steady >= 8:
+				return
+		await _frames(5)
+	push_warning("the window wouldn't take 1920 x 1080 (it is %s, mode %d)" % [str(DisplayServer.window_get_size()), DisplayServer.window_get_mode()])
 
 
 func _party() -> Array[ActorBase]:
