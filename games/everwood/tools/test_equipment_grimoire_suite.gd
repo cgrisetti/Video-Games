@@ -174,8 +174,8 @@ func _stage_1_philological_linter_gate() -> void:
 	for card: ScribeCardResource in catalog.cards():
 		if card.is_lead() and card.starter:
 			starters += 1
-	check.call(not_leads and starters == 13 and catalog.weapons().size() == 20 and catalog.under_cards().size() == 4 and catalog.lead_cards(2).size() >= 3,
-		"the seal cards are a kind of their own: the 13 starters, 20 weapons, 4 under-cards and the Grimoire slots' choices are as they were")
+	check.call(not_leads and starters == 14 and catalog.weapons().size() == 20 and catalog.under_cards().size() == 4 and catalog.lead_cards(2).size() >= 3,
+		"the seal cards are a kind of their own: the 14 starters (the deck's Ember-Wick Cut is the 14th), 20 weapons, 4 under-cards and the Grimoire slots' choices are as they were")
 	# Gate 3: the doc's banned words (and the Lens's) off every name a player reads here.
 	var shown: PackedStringArray = PackedStringArray()
 	for tier: EquipmentTierResource in tiers:

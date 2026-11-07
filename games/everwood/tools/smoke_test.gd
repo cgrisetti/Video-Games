@@ -149,6 +149,8 @@ const EQUIPMENT_GRIMOIRE_CHECKS: GDScript = preload("res://tools/test_equipment_
 const SEAL_BENCH_CHECKS: GDScript = preload("res://tools/test_seal_bench.gd")
 ## The seven-card hand and the Ink-Well (tools/test_ink_well.gd, 25 GDD R1-R5).
 const INK_WELL_CHECKS: GDScript = preload("res://tools/test_ink_well.gd")
+## The Ink Card Deck: the eight cards, their twists, finds on the isles and the card bench (25 GDD §7).
+const INK_DECK_CHECKS: GDScript = preload("res://tools/test_ink_deck.gd")
 var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
 
@@ -257,6 +259,8 @@ func _run() -> void:
 	await SEAL_BENCH_CHECKS.new().run(self, _check)
 	# The seven-card hand's rules and the Ink-Well, last.
 	await INK_WELL_CHECKS.new().run(self, _check)
+	# The Ink Card Deck, after the Ink-Well.
+	await INK_DECK_CHECKS.new().run(self, _check)
 	# The title screen and its tales (docs/22), last of all, in a scratch tales folder.
 	await TITLE_CHECKS.new().run(self, _check, TEST_SAVE_PATH)
 	_remove_file(TEST_SAVE_PATH)
@@ -322,8 +326,8 @@ func _check_arsenal_catalog() -> void:
 				starters += 1
 			else:
 				boss_cards += 1
-	_check(catalog.armors().size() == 4 and catalog.weapons().size() == 20 and starters == 13 and boss_cards >= 4 and catalog.under_cards().size() == 4,
-		"the Arsenal holds 4 armors, 20 weapons (4 classic, 16 on the trail), 13 starter lead cards, %d boss cards and 4 under-cards" % boss_cards)
+	_check(catalog.armors().size() == 4 and catalog.weapons().size() == 20 and starters == 14 and boss_cards >= 4 and catalog.under_cards().size() == 4,
+		"the Arsenal holds 4 armors, 20 weapons (4 classic, 16 on the trail), 14 starter lead cards (the deck's Ember-Wick Cut is the 14th), %d boss cards and 4 under-cards" % boss_cards)
 	var choices: bool = true
 	for slot: int in EquipmentLoadoutResource.SLOT_COUNT:
 		choices = choices and catalog.lead_cards(slot).size() >= 3

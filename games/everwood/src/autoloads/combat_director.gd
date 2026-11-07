@@ -189,6 +189,9 @@ func _on_enemy_down(enemy: ActorBase) -> void:
 		refill_ink(drops, enemy.global_position, INK_REFILL_RADIUS)
 		_award_marks_near(enemy.global_position, drops * ScribeCardResource.MARKS_PER_CALM_DROP)
 		PartyProgress.current.add_rubbing()
+		# Now and then a calmed foe leaves a deck card of its isle's Sign the party hasn't found yet.
+		var level: LevelBase = get_tree().current_scene as LevelBase if is_inside_tree() else null
+		PartyProgress.current.roll_deck_find(level.home_sign() if level != null else ScribeSignResource.Sign.NONE, drops)
 
 
 ## Host: Ink-Binding Marks for every card the heroes near a calm wear (25 GDD R3): the
@@ -551,6 +554,9 @@ func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> 
 	var outcome: int = target.receive_strike(event)
 	if outcome == StatsComponent.StrikeOutcome.HIT and event.stun_seconds > 0.0 and not target.stats.is_downed:
 		target.stagger(event.stun_seconds)
+	# A deck card's frost or root (CardTwists) holds unless the blow was dodged.
+	if event.slow_seconds > 0.0 and outcome != StatsComponent.StrikeOutcome.EVADED:
+		target.apply_slow(event.slow_fraction, event.slow_seconds)
 	match outcome:
 		StatsComponent.StrikeOutcome.PERFECT_GUARD:
 			_on_perfect_guard(target, event)
@@ -606,6 +612,25 @@ func sign_detonation(target: ActorBase, event: CombatEvent, scribe_sign: int, ba
 		_show_detonation.rpc(target.get_path(), scribe_sign, false, label)
 	else:
 		_show_detonation(target.get_path(), scribe_sign, false, label)
+
+
+## A deck card's slow or root on a foe (CardTwists): a blow with no harm in it that carries the slow,
+## so the foe's owner applies it on every peer's behalf.
+func slow_foe(owner: ActorBase, foe: ActorBase, fraction: float, seconds: float) -> void:
+	if foe == null:
+		return
+	var touch: CombatEvent = CombatEvent.new()
+	touch.kind = CombatEvent.Kind.STRIKE
+	touch.attacker_path = owner.get_path()
+	touch.target_path = foe.get_path()
+	touch.attacker_player_id = owner.player_id
+	touch.attacker_role = owner.role()
+	touch.unavoidable = true
+	touch.slow_fraction = clampf(fraction, 0.0, 1.0)
+	touch.slow_seconds = seconds
+	touch.origin = owner.global_position
+	touch.reach = owner.global_position.distance_to(foe.global_position) + foe.body_radius() + 1.0
+	deliver(touch)
 
 
 ## A Tank's Ward-Mantle throws `poise` back at the foe whose blow it soaked (like a Perfect Guard's counter).

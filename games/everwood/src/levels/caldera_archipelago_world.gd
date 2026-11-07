@@ -318,6 +318,12 @@ func _on_player_registered(seat: PartyMember) -> void:
 		view.set_horizon(CAMERA_FAR)
 
 
+## The Sign of the isle the party is on (Miller's Oak is Warm-Hearth, Iron-Ness Iron-Root...).
+func home_sign() -> int:
+	var here: IslandGridResource = CalderaAtlas.isle(streamer.active_isle) if streamer != null else null
+	return int(here.scribe_sign) if here != null else ScribeSignResource.Sign.NONE
+
+
 func _report_extra() -> String:
 	if streamer == null:
 		return ""

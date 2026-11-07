@@ -138,6 +138,11 @@ func home_place() -> String:
 
 
 ## The ZoneMusicProfileResource id that plays at a spot (16 GDD §5.2; &"" for none).
+## The Sign of the land the party is on (the deck finds pick a card of it): none by default.
+func home_sign() -> int:
+	return ScribeSignResource.Sign.NONE
+
+
 func music_profile_at(_position: Vector3) -> StringName:
 	return &""
 

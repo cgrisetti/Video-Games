@@ -200,6 +200,19 @@ const TUCK_SYNERGY_POSTURE_MULT: float = 1.25
 ## What an Under-Card Tuck beneath it adds, by id.
 @export var under_card_tuck_synergy_id: StringName = &""
 
+@export_group("The Ink Card Deck (25 GDD §7)")
+## The one rule only this card has (CardTwists), NONE for the older cards.
+@export var twist: CardTwists.Twist = CardTwists.Twist.NONE
+## The card's face (InkCardFace): which picture it paints. &"" paints its Sign's glyph and mode.
+@export var art_motif: StringName = &""
+## What it does, the way an eight-year-old would say it ("Your hits make big foes wobble").
+@export_multiline var kid_text: String = ""
+## A line from someone in the world, and who said it.
+@export_multiline var flavor_text: String = ""
+@export var flavor_by: String = ""
+## Where in the Caldera it turns up.
+@export_multiline var found_text: String = ""
+
 ## The role that delivers this leaf (the manifestation under its role's name). Not stored: it is manifestation_mode.
 var role_delivery: RoleDelivery:
 	get:

@@ -461,6 +461,28 @@ func add_rubbing() -> void:
 	_commit()
 
 
+## The chance a calmed foe leaves a deck card, by its Ink-Drop refill (1 a calm foe, 2 a rare, 3 a Great-Boggart).
+const DECK_FIND_CHANCE: Array[float] = [0.0, 0.2, 0.6, 1.0]
+## The deck finds' own dice (never drop_rng, so the boss chest's seeded drops stay as they were).
+var deck_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
+
+## Host: a calmed foe may leave an Ink Card Deck card (25 GDD §7) of the isle's Sign that the party
+## hasn't found yet: Plain Ink, into the binder, and every screen shows the card. Returns the copy key, or &"".
+func roll_deck_find(scribe_sign: int, refill: int) -> StringName:
+	if not NetworkManager.current.is_host():
+		return &""
+	var missing: Array[ScribeCardResource] = []
+	for card: ScribeCardResource in ArsenalCatalog.current.ink_deck():
+		if not card.starter and best_finish(card.card_id) < 0 and (scribe_sign == ScribeSignResource.Sign.NONE or card.scribe_sign == scribe_sign):
+			missing.append(card)
+	if missing.is_empty() or deck_rng.randf() >= DECK_FIND_CHANCE[clampi(refill, 0, DECK_FIND_CHANCE.size() - 1)]:
+		return &""
+	var found: ScribeCardResource = missing[deck_rng.randi_range(0, missing.size() - 1)]
+	award_card(found.card_id)
+	return found.card_id
+
+
 ## Three rubbings draft a missing Plain Ink copy of a card at the Scribe Desk (one the party has none of).
 func can_draft(card_id: StringName) -> bool:
 	var listed: ScribeCardResource = ArsenalCatalog.current.card(card_id)

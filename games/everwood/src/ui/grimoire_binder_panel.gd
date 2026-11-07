@@ -46,6 +46,8 @@ enum Column { LEAVES, DIAMONDS, PLACES, TUCKS }
 enum Tab { GEAR, CARDS, COMBOS, SEALS, ATLAS }
 ## The card bench's three layers, top to bottom.
 enum Layer { PLACE, CARD, TUCK }
+## The bench's last row, under the layers: "How does a diamond work?" (DiamondGuide).
+const GUIDE_ROW: int = 3
 const TAB_NAMES: Array[String] = ["1. Gear & Weapon", "2. Quick Magic-Ink Cards", "3. Combo Moves", "4. Seal Press", "Atlas Map"]
 ## The letter in the header's diamond, by tab (the wireframes' C, E, D...).
 const TAB_GLYPHS: Array[String] = ["C", "E", "F", "D", "M"]
@@ -60,7 +62,7 @@ const TAB_TOOLTIPS: Array[String] = [
 ## The line under the header's title, by tab (the wireframes' own words).
 const TAB_SUBTITLES: Array[String] = [
 	"Tab 1 shows the hero. Seals change at a Hearth-Brazier or the Scribe Desk; weapon and armour at the Scribe Desk.",
-	"Tab 2. Pick a diamond, then its Place-Card, its card and the one Tuck. Changes go to the host as you make them.",
+	"Pick a diamond, then pick a card for it. Your hero uses it in every fight!",
 	"Button patterns your hero has learned. Play one in a row and its last move hits harder.",
 	"From Binder tab 1 at a Hearth-Brazier or the Scribe Desk. One card does a different job in each slot.",
 	"Where you are, and where to go next.",
@@ -191,6 +193,9 @@ var _combo_rows: Array[Label] = []
 var _note: Label
 var _hint: Label
 var _note_left: float = 0.0
+## The picture guide to a diamond while it's open, and whether it has shown itself this session.
+var _guide: DiamondGuide
+static var guide_seen: bool = false
 
 
 func setup(target_actor: ActorBase) -> void:
@@ -539,6 +544,10 @@ static func layer_column(layer: int) -> int:
 # --- Moving and picking ---------------------------------------------------------
 
 func _on_menu_input(action: StringName) -> void:
+	if is_instance_valid(_guide):
+		if action == InputComponent.MENU_ACCEPT or action == InputComponent.MENU_BACK:
+			_guide.close()
+		return
 	if action == InputComponent.MENU_TAB_PREV or action == InputComponent.MENU_TAB_NEXT:
 		step_tab(-1 if action == InputComponent.MENU_TAB_PREV else 1)
 		return
@@ -588,21 +597,24 @@ func _on_menu_input(action: StringName) -> void:
 						var at: int = BENCH_SOCKETS.find(selected_socket())
 						_select_socket(BENCH_SOCKETS[wrapi(at + (-1 if action == InputComponent.MENU_LEFT else 1), 0, BENCH_SOCKETS.size())])
 					InputComponent.MENU_UP, InputComponent.MENU_DOWN:
-						bench_layer = wrapi(bench_layer + (-1 if action == InputComponent.MENU_UP else 1), 0, Layer.size())
+						bench_layer = wrapi(bench_layer + (-1 if action == InputComponent.MENU_UP else 1), 0, GUIDE_ROW + 1)
 					InputComponent.MENU_ACCEPT:
 						accept()
+						return
 			else:
+				# Your cards are a grid of pictures: the arrows move round it.
 				match action:
 					InputComponent.MENU_UP:
-						_move(-1)
+						_move(-BinderCardBench.GRID_COLUMNS)
 					InputComponent.MENU_DOWN:
+						_move(BinderCardBench.GRID_COLUMNS)
+					InputComponent.MENU_LEFT:
+						_move(-1)
+					InputComponent.MENU_RIGHT:
 						_move(1)
-					InputComponent.MENU_LEFT, InputComponent.MENU_RIGHT:
-						var filter: Array[int] = BinderCardBench.FILTERS
-						open_layer(filter[wrapi(filter.find(bench_layer) + (-1 if action == InputComponent.MENU_LEFT else 1), 0, filter.size())])
-						return
 					InputComponent.MENU_ACCEPT:
 						accept()
+						return
 	AudioCues.play(&"menu_move")
 	_refresh()
 
@@ -610,13 +622,13 @@ func _on_menu_input(action: StringName) -> void:
 func _move(step: int) -> void:
 	match column:
 		Column.LEAVES:
-			leaf_row = wrapi(leaf_row + step, 0, leaf_options().size())
+			leaf_row = clampi(leaf_row + step, 0, leaf_options().size() - 1)
 		Column.PLACES:
-			place_row = wrapi(place_row + step, 0, place_options().size())
+			place_row = clampi(place_row + step, 0, place_options().size() - 1)
 		Column.TUCKS:
-			tuck_row = wrapi(tuck_row + step, 0, tuck_options().size())
+			tuck_row = clampi(tuck_row + step, 0, tuck_options().size() - 1)
 		Column.DIAMONDS:
-			bench_layer = wrapi(bench_layer + step, 0, Layer.size())
+			bench_layer = wrapi(bench_layer + step, 0, GUIDE_ROW + 1)
 
 
 # --- The tabs ---------------------------------------------------------------------
@@ -691,6 +703,8 @@ func _show_page(index: int) -> void:
 		_place_preview()
 	_refresh_tabs()
 	_refresh()
+	if index == Tab.CARDS and not guide_seen and not GrimoireRules.all_open():
+		show_guide()
 
 
 func _on_tab_clicked(event: InputEvent, index: int) -> void:
@@ -769,18 +783,115 @@ func _light_hero(on: bool) -> void:
 
 ## Light: slot the highlighted card in the chosen diamond's layer, or (on the bench) open the collection on it.
 func accept() -> void:
+	if column == Column.DIAMONDS:
+		if bench_layer == GUIDE_ROW:
+			show_guide()
+		else:
+			open_layer(bench_layer)
+		return
+	var layer: int = shown_layer()
+	var options: Array[StringName] = layer_options(layer)
+	var key: StringName = options[clampi(layer_row(layer), 0, options.size() - 1)]
+	if key == layer_copy(layer):
+		column = Column.DIAMONDS
+		_refresh()
+		return
+	var from: Vector2 = _sheet_point(_bench.spotlight, BinderCardBench.SPOTLIGHT_CARD * 0.5) if is_instance_valid(_bench.spotlight) else Vector2.ZERO
+	var placed: bool = false
 	match column:
 		Column.LEAVES:
-			if slot_leaf(leaf_options()[clampi(leaf_row, 0, leaf_options().size() - 1)]):
-				column = Column.DIAMONDS
+			placed = slot_leaf(key)
 		Column.PLACES:
-			if slot_place(place_options()[clampi(place_row, 0, place_options().size() - 1)]):
-				column = Column.DIAMONDS
+			placed = slot_place(key)
 		Column.TUCKS:
-			if slot_tuck(tuck_options()[clampi(tuck_row, 0, tuck_options().size() - 1)]):
-				column = Column.DIAMONDS
-		Column.DIAMONDS:
-			open_layer(bench_layer)
+			placed = slot_tuck(key)
+	if placed:
+		column = Column.DIAMONDS
+		_celebrate(key, layer, from)
+		_refresh()
+
+
+## The bench's layer that the collection shows (the guide row shows the cards).
+func shown_layer() -> int:
+	return Layer.CARD if bench_layer >= Layer.size() else bench_layer
+
+
+## The picture guide to a diamond (DiamondGuide), over the sheet; light or dodge closes it.
+func show_guide() -> void:
+	if is_instance_valid(_guide):
+		return
+	guide_seen = true
+	_guide = DiamondGuide.new()
+	_sheet.add_child(_guide)
+	_guide.done.connect(_on_guide_done)
+	AudioCues.play(&"menu_move")
+
+
+func _on_guide_done() -> void:
+	_guide = null
+
+
+## A point on a control, in the sheet's own coordinates.
+func _sheet_point(control: Control, local: Vector2) -> Vector2:
+	return _sheet.get_global_transform().affine_inverse() * (control.get_global_transform() * local)
+
+
+## A card just went in: it flies from the spotlight into its diamond, sparkles burst there, a chime,
+## and a cheerful line says where it went.
+func _celebrate(copy_key: StringName, layer: int, from: Vector2) -> void:
+	var socket: int = selected_socket()
+	var card: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key)) if copy_key != &"" else null
+	var landing: Vector2 = _sheet_point(widget, widget.diamond_center(socket))
+	var tint: Color = AtelierTheme.sign_fill(card.scribe_sign) if card != null else AtelierTheme.GOLD
+	if card != null and from != Vector2.ZERO:
+		var flyer: InkCardFace = InkCardFace.new(copy_key)
+		flyer.size = BinderCardBench.SPOTLIGHT_CARD
+		flyer.pivot_offset = BinderCardBench.SPOTLIGHT_CARD * 0.5
+		flyer.position = from - BinderCardBench.SPOTLIGHT_CARD * 0.5
+		_sheet.add_child(flyer)
+		var flight: Tween = flyer.create_tween().set_parallel(true)
+		flight.tween_property(flyer, ^"position", landing - BinderCardBench.SPOTLIGHT_CARD * 0.5, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		flight.tween_property(flyer, ^"scale", Vector2.ONE * 0.12, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		flight.tween_property(flyer, ^"rotation", 0.6, 0.35)
+		flight.chain().tween_callback(flyer.queue_free)
+	var sparkle: CardSparkle = CardSparkle.new(tint)
+	sparkle.position = landing
+	_sheet.add_child(sparkle)
+	AudioCues.play(&"card_chime")
+	var where: String = GrimoireRules.SOCKET_NAMES[socket]
+	if card == null:
+		_cheer("Your %s diamond is empty now." % where)
+	elif layer == Layer.PLACE:
+		_cheer("%s frames your %s card!" % [card.display_name, where])
+	elif layer == Layer.TUCK:
+		_cheer("%s is tucked under your %s card!" % [card.display_name, where])
+	else:
+		_cheer("%s is in your %s diamond!" % [card.display_name, where])
+
+
+## A happy note under the page (in green; a problem note is in red).
+func _cheer(text: String) -> void:
+	_note.text = text
+	_note.add_theme_color_override(&"font_color", AtelierTheme.GOOD)
+	_note_left = NOTE_TIME
+
+
+## The spotlight's call to action: what light will do, or why it can't yet, in plain words.
+func spotlight_words(layer: int, copy_key: StringName, verdict: Array) -> String:
+	var where: String = GrimoireRules.SOCKET_NAMES[selected_socket()]
+	if copy_key == layer_copy(layer):
+		return "It's in your %s diamond already!" % where if copy_key != &"" else "This spot is empty now."
+	if not bool(verdict[1]):
+		var why: String = fit_line(copy_key, layer_column(layer)).get_slice(": ", 1).trim_suffix(".")
+		return "Not yet: %s." % why if why != "" else "Not yet."
+	if copy_key == &"":
+		return "Light: leave it empty."
+	match layer:
+		Layer.PLACE:
+			return "Light: frame your %s card with it!" % where
+		Layer.TUCK:
+			return "Light: slide it under your %s card!" % where
+	return "Light: put it in your %s diamond!" % where
 
 
 ## Opens the collection on a layer (a click on a layer or a filter, or light on the bench).
@@ -886,6 +997,7 @@ func _on_kit_refused(device_id: int, reason: String) -> void:
 
 func _show_note(text: String) -> void:
 	_note.text = text
+	_note.add_theme_color_override(&"font_color", PROBLEM_COLOR)
 	_note_left = NOTE_TIME
 
 
@@ -1044,7 +1156,7 @@ static func _tile_word(card: ScribeCardResource, open: bool, opens: int) -> Stri
 
 ## The chosen diamond's name and what it's for ("R · your skill").
 func socket_title(socket: int) -> String:
-	return ["L · your guard card", "R · your skill", "L+R · your Grand card"][clampi(socket, 0, 2)]
+	return ["L · your shield card", "R · your attack card", "L+R · your Grand card"][clampi(socket, 0, 2)]
 
 
 ## What casting the chosen diamond's card costs, and its button.
@@ -1148,9 +1260,9 @@ func _refresh_cards() -> void:
 			widget.preview_socket(socket, view["leaf"], view["leaf_variant"], ScribeCardResource.copy_card_id(key), ScribeCardResource.copy_variant(key))
 	_bench.refresh()
 	if column == Column.DIAMONDS:
-		_hint.text = "← → pick a diamond  ·  ↑ ↓ pick a layer  ·  light opens the collection  ·  dodge or Tab closes"
+		_hint.text = "← → pick a diamond  ·  ↑ ↓ pick what to change  ·  light: choose a card  ·  dodge or Tab closes"
 	else:
-		_hint.text = "↑ ↓ choose  ·  ← → Cards, Tucks, Place-Cards  ·  light slots it  ·  dodge goes back"
+		_hint.text = "arrows: look at your cards  ·  light: put it in  ·  dodge: go back"
 
 
 ## The weapon row: the material's own name, the frame, and its tier of seven ("Barrow-Steel Long-Blade  ·  Falchion  (Tier IV of VII)").
@@ -1281,11 +1393,12 @@ func tooltip_heading() -> String:
 			var named: Array[String] = [weapon_title(), piece_words(GearRow.OFF_HAND)[1], piece_words(GearRow.ARMOR)[1], actor.loadout.display_name]
 			return "HIGHLIGHTED · %s\n%s" % [["WEAPON", "OFFHAND", "MANTLE", "CALLING"][gear_row], named[gear_row]]
 		Tab.CARDS:
+			var layer: int = shown_layer()
 			if column == Column.DIAMONDS:
-				return "HIGHLIGHTED · %s\n%s" % [["PLACE-CARD", "INK CARD", "TUCK"][bench_layer], socket_title(selected_socket())]
-			var key: StringName = layer_options(bench_layer)[clampi(layer_row(bench_layer), 0, layer_options(bench_layer).size() - 1)]
+				return "HIGHLIGHTED · %s\n%s" % [("GUIDE" if bench_layer == GUIDE_ROW else ["PLACE-CARD", "INK CARD", "TUCK"][layer]), socket_title(selected_socket())]
+			var key: StringName = layer_options(layer)[clampi(layer_row(layer), 0, layer_options(layer).size() - 1)]
 			var card: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(key)) if key != &"" else null
-			return "HIGHLIGHTED · %s\n%s" % [["PLACE-CARD", "INK CARD", "TUCK"][bench_layer], card.display_name if card != null else empty_layer_text(bench_layer)]
+			return "HIGHLIGHTED · %s\n%s" % [["PLACE-CARD", "INK CARD", "TUCK"][layer], card.display_name if card != null else empty_layer_text(layer)]
 		Tab.SEALS:
 			var seal: ScribeCardResource = ArsenalCatalog.current.get_card(press_candidate())
 			return "HIGHLIGHTED · %s SEAL\n%s" % [GrimoireRules.SEAL_NAMES[seal_row].to_upper(), seal.display_name if seal != null else "an empty slot"]
@@ -1579,8 +1692,8 @@ static func combo_tooltip(form: ComboChainResource) -> String:
 func _card_tooltip() -> String:
 	match column:
 		Column.LEAVES, Column.PLACES, Column.TUCKS:
-			var options: Array[StringName] = layer_options(bench_layer)
-			return card_tooltip_for(options[clampi(layer_row(bench_layer), 0, options.size() - 1)], column)
+			var options: Array[StringName] = layer_options(shown_layer())
+			return card_tooltip_for(options[clampi(layer_row(shown_layer()), 0, options.size() - 1)], column)
 	var socket: int = DIAMOND_ROWS[diamond_row] if DIAMOND_ROWS[diamond_row] >= 0 else selected_socket()
 	var cost: String = _cost_words(_socket_cost(socket))
 	match socket:

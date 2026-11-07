@@ -83,6 +83,9 @@ func _ready() -> void:
 	name = "PlayerHUD"
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# A deck card found in play springs up on every player's screen (CardReveal, 25 GDD §7).
+	if PartyProgress.current != null:
+		PartyProgress.current.card_awarded.connect(_on_card_awarded)
 
 	var top: VBoxContainer = VBoxContainer.new()
 	top.anchor_left = 0.5 - BOSS_BAR_WIDTH * 0.5
@@ -195,11 +198,30 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	clear_pin()
+	if PartyProgress.current != null and PartyProgress.current.card_awarded.is_connected(_on_card_awarded):
+		PartyProgress.current.card_awarded.disconnect(_on_card_awarded)
 	var director: CombatDirector = CombatDirector.current
 	if director != null and director.glimmer_opened.is_connected(_on_glimmer_opened):
 		director.glimmer_opened.disconnect(_on_glimmer_opened)
 		director.bravery_countered.disconnect(_on_bravery_countered)
 
+
+
+## A card just came into the binder: a deck card gets its "A NEW CARD!" reveal on this screen.
+func _on_card_awarded(copy_key: StringName) -> void:
+	if not ArsenalCatalog.INK_DECK.has(ScribeCardResource.copy_card_id(copy_key)):
+		return
+	var reveal: CardReveal = CardReveal.new()
+	reveal.setup(copy_key)
+	add_child(reveal)
+
+
+## The newest "A NEW CARD!" reveal on this screen, or null.
+func card_reveal() -> CardReveal:
+	for child: Node in get_children():
+		if child is CardReveal and not child.is_queued_for_deletion():
+			return child as CardReveal
+	return null
 
 
 ## The place this hero just walked into (15_THE_MYTHOPOETIC_LENS.md §6.2): crossing

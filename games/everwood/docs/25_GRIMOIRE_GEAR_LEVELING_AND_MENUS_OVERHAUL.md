@@ -175,3 +175,48 @@ the coat-dye swatches (no dye choice exists yet), turning the preview with the r
 stick (it still turns on its own), and the Seal Press as a page reached only from tab 1
 (it keeps its tab, look-only away from a rest point).
 
+
+## 7. The Ink Card Deck (2026-11-07)
+
+Workshopped on the "Everwood Ink Card Deck" page, then built for an eight-year-old
+to understand at a glance. One attack and one defense card for each Sign:
+
+| Sign | Attack: R, Ink Blade | Defense: L, Ink Shield |
+|---|---|---|
+| Iron-Root | **Cairn-Cleave** (Common): every third coated hit rings a big foe for SHATTERPOINT | **Hedge-Root Brace** (Common): the counter-brace roots the foe you just hit, 1.5 s |
+| Rime-Gale | **Squall-Lash** (Uncommon): coated hits frost-slow 20% for 2 s; every fourth bursts in GLACIAL RUPTURE | **Hoarfrost Mantle** (Common): no slow takes hold; the counter-brace's 4 m frost ring slows foes 40% for 3 s |
+| Warm-Hearth | **Ember-Wick Cut** (Common, the starting card): an Ember-Burn stacks +18% stagger a hit, up to 3; the cut rings for DAWNBURST | **Kindle-Hearth Ward** (Uncommon): friends within 3 m behind you mend 1.5% a second; the counter-brace sets off DAWNBURST |
+| Star-Tide | **Tide-Turn Thrust** (Uncommon): 6 Breath back a coated hit; the thrust rings for ASTRAL CHORUS | **Moon-Weir Guard** (Common): a Perfect Guard under the shield pours 1 Ink-Drop (once in 4 s); the counter-brace gives friends behind you 15 Breath |
+
+Every shield soaks 70% of its own Sign's blows from bosses, shrugs stuns and shoves,
+and lasts the coat's 8 s. **Where they come from:** Ember-Wick Cut is in every binder
+from the start; the Commons are inscribed at the Scribery (25 Chimes); none are in the
+boss chest (its seeded drops stay as they were); a calmed foe may leave a deck card of its isle's Sign the party hasn't found
+(`PartyProgress.roll_deck_find`: 20% from a calm foe, 60% a rare, always a Great-Boggart),
+and "A NEW CARD!" (`CardReveal`) springs up on every player's screen.
+
+**Build.** `ScribeCardResource` gained `twist`, `art_motif`, `kid_text`, `flavor_text`,
+`flavor_by` and `found_text`. `CardTwists` (`src/combat/card_twists.gd`) holds every
+twist's rule and number; `SignFlowComponent` calls it on a coated hit, on the
+counter-brace, each frame a shield is up and on a Perfect Guard. Slows ride the strike
+(`CombatEvent.slow_fraction`, `slow_seconds`; `CombatDirector.slow_foe`) so the foe's
+owner applies them; `ActorBase.apply_slow` / `slow_factor` scale `steer_horizontal`.
+`LevelBase.home_sign()` names the isle's Sign (the Caldera reads it from the atlas).
+
+**The card bench for a young player.** `InkCardFace` paints each card in code: its
+Sign's colours, name, ink dots, the eight deck pictures (cairn, hedge, squall,
+mantle, ember, hearth, thrust, weir; any other card gets its Sign's glyph over a blade
+or a shield), what it does in a child's words and its diamond; Gilded Leaf copies
+shimmer and Star-Ink copies twinkle. Your cards are a grid of these pictures; the
+highlighted one stands big in the spotlight with "Light: put it in your R diamond!" or
+why not yet; slotting one flies the card into its diamond with a burst of sparkles
+(`CardSparkle`), a chime and "Squall-Lash is in your R diamond!". `DiamondGuide` is the
+picture guide (a diamond taken apart, six numbered steps); it opens itself the first
+time the cards tab shows in a session and from the bench's "How does a diamond work?".
+Checked by `tools/test_ink_deck.gd`.
+
+**Corrections to the workshop page.** The L counter-brace is "land a hit, then tap L
+in the gold flash" (not "after a blocked hit"), so Hedge-Root Brace roots the foe you
+just hit; a shield already shrugged shoves, so that line is no longer "new". The
+page's open questions ("To decide") were built as drafted; changing one is a number in
+`CardTwists` or a line in `ArsenalCatalog._build_ink_deck`.
