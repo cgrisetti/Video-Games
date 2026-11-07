@@ -1,6 +1,6 @@
 ## The Grimoire Binder (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §6), opened out of
 ## combat with a tap of Tab / View on the player's own screen. Since the Phase
-## 12 Kaizen pass (K4) it has three numbered tabs, plus the Atlas Map, stepped
+## 12 Kaizen pass (K4) it has numbered tabs, plus the Atlas Map, stepped
 ## with Q / E on the keyboard or L / R on a pad (or a click on the tab):
 ##
 ##   [1. Gear & Weapon]           the hero turning slowly in a lit preview
@@ -15,6 +15,18 @@
 ##                                the Ink Card Collection
 ##   [3. Combo Moves]             the directional forms the party knows, with
 ##                                their buttons, and the ones still to learn
+##   [4. Seals & Pocket Cards]    the stamping bench beside the same live
+##                                preview: the three seals pressed on the
+##                                weapon, off-hand and mantle, and the four
+##                                pocket cards (L, its tuck, R, its tuck);
+##                                up / down picks a slot, left / right (or
+##                                light) changes its card among none, the
+##                                Fellowship's starting seal and every seal
+##                                card the party owns; the hero wears it at
+##                                once and the host keeps it for the
+##                                Fellowship (EquipmentSealComponent.choose_hand).
+##                                A slot the ladder hasn't opened is locked and
+##                                says when it opens
 ##
 ## A tooltip box under the tabs says what the tab is for and what the
 ## highlighted row does, in plain words, for a pad as much as the mouse (rows
@@ -40,19 +52,34 @@ extends Control
 signal closed
 
 enum Column { LEAVES, DIAMONDS, PLACES }
-enum Tab { GEAR, CARDS, COMBOS, ATLAS }
-const TAB_NAMES: Array[String] = ["1. Gear & Weapon", "2. Quick Magic-Ink Cards", "3. Combo Moves", "Atlas Map"]
+enum Tab { GEAR, CARDS, COMBOS, SEALS, ATLAS }
+const TAB_NAMES: Array[String] = ["1. Gear & Weapon", "2. Quick Magic-Ink Cards", "3. Combo Moves", "4. Seals & Pocket Cards", "Atlas Map"]
 ## What each tab is for, in the tooltip box and as the tab's mouse tooltip.
 const TAB_TOOLTIPS: Array[String] = [
 	"Your hero, your weapon and what you wear. Change them at the Scribe Desk in town.",
 	"Slot Ink Cards into your diamonds: L guards, R is your skill, L+R your big move. A Place-Card framing a card makes it stronger.",
 	"Button patterns your hero has learned. Play one in a row and its last move hits harder.",
+	"Press seal cards onto your weapon, off-hand and mantle, and choose the cards you pull from your pocket after a hit. Your hero wears them at once.",
 	"The Wayfarer's Atlas: where you are, and where to go next.",
 ]
 ## A Place-Card's "when": it rides with the diamond's Ink Card.
 const PLACE_WHEN: String = "It rides with the Ink Card in this diamond: on the trail (INK READY) and in every cast in a fight."
 ## The Gear & Weapon tab's rows.
 enum GearRow { WEAPON, OFF_HAND, ARMOR, CALLING }
+## The stamping bench's slot shapes: a pressed card, an open empty slot, a slot still locked.
+const SEAL_PRESSED: String = "◆"
+const SEAL_EMPTY: String = "◇"
+const SEAL_LOCKED: String = "▢"
+## What each slot of the hand does (PlayerLoadoutResource.HandSlot order); %s is the trigger's key.
+const SEAL_SLOT_TIPS: Array[String] = [
+	"Your weapon's seal: its bonus rides every hit you land.",
+	"Your off-hand's seal: it wards off blows of its Sign, and their stun.",
+	"Your mantle's seal: a steadier stance or a quicker stride.",
+	"Your %s card: land a hit, then press %s in the flash to pull it from your pocket. Your strikes carry it.",
+	"Tucked under your %s card: it makes that pull stronger.",
+	"Your %s card: land a hit, then press %s in the flash to pull it from your pocket. Your strikes carry it.",
+	"Tucked under your %s card: it makes that pull stronger.",
+]
 
 const PAGE_WIDTH: float = 330.0
 const TITLE_SIZE: int = 24
@@ -101,6 +128,8 @@ var place_row: int = 0
 var diamond_row: int = 2
 var gear_row: int = GearRow.WEAPON
 var combo_row: int = 0
+## The stamping bench's highlighted slot (PlayerLoadoutResource.HandSlot).
+var seal_row: int = PlayerLoadoutResource.HandSlot.WEAPON_SEAL
 var folio_open: bool = false
 var tab: int = Tab.CARDS
 var atlas: WorldMapPanel
@@ -128,6 +157,11 @@ var _leaf_rows: Array[Label] = []
 var _place_rows: Array[Label] = []
 var _gear_rows: Array[Label] = []
 var _gear_stats: Label
+## The Gear & Weapon page and the stamping bench share one row with the live preview.
+var _gear_panel: Control
+var _seal_panel: Control
+var _seal_rows: Array[Label] = []
+var _seal_stats: Label
 var _combo_rows: Array[Label] = []
 var _detail: Label
 var _note: Label
@@ -188,8 +222,11 @@ func _ready() -> void:
 	if actor != null and actor.input != null:
 		actor.input.menu_open = true
 		actor.input.menu_input.connect(_on_menu_input)
+	if actor != null and actor.seal != null:
+		actor.seal.loadout_changed.connect(_on_hand_changed)
 	PartyProgress.current.progress_changed.connect(_refresh)
 	NetworkManager.current.kit_refused.connect(_on_kit_refused)
+	NetworkManager.current.seal_hand_refused.connect(_on_kit_refused)
 	_show_page(Tab.CARDS)
 
 
@@ -215,7 +252,8 @@ func _build_tooltip() -> PanelContainer:
 	return panel
 
 
-## Tab 1: the lit preview window beside the gear rows.
+## Tab 1: the lit preview window beside the gear rows. Tab 4's stamping bench shares the row and the
+## preview, standing where the gear rows stand.
 func _build_gear_page() -> Control:
 	var row: HBoxContainer = HBoxContainer.new()
 	row.name = "GearPage"
@@ -232,8 +270,33 @@ func _build_gear_page() -> Control:
 		_gear_rows.append(gear)
 	_gear_stats = _label(SMALL_FONT_SIZE, DIM_COLOR.lightened(0.2))
 	page.add_child(_gear_stats)
-	row.add_child(page.get_parent())
+	_gear_panel = page.get_parent() as Control
+	row.add_child(_gear_panel)
+	_seal_panel = _build_seal_bench()
+	row.add_child(_seal_panel)
 	return row
+
+
+## Tab 4: the stamping bench, a row per slot of the hand: the three seals on the gear, then the four pocket cards.
+func _build_seal_bench() -> Control:
+	var page: VBoxContainer = _page("Seals & Pocket Cards")
+	var panel: Control = page.get_parent() as Control
+	panel.name = "SealBench"
+	panel.custom_minimum_size = Vector2(PAGE_WIDTH * 1.45, 0.0)
+	for slot: int in PlayerLoadoutResource.HAND_SLOT_COUNT:
+		if slot == PlayerLoadoutResource.HandSlot.WEAPON_SEAL or slot == PlayerLoadoutResource.HandSlot.L_PRIMARY:
+			var heading: Label = _label(SMALL_FONT_SIZE, PAGE_EDGE.lightened(0.15))
+			heading.text = "Seals on your gear" if slot == PlayerLoadoutResource.HandSlot.WEAPON_SEAL else "Pocket cards: pull one after a hit"
+			page.add_child(heading)
+		var line: Label = _label(FONT_SIZE, ROW_COLOR)
+		line.mouse_filter = Control.MOUSE_FILTER_STOP
+		line.gui_input.connect(_on_seal_clicked.bind(slot))
+		page.add_child(line)
+		_seal_rows.append(line)
+	_seal_stats = _label(SMALL_FONT_SIZE, DIM_COLOR.lightened(0.2))
+	page.add_child(_seal_stats)
+	panel.visible = false
+	return panel
 
 
 ## The live preview: a window on the shared world, framed like a page.
@@ -349,6 +412,10 @@ func _exit_tree() -> void:
 	var network: NetworkManager = NetworkManager.current
 	if network != null and network.kit_refused.is_connected(_on_kit_refused):
 		network.kit_refused.disconnect(_on_kit_refused)
+	if network != null and network.seal_hand_refused.is_connected(_on_kit_refused):
+		network.seal_hand_refused.disconnect(_on_kit_refused)
+	if is_instance_valid(actor) and actor.seal != null and actor.seal.loadout_changed.is_connected(_on_hand_changed):
+		actor.seal.loadout_changed.disconnect(_on_hand_changed)
 	if is_instance_valid(actor) and actor.input != null:
 		actor.input.menu_open = false
 		if actor.input.menu_input.is_connected(_on_menu_input):
@@ -368,7 +435,7 @@ func _process(delta: float) -> void:
 	var top: float = maxf((_tabs.size.y + 18.0) * fit, (size.y - _tallest * fit) * 0.5)
 	_root.position = Vector2((size.x - _root.size.x * fit) * 0.5, top)
 	_tabs.position = Vector2((size.x - _tabs.size.x * fit) * 0.5, top - (_tabs.size.y + 10.0) * fit)
-	if tab == Tab.GEAR:
+	if _shows_preview(tab):
 		_preview_angle = wrapf(_preview_angle + PREVIEW_ORBIT_SPEED * delta, 0.0, TAU)
 		_place_preview()
 
@@ -447,6 +514,14 @@ func _on_menu_input(action: StringName) -> void:
 		Tab.COMBOS:
 			if action == InputComponent.MENU_UP or action == InputComponent.MENU_DOWN:
 				combo_row = wrapi(combo_row + (-1 if action == InputComponent.MENU_UP else 1), 0, maxi(1, _combo_rows.size()))
+		Tab.SEALS:
+			match action:
+				InputComponent.MENU_UP, InputComponent.MENU_DOWN:
+					seal_row = wrapi(seal_row + (-1 if action == InputComponent.MENU_UP else 1), 0, PlayerLoadoutResource.HAND_SLOT_COUNT)
+				InputComponent.MENU_LEFT:
+					step_seal(-1)
+				InputComponent.MENU_RIGHT, InputComponent.MENU_ACCEPT:
+					step_seal(1)
 		_:
 			match action:
 				InputComponent.MENU_LEFT:
@@ -533,9 +608,11 @@ func _show_page(index: int) -> void:
 	_page_tab = index
 	_root.visible = true
 	for page: int in _pages.size():
-		_pages[page].visible = page == index
-	_light_hero(index == Tab.GEAR)
-	if index == Tab.GEAR:
+		_pages[page].visible = page == (Tab.GEAR if index == Tab.SEALS else index)
+	_gear_panel.visible = index != Tab.SEALS
+	_seal_panel.visible = index == Tab.SEALS
+	_light_hero(_shows_preview(index))
+	if _shows_preview(index):
 		_place_preview()
 	_refresh_tabs()
 	_refresh()
@@ -557,7 +634,12 @@ func _refresh_tabs() -> void:
 
 ## Whether the preview is showing the hero now.
 func preview_live() -> bool:
-	return tab == Tab.GEAR and preview_camera != null and preview_camera.current and key_light.visible and not _lit.is_empty()
+	return _shows_preview(tab) and preview_camera != null and preview_camera.current and key_light.visible and not _lit.is_empty()
+
+
+## The tabs that show the hero in the preview: Gear & Weapon and the stamping bench.
+static func _shows_preview(index: int) -> bool:
+	return index == Tab.GEAR or index == Tab.SEALS
 
 
 ## The camera circling the hero at chest height, the key light over its shoulder and the rim light behind the hero.
@@ -702,6 +784,10 @@ func _refresh() -> void:
 			_title.text = "GRIMOIRE BINDER  ·  Combo Moves  ·  %d Chimes" % chimes
 			_refresh_combos()
 			_hint.text = "%s  ·  ↑/↓ choose a move  ·  dodge or Tab closes" % tabs
+		Tab.SEALS:
+			_title.text = "GRIMOIRE BINDER  ·  Seals & Pocket Cards  ·  %d Chimes" % chimes
+			_refresh_seals()
+			_hint.text = "%s  ·  ↑/↓ choose a slot  ·  ←/→ or light change its card  ·  dodge or Tab closes" % tabs
 		_:
 			_refresh_cards(chimes, tabs)
 	_tooltip.text = tooltip_text_now()
@@ -782,6 +868,8 @@ func tooltip_text_now() -> String:
 		Tab.COMBOS:
 			var forms: Array[ComboChainResource] = ArsenalCatalog.current.combos()
 			item = combo_tooltip(forms[combo_row]) if combo_row < forms.size() else ""
+		Tab.SEALS:
+			item = seal_tooltip(seal_row)
 		Tab.CARDS:
 			item = _card_tooltip()
 	return TAB_TOOLTIPS[tab] if item == "" else "%s\n%s" % [item, TAB_TOOLTIPS[tab]]
@@ -816,6 +904,111 @@ func gear_tooltip(row: int) -> String:
 				return "Unsworn: no Calling yet. One opens at Level %d (hold C, or the Scribe Desk)." % ArsenalCatalog.CALLING_LEVEL
 			return ("%s: %s" % [sub, secondary.summary()]) if sub != "" else secondary.summary()
 	return ""
+
+
+## The stamping bench's rows: each slot, its card (or none), and the shape that says which.
+func _refresh_seals() -> void:
+	for slot: int in _seal_rows.size():
+		var line: Label = _seal_rows[slot]
+		line.text = ("> " if slot == seal_row else "  ") + seal_row_text(slot)
+		line.modulate = SELECTED_COLOR if slot == seal_row else (ROW_COLOR if seal_slot_open(slot) else DIM_COLOR)
+		line.tooltip_text = seal_tooltip(slot)
+	if actor.seal == null or actor.seal.loadout == null:
+		_seal_stats.text = ""
+		return
+	var hand: PlayerLoadoutResource = actor.seal.loadout
+	var tier: EquipmentTierResource = actor.seal.tier()
+	_seal_stats.text = "Stage %d · Lv %d · %s gear  ·  %d seals, %d pocket cards" % [actor.seal.progression_stage, actor.seal.true_level,
+		tier.weapon_material_name if tier != null else "Orchard-Wood", hand.seal_count(), hand.active_count()]
+
+
+## One slot's row: "Off-Hand:  ◆ Seal of the Quiet Weir  [Star-Tide]", "Mantle:  ▢ locked · opens at Stage 3 (Lv 11)".
+func seal_row_text(slot: int) -> String:
+	var slot_name: String = PlayerLoadoutResource.HAND_SLOT_NAMES[slot]
+	if not seal_slot_open(slot):
+		return "%s:  %s locked · %s" % [slot_name, SEAL_LOCKED, PlayerLoadoutResource.slot_opens_text(slot)]
+	var card_id: StringName = actor.seal.loadout.card_in_slot(slot) if actor.seal.loadout != null else &""
+	var listed: ScribeCardResource = ArsenalCatalog.current.get_card(card_id)
+	if listed == null:
+		return "%s:  %s none" % [slot_name, SEAL_EMPTY]
+	var lent: bool = card_id == ArsenalCatalog.starting_seal_for_slot(actor.role(), slot) \
+		and not ArsenalCatalog.owns_any_finish(card_id, PartyProgress.current.collection)
+	return "%s:  %s %s  [%s]%s" % [slot_name, SEAL_PRESSED, listed.display_name, ArsenalCatalog.current.sign_seal(listed.scribe_sign).display_name,
+		"  (starter)" if lent else ""]
+
+
+## What a slot of the hand does, and what is in it; a locked slot says when it opens.
+func seal_tooltip(slot: int) -> String:
+	if actor.seal == null:
+		return ""
+	var slot_name: String = PlayerLoadoutResource.HAND_SLOT_NAMES[slot]
+	if not seal_slot_open(slot):
+		return "Locked: the %s slot %s. Your party is Lv %d." % [slot_name, PlayerLoadoutResource.slot_opens_text(slot), actor.seal.true_level]
+	var tip: String = SEAL_SLOT_TIPS[slot]
+	if not PlayerLoadoutResource.is_seal_slot(slot):
+		var on_l: bool = slot == PlayerLoadoutResource.HandSlot.L_PRIMARY or slot == PlayerLoadoutResource.HandSlot.L_TUCK
+		var key: String = _key(InputComponent.ACTION_TRIGGER_L if on_l else InputComponent.ACTION_TRIGGER_R)
+		tip = tip % ([key, key] if tip.count("%s") == 2 else [key])
+	var listed: ScribeCardResource = ArsenalCatalog.current.get_card(actor.seal.loadout.card_in_slot(slot)) if actor.seal.loadout != null else null
+	if listed == null:
+		return "%s Empty: ←/→ presses a card here." % tip
+	return "%s %s" % [tip, listed.description.strip_edges()]
+
+
+# --- The stamping bench ------------------------------------------------------------
+
+## The cards a slot of the hand cycles through: none (&""), the Fellowship's starting seal, then every seal card the party owns.
+func seal_options(slot: int) -> Array[StringName]:
+	return ArsenalCatalog.current.seal_options_for_slot(actor.role(), slot, PartyProgress.current.collection)
+
+
+## Whether a slot of the hand is open at the hero's stage and level.
+func seal_slot_open(slot: int) -> bool:
+	return is_instance_valid(actor) and actor.seal != null and PlayerLoadoutResource.slot_open(slot, actor.seal.progression_stage, actor.seal.true_level)
+
+
+## Left / right (or light) on the bench: the highlighted slot's next (or previous) card, pressed at
+## once if it fits. A locked slot refuses and says when it opens. Returns whether the hero now wears it.
+func step_seal(step: int) -> bool:
+	if not is_instance_valid(actor) or actor.seal == null or actor.seal.loadout == null:
+		return false
+	if not seal_slot_open(seal_row):
+		_show_note("The %s slot %s" % [PlayerLoadoutResource.HAND_SLOT_NAMES[seal_row], PlayerLoadoutResource.slot_opens_text(seal_row)])
+		AudioCues.play(&"refuse")
+		return false
+	var options: Array[StringName] = seal_options(seal_row)
+	var index: int = options.find(actor.seal.loadout.card_in_slot(seal_row))
+	return press_seal(seal_row, options[wrapi(index + step, 0, options.size())])
+
+
+## Presses a seal card (&"" lifts it) into one slot of the hand. Returns whether the hero now wears it.
+func press_seal(slot: int, card_id: StringName) -> bool:
+	if not is_instance_valid(actor) or actor.seal == null or actor.seal.loadout == null:
+		return false
+	var draft: PlayerLoadoutResource = actor.seal.loadout.copy()
+	draft.set_card_in_slot(slot, card_id)
+	var problem: String = actor.seal.choose_hand(draft)
+	if problem != "":
+		_show_note(problem)
+		AudioCues.play(&"refuse")
+		return false
+	AudioCues.play(&"equip")
+	_refresh()
+	return true
+
+
+func _on_seal_clicked(event: InputEvent, slot: int) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+		seal_row = slot
+		step_seal(1)
+		_refresh()
+
+
+## The hero's hand changed (the bench, the host's answer, a level): the rows follow it.
+func _on_hand_changed(_hand: PlayerLoadoutResource) -> void:
+	if is_inside_tree():
+		_refresh()
 
 
 ## What a combo form does, in a sentence a child can follow.

@@ -4,9 +4,12 @@
 ##
 ## It keeps the hero's PlayerLoadoutResource: the material tier its True Level
 ## forged, its youth silhouette, and the 7-Card Hand (3 seals pressed onto the
-## gear, 4 invocations on L, R and L+R). Until the Binder has a stamping bench
-## the hand is the role's default, trimmed to what the progression stage has
-## opened (ArsenalCatalog.default_seal_loadout); set_loadout takes a chosen one.
+## gear, 4 invocations on L, R and L+R). The cards are the ones the player chose
+## at the Grimoire Binder's stamping bench (tab 4), which ride the hero's seat,
+## checked by the host and saved per Fellowship (wear_seat_hand); a hero nobody
+## has chosen for wears its role's default, trimmed to what the progression
+## stage has opened (ArsenalCatalog.default_seal_loadout). choose_hand is the
+## bench's call; set_loadout puts on a hand for this copy alone (the checks).
 ##
 ## What it does in play, every peer reading the same ids:
 ## - Passive seals: a Weapon Seal adds its flat bonus to every strike and its
@@ -28,10 +31,12 @@
 ##   window is open and the pips are there, and the pull fires by itself when
 ##   the pips are full (execute_one_button_gambit).
 ##
-## Network (Gate 4): sync_loadout_rpc carries the hand as Strings and ints;
-## trigger_pocket_pull_rpc carries a card id and two ints. Each peer derives the
-## same default hand from the roster and the party's level, so a late copy
-## looks right before the first message lands.
+## Network (Gate 4): the chosen hand rides the seat in the roster (the host
+## refuses one that claims a locked slot or a card the party can't use);
+## sync_loadout_rpc carries the owner's whole hand as Strings and ints, and
+## every copy refuses it on the same terms; trigger_pocket_pull_rpc carries a
+## card id and two ints. Each peer derives the same hand from the roster and the
+## party's level, so a late copy looks right before the first message lands.
 class_name EquipmentSealComponent
 extends Node
 
@@ -91,6 +96,10 @@ var last_invocation: Dictionary = {}
 
 var _custom_hand: bool = false
 var _received_from_owner: bool = false
+## The hand the hero's seat carries (the stamping bench's, host-checked): {} wears the role's default.
+var _seat_hand: Dictionary = {}
+## Hands another peer named for this hero that a locked slot or an unusable card turned away.
+var _refused_hands: int = 0
 var _shrug_until: float = -INF
 var _window_fired: bool = false
 var _invocations: int = 0
@@ -110,12 +119,21 @@ func _ready() -> void:
 	if progress != null:
 		progress.progress_changed.connect(_on_progress_changed)
 		progress.trail_level_reached.connect(_on_trail_level_reached)
+	var network: NetworkManager = NetworkManager.current
+	if network != null:
+		network.seal_hand_refused.connect(_on_seal_hand_refused)
+		var seat: PartyMember = network.member(actor.player_id)
+		if seat != null and not seat.companion:
+			_seat_hand = seat.seal_hand.duplicate(true)
 	_derive_hand()
 	# The actor's authority is set once its components are built; the first broadcast waits for it.
 	_broadcast_loadout.call_deferred()
 
 
 func _exit_tree() -> void:
+	var network: NetworkManager = NetworkManager.current
+	if network != null and network.seal_hand_refused.is_connected(_on_seal_hand_refused):
+		network.seal_hand_refused.disconnect(_on_seal_hand_refused)
 	var progress: PartyProgress = PartyProgress.current
 	if progress == null:
 		return
@@ -152,7 +170,8 @@ func refresh() -> void:
 	_broadcast_loadout()
 
 
-## A hand the hero chose (the Binder's bench, a playtest): trimmed to the stage, shown and broadcast.
+## A hand put on this copy alone (the checks, and the bench's choice while the host looks at it):
+## trimmed to the stage, shown and broadcast.
 func set_loadout(chosen: PlayerLoadoutResource) -> void:
 	loadout = chosen.copy() if chosen != null else null
 	_custom_hand = loadout != null
@@ -161,10 +180,64 @@ func set_loadout(chosen: PlayerLoadoutResource) -> void:
 	_broadcast_loadout()
 
 
-## Returns the hand to its role's default by stage.
+## Takes off a hand set_loadout put on: the seat's chosen hand again, or the role's default by stage.
 func clear_custom_loadout() -> void:
 	_custom_hand = false
 	refresh()
+
+
+## The Binder's stamping bench: the player pressed a new hand. If it fits (hand_problem) the hero
+## wears it at once and the host is asked to keep it on the seat, for every peer and for the
+## Fellowship's next session; the host checks it again and a refusal takes it back off. Returns
+## why the hand can't be worn ("" when it can).
+func choose_hand(chosen: PlayerLoadoutResource) -> String:
+	var problem: String = hand_problem(chosen)
+	if problem != "":
+		return problem
+	set_loadout(chosen)
+	NetworkManager.current.update_local_seal_hand(actor.device_id, chosen.to_network_dict())
+	return ""
+
+
+## Why this hero may not wear a hand now, in a few words ("" when it may): seal cards the party owns
+## (or the Fellowship's starting seal for the slot), in slots its stage has opened.
+func hand_problem(hand: PlayerLoadoutResource) -> String:
+	var progress: PartyProgress = PartyProgress.current
+	var collection: Dictionary[StringName, int] = progress.collection if progress != null else {}
+	return ArsenalCatalog.current.seal_hand_problem(hand, actor.role(), progression_stage, true_level, collection)
+
+
+## The seat's hand changed (the host took a bench choice, or a level opened a slot): every copy
+## of the hero wears it. {} goes back to the role's default.
+func wear_seat_hand(hand: Dictionary) -> void:
+	if hand == _seat_hand:
+		return
+	_seat_hand = hand.duplicate(true)
+	_custom_hand = false
+	_received_from_owner = false
+	refresh()
+
+
+## The hand the hero's seat carries ({} for the role's default).
+func seat_hand() -> Dictionary:
+	return _seat_hand
+
+
+## Whether the hero wears a hand chosen at the bench (or set by a check) rather than its role's default.
+func wears_chosen_hand() -> bool:
+	return _custom_hand or not _seat_hand.is_empty()
+
+
+## Hands another peer named for this hero that were turned away.
+func refused_hands() -> int:
+	return _refused_hands
+
+
+func _on_seal_hand_refused(device_id: int, _reason: String) -> void:
+	# The host said no to a bench choice: back to the hand the seat still carries.
+	if is_instance_valid(actor) and actor.is_local_player() and device_id == actor.device_id and _custom_hand:
+		_custom_hand = false
+		refresh()
 
 
 ## Dresses the hero's puppet in the hand: the youth silhouette, the tier and the seals.
@@ -204,6 +277,10 @@ func _derive_hand() -> void:
 		loadout = catalog.default_seal_loadout(compiled.class_id, actor.role(), weapon_type, calling_id, true_level, actor.party_slot, debug_stage_override)
 		if kept_body >= 0:
 			loadout.body_type = kept_body as PlayerLoadoutResource.YouthBodyType
+		# The cards chosen at the stamping bench (the seat's, host-checked) on the tier and frame the level forged.
+		if not _seat_hand.is_empty():
+			loadout.take_cards_from(PlayerLoadoutResource.from_dict(_seat_hand))
+			loadout.trim_to_stage(progression_stage, true_level)
 	apply_visuals()
 	loadout_changed.emit(loadout)
 
@@ -542,9 +619,13 @@ func _broadcast_loadout() -> void:
 		sync_loadout_rpc.rpc_id(peer_id, data)
 
 
-## The owner's hand, as Strings and ints (PlayerLoadoutResource.to_network_dict).
+## The owner's hand, as Strings and ints (PlayerLoadoutResource.to_network_dict). A copy checks it as
+## the host checks a bench choice, and keeps its own if it claims a locked slot or an unusable card.
 @rpc("authority", "call_remote", "reliable")
 func sync_loadout_rpc(data: Dictionary) -> void:
+	if hand_problem(PlayerLoadoutResource.from_dict(data)) != "":
+		_refused_hands += 1
+		return
 	if loadout == null:
 		loadout = PlayerLoadoutResource.new()
 	loadout.from_network_dict(data)

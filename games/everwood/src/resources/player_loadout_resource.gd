@@ -23,6 +23,9 @@ extends Resource
 enum YouthBodyType { BODY_MALE_YOUTH = 0, BODY_FEMALE_YOUTH = 1 }
 ## The direct triggers that fire an invocation: L, R, and both together.
 enum TriggerSlot { L = 0, R = 1, L_AND_R = 2 }
+## The seven slots of the hand, one row each on the Binder's stamping bench, in
+## ArsenalCatalog.ROLE_SEAL_HANDS order: the three seals, then L, its tuck, R and its tuck.
+enum HandSlot { WEAPON_SEAL = 0, OFFHAND_SEAL = 1, MANTLE_SEAL = 2, L_PRIMARY = 3, L_TUCK = 4, R_PRIMARY = 5, R_TUCK = 6 }
 
 const SEAL_SLOT_COUNT: int = 3
 const ACTIVE_SLOT_COUNT: int = 4
@@ -43,6 +46,13 @@ const FIRST_POCKET_PULL_LEVEL: int = 3
 const OFFHAND_SEAL_LEVEL: int = 4
 const BODY_TYPE_NAMES: Array[String] = ["Male Youth", "Female Youth"]
 const TRIGGER_NAMES: Array[String] = ["L", "R", "L+R"]
+const HAND_SLOT_COUNT: int = 7
+## What the bench calls each slot (HandSlot order).
+const HAND_SLOT_NAMES: Array[String] = ["Weapon", "Off-Hand", "Mantle", "L", "L tuck", "R", "R tuck"]
+## The stage each slot opens at (HandSlot order), as trim_to_stage takes them off: the
+## off-hand seal and the L card in Stage 1 (at Lv 4 and Lv 3), the weapon seal and R at
+## Stage 2, the mantle seal and the L tuck at Stage 3, the R tuck at Stage 4.
+const SLOT_OPEN_STAGES: Array[int] = [2, 1, 3, 1, 3, 2, 4]
 
 @export var body_type: YouthBodyType = YouthBodyType.BODY_MALE_YOUTH
 @export var calling_id: StringName = &"CALLING_SHIELD_SWORN"
@@ -130,6 +140,89 @@ func set_seal_in_slot(slot_flag: int, card_id: StringName) -> void:
 			offhand_seal_card_id = card_id
 		ScribeCardResource.SealSlotMask.SEAL_MANTLE_ARMOR:
 			mantle_seal_card_id = card_id
+
+
+## The card in one of the seven slots (HandSlot), &"" for none.
+func card_in_slot(slot: int) -> StringName:
+	match slot:
+		HandSlot.WEAPON_SEAL:
+			return weapon_seal_card_id
+		HandSlot.OFFHAND_SEAL:
+			return offhand_seal_card_id
+		HandSlot.MANTLE_SEAL:
+			return mantle_seal_card_id
+		HandSlot.L_PRIMARY:
+			return slot_l_primary_id
+		HandSlot.L_TUCK:
+			return slot_l_tuck_id
+		HandSlot.R_PRIMARY:
+			return slot_r_primary_id
+		HandSlot.R_TUCK:
+			return slot_r_tuck_id
+	return &""
+
+
+func set_card_in_slot(slot: int, card_id: StringName) -> void:
+	match slot:
+		HandSlot.WEAPON_SEAL:
+			weapon_seal_card_id = card_id
+		HandSlot.OFFHAND_SEAL:
+			offhand_seal_card_id = card_id
+		HandSlot.MANTLE_SEAL:
+			mantle_seal_card_id = card_id
+		HandSlot.L_PRIMARY:
+			slot_l_primary_id = card_id
+		HandSlot.L_TUCK:
+			slot_l_tuck_id = card_id
+		HandSlot.R_PRIMARY:
+			slot_r_primary_id = card_id
+		HandSlot.R_TUCK:
+			slot_r_tuck_id = card_id
+
+
+## Takes the seven cards from another hand and keeps this one's tier, frame, armour and silhouette
+## (a saved hand's cards on the hand the hero's level forged).
+func take_cards_from(other: PlayerLoadoutResource) -> void:
+	for slot: int in HAND_SLOT_COUNT:
+		set_card_in_slot(slot, other.card_in_slot(slot) if other != null else &"")
+
+
+## The three seal slots come first; the other four are the invocations.
+static func is_seal_slot(slot: int) -> bool:
+	return slot >= HandSlot.WEAPON_SEAL and slot <= HandSlot.MANTLE_SEAL
+
+
+## A seal slot's ScribeCardResource.SealSlotMask flag (SEAL_NONE for an invocation slot).
+static func seal_flag_for_slot(slot: int) -> int:
+	return ScribeCardResource.SEAL_SLOT_FLAGS[slot] if is_seal_slot(slot) else ScribeCardResource.SealSlotMask.SEAL_NONE
+
+
+## Whether a slot is open at a stage and level, exactly as trim_to_stage leaves it.
+static func slot_open(slot: int, stage: int, true_level: int) -> bool:
+	if slot < 0 or slot >= HAND_SLOT_COUNT:
+		return false
+	var opens: int = SLOT_OPEN_STAGES[slot]
+	if stage != opens:
+		return stage > opens
+	if stage != STAGE_HOMESTEAD:
+		return true
+	return true_level >= (OFFHAND_SEAL_LEVEL if slot == HandSlot.OFFHAND_SEAL else FIRST_POCKET_PULL_LEVEL)
+
+
+## The first True Level that opens a slot: Lv 3 the L card, Lv 4 the off-hand seal, Lv 6, 11 and 16 the rest.
+static func slot_open_level(slot: int) -> int:
+	var opens: int = SLOT_OPEN_STAGES[clampi(slot, 0, HAND_SLOT_COUNT - 1)]
+	if opens == STAGE_HOMESTEAD:
+		return OFFHAND_SEAL_LEVEL if slot == HandSlot.OFFHAND_SEAL else FIRST_POCKET_PULL_LEVEL
+	return STAGE_MAX_LEVELS[opens - 1] + 1
+
+
+## When a locked slot opens, in a few words: "opens at Lv 4", "opens at Stage 3 (Lv 11)".
+static func slot_opens_text(slot: int) -> String:
+	var opens: int = SLOT_OPEN_STAGES[clampi(slot, 0, HAND_SLOT_COUNT - 1)]
+	if opens == STAGE_HOMESTEAD:
+		return "opens at Lv %d" % slot_open_level(slot)
+	return "opens at Stage %d (Lv %d)" % [opens, slot_open_level(slot)]
 
 
 ## The card a trigger fires: L's and R's primaries; L+R's is the L primary, with the R primary as its partner.

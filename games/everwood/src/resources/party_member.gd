@@ -18,6 +18,9 @@ var companion: bool = false
 ## The seat's equipment kit as EquipmentLoadoutResource.to_dict() ids (an opaque
 ## Dictionary here, so the network layer doesn't need to know what's in it).
 var kit: Dictionary = {}
+## The Seal-and-Tuck hand the player chose at the Binder's stamping bench, as
+## PlayerLoadoutResource.to_network_dict() Strings and ints ({} wears the role's default).
+var seal_hand: Dictionary = {}
 
 
 static func make_player_id(for_peer: int, for_device: int) -> StringName:
@@ -35,6 +38,7 @@ func to_dict() -> Dictionary:
 		"slot": slot,
 		"companion": companion,
 		"kit": kit,
+		"seal_hand": seal_hand,
 	}
 
 
@@ -49,6 +53,7 @@ static func from_dict(data: Dictionary) -> PartyMember:
 	member.slot = int(data.get("slot", 0))
 	member.companion = bool(data.get("companion", false))
 	member.kit = data.get("kit", {}) as Dictionary
+	member.seal_hand = data.get("seal_hand", {}) as Dictionary
 	return member
 
 
