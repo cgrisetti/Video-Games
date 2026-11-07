@@ -542,32 +542,58 @@ func _add_solids(record: LoadedChunk) -> void:
 ## A landblock's scatter, one MultiMesh per species: within CalderaKit.ATELIER_RANGE
 ## of a camera the sculpted atelier mesh (oak clumps, willows, pines, layered
 ## ferns...), past it the one-draw stand-in; small scatter is gone past SMALL_RANGE.
+## A dense stand (CalderaKit.DENSE_STAND trees of one species or more: the Moss-Oaks)
+## is grouped into DENSE_CELL m cells that each hand over at DENSE_ATELIER_RANGE
+## instead, so only the cells round a camera draw sculpted (docs/27 §8).
 func _add_scatter(record: LoadedChunk) -> void:
 	for species: Variant in record.scatter:
 		var spots: Array = record.scatter[species] as Array
 		if spots.is_empty():
 			continue
 		var kind: int = int(species)
-		var small: bool = CalderaKit.is_small(kind)
-		var atelier: ArrayMesh = CalderaKit.atelier_mesh(kind)
-		if atelier != null:
-			var near: MultiMeshInstance3D = _scatter_node("Atelier_%d" % kind, atelier, spots)
-			near.visibility_range_end = CalderaKit.SMALL_RANGE if small else CalderaKit.ATELIER_RANGE
-			near.visibility_range_end_margin = CalderaKit.ATELIER_MARGIN
-			if small:
-				near.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			record.root.add_child(near)
-			if small:
-				continue
-		var node: MultiMeshInstance3D = _scatter_node("Scatter_%d" % kind, CalderaKit.species_mesh(kind), spots)
-		node.material_override = CalderaKit.vertex_material()
-		if atelier != null:
-			node.visibility_range_begin = CalderaKit.ATELIER_RANGE
-			node.visibility_range_begin_margin = CalderaKit.ATELIER_MARGIN
-		elif small:
-			node.visibility_range_end = CalderaKit.SMALL_RANGE
-			node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		record.root.add_child(node)
+		if CalderaKit.atelier_mesh(kind) != null and not CalderaKit.is_small(kind) and spots.size() >= CalderaKit.DENSE_STAND:
+			var cells: Dictionary[Vector2i, Array] = _stand_cells(spots)
+			for cell: Vector2i in cells:
+				_add_stand(record, kind, cells[cell], "%d_%d_%d" % [kind, cell.x, cell.y], CalderaKit.DENSE_ATELIER_RANGE)
+		else:
+			_add_stand(record, kind, spots, str(kind), CalderaKit.ATELIER_RANGE)
+
+
+## One stand of a species at `spots`: its sculpted atelier MultiMesh (when the species has one)
+## handing over to its stand-in at `handover` metres, both named by `suffix`.
+func _add_stand(record: LoadedChunk, kind: int, spots: Array, suffix: String, handover: float) -> void:
+	var small: bool = CalderaKit.is_small(kind)
+	var atelier: ArrayMesh = CalderaKit.atelier_mesh(kind)
+	if atelier != null:
+		var near: MultiMeshInstance3D = _scatter_node("Atelier_" + suffix, atelier, spots)
+		near.visibility_range_end = CalderaKit.SMALL_RANGE if small else handover
+		near.visibility_range_end_margin = CalderaKit.ATELIER_MARGIN
+		if small:
+			near.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		record.root.add_child(near)
+		if small:
+			return
+	var node: MultiMeshInstance3D = _scatter_node("Scatter_" + suffix, CalderaKit.species_mesh(kind), spots)
+	node.material_override = CalderaKit.vertex_material()
+	if atelier != null:
+		node.visibility_range_begin = handover
+		node.visibility_range_begin_margin = CalderaKit.ATELIER_MARGIN
+	elif small:
+		node.visibility_range_end = CalderaKit.SMALL_RANGE
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	record.root.add_child(node)
+
+
+## A dense stand's spots grouped into CalderaKit.DENSE_CELL m cells, by cell column and row.
+static func _stand_cells(spots: Array) -> Dictionary[Vector2i, Array]:
+	var cells: Dictionary[Vector2i, Array] = {}
+	for spot: Variant in spots:
+		var at: Vector3 = (spot as Transform3D).origin
+		var cell: Vector2i = Vector2i(floori(at.x / CalderaKit.DENSE_CELL), floori(at.z / CalderaKit.DENSE_CELL))
+		if not cells.has(cell):
+			cells[cell] = []
+		(cells[cell] as Array).append(spot)
+	return cells
 
 
 ## A near landblock's meadow (IslandBuilder._meadow): per 32 m cell a MultiMesh of

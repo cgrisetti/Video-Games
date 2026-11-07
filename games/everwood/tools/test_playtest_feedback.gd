@@ -664,32 +664,53 @@ func _check_atelier_foliage() -> void:
 		problems.append("the layered fern is missing or too big")
 	if CalderaKit.atelier_mesh(IslandBuilder.Species.ROCK) != null:
 		problems.append("stones have an atelier mesh")
-	# Live: the loaded island shows atelier meshes near and stand-ins far, from the same spots.
+	# Live: the loaded island shows atelier meshes near and stand-ins far, from the same spots,
+	# each sculpted stand handing over to its stand-in at one distance: ATELIER_RANGE, or
+	# DENSE_ATELIER_RANGE for the cells of a dense stand (the Moss-Oaks), which together hold every tree.
 	var near_far: int = 0
+	var dense_cells: int = 0
 	var mismatched: int = 0
 	var willows: int = 0
 	for record: ArchipelagoStreamer.LoadedChunk in level.streamer.chunks.values():
 		if record.root == null:
 			continue
 		willows += (record.scatter.get(IslandBuilder.Species.WILLOW_TREE, []) as Array).size()
-		for species: int in trees:
-			var near: MultiMeshInstance3D = record.root.get_node_or_null("Atelier_%d" % species) as MultiMeshInstance3D
-			var far: MultiMeshInstance3D = record.root.get_node_or_null("Scatter_%d" % species) as MultiMeshInstance3D
-			if near == null and far == null:
+		var celled: Dictionary[int, int] = {}
+		for child: Node in record.root.get_children():
+			if not child.name.begins_with("Atelier_"):
 				continue
+			var suffix: String = String(child.name).trim_prefix("Atelier_")
+			var species: int = int(suffix.get_slice("_", 0))
+			if not trees.has(species):
+				continue
+			var near: MultiMeshInstance3D = child as MultiMeshInstance3D
+			var far: MultiMeshInstance3D = record.root.get_node_or_null("Scatter_" + suffix) as MultiMeshInstance3D
+			var stand: int = (record.scatter.get(species, []) as Array).size()
+			var cell: bool = suffix.get_slice_count("_") == 3
+			var handover: float = CalderaKit.atelier_range(stand)
 			if near == null or far == null or near.multimesh.instance_count != far.multimesh.instance_count or near.material_override != null \
-					or not is_equal_approx(near.visibility_range_end, CalderaKit.ATELIER_RANGE) \
-					or not is_equal_approx(far.visibility_range_begin, CalderaKit.ATELIER_RANGE):
+					or cell != (stand >= CalderaKit.DENSE_STAND) \
+					or not is_equal_approx(near.visibility_range_end, handover) or not is_equal_approx(far.visibility_range_begin, handover) \
+					or not is_equal_approx(near.visibility_range_end_margin, far.visibility_range_begin_margin):
 				mismatched += 1
+			elif cell:
+				dense_cells += 1
+				celled[species] = celled.get(species, 0) + near.multimesh.instance_count
 			else:
 				near_far += 1
+		for species: int in celled:
+			if celled[species] != (record.scatter.get(species, []) as Array).size():
+				problems.append("a dense stand's cells hold %d of its %d trees" % [celled[species], (record.scatter.get(species, []) as Array).size()])
 	if mismatched > 0:
-		problems.append("%d landblock species without a matching near and far pair" % mismatched)
+		problems.append("%d stands without a matching near and far pair handing over at one distance" % mismatched)
 	if willows == 0:
 		problems.append("no weeping willows on Embershore")
+	if dense_cells == 0:
+		problems.append("no dense stand is grouped into cells (the Moss-Oaks)")
 	check.call(problems.is_empty() and near_far > 0 and heaviest <= TREE_TRIANGLES and lowest_crown >= CROWN_CLEARANCE,
-		"K4: oak clumps, ash, weeping willows (%d on Embershore), orchard apples and tiered pines are sculpted (at most %d triangles, crowns from %.1f m up), with layered ferns; %d landblock stands swap to one-draw stand-ins past %.0f m%s"
-		% [willows, heaviest, lowest_crown, near_far, CalderaKit.ATELIER_RANGE, "" if problems.is_empty() else ": " + "; ".join(problems)])
+		"K4: oak clumps, ash, weeping willows (%d on Embershore), orchard apples and tiered pines are sculpted (at most %d triangles, crowns from %.1f m up), with layered ferns; %d landblock stands swap to one-draw stand-ins past %.0f m and %d cells of dense stands (%d trees or more a landblock) past %.0f m%s"
+		% [willows, heaviest, lowest_crown, near_far, CalderaKit.ATELIER_RANGE, dense_cells, CalderaKit.DENSE_STAND, CalderaKit.DENSE_ATELIER_RANGE,
+			"" if problems.is_empty() else ": " + "; ".join(problems)])
 
 
 func _check_organic_coasts() -> void:
