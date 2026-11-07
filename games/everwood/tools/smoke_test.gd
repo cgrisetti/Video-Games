@@ -421,8 +421,8 @@ func _check_arsenal_catalog() -> void:
 		seen_variants[variant] = true
 		rare_seen = rare_seen or dropped.rarity >= ScribeCardResource.CardRarity.RARE
 		plain_starter = plain_starter or (dropped.starter and variant == ScribeCardResource.CardVariant.STANDARD)
-	_check(seen_variants.has(ScribeCardResource.CardVariant.GILDED_LEAF) and seen_variants.has(ScribeCardResource.CardVariant.STAR_INKED_VELLUM) and rare_seen and not plain_starter,
-		"boss chests drop Rare and Legendary cards and Gilded Leaf or Star-Ink copies (never a Plain Ink starter card)")
+	_check(seen_variants.has(ScribeCardResource.CardVariant.GILDED_LEAF) and not seen_variants.has(ScribeCardResource.CardVariant.STAR_INKED_VELLUM) and rare_seen and not plain_starter,
+		"boss chests drop Rare and Legendary cards, some as Gilded Leaf, never as Star-Ink (it is pressed, 22 GDD R3) and never a Plain Ink starter card")
 
 
 ## The 3x3 Callings (06 §3, 07 GDD §1.3), without actors: the nine names,
@@ -1254,8 +1254,8 @@ func _check_card_invocations() -> void:
 	shiny_kit.lead_variants[0] = ScribeCardResource.CardVariant.GILDED_LEAF
 	var shiny_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, shiny_kit).card_action(0)
 	var plain_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK).card_action(0)
-	_check(is_equal_approx(shiny_charge.damage, plain_charge.damage * 1.1) and shiny_charge.action_id == plain_charge.action_id,
-		"a finish adds potency (14 GDD §8): a Gilded Leaf Shield Charge hits 10% harder (%.1f vs %.1f), with the same action id" % [shiny_charge.damage,
+	_check(is_equal_approx(shiny_charge.damage, plain_charge.damage * 1.15) and shiny_charge.action_id == plain_charge.action_id,
+		"a finish adds potency (22 GDD R3): a Gilded Leaf Shield Charge hits 15%% harder (%.1f vs %.1f), with the same action id" % [shiny_charge.damage,
 			plain_charge.damage])
 	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK))
 
@@ -2434,17 +2434,21 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 		"charting the Barrow-Crag-Crossing takes 25 Chimes, saves it, and frames L+R in both the shop's diamonds and the HUD's")
 	shop.select_tab(ScriberyShopPanel.Tab.GILD)
 	var on_press: bool = shop.select_option(ArsenalCatalog.TAUNT)
+	# Seasoned in the field (22 GDD R3): not ready yet, then 100 Ink-Binding Marks make it Ready to Press.
+	var too_soon: bool = not progress.can_gild(ArsenalCatalog.TAUNT)
+	progress.ink_marks[ArsenalCatalog.TAUNT] = ScribeCardResource.MARKS_TO_PRESS[1]
 	var gilded: bool = shop.buy()
 	await _seconds(0.1)
 	saved.load(TEST_SAVE_PATH)
-	_check(on_press and gilded and progress.chimes == 125 and progress.owns_card(ArsenalCatalog.TAUNT, ScribeCardResource.CardVariant.GILDED_LEAF)
+	_check(on_press and too_soon and gilded and progress.chimes == 175 and progress.owns_card(ArsenalCatalog.TAUNT, ScribeCardResource.CardVariant.GILDED_LEAF)
+		and progress.marks_of(&"taunt:shiny_foil") == 100 and progress.maker_seals.has(&"taunt:shiny_foil")
 		and int((saved.get_value("cards", "collection", {}) as Dictionary).get("taunt:shiny_foil", 0)) == 1
 		and tank.loadout.kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] == ScribeCardResource.CardVariant.GILDED_LEAF
 		and shop.widget.kit.socket_leaf_variant(Diorama.SKILL) == ScribeCardResource.CardVariant.GILDED_LEAF
 		and hud_widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.GILDED_LEAF
 		and shop.widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.STAR_INKED_VELLUM
-		and PartyProgress.gilding_cost(&"taunt:shiny_foil") == 120,
-		"the Gilding Press turns the worn Taunt from Plain Ink to Gilded Leaf for 50 Chimes: saved, worn, gold-trimmed on the HUD, and the press now previews Star-Ink (120)")
+		and PartyProgress.marks_needed(&"taunt:shiny_foil") == 250 and is_equal_approx(ScribeCardResource.finish_potency(1), 1.15),
+		"the Gilding Press turns the worn Taunt from Plain Ink to Gilded Leaf once it has 100 Ink-Binding Marks (no Chimes): saved, worn, gold-trimmed on the HUD, pressed by its hero, +15%, and the press now previews Star-Ink at 250 Marks")
 	shop.close()
 	await _seconds(0.05)
 	_check(hud.scribery_panel() == null and not tank.input.menu_open, "closing the counter hands the controller back")
@@ -2956,8 +2960,8 @@ func test_phase_12_miyamoto_posture_trinity_and_grimoire_ux() -> void:
 	var gilded_place: Dictionary = catalog.compute_diorama_synergy(ArsenalCatalog.RISING_DRIVE, ArsenalCatalog.ARIUNDLE_MOSS_OAKS,
 		ScribeCardResource.CardVariant.STANDARD, ScribeCardResource.CardVariant.GILDED_LEAF)
 	_check(harmony["is_home_ground_harmony"] and is_equal_approx(harmony["coat_duration_sec"], 10.0) and is_equal_approx(harmony["bonus_poise"], 15.0)
-		and is_equal_approx(gilded_place["bonus_poise"], 16.5),
-		"Moss-Oak Hollow behind an Iron-Root Action-Leaf is Home-Ground Harmony: a 10.0 s coat and +15 poise (16.5 from a Gilded Leaf Place-Card)")
+		and is_equal_approx(gilded_place["bonus_poise"], 15.0 * 1.15),
+		"Moss-Oak Hollow behind an Iron-Root Action-Leaf is Home-Ground Harmony: a 10.0 s coat and +15 poise (17.25 from a Gilded Leaf Place-Card)")
 	var dps_class: PlayerClassResource = ClassLoadouts.player_class(dps.loadout.class_id, dps.loadout.calling)
 	var plain_kit: EquipmentLoadoutResource = dps.loadout.kit.copy()
 	var gilded_kit: EquipmentLoadoutResource = plain_kit.copy()
@@ -2967,8 +2971,8 @@ func test_phase_12_miyamoto_posture_trinity_and_grimoire_ux() -> void:
 	var plain_r: float = LoadoutComposer.compose(dps_class, plain_kit).opener_for(Cmd.TRIGGER_R_SKILL).damage
 	var gilded_r: float = LoadoutComposer.compose(dps_class, gilded_kit).opener_for(Cmd.TRIGGER_R_SKILL).damage
 	var star_r: float = LoadoutComposer.compose(dps_class, star_kit).opener_for(Cmd.TRIGGER_R_SKILL).damage
-	_check(plain_r > 0.0 and is_equal_approx(gilded_r, plain_r * 1.1) and is_equal_approx(star_r, plain_r * 1.2),
-		"the Gilding Press adds potency: Gale Rush hits %.1f Plain, %.1f Gilded Leaf (+10%%), %.1f Star-Inked Vellum (+20%%)" % [plain_r, gilded_r, star_r])
+	_check(plain_r > 0.0 and is_equal_approx(gilded_r, plain_r * 1.15) and is_equal_approx(star_r, plain_r * 1.3),
+		"the press adds potency (22 GDD R3): Gale Rush hits %.1f Plain Ink, %.1f Gilded Leaf (+15%%), %.1f Star-Ink (+30%%)" % [plain_r, gilded_r, star_r])
 	# Gild the DPS's worn Gale Rush at the Scribery: the shop's, the HUD's and the Binder's diamonds all show it.
 	dps.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(0.0, 0.0, 26.0)))
 	await _seconds(0.1)
@@ -2982,14 +2986,16 @@ func test_phase_12_miyamoto_posture_trinity_and_grimoire_ux() -> void:
 	var picked: bool = shop.select_option(ArsenalCatalog.GALE_RUSH)
 	await physics_frame
 	var preview_drew: bool = shop.previews_played > previews and dps.visuals.choreography_count(ActorVisuals.Choreography.POCKET_DRAW) > draws_before
+	# Seasoned in the field first: 100 Ink-Binding Marks make it Ready to Press.
+	progress.ink_marks[ArsenalCatalog.GALE_RUSH] = ScribeCardResource.MARKS_TO_PRESS[1]
 	var gilded: bool = shop.buy()
 	await _seconds(0.1)
 	_check(picked and preview_drew and gilded and progress.owns_card(ArsenalCatalog.GALE_RUSH, ScribeCardResource.CardVariant.GILDED_LEAF)
 		and dps.loadout.kit.lead_variants[ScribeCardResource.GrimoireSlot.SIGNATURE] == ScribeCardResource.CardVariant.GILDED_LEAF
 		and hud_widget.socket_view(Diorama.SKILL)["leaf_variant"] == ScribeCardResource.CardVariant.GILDED_LEAF
 		and shop.widget.kit.socket_leaf_variant(Diorama.SKILL) == ScribeCardResource.CardVariant.GILDED_LEAF
-		and is_equal_approx(dps.loadout.opener_for(Cmd.TRIGGER_R_SKILL).damage, plain_r * 1.1),
-		"picking Gale Rush at the Gilding Press plays the pocket-draw preview on the DPS's puppet; gilding it (+10%%) shows on the shop's and the HUD's diamonds and in the swing")
+		and is_equal_approx(dps.loadout.opener_for(Cmd.TRIGGER_R_SKILL).damage, plain_r * 1.15),
+		"picking Gale Rush at the Gilding Press plays the pocket-draw preview on the DPS's puppet; pressing it once Ready (+15%%) shows on the shop's and the HUD's diamonds and in the swing")
 	shop.close()
 	await _seconds(0.05)
 	hud.toggle_binder()

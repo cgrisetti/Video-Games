@@ -39,7 +39,9 @@ static var current: ArsenalCatalog
 ## Card resources saved as .tres files here are registered at startup too.
 const CARD_FOLDER: String = "res://data/cards/"
 ## Odds of a chest card being a Plain Vellum, Gilded Leaf or Star-Inked Vellum copy.
-const VARIANT_ODDS: Array[float] = [0.6, 0.3, 0.1]
+## A dropped card's finish (22 GDD R3): nine in ten Plain Ink, one in ten Gilded Leaf;
+## Star-Ink never drops, it is pressed.
+const VARIANT_ODDS: Array[float] = [0.9, 0.1, 0.0]
 
 # Armor
 const HEARTH_LINEN: StringName = &"hearth_linen"

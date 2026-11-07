@@ -43,6 +43,8 @@ const UPGRADE_STEP: float = 0.1
 const MAX_UPGRADE_LEVEL: int = 5
 ## Level n costs this many Chimes times n: 4, 8, 12, 16, 20.
 const UPGRADE_BASE_COST: int = 4
+## Rubbings that draft a missing Plain Ink card at the Scribe Desk (22 GDD R3).
+const DRAFT_RUBBINGS: int = 3
 ## XP the trail pays the party (11 GDD §5.2).
 const XP_PER_MOB: int = 35
 const XP_PER_GATE: int = 80
@@ -95,6 +97,13 @@ var callings: Dictionary[StringName, StringName] = {}
 var seal_hands: Dictionary[StringName, Dictionary] = {}
 ## Encounter id -> Glimmer-Spot openings the party has seen (14 GDD §3, N_seen).
 var pattern_seen: Dictionary[StringName, int] = {}
+## Copy key -> Ink-Binding Marks (22 GDD R3): earned by calming foes while the card is
+## worn, or by feeding it a spare copy; at ScribeCardResource.MARKS_TO_PRESS it is Ready to Press.
+var ink_marks: Dictionary[StringName, int] = {}
+## Copy key -> who pressed it ("pressed by P3"), the Scribe's Maker-Seal on the card.
+var maker_seals: Dictionary[StringName, String] = {}
+## Creature rubbings the party has gathered: three draft a missing Plain Ink card at the Scribe Desk.
+var rubbings: int = 0
 ## The Caldera Isles' eight world-state booleans as bits (CalderaWorldState.FLAGS order).
 var caldera_flags: int = 0
 ## The playtest switcher (PlaytestSwitcher, K2) is in use: nothing more is saved this session.
@@ -376,39 +385,141 @@ static func gilding_cost(copy_key: StringName) -> int:
 	return ScribeCardResource.GILDING_COSTS[next] if next < ScribeCardResource.GILDING_COSTS.size() else 0
 
 
-## The press gilds an owned Action-Leaf or Place-Card: Plain Vellum to Gilded Leaf, Gilded Leaf to Star-Inked Vellum.
+## The press finishes an owned card that is Ready to Press (22 GDD R3): Plain Ink to Gilded
+## Leaf at 100 Ink-Binding Marks, Gilded Leaf to Star-Ink at 250.
 func can_gild(copy_key: StringName) -> bool:
 	var listed: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key))
-	if listed == null or not (listed.is_action_leaf() or listed.is_place_card()):
+	if listed == null or not (listed.is_action_leaf() or listed.is_place_card() or listed.is_seal_card()):
 		return false
-	var cost: int = gilding_cost(copy_key)
-	return cost > 0 and chimes >= cost and LoadoutComposer.owns(copy_key, 1, collection)
+	return ready_to_press(copy_key) and LoadoutComposer.owns(copy_key, 1, collection)
 
 
-## Presses a finer copy of `copy_key` into the binder (the old copy stays). Host checks and applies.
-func request_gild(copy_key: StringName) -> void:
+## A copy's Ink-Binding Marks.
+func marks_of(copy_key: StringName) -> int:
+	return ink_marks.get(copy_key, 0)
+
+
+## The Marks a copy needs for its next finish (0 when it is already Star-Ink).
+static func marks_needed(copy_key: StringName) -> int:
+	var next: int = ScribeCardResource.copy_variant(copy_key) + 1
+	return ScribeCardResource.MARKS_TO_PRESS[next] if next < ScribeCardResource.MARKS_TO_PRESS.size() else 0
+
+
+## Whether a copy has its Marks for the next finish ("Ready to Press").
+func ready_to_press(copy_key: StringName) -> bool:
+	var needed: int = marks_needed(copy_key)
+	return needed > 0 and marks_of(copy_key) >= needed
+
+
+## Host only: Marks for every card a Fellowship's seated heroes wear (a calm while worn).
+func award_ink_marks(class_id: StringName, worn_keys: Array[StringName], marks: int) -> void:
+	if not NetworkManager.current.is_host() or marks <= 0:
+		return
+	for key: StringName in worn_keys:
+		if key != &"" and marks_needed(key) > 0:
+			ink_marks[key] = mini(marks_of(key) + marks, ScribeCardResource.MARKS_TO_PRESS.back())
+	_commit()
+
+
+## Feeds a spare copy into a card (+100 Marks). The party must hold two copies; one is used up.
+func request_feed_spare(copy_key: StringName) -> void:
 	if NetworkManager.current.is_host():
-		_server_gild(copy_key)
+		_server_feed_spare(copy_key)
 	elif NetworkManager.current.is_online():
-		_request_gild.rpc_id(1, copy_key)
+		_request_feed_spare.rpc_id(1, copy_key)
 
 
-func _server_gild(copy_key: StringName) -> bool:
+func can_feed_spare(copy_key: StringName) -> bool:
+	return copies_of(copy_key) >= 2 and marks_needed(copy_key) > 0
+
+
+func _server_feed_spare(copy_key: StringName) -> bool:
+	if not can_feed_spare(copy_key):
+		return false
+	collection[copy_key] = copies_of(copy_key) - 1
+	ink_marks[copy_key] = mini(marks_of(copy_key) + ScribeCardResource.MARKS_PER_SPARE_COPY, ScribeCardResource.MARKS_TO_PRESS.back())
+	_commit()
+	return true
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_feed_spare(copy_key: StringName) -> void:
+	if multiplayer.is_server():
+		_server_feed_spare(copy_key)
+
+
+## Host only: a calmed foe leaves a rubbing for the party's satchel.
+func add_rubbing() -> void:
+	if not NetworkManager.current.is_host():
+		return
+	rubbings += 1
+	_commit()
+
+
+## Three rubbings draft a missing Plain Ink copy of a card at the Scribe Desk (one the party has none of).
+func can_draft(card_id: StringName) -> bool:
+	var listed: ScribeCardResource = ArsenalCatalog.current.card(card_id)
+	return rubbings >= DRAFT_RUBBINGS and listed != null and listed.is_lead() and best_finish(card_id) < 0
+
+
+func request_draft(card_id: StringName) -> void:
+	if NetworkManager.current.is_host():
+		_server_draft(card_id)
+	elif NetworkManager.current.is_online():
+		_request_draft.rpc_id(1, card_id)
+
+
+func _server_draft(card_id: StringName) -> bool:
+	if not can_draft(card_id):
+		return false
+	rubbings -= DRAFT_RUBBINGS
+	var key: StringName = ScribeCardResource.copy_key(card_id, ScribeCardResource.CardVariant.STANDARD)
+	collection[key] = copies_of(key) + 1
+	card_awarded.emit(key)
+	_commit()
+	return true
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_draft(card_id: StringName) -> void:
+	if multiplayer.is_server():
+		_server_draft(card_id)
+
+
+## Presses a Ready copy of `copy_key` to its next finish: the copy becomes the finer one,
+## carries its Marks on toward the next press, and wears the presser's Maker-Seal.
+## Host checks and applies.
+func request_gild(copy_key: StringName, pressed_by: String = "") -> void:
+	if NetworkManager.current.is_host():
+		_server_gild(copy_key, pressed_by)
+	elif NetworkManager.current.is_online():
+		_request_gild.rpc_id(1, copy_key, pressed_by)
+
+
+func _server_gild(copy_key: StringName, pressed_by: String = "") -> bool:
 	if not can_gild(copy_key):
 		return false
-	chimes -= gilding_cost(copy_key)
 	var finer: StringName = ScribeCardResource.copy_key(ScribeCardResource.copy_card_id(copy_key),
 		(ScribeCardResource.copy_variant(copy_key) + 1) as ScribeCardResource.CardVariant)
+	var listed: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key))
+	# A starter's free Plain Ink copy isn't in the binder to use up; any other copy turns into the finer one.
+	var free_starter: bool = listed.starter and ScribeCardResource.copy_variant(copy_key) == ScribeCardResource.CardVariant.STANDARD
+	if not free_starter:
+		collection[copy_key] = maxi(0, copies_of(copy_key) - 1)
 	collection[finer] = copies_of(finer) + 1
+	ink_marks[finer] = marks_of(copy_key)
+	ink_marks.erase(copy_key)
+	if pressed_by != "":
+		maker_seals[finer] = pressed_by
 	card_awarded.emit(finer)
 	_commit()
 	return true
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_gild(copy_key: StringName) -> void:
+func _request_gild(copy_key: StringName, pressed_by: String = "") -> void:
 	if multiplayer.is_server():
-		_server_gild(copy_key)
+		_server_gild(copy_key, pressed_by)
 
 
 # --- The trail (11 GDD §5) -------------------------------------------------
@@ -605,6 +716,9 @@ func load_save() -> void:
 	xp = 0
 	hero_xp.clear()
 	promoted_tiers.clear()
+	ink_marks.clear()
+	maker_seals.clear()
+	rubbings = 0
 	levels.clear()
 	collection.clear()
 	kits.clear()
@@ -652,6 +766,8 @@ func load_save() -> void:
 			# A column number from the first Callings build reads back as its id.
 			callings[StringName(str(class_id))] = Callings.id_of(int(saved)) if saved is int else StringName(str(saved))
 		_read_pattern_seen(file.get_value("glimmer", "seen", {}) as Dictionary)
+		_read_marks(file.get_value("cards", "marks", {}) as Dictionary, file.get_value("cards", "maker_seals", {}) as Dictionary)
+		rubbings = maxi(0, int(file.get_value("cards", "rubbings", 0)))
 		caldera_flags = maxi(0, int(file.get_value("caldera", "flags", 0)))
 	progress_changed.emit()
 
@@ -669,6 +785,9 @@ func save() -> Error:
 	for id: StringName in UPGRADES:
 		file.set_value("upgrades", String(id), level_of(id))
 	file.set_value("cards", "collection", _plain_collection())
+	file.set_value("cards", "marks", _plain_marks())
+	file.set_value("cards", "maker_seals", _plain_maker_seals())
+	file.set_value("cards", "rubbings", rubbings)
 	var plain_kits: Dictionary = {}
 	for class_id: StringName in kits:
 		plain_kits[String(class_id)] = kits[class_id]
@@ -684,6 +803,29 @@ func save() -> Error:
 	file.set_value("glimmer", "seen", _plain_pattern_seen())
 	file.set_value("caldera", "flags", caldera_flags)
 	return file.save(save_path)
+
+
+func _plain_marks() -> Dictionary:
+	var plain: Dictionary = {}
+	for key: StringName in ink_marks:
+		plain[String(key)] = ink_marks[key]
+	return plain
+
+
+func _plain_maker_seals() -> Dictionary:
+	var plain: Dictionary = {}
+	for key: StringName in maker_seals:
+		plain[String(key)] = maker_seals[key]
+	return plain
+
+
+func _read_marks(marks: Dictionary, seals: Dictionary) -> void:
+	ink_marks.clear()
+	maker_seals.clear()
+	for key: Variant in marks:
+		ink_marks[StringName(str(key))] = clampi(int(marks[key]), 0, ScribeCardResource.MARKS_TO_PRESS.back())
+	for key: Variant in seals:
+		maker_seals[StringName(str(key))] = str(seals[key])
 
 
 func _plain_hero_xp() -> Dictionary:
@@ -763,7 +905,8 @@ func _snapshot() -> Dictionary:
 	var bought: Dictionary = {}
 	for id: StringName in UPGRADES:
 		bought[String(id)] = level_of(id)
-	return {"chimes": chimes, "levels": bought, "victories": victories, "xp": xp, "hero_xp": _plain_hero_xp(), "tiers": _plain_promoted_tiers(), "collection": _plain_collection(),
+	return {"chimes": chimes, "levels": bought, "victories": victories, "xp": xp, "hero_xp": _plain_hero_xp(), "tiers": _plain_promoted_tiers(), "marks": _plain_marks(), "maker_seals": _plain_maker_seals(),
+		"rubbings": rubbings, "collection": _plain_collection(),
 		"glimmer_seen": _plain_pattern_seen()}
 
 
@@ -787,6 +930,8 @@ func _receive_progress(data: Dictionary) -> void:
 	xp = clampi(int(data.get("xp", 0)), 0, LEVEL_XP.back())
 	_read_hero_xp(data.get("hero_xp", {}) as Dictionary)
 	_read_promoted_tiers(data.get("tiers", {}) as Dictionary)
+	_read_marks(data.get("marks", {}) as Dictionary, data.get("maker_seals", {}) as Dictionary)
+	rubbings = maxi(0, int(data.get("rubbings", 0)))
 	_read_collection(data.get("collection", {}) as Dictionary)
 	_read_pattern_seen(data.get("glimmer_seen", {}) as Dictionary)
 	progress_changed.emit()

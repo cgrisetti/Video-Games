@@ -88,9 +88,18 @@ const SOCKET_GRIMOIRE_SLOTS: Array[int] = [-1, GrimoireSlot.SIGNATURE, GrimoireS
 ## Pips a Sign-Flow cast from each socket costs in combat (L's Counter-Brace, R, L+R).
 const SOCKET_PIP_COSTS: Array[float] = [1.0, 1.0, 3.0]
 ## The Gilding Press's price to raise a copy to each finish: Gilded Leaf 50, Star-Inked Vellum 120 Chimes.
-const GILDING_COSTS: Array[int] = [0, 50, 120]
+## The Gilding Press no longer sells a finish for Chimes (22 GDD R3): a card is pressed
+## once its Ink-Binding Marks reach MARKS_TO_PRESS for the next finish.
+const GILDING_COSTS: Array[int] = [0, 0, 0]
+## Ink-Binding Marks a copy needs to be pressed to each finish (Gilded Leaf at 100, Star-Ink at 250).
+const MARKS_TO_PRESS: Array[int] = [0, 100, 250]
+## Marks a spare copy fed into a card adds.
+const MARKS_PER_SPARE_COPY: int = 100
+## Marks every worn card earns when its hero calms a foe, by the drops the calm pours back
+## (a plain foe 1, a Rare 2, a Great-Boggart 3) [tuning TBD].
+const MARKS_PER_CALM_DROP: int = 5
 ## What each finish adds to a card's potency (damage, poise, heals, a Place-Card's bonuses): +10% and +20%.
-const FINISH_POTENCY: Array[float] = [1.0, 1.1, 1.2]
+const FINISH_POTENCY: Array[float] = [1.0, 1.15, 1.30]
 const ROLE_DELIVERY_NAMES: Array[String] = ["Ink Blade", "Ink Shield", "Ink-Share"]
 ## The manifestations by the doc's names (the same three values).
 const MODE_WEAPON_COAT: int = ManifestationMode.WEAPON_COAT

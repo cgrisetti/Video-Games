@@ -187,6 +187,32 @@ func _on_enemy_down(enemy: ActorBase) -> void:
 		elif rank == "Elite" or rank == "Boss":
 			drops = GrimoireRules.REFILL_GREAT_BOGGART
 		refill_ink(drops, enemy.global_position, INK_REFILL_RADIUS)
+		_award_marks_near(enemy.global_position, drops * ScribeCardResource.MARKS_PER_CALM_DROP)
+		PartyProgress.current.add_rubbing()
+
+
+## Host: Ink-Binding Marks for every card the heroes near a calm wear (22 GDD R3): the
+## three socket cards (in their finishes), the Tuck and the three Seals.
+func _award_marks_near(near: Vector3, marks: int) -> void:
+	for member: ActorBase in party_actors():
+		if not is_instance_valid(member) or member.loadout == null or member.loadout.kit == null:
+			continue
+		if member.global_position.distance_to(near) > INK_REFILL_RADIUS:
+			continue
+		var kit: EquipmentLoadoutResource = member.loadout.kit
+		var worn: Array[StringName] = []
+		for socket: int in EquipmentLoadoutResource.SOCKET_COUNT:
+			var leaf: StringName = kit.socket_leaf_id(socket)
+			if leaf != &"":
+				worn.append(ScribeCardResource.copy_key(leaf, kit.socket_leaf_variant(socket)))
+		for slot: int in [ScribeCardResource.GrimoireSlot.SIGNATURE, ScribeCardResource.GrimoireSlot.ULTIMATE]:
+			if kit.under_ids[slot] != &"":
+				worn.append(kit.under_ids[slot])
+		if member.seal != null and member.seal.loadout != null:
+			for seal_id: StringName in member.seal.loadout.seal_card_ids():
+				if seal_id != &"":
+					worn.append(seal_id)
+		PartyProgress.current.award_ink_marks(member.loadout.class_id, worn, marks)
 
 
 ## Host: Ink-Drops into the well of every hero within `radius` of `near` (every hero when 0).

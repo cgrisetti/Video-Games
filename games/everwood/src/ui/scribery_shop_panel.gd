@@ -262,10 +262,13 @@ func buy() -> bool:
 	var progress: PartyProgress = PartyProgress.current
 	if tab == Tab.GILD:
 		if not progress.can_gild(choice):
-			_refuse("Needs %d Chimes" % PartyProgress.gilding_cost(choice))
+			var short: int = PartyProgress.marks_needed(choice) - progress.marks_of(choice)
+			_refuse("Needs %d more Ink-Binding Marks" % short if short > 0 else "Not ready to press")
 			return false
 		_pending_slot = {"copy_key": _finer(choice), "replaces": choice}
-		progress.request_gild(choice)
+		# The Scribe's Maker-Seal: who pressed it (22 GDD R3).
+		var presser: String = actor.display_name().get_slice(" ", 0) if is_instance_valid(actor) else ""
+		progress.request_gild(choice, presser)
 	else:
 		if not progress.can_inscribe(choice):
 			var have: bool = progress.owns_card(choice)
@@ -393,9 +396,10 @@ func _row_text(id: StringName) -> String:
 	var progress: PartyProgress = PartyProgress.current
 	if tab == Tab.GILD:
 		var finer: int = ScribeCardResource.copy_variant(_finer(id))
-		return "%s: %s → %s (+%d%% potency)   %d Chimes" % [catalog.card(ScribeCardResource.copy_card_id(id)).display_name,
+		var marks: String = "Ready to Press" if progress.ready_to_press(id) else "%d / %d Marks" % [progress.marks_of(id), PartyProgress.marks_needed(id)]
+		return "%s: %s → %s (+%d%% potency)   %s" % [catalog.card(ScribeCardResource.copy_card_id(id)).display_name,
 			ScribeCardResource.VARIANT_NAMES[ScribeCardResource.copy_variant(id)], ScribeCardResource.VARIANT_NAMES[finer],
-			roundi((ScribeCardResource.finish_potency(finer) - 1.0) * 100.0), PartyProgress.gilding_cost(id)]
+			roundi((ScribeCardResource.finish_potency(finer) - 1.0) * 100.0), marks]
 	var listed: ScribeCardResource = catalog.card(id)
 	var seal: String = catalog.sign_seal(listed.scribe_sign).display_name
 	var kind: String = seal if listed.is_place_card() else "%s · %s" % [seal, listed.mode_name()]
