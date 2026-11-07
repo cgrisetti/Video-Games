@@ -13,7 +13,15 @@ const THICKNESS: float = 0.8
 const SPIN_SPEED: float = 0.55
 const SPLASH_COLOR: Color = Color(0.92, 0.97, 1.0, 0.7)
 
+## Whether the water turns it (Embershore's stops at Lv 5 until the Root-Sanctum is cleared, docs/27 §9).
+@export var turning: bool = true:
+	set(value):
+		turning = value
+		if _splash != null:
+			_splash.emitting = value
+
 var _wheel: MeshInstance3D
+var _splash: CPUParticles3D
 
 
 func _ready() -> void:
@@ -21,11 +29,14 @@ func _ready() -> void:
 	_wheel.name = "Wheel"
 	_wheel.mesh = WorldAssetCatalog.watermill_wheel_mesh(RADIUS, THICKNESS)
 	add_child(_wheel)
-	add_child(_splashes())
+	_splash = _splashes()
+	_splash.emitting = turning
+	add_child(_splash)
 
 
 func _process(delta: float) -> void:
-	_wheel.rotate_object_local(Vector3.UP, SPIN_SPEED * delta)
+	if turning:
+		_wheel.rotate_object_local(Vector3.UP, SPIN_SPEED * delta)
 
 
 ## White water thrown up where the paddles bite (it sits at the wheel's foot, so it's not spun).

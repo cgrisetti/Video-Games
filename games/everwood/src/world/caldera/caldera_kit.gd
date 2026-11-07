@@ -132,6 +132,38 @@ static func solid_box(parent: Node3D, node_name: String, center: Vector3, size: 
 	return body
 
 
+## A walkable slab from `a` to `b` (its top face through both), `width` across and `thickness` deep: a sloping bridge deck or a stair's flight.
+static func solid_slab(parent: Node3D, node_name: String, a: Vector3, b: Vector3, width: float, thickness: float,
+		layer: int = ActorBase.LAYER_LOW_SCENERY) -> StaticBody3D:
+	var body: StaticBody3D = StaticBody3D.new()
+	body.name = node_name
+	body.collision_layer = layer
+	body.collision_mask = 0
+	var length: float = a.distance_to(b)
+	var forward: Vector3 = (b - a) / maxf(length, 0.001)
+	var basis: Basis = Basis.looking_at(forward, Vector3.UP)
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var box: BoxShape3D = BoxShape3D.new()
+	box.size = Vector3(width, thickness, length)
+	shape.shape = box
+	shape.transform = Transform3D(basis, (a + b) * 0.5 - basis.y * thickness * 0.5)
+	body.add_child(shape)
+	parent.add_child(body)
+	return body
+
+
+## The slab's look: a box of `color` matching solid_slab's shape.
+static func add_slab(into: LandblockTerrain.MeshMerge, a: Vector3, b: Vector3, width: float, thickness: float, color: Color) -> void:
+	var length: float = a.distance_to(b)
+	if length < 0.01:
+		return
+	var forward: Vector3 = (b - a) / length
+	var basis: Basis = Basis.looking_at(forward, Vector3.UP)
+	var box: BoxMesh = BoxMesh.new()
+	box.size = Vector3(width, thickness, length)
+	into.add_arrays(box.get_mesh_arrays(), Transform3D(basis, (a + b) * 0.5 - basis.y * thickness * 0.5), color)
+
+
 static func solid_cylinder(parent: Node3D, node_name: String, foot: Vector3, radius: float, height: float,
 		layer: int = ActorBase.LAYER_WORLD) -> StaticBody3D:
 	var body: StaticBody3D = StaticBody3D.new()

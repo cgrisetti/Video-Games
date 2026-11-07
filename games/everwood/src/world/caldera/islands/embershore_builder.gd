@@ -449,6 +449,7 @@ func _build_encounters(root: Node3D) -> void:
 
 func build_structures(root: Node3D) -> void:
 	EmbershoreWater.build(root, self)
+	EmbershoreLandmarks.build(root, self)
 	_build_start(root)
 	_build_cottages(root, "bramblebridge_houses", "Bramblebridge", 20)
 	_build_cottages(root, "hearthstead_houses", "Hearthstead", 60)
@@ -464,7 +465,8 @@ func build_structures(root: Node3D) -> void:
 func _build_start(root: Node3D) -> void:
 	var post: ChimePost = ChimePost.new()
 	post.name = "StartChimePost"
-	post.place = "Bramblebridge"
+	post.place = "Bramble-Bridge"
+	post.checkpoint = true
 	post.position = ground(START_AT.x + 3.0, START_AT.y + 1.0)
 	root.add_child(post)
 	CalderaKit.sign_label(root, "StartSign", "Bramblebridge\nEmbershore · Lv 1-2 · the stone bridge lies north", ground(START_AT.x, START_AT.y - 6.0) + Vector3(0.0, 2.6, 0.0))

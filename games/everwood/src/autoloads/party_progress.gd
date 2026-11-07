@@ -106,6 +106,8 @@ var maker_seals: Dictionary[StringName, String] = {}
 var rubbings: int = 0
 ## The Caldera Isles' eight world-state booleans as bits (CalderaWorldState.FLAGS order).
 var caldera_flags: int = 0
+## Reveal id -> the hero classes (as strings) that have seen it (docs/27 §7: the Doverslap reveal plays once per player per save).
+var reveals_seen: Dictionary[StringName, PackedStringArray] = {}
 ## The playtest switcher (PlaytestSwitcher, K2) is in use: nothing more is saved this session.
 var playtest: bool = false
 ## While playtesting, the trail level and Grimoire level the switcher chose (0: the party's own).
@@ -307,6 +309,21 @@ func award_card(copy_key: StringName) -> void:
 
 
 # --- Glimmer-Spots (14 GDD §3) ----------------------------------------------
+
+## Whether `who` (a hero class id) has seen a reveal this save.
+func has_seen_reveal(reveal_id: StringName, who: StringName) -> bool:
+	return reveals_seen.has(reveal_id) and reveals_seen[reveal_id].has(String(who))
+
+
+## Remembers that `who` has seen a reveal, and saves.
+func record_reveal(reveal_id: StringName, who: StringName) -> void:
+	if has_seen_reveal(reveal_id, who):
+		return
+	if not reveals_seen.has(reveal_id):
+		reveals_seen[reveal_id] = PackedStringArray()
+	reveals_seen[reveal_id].append(String(who))
+	save()
+
 
 func pattern_seen_count(encounter_id: StringName) -> int:
 	return pattern_seen.get(encounter_id, 0)
@@ -744,6 +761,7 @@ func load_save() -> void:
 	seal_hands.clear()
 	pattern_seen.clear()
 	caldera_flags = 0
+	reveals_seen.clear()
 	hero_name = ""
 	created_unix = 0
 	last_played_unix = 0
@@ -793,6 +811,10 @@ func load_save() -> void:
 		_read_marks(file.get_value("cards", "marks", {}) as Dictionary, file.get_value("cards", "maker_seals", {}) as Dictionary)
 		rubbings = maxi(0, int(file.get_value("cards", "rubbings", 0)))
 		caldera_flags = maxi(0, int(file.get_value("caldera", "flags", 0)))
+		reveals_seen.clear()
+		var saved_reveals: Dictionary = file.get_value("caldera", "reveals", {}) as Dictionary
+		for reveal_id: Variant in saved_reveals:
+			reveals_seen[StringName(str(reveal_id))] = PackedStringArray(saved_reveals[reveal_id])
 	progress_changed.emit()
 
 
@@ -832,6 +854,10 @@ func save() -> Error:
 	file.set_value("seal_hands", "by_class", plain_hands)
 	file.set_value("glimmer", "seen", _plain_pattern_seen())
 	file.set_value("caldera", "flags", caldera_flags)
+	var plain_reveals: Dictionary = {}
+	for reveal_id: StringName in reveals_seen:
+		plain_reveals[String(reveal_id)] = Array(reveals_seen[reveal_id])
+	file.set_value("caldera", "reveals", plain_reveals)
 	return file.save(save_path)
 
 

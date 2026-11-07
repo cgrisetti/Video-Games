@@ -20,6 +20,13 @@ const SWING_DAMPING: float = 1.8
 
 ## The place whose rhyme it sings (a MythopoeticAtlas place; empty: the level's home place).
 @export var place: String = ""
+## A checkpoint (docs/27 §7: Embershore's four): ringing it makes it where that hero gets back
+## up when downed, and the party's card loadouts change only within reach of one.
+@export var checkpoint: bool = false
+
+const GROUP: StringName = &"chime_posts"
+## A hero within this far of a checkpoint post may change their cards and gear there.
+const LOADOUT_REACH: float = 14.0
 
 var rings: int = 0
 
@@ -31,6 +38,7 @@ var _age: float = 0.0
 
 func _ready() -> void:
 	add_to_group(WorldAtmosphereDirector.LANTERN_GROUP)
+	add_to_group(GROUP)
 	add_child(WorldAssetCatalog.build(WorldVisualCatalog.KIT_CHIME_POST_DIAGNOSTIC))
 	_pivot = Node3D.new()
 	_pivot.name = "ChimeLantern"
@@ -82,10 +90,25 @@ func _process(delta: float) -> void:
 
 
 ## Rings for a player: a soft chime, and their ribbon unfurls this place's next couplet.
+## The checkpoint post within LOADOUT_REACH of `actor`, if any.
+static func near(actor: ActorBase) -> ChimePost:
+	if actor == null or not actor.is_inside_tree():
+		return null
+	for node: Node in actor.get_tree().get_nodes_in_group(GROUP):
+		var post: ChimePost = node as ChimePost
+		if post != null and post.checkpoint and post.global_position.distance_to(actor.global_position) <= LOADOUT_REACH:
+			return post
+	return null
+
+
 func ring(member: ActorBase) -> void:
 	rings += 1
 	_cooldowns[member.player_id] = COOLDOWN
 	_swing = SWING
+	if checkpoint and member.is_multiplayer_authority():
+		var column: float = float(member.party_slot % 4) - 1.5
+		member.spawn_transform = Transform3D(Basis.IDENTITY, global_position + Vector3(column * 1.6 + 2.0, 0.3, 2.5))
+		CombatDirector.current.announce(global_position + Vector3.UP * 2.6, "%s: checkpoint" % (place if place != "" else "Chime-post"), CalderaKit.HEARTH_SAFFRON, &"")
 	AudioCues.play_at(&"chime", global_position + Vector3.UP * 2.0, 1.25, -6.0)
 	var zone: StringName = zone_id()
 	var hud: PlayerHUD = PlayerHUD.for_actor(get_tree(), member)

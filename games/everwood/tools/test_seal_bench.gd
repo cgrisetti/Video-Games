@@ -40,6 +40,7 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 		EquipmentSealComponent.enabled = seals_were
 		return
 	await _wait_out_of_combat(hero)
+	await _stand_by_chime_post(hero)
 	# A clean start: no saved hand for the Fellowship, the seat on the role's default.
 	PartyProgress.current.save_seal_hand(seat.class_id, {})
 	NetworkManager.current.grant_seal_hand(hero.player_id, {})
@@ -58,6 +59,22 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 
 
 # --- Helpers --------------------------------------------------------------------------
+
+## In the Caldera, cards change only within a checkpoint chime-post's reach (docs/27 §7): the bench is used beside one.
+func _stand_by_chime_post(hero: ActorBase) -> void:
+	var world: CalderaArchipelagoWorld = level as CalderaArchipelagoWorld
+	if world == null:
+		return
+	for node: Node in tree.get_nodes_in_group(ChimePost.GROUP):
+		var post: ChimePost = node as ChimePost
+		if post != null and post.checkpoint:
+			var spot: Vector3 = post.global_position + Vector3(3.0, 0.0, 2.0)
+			world.streamer.ensure_ground_at(spot)
+			spot.y = world.streamer.height_at(spot.x, spot.z) + 0.05
+			hero.place_at(Transform3D(Basis.IDENTITY, spot))
+			await _frames(2)
+			return
+
 
 func _frames(count: int) -> void:
 	for index: int in count:

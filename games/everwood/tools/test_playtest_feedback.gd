@@ -36,8 +36,8 @@
 ##       level and hidden from the Options menu
 extends RefCounted
 
-## Hearthstead Market's green: flat ground to sprint on.
-const GREEN: Vector3 = Vector3(140.0, 0.0, 10.0)
+## The green by the Doverslap chime-post on Embershore: flat ground to sprint on, within the post's reach (cards change there).
+const GREEN: Vector3 = Vector3(745.35, 0.0, -121.64)
 
 var tree: SceneTree
 var check: Callable

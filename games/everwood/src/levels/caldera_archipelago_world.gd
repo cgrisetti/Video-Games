@@ -794,7 +794,14 @@ func _on_world_flag_changed(flag: StringName, value: bool) -> void:
 				line += "\nAll three Signs answer: the One Cliff Stair is open"
 		CalderaWorldState.EBB_UNLOCKED:
 			title = "THE LONG FLOOD ENDS"
-			line = "The sea falls six metres: the Old Quay Market, the three raid gates and the Sea-Door are bared"
+			line = "The sea falls six metres: the Old Quay, the three raid gates and the Sea-Door are bared"
+		CalderaWorldState.WHEEL_STOPPED:
+			title = "THE MILL-WHEEL STOPS"
+			line = "The Elder Oak's roots have choked the Bramble's weir: the Root-Sanctum waits beneath it"
+			color = Color(0.62, 0.86, 0.5)
+		CalderaWorldState.DOWNS_GATE_OPEN:
+			title = "THE DOWNS GATE IS OPEN"
+			line = "The Downs road runs from Hearthstead over Mill-Downs to Bramblebridge"
 	if title == "":
 		return
 	last_world_banner = title

@@ -66,6 +66,12 @@ var _dolly_left: float = 0.0
 var _dolly_peak: float = 0.0
 var _pulses: int = 0
 var _listening_to: SignFlowComponent
+## A reveal (docs/27 §7, the Doverslap): for `_reveal_total` seconds the camera eases up and back
+## from the hero and turns to look at `_reveal_at`, then eases home. Each viewport runs its own.
+var _reveal_at: Vector3 = Vector3.ZERO
+var _reveal_left: float = 0.0
+var _reveal_total: float = 0.0
+var reveals_shown: int = 0
 
 
 func follow(target_actor: ActorBase) -> void:
@@ -105,6 +111,27 @@ func apply_view_distance() -> void:
 
 
 ## The Sign-Flow cast's push toward the shoulder and back.
+## Pulls the camera up and back to look at `at` for `seconds`, then returns it.
+func reveal(at: Vector3, seconds: float = 4.0) -> void:
+	_reveal_at = at
+	_reveal_total = maxf(seconds, 0.5)
+	_reveal_left = _reveal_total
+	reveals_shown += 1
+
+
+func is_revealing() -> bool:
+	return _reveal_left > 0.0
+
+
+## How far into the reveal the camera is (0 home, 1 fully pulled back), eased both ways.
+func reveal_blend() -> float:
+	if _reveal_left <= 0.0:
+		return 0.0
+	var elapsed: float = _reveal_total - _reveal_left
+	var ease_time: float = minf(0.9, _reveal_total * 0.3)
+	return smoothstep(0.0, ease_time, elapsed) * smoothstep(0.0, ease_time, _reveal_left)
+
+
 func dolly_pulse() -> void:
 	# The Options menu can turn the push off (it still counts).
 	_dolly_left = DOLLY_PULSE_TIME if SettingsManager.pulse_on() else 0.0
@@ -139,7 +166,8 @@ func _process(delta: float) -> void:
 		_listening_to = actor.sign_flow
 		actor.sign_flow.sign_flow_cast.connect(_on_sign_flow_cast)
 	# The field of view follows the Options menu.
-	fov = SettingsManager.fov()
+	_reveal_left = maxf(0.0, _reveal_left - delta)
+	fov = SettingsManager.fov() + 14.0 * reveal_blend()
 	_dolly_left = maxf(0.0, _dolly_left - delta)
 	var orbit: float = actor.input.camera_orbit_input if actor.input != null else 0.0
 	var mouse_yaw: float = actor.input.take_mouse_yaw() if actor.input != null else 0.0
@@ -202,6 +230,18 @@ func _place() -> void:
 		var shoulder: Vector3 = _focus + Vector3.UP * SHOULDER_HEIGHT + Vector3(cos(yaw), 0.0, -sin(yaw)) * SHOULDER_SIDE
 		global_position = global_position.move_toward(shoulder, push)
 		_dolly_peak = maxf(_dolly_peak, push)
+	var blend: float = reveal_blend()
+	if blend > 0.0:
+		# Up and back from the hero, on the side away from what's revealed, looking out over them at it.
+		var away: Vector3 = _focus - _reveal_at
+		away.y = 0.0
+		away = away.normalized() if away.length() > 0.01 else Vector3(sin(yaw), 0.0, cos(yaw))
+		var pulled: Vector3 = _focus + away * (boom + 11.0) + Vector3.UP * (pivot_height(pitch_degrees) + 7.5)
+		global_position = global_position.lerp(_above_ground(pulled), blend)
+		var toward: Vector3 = _reveal_at
+		toward.y = _focus.y + 4.0
+		look_at(look_point.lerp(_focus.lerp(toward, 0.08), blend))
+		return
 	look_at(look_point)
 
 

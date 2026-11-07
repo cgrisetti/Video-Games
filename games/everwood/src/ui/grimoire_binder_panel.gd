@@ -851,7 +851,21 @@ static func _tuck_slot_for(socket: int) -> int:
 	return ScribeCardResource.GrimoireSlot.ULTIMATE if socket == GrimoireRules.SOCKET_LR else ScribeCardResource.GrimoireSlot.SIGNATURE
 
 
+## In the Caldera, cards and gear change only within reach of a checkpoint chime-post (docs/27 §7):
+## the Binder opens anywhere to read, but a press away from one is refused.
+const LOADOUT_LOCKED_NOTE: String = "Cards and gear change at a chime-post: ring one first"
+
+
+func _loadout_locked() -> bool:
+	var level: LevelBase = get_tree().current_scene as LevelBase if is_inside_tree() else null
+	return level is CalderaArchipelagoWorld and ChimePost.near(actor) == null
+
+
 func _equip(draft: EquipmentLoadoutResource) -> bool:
+	if _loadout_locked():
+		_show_note(LOADOUT_LOCKED_NOTE)
+		AudioCues.play(&"refuse")
+		return false
 	var progress: PartyProgress = PartyProgress.current
 	var problem: String = LoadoutComposer.kit_problem(_player_class(), draft, progress.grimoire_level(), progress.collection, progress.trail_level())
 	if problem != "":
@@ -1486,6 +1500,10 @@ func step_seal(step: int) -> bool:
 ## Presses a seal card (&"" lifts it) into one slot of the hand. Returns whether the hero now wears it.
 func press_seal(slot: int, card_id: StringName) -> bool:
 	if not is_instance_valid(actor) or actor.seal == null or actor.seal.loadout == null:
+		return false
+	if _loadout_locked():
+		_show_note(LOADOUT_LOCKED_NOTE)
+		AudioCues.play(&"refuse")
 		return false
 	var draft: PlayerLoadoutResource = actor.seal.loadout.copy()
 	# One card, one place (25 GDD R5): pressing a seal already on another piece moves it here.
