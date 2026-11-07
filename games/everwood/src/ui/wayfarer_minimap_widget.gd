@@ -264,6 +264,10 @@ static func draw_glyph(canvas: CanvasItem, at: Vector2, glyph: int, size: float)
 		CartographyBaker.Glyph.PORTAL:
 			canvas.draw_arc(at, size, 0.0, TAU, 16, tint, 2.0)
 			canvas.draw_circle(at, size * 0.4, tint.lightened(0.3))
+		CartographyBaker.Glyph.QUEST:
+			WorldMapPanel.draw_node_icon(canvas, at, CartographyBaker.NodeKind.QUEST, size)
+		CartographyBaker.Glyph.BEACON:
+			WorldMapPanel.draw_node_icon(canvas, at, CartographyBaker.NodeKind.BEACON, size)
 		_:
 			canvas.draw_colored_polygon(PackedVector2Array([at + Vector2(0.0, -size), at + Vector2(size * 0.85, size * 0.6),
 				at + Vector2(-size * 0.85, size * 0.6)]), tint)

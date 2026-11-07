@@ -112,7 +112,6 @@ var _clock: float = 0.0
 var _heartbeat_left: float = 0.0
 var _level: LevelBase
 var _environment: Environment
-var _sky: ProceduralSkyMaterial
 var _sun: DirectionalLight3D
 var _snap_look: bool = true
 var _sun_color: Color = Color(1.0, 0.95, 0.86)
@@ -235,7 +234,6 @@ func _poll_atelier(block: bool) -> void:
 func _attach(level: LevelBase) -> void:
 	_level = level
 	_environment = null
-	_sky = null
 	_sun = null
 	horizon.visible = level != null and level.wants_horizon_ring()
 	_motes.emitting = level != null
@@ -262,8 +260,6 @@ func _attach(level: LevelBase) -> void:
 		_environment.fog_height = FOG_HEIGHT
 		_environment.fog_height_density = FOG_HEIGHT_DENSITY
 		_environment.adjustment_enabled = true
-		if _environment.sky != null:
-			_sky = _environment.sky.sky_material as ProceduralSkyMaterial
 	_sun = level.find_child("Sun", true, false) as DirectionalLight3D
 	if _sun != null:
 		_sun.shadow_blur = SUN_SHADOW_BLUR
@@ -337,12 +333,13 @@ func _ease_look(delta: float) -> void:
 		_environment.fog_density = lerpf(_fog_density * _level.fog_density_scale(), SEAM_MIST_DENSITY, seam_mist)
 		_environment.fog_height = _level.fog_height()
 		_environment.adjustment_saturation = _saturation
-	if _sky != null:
-		_sky.sky_top_color = _sky_top
-		_sky.sky_horizon_color = _sky_horizon
+	# The level's sky: Godot's procedural one, or the storybook sky that LevelBase puts in its place (13_PLAYTEST §2.6).
+	var sky_material: Material = _environment.sky.sky_material if _environment != null and _environment.sky != null else null
+	if sky_material != null:
 		var below: Color = _level.sky_ground_color()
-		_sky.ground_horizon_color = _sky_horizon.lerp(below if below.a > 0.0 else look.turf_albedo, 0.45 if below.a <= 0.0 else 0.7)
-		_sky.ground_bottom_color = below if below.a > 0.0 else look.turf_albedo.darkened(0.35)
+		StorybookSky.set_colors(sky_material, _sky_top, _sky_horizon,
+			_sky_horizon.lerp(below if below.a > 0.0 else look.turf_albedo, 0.45 if below.a <= 0.0 else 0.7),
+			below if below.a > 0.0 else look.turf_albedo.darkened(0.35))
 	horizon.set_tint(_sky_horizon, _fog_color)
 	_mote_material.albedo_color = _mote_color
 	_mote_material.emission = Color(_mote_color.r, _mote_color.g, _mote_color.b)

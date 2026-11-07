@@ -132,6 +132,9 @@ const HERO_RIG_CHECKS: GDScript = preload("res://tools/test_hero_rig.gd")
 const CALDERA_CHECKS: GDScript = preload("res://tools/test_caldera_isles.gd")
 ## The Phase 12 Combat Kaizen refinement's checks (tools/test_phase12_kaizen.gd): jump, sprint, the playtest switcher, the diamond HUD, the Grimoire's tabs, the playground names.
 const KAIZEN_CHECKS: GDScript = preload("res://tools/test_phase12_kaizen.gd")
+## Phase 12.5's playtest-feedback checks (tools/test_playtest_feedback.gd), last: options, the map, arms, foliage, coasts, badges.
+const PLAYTEST_CHECKS: GDScript = preload("res://tools/test_playtest_feedback.gd")
+const TEST_SETTINGS_PATH: String = "user://smoke_test_settings.json"
 var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
 
@@ -143,6 +146,9 @@ func _run() -> void:
 	print("Everwood smoke test")
 	_remove_file(TEST_SAVE_PATH)
 	PartyProgress.current.use_save_file(TEST_SAVE_PATH)
+	# The machine's settings too: the smoke test never touches the real settings file.
+	SaveManager.remove(TEST_SETTINGS_PATH)
+	SettingsManager.current.use_settings_file(TEST_SETTINGS_PATH)
 	# The older checks play the classic full kits at trail Level 10, against foes
 	# without their Braced Front Guard; the Phase 11 combat check sets up its own.
 	PartyProgress.current.apply_full_endgame_kit_for_testing()
@@ -226,7 +232,9 @@ func _run() -> void:
 	await CALDERA_CHECKS.new().run(self, _check)
 	# The Phase 12 Combat Kaizen refinement (K1 to K5) on Hearthstead Market's green.
 	await KAIZEN_CHECKS.new().run(self, _check)
+	await PLAYTEST_CHECKS.new().run(self, _check)
 	_remove_file(TEST_SAVE_PATH)
+	SaveManager.remove(TEST_SETTINGS_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
 	if _failures.is_empty():

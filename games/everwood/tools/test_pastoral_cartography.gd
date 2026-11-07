@@ -362,9 +362,9 @@ func _check_atlas_and_trail() -> void:
 	var view: PlayerCamera = level.camera_for_seat(actor.party_slot + 1)
 	var opened: bool = hud.open_atlas()
 	await _frames(2)
-	var atlas: CartographyAtlasPanel = hud.atlas_panel()
+	var atlas: WorldMapPanel = hud.atlas_panel()
 	var hidden: bool = view != null and not view.get_cull_mask_value(WorldLabelStyle.STATION_LABEL_LAYER)
-	check.call(opened and atlas != null and actor.input.menu_open and hidden and atlas.zones().size() == 1 and atlas.map != null,
+	check.call(opened and atlas != null and actor.input.menu_open and hidden and atlas.nodes_of(CartographyBaker.NodeKind.TOWN).size() == 1 and atlas.map != null,
 		"a tap of M opens the Wayfarer's Atlas over P1's view (the controller drives it, the station signs drop out of the view behind it)")
 	var target: Vector2 = Vector2(actor.global_position.x, actor.global_position.z) + Vector2(0.0, -24.0)
 	atlas.pin(target)

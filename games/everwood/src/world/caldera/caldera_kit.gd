@@ -2,7 +2,9 @@
 ## merged into vertex-coloured meshes (one draw each) in the storybook look:
 ## piers and causeways, Lantern-Skiffs, huts, ruins, arches and raid seals,
 ## the far landmarks North Quay looks at (Forge Stacks, Bell-Tower, the
-## World-Tree), and the scatter's trees, reeds and stones.
+## World-Tree), and the scatter's trees, reeds and stones: near a camera the
+## trees and ferns are sculpted atelier meshes (atelier_mesh), past it one-draw
+## vertex-coloured stand-ins (species_mesh).
 ##
 ## Merging (the add_* functions) is pure; the make_*/solid_* functions build
 ## nodes on the main thread.
@@ -32,8 +34,17 @@ const GALE_AZURE: Color = Color(0.36, 0.7, 0.95)
 const HEARTH_SAFFRON: Color = Color(1.0, 0.8, 0.28)
 const TIDE_VIOLET: Color = Color(0.62, 0.38, 0.92)
 
+## Within this distance of a camera (to a landblock's middle) the scatter shows its atelier meshes, past it the stand-ins.
+const ATELIER_RANGE: float = 200.0
+## The swap's give either way (so standing at the line doesn't flicker).
+const ATELIER_MARGIN: float = 14.0
+## Small scatter (stones, reeds, ferns) is gone past this distance.
+const SMALL_RANGE: float = 220.0
+
 static var _vertex_material: ShaderMaterial
 static var _species: Dictionary[int, ArrayMesh] = {}
+static var _atelier: Dictionary[int, ArrayMesh] = {}
+static var _fruit_arrays: Array = []
 static var _glows: Dictionary[String, StandardMaterial3D] = {}
 
 
@@ -365,22 +376,28 @@ static func add_windmill_silhouette(into: LandblockTerrain.MeshMerge, foot: Vect
 
 # --- The scatter's meshes ------------------------------------------------------------
 
-## One shared mesh per scatter species (built once, in its own frame, foot at the origin).
+## One shared one-draw stand-in per scatter species (built once, in its own frame,
+## foot at the origin, coloured by vertex for CalderaKit.vertex_material()).
 static func species_mesh(species: int) -> ArrayMesh:
 	if _species.has(species):
 		return _species[species]
 	var into: LandblockTerrain.MeshMerge = merge()
 	match species:
 		IslandBuilder.Species.ORCHARD_TREE:
-			add_post(into, Vector3.ZERO, 0.16, 0.24, 1.9, TIMBER, 6)
-			add_sphere(into, Vector3(0.0, 2.6, 0.0), 1.55, Color(0.42, 0.6, 0.3), 0.8, 8)
-			for petal: Vector3 in [Vector3(0.9, 2.9, 0.4), Vector3(-0.7, 3.1, -0.6), Vector3(0.1, 3.4, 0.9), Vector3(-0.4, 2.5, 1.1)]:
+			add_post(into, Vector3.ZERO, 0.14, 0.24, 3.2, TIMBER, 6)
+			add_sphere(into, Vector3(0.0, 4.0, 0.0), 1.75, Color(0.42, 0.6, 0.3), 0.8, 8)
+			for petal: Vector3 in [Vector3(1.0, 4.3, 0.4), Vector3(-0.8, 4.5, -0.6), Vector3(0.1, 4.8, 1.0), Vector3(-0.4, 3.8, 1.3)]:
 				add_sphere(into, petal, 0.26, Color(0.95, 0.42, 0.32), 1.0, 5)
 		IslandBuilder.Species.OAK_TREE:
-			add_post(into, Vector3.ZERO, 0.32, 0.55, 4.2, Color(0.4, 0.3, 0.22), 7)
-			add_sphere(into, Vector3(0.0, 5.6, 0.0), 2.9, LEAF, 0.75, 8)
-			add_sphere(into, Vector3(1.6, 4.9, 0.6), 1.9, LEAF.lerp(DARK_LEAF, 0.4), 0.8, 7)
-			add_sphere(into, Vector3(-1.4, 5.0, -0.8), 2.0, LEAF.lightened(0.08), 0.8, 7)
+			add_post(into, Vector3.ZERO, 0.32, 0.55, 4.8, Color(0.4, 0.3, 0.22), 7)
+			add_sphere(into, Vector3(0.0, 6.2, 0.0), 2.9, LEAF, 0.75, 8)
+			add_sphere(into, Vector3(1.6, 5.5, 0.6), 1.9, LEAF.lerp(DARK_LEAF, 0.4), 0.8, 7)
+			add_sphere(into, Vector3(-1.4, 5.6, -0.8), 2.0, LEAF.lightened(0.08), 0.8, 7)
+		IslandBuilder.Species.WILLOW_TREE:
+			add_post(into, Vector3.ZERO, 0.3, 0.5, 4.4, Color(0.4, 0.32, 0.22), 6)
+			add_sphere(into, Vector3(0.0, 5.6, 0.0), 2.9, Color(0.5, 0.62, 0.32), 0.7, 8)
+			# The hanging fronds' curtain.
+			into.add_cylinder(Vector3(0.0, 4.5, 0.0), 2.5, 3.0, 2.0, Color(0.44, 0.56, 0.28), 10)
 		IslandBuilder.Species.PINE_TREE, IslandBuilder.Species.SNOW_PINE:
 			var tip: Color = SNOW if species == IslandBuilder.Species.SNOW_PINE else DARK_LEAF.lightened(0.1)
 			add_post(into, Vector3.ZERO, 0.16, 0.28, 2.4, DARK_TIMBER, 6)
@@ -388,8 +405,9 @@ static func species_mesh(species: int) -> ArrayMesh:
 			add_cone(into, Vector3(0.0, 3.4, 0.0), 1.7, 2.8, DARK_LEAF.lerp(tip, 0.3), 8)
 			add_cone(into, Vector3(0.0, 5.0, 0.0), 1.1, 2.6, DARK_LEAF.lerp(tip, 0.7), 8)
 		IslandBuilder.Species.ASH_TREE:
-			add_post(into, Vector3.ZERO, 0.2, 0.32, 3.4, Color(0.52, 0.48, 0.42), 6)
-			add_sphere(into, Vector3(0.0, 4.4, 0.0), 2.1, Color(0.5, 0.62, 0.36), 0.9, 8)
+			add_post(into, Vector3.ZERO, 0.2, 0.34, 4.6, Color(0.52, 0.48, 0.42), 6)
+			add_sphere(into, Vector3(0.0, 5.8, 0.0), 2.5, Color(0.5, 0.62, 0.36), 0.85, 8)
+			add_sphere(into, Vector3(1.2, 5.2, -0.5), 1.5, Color(0.46, 0.58, 0.34), 0.85, 6)
 		IslandBuilder.Species.REED_CLUMP:
 			for blade: int in 6:
 				var angle: float = TAU * float(blade) / 6.0
@@ -415,3 +433,230 @@ static func species_mesh(species: int) -> ArrayMesh:
 				into.add_arrays(leaf.get_mesh_arrays(), Transform3D(Basis(Vector3.UP, angle) * Basis(Vector3.RIGHT, -0.5), Vector3(sin(angle) * 0.4, 0.35, cos(angle) * 0.4)), Color(0.32, 0.5, 0.26))
 	_species[species] = into.commit()
 	return _species[species]
+
+
+# --- The scatter's atelier meshes (docs/13 K4) ----------------------------------------
+
+## A scatter species' sculpted near mesh in its own materials (null for one that
+## has none: reeds and stones), built once, foot at the origin: an oak clump (a
+## gnarled moss-oak with hanging moss and ferns at its foot), a slender ash, a
+## weeping willow, an orchard apple in fruit, a pine of drooping needle tiers
+## (snow on its boughs for the snow pine) and a layered fern. Crowns sway in the
+## wind and dither out of a camera's sightline; trunks fork above the 3.2 m
+## combat sightline.
+static func atelier_mesh(species: int) -> ArrayMesh:
+	if _atelier.has(species):
+		return _atelier[species]
+	var parts: WorldAssetCatalog.Parts = WorldAssetCatalog.Parts.new()
+	var made: bool = true
+	match species:
+		IslandBuilder.Species.OAK_TREE:
+			_broadleaf(parts, 9.0, 0.6, 4, 15, WorldAssetCatalog.LEAF_COLORS[WorldVisualCatalog.KIT_TREE_MOSS_OAK], 7, 0.9, 3)
+			for fern: int in 3:
+				var angle: float = TAU * float(fern) / 3.0 + 0.5
+				_layered_fern(parts, Vector3(cos(angle) * 1.5, 0.0, sin(angle) * 1.5), 0.75, 20 + fern)
+		IslandBuilder.Species.ASH_TREE:
+			_broadleaf(parts, 8.2, 0.42, 3, 12, [Color(0.3, 0.44, 0.22), Color(0.6, 0.7, 0.4)], 0, 0.0, 11)
+		IslandBuilder.Species.WILLOW_TREE:
+			_willow(parts)
+		IslandBuilder.Species.ORCHARD_TREE:
+			_orchard_apple(parts)
+		IslandBuilder.Species.PINE_TREE, IslandBuilder.Species.SNOW_PINE:
+			_tiered_pine(parts, species == IslandBuilder.Species.SNOW_PINE)
+		IslandBuilder.Species.FERN_TUFT:
+			_layered_fern(parts, Vector3.ZERO, 1.0, 1)
+		_:
+			made = false
+	_atelier[species] = parts.commit() if made else null
+	return _atelier[species]
+
+
+## Whether a scatter species shows an atelier mesh near a camera.
+static func has_atelier(species: int) -> bool:
+	return atelier_mesh(species) != null
+
+
+## Whether a species is small scatter (no stand-in past SMALL_RANGE, no shadow).
+static func is_small(species: int) -> bool:
+	return species in [IslandBuilder.Species.ROCK, IslandBuilder.Species.REED_CLUMP, IslandBuilder.Species.FERN_TUFT]
+
+
+static func _bark() -> Material:
+	return WorldVisualCatalog.craft(ProceduralTextureAtelier.Set.HEWN_TIMBER, WorldAssetCatalog.BARK, true, 0.35)
+
+
+## A broadleaf: a gnarled trunk `tall` x 0.7 high forking into `boughs` boughs, under
+## a leaf-cloud crown of `lobes` lobes (`leaves`: its dark underside and sunlit top)
+## with `fronds` hanging moss fronds. Returns the crown's middle.
+static func _broadleaf(parts: WorldAssetCatalog.Parts, tall: float, girth: float, boughs: int, lobes: int, leaves: Array, fronds: int,
+		frond_length: float, seed_value: int) -> Vector3:
+	var trunk: ArrayMesh = ShapeKit.make_gnarled_trunk_mesh(tall * 0.7, girth, girth * 0.42, boughs, seed_value)
+	parts.add_mesh(trunk, Transform3D.IDENTITY, [_bark()])
+	var crown_at: Vector3 = (trunk.get_meta(ShapeKit.META_CROWN_CENTER) as Vector3) + Vector3(0.0, 0.5, 0.0)
+	var canopy: Material = WorldVisualCatalog.canopy(Color.WHITE, tall, 0.16, true)
+	parts.add_mesh(ShapeKit.make_leaf_cloud_crown(crown_at, tall * 0.34, lobes, seed_value, leaves[0], leaves[1], fronds, frond_length),
+		Transform3D.IDENTITY, [canopy])
+	return crown_at
+
+
+## A weeping willow: a stout leaning trunk under a broad dome whose fronds trail down round its rim, never below 3.4 m.
+static func _willow(parts: WorldAssetCatalog.Parts) -> void:
+	var tall: float = 8.0
+	var trunk: ArrayMesh = ShapeKit.make_gnarled_trunk_mesh(tall * 0.6, 0.56, 0.26, 4, 7)
+	parts.add_mesh(trunk, Transform3D.IDENTITY, [_bark()])
+	var crown_at: Vector3 = (trunk.get_meta(ShapeKit.META_CROWN_CENTER) as Vector3) + Vector3(0.0, 0.4, 0.0)
+	var radius: float = tall * 0.36
+	var frond: float = clampf(crown_at.y - radius * 0.25 - 3.4, 0.6, 2.2)
+	var leaves: Array = WorldAssetCatalog.LEAF_COLORS[WorldVisualCatalog.KIT_TREE_WEEPING_WILLOW]
+	parts.add_mesh(ShapeKit.make_leaf_cloud_crown(crown_at, radius, 14, 7, leaves[0], leaves[1], 26, frond), Transform3D.IDENTITY,
+		[WorldVisualCatalog.canopy(Color.WHITE, tall, 0.3, true)])
+
+
+## An orchard apple: a short forked trunk under a round crown dotted with red and amber apples.
+static func _orchard_apple(parts: WorldAssetCatalog.Parts) -> void:
+	var tall: float = 5.0
+	var trunk: ArrayMesh = ShapeKit.make_gnarled_trunk_mesh(maxf(3.6, tall * 0.72), 0.24, 0.12, 3, 5)
+	parts.add_mesh(trunk, Transform3D.IDENTITY, [_bark()])
+	var radius: float = tall * 0.36
+	var crown_at: Vector3 = (trunk.get_meta(ShapeKit.META_CROWN_CENTER) as Vector3) + Vector3(0.0, 0.3, 0.0)
+	crown_at.y = maxf(crown_at.y, ZoneBiomeResource.MAX_OBSTACLE_SIGHTLINE_M + radius * 0.5)
+	var leaves: Array = WorldAssetCatalog.LEAF_COLORS[WorldVisualCatalog.KIT_TREE_ORCHARD_APPLE]
+	var canopy: Material = WorldVisualCatalog.canopy(Color.WHITE, tall, 0.18, true)
+	parts.add_mesh(ShapeKit.make_leaf_cloud_crown(crown_at, radius, 11, 5, leaves[0], leaves[1]), Transform3D.IDENTITY, [canopy])
+	if _fruit_arrays.is_empty():
+		var ball: SphereMesh = SphereMesh.new()
+		ball.radius = 1.0
+		ball.height = 2.0
+		ball.radial_segments = 6
+		ball.rings = 3
+		_fruit_arrays = ball.get_mesh_arrays()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 512
+	var apples: Array[Color] = [Color(0.82, 0.18, 0.15), Color(0.9, 0.62, 0.2)]
+	for index: int in 10:
+		var direction: Vector3 = Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-0.2, 0.9), rng.randf_range(-1.0, 1.0)).normalized()
+		parts.add_arrays(_fruit_arrays, Transform3D(Basis.from_scale(Vector3.ONE * 0.11), crown_at + direction * radius * 0.95), canopy, apples[index % 2])
+
+
+## A pine of five drooping needle tiers, wide and low to narrow and high (all above the
+## sightline), each a cone of needles ringed by boughs that hang at their tips; snow
+## lies along the boughs' ridges for the snow pine.
+static func _tiered_pine(parts: WorldAssetCatalog.Parts, snowy: bool) -> void:
+	var tall: float = 9.0
+	parts.add_mesh(ShapeKit.make_gnarled_trunk_mesh(tall * 0.94, 0.34, 0.08, 0, 4), Transform3D.IDENTITY, [_bark()])
+	var needles: Material = WorldVisualCatalog.canopy(Color.WHITE, tall, 0.12, true)
+	var leaves: Array = WorldAssetCatalog.LEAF_COLORS[WorldVisualCatalog.KIT_TREE_HIGHLAND_PINE]
+	var dark: Color = leaves[0]
+	var light: Color = leaves[1]
+	var tiers: int = 5
+	for tier: int in tiers:
+		var t: float = float(tier) / float(tiers - 1)
+		var y: float = lerpf(3.9, tall * 0.84, t)
+		var radius: float = lerpf(2.5, 0.85, t)
+		var droop: float = radius * 0.5
+		var top: Color = dark.lerp(light, 0.5 + t * 0.5)
+		parts.foliage_cone(Vector3(0.0, y - droop * 0.9, 0.0), radius * 0.6, droop + radius * 0.85, dark.lerp(light, t * 0.4),
+			top.lerp(SNOW, 0.55) if snowy else top, needles)
+		var boughs: int = 9 - tier
+		for bough: int in boughs:
+			var angle: float = TAU * float(bough) / float(boughs) + float(tier) * 0.61
+			_needle_bough(parts, Vector3(0.0, y, 0.0), angle, radius, droop, dark.lerp(light, t * 0.3), top, snowy, needles)
+	parts.foliage_cone(Vector3(0.0, tall * 0.84, 0.0), 0.42, tall * 0.2, dark.lerp(light, 0.6), SNOW if snowy else light, needles)
+
+
+## One drooping bough: a tapered strip folded along a raised ridge, from the trunk out
+## `radius` metres and down `droop` at its tip.
+static func _needle_bough(parts: WorldAssetCatalog.Parts, root: Vector3, angle: float, radius: float, droop: float, inner: Color,
+		outer: Color, snowy: bool, material: Material) -> void:
+	var out: Vector3 = Vector3(cos(angle), 0.0, sin(angle))
+	var side: Vector3 = Vector3(-sin(angle), 0.0, cos(angle))
+	var points: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var uvs: PackedVector2Array = PackedVector2Array()
+	var colors: PackedColorArray = PackedColorArray()
+	var segments: int = 3
+	for step: int in segments + 1:
+		var f: float = float(step) / float(segments)
+		var center: Vector3 = root + out * lerpf(0.15, radius, f) + Vector3.UP * (-droop * f * f)
+		var half: float = radius * 0.32 * (1.0 - 0.8 * f)
+		var normal: Vector3 = (Vector3.UP * 0.8 + out * (0.3 + 0.5 * f)).normalized()
+		var shade: Color = inner.lerp(outer, f)
+		for across: int in 3:
+			var lift: float = 0.14 * (1.0 - f) if across == 1 else -0.04
+			points.append(center + side * half * float(across - 1) + Vector3.UP * lift)
+			normals.append(normal)
+			uvs.append(Vector2(0.0, 1.0 - f))
+			colors.append(shade.lerp(SNOW, 0.75) if snowy and across == 1 else shade)
+	var order: PackedInt32Array = PackedInt32Array()
+	for step: int in segments:
+		var a: int = step * 3
+		for strip: int in 2:
+			var p: int = a + strip
+			order.append_array(PackedInt32Array([p, p + 3, p + 1, p + 1, p + 3, p + 4]))
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = points
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = order
+	parts.add_arrays(arrays, Transform3D.IDENTITY, material)
+
+
+## A layered fern at `at`: an outer ring of seven long fronds arching out low, an
+## inner ring of five shorter, paler ones standing up, each frond's leaflets
+## notched along its folded rib. It leans away from heroes brushing through.
+static func _layered_fern(parts: WorldAssetCatalog.Parts, at: Vector3, size: float, seed_value: int) -> void:
+	var material: Material = WorldVisualCatalog.foliage(Color.WHITE, 1.2, 0.5, 1.0)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 7300 + seed_value
+	# count, length, rise (radians), droop, dark, light
+	var layers: Array[Array] = [
+		[7, 1.15, 0.75, 0.85, Color(0.16, 0.3, 0.14), Color(0.4, 0.58, 0.24)],
+		[5, 0.8, 1.15, 0.55, Color(0.24, 0.4, 0.18), Color(0.56, 0.72, 0.32)],
+	]
+	for layer: int in layers.size():
+		var spec: Array = layers[layer]
+		var count: int = spec[0]
+		for frond: int in count:
+			var angle: float = TAU * float(frond) / float(count) + float(layer) * 0.45 + rng.randf_range(-0.2, 0.2)
+			var length: float = float(spec[1]) * size * rng.randf_range(0.85, 1.15)
+			_fern_frond(parts, at, angle, length, float(spec[2]) + rng.randf_range(-0.12, 0.12), float(spec[3]), spec[4], spec[5], material)
+
+
+static func _fern_frond(parts: WorldAssetCatalog.Parts, root: Vector3, angle: float, length: float, rise: float, droop: float, dark: Color,
+		light: Color, material: Material) -> void:
+	var out: Vector3 = Vector3(cos(angle), 0.0, sin(angle))
+	var side: Vector3 = Vector3(-sin(angle), 0.0, cos(angle))
+	var points: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var uvs: PackedVector2Array = PackedVector2Array()
+	var colors: PackedColorArray = PackedColorArray()
+	var segments: int = 6
+	for step: int in segments + 1:
+		var f: float = float(step) / float(segments)
+		var center: Vector3 = root + out * (length * f * cos(rise)) + Vector3.UP * (length * f * sin(rise) - droop * length * f * f)
+		# Widest a little below the middle, notched leaflet by leaflet.
+		var half: float = length * 0.15 * sin(PI * minf(f * 1.1, 1.0)) * (1.2 if step % 2 == 1 else 0.8)
+		var normal: Vector3 = (Vector3.UP * 0.75 + out * 0.35).normalized()
+		var shade: Color = dark.lerp(light, f)
+		for across: int in 3:
+			var lift: float = 0.03 * length if across == 1 else 0.0
+			points.append(center + side * half * float(across - 1) + Vector3.UP * lift)
+			normals.append(normal)
+			uvs.append(Vector2(0.0, 1.0 - f))
+			colors.append(shade)
+	var order: PackedInt32Array = PackedInt32Array()
+	for step: int in segments:
+		var a: int = step * 3
+		for strip: int in 2:
+			var p: int = a + strip
+			order.append_array(PackedInt32Array([p, p + 3, p + 1, p + 1, p + 3, p + 4]))
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = points
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = order
+	parts.add_arrays(arrays, Transform3D.IDENTITY, material)

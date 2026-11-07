@@ -15,6 +15,12 @@
 ##     turning toward a curious hob or an open Glimmer-Spot within 8 m
 ##   - through a hit-stop, a 45 Hz micro-tremor in the chest and weapon hand,
 ##     and volume-preserving squash-and-stretch of the hips: (1/sqrt(s), s, 1/sqrt(s))
+##   - natural joints (docs/13_PLAYTEST_KAIZEN_UPDATE_PROMPT.md §2.9), last of
+##     all on the arms: a shoulder reaches back no more than 60 degrees with the
+##     arm down (about 17 overhead) and only so far across the chest, an elbow
+##     bends no more than 150 degrees and only the way an elbow bends (the upper
+##     arm turns so its crease faces the bend), and a forearm twists no more than
+##     85 degrees either way; the weapon hand keeps its aim throughout
 ## It deliberately isn't Godot's SpringBoneSimulator3D (frame-rate dependent,
 ## godot#103229, and wrong under bone scale), and keeps a readiness guard at
 ## the top of each step (godot#106463). Inputs are set by ActorVisuals each
@@ -53,6 +59,20 @@ const PLANT_HEIGHT: float = 0.07
 const PELVIS_DROP_MAX: float = 0.3
 ## The off hand's wrist sits this far back from the grip, toward its shoulder.
 const GRIP_WRIST_BACK: float = 0.07
+## Natural joints (13_PLAYTEST §2.9): how far back a shoulder reaches (a share of
+## straight back) with the arm hanging and raised overhead, how far across the
+## chest, the elbow's greatest bend, the bend below which the upper arm keeps its
+## own twist, and how far a forearm turns either way.
+const SHOULDER_BACK_REACH_DOWN: float = 0.87
+const SHOULDER_BACK_REACH_UP: float = 0.3
+const SHOULDER_ACROSS_REACH: float = 0.65
+const ELBOW_MAX_BEND_DEG: float = 150.0
+const ELBOW_PLANE_FROM_DEG: float = 12.0
+const FOREARM_TWIST_MAX_DEG: float = 85.0
+## With a weapon, shield or quiver strapped on the back, the cloak's top two
+## lengths flare no further than this (the straps hold them to the back), so the
+## cloak never swings through what's strapped over it (13_PLAYTEST §2.8).
+const STRAPPED_FLARE_MAX: float = 0.14
 const CLOAK_BONES: Array[int] = [B.CLOAK_01, B.CLOAK_02, B.CLOAK_03]
 const CLOAK_REST_FLARE: Array[float] = [0.1, 0.07, 0.05]
 const CLOAK_SPEED_FLARE: Array[float] = [0.42, 0.22, 0.16]
@@ -85,6 +105,8 @@ var hit_stop_duration: float = 0.0
 var wind: Vector4 = Vector4(0.8, 0.0, 0.6, 0.35)
 ## 0 while a clip owns the whole body (a roll, the kneel); 1 otherwise.
 var lean_weight: float = 1.0
+## Something is strapped on the back (a stowed weapon, a shield, a quiver): the cloak's top lies under it.
+var back_strapped: bool = false
 
 # --- What it did last step (for the HUD's tests and debug) ---
 var steps: int = 0
@@ -101,6 +123,8 @@ var squash: float = 1.0
 var pelvis_drop: float = 0.0
 ## How far the off hand's wrist ended from its grip target (-1 when not gripping).
 var grip_error: float = -1.0
+## How many times the natural joints held an arm back last step (shoulders, elbows, forearms).
+var joint_limits: int = 0
 var draw_error: float = -1.0
 ## How far each planted ankle ended from the ground target.
 var foot_errors: PackedFloat32Array = PackedFloat32Array([0.0, 0.0])
@@ -277,12 +301,17 @@ func _solve(dt: float) -> void:
 		var wrist: Vector3 = globals[B.HAND_R].origin
 		draw_error = _two_bone(rot, pos, B.UPPER_ARM_R, B.FOREARM_R, B.HAND_R, wrist.lerp(jaw, draw_weight), Vector3(0.6, -0.2, 0.6), false)
 
+	# Natural joints, last on the arms: no arm swings round behind the back, no elbow bends backward.
+	joint_limits = limit_arms(rot, pos)
+
 	# The cloak trails with speed and the wind, flutters, and stays outside the body.
 	var wind_local: Vector3 = frame.inverse() * Vector3(wind.x, 0.0, wind.z) * wind.w
 	var speed_back: float = clampf(forward_speed / maxf(move_speed, 0.1), 0.0, 1.3)
 	for index: int in 3:
 		var flutter: float = sin(_clock * 7.3 + float(index) * 1.7) * 0.05 * (0.25 + speed_back) + sin(_clock * 2.1 + float(index)) * 0.02
 		var pitch_target: float = -(CLOAK_REST_FLARE[index] + CLOAK_SPEED_FLARE[index] * speed_back + 0.25 * maxf(0.0, wind_local.z)) + flutter
+		if back_strapped and index < 2:
+			pitch_target = maxf(pitch_target, -STRAPPED_FLARE_MAX)
 		var roll_target: float = clampf(-side_speed / maxf(move_speed, 0.1) * 0.25 + yaw_rate * 0.03 * float(index + 1) + wind_local.x * 0.12, -0.4, 0.4)
 		_cloak_x[index] = spring_step(_cloak_x[index], pitch_target, CLOAK_OMEGA, CLOAK_ZETA, dt)
 		_cloak_roll_x[index] = spring_step(_cloak_roll_x[index], roll_target, CLOAK_OMEGA, CLOAK_ZETA, dt)
@@ -321,6 +350,101 @@ func _solve(dt: float) -> void:
 	skeleton.set_bone_pose_position(B.HIPS, pos[B.HIPS])
 	var root: float = 1.0 / sqrt(maxf(squash, 0.01))
 	skeleton.set_bone_pose_scale(B.HIPS, hips_scale * Vector3(root, squash, root))
+
+
+## Holds both arms to natural joints (13_PLAYTEST §2.9). Returns how many joints it held.
+##   - the shoulder: the upper arm reaches back no more than SHOULDER_BACK_REACH
+##     (a share of the chest's straight back: 0.87 with the arm hanging, 0.3 raised
+##     overhead) and across the chest no more than SHOULDER_ACROSS_REACH; the
+##     forearm and hand go with it
+##   - the elbow: at most ELBOW_MAX_BEND_DEG, and only toward the upper arm's
+##     front (+Z, where the elbow's crease is): once it bends past
+##     ELBOW_PLANE_FROM_DEG the upper arm turns about itself to face the bend,
+##     which can't change where the elbow or the hand is
+##   - the forearm: it turns with the hand (pronation) from the elbow's hinge, no
+##     more than FOREARM_TWIST_MAX_DEG either way (the wrist takes the rest)
+## The hand keeps its own aim in the skeleton's space (its weapon points where the clip says).
+static func limit_arms(rot: Array[Quaternion], pos: Array[Vector3]) -> int:
+	var held: int = 0
+	for side: float in [-1.0, 1.0]:
+		var upper: int = B.UPPER_ARM_L if side < 0.0 else B.UPPER_ARM_R
+		var fore: int = B.FOREARM_L if side < 0.0 else B.FOREARM_R
+		var hand: int = B.HAND_L if side < 0.0 else B.HAND_R
+		var globals: Array[Transform3D] = _globals(rot, pos)
+		var chest: Basis = globals[B.CHEST].basis.orthonormalized()
+		var up: Vector3 = chest.y.normalized()
+		var back: Vector3 = chest.z.normalized()
+		var out: Vector3 = chest.x.normalized() * side
+		var upper_global: Basis = globals[upper].basis.orthonormalized()
+		var fore_global: Basis = globals[fore].basis.orthonormalized()
+		var hand_global: Basis = globals[hand].basis.orthonormalized()
+		var arm: Vector3 = upper_global.y.normalized()
+		# The shoulder's reach: back (less so the higher the arm), and across the chest.
+		var wanted: Vector3 = arm
+		# Twice: holding the arm forward changes how high it is, and so how far back it may go.
+		for settle: int in 2:
+			var reach: float = lerpf(SHOULDER_BACK_REACH_DOWN, SHOULDER_BACK_REACH_UP, clampf((wanted.dot(up) + 1.0) * 0.5, 0.0, 1.0))
+			if wanted.dot(back) > reach:
+				wanted = _with_share(wanted, back, reach)
+		if wanted.dot(out) < -SHOULDER_ACROSS_REACH:
+			wanted = _with_share(wanted, out, -SHOULDER_ACROSS_REACH)
+		if wanted.dot(arm) < 0.99995:
+			var swing: Basis = Basis(HeroPoseBaker.arc(arm, wanted))
+			upper_global = swing * upper_global
+			fore_global = swing * fore_global
+			hand_global = swing * hand_global
+			arm = wanted
+			held += 1
+		# The elbow: no more than its greatest bend...
+		var forearm: Vector3 = fore_global.y.normalized()
+		var bend: float = acos(clampf(arm.dot(forearm), -1.0, 1.0))
+		var most: float = deg_to_rad(ELBOW_MAX_BEND_DEG)
+		if bend > most:
+			var hinge: Vector3 = arm.cross(forearm)
+			if hinge.length() > 0.001:
+				var ease_back: Basis = Basis(hinge.normalized(), most - bend)
+				fore_global = ease_back * fore_global
+				hand_global = ease_back * hand_global
+				forearm = fore_global.y.normalized()
+				bend = most
+				held += 1
+		# ...and only the way an elbow bends: the upper arm turns about itself so its crease (+Z) faces the bend.
+		var bend_degrees: float = rad_to_deg(bend)
+		if bend_degrees > ELBOW_PLANE_FROM_DEG:
+			var toward: Vector3 = (forearm - arm * arm.dot(forearm)).normalized()
+			var crease: Vector3 = upper_global.z - arm * arm.dot(upper_global.z)
+			if crease.length() > 0.001:
+				var turn: float = crease.normalized().signed_angle_to(toward, arm) * smoothstep(ELBOW_PLANE_FROM_DEG, ELBOW_PLANE_FROM_DEG + 15.0, bend_degrees)
+				if absf(turn) > 0.0175:
+					upper_global = Basis(arm, turn) * upper_global
+					if absf(turn) > deg_to_rad(20.0):
+						held += 1
+		# The forearm turns with the hand (pronation) from the elbow's hinge, no more
+		# than FOREARM_TWIST_MAX_DEG either way; the wrist takes the rest.
+		var carried: Vector3 = Basis(HeroPoseBaker.arc(arm, forearm)) * upper_global.z
+		var reference: Vector3 = carried - forearm * forearm.dot(carried)
+		var palm: Vector3 = hand_global.z - forearm * forearm.dot(hand_global.z)
+		if reference.length() > 0.001:
+			reference = reference.normalized()
+			var twist: float = reference.signed_angle_to(palm.normalized(), forearm) if palm.length() > 0.001 else 0.0
+			var limit: float = deg_to_rad(FOREARM_TWIST_MAX_DEG)
+			if absf(twist) > limit:
+				held += 1
+			var front: Vector3 = Basis(forearm, clampf(twist, -limit, limit)) * reference
+			fore_global = Basis(forearm.cross(front).normalized(), forearm, front).orthonormalized()
+		var parent: int = HeroRigBuilder.BONE_PARENTS[upper]
+		rot[upper] = (globals[parent].basis.orthonormalized().inverse() * upper_global).get_rotation_quaternion()
+		rot[fore] = (upper_global.inverse() * fore_global).get_rotation_quaternion()
+		rot[hand] = (fore_global.inverse() * hand_global).get_rotation_quaternion()
+	return held
+
+
+## `direction` turned so its share along `axis` is `share` (the rest of it keeps its own way).
+static func _with_share(direction: Vector3, axis: Vector3, share: float) -> Vector3:
+	var across: Vector3 = direction - axis * direction.dot(axis)
+	if across.length() < 0.0001:
+		across = axis.cross(Vector3.RIGHT if absf(axis.dot(Vector3.RIGHT)) < 0.9 else Vector3.UP)
+	return (across.normalized() * sqrt(maxf(0.0, 1.0 - share * share)) + axis * share).normalized()
 
 
 ## Every bone's transform in the skeleton's space, from local rotations and positions.

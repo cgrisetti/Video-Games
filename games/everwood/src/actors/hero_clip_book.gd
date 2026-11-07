@@ -147,9 +147,8 @@ const RUN_ROLL: Array[float] = [0.0, -2.0, -4.0, -6.5, -3.0, 0.0, 2.0, 4.0, 6.5,
 ## The legs' beat at each frame, and which leg leads it (-1 left, 1 right).
 const RUN_BEATS: Array[String] = ["reach", "heel", "contact", "cushion", "loft", "reach", "heel", "contact", "cushion", "loft", "reach"]
 const RUN_LEADS: Array[float] = [-1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0]
-## The weapon arm's suspension bounce, lagging the pelvis by 3 frames (-1 dipped, 0 carried, 1 riding high).
-const RUN_PORT: Array[float] = [1.0, 0.4, 0.0, -1.0, 0.0, 1.0, 0.4, 0.0, -1.0, 0.0, 1.0]
-## The off arm's counter-balance swing (-1 back, the left leg leading; 1 forward).
+## The arms' counter-balance swing, the off arm's way (-1 back, the left leg
+## leading; 1 forward); the weapon arm swings the other way (13_PLAYTEST §2.12).
 const RUN_SWING: Array[float] = [-0.6, -0.85, -1.0, -0.7, 0.0, 0.6, 0.85, 1.0, 0.7, 0.0, -0.6]
 ## The leading boot pitched up 24 degrees on heel-strike, half that at contact; flat;
 ## the trailing ankle snapped 31 degrees down on toe-off.
@@ -181,7 +180,7 @@ static func _run_cycle(book: Array[Array]) -> void:
 			_hips(Vector3(RUN_HIPS[index].x, RUN_HIPS[index].y, 0.0)),
 			_e({B.HIPS: Vector3(0.0, yaw, roll), B.SPINE: Vector3(-5.0, -0.4 * yaw, -0.6 * roll), B.CHEST: Vector3(chest_pitch, -1.2 * yaw, -0.7 * roll),
 				B.NECK: Vector3(0.0, 0.2 * yaw, 0.0), B.HEAD: Vector3(-0.35 * (chest_pitch + 4.0), 0.42 * yaw, 0.25 * roll)}),
-			_run_port(RUN_PORT[index]),
+			_run_weapon_swing(-RUN_SWING[index]),
 			_run_swing(RUN_SWING[index]),
 		])
 		keys.append([RUN_FRAMES[index], pose])
@@ -222,11 +221,16 @@ static func _run_legs(beat: String, lead: float) -> Dictionary:
 	return {"aim": aims}
 
 
-## The weapon arm's diagonal low port: carried across the hip, the haft 30 degrees off upright, bouncing.
-static func _run_port(bounce: float) -> Dictionary:
-	var upper: Vector3 = Vector3(0.22, -0.92, -0.2).lerp(Vector3(0.22, -0.95, -0.12) if bounce < 0.0 else Vector3(0.22, -0.9, -0.27), absf(bounce))
-	var fore: Vector3 = Vector3(-0.62, -0.28, -0.73).lerp(Vector3(-0.6, -0.4, -0.69) if bounce < 0.0 else Vector3(-0.62, -0.16, -0.77), absf(bounce))
-	return {"aim": {B.UPPER_ARM_R: upper, B.FOREARM_R: fore}, "wpn": {B.HAND_R: Vector3(-0.75, 0.62, -0.3)}}
+## The weapon arm's athletic swing (docs/13_PLAYTEST_KAIZEN_UPDATE_PROMPT.md §2.12):
+## the off arm's arc mirrored and swung the other way, the elbow bent, the
+## weapon carried point-forward and a little up (no longer parked at the hip).
+static func _run_weapon_swing(swing: float) -> Dictionary:
+	var middle_upper: Vector3 = Vector3(0.2, -1.0, 0.0)
+	var middle_fore: Vector3 = Vector3(0.02, -0.75, -0.55)
+	var upper: Vector3 = middle_upper.lerp(Vector3(0.18, -0.86, -0.46) if swing > 0.0 else Vector3(0.2, -0.88, 0.42), absf(swing))
+	var fore: Vector3 = middle_fore.lerp(Vector3(-0.2, -0.3, -0.93) if swing > 0.0 else Vector3(0.1, -0.82, 0.2), absf(swing))
+	var haft: Vector3 = Vector3(0.12, 0.4, -0.91).lerp(Vector3(0.16, 0.62, -0.77) if swing > 0.0 else Vector3(0.1, 0.12, -0.99), absf(swing))
+	return {"aim": {B.UPPER_ARM_R: upper, B.FOREARM_R: fore}, "wpn": {B.HAND_R: haft}}
 
 
 ## The off arm's counter-balance arc: back while the left leg leads, forward and across while the right does.

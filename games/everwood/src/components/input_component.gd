@@ -44,6 +44,8 @@ signal hearth_rite_held(command: int)
 signal binder_requested
 ## A tap of the assist-mode button (M / R3): the Wayfarer's Atlas opens (or closes).
 signal atlas_requested
+## A tap of Esc or Options / Menu: the Options menu opens (or, over another menu, that menu closes).
+signal options_requested
 ## Up / down / accept / back for an open menu (MENU_* below).
 signal menu_input(action: StringName)
 
@@ -75,6 +77,8 @@ const ACTION_CHANGE_CLASS: StringName = &"player_change_class"
 const ACTION_CHANGE_MODE: StringName = &"player_change_mode"
 const ACTION_CHANGE_CALLING: StringName = &"player_change_calling"
 const ACTION_JOIN: StringName = &"player_join"
+## The Options menu (13_PLAYTEST §2.1): Esc, or a tap of a seated pad's Options / Menu (Start).
+const ACTION_OPTIONS: StringName = &"player_options"
 ## Camera pitch and mouse-look (18 GDD §6).
 const ACTION_CAMERA_PITCH_UP: StringName = &"cam_pitch_up"
 const ACTION_CAMERA_PITCH_DOWN: StringName = &"cam_pitch_down"
@@ -88,7 +92,7 @@ const TETHER_ACTIONS: Array[StringName] = [ACTION_TETHER_UP, ACTION_TETHER_RIGHT
 const BUTTON_ACTIONS: Array[StringName] = [
 	ACTION_LIGHT, ACTION_HEAVY, ACTION_DODGE, ACTION_TRIGGER_L, ACTION_TRIGGER_R, ACTION_ULT,
 	ACTION_TETHER_UP, ACTION_TETHER_RIGHT, ACTION_TETHER_DOWN, ACTION_TETHER_LEFT,
-	ACTION_CHANGE_CLASS, ACTION_CHANGE_MODE, ACTION_CHANGE_CALLING, ACTION_JUMP, ACTION_SPRINT, ACTION_PLAYTEST_CYCLE,
+	ACTION_CHANGE_CLASS, ACTION_CHANGE_MODE, ACTION_CHANGE_CALLING, ACTION_JUMP, ACTION_SPRINT, ACTION_PLAYTEST_CYCLE, ACTION_OPTIONS,
 ]
 
 const MENU_UP: StringName = &"up"
@@ -100,6 +104,8 @@ const MENU_RIGHT: StringName = &"right"
 ## L / R (Q / E on the keyboard) in a menu: the previous and next tab (the Grimoire Binder's).
 const MENU_TAB_PREV: StringName = &"tab_prev"
 const MENU_TAB_NEXT: StringName = &"tab_next"
+## Heavy in a menu: a menu's second action (the map turns between its Zone and World views).
+const MENU_ALT: StringName = &"alt"
 
 const MODE_NAMES: Array[String] = ["Master", "Adventurer", "Squire Gambit"]
 const KEYBOARD_DEVICE: int = 0
@@ -157,6 +163,8 @@ var actor: ActorBase
 var move_input: Vector2 = Vector2.ZERO
 ## Sprint is held (L3 / LS, Left Shift) and no menu is open.
 var sprint_held: bool = false
+## Sprint was pressed this tick (the toggle sprint's click, 13_PLAYTEST §2.3).
+var sprint_pressed: bool = false
 var camera_orbit_input: float = 0.0
 ## The camera's pitch: +1 looks up, -1 down (stick, or the pitch keys).
 var camera_pitch_input: float = 0.0
@@ -253,6 +261,12 @@ static func _event_strength(event: InputEvent, for_device: int) -> float:
 static func pad_family_of(for_device: int) -> PadFamily:
 	if for_device == KEYBOARD_DEVICE:
 		return PadFamily.KEYBOARD
+	# The Options menu can name every pad's buttons one way.
+	match SettingsManager.glyphs():
+		SettingsManager.PadGlyphs.PLAYSTATION:
+			return PadFamily.PLAYSTATION
+		SettingsManager.PadGlyphs.XBOX:
+			return PadFamily.XBOX
 	var pad_name: String = Input.get_joy_name(for_device - 1).to_lower()
 	for hint: String in ["playstation", "dualsense", "dualshock", "ps3", "ps4", "ps5", "sony"]:
 		if pad_name.contains(hint):
@@ -450,9 +464,9 @@ func _input(event: InputEvent) -> void:
 		return
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_mouse_yaw -= motion.relative.x * MOUSE_SENSITIVITY
+		_mouse_yaw -= motion.relative.x * MOUSE_SENSITIVITY * SettingsManager.mouse_scale()
 	if motion != null and not menu_open and mouse_looking():
-		_mouse_pitch += motion.relative.y * MOUSE_PITCH_SENSITIVITY * (-1.0 if invert_pitch else 1.0)
+		_mouse_pitch += motion.relative.y * MOUSE_PITCH_SENSITIVITY * SettingsManager.mouse_scale() * (-1.0 if SettingsManager.invert_y() else 1.0)
 
 
 func poll(dt: float) -> void:
@@ -477,6 +491,9 @@ func poll(dt: float) -> void:
 		_poll_mouse_look()
 	_remember_stick_direction()
 	sprint_held = false
+	sprint_pressed = false
+	# Invert Y follows the Options menu (13_PLAYTEST §2.2).
+	invert_pitch = SettingsManager.invert_y()
 	if menu_open:
 		if _menu_armed:
 			_poll_menu()
@@ -489,6 +506,7 @@ func poll(dt: float) -> void:
 	_menu_armed = false
 	_update_auto_guard()
 	sprint_held = _held.get(ACTION_SPRINT, false)
+	sprint_pressed = _pressed(ACTION_SPRINT)
 	if _pressed(ACTION_JUMP):
 		jump_requested.emit()
 	if _pressed(ACTION_PLAYTEST_CYCLE):
@@ -501,6 +519,9 @@ func poll(dt: float) -> void:
 		_share_chorded = true
 	if not share_held and not _was_held.get(ACTION_CHANGE_CLASS, false):
 		_share_chorded = false
+	if _tapped(ACTION_OPTIONS):
+		options_requested.emit()
+	_held_for(ACTION_OPTIONS, dt)
 	if _tapped(ACTION_CHANGE_CLASS) and not _share_chorded:
 		binder_requested.emit()
 	if _held_for(ACTION_CHANGE_CLASS, dt) and not _share_chorded:
@@ -577,10 +598,19 @@ func _poll_menu() -> void:
 		menu_input.emit(MENU_TAB_NEXT)
 	if _pressed(ACTION_DODGE) or _pressed(ACTION_JUMP):
 		menu_input.emit(MENU_BACK)
+	if _pressed(ACTION_HEAVY):
+		menu_input.emit(MENU_ALT)
 	if _tapped(ACTION_CHANGE_CLASS):
 		binder_requested.emit()
 	if _tapped(ACTION_CHANGE_MODE):
 		atlas_requested.emit()
+	if _tapped(ACTION_OPTIONS):
+		options_requested.emit()
+	# Esc / Options' hold time counts in a menu too, so a long hold (leaving the party) isn't a tap.
+	if not _held.get(ACTION_OPTIONS, false):
+		_hold_time[ACTION_OPTIONS] = 0.0
+	else:
+		_hold_time[ACTION_OPTIONS] = _hold_time.get(ACTION_OPTIONS, 0.0) + get_physics_process_delta_time()
 	# The assist-mode button's hold time still counts while a menu is open (so its tap reads).
 	if not _held.get(ACTION_CHANGE_MODE, false):
 		_hold_time[ACTION_CHANGE_MODE] = 0.0

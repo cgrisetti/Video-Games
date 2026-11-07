@@ -47,6 +47,7 @@ const DEMO_ATTACK_EVERY: float = 0.55
 @onready var effects_root: Node3D = $Effects
 @onready var spawn_points: Node3D = $SpawnPoints
 @onready var grid: SplitScreenViewportGrid = $Screens/Grid
+var _debug_banner: String = ""
 @onready var banner: Label = $Screens/Banner
 
 var actors: Dictionary[StringName, ActorBase] = {}
@@ -241,6 +242,9 @@ func _ready() -> void:
 	NetworkManager.current.kit_validator = check_kit
 	NetworkManager.current.calling_validator = check_calling
 	grid.set_world(get_world_3d())
+	# The storybook sky, with its clouds and the far ridgelines (13_PLAYTEST §2.6), in place of the procedural one.
+	for found: Node in find_children("*", "WorldEnvironment", true, false):
+		StorybookSky.install((found as WorldEnvironment).environment)
 	_setup_level()
 	# Every sign and nameplate reads the same (18 GDD §6.2), built by any script or baked into the scene.
 	WorldLabelStyle.watch(get_tree(), self)
@@ -318,6 +322,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if click != null and click.pressed and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE \
 			and NetworkManager.current.is_device_seated(InputComponent.KEYBOARD_DEVICE):
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	# Esc gives the mouse back (and, through the Input Map, opens the Options menu).
 	var key: InputEventKey = event as InputEventKey
 	if key != null and key.pressed and key.physical_keycode == KEY_ESCAPE:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -755,12 +760,18 @@ func _show_notice(text: String) -> void:
 	_notice_time_left = NOTICE_TIME
 
 
+## The top of the screen shows nothing in play (13_PLAYTEST §2.1): only the join
+## prompt while nobody's seated and a short notice when someone joins or leaves.
+## The old lines (the level's hint, the keys, the network status) are kept as
+## debug_banner_text() for the Developer Tools panel.
 func _refresh_banner() -> void:
 	var local_count: int = NetworkManager.current.local_player_count()
 	var lines: PackedStringArray = PackedStringArray()
+	var shown: PackedStringArray = PackedStringArray()
 	if local_count == 0:
 		lines.append("EVERWOOD · %s" % level_title())
 		lines.append("Press Enter, or plug in a pad (or press Start), to join")
+		shown.append_array(lines)
 	elif local_count < NetworkManager.MAX_LOCAL_PLAYERS and NetworkManager.current.party_size() < NetworkManager.MAX_PARTY_SIZE:
 		lines.append("Plug in a pad or press Start / Enter to join (%d/%d on this screen) · hold it to leave" % [
 			local_count, NetworkManager.MAX_LOCAL_PLAYERS])
@@ -772,7 +783,15 @@ func _refresh_banner() -> void:
 		" + %d bot%s" % [bots, "" if bots == 1 else "s"] if bots > 0 else "", _join_address])
 	if _notice_time_left > 0.0:
 		lines.append(_notice)
-	banner.text = "\n".join(lines)
+		shown.append(_notice)
+	_debug_banner = "\n".join(lines)
+	banner.text = "\n".join(shown)
+	banner.visible = not shown.is_empty()
+
+
+## What the top banner used to show in play (the level's hint and keys, the network status): the Developer Tools panel's.
+func debug_banner_text() -> String:
+	return _debug_banner
 
 
 # --- Command line, demo bots, screenshots ---------------------------------

@@ -107,6 +107,15 @@ func _outward(at: Vector2) -> Vector2:
 	return Vector2(at.x / (semi.x * semi.x), at.y / (semi.y * semi.y)).normalized()
 
 
+func _coast_shape() -> Dictionary:
+	return {"center": Vector2.ZERO, "semi": SHAPES[isle.isle_id]["semi"]}
+
+
+## Rime-Firth's high basalt shore takes steep-sided firths where the others take low river inlets.
+func _inlet_max_rise() -> float:
+	return 70.0 if isle.isle_id == CalderaAtlas.ISLE_RIME_FIRTH else super()
+
+
 func _base_height(x: float, z: float) -> float:
 	var semi: Vector2 = SHAPES[isle.isle_id]["semi"]
 	var q: float = ellipse_q(x, z, Vector2.ZERO, semi, 0.07)
@@ -175,7 +184,9 @@ func _scatter_species(x: float, z: float, height: float, up: float, roll: float)
 				return -1
 			if height < 1.6:
 				return Species.REED_CLUMP if roll < 0.4 else -1
-			return Species.OAK_TREE if roll < 0.04 else (Species.REED_CLUMP if roll < 0.18 else (Species.FERN_TUFT if roll < 0.24 else -1))
+			if roll < 0.025:
+				return Species.WILLOW_TREE
+			return Species.OAK_TREE if roll < 0.045 else (Species.REED_CLUMP if roll < 0.18 else (Species.FERN_TUFT if roll < 0.24 else -1))
 	if height < 1.2:
 		return -1
 	if up < 0.66:

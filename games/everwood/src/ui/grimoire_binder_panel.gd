@@ -101,7 +101,7 @@ var gear_row: int = GearRow.WEAPON
 var combo_row: int = 0
 var folio_open: bool = false
 var tab: int = Tab.CARDS
-var atlas: CartographyAtlasPanel
+var atlas: WorldMapPanel
 ## The live preview on the Gear & Weapon tab.
 var preview_viewport: SubViewport
 var preview_camera: Camera3D
@@ -500,7 +500,7 @@ func show_atlas_tab() -> void:
 	var level: LevelBase = get_tree().current_scene as LevelBase if is_inside_tree() else null
 	if hud != null:
 		level = hud._level()
-	atlas = CartographyAtlasPanel.new()
+	atlas = WorldMapPanel.new()
 	atlas.setup(actor, level, hud, true)
 	add_child(atlas)
 	move_child(get_node("Tabs"), -1)

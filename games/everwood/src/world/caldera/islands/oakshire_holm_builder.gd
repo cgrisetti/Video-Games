@@ -71,6 +71,10 @@ func _define() -> void:
 	add_arrival(CalderaAtlas.ARRIVE_ROOT_SANCTUM, Vector2(-330.0, 146.0))
 
 
+func _coast_shape() -> Dictionary:
+	return {"center": CENTER, "semi": SEMI_AXES}
+
+
 func _base_height(x: float, z: float) -> float:
 	var q: float = ellipse_q(x, z, CENTER, SEMI_AXES, 0.05)
 	if q > 1.0:
@@ -101,6 +105,9 @@ func _scatter_species(x: float, z: float, height: float, up: float, roll: float)
 		return -1
 	if Vector2(x - ROOT_SANCTUM_AT.x, z - ROOT_SANCTUM_AT.y).length() < 30.0 or Vector2(x - WINDMILL_AT.x, z - WINDMILL_AT.y).length() < 20.0:
 		return -1
+	# Weeping willows and ferns on the low ground by the shore and along the river inlets.
+	if height < 3.4 and up > 0.85:
+		return Species.WILLOW_TREE if roll < 0.035 else (Species.FERN_TUFT if roll < 0.07 else -1)
 	if Vector2(x - ORCHARDS_AT.x, z - ORCHARDS_AT.y).length() < ORCHARDS_RADIUS:
 		return Species.ORCHARD_TREE if roll < 0.32 else (Species.FERN_TUFT if roll < 0.36 else -1)
 	if roll < 0.035:

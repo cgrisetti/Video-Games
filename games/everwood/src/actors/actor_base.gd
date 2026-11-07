@@ -45,6 +45,11 @@ const SPRINT_SPEED_SCALE: float = 1.5
 const SPRINT_STAMINA_PER_SEC: float = 12.0
 ## Stamina doesn't start coming back until sprinting has stopped this long.
 const SPRINT_REGEN_HOLD: float = 0.4
+## Toggle Sprint (13_PLAYTEST §2.3): it keeps going while the stick is at least
+## this share forward (about 55 degrees either side of straight ahead), and ends
+## after the hero has stood still this long.
+const SPRINT_KEEP_FORWARD: float = 0.57
+const SPRINT_STOP_GRACE: float = 0.35
 ## The stick has to be this far over to sprint.
 const SPRINT_MIN_STICK: float = 0.2
 ## How quickly actors reach their wanted speed, in metres per second per second.
@@ -146,6 +151,9 @@ var interactable: Interactable
 var move_intent: Vector3 = Vector3.ZERO
 ## Running half again as fast on sprint (K1); jumps made this session.
 var sprinting: bool = false
+## A toggled sprint is under way (Toggle Sprint; it outlives the click).
+var sprint_latched: bool = false
+var _sprint_still: float = 0.0
 var jumps: int = 0
 var _sprint_spent: bool = false
 var _launching: bool = false
@@ -688,9 +696,21 @@ func land_jump() -> void:
 
 
 ## Sprint while it's held, the hero is moving on their feet and there's stamina;
-## run dry and it stops until sprint is let go.
+## run dry and it stops until sprint is let go. With Toggle Sprint on (the
+## Options menu's default, 13_PLAYTEST §2.3) a click of L3 / Shift starts a
+## sprint that keeps going until the hero steers sideways or back, stands still
+## for a moment, runs dry, or the button is clicked again.
 func _update_sprint(delta: float) -> void:
 	var held: bool = input != null and input.sprint_held
+	if input != null and SettingsManager.toggle_sprint():
+		if input.sprint_pressed:
+			sprint_latched = not sprint_latched
+			_sprint_still = 0.0
+		if sprint_latched and _sprint_breaks(delta):
+			sprint_latched = false
+		held = sprint_latched
+	else:
+		sprint_latched = false
 	if not held:
 		_sprint_spent = false
 	var on_feet: bool = state_machine.is_in(&"locomotion") or state_machine.is_in(&"jump")
@@ -698,6 +718,7 @@ func _update_sprint(delta: float) -> void:
 	if not wants or stats.stamina <= 0.0:
 		if wants:
 			_sprint_spent = true
+			sprint_latched = false
 		sprinting = false
 		return
 	sprinting = true
@@ -705,6 +726,18 @@ func _update_sprint(delta: float) -> void:
 	if stats.stamina <= 0.0:
 		sprinting = false
 		_sprint_spent = true
+		sprint_latched = false
+
+
+## Whether the hero's steering ends a toggled sprint: mostly sideways or back
+## (less than SPRINT_KEEP_FORWARD of the stick forward), or standing still for SPRINT_STOP_GRACE.
+func _sprint_breaks(delta: float) -> bool:
+	var stick: Vector2 = input.move_input
+	if stick.length() < SPRINT_MIN_STICK:
+		_sprint_still += delta
+		return _sprint_still >= SPRINT_STOP_GRACE
+	_sprint_still = 0.0
+	return stick.y < stick.length() * SPRINT_KEEP_FORWARD
 
 
 func can_act() -> bool:

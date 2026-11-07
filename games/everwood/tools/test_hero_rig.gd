@@ -395,7 +395,7 @@ func _check_iron_woodsman(dps: ActorBase, boss: ActorBase) -> void:
 	check.call(kinematics.foot_errors[0] < 0.02 and kinematics.foot_errors[1] < 0.02,
 		"both boots stay planted on the flagstones (foot IK %.3f / %.3f m)" % [kinematics.foot_errors[0], kinematics.foot_errors[1]])
 	# The run: feet plant on frames 4 and 18, the body leans in, the cloak streams back clear of the body.
-	var idle_flare: float = kinematics.cloak_pitch[0]
+	var idle_flare: float = kinematics.cloak_pitch[2]
 	var planted: int = animator.feet_planted
 	dps.input.inject_move(Vector2(0.0, 1.0))
 	var lean: float = 0.0
@@ -405,7 +405,8 @@ func _check_iron_woodsman(dps: ActorBase, boss: ActorBase) -> void:
 	for step: int in 50:
 		await tree.physics_frame
 		lean = minf(lean, kinematics.lean)
-		flare = minf(flare, kinematics.cloak_pitch[0])
+		# The hem streams back (13_PLAYTEST §2.8: with gear strapped on the back, the cloak's top lies under it).
+		flare = minf(flare, kinematics.cloak_pitch[2])
 		clearance = minf(clearance, kinematics.cloak_clearance)
 		running = running or animator.clip == &"locomotion_run_cycle"
 	dps.input.inject_move(Vector2.ZERO)
@@ -685,14 +686,17 @@ func _check_jaunty_run() -> void:
 		and chest_yaw > 0.15 and chest_roll > 0.05 and not info.get("grip", false),
 		"the run squashes the hips 45 mm at each plant (frames 4, 18) and lofts them 55 mm (11, 25), shifting 35 mm over the planted boot with a 6.5-degree pelvic roll and 0.18 rad yaw, the chest counter-twisting (%.2f rad) and rolling its shoulders"
 		% chest_yaw)
-	var port: Array[Transform3D] = _pose_globals(poses[11])
-	var chest: Basis = port[B.CHEST].basis.orthonormalized()
-	var haft: Vector3 = (chest.inverse() * port[B.HAND_R].basis.z.normalized()).normalized()
-	var tilt: float = rad_to_deg(acos(clampf(haft.y, -1.0, 1.0)))
+	# Both arms swing (docs/13_PLAYTEST_KAIZEN_UPDATE_PROMPT.md §2.12): the off arm back
+	# while the weapon arm comes forward (frame 4), then the other way (frame 18).
 	var back_swing: float = _pose_globals(poses[4])[B.UPPER_ARM_L].basis.y.normalized().z
 	var fore_swing: float = _pose_globals(poses[18])[B.UPPER_ARM_L].basis.y.normalized().z
-	check.call(tilt > 20.0 and tilt < 45.0 and haft.x < 0.0 and back_swing > 0.2 and fore_swing < -0.2,
-		"the weapon rides one-handed in a diagonal low port across the hip (%.0f degrees off upright) while the off arm swings back and forth to counter-balance" % tilt)
+	var weapon_fore: float = _pose_globals(poses[4])[B.UPPER_ARM_R].basis.y.normalized().z
+	var weapon_back: float = _pose_globals(poses[18])[B.UPPER_ARM_R].basis.y.normalized().z
+	var carried: Array[Transform3D] = _pose_globals(poses[11])
+	var haft: Vector3 = (carried[B.CHEST].basis.orthonormalized().inverse() * carried[B.HAND_R].basis.z.normalized()).normalized()
+	check.call(back_swing > 0.2 and fore_swing < -0.2 and weapon_fore < -0.2 and weapon_back > 0.2 and haft.z < -0.5,
+		"both arms swing as the hero runs, the weapon arm opposite the off arm (%.2f forward as the off arm goes %.2f back), the weapon carried point-forward"
+		% [-weapon_fore, back_swing])
 	var heel: float = _pose_globals(poses[2])[B.FOOT_L].basis.y.normalized().y
 	var toe_off: float = _pose_globals(poses[4])[B.FOOT_R].basis.y.normalized().y
 	var stance_x: float = _pose_globals(poses[7])[B.FOOT_L].origin.x

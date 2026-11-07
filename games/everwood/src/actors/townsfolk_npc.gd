@@ -52,6 +52,9 @@ var _home_yaw: float = 0.0
 func _ready() -> void:
 	_home = global_position
 	_home_yaw = rotation.y
+	# Quest-givers are quest locations on the map (CartographyBaker.GLYPH_GROUP, 13_PLAYTEST §2.4).
+	if role == Role.QUEST_GIVER:
+		add_to_group(&"map_glyphs")
 	reach = 2.6 if role == Role.QUEST_GIVER or role == Role.VENDOR else 0.0
 	# Only those you can talk to need to watch for players.
 	set_physics_process(reach > 0.0)
