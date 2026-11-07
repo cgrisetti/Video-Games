@@ -26,8 +26,8 @@
 extends RefCounted
 
 const LENS: GDScript = preload("res://tools/test_mythopoetic_lens.gd")
-## Hearthstead Market's green: flat ground to jump and sprint on.
-const GREEN: Vector3 = Vector3(140.0, 0.0, 10.0)
+## The green by the Doverslap chime-post on Embershore: flat ground to jump and sprint on, within the post's reach (cards change there).
+const GREEN: Vector3 = Vector3(745.35, 0.0, -121.64)
 
 var tree: SceneTree
 var check: Callable

@@ -9,3 +9,5 @@ demo/
 # The SoundFont the audio baker renders through (tools/build_audio_stems.py fetches it), and its listening copies.
 tools/soundfonts/*.sf2
 tools/audio_previews/
+# The generator's own Python environment (uv venv --python 3.12 tools/worldgen/.venv).
+tools/worldgen/.venv/

@@ -94,6 +94,8 @@ Every system and quest in Everwood must obey these nine structural rules establi
 
 ## **3\. ZONE 1 DEEP-DIVE: MILLER'S OAK (STARTING ZONE & PERMANENT HUB)**
 
+> **Built as Embershore (2026-11-07, [docs/27](27_EMBERSHORE_MASTER_V2.md)):** the starting isle in the engine is Embershore, built from its generator: a 2:1 grid of 16 x 8 landblocks (2,048 x 1,024 m), not the 12 x 12 below. Its places are Bramblebridge, the Ariundle Moss-Oaks, the Sunken Holloway, the Doverslap Gorge Bridge, the Coast Road, Hearthstead, North Quay and Mill-Downs. **Atlas note:** Embershore uses a 2:1 2,048 x 1,024 m grid; decide whether all isles follow. The text below is the earlier design.
+
 **Grid Footprint:** 12 \\times 12 Chunks (128\\text{m} \\times 128\\text{m} per chunk \= 1,536\\text{m} \\times 1,536\\text{m} total world area) **Local Coordinate Space:** X \\in \[-768\\text{m}, \+768\\text{m}\], Z \\in \[-768\\text{m}, \+768\\text{m}\] (where \-Z is North toward the Sound and \+Z is South toward the Open Sea) **Level Band:** \\text{Lv } 1\\text{--}6 (Onboarding) \+ \\text{Lv } 6\\text{--}20 (Central Hub & \-6\\text{m} Ebb-Tide Endgame Bazaar) **Native Calling Sign:** **Warm Hearth** (Fire / Vitality / Restoration)
 
 ### **3.1 Topographical & Ecological Profile**
@@ -184,7 +186,7 @@ Miller's Oak is a crescent-shaped southern rim segment of the volcanic caldera.
 
 ## **4\. ZONES 2, 3, & 4: THE THREE FRICTION ISLES (LV 6–14)**
 
-Each Friction Isle occupies a standardized 12 \\times 12 chunk grid (1,536\\text{m} \\times 1,536\\text{m}) and strictly obeys Le Guin's **Inner Shore / Outer Shore Law**:
+Each Friction Isle occupies a standardized 12 \\times 12 chunk grid (1,536\\text{m} \\times 1,536\\text{m}; the starting isle alone is 16 x 8 since docs/27) and strictly obeys Le Guin's **Inner Shore / Outer Shore Law**:
 
 > * **The Inner Shore (Facing The Sound):** Sheltered water, arrival causeway/quay, the friendly Steading, and the coastal **Beacon Tower** overlooking the Sound.  
 > * **The Interior Spine:** The primary resource-gathering, questing, and dungeon-delving terrain teaching that island's core mechanical pillar.  

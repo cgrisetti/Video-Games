@@ -10,12 +10,14 @@
 class_name CalderaAtlas
 extends RefCounted
 
-const ISLE_OAKSHIRE_HOLM: StringName = &"isle_oakshire_holm"
+const ISLE_EMBERSHORE: StringName = &"isle_embershore"
+## The starting isle's old name (Oakshire Holm, then Miller's Oak): the same island, kept so older code and saves still find it.
+const ISLE_OAKSHIRE_HOLM: StringName = ISLE_EMBERSHORE
 const ISLE_IRON_NESS: StringName = &"isle_iron_ness"
 const ISLE_BARROW_EYOT: StringName = &"isle_barrow_eyot"
 const ISLE_RIME_FIRTH: StringName = &"isle_rime_firth"
 const ISLE_THE_CROWN: StringName = &"isle_the_crown"
-const ISLES: Array[StringName] = [ISLE_OAKSHIRE_HOLM, ISLE_IRON_NESS, ISLE_BARROW_EYOT, ISLE_RIME_FIRTH, ISLE_THE_CROWN]
+const ISLES: Array[StringName] = [ISLE_EMBERSHORE, ISLE_IRON_NESS, ISLE_BARROW_EYOT, ISLE_RIME_FIRTH, ISLE_THE_CROWN]
 
 const SEAM_WEST_STRAIT: StringName = &"seam_west_strait"
 const SEAM_EEL_SPIT: StringName = &"seam_eel_spit"
@@ -24,7 +26,9 @@ const SEAM_CROWN_LANDING: StringName = &"seam_crown_landing"
 const SEAMS: Array[StringName] = [SEAM_WEST_STRAIT, SEAM_EEL_SPIT, SEAM_SALT_ROAD, SEAM_CROWN_LANDING]
 
 ## Arrival points every builder may name.
-const ARRIVE_ORCHARDS: StringName = &"lee_shore_orchards"
+const ARRIVE_START: StringName = &"bramblebridge_green"
+## The start's old name (the Lee-Shore Orchards), the same arrival.
+const ARRIVE_ORCHARDS: StringName = ARRIVE_START
 const ARRIVE_NORTH_QUAY: StringName = &"north_quay"
 const ARRIVE_ROOT_SANCTUM: StringName = &"root_sanctum"
 const ARRIVE_SOUTH_BAY: StringName = &"south_bay_landing"
@@ -33,7 +37,7 @@ const ARRIVE_QUAY: StringName = &"quay"
 const ARRIVE_SUMMIT: StringName = &"summit_glade"
 
 ## The friction isles' lanes all reopen once the Root-Sanctum is cleared.
-const LANES_DARK_LINE: String = "The lane is dark. Clear the Root-Sanctum in Miller's Oak (Lv 6) to open it."
+const LANES_DARK_LINE: String = "The lane is dark. Clear the Root-Sanctum in Embershore (Lv 6) to open it."
 const CROWN_SHUT_LINE: String = "The Crown's currents run wild. Light all three Beacons to calm them."
 
 static var _isles: Dictionary[StringName, IslandGridResource] = {}
@@ -83,8 +87,8 @@ static func builder_for(id: StringName) -> IslandBuilder:
 		return _builders[id]
 	var made: IslandBuilder
 	match id:
-		ISLE_OAKSHIRE_HOLM:
-			made = OakshireHolmBuilder.new(_isles[id])
+		ISLE_EMBERSHORE:
+			made = EmbershoreBuilder.new(_isles[id])
 		ISLE_THE_CROWN:
 			made = CrownHeartCragBuilder.new(_isles[id])
 		ISLE_IRON_NESS, ISLE_BARROW_EYOT, ISLE_RIME_FIRTH:
@@ -119,9 +123,10 @@ static func shown_names() -> Array[String]:
 static func _ensure() -> void:
 	if not _isles.is_empty():
 		return
-	_isle(ISLE_OAKSHIRE_HOLM, "Miller's Oak", "South", 1, 6, ScribeSignResource.Sign.SIGN_WARM_HEARTH, "", 12, Vector2(0.0, 1600.0),
-		"Hearthstead Market", "Windmill", "Old Quay Market", &"", "", WorldVisualCatalog.OAKSHIRE_WICK, &"millers_holm",
-		Color(0.96, 0.78, 0.36))
+	# Embershore (docs/27): a 2:1 grid, 16 x 8 landblocks, 1,850 m south of The Crown so its corners clear the outer isles' grids.
+	_isle(ISLE_EMBERSHORE, "Embershore", "South", 1, 6, ScribeSignResource.Sign.SIGN_WARM_HEARTH, "", 16, Vector2(0.0, 1850.0),
+		"Hearthstead", "Windmill", "The Old Quay", &"", "", WorldVisualCatalog.OAKSHIRE_WICK, &"millers_holm",
+		Color(0.96, 0.78, 0.36), 8)
 	_isle(ISLE_IRON_NESS, "Iron-Ness", "West", 6, 10, ScribeSignResource.Sign.SIGN_IRON_ROOT, "Shield-Sworn", 12, Vector2(-1650.0, 350.0),
 		"Forge-Gorge", "Forge Stacks", "Raid Gate A: the Under-Forge Abyss", CalderaWorldState.BEACON_IRON, "Iron Current",
 		WorldVisualCatalog.QUARRY_WICK, &"dover_slap_falls", Color(0.86, 0.52, 0.26))
@@ -136,23 +141,25 @@ static func _ensure() -> void:
 	_isle(ISLE_THE_CROWN, "The Crown", "Centre", 15, 20, ScribeSignResource.Sign.NONE, "", 8, Vector2.ZERO,
 		"Lantern-Bearers' Waypost", "World-Tree", "The Sea-Door to the Heart", &"", "",
 		WorldVisualCatalog.SUNKEN_CROWN_FALLS, &"crown_island", Color(0.98, 0.84, 0.42))
+	# Embershore's ends and directions come from its generator (docs/27 §1: causeways and skiffs), in its own frame.
+	# A causeway's deck is level from shore to shore at Embershore's head height; the far isle's arrival pad rises to meet it.
 	_seam(SEAM_WEST_STRAIT, "The West Strait", LoadSeamResource.SeamSkin.WALKABLE_CAUSEWAY, false,
-		ISLE_OAKSHIRE_HOLM, Vector3(-600.0, 1.0, -96.0), ISLE_IRON_NESS, Vector3(250.0, 1.0, 512.0),
-		CalderaWorldState.ROOT_SANCTUM_CLEARED, LANES_DARK_LINE)
+		ISLE_EMBERSHORE, Vector3(-918.19, 1.86, -286.72), ISLE_IRON_NESS, Vector3(250.0, 1.86, 512.0),
+		CalderaWorldState.ROOT_SANCTUM_CLEARED, LANES_DARK_LINE, Vector2(-0.8768, -0.4809))
 	_seam(SEAM_EEL_SPIT, "Eel Spit", LoadSeamResource.SeamSkin.WALKABLE_CAUSEWAY, true,
-		ISLE_OAKSHIRE_HOLM, Vector3(600.0, 0.8, -96.0), ISLE_BARROW_EYOT, Vector3(-260.0, 0.8, 458.0),
-		CalderaWorldState.ROOT_SANCTUM_CLEARED, LANES_DARK_LINE)
+		ISLE_EMBERSHORE, Vector3(967.68, 4.77, -382.29), ISLE_BARROW_EYOT, Vector3(-260.0, 4.77, 458.0),
+		CalderaWorldState.ROOT_SANCTUM_CLEARED, LANES_DARK_LINE, Vector2(0.7624, -0.647))
 	_seam(SEAM_SALT_ROAD, "The Salt Road", LoadSeamResource.SeamSkin.LANTERN_SKIFF, false,
-		ISLE_OAKSHIRE_HOLM, Vector3(30.0, 1.6, -426.0), ISLE_RIME_FIRTH, Vector3(60.0, 1.6, 470.0),
-		CalderaWorldState.ROOT_SANCTUM_CLEARED, LANES_DARK_LINE)
+		ISLE_EMBERSHORE, Vector3(47.79, 1.6, -262.83), ISLE_RIME_FIRTH, Vector3(60.0, 1.6, 470.0),
+		CalderaWorldState.ROOT_SANCTUM_CLEARED, LANES_DARK_LINE, Vector2(0.7428, -0.6695))
 	_seam(SEAM_CROWN_LANDING, "The Crown Landing", LoadSeamResource.SeamSkin.LANTERN_SKIFF, false,
-		ISLE_OAKSHIRE_HOLM, Vector3(50.0, 1.6, -426.0), ISLE_THE_CROWN, Vector3(0.0, 1.6, 414.0),
-		CalderaWorldState.CROWN_LANDING, CROWN_SHUT_LINE)
+		ISLE_EMBERSHORE, Vector3(37.55, 1.6, -262.83), ISLE_THE_CROWN, Vector3(0.0, 1.6, 414.0),
+		CalderaWorldState.CROWN_LANDING, CROWN_SHUT_LINE, Vector2(0.0, -1.0))
 
 
 static func _isle(id: StringName, label: String, compass: String, low: int, high: int, scribe_sign: int, calling: String, chunks: int,
 		sound_position: Vector2, steading: String, landmark: String, ebb: String, beacon: StringName, current_name: String,
-		biome: StringName, music: StringName, accent: Color) -> void:
+		biome: StringName, music: StringName, accent: Color, chunks_z: int = 0) -> void:
 	var made: IslandGridResource = IslandGridResource.new()
 	made.isle_id = id
 	made.display_name = label
@@ -162,6 +169,7 @@ static func _isle(id: StringName, label: String, compass: String, low: int, high
 	made.scribe_sign = scribe_sign as ScribeSignResource.Sign
 	made.calling_title = calling
 	made.chunks = chunks
+	made.chunks_z = chunks_z
 	made.sound_position = sound_position
 	made.steading = steading
 	made.landmark = landmark
@@ -175,7 +183,7 @@ static func _isle(id: StringName, label: String, compass: String, low: int, high
 
 
 static func _seam(id: StringName, label: String, skin: LoadSeamResource.SeamSkin, shingle: bool, isle_a: StringName, anchor_a: Vector3,
-		isle_b: StringName, anchor_b: Vector3, gate: StringName, closed_line: String) -> void:
+		isle_b: StringName, anchor_b: Vector3, gate: StringName, closed_line: String, direction: Vector2 = Vector2(0.0, -1.0)) -> void:
 	var made: LoadSeamResource = LoadSeamResource.new()
 	made.seam_id = id
 	made.display_name = label
@@ -185,7 +193,7 @@ static func _seam(id: StringName, label: String, skin: LoadSeamResource.SeamSkin
 	made.anchor_a = anchor_a
 	made.isle_b = isle_b
 	made.anchor_b = anchor_b
-	made.direction = Vector2(0.0, -1.0)
+	made.direction = direction.normalized()
 	made.gate_flag = gate
 	made.closed_line = closed_line
 	_seams[id] = made

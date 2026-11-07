@@ -68,15 +68,20 @@ func _define() -> void:
 	var arrival: Vector2
 	match isle.isle_id:
 		CalderaAtlas.ISLE_IRON_NESS:
-			var anchor: Vector3 = CalderaAtlas.seam(CalderaAtlas.SEAM_WEST_STRAIT).anchor(isle.isle_id)
-			add_pad(Vector2(anchor.x, anchor.z - 12.0), 10.0, anchor.y, 8.0)
+			var seam: LoadSeamResource = CalderaAtlas.seam(CalderaAtlas.SEAM_WEST_STRAIT)
+			var anchor: Vector3 = seam.anchor(isle.isle_id)
+			# Inland from the shore end, whichever way the causeway comes in (docs/27: from Embershore's west tip).
+			var inland: Vector2 = -Vector2(seam.out_direction(isle.isle_id).x, seam.out_direction(isle.isle_id).z)
+			add_pad(Vector2(anchor.x, anchor.z) + inland * 12.0, 10.0, anchor.y, 8.0)
 			# The road up from the West Strait finds its own way now (docs/26): no straight trench to the steading.
-			arrival = Vector2(anchor.x, anchor.z - 16.0)
+			arrival = Vector2(anchor.x, anchor.z) + inland * 16.0
 			add_path(PackedVector2Array([arrival, Vector2(steading.x + 10.0, steading.y + 30.0), steading, beacon]), 2.0)
 		CalderaAtlas.ISLE_BARROW_EYOT:
-			var anchor: Vector3 = CalderaAtlas.seam(CalderaAtlas.SEAM_EEL_SPIT).anchor(isle.isle_id)
-			add_pad(Vector2(anchor.x, anchor.z - 12.0), 10.0, anchor.y, 8.0)
-			arrival = Vector2(anchor.x, anchor.z - 16.0)
+			var seam: LoadSeamResource = CalderaAtlas.seam(CalderaAtlas.SEAM_EEL_SPIT)
+			var anchor: Vector3 = seam.anchor(isle.isle_id)
+			var inland: Vector2 = -Vector2(seam.out_direction(isle.isle_id).x, seam.out_direction(isle.isle_id).z)
+			add_pad(Vector2(anchor.x, anchor.z) + inland * 12.0, 10.0, anchor.y, 8.0)
+			arrival = Vector2(anchor.x, anchor.z) + inland * 16.0
 			add_path(PackedVector2Array([arrival, steading, Vector2(-330.0, 60.0), beacon]), 2.0)
 			add_path(PackedVector2Array([steading, Vector2(-80.0, 80.0), Vector2(shape["landmark"].x - 40.0, shape["landmark"].y + 20.0)]), 1.8)
 		CalderaAtlas.ISLE_RIME_FIRTH:

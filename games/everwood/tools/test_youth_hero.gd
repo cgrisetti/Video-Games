@@ -8,7 +8,7 @@
 ##   - empty hands at spawn (the tool and quiver tucked away), the youth's own
 ##     idle, walk and run picked by speed, feet planting, the tool drawn with
 ##     the reach-back overlay when a fight starts and tucked away again after
-##   - the start: Miller's Oak's orchard arrival stands Player 1 on the lane
+##   - the start: Embershore's Bramblebridge arrival stands Player 1 at the chime-post
 ##     facing up it toward the Windmill and Hearthstead Market
 ##   - adults stay adults: a companion, or a sworn hero, is never the youth
 extends RefCounted
@@ -156,16 +156,17 @@ func _check_clips() -> void:
 
 
 func _check_start_spot() -> void:
-	var builder: IslandBuilder = CalderaAtlas.builder_for(CalderaAtlas.ISLE_OAKSHIRE_HOLM)
-	var spot: Vector3 = builder.arrival_spot(CalderaAtlas.ARRIVE_ORCHARDS, 0)
-	var facing: Vector3 = -builder.arrival_basis(CalderaAtlas.ARRIVE_ORCHARDS).z
-	var lane: Vector2 = OakshireHolmBuilder.ORCHARD_LANE_UP.normalized()
-	check.call(Vector2(spot.x, spot.z).distance_to(OakshireHolmBuilder.ORCHARD_LANE_FOOT) < 0.05 and Vector2(facing.x, facing.z).dot(lane) > 0.999,
-		"a Level 1 start stands Player 1 on Miller's Oak's orchard lane at %s, facing up it toward the Windmill and Hearthstead Market"
+	var builder: IslandBuilder = CalderaAtlas.builder_for(CalderaAtlas.ISLE_EMBERSHORE)
+	var spot: Vector3 = builder.arrival_spot(CalderaAtlas.ARRIVE_START, 0)
+	var facing: Vector3 = -builder.arrival_basis(CalderaAtlas.ARRIVE_START).z
+	var toward_bridge: Vector2 = EmbershoreBuilder.START_FACING.normalized()
+	# The party's row of four spreads 3.6 m either side of the arrival across the green.
+	check.call(Vector2(spot.x, spot.z).distance_to(EmbershoreBuilder.START_AT) < 4.0 and Vector2(facing.x, facing.z).dot(toward_bridge) > 0.999,
+		"a Level 1 start stands Player 1 on Bramblebridge's green by its chime-post on Embershore at %s, facing the stone bridge (docs/27 §7)"
 		% Vector2(spot.x, spot.z))
-	var second: Vector3 = builder.arrival_spot(CalderaAtlas.ARRIVE_ORCHARDS, 1)
+	var second: Vector3 = builder.arrival_spot(CalderaAtlas.ARRIVE_START, 1)
 	check.call(absf((second - spot).normalized().dot(Vector3(facing.x, 0.0, facing.z))) < 0.01,
-		"...and the rest of the party lines up beside them, across the lane")
+		"...and the rest of the party lines up beside them, across the green")
 
 
 func _check_motion(p1: ActorBase) -> void:

@@ -18,8 +18,10 @@ const CHUNK_SIZE: float = 128.0
 @export var scribe_sign: ScribeSignResource.Sign = ScribeSignResource.Sign.NONE
 ## The Calling whose island it is ("Shield-Sworn"), or "" for the hub.
 @export var calling_title: String = ""
-## Landblocks per side (12 for the outer isles, 8 for The Crown).
+## Landblocks along x (12 for the outer isles, 8 for The Crown, 16 for Embershore).
 @export var chunks: int = 12
+## Landblocks along z; 0 means a square grid (Embershore is 16 x 8, docs/27).
+@export var chunks_z: int = 0
 ## The island's centre in The Sound's frame (x, z metres; The Crown at the origin).
 @export var sound_position: Vector2 = Vector2.ZERO
 @export var steading: String = ""
@@ -27,7 +29,7 @@ const CHUNK_SIZE: float = 128.0
 @export var landmark: String = ""
 ## What the -6 m Ebb bares on its shore.
 @export var ebb_reveal: String = ""
-## The CalderaWorldState flag its Beacon sets (&"" for Miller's Oak and The Crown).
+## The CalderaWorldState flag its Beacon sets (&"" for Embershore and The Crown).
 @export var beacon_flag: StringName = &""
 ## The current round The Crown its Beacon calms ("Iron Current").
 @export var current_name: String = ""
@@ -38,8 +40,26 @@ const CHUNK_SIZE: float = 128.0
 @export var accent_color: Color = Color(0.9, 0.8, 0.5)
 
 
+func chunks_x() -> int:
+	return chunks
+
+
+func chunks_z_count() -> int:
+	return chunks_z if chunks_z > 0 else chunks
+
+
+## The grid's size and half-size in metres, x by z.
+func grid_size() -> Vector2:
+	return Vector2(float(chunks_x()), float(chunks_z_count())) * CHUNK_SIZE
+
+
+func half_size() -> Vector2:
+	return grid_size() * 0.5
+
+
+## The grid's longer side (metres), where one number has to do.
 func grid_size_m() -> float:
-	return float(chunks) * CHUNK_SIZE
+	return maxf(grid_size().x, grid_size().y)
 
 
 func half_size_m() -> float:
@@ -49,12 +69,22 @@ func half_size_m() -> float:
 ## The lowest and highest landblock index on each axis (the grid is centred on the island).
 func chunk_min() -> int:
 	@warning_ignore("integer_division")
-	return -chunks / 2
+	return -chunks_x() / 2
 
 
 func chunk_max() -> int:
 	@warning_ignore("integer_division")
-	return chunks / 2 - 1
+	return chunks_x() / 2 - 1
+
+
+func chunk_min_z() -> int:
+	@warning_ignore("integer_division")
+	return -chunks_z_count() / 2
+
+
+func chunk_max_z() -> int:
+	@warning_ignore("integer_division")
+	return chunks_z_count() / 2 - 1
 
 
 func level_band() -> String:
@@ -62,7 +92,13 @@ func level_band() -> String:
 
 
 func contains_chunk(chunk: Vector2i) -> bool:
-	return chunk.x >= chunk_min() and chunk.x <= chunk_max() and chunk.y >= chunk_min() and chunk.y <= chunk_max()
+	return chunk.x >= chunk_min() and chunk.x <= chunk_max() and chunk.y >= chunk_min_z() and chunk.y <= chunk_max_z()
+
+
+## Whether a spot (x, z) lies inside the grid.
+func contains_point(x: float, z: float) -> bool:
+	var half: Vector2 = half_size()
+	return absf(x) <= half.x and absf(z) <= half.y
 
 
 static func chunk_of(at: Vector3) -> Vector2i:

@@ -1,8 +1,9 @@
 ## The Caldera Isles' world state (autoload "Caldera";
 ## docs/20_CALDERA_ATLAS_AND_CROWN_BIBLE.md, the Musk Razor locks): eight
-## booleans and the sea level they move, nothing else.
+## booleans and the sea level they move, plus Embershore's two (docs/27 §9),
+## nothing else.
 ##
-##   root_sanctum_cleared   Miller's Oak's Lv 6 capstone: the trade lanes go
+##   root_sanctum_cleared   Embershore's Lv 6 capstone: the trade lanes go
 ##                          dark and the West Strait, Eel Spit and Salt Road open
 ##   beacon_iron / _tide / _gale
 ##                          one flag, three effects: its stall at Hearthstead
@@ -13,6 +14,11 @@
 ##                          bough of the World-Tree; all three open the One Stair
 ##   ebb_unlocked           the Harmonic Bell rung together: the Long Flood ends
 ##                          and the sea falls from 0 m to -6 m on every isle
+##   wheel_stopped          Embershore's mill-wheel stops once the party reaches
+##                          Lv 5 (the Elder Oak's roots choke the weir); it turns
+##                          again when the Root-Sanctum is cleared
+##   downs_gate_open        Embershore's Downs Gate, opened from the Hearthstead
+##                          side, stays open
 ##
 ## can_land_on_crown() and cliff_stair_open() are derived, never stored. The host
 ## decides every change and tells the other peers; the flags ride in the party's
@@ -34,9 +40,11 @@ const TRIAL_ANVIL_COMPLETE: StringName = &"trial_anvil_complete"
 const TRIAL_GALE_COMPLETE: StringName = &"trial_gale_complete"
 const TRIAL_TIDE_COMPLETE: StringName = &"trial_tide_complete"
 const EBB_UNLOCKED: StringName = &"ebb_unlocked"
-## The eight authoritative booleans, in save-bit order.
+const WHEEL_STOPPED: StringName = &"wheel_stopped"
+const DOWNS_GATE_OPEN: StringName = &"downs_gate_open"
+## The authoritative booleans, in save-bit order (the eight of docs/20, then Embershore's two).
 const FLAGS: Array[StringName] = [ROOT_SANCTUM_CLEARED, BEACON_IRON, BEACON_TIDE, BEACON_GALE,
-	TRIAL_ANVIL_COMPLETE, TRIAL_GALE_COMPLETE, TRIAL_TIDE_COMPLETE, EBB_UNLOCKED]
+	TRIAL_ANVIL_COMPLETE, TRIAL_GALE_COMPLETE, TRIAL_TIDE_COMPLETE, EBB_UNLOCKED, WHEEL_STOPPED, DOWNS_GATE_OPEN]
 ## A seam's gate id meaning "open once can_land_on_crown()".
 const CROWN_LANDING: StringName = &"crown_landing"
 ## The three Crown trials, by id.
@@ -63,6 +71,8 @@ var trial_anvil_complete: bool = false
 var trial_gale_complete: bool = false
 var trial_tide_complete: bool = false
 var ebb_unlocked: bool = false
+var wheel_stopped: bool = false
+var downs_gate_open: bool = false
 
 ## Where the sea stands right now (it eases from 0 to -6 over the Ebb).
 var sea_level_y: float = SEA_LEVEL_FLOOD
@@ -138,7 +148,7 @@ func lane_open(gate: StringName) -> bool:
 	return get_flag(gate)
 
 
-## Whether the party has earned a Scribe Sign at a Beacon (Warm-Hearth is Miller's Oak's own).
+## Whether the party has earned a Scribe Sign at a Beacon (Warm-Hearth is Embershore's own).
 func sign_granted(scribe_sign: int) -> bool:
 	match scribe_sign:
 		ScribeSignResource.Sign.SIGN_IRON_ROOT:

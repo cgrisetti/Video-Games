@@ -1,11 +1,16 @@
 ## Streams the Caldera Isles (docs/20 Part I; the Musk Razor's 5 grids, 4
 ## seams): exactly one island grid is live at a time, at the origin.
 ##
-##   - Every landblock of the live island shows a light 8 m stand-in (with its
-##     trees, reeds and stones), so the whole island reads from anywhere on it.
+##   - Every landblock of the live island shows a light far stand-in (8 m on
+##     the procedural isles, 4 m on Embershore) with its trees, reeds and
+##     stones, so the whole island reads from anywhere on it.
 ##   - A 3 x 3 window of landblocks round the Soul Tether centroid (the middle
-##     of the party), plus the landblock under every hero, gets the 2 m ground
-##     and its collider; it follows the party and drops what falls behind.
+##     of the party), plus the landblock under every hero, gets the near ground
+##     (2 m, or 1 m on Embershore) and its collider; it follows the party and
+##     drops what falls behind. An isle with a mid level of detail (Embershore's
+##     2 m) shows it in a ring round the window (docs/27 §4).
+##   - An isle whose collision is resident (Embershore: its heightmap is the
+##     collider) keeps every landblock's collider from the moment it's live.
 ##   - The other four islands stand on the horizon across The Sound as
 ##     impostor silhouettes with their landmarks, where the Master Atlas draws them.
 ##   - One sea plane, at CalderaWorldState.sea_level_y, carries the three
@@ -25,6 +30,13 @@ signal collision_changed(chunk: Vector2i, loaded: bool)
 const WINDOW_RADIUS: int = 1
 ## A loaded landblock is dropped once it's further than this from the centroid's (and no hero stands on it).
 const KEEP_RADIUS: int = 2
+## The mid level of detail's ring round the window, and where it's dropped.
+const MID_RADIUS: int = 2
+const MID_KEEP_RADIUS: int = 3
+## Levels of detail (IslandBuilder.lod_quads): the window, the ring round it, the far stand-in.
+const LOD_NEAR: int = 0
+const LOD_MID: int = 1
+const LOD_FAR: int = 2
 ## Microseconds a frame spent turning finished worker data into nodes.
 const FINISH_BUDGET_USEC: int = 3000
 const SEA_SIZE: float = 16000.0
@@ -43,12 +55,15 @@ class ChunkJob:
 	var isle_id: StringName
 	var builder: IslandBuilder
 	var chunk: Vector2i
-	var near: bool
+	## LOD_NEAR, LOD_MID or LOD_FAR.
+	var level: int = LOD_FAR
 	var task_id: int = -1
 	var data: Dictionary = {}
 
 	func run() -> void:
-		data = builder.build_chunk_data(chunk, IslandBuilder.NEAR_QUADS if near else IslandBuilder.FAR_QUADS, near, not near)
+		var quads: int = builder.lod_quads()[level]
+		var near: bool = level == LOD_NEAR
+		data = builder.build_chunk_data(chunk, quads, near and not builder.collision_resident(), level == LOD_FAR, near)
 
 
 ## One landblock of the live island and its nodes.
@@ -58,14 +73,25 @@ class LoadedChunk:
 	var chunk: Vector2i
 	var root: Node3D
 	var far_mesh: MeshInstance3D
+	var mid_mesh: MeshInstance3D
 	var near_mesh: MeshInstance3D
 	var body: StaticBody3D
 	## Species -> Array of Transform3D (for trunk colliders in the window).
 	var scatter: Dictionary = {}
+	## Whether the trunks and stones have their colliders on the body yet.
+	var solids_added: bool = false
 	## The near landblock's meadow of grass and wildflowers (docs/24 §4).
 	var meadow: Node3D
 	var far_job: ChunkJob
+	var mid_job: ChunkJob
 	var near_job: ChunkJob
+
+	## Each level shows only while nothing finer is there.
+	func show_finest() -> void:
+		if mid_mesh != null:
+			mid_mesh.visible = near_mesh == null
+		if far_mesh != null:
+			far_mesh.visible = near_mesh == null and mid_mesh == null
 
 
 ## An island's far silhouette heights, built on a worker thread.
@@ -77,31 +103,32 @@ class ImpostorJob:
 	var arrays: Array = []
 
 	func run() -> void:
-		var half: float = builder.isle.half_size_m()
+		var half: Vector2 = builder.isle.half_size()
 		var step: float = ArchipelagoStreamer.IMPOSTOR_STEP
-		var side: int = int(half * 2.0 / step) + 1
+		var side: int = int(half.x * 2.0 / step) + 1
+		var rows: int = int(half.y * 2.0 / step) + 1
 		var vertices: PackedVector3Array = PackedVector3Array()
 		var colors: PackedColorArray = PackedColorArray()
-		vertices.resize(side * side)
-		colors.resize(side * side)
-		for row: int in side:
+		vertices.resize(side * rows)
+		colors.resize(side * rows)
+		for row: int in rows:
 			for column: int in side:
-				var x: float = -half + column * step
-				var z: float = -half + row * step
+				var x: float = -half.x + column * step
+				var z: float = -half.y + row * step
 				var h: float = builder.height_at(x, z)
 				vertices[row * side + column] = Vector3(x, h, z)
 				colors[row * side + column] = builder.surface_color(x, z, h, 1.0 if h > 1.5 else 0.9)
 		var normals: PackedVector3Array = PackedVector3Array()
-		normals.resize(side * side)
-		for row: int in side:
+		normals.resize(side * rows)
+		for row: int in rows:
 			for column: int in side:
 				var left: float = vertices[row * side + maxi(column - 1, 0)].y
 				var right: float = vertices[row * side + mini(column + 1, side - 1)].y
 				var back: float = vertices[maxi(row - 1, 0) * side + column].y
-				var front: float = vertices[mini(row + 1, side - 1) * side + column].y
+				var front: float = vertices[mini(row + 1, rows - 1) * side + column].y
 				normals[row * side + column] = Vector3((left - right) / (2.0 * step), 1.0, (back - front) / (2.0 * step)).normalized()
 		var indices: PackedInt32Array = PackedInt32Array()
-		for row: int in side - 1:
+		for row: int in rows - 1:
 			for column: int in side - 1:
 				var a: int = row * side + column
 				if vertices[a].y < -4.0 and vertices[a + 1].y < -4.0 and vertices[a + side].y < -4.0 and vertices[a + side + 1].y < -4.0:
@@ -179,17 +206,22 @@ func activate_island(isle_id: StringName, focus: Array[Vector3]) -> void:
 	structures.name = "Island_%s" % String(isle_id).trim_prefix("isle_")
 	add_child(structures)
 	builder.build_structures(structures)
-	var low: int = builder.isle.chunk_min()
-	var high: int = builder.isle.chunk_max()
-	for x: int in range(low, high + 1):
-		for z: int in range(low, high + 1):
+	var resident: bool = builder.collision_resident()
+	for x: int in range(builder.isle.chunk_min(), builder.isle.chunk_max() + 1):
+		for z: int in range(builder.isle.chunk_min_z(), builder.isle.chunk_max_z() + 1):
 			var record: LoadedChunk = LoadedChunk.new()
 			record.chunk = Vector2i(x, z)
 			record.root = Node3D.new()
 			record.root.name = "Landblock_%d_%d" % [x, z]
 			_terrain.add_child(record.root)
 			chunks[record.chunk] = record
-			record.far_job = _dispatch(record.chunk, false)
+			if resident:
+				# The whole island's colliders at once, straight from its data (docs/27 §4).
+				var resident_heights: PackedFloat32Array = builder.collision_heights_for(record.chunk)
+				if not resident_heights.is_empty():
+					record.body = _ground_body(record.chunk, resident_heights)
+					record.root.add_child(record.body)
+			record.far_job = _dispatch(record.chunk, LOD_FAR)
 	focus_points = focus.duplicate()
 	_build_impostors()
 	_refresh_sea()
@@ -198,7 +230,7 @@ func activate_island(isle_id: StringName, focus: Array[Vector3]) -> void:
 
 
 ## Builds, right now, the window round `points` (the first is the centroid) and the
-## landblock under each, and every far stand-in still on its way.
+## landblock under each, the mid ring round the window, and every far stand-in still on its way.
 func load_now(points: Array[Vector3]) -> void:
 	if builder == null:
 		return
@@ -214,9 +246,15 @@ func load_now(points: Array[Vector3]) -> void:
 			_jobs.erase(record.near_job)
 			_finish(record.near_job)
 		else:
-			var job: ChunkJob = _make_job(chunk, true)
+			var job: ChunkJob = _make_job(chunk, LOD_NEAR)
 			job.run()
 			_finish(job)
+	# The mid ring round the window arrives with it, so an arrival leaves no job on the way.
+	for chunk: Vector2i in _wanted_mid():
+		var record: LoadedChunk = chunks.get(chunk, null)
+		if record != null and record.mid_mesh == null and record.mid_job == null:
+			record.mid_job = _dispatch(chunk, LOD_MID)
+	_finish_jobs(true)
 
 
 ## Whether the ground under `at` has its collider.
@@ -238,14 +276,18 @@ func height_at(x: float, z: float) -> float:
 	return builder.height_at(x, z) if builder != null else 0.0
 
 
-## How many landblocks have their window ground, their stand-in, or a job on the way (tests, telemetry).
+## How many landblocks have their window ground, their mid ring, their stand-in, their collider, or a job on the way (tests, telemetry).
 func counts() -> Dictionary:
 	var near: int = 0
+	var mid: int = 0
 	var far: int = 0
+	var bodies: int = 0
 	for record: LoadedChunk in chunks.values():
 		near += 1 if record.near_mesh != null else 0
+		mid += 1 if record.mid_mesh != null else 0
 		far += 1 if record.far_mesh != null else 0
-	return {"near": near, "far": far, "pending": _jobs.size(), "chunks": chunks.size(),
+		bodies += 1 if record.body != null else 0
+	return {"near": near, "mid": mid, "far": far, "bodies": bodies, "pending": _jobs.size(), "chunks": chunks.size(),
 		"terrain_nodes": _terrain.get_child_count(), "impostors": impostors.get_child_count()}
 
 
@@ -293,14 +335,44 @@ func _keeps(chunk: Vector2i) -> bool:
 	return false
 
 
+## The mid ring: landblocks within MID_RADIUS of the centroid's that aren't in the window.
+func _wanted_mid() -> Dictionary[Vector2i, bool]:
+	var wanted: Dictionary[Vector2i, bool] = {}
+	if builder == null or focus_points.is_empty() or builder.lod_quads()[LOD_MID] <= 0:
+		return wanted
+	var near: Dictionary[Vector2i, bool] = _wanted_near()
+	var middle: Vector2i = IslandGridResource.chunk_of(focus_points[0])
+	for dx: int in range(-MID_RADIUS, MID_RADIUS + 1):
+		for dz: int in range(-MID_RADIUS, MID_RADIUS + 1):
+			var chunk: Vector2i = middle + Vector2i(dx, dz)
+			if builder.isle.contains_chunk(chunk) and not near.has(chunk):
+				wanted[chunk] = true
+	return wanted
+
+
+func _keeps_mid(chunk: Vector2i) -> bool:
+	if focus_points.is_empty():
+		return true
+	var middle: Vector2i = IslandGridResource.chunk_of(focus_points[0])
+	return absi(chunk.x - middle.x) <= MID_KEEP_RADIUS and absi(chunk.y - middle.y) <= MID_KEEP_RADIUS
+
+
 func _update_window() -> void:
 	for chunk: Vector2i in _wanted_near():
 		var record: LoadedChunk = chunks.get(chunk, null)
 		if record != null and record.near_mesh == null and record.near_job == null:
-			record.near_job = _dispatch(chunk, true)
+			record.near_job = _dispatch(chunk, LOD_NEAR)
+	for chunk: Vector2i in _wanted_mid():
+		var record: LoadedChunk = chunks.get(chunk, null)
+		if record != null and record.mid_mesh == null and record.mid_job == null:
+			record.mid_job = _dispatch(chunk, LOD_MID)
 	for record: LoadedChunk in chunks.values():
 		if record.near_mesh != null and not _keeps(record.chunk):
 			_drop_near(record)
+		if record.mid_mesh != null and not _keeps_mid(record.chunk):
+			record.mid_mesh.queue_free()
+			record.mid_mesh = null
+			record.show_finest()
 
 
 func _drop_near(record: LoadedChunk) -> void:
@@ -309,28 +381,29 @@ func _drop_near(record: LoadedChunk) -> void:
 	if record.meadow != null:
 		record.meadow.queue_free()
 		record.meadow = null
-	if record.body != null:
+	# A resident collider stays; a window collider goes with its ground.
+	if record.body != null and not builder.collision_resident():
 		record.body.queue_free()
 		record.body = null
-	if record.far_mesh != null:
-		record.far_mesh.visible = true
+		record.solids_added = false
+	record.show_finest()
 	collision_changed.emit(record.chunk, false)
 
 
 # --- Jobs ------------------------------------------------------------------------------
 
-func _make_job(chunk: Vector2i, near: bool) -> ChunkJob:
+func _make_job(chunk: Vector2i, level: int) -> ChunkJob:
 	var job: ChunkJob = ChunkJob.new()
 	job.isle_id = active_isle
 	job.builder = builder
 	job.chunk = chunk
-	job.near = near
+	job.level = level
 	return job
 
 
-func _dispatch(chunk: Vector2i, near: bool) -> ChunkJob:
-	var job: ChunkJob = _make_job(chunk, near)
-	job.task_id = WorkerThreadPool.add_task(job.run, false, "Caldera %s %s" % ["near" if near else "far", chunk])
+func _dispatch(chunk: Vector2i, level: int) -> ChunkJob:
+	var job: ChunkJob = _make_job(chunk, level)
+	job.task_id = WorkerThreadPool.add_task(job.run, false, "Caldera %s %s" % [["near", "mid", "far"][level], chunk])
 	_jobs.append(job)
 	return job
 
@@ -365,32 +438,43 @@ func _finish(job: ChunkJob) -> void:
 	var record: LoadedChunk = chunks.get(job.chunk, null)
 	if record == null:
 		return
-	if job.near:
-		if record.near_job == job:
-			record.near_job = null
-		if record.near_mesh != null:
-			return
-		record.near_mesh = _ground_mesh("Near", job.data)
-		record.root.add_child(record.near_mesh)
-		record.body = _collider(job.chunk, job.data, record.scatter)
-		record.root.add_child(record.body)
-		record.meadow = _meadow_node(job.data.get("meadow", []) as Array)
-		record.root.add_child(record.meadow)
-		if record.far_mesh != null:
-			record.far_mesh.visible = false
-		near_builds += 1
-		collision_changed.emit(job.chunk, true)
-	else:
-		if record.far_job == job:
-			record.far_job = null
-		if record.far_mesh != null:
-			return
-		record.far_mesh = _ground_mesh("Far", job.data)
-		record.far_mesh.visible = record.near_mesh == null
-		record.root.add_child(record.far_mesh)
-		record.scatter = job.data.get("scatter", {}) as Dictionary
-		_add_scatter(record)
-		far_builds += 1
+	match job.level:
+		LOD_NEAR:
+			if record.near_job == job:
+				record.near_job = null
+			if record.near_mesh != null:
+				return
+			record.near_mesh = _ground_mesh("Near", job.data)
+			record.root.add_child(record.near_mesh)
+			if record.body == null:
+				record.body = _ground_body(job.chunk, job.data["collision_heights"])
+				record.root.add_child(record.body)
+			_add_solids(record)
+			record.meadow = _meadow_node(job.data.get("meadow", []) as Array)
+			record.root.add_child(record.meadow)
+			record.show_finest()
+			near_builds += 1
+			collision_changed.emit(job.chunk, true)
+		LOD_MID:
+			if record.mid_job == job:
+				record.mid_job = null
+			if record.mid_mesh != null:
+				return
+			record.mid_mesh = _ground_mesh("Mid", job.data)
+			record.root.add_child(record.mid_mesh)
+			record.show_finest()
+		LOD_FAR:
+			if record.far_job == job:
+				record.far_job = null
+			if record.far_mesh != null:
+				return
+			record.far_mesh = _ground_mesh("Far", job.data)
+			record.root.add_child(record.far_mesh)
+			record.scatter = job.data.get("scatter", {}) as Dictionary
+			_add_scatter(record)
+			_add_solids(record)
+			record.show_finest()
+			far_builds += 1
 
 
 func _ground_mesh(node_name: String, data: Dictionary) -> MeshInstance3D:
@@ -409,8 +493,8 @@ func _ground_mesh(node_name: String, data: Dictionary) -> MeshInstance3D:
 	return ground
 
 
-## The window's collider: the ground as a height map on the low-scenery layer, and the trunks and stones that block the way.
-func _collider(chunk: Vector2i, data: Dictionary, scatter: Dictionary) -> StaticBody3D:
+## A landblock's collider: the ground as a height map on the low-scenery layer.
+func _ground_body(chunk: Vector2i, collision_heights: PackedFloat32Array) -> StaticBody3D:
 	var body: StaticBody3D = StaticBody3D.new()
 	body.name = "Ground"
 	body.collision_layer = ActorBase.LAYER_LOW_SCENERY
@@ -418,22 +502,30 @@ func _collider(chunk: Vector2i, data: Dictionary, scatter: Dictionary) -> Static
 	var shape: HeightMapShape3D = HeightMapShape3D.new()
 	shape.map_width = IslandBuilder.COLLISION_SIDE
 	shape.map_depth = IslandBuilder.COLLISION_SIDE
-	shape.map_data = data["collision_heights"]
+	shape.map_data = collision_heights
 	var collision: CollisionShape3D = CollisionShape3D.new()
 	collision.name = "Collision"
 	collision.shape = shape
 	var size: float = IslandGridResource.CHUNK_SIZE
 	collision.position = Vector3(chunk.x * size + size * 0.5, 0.0, chunk.y * size + size * 0.5)
 	body.add_child(collision)
+	return body
+
+
+## The trunks and stones that block the way, once a landblock has both its collider and its scatter (and only inside the window).
+func _add_solids(record: LoadedChunk) -> void:
+	if record.solids_added or record.body == null or record.near_mesh == null or record.scatter.is_empty():
+		return
+	record.solids_added = true
 	var solids: StaticBody3D = StaticBody3D.new()
 	solids.name = "Solids"
 	solids.collision_layer = ActorBase.LAYER_WORLD
 	solids.collision_mask = 0
-	for species: Variant in scatter:
+	for species: Variant in record.scatter:
 		var radius: float = IslandBuilder.SOLID_RADIUS[int(species)]
 		if radius <= 0.0:
 			continue
-		for where: Transform3D in scatter[species] as Array:
+		for where: Transform3D in record.scatter[species] as Array:
 			var trunk: CollisionShape3D = CollisionShape3D.new()
 			var cylinder: CylinderShape3D = CylinderShape3D.new()
 			cylinder.radius = radius * where.basis.get_scale().x
@@ -442,10 +534,9 @@ func _collider(chunk: Vector2i, data: Dictionary, scatter: Dictionary) -> Static
 			trunk.position = where.origin + Vector3(0.0, 1.5, 0.0)
 			solids.add_child(trunk)
 	if solids.get_child_count() > 0:
-		body.add_child(solids)
+		record.body.add_child(solids)
 	else:
 		solids.free()
-	return body
 
 
 ## A landblock's scatter, one MultiMesh per species: within CalderaKit.ATELIER_RANGE

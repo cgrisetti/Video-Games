@@ -55,7 +55,7 @@
 ##     walking the causeways and gliding the skiff lanes, the Beacons, The
 ##     Crown's seven areas and three trials, and the Harmonic Bell's Ebb
 ##   - then the Audio Mosaics (tools/test_audio_architecture.gd, docs/16 §7):
-##     Miller's Oak's and The Crown's twelve-cell mosaics, chained on the bar
+##     Embershore's and The Crown's twelve-cell mosaics, chained on the bar
 ##     line, the six-mood walk, the Pre-Warm turning to Anxiousness, the Skirmish
 ##     on the same cell, the Mellow shelf and the F4 score line
 ##   - then the Phase 12 Combat Kaizen refinement (tools/test_phase12_kaizen.gd):
@@ -248,9 +248,9 @@ func _run() -> void:
 	await _hero_rig.run_vale(self, _check)
 	# The Caldera Isles last (docs/20): the boot, the seams, the Beacons, The Crown's seven areas, the trials and the Ebb.
 	await CALDERA_CHECKS.new().run(self, _check)
-	# The Audio Mosaics of Miller's Oak and The Crown (docs/16 §7): six moods, phrase cells, the F4 line.
+	# The Audio Mosaics of Embershore and The Crown (docs/16 §7): six moods, phrase cells, the F4 line.
 	await AUDIO_MOSAIC_CHECKS.new().run(self, _check)
-	# The Phase 12 Combat Kaizen refinement (K1 to K5) on Hearthstead Market's green.
+	# The Phase 12 Combat Kaizen refinement (K1 to K5) on the Doverslap chime-post's green.
 	await KAIZEN_CHECKS.new().run(self, _check)
 	await PLAYTEST_CHECKS.new().run(self, _check)
 	# The Seal-and-Tuck Grimoire's three gates, on the same green.

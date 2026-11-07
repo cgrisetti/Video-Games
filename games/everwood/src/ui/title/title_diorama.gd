@@ -1,5 +1,5 @@
 ## The living picture behind the title (docs/22_TITLE_SCREEN_AND_TALES.md §2):
-## Miller's Oak's orchard knoll at golden hour above The Sound, the Level 1
+## Embershore's orchard knoll at golden hour above The Sound, the Level 1
 ## youth standing on its crest in the easy idle, the cape stirring, apple
 ## trees in fruit, motes drifting in the low sun, and across the water The
 ## Crown and the World-Tree in the haze. Built in code from the game's own

@@ -2,7 +2,7 @@
 ## Wayfarer's Atlas of 18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md §7.3):
 ## the parchment map over the player's view, opened out of combat with a tap of
 ## M / R3, or from the Grimoire Binder's Atlas Map tab.
-##   - a header naming where you are ("Miller's Oak · Lv 1–6 · Hearthstead
+##   - a header naming where you are ("Embershore · Lv 1–6 · Hearthstead
 ##     Market"), and the Zone Map / World Map tabs: the island you're on, or
 ##     all five isles of the Caldera (on a single-map level, a close crop of
 ##     the place you're in, or the whole map)
@@ -272,7 +272,7 @@ func mark_spot(map_at: Vector2) -> void:
 	if scope == MapScope.WORLD and CartographyBaker.is_archipelago(level):
 		for each: IslandGridResource in CalderaAtlas.isles():
 			var offset: Vector2 = map_at - each.sound_position
-			if absf(offset.x) <= each.grid_size_m() * 0.5 and absf(offset.y) <= each.grid_size_m() * 0.5:
+			if each.contains_point(offset.x, offset.y):
 				isle = each.isle_id
 				local = offset
 	hud.set_waymarker("Marked spot", isle, local)

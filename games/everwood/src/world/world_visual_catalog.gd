@@ -403,6 +403,12 @@ static func water(kind: StringName = &"canal", flow: Vector2 = Vector2(0.0, 0.5)
 		&"falls":
 			made.set_shader_parameter(&"waterfall", true)
 			made.set_shader_parameter(&"foam_amount", 0.6)
+		&"river":
+			# Embershore's rivers (docs/27 §5): 0.6 m of water over the bed, ripples running downstream along the ribbon.
+			made.set_shader_parameter(&"along_uv", true)
+			made.set_shader_parameter(&"foam_amount", 0.34)
+			made.set_shader_parameter(&"depth_fade", 0.9)
+			made.set_shader_parameter(&"ripple_scale", 0.8)
 		_:
 			made.set_shader_parameter(&"foam_amount", 0.32)
 	_materials[key] = made

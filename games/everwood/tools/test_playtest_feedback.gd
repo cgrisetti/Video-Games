@@ -5,7 +5,7 @@
 ##       own file; the Controls tab's keyboard and pad drawn from the Input
 ##       Map; invert Y; toggle sprint (a click keeps running until you turn
 ##       aside, stop or click again; off, it's held)
-##   K2  the map: Miller's Oak's Zone Map painted from its island (sea, an
+##   K2  the map: Embershore's Zone Map painted from its island (sea, an
 ##       inked shore, roads and the huts' footprints), its towns, dungeon and
 ##       four crossings named, a legend, the hero's turning arrow; a click on
 ##       a mark, a click on open ground and the pad's keys each set a
@@ -36,8 +36,8 @@
 ##       level and hidden from the Options menu
 extends RefCounted
 
-## Hearthstead Market's green: flat ground to sprint on.
-const GREEN: Vector3 = Vector3(140.0, 0.0, 10.0)
+## The green by the Doverslap chime-post on Embershore: flat ground to sprint on, within the post's reach (cards change there).
+const GREEN: Vector3 = Vector3(745.35, 0.0, -121.64)
 
 var tree: SceneTree
 var check: Callable
@@ -318,21 +318,21 @@ func _check_zone_map() -> void:
 	if panel == null or panel.map == null:
 		check.call(false, "K2: the map opens and its Zone Map is painted")
 		return
-	var half: float = CalderaAtlas.isle(CalderaAtlas.ISLE_OAKSHIRE_HOLM).grid_size_m() * 0.5
+	var half: Vector2 = CalderaAtlas.isle(CalderaAtlas.ISLE_EMBERSHORE).half_size()
 	var inks: Dictionary[String, int] = _inks(panel.map.get_image())
 	var title: String = CartographyBaker.map_title(level, panel.scope, Vector2(hero.global_position.x, hero.global_position.z))
-	check.call(CartographyBaker.world_rect(panel.map) == Rect2(-half, -half, half * 2.0, half * 2.0) and inks["water"] > 200 and inks["shore"] > 50
-		and inks["road"] > 30 and inks["footprint"] > 4 and title.begins_with("Miller's Oak · Lv 1–6 · "),
-		"K2: the Zone Map is Miller's Oak itself, painted from its island: the sea and its inked shore, the roads and the huts (%s); the header reads \"%s\""
+	check.call(CartographyBaker.world_rect(panel.map) == Rect2(-half, half * 2.0) and inks["water"] > 200 and inks["shore"] > 50
+		and inks["road"] > 30 and inks["footprint"] > 4 and title.begins_with("Embershore · Lv 1–6 · "),
+		"K2: the Zone Map is Embershore itself (2,048 x 1,024 m), painted from its island: the sea and its inked shore, the roads and the huts (%s); the header reads \"%s\""
 		% [inks, title])
-	var market: Dictionary = _node_named(panel, "Hearthstead Market")
+	var market: Dictionary = _node_named(panel, "Hearthstead")
 	var sanctum: Dictionary = _node_named(panel, "The Root-Sanctum")
 	var crossings: Array[Dictionary] = panel.nodes_of(CartographyBaker.NodeKind.CROSSING)
 	var quests: Array[Dictionary] = panel.nodes_of(CartographyBaker.NodeKind.QUEST)
 	var goal: String = String(quests[0]["label"]) if not quests.is_empty() else "none"
 	check.call(not market.is_empty() and int(market["kind"]) == CartographyBaker.NodeKind.TOWN and not sanctum.is_empty()
 		and int(sanctum["kind"]) == CartographyBaker.NodeKind.DUNGEON and crossings.size() == 4 and not quests.is_empty(),
-		"K2: towns, dungeons, crossings and quests are named on it: Hearthstead Market (a town), The Root-Sanctum (a dungeon), the four crossings (%s) and the quest \"%s\""
+		"K2: towns, dungeons, crossings and quests are named on it: Hearthstead (a town), The Root-Sanctum (a dungeon), the four crossings (%s) and the quest \"%s\""
 		% [", ".join(crossings.map(func(node: Dictionary) -> String: return String(node["label"]))), goal])
 	var up: PackedVector2Array = WorldMapPanel.arrow_points(Vector2.ZERO, 0.0, 10.0)
 	var left: PackedVector2Array = WorldMapPanel.arrow_points(Vector2.ZERO, PI * 0.5, 10.0)
@@ -686,16 +686,17 @@ func _check_atelier_foliage() -> void:
 	if mismatched > 0:
 		problems.append("%d landblock species without a matching near and far pair" % mismatched)
 	if willows == 0:
-		problems.append("no weeping willows on Miller's Oak")
+		problems.append("no weeping willows on Embershore")
 	check.call(problems.is_empty() and near_far > 0 and heaviest <= TREE_TRIANGLES and lowest_crown >= CROWN_CLEARANCE,
-		"K4: oak clumps, ash, weeping willows (%d on Oakshire), orchard apples and tiered pines are sculpted (at most %d triangles, crowns from %.1f m up), with layered ferns; %d landblock stands swap to one-draw stand-ins past %.0f m%s"
+		"K4: oak clumps, ash, weeping willows (%d on Embershore), orchard apples and tiered pines are sculpted (at most %d triangles, crowns from %.1f m up), with layered ferns; %d landblock stands swap to one-draw stand-ins past %.0f m%s"
 		% [willows, heaviest, lowest_crown, near_far, CalderaKit.ATELIER_RANGE, "" if problems.is_empty() else ": " + "; ".join(problems)])
 
 
 func _check_organic_coasts() -> void:
 	var problems: PackedStringArray = PackedStringArray()
 	var summary: PackedStringArray = PackedStringArray()
-	for isle_id: StringName in [CalderaAtlas.ISLE_OAKSHIRE_HOLM, CalderaAtlas.ISLE_IRON_NESS, CalderaAtlas.ISLE_BARROW_EYOT, CalderaAtlas.ISLE_RIME_FIRTH]:
+	# Embershore's coast is its heightmap's own (docs/27), so only the three procedural outer isles grow an organic coast.
+	for isle_id: StringName in [CalderaAtlas.ISLE_IRON_NESS, CalderaAtlas.ISLE_BARROW_EYOT, CalderaAtlas.ISLE_RIME_FIRTH]:
 		var builder: IslandBuilder = CalderaAtlas.builder_for(isle_id)
 		var shape: Dictionary = builder._coast_shape()
 		if not builder.has_organic_coast() or shape.is_empty():
