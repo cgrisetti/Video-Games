@@ -381,9 +381,9 @@ func _check_binder_tabs() -> void:
 	var weapon_tip: String = binder.tooltip_text_now()
 	await _tap_key(KEY_S)
 	await _frames(2)
-	check.call(binder._gear_rows[0].text.contains(hero.loadout.weapon.display_name) and weapon_tip.contains(GrimoireBinderPanel.TAB_TOOLTIPS[Tab.GEAR])
+	check.call(binder._gear_rows[0].text == binder.weapon_title() and weapon_tip.contains(GrimoireBinderPanel.TAB_TOOLTIPS[Tab.GEAR])
 		and binder.gear_row == GrimoireBinderPanel.GearRow.OFF_HAND and binder.tooltip_text_now().begins_with(binder.gear_tooltip(GrimoireBinderPanel.GearRow.OFF_HAND)),
-		"its rows name the weapon (%s), off-hand, armour and Calling; ↓ moves the tooltip to the off-hand" % hero.loadout.weapon.display_name)
+		"its rows name the weapon (%s), offhand, mantle and Calling; ↓ moves the tooltip to the offhand" % binder.weapon_title())
 	await _tap_key(KEY_L)
 	await _frames(3)
 	var unlit: bool = true

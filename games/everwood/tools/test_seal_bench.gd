@@ -194,7 +194,7 @@ func _check_bench(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:
 	var starter_marked: bool = true
 	var rows_ok: bool = binder._seal_rows.size() == GrimoireBinderPanel.SEAL_ROWS.size()
 	for slot: int in mini(binder._seal_rows.size(), GrimoireBinderPanel.SEAL_ROWS.size()):
-		var text: String = binder._seal_rows[slot].text
+		var text: String = binder.seal_row_text(slot)
 		rows_ok = rows_ok and binder._seal_rows[slot].visible and text.contains(PlayerLoadoutResource.HAND_SLOT_NAMES[slot] + ":")
 		if binder.seal_slot_open(slot):
 			open_rows += 1
@@ -211,14 +211,14 @@ func _check_bench(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:
 		and binder.tooltip_text_now().contains(GrimoireBinderPanel.TAB_TOOLTIPS[GrimoireBinderPanel.Tab.SEALS]),
 		"\"4. Seal Press\" lists the three Seals beside the lit preview: %d open at Stage %d (the starting seals marked), %d locked by shape with when they open"
 		% [open_rows, stage, locked_rows])
-	# Down to the off-hand, then right: its next card, on the hero at once.
-	hero.input.menu_input.emit(InputComponent.MENU_UP)
-	hero.input.menu_input.emit(InputComponent.MENU_DOWN)
-	hero.input.menu_input.emit(InputComponent.MENU_DOWN)
+	# The Seal Press (the Seals wireframe): → to the offhand, ↓ to its next card, light presses it, on the hero at once.
+	binder.pick_seal_slot(Hand.WEAPON_SEAL)
+	hero.input.menu_input.emit(InputComponent.MENU_RIGHT)
 	var options: Array[StringName] = binder.seal_options(Hand.OFFHAND_SEAL)
 	var worn_before: StringName = hero.seal.loadout.offhand_seal_card_id
 	var expected: StringName = options[wrapi(options.find(worn_before) + 1, 0, options.size())]
-	hero.input.menu_input.emit(InputComponent.MENU_RIGHT)
+	hero.input.menu_input.emit(InputComponent.MENU_DOWN)
+	hero.input.menu_input.emit(InputComponent.MENU_ACCEPT)
 	await _frames(1)
 	var stepped: bool = binder.seal_row == Hand.OFFHAND_SEAL and hero.seal.loadout.offhand_seal_card_id == expected \
 		and hero.visuals.seal_state().get("offhand_seal", &"x") == expected
@@ -230,7 +230,7 @@ func _check_bench(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:
 		and stepped and pressed and hero.seal.loadout.offhand_seal_card_id == ArsenalCatalog.CARD_WEST_WIND_PROMISE
 		and shown.get("offhand_seal", &"") == ArsenalCatalog.CARD_WEST_WIND_PROMISE and bool(shown.get("offhand_sealed", false)) and binder.preview_live()
 		and binder._seal_rows[Hand.OFFHAND_SEAL].text.contains("Firth-Squall Feather") and hero.seal.wears_chosen_hand(),
-		"↓ and → step the off-hand to its next card, then the Firth-Squall Feather goes on: the hero's crest shows it in the preview at once and EquipmentSealComponent.loadout holds it")
+		"→, ↓ and light press the offhand's next card, then the Firth-Squall Feather goes on: the hero's crest shows it in the preview at once and EquipmentSealComponent.loadout holds it")
 	check.call(String(seat.seal_hand.get("offhand_seal", "")) == "CARD_WEST_WIND_PROMISE" and hero.seal.seat_hand() == seat.seal_hand
 		and String(progress.seal_hand_for(seat.class_id).get("offhand_seal", "")) == "CARD_WEST_WIND_PROMISE"
 		and String(_hand_on_disk(seat.class_id).get("offhand_seal", "")) == "CARD_WEST_WIND_PROMISE"
@@ -246,7 +246,7 @@ func _check_bench(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:
 	if locked_slot >= 0:
 		var before: Dictionary = hero.seal.loadout.to_network_dict()
 		binder.seal_row = locked_slot
-		hero.input.menu_input.emit(InputComponent.MENU_RIGHT)
+		hero.input.menu_input.emit(InputComponent.MENU_ACCEPT)
 		await _frames(1)
 		var keyed_refusal: String = binder.note_text()
 		var pressed_locked: bool = binder.press_seal(locked_slot, ArsenalCatalog.CARD_WEST_WIND_PROMISE)
@@ -255,7 +255,7 @@ func _check_bench(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:
 		check.call(keyed_refusal.contains(opens) and not pressed_locked and binder.note_text().contains(opens)
 			and tip.begins_with("Locked: the %s slot %s" % [PlayerLoadoutResource.HAND_SLOT_NAMES[locked_slot], opens])
 			and hero.seal.loadout.to_network_dict() == before and hero.seal.loadout.card_in_slot(locked_slot) == &"",
-			"the locked %s slot refuses → and a press (\"%s\"); the tooltip box says why: %s" % [PlayerLoadoutResource.HAND_SLOT_NAMES[locked_slot], keyed_refusal, tip.get_slice("\n", 0)])
+			"the locked %s slot refuses light and a press (\"%s\"); the tooltip box says why: %s" % [PlayerLoadoutResource.HAND_SLOT_NAMES[locked_slot], keyed_refusal, tip.get_slice("\n", 0)])
 	else:
 		check.call(GrimoireRules.all_open() or GrimoireRules.seal_open(GrimoireRules.SEAL_OPEN_LEVELS.size() - 1, hero.seal.true_level),
 			"every Seal is open: the mantle Seal at Lv %d, or the classic full kits" % GrimoireRules.SEAL_OPEN_LEVELS[2])
