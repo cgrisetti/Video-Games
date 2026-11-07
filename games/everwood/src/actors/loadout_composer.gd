@@ -16,8 +16,12 @@
 ## Deterministic: the same class and kit give the same actions with the same
 ## ids on every peer, which is what lets the network name actions by id.
 ##
-## It also holds the Grimoire's rules (levels, memory, what a kit may hold),
-## which the Scribe Desk follows and the host checks again.
+## It also holds the Grimoire's rules (what a kit may hold), which the Binder and
+## the Scribe Desk follow and the host checks again. Since the seven-card hand
+## (22 GDD R4, R5) a hero's own Character Level opens its sockets: R at Lv 4, L
+## at 6, L+R at 17, and one Tuck (an under-card beneath R or L+R) at 11; a
+## locked socket plays the weapon's own flourish. Grimoire Memory is gone. The
+## older checks' classic full kits (GrimoireRules.all_open) keep the old rules.
 class_name LoadoutComposer
 extends RefCounted
 
@@ -58,7 +62,7 @@ const Fx = CombatActionResource.Effect
 
 static func compose(player_class: PlayerClassResource, requested: EquipmentLoadoutResource) -> ClassLoadoutResource:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
-	var kit: EquipmentLoadoutResource = sanitized(player_class, requested)
+	var kit: EquipmentLoadoutResource = gated(sanitized(player_class, requested), hero_level(player_class.class_id))
 	var armor: EquipmentItemResource = catalog.item(kit.armor_id)
 	var weapon: EquipmentItemResource = catalog.item(kit.weapon_id)
 	var loadout: ClassLoadoutResource = ClassLoadoutResource.new()
@@ -107,6 +111,51 @@ static func compose(player_class: PlayerClassResource, requested: EquipmentLoado
 	loadout.trigger_r_label = _label(cards[ScribeCardResource.GrimoireSlot.SIGNATURE])
 	loadout.ult_label = _label(cards[ScribeCardResource.GrimoireSlot.ULTIMATE])
 	return loadout
+
+
+## A Fellowship's hero's Character Level (Lv 20 where there's no party, in tools).
+static func hero_level(class_id: StringName) -> int:
+	return PartyProgress.current.character_level(class_id) if PartyProgress.current != null else PartyProgress.MAX_CHARACTER_LEVEL
+
+
+## The kit as a hero of `level` may wear it (22 GDD R4): a socket the level hasn't
+## opened holds no card, and the one Tuck sits under R or L+R from Lv 11 (R's
+## first if both were set). The Forward and Back cards are the Fellowship's
+## stance moves and keep no under-card. Unchanged under the classic full kits.
+static func gated(kit: EquipmentLoadoutResource, level: int) -> EquipmentLoadoutResource:
+	if GrimoireRules.all_open():
+		return kit
+	var worn: EquipmentLoadoutResource = kit.copy()
+	const Slot = ScribeCardResource.GrimoireSlot
+	if not GrimoireRules.socket_open(GrimoireRules.SOCKET_R, level):
+		worn.lead_ids[Slot.SIGNATURE] = &""
+	if not GrimoireRules.socket_open(GrimoireRules.SOCKET_LR, level):
+		worn.lead_ids[Slot.ULTIMATE] = &""
+	if not GrimoireRules.socket_open(GrimoireRules.SOCKET_L, level):
+		worn.guard_leaf_id = &""
+	worn.under_ids[Slot.FORWARD] = &""
+	worn.under_ids[Slot.BACK] = &""
+	var tuck_slot: int = tuck_slot_of(worn)
+	for slot: int in [Slot.SIGNATURE, Slot.ULTIMATE]:
+		if slot != tuck_slot or not GrimoireRules.tuck_open(level) or worn.lead_ids[slot] == &"":
+			worn.under_ids[slot] = &""
+	return worn
+
+
+## Which slot the kit's Tuck sits under: R's (SIGNATURE) if it has one, else L+R's, else -1.
+static func tuck_slot_of(kit: EquipmentLoadoutResource) -> int:
+	const Slot = ScribeCardResource.GrimoireSlot
+	if kit.under_ids[Slot.SIGNATURE] != &"":
+		return Slot.SIGNATURE
+	if kit.under_ids[Slot.ULTIMATE] != &"":
+		return Slot.ULTIMATE
+	return -1
+
+
+## The three socket cards the hero wears (L, R, L+R), &"" where empty.
+static func socket_cards(kit: EquipmentLoadoutResource) -> Array[StringName]:
+	const Slot = ScribeCardResource.GrimoireSlot
+	return [kit.guard_leaf_id, kit.lead_ids[Slot.SIGNATURE], kit.lead_ids[Slot.ULTIMATE]]
 
 
 ## A copy of `requested` with anything unknown, misplaced or not allowed by
@@ -247,10 +296,18 @@ static func kit_problem(player_class: PlayerClassResource, kit: EquipmentLoadout
 			var lead_key: StringName = kit.lead_copy_key(slot)
 			uses[lead_key] = uses.get(lead_key, 0) + 1
 		if kit.under_ids[slot] != &"":
-			if trail_level < ArsenalCatalog.UNDER_TUCK_LEVEL:
-				return "Under-Card links open at Level %d" % ArsenalCatalog.UNDER_TUCK_LEVEL
-			if not under_link_open(slot, level, trail_level):
-				return "Under-Card link %d opens at Grimoire Lv %d" % [slot + 1, slot + 2]
+			if GrimoireRules.all_open():
+				if trail_level < ArsenalCatalog.UNDER_TUCK_LEVEL:
+					return "Under-Card links open at Level %d" % ArsenalCatalog.UNDER_TUCK_LEVEL
+				if not under_link_open(slot, level, trail_level):
+					return "Under-Card link %d opens at Grimoire Lv %d" % [slot + 1, slot + 2]
+			else:
+				if slot != ScribeCardResource.GrimoireSlot.SIGNATURE and slot != ScribeCardResource.GrimoireSlot.ULTIMATE:
+					return "The Tuck goes under R or L+R"
+				if not GrimoireRules.tuck_open(hero_level(player_class.class_id)):
+					return "The Tuck opens at Lv %d" % GrimoireRules.TUCK_OPEN_LEVEL
+				if slot == ScribeCardResource.GrimoireSlot.ULTIMATE and kit.under_ids[ScribeCardResource.GrimoireSlot.SIGNATURE] != &"":
+					return "Only one Tuck: take it from under R first"
 			uses[kit.under_ids[slot]] = uses.get(kit.under_ids[slot], 0) + 1
 	# The diorama's own copies (they take no Grimoire Memory): L's leaf needs a
 	# copy of its own; one charted Place-Card can frame every socket.
@@ -265,10 +322,18 @@ static func kit_problem(player_class: PlayerClassResource, kit: EquipmentLoadout
 			var missing: ScribeCardResource = catalog.card(ScribeCardResource.copy_card_id(key))
 			return "Not in the binder: %s (%s)" % [missing.display_name if missing != null else String(key),
 				ScribeCardResource.VARIANT_NAMES[ScribeCardResource.copy_variant(key)]]
-	var used: int = memory_used(kit)
-	var capacity: int = memory_capacity(level, player_class.bonus_memory)
-	if used > capacity:
-		return "Needs %d Grimoire Memory (Lv %d holds %d)" % [used, level, capacity]
+	if GrimoireRules.all_open():
+		# The classic full kits keep the old Grimoire Memory rule (the older checks).
+		var used: int = memory_used(kit)
+		var capacity: int = memory_capacity(level, player_class.bonus_memory)
+		if used > capacity:
+			return "Needs %d Grimoire Memory (Lv %d holds %d)" % [used, level, capacity]
+		return ""
+	# The seven-card hand (22 GDD R4, R5): one card per socket, one Tuck, seven different titles.
+	var twice: StringName = GrimoireRules.duplicate_title(socket_cards(kit))
+	if twice != &"":
+		var worn_twice: ScribeCardResource = catalog.card(twice)
+		return "%s is already in another socket" % (worn_twice.display_name if worn_twice != null else String(twice))
 	return ""
 
 

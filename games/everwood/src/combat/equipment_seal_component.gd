@@ -325,20 +325,31 @@ func gate_command(command: int) -> int:
 	return command
 
 
-## Whether a trigger pulls at the hero's stage: L from Stage 1, R from Stage 2, L+R from Stage 4.
+## Whether a trigger's socket is open at the hero's Character Level (22 GDD R4: R at 4, L at
+## 6, L+R at 17), and inside a playtest's forced stage.
 func is_trigger_slot_unlocked(trigger_slot: int) -> bool:
-	return PlayerLoadoutResource.trigger_open_at_stage(trigger_slot, progression_stage)
+	var socket: int = SOCKET_TRIGGERS.find(trigger_slot)
+	if debug_stage_override > 0 and not PlayerLoadoutResource.trigger_open_at_stage(trigger_slot, progression_stage):
+		return false
+	return socket >= 0 and GrimoireRules.socket_open(socket, true_level)
 
 
 func tucks_unlocked() -> bool:
 	return progression_stage >= TUCK_STAGE
 
 
-## The seal card a trigger would pull, or null.
+## The card a trigger would pull: an old pocket seal card if one is still set, else the
+## socket's own card (22 GDD R5), or null.
 func card_for_trigger(trigger_slot: int) -> ScribeCardResource:
 	if loadout == null:
 		return null
-	var card: ScribeCardResource = ArsenalCatalog.current.get_card(loadout.primary_for_trigger(trigger_slot))
+	var card: ScribeCardResource = legacy_pocket_card(trigger_slot)
+	return card if card != null else ArsenalCatalog.current.get_card(socket_card_id(SOCKET_TRIGGERS.find(trigger_slot)))
+
+
+## The Seal-and-Tuck branch's pocket seal card on a trigger (never opens now), or null.
+func legacy_pocket_card(trigger_slot: int) -> ScribeCardResource:
+	var card: ScribeCardResource = ArsenalCatalog.current.get_card(loadout.primary_for_trigger(trigger_slot)) if loadout != null else null
 	return card if card != null and card.is_seal_card() else null
 
 
@@ -349,10 +360,10 @@ func get_passive_ward_mitigation(incoming_sign: StringName) -> float:
 	if not enabled or loadout == null:
 		return 0.0
 	var ward: float = 0.0
-	for seal_id: StringName in loadout.seal_card_ids():
-		var seal_card: ScribeCardResource = ArsenalCatalog.current.get_card(seal_id)
-		if seal_card != null and seal_card.wards_against(incoming_sign):
-			ward += seal_card.passive_ward_mitigation
+	for pressed: Array in loadout.seal_slots():
+		var seal_card: ScribeCardResource = ArsenalCatalog.current.get_card(pressed[1])
+		if seal_card != null and seal_card.wards_in_slot(pressed[0], incoming_sign):
+			ward += float(seal_card.slot_passive(pressed[0])["ward"])
 	return clampf(ward, 0.0, ArsenalCatalog.WARD_CAP)
 
 
@@ -360,9 +371,9 @@ func get_passive_ward_mitigation(incoming_sign: StringName) -> float:
 func grants_stun_immunity_against(incoming_sign: StringName) -> bool:
 	if not enabled or loadout == null:
 		return false
-	for seal_id: StringName in loadout.seal_card_ids():
-		var seal_card: ScribeCardResource = ArsenalCatalog.current.get_card(seal_id)
-		if seal_card != null and seal_card.wards_against(incoming_sign) and seal_card.grants_sign_stun_immunity:
+	for pressed: Array in loadout.seal_slots():
+		var seal_card: ScribeCardResource = ArsenalCatalog.current.get_card(pressed[1])
+		if seal_card != null and seal_card.wards_in_slot(pressed[0], incoming_sign) and bool(seal_card.slot_passive(pressed[0])["stun"]):
 			return true
 	return false
 
@@ -378,7 +389,7 @@ func passive_flat_damage_bonus() -> int:
 	if not enabled or loadout == null:
 		return 0
 	var weapon_seal: ScribeCardResource = ArsenalCatalog.current.get_card(loadout.weapon_seal_card_id)
-	return weapon_seal.passive_flat_damage_bonus if weapon_seal != null else 0
+	return int(weapon_seal.slot_passive(ScribeCardResource.SealSlotMask.SEAL_WEAPON)["flat"]) if weapon_seal != null else 0
 
 
 ## The strongest posture-break multiplier among the seals.
@@ -393,10 +404,10 @@ func move_speed_mult() -> float:
 	if not enabled or loadout == null:
 		return 1.0
 	var mult: float = 1.0
-	for seal_id: StringName in loadout.seal_card_ids():
-		var seal_card: ScribeCardResource = ArsenalCatalog.current.get_card(seal_id)
+	for pressed: Array in loadout.seal_slots():
+		var seal_card: ScribeCardResource = ArsenalCatalog.current.get_card(pressed[1])
 		if seal_card != null:
-			mult = maxf(mult, seal_card.passive_move_speed_mult)
+			mult = maxf(mult, float(seal_card.slot_passive(pressed[0])["stride"]))
 	return mult
 
 
@@ -499,7 +510,11 @@ func execute_one_button_gambit() -> Dictionary:
 		return answer
 	for trigger_slot: int in [PlayerLoadoutResource.TriggerSlot.L, PlayerLoadoutResource.TriggerSlot.R]:
 		var card: ScribeCardResource = card_for_trigger(trigger_slot)
-		if card == null or not is_trigger_slot_unlocked(trigger_slot) or actor.stats.resonance_pips() < card.resonance_pip_cost:
+		if card == null or not is_trigger_slot_unlocked(trigger_slot):
+			continue
+		var socket: int = SOCKET_TRIGGERS.find(trigger_slot)
+		var cost: int = card.resonance_pip_cost if legacy_pocket_card(trigger_slot) != null else GrimoireRules.ink_cost(socket, card, socket_has_tuck(socket))
+		if actor.stats.resonance_pips() < cost:
 			continue
 		if trigger_slot == PlayerLoadoutResource.TriggerSlot.R:
 			var skill: CombatActionResource = actor.loadout.opener_for(CombatActionResource.Command.TRIGGER_R_SKILL)
@@ -531,9 +546,30 @@ func _on_sign_flow_cast(socket: int, _scribe_sign: int) -> void:
 	if not enabled or socket < 0 or socket >= SOCKET_TRIGGERS.size():
 		return
 	var trigger_slot: int = SOCKET_TRIGGERS[socket]
-	if card_for_trigger(trigger_slot) == null or not is_trigger_slot_unlocked(trigger_slot):
+	if legacy_pocket_card(trigger_slot) == null or not is_trigger_slot_unlocked(trigger_slot):
+		# The seven-card hand (22 GDD R5): the socket's own card is what comes out of the
+		# pouch. Its Sign-Flow cast already coats the weapon, so the pull adds the look alone.
+		var leaf_id: StringName = socket_card_id(socket)
+		if leaf_id != &"":
+			_show_pocket_pull(leaf_id, trigger_slot, socket_has_tuck(socket))
 		return
 	_invoke(trigger_slot, false)
+
+
+## The card in one of the Cross's sockets (L, R, L+R) on the hero's composed kit, &"" when empty or locked.
+func socket_card_id(socket: int) -> StringName:
+	if actor == null or actor.loadout == null or actor.loadout.kit == null:
+		return &""
+	var cards: Array[StringName] = LoadoutComposer.socket_cards(actor.loadout.kit)
+	return cards[socket] if socket >= 0 and socket < cards.size() else &""
+
+
+## Whether the one Tuck sits under a socket (R or L+R) on the composed kit.
+func socket_has_tuck(socket: int) -> bool:
+	if actor == null or actor.loadout == null or actor.loadout.kit == null or socket == GrimoireRules.SOCKET_L:
+		return false
+	var slot: int = ScribeCardResource.GrimoireSlot.SIGNATURE if socket == GrimoireRules.SOCKET_R else ScribeCardResource.GrimoireSlot.ULTIMATE
+	return actor.loadout.kit.under_ids[slot] != &""
 
 
 ## The pull itself: the pips (when charged here), the coat, the flourish everywhere, the trail's ink.
@@ -542,37 +578,55 @@ func _invoke(trigger_slot: int, charge_pips: bool) -> Dictionary:
 	var primary_id: StringName = loadout.primary_for_trigger(trigger_slot)
 	if trigger_slot == PlayerLoadoutResource.TriggerSlot.L_AND_R and progression_stage < GRAND_INVOCATION_STAGE:
 		primary_id = &""
+	# The seven-card hand (22 GDD R5): with no old pocket card, the pull is the socket's own
+	# card. It costs what the socket costs (GrimoireRules.ink_cost) and adds no coat of its
+	# own: the card's Sign-Flow cast is the coat.
+	var socket: int = SOCKET_TRIGGERS.find(trigger_slot)
+	var leaf_pull: bool = false
 	if primary_id == &"":
-		return _refuse(trigger_slot, REASON_EMPTY)
+		primary_id = socket_card_id(socket)
+		leaf_pull = primary_id != &""
+		if not leaf_pull:
+			var locked: bool = socket >= 0 and not GrimoireRules.socket_open(socket, true_level)
+			return _refuse(trigger_slot, REASON_LOCKED if locked else REASON_EMPTY)
 	var card: ScribeCardResource = catalog.get_card(primary_id)
-	if card == null or not card.is_seal_card():
+	if card == null or (not leaf_pull and not card.is_seal_card()):
 		return _refuse(trigger_slot, REASON_EMPTY)
+	var cost: int = GrimoireRules.ink_cost(socket, card, socket_has_tuck(socket)) if leaf_pull else card.resonance_pip_cost
 	if charge_pips:
-		if actor.stats.resonance_pips() < card.resonance_pip_cost:
+		if actor.stats.resonance_pips() < cost:
 			return _refuse(trigger_slot, REASON_PIPS)
-		actor.stats.add_resonance(-float(card.resonance_pip_cost))
+		actor.stats.add_resonance(-float(cost))
 	flow_link_timer = 0.0
 	_window_fired = true
 	var tuck_id: StringName = loadout.tuck_for_trigger(trigger_slot)
-	var has_tuck: bool = tuck_id != &"" and tucks_unlocked()
-	active_card_id = primary_id
-	active_tuck = has_tuck
-	active_left = card.active_buff_duration_sec
-	burst_left = BURST_GRACE_SEC
+	var has_tuck: bool = socket_has_tuck(socket) if leaf_pull else (tuck_id != &"" and tucks_unlocked())
 	_invocations += 1
-	var damage: int = catalog.evaluate_hit_damage(loadout, true, true, primary_id, has_tuck)
-	var posture: float = card.active_posture_damage_bonus * (ScribeCardResource.TUCK_SYNERGY_POSTURE_MULT if has_tuck else 1.0)
+	var damage: int = 0
+	var posture: float = 0.0
+	if leaf_pull:
+		_end_coat()
+	else:
+		active_card_id = primary_id
+		active_tuck = has_tuck
+		active_left = card.active_buff_duration_sec
+		burst_left = BURST_GRACE_SEC
+		damage = catalog.evaluate_hit_damage(loadout, true, true, primary_id, has_tuck)
+		posture = card.active_posture_damage_bonus * (ScribeCardResource.TUCK_SYNERGY_POSTURE_MULT if has_tuck else 1.0)
 	_show_pocket_pull(primary_id, trigger_slot, has_tuck)
+	var ink: Color = card.ink_primary_color if not leaf_pull else ArsenalCatalog.current.sign_seal(card.scribe_sign).color
 	if actor.trail != null:
-		actor.trail.set_ink_override(card.ink_primary_color, active_left)
+		actor.trail.set_ink_override(ink, active_left if not leaf_pull else BURST_GRACE_SEC)
 	if actor.is_local_player():
 		AudioCues.play(&"card_chime", 1.15, -8.0)
 	CombatDirector.current.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.9), "POCKET-PULL!",
-		card.ink_primary_color.lightened(0.2), PULL_TEXT_SIZE)
+		ink.lightened(0.2), PULL_TEXT_SIZE)
 	last_invocation = {
 		"success": true,
 		"card_id": primary_id,
-		"action_id": card.active_action_id,
+		"action_id": card.active_action_id if not leaf_pull else StringName(card.card_id),
+		"ink_cost": cost,
+		"leaf_pull": leaf_pull,
 		"damage": damage,
 		"posture_damage": posture,
 		"manifestation_mode": int(card.manifestation_mode),

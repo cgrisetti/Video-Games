@@ -266,12 +266,11 @@ const SEAL_CHIME_COST: int = 40
 ## R tuck (by ClassLoadoutResource.Role). Each slot's card is the Fellowship's starting seal there,
 ## which the bench always offers in that slot (like a starter Ink Card, it needs no copy).
 const ROLE_SEAL_HANDS: Dictionary[int, Array] = {
-	ClassLoadoutResource.Role.TANK: [CARD_OLD_ROOT_BASTION, CARD_QUIET_WEIR, CARD_WEST_WIND_PROMISE,
-		CARD_QUIET_WEIR, CARD_WEST_WIND_PROMISE, CARD_OLD_ROOT_BASTION, CARD_EMBER_BOUGH],
-	ClassLoadoutResource.Role.HEALER: [CARD_WEST_WIND_PROMISE, CARD_QUIET_WEIR, CARD_EMBER_BOUGH,
-		CARD_WEST_WIND_PROMISE, CARD_QUIET_WEIR, CARD_EMBER_BOUGH, CARD_OLD_ROOT_BASTION],
-	ClassLoadoutResource.Role.DPS: [CARD_EMBER_BOUGH, CARD_WEST_WIND_PROMISE, CARD_OLD_ROOT_BASTION,
-		CARD_EMBER_BOUGH, CARD_QUIET_WEIR, CARD_WEST_WIND_PROMISE, CARD_OLD_ROOT_BASTION],
+	# Weapon, offhand and mantle: three different seals (22 GDD R5). The four pocket slots
+	# are empty: the L, R and L+R cards live in the kit's sockets now.
+	ClassLoadoutResource.Role.TANK: [CARD_OLD_ROOT_BASTION, CARD_QUIET_WEIR, CARD_WEST_WIND_PROMISE, &"", &"", &"", &""],
+	ClassLoadoutResource.Role.HEALER: [CARD_WEST_WIND_PROMISE, CARD_EMBER_BOUGH, CARD_QUIET_WEIR, &"", &"", &"", &""],
+	ClassLoadoutResource.Role.DPS: [CARD_EMBER_BOUGH, CARD_OLD_ROOT_BASTION, CARD_WEST_WIND_PROMISE, &"", &"", &"", &""],
 }
 
 # The Secondary Callings (06 §3, 07 GDD §1.3), in column order.
@@ -839,7 +838,7 @@ func evaluate_hit_damage(loadout: PlayerLoadoutResource, is_heavy_attack: bool, 
 	if loadout.weapon_seal_card_id != &"":
 		var w_seal: ScribeCardResource = get_card(loadout.weapon_seal_card_id)
 		if w_seal != null:
-			dmg += float(w_seal.passive_flat_damage_bonus)
+			dmg += float(w_seal.slot_passive(ScribeCardResource.SealSlotMask.SEAL_WEAPON)["flat"])
 	if is_active_invocation and active_card_id != &"":
 		var active_card: ScribeCardResource = get_card(active_card_id)
 		if active_card != null:
@@ -863,13 +862,12 @@ func evaluate_incoming_hit(loadout: PlayerLoadoutResource, raw_damage: int, inco
 		mitigation = tier.get_mitigation_for_class(loadout.armor_weight_class as EquipmentTierResource.ArmorWeightClass)
 	var stun_immune: bool = false
 	if loadout != null:
-		for seal_id: StringName in loadout.seal_card_ids():
-			if seal_id == &"":
-				continue
-			var seal_card: ScribeCardResource = get_card(seal_id)
-			if seal_card != null and seal_card.wards_against(incoming_sign):
-				mitigation = clampf(mitigation + seal_card.passive_ward_mitigation, 0.0, WARD_CAP)
-				if seal_card.grants_sign_stun_immunity:
+		for pressed: Array in loadout.seal_slots():
+			var seal_card: ScribeCardResource = get_card(pressed[1])
+			if seal_card != null and seal_card.wards_in_slot(pressed[0], incoming_sign):
+				var passive: Dictionary = seal_card.slot_passive(pressed[0])
+				mitigation = clampf(mitigation + float(passive["ward"]), 0.0, WARD_CAP)
+				if bool(passive["stun"]):
 					stun_immune = true
 	var final_damage: int = maxi(1, int(round(float(raw_damage) * (1.0 - mitigation))))
 	return {"final_damage": final_damage, "mitigation_applied": mitigation, "stun_immune": stun_immune}
@@ -880,10 +878,10 @@ func posture_break_mult_of(loadout: PlayerLoadoutResource) -> float:
 	var mult: float = 1.0
 	if loadout == null:
 		return mult
-	for seal_id: StringName in loadout.seal_card_ids():
-		var seal_card: ScribeCardResource = get_card(seal_id)
+	for pressed: Array in loadout.seal_slots():
+		var seal_card: ScribeCardResource = get_card(pressed[1])
 		if seal_card != null:
-			mult = maxf(mult, seal_card.passive_posture_break_mult)
+			mult = maxf(mult, float(seal_card.slot_passive(pressed[0])["posture"]))
 	return mult
 
 
@@ -1003,6 +1001,8 @@ func seal_hand_problem(hand: PlayerLoadoutResource, role: int, stage: int, true_
 			continue
 		var slot_name: String = PlayerLoadoutResource.HAND_SLOT_NAMES[slot]
 		var listed: ScribeCardResource = get_card(card_id)
+		if not PlayerLoadoutResource.is_seal_slot(slot):
+			return "The %s slot %s" % [slot_name, PlayerLoadoutResource.slot_opens_text(slot)]
 		if listed == null or not listed.is_seal_card():
 			return "Only seal cards go in the %s slot" % slot_name
 		if not PlayerLoadoutResource.slot_open(slot, stage, true_level):
@@ -1011,6 +1011,9 @@ func seal_hand_problem(hand: PlayerLoadoutResource, role: int, stage: int, true_
 			return "%s can't go on the %s" % [listed.display_name, slot_name]
 		if not seal_available(card_id, role, slot, collection):
 			return "Get %s at the Reed-Light Scribery first" % listed.display_name
+	var twice: StringName = GrimoireRules.duplicate_title(hand.seal_card_ids())
+	if twice != &"":
+		return "%s is already pressed on another piece" % get_card(twice).display_name
 	if not hand.validate_loadout_for_stage(stage):
 		return "Too many cards for Stage %d" % stage
 	return ""
@@ -2218,28 +2221,54 @@ func _archetype(id: StringName, archetype: EquipmentTierResource.WeaponArchetype
 
 # --- The seal cards (docs/everwood_equipment_grimoire_architecture.md §4, §6.4) -------------------
 
-## Four canonical seals, one a Sign: each may be pressed on any of the three
-## pieces (its ward, flat bonus, posture or stride comes with it) and pulled
-## from the pouch on L, R or L+R. Never in a chest: the Reed-Light Scribery
-## sells them (SEAL_CHIME_COST), and the Binder's stamping bench presses them.
+## Four seals, one a Sign (the Google Doc §3): each may be pressed on any of the
+## three pieces and does a different job on each (the Contextual Slot Rule,
+## slot_passives). Never in a chest: the Reed-Light Scribery sells them
+## (SEAL_CHIME_COST) and the Seal Press presses them. Ids keep the Seal-and-Tuck
+## branch's spellings. Numbers the doc gives are kept; where it names a feel the
+## code has no lever for yet (attack speed, a Bramble-Slow patch, a pulse), the
+## nearest lever stands in and the text says what the doc means [tuning TBD].
 func _build_seal_cards() -> void:
 	const Foil = ScribeCardResource.FoilGrade
-	_seal_card(CARD_QUIET_WEIR, "Seal of the Quiet Weir", Sign.SIGN_STAR_TIDE, Foil.FOIL_GILDED_LEAF, &"SCRIPT_STAR_WARD",
-		Color("#9370DB"), Color("#E6E6FA"), 0.35, true, 2, 1.0, 1.0,
+	const W = ScribeCardResource.SealSlotMask.SEAL_WEAPON
+	const O = ScribeCardResource.SealSlotMask.SEAL_OFFHAND_BUCKLER
+	const M = ScribeCardResource.SealSlotMask.SEAL_MANTLE_ARMOR
+	var bell: ScribeCardResource = _seal_card(CARD_QUIET_WEIR, "Ebb-Quay Star-Bell", Sign.SIGN_STAR_TIDE, Foil.FOIL_PLAIN_VELLUM, &"SCRIPT_STAR_WARD",
+		Color("#5C4AE4"), Color("#B388EB"), 0.30, true, 0, 1.10, 1.0,
 		ScribeCardResource.MODE_WARD_MANTLE, 1, &"ACTION_SHIELD_CHARGE_RELEASE", 1.45, 45.0, &"TUCK_STAR_NOVA_PULSE",
-		"Pressed on a buckler it wards Star-Tide: a third less of its blows, and no stun. Pulled, the crest erupts and the shield charges.")
-	_seal_card(CARD_EMBER_BOUGH, "Seal of the Ember-Bough", Sign.SIGN_WARM_HEARTH, Foil.FOIL_STAR_INKED_VELLUM, &"SCRIPT_HEARTH_VOW",
-		Color("#FF8C00"), Color("#FFFACD"), 0.30, true, 4, 1.0, 1.0,
+		"A Star-Tide bell-seal: it wards Star-Tide on the offhand and the mantle, and rings stagger on the blade.")
+	bell.slot_passives = {
+		W: {"ward": 0.0, "stun": false, "posture": 1.10, "text": "Strikes carry Star-Tide; every 4th hit chimes for bonus stagger."},
+		O: {"ward": 0.30, "stun": true, "text": "Guarding cuts Star-Tide beams 30% and stops stun. Censer: 20% longer tether."},
+		M: {"ward": 0.20, "stun": true, "text": "-20% from Star-Tide waves. No Deep-Hush silence."},
+	}
+	var ember: ScribeCardResource = _seal_card(CARD_EMBER_BOUGH, "Cider-Hearth Ember", Sign.SIGN_WARM_HEARTH, Foil.FOIL_PLAIN_VELLUM, &"SCRIPT_HEARTH_VOW",
+		Color("#F26419"), Color("#F6AE2D"), 0.20, true, 4, 1.18, 1.0,
 		ScribeCardResource.MODE_WEAPON_COAT, 1, &"ACTION_FLAME_BLADE_COAT", 1.55, 50.0, &"TUCK_EMBER_FLARE_TRAIL",
-		"Pressed on a blade it adds four to every cut and wards Warm-Hearth. Pulled, hearth-ink pours down the weapon and coats it in flame.")
-	_seal_card(CARD_OLD_ROOT_BASTION, "Seal of the Old-Root", Sign.SIGN_IRON_ROOT, Foil.FOIL_PLAIN_VELLUM, &"SCRIPT_ROOT_BIND",
-		Color("#2E8B57"), Color("#98FB98"), 0.35, true, 2, 1.25, 1.0,
+		"A Warm-Hearth ember-seal: Ember-Burn on the blade, a hearth pulse on the offhand, a ward on the mantle.")
+	ember.slot_passives = {
+		W: {"ward": 0.0, "stun": false, "flat": 4, "posture": 1.18, "text": "Your swings catch Warm-Hearth ink: a stacking Ember-Burn, 18% more stagger wear."},
+		O: {"ward": 0.10, "stun": false, "text": "Buckler: PARRY & STRIKE! lets out a 3 m Warm-Hearth pulse. Censer: your tethered friend gets 12% more healing."},
+		M: {"ward": 0.20, "stun": true, "text": "-20% from Warm-Hearth cinders. Heal 1.5% a second near braziers."},
+	}
+	var root_bind: ScribeCardResource = _seal_card(CARD_OLD_ROOT_BASTION, "Old-Hob's Root-Bind", Sign.SIGN_IRON_ROOT, Foil.FOIL_PLAIN_VELLUM, &"SCRIPT_ROOT_BIND",
+		Color("#D9822B"), Color("#3B7A57"), 0.20, true, 0, 1.25, 1.0,
 		ScribeCardResource.MODE_WARD_MANTLE, 1, &"ACTION_ROOT_ANCHOR_SLAM", 1.40, 55.0, &"TUCK_ROOT_QUAKE_BIND",
-		"Pressed on a mantle it doubles down on poise: a quarter more posture break, and a ward against Iron-Root. Pulled, roots anchor the hero and slam the ground.")
-	_seal_card(CARD_WEST_WIND_PROMISE, "Seal of the West-Wind", Sign.SIGN_RIME_GALE, Foil.FOIL_GILDED_LEAF, &"SCRIPT_GALE_STRIDE",
-		Color("#00CED1"), Color("#E0FFFF"), 0.30, true, 2, 1.0, 1.15,
+		"An Iron-Root bind-seal: stagger on the blade, a rooted guard on the offhand, a ward on the mantle.")
+	root_bind.slot_passives = {
+		W: {"ward": 0.0, "stun": false, "posture": 1.25, "text": "+25% Iron-Root stagger. Heavy finishers leave a 3 s Bramble-Slow patch."},
+		O: {"ward": 0.10, "stun": true, "text": "Guarding soaks the knockback and roots attackers for 1.5 s. Quiver or censer: heavy shots pin flying Mites."},
+		M: {"ward": 0.20, "stun": true, "text": "-20% from Iron-Root blows. No Crag-Stagger."},
+	}
+	var feather: ScribeCardResource = _seal_card(CARD_WEST_WIND_PROMISE, "Firth-Squall Feather", Sign.SIGN_RIME_GALE, Foil.FOIL_PLAIN_VELLUM, &"SCRIPT_GALE_STRIDE",
+		Color("#4BC4E5"), Color("#E2F3F8"), 0.20, true, 2, 1.0, 1.0,
 		ScribeCardResource.MODE_LANTERN_TETHER, 1, &"ACTION_GALE_TETHER_HASTE", 1.35, 40.0, &"TUCK_GALE_STRIDE_ECHO",
-		"Pressed on a mantle it quickens a slow hero's stride by 15% and wards Rime-Gale. Pulled, a haste runs down the Soul Tether.")
+		"A Rime-Gale feather-seal: speed on the blade, a longer step on the offhand, a ward on the mantle.")
+	feather.slot_passives = {
+		W: {"ward": 0.0, "stun": false, "flat": 2, "text": "+15% speed on Light chains, and Rime-Gale stagger."},
+		O: {"ward": 0.0, "stun": false, "stride": 1.15, "text": "Buckler: Shield-Step goes 35% further. Quiver or censer: shots pierce one more."},
+		M: {"ward": 0.20, "stun": true, "text": "-20% from Rime-Gale squalls. No Frost-Slow on ice."},
+	}
 
 
 func _seal_card(id: StringName, label: String, scribe_sign: Sign, foil: ScribeCardResource.FoilGrade, script: StringName,

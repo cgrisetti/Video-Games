@@ -1981,9 +1981,15 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 		"Level 3: a Plain Vellum R card slots into every empty R (Taunt, Rime-Lash); the healer's own pick stays")
 	progress.award_xp(PartyProgress.LEVEL_XP[4] - progress.xp)
 	await _seconds(0.1)
-	_check(progress.trail_level() == 5 and tank.loadout.weapon.item_id == ArsenalCatalog.BRAMBLE_FALCHION and tank.loadout.kit.lead_ids[3] == ArsenalCatalog.BULWARK_QUAKE
-		and dps.loadout.kit.lead_ids[3] == ArsenalCatalog.TEMPEST_FLOW and healer.loadout.kit.lead_ids[3] == ArsenalCatalog.LIFELINE_PULL,
-		"Level 5: Bramble-Bridge Steel and an L+R card")
+	# The seven-card hand (22 GDD R4): the L+R card goes into every kit, but its socket opens at Character Level 17.
+	var seat_kit: Callable = func(hero: ActorBase) -> EquipmentLoadoutResource:
+		return EquipmentLoadoutResource.from_dict(NetworkManager.current.roster[hero.player_id].kit)
+	_check(progress.trail_level() == 5 and tank.loadout.weapon.item_id == ArsenalCatalog.BRAMBLE_FALCHION
+		and (seat_kit.call(tank) as EquipmentLoadoutResource).lead_ids[3] == ArsenalCatalog.BULWARK_QUAKE
+		and (seat_kit.call(dps) as EquipmentLoadoutResource).lead_ids[3] == ArsenalCatalog.TEMPEST_FLOW
+		and (seat_kit.call(healer) as EquipmentLoadoutResource).lead_ids[3] == ArsenalCatalog.LIFELINE_PULL
+		and (GrimoireRules.all_open() or tank.loadout.kit.lead_ids[3] == &""),
+		"Level 5: Bramble-Bridge Steel and an L+R card in every kit, its socket locked until Character Level 17")
 	progress.award_xp(PartyProgress.LEVEL_XP[6] - progress.xp)
 	await _seconds(0.1)
 	_check(tank.loadout.kit.under_ids[2] == ArsenalCatalog.IRON_ROOT_LINK and dps.loadout.kit.under_ids[2] == ArsenalCatalog.STAR_TIDE_LINK

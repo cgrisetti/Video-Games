@@ -986,6 +986,11 @@ func press_seal(slot: int, card_id: StringName) -> bool:
 	if not is_instance_valid(actor) or actor.seal == null or actor.seal.loadout == null:
 		return false
 	var draft: PlayerLoadoutResource = actor.seal.loadout.copy()
+	# One card, one place (22 GDD R5): pressing a seal already on another piece moves it here.
+	if card_id != &"":
+		for other: int in PlayerLoadoutResource.HAND_SLOT_COUNT:
+			if other != slot and draft.card_in_slot(other) == card_id:
+				draft.set_card_in_slot(other, &"")
 	draft.set_card_in_slot(slot, card_id)
 	var problem: String = actor.seal.choose_hand(draft)
 	if problem != "":

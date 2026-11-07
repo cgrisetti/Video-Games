@@ -174,6 +174,11 @@ const TUCK_SYNERGY_POSTURE_MULT: float = 1.25
 ## Every strike's posture damage, and the hero's stride, times these.
 @export var passive_posture_break_mult: float = 1.0
 @export var passive_move_speed_mult: float = 1.0
+## The Contextual Slot Rule (the Google Doc §3, 22 GDD): the same seal does a
+## different job on each piece. SealSlotMask flag -> {"ward": share of a blow of
+## the card's Sign, "stun": bool, "flat": int, "posture": mult, "stride": mult,
+## "text": what the Seal Press says}. A slot not listed reads the passive_* above.
+@export var slot_passives: Dictionary = {}
 
 @export_group("Layer 2: Mid-Combat Pocket-Pull Invocation")
 ## Pips the pull costs (1 to 3), and the action it releases, by id.
@@ -229,6 +234,24 @@ func passive_ward_sign_enum() -> int:
 ## Whether the seal wards against a Sign (by its id, &"SIGN_STAR_TIDE").
 func wards_against(incoming_sign: StringName) -> bool:
 	return passive_ward_sign != &"" and passive_ward_mitigation > 0.0 and passive_ward_sign == incoming_sign
+
+
+## What this seal does pressed into one slot (a SealSlotMask flag): ward, stun, flat, posture, stride, text.
+func slot_passive(slot_flag: int) -> Dictionary:
+	var listed: Dictionary = slot_passives.get(slot_flag, {})
+	return {
+		"ward": float(listed.get("ward", passive_ward_mitigation)),
+		"stun": bool(listed.get("stun", grants_sign_stun_immunity)),
+		"flat": int(listed.get("flat", passive_flat_damage_bonus)),
+		"posture": float(listed.get("posture", passive_posture_break_mult)),
+		"stride": float(listed.get("stride", passive_move_speed_mult)),
+		"text": String(listed.get("text", description)),
+	}
+
+
+## Whether this seal, pressed into `slot_flag`, wards a blow of `incoming_sign`.
+func wards_in_slot(slot_flag: int, incoming_sign: StringName) -> bool:
+	return passive_ward_sign != &"" and passive_ward_sign == incoming_sign and float(slot_passive(slot_flag)["ward"]) > 0.0
 
 
 func has_tuck_synergy() -> bool:

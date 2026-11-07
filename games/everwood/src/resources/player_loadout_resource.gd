@@ -1,17 +1,14 @@
-## A hero's Seal-and-Tuck Grimoire hand (docs/everwood_equipment_grimoire_architecture.md
-## Part II §4-§5): the material tier they wear, their youth silhouette, and the
-## 7-Card Pre-Raid Hand, partitioned so nothing scrolls mid-fight (the Musk Razor):
+## A hero's Seals and the frame they're pressed on (22_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md;
+## the Google Doc *Everwood Equipment & Grimoire Architecture* §3): the material
+## tiers its weapon and armour were promoted to, its youth silhouette, and the
+## three Equipment Seals pressed onto the weapon, the offhand (buckler, quiver,
+## censer or a maul's Pommel-Knot) and the mantle. Each opens at a Character
+## Level (Lv 3, 6, 11) and no title is pressed twice.
 ##
-##   Layer 1  three Equipment Seals pressed onto the 3D gear before battle
-##            (weapon, off-hand / buckler, mantle): a Deep-Ink script, a Sign
-##            ward, a flat bonus, and the card's foil in the shader
-##   Layer 2  four Active Invocations on the direct triggers: L and R each
-##            hold a primary card and an Under-Card Tuck beneath it; L+R is
-##            the Grand Invocation of both primaries (Stage 4)
-##
-## The Graduated APM ladder opens the slots by progression stage
-## (validate_loadout_for_stage): Stage 1 one seal and the L card, Stage 2 two
-## and two, Stage 3 three and three (the first tuck), Stage 4 everything.
+## The rest of the seven-card hand lives in the kit's sockets: the L, R and L+R
+## cards and the one Tuck (EquipmentLoadoutResource, LoadoutComposer). The four
+## pocket fields below are the Seal-and-Tuck branch's, kept so its saves read;
+## they never open any more.
 ##
 ## Ids only: to_network_dict is Strings and ints, so a hand crosses ENet and
 ## save files as a few short keys and every peer resolves them in the
@@ -37,22 +34,20 @@ const STAGE_FIRST_FRICTION: int = 2
 const STAGE_CONVERGENCE: int = 3
 const STAGE_APEX: int = 4
 const STAGE_NAMES: Array[String] = ["", "Homestead Onboarding", "First Friction Isle", "Three Isles Convergence", "Apex & Endgame Raids"]
-const STAGE_MAX_LEVELS: Array[int] = [0, 5, 10, 15, 20]
-## How many seal slots and active slots each stage opens (index = stage).
+## The Google Doc's bands: Stage 3 runs to Lv 16, Stage 4 is Lv 17 to 20.
+const STAGE_MAX_LEVELS: Array[int] = [0, 5, 10, 16, 20]
+## How many seal slots each stage opens (index = stage): the weapon's (Lv 3), the offhand's
+## (Lv 6), the mantle's (Lv 11). The hand's four pocket slots never open any more: the L, R
+## and L+R cards and the Tuck live in the kit's sockets (22 GDD R4, R5).
 const SEALS_OPEN: Array[int] = [0, 1, 2, 3, 3]
-const ACTIVES_OPEN: Array[int] = [0, 1, 2, 3, 4]
-## Within Stage 1: the first Pocket-Pull card comes at Lv 3, the off-hand seal at Lv 4.
-const FIRST_POCKET_PULL_LEVEL: int = 3
-const OFFHAND_SEAL_LEVEL: int = 4
+const ACTIVES_OPEN: Array[int] = [0, 0, 0, 0, 0]
+## The level each slot opens at, in HandSlot order (the four pocket slots: never).
+const SLOT_OPEN_LEVELS: Array[int] = [3, 6, 11, 99, 99, 99, 99]
 const BODY_TYPE_NAMES: Array[String] = ["Male Youth", "Female Youth"]
 const TRIGGER_NAMES: Array[String] = ["L", "R", "L+R"]
 const HAND_SLOT_COUNT: int = 7
 ## What the bench calls each slot (HandSlot order).
 const HAND_SLOT_NAMES: Array[String] = ["Weapon", "Off-Hand", "Mantle", "L", "L tuck", "R", "R tuck"]
-## The stage each slot opens at (HandSlot order), as trim_to_stage takes them off: the
-## off-hand seal and the L card in Stage 1 (at Lv 4 and Lv 3), the weapon seal and R at
-## Stage 2, the mantle seal and the L tuck at Stage 3, the R tuck at Stage 4.
-const SLOT_OPEN_STAGES: Array[int] = [2, 1, 3, 1, 3, 2, 4]
 
 @export var body_type: YouthBodyType = YouthBodyType.BODY_MALE_YOUTH
 @export var calling_id: StringName = &"CALLING_SHIELD_SWORN"
@@ -85,6 +80,13 @@ func seal_card_ids() -> Array[StringName]:
 ## The four invocations in slot order (L, L tuck, R, R tuck).
 func active_card_ids() -> Array[StringName]:
 	return [slot_l_primary_id, slot_l_tuck_id, slot_r_primary_id, slot_r_tuck_id]
+
+
+## Each pressed seal with the slot it sits in: [[SealSlotMask flag, card id], ...].
+func seal_slots() -> Array[Array]:
+	return [[ScribeCardResource.SealSlotMask.SEAL_WEAPON, weapon_seal_card_id],
+		[ScribeCardResource.SealSlotMask.SEAL_OFFHAND_BUCKLER, offhand_seal_card_id],
+		[ScribeCardResource.SealSlotMask.SEAL_MANTLE_ARMOR, mantle_seal_card_id]]
 
 
 func get_all_equipped_card_ids() -> Array[StringName]:
@@ -200,32 +202,24 @@ static func seal_flag_for_slot(slot: int) -> int:
 	return ScribeCardResource.SEAL_SLOT_FLAGS[slot] if is_seal_slot(slot) else ScribeCardResource.SealSlotMask.SEAL_NONE
 
 
-## Whether a slot is open at a stage and level, exactly as trim_to_stage leaves it.
+## Whether a slot is open at a stage and level, exactly as trim_to_stage leaves it: the
+## level must reach the slot's (GrimoireRules), and a playtest's forced stage caps it.
 static func slot_open(slot: int, stage: int, true_level: int) -> bool:
 	if slot < 0 or slot >= HAND_SLOT_COUNT:
 		return false
-	var opens: int = SLOT_OPEN_STAGES[slot]
-	if stage != opens:
-		return stage > opens
-	if stage != STAGE_HOMESTEAD:
-		return true
-	return true_level >= (OFFHAND_SEAL_LEVEL if slot == HandSlot.OFFHAND_SEAL else FIRST_POCKET_PULL_LEVEL)
+	var opens: int = SLOT_OPEN_LEVELS[slot]
+	return true_level >= opens and stage >= stage_for_true_level(opens)
 
 
-## The first True Level that opens a slot: Lv 3 the L card, Lv 4 the off-hand seal, Lv 6, 11 and 16 the rest.
+## The Character Level that opens a slot: Lv 3 the weapon Seal, 6 the offhand's, 11 the mantle's.
 static func slot_open_level(slot: int) -> int:
-	var opens: int = SLOT_OPEN_STAGES[clampi(slot, 0, HAND_SLOT_COUNT - 1)]
-	if opens == STAGE_HOMESTEAD:
-		return OFFHAND_SEAL_LEVEL if slot == HandSlot.OFFHAND_SEAL else FIRST_POCKET_PULL_LEVEL
-	return STAGE_MAX_LEVELS[opens - 1] + 1
+	return SLOT_OPEN_LEVELS[clampi(slot, 0, HAND_SLOT_COUNT - 1)]
 
 
-## When a locked slot opens, in a few words: "opens at Lv 4", "opens at Stage 3 (Lv 11)".
+## When a locked slot opens, in a few words: "opens at Lv 6".
 static func slot_opens_text(slot: int) -> String:
-	var opens: int = SLOT_OPEN_STAGES[clampi(slot, 0, HAND_SLOT_COUNT - 1)]
-	if opens == STAGE_HOMESTEAD:
-		return "opens at Lv %d" % slot_open_level(slot)
-	return "opens at Stage %d (Lv %d)" % [opens, slot_open_level(slot)]
+	var opens: int = slot_open_level(slot)
+	return "opens at Lv %d" % opens if opens <= STAGE_MAX_LEVELS[STAGE_APEX] else "is in the Cross now"
 
 
 ## The card a trigger fires: L's and R's primaries; L+R's is the L primary, with the R primary as its partner.
@@ -296,50 +290,20 @@ static func trigger_open_at_stage(trigger_slot: int, stage: int) -> bool:
 	return false
 
 
-## Whether the hand fits a stage's slots: how many seals and invocations it
-## may hold, and no tucks before Stage 3 (the doc's exact rule).
+## Whether the hand fits a stage's slots: no more seals than it opened, no pocket cards,
+## and no title twice (22 GDD R5).
 func validate_loadout_for_stage(progression_stage: int) -> bool:
-	var seals: int = seal_count()
-	var actives: int = active_count()
-	match progression_stage:
-		1:
-			return seals <= 1 and actives <= 1
-		2:
-			return seals <= 2 and actives <= 2 and slot_l_tuck_id == &"" and slot_r_tuck_id == &""
-		3:
-			return seals <= 3 and actives <= 3
-		4:
-			return seals <= 3 and actives <= 4
-		_:
-			return false
+	var stage: int = clampi(progression_stage, STAGE_HOMESTEAD, STAGE_APEX)
+	return seal_count() <= seals_open_at_stage(stage) and active_count() == 0 \
+		and GrimoireRules.duplicate_title(seal_card_ids()) == &""
 
 
-## Takes off whatever a stage (and, in Stage 1, a level) hasn't opened yet, in
-## the order the ladder opens them: the off-hand seal (Lv 4), then the weapon
-## seal, then the mantle; the L card (Lv 3), then R, then the L tuck, then the R tuck.
+## Takes off whatever the level (and a playtest's forced stage) hasn't opened yet.
 func trim_to_stage(progression_stage: int, true_level: int = STAGE_MAX_LEVELS[STAGE_APEX]) -> void:
 	var stage: int = clampi(progression_stage, STAGE_HOMESTEAD, STAGE_APEX)
-	var seals_open: int = seals_open_at_stage(stage)
-	var actives_open: int = actives_open_at_stage(stage)
-	if stage == STAGE_HOMESTEAD:
-		if true_level < OFFHAND_SEAL_LEVEL:
-			seals_open = 0
-		if true_level < FIRST_POCKET_PULL_LEVEL:
-			actives_open = 0
-	if seals_open < 1:
-		offhand_seal_card_id = &""
-	if seals_open < 2:
-		weapon_seal_card_id = &""
-	if seals_open < 3:
-		mantle_seal_card_id = &""
-	if actives_open < 1:
-		slot_l_primary_id = &""
-	if actives_open < 2:
-		slot_r_primary_id = &""
-	if actives_open < 3:
-		slot_l_tuck_id = &""
-	if actives_open < 4:
-		slot_r_tuck_id = &""
+	for slot: int in HAND_SLOT_COUNT:
+		if not slot_open(slot, stage, true_level):
+			set_card_in_slot(slot, &"")
 
 
 # --- Across the network and into saves (Gate 4) --------------------------------------

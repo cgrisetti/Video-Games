@@ -50,7 +50,8 @@ const TIER_RECIPES: Array[Array] = [
 	["#3D355E", 0.98, 0.12, 0.85, "#9370DB", 0.55],
 ]
 const HOMESTEAD_NAMES: Array[String] = ["Orchard-Stick & Bark-Buckler", "Cooper's Cider-Mallet", "Bent-Twig Bough & Reed-Shafts", "Rowan-Crook & Tallow-Jar"]
-const SEAL_NAMES: Array[String] = ["Seal of the Quiet Weir", "Seal of the Ember-Bough", "Seal of the Old-Root", "Seal of the West-Wind"]
+## The Google Doc's four seals, in SEAL_CARD_IDS order (ids keep the Seal-and-Tuck branch's spellings).
+const SEAL_NAMES: Array[String] = ["Ebb-Quay Star-Bell", "Cider-Hearth Ember", "Old-Hob's Root-Bind", "Firth-Squall Feather"]
 ## The split-screen cells the ledger must fit under 8% of: one, two (either way) and four players.
 const CELLS: Array[Vector2] = [Vector2(1600.0, 900.0), Vector2(800.0, 900.0), Vector2(1600.0, 450.0), Vector2(800.0, 450.0), Vector2(640.0, 360.0)]
 
@@ -162,7 +163,13 @@ func _stage_1_philological_linter_gate() -> void:
 			and seal.can_stamp_into_slot(ScribeCardResource.SealSlotMask.SEAL_WEAPON) and seal.can_stamp_into_slot(ScribeCardResource.SealSlotMask.SEAL_MANTLE_ARMOR) \
 			and seal.passive_ward_sign == ScribeSignResource.id_of(seal.scribe_sign) and seal.resonance_pip_cost == 1 and seal.drop_weight == 0.0
 		not_leads = not_leads and not seal.is_lead() and not seal.is_under() and not seal.is_place_card() and not seal.is_action_leaf()
-	check.call(seals_ok, "four seal cards, the Quiet Weir, the Ember-Bough, the Old-Root and the West-Wind, each stampable on any piece and warding its own Sign")
+	var slot_rule: bool = true
+	for seal: ScribeCardResource in seals:
+		var on_weapon: Dictionary = seal.slot_passive(ScribeCardResource.SealSlotMask.SEAL_WEAPON)
+		var on_mantle: Dictionary = seal.slot_passive(ScribeCardResource.SealSlotMask.SEAL_MANTLE_ARMOR)
+		slot_rule = slot_rule and seal.slot_passives.size() == 3 and is_equal_approx(float(on_mantle["ward"]), 0.20) and bool(on_mantle["stun"]) \
+			and float(on_weapon["ward"]) == 0.0 and String(on_weapon["text"]) != String(on_mantle["text"])
+	check.call(seals_ok and slot_rule, "four seal cards, the Ebb-Quay Star-Bell, the Cider-Hearth Ember, Old-Hob's Root-Bind and the Firth-Squall Feather, each stampable on any piece; each does a different job on each piece (the Contextual Slot Rule): -20% of its Sign and no stun on the mantle, none of that on the blade")
 	var starters: int = 0
 	for card: ScribeCardResource in catalog.cards():
 		if card.is_lead() and card.starter:
@@ -220,16 +227,16 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	warden.offhand_seal_card_id = ArsenalCatalog.CARD_QUIET_WEIR
 	var star_hit: Dictionary = catalog.evaluate_incoming_hit(warden, 100, &"SIGN_STAR_TIDE")
 	var root_hit: Dictionary = catalog.evaluate_incoming_hit(warden, 100, &"SIGN_IRON_ROOT")
-	check.call(bool(star_hit["stun_immune"]) and int(star_hit["final_damage"]) <= 50 and int(star_hit["final_damage"]) == 41
+	check.call(bool(star_hit["stun_immune"]) and int(star_hit["final_damage"]) <= 50 and int(star_hit["final_damage"]) == 46
 		and not bool(root_hit["stun_immune"]) and int(root_hit["final_damage"]) == 76,
-		"a Forge-Iron buckler stamped with the Quiet Weir takes a 100 Star-Tide blow for %d, unstunned, and an Iron-Root one for %d"
+		"a Forge-Plate Shield-Sworn with the Star-Bell on the buckler takes a 100 Star-Tide blow for %d (24%% Armor Guard and the 30%% ward), unstunned, and an Iron-Root one for %d"
 		% [int(star_hit["final_damage"]), int(root_hit["final_damage"])])
 	var controller: EquipmentSealComponent = EquipmentSealComponent.new()
 	controller.loadout = warden
 	var by_controller: Dictionary = controller.evaluate_incoming_hit(catalog, 100, &"SIGN_STAR_TIDE")
-	check.call(by_controller == star_hit and is_equal_approx(controller.get_passive_ward_mitigation(&"SIGN_STAR_TIDE"), 0.35)
+	check.call(by_controller == star_hit and is_equal_approx(controller.get_passive_ward_mitigation(&"SIGN_STAR_TIDE"), 0.30)
 		and controller.grants_stun_immunity_against(&"SIGN_STAR_TIDE") and not controller.grants_stun_immunity_against(&"SIGN_RIME_GALE"),
-		"the seal component reckons the same blow, a 35% Star-Tide ward with its stun immunity")
+		"the seal component reckons the same blow, a 30% Star-Tide ward on the buckler with its stun immunity")
 	controller.free()
 	# The Dual-Readout curve (§5.1).
 	check.call(ArsenalCatalog.compute_true_level_from_renown(40) == 20 and ArsenalCatalog.compute_true_level_from_renown(1) == 1
@@ -252,21 +259,26 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	# The Graduated APM ladder (§5.2).
 	check.call(PlayerLoadoutResource.stage_for_true_level(1) == 1 and PlayerLoadoutResource.stage_for_true_level(5) == 1
 		and PlayerLoadoutResource.stage_for_true_level(6) == 2 and PlayerLoadoutResource.stage_for_true_level(10) == 2
-		and PlayerLoadoutResource.stage_for_true_level(11) == 3 and PlayerLoadoutResource.stage_for_true_level(15) == 3
-		and PlayerLoadoutResource.stage_for_true_level(16) == 4 and PlayerLoadoutResource.stage_for_true_level(20) == 4
+		and PlayerLoadoutResource.stage_for_true_level(11) == 3 and PlayerLoadoutResource.stage_for_true_level(16) == 3
+		and PlayerLoadoutResource.stage_for_true_level(17) == 4 and PlayerLoadoutResource.stage_for_true_level(20) == 4
 		and ArsenalCatalog.compute_progression_stage(ArsenalCatalog.compute_true_level_from_renown(40)) == 4,
-		"the four stages sit on Lv 1-5, 6-10, 11-15 and 16-20")
+		"the four stages sit on the Google Doc's Lv 1-5, 6-10, 11-16 and 17-20")
 	var raid: PlayerLoadoutResource = _raid_hand()
 	var mid: PlayerLoadoutResource = _hand(ArsenalCatalog.TIER_3_FORGE_IRON)
 	mid.weapon_seal_card_id = ArsenalCatalog.CARD_EMBER_BOUGH
 	mid.offhand_seal_card_id = ArsenalCatalog.CARD_QUIET_WEIR
 	mid.slot_l_primary_id = ArsenalCatalog.CARD_QUIET_WEIR
 	mid.slot_r_primary_id = ArsenalCatalog.CARD_EMBER_BOUGH
-	check.call(raid.get_total_equipped_card_count() == 7 and PlayerLoadoutResource.MAX_CARDS == 7 and raid.validate_loadout_for_stage(4)
-		and not raid.validate_loadout_for_stage(3) and not raid.validate_loadout_for_stage(2) and not raid.validate_loadout_for_stage(1)
-		and mid.validate_loadout_for_stage(2) and mid.validate_loadout_for_stage(3) and not mid.validate_loadout_for_stage(1)
-		and not raid.validate_loadout_for_stage(0) and not raid.validate_loadout_for_stage(5),
-		"a 7-card hand (3 seals, 4 invocations) is a Stage 4 hand, refused in Stages 1 to 3; two seals and L and R fit Stage 2")
+	var seals_only: PlayerLoadoutResource = mid.copy()
+	seals_only.slot_l_primary_id = &""
+	seals_only.slot_r_primary_id = &""
+	var twice: PlayerLoadoutResource = seals_only.copy()
+	twice.mantle_seal_card_id = twice.weapon_seal_card_id
+	check.call(PlayerLoadoutResource.MAX_CARDS == 7 and not raid.validate_loadout_for_stage(4) and not mid.validate_loadout_for_stage(4)
+		and seals_only.validate_loadout_for_stage(2) and not seals_only.validate_loadout_for_stage(1)
+		and not twice.validate_loadout_for_stage(4) and GrimoireRules.duplicate_title(twice.seal_card_ids()) == twice.weapon_seal_card_id
+		and GrimoireRules.slots_open(1) == 0 and GrimoireRules.slots_open(12) == 6 and GrimoireRules.slots_open(17) == 7,
+		"the hand keeps Seals only (the L, R and L+R cards and the Tuck live in the Cross): two Seals fit Stage 2, not Stage 1; a hand with old pocket cards is refused; no seal twice; 0 of 7 slots at Lv 1, 6 at Lv 12, all 7 at Lv 17")
 	var tank: StringName = ClassLoadouts.SHIELD_TANK
 	var sword: int = EquipmentItemResource.WeaponType.LIGHT_SWORD
 	var at_1: PlayerLoadoutResource = catalog.default_seal_loadout(tank, ClassLoadoutResource.Role.TANK, sword, &"bridge_warden", 1, 0)
@@ -275,13 +287,13 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	var at_6: PlayerLoadoutResource = catalog.default_seal_loadout(tank, ClassLoadoutResource.Role.TANK, sword, &"bridge_warden", 6, 3)
 	var at_11: PlayerLoadoutResource = catalog.default_seal_loadout(tank, ClassLoadoutResource.Role.TANK, sword, &"bridge_warden", 11, 0)
 	var at_20: PlayerLoadoutResource = catalog.default_seal_loadout(tank, ClassLoadoutResource.Role.TANK, sword, &"bridge_warden", 20, 0)
-	check.call(at_1.seal_count() == 0 and at_1.active_count() == 0 and at_3.seal_count() == 0 and at_3.active_count() == 1 and at_3.slot_l_primary_id != &""
-		and at_4.seal_count() == 1 and at_4.offhand_seal_card_id == ArsenalCatalog.CARD_QUIET_WEIR and at_4.active_count() == 1
-		and at_6.seal_count() == 2 and at_6.active_count() == 2 and at_6.slot_l_tuck_id == &"" and at_6.slot_r_tuck_id == &""
-		and at_11.seal_count() == 3 and at_11.active_count() == 3 and at_11.slot_l_tuck_id != &"" and at_11.slot_r_tuck_id == &""
-		and at_20.seal_count() == 3 and at_20.active_count() == 4 and at_20.equipped_tier_id == ArsenalCatalog.TIER_7_STAR_GLASS
+	check.call(at_1.seal_count() == 0 and at_3.seal_count() == 1 and at_3.weapon_seal_card_id == ArsenalCatalog.CARD_OLD_ROOT_BASTION
+		and at_4.seal_count() == 1 and at_6.seal_count() == 2 and at_6.offhand_seal_card_id == ArsenalCatalog.CARD_QUIET_WEIR
+		and at_11.seal_count() == 3 and at_11.mantle_seal_card_id == ArsenalCatalog.CARD_WEST_WIND_PROMISE
+		and at_20.seal_count() == 3 and at_20.equipped_tier_id == ArsenalCatalog.TIER_7_STAR_GLASS
+		and at_1.active_count() + at_6.active_count() + at_11.active_count() + at_20.active_count() == 0
 		and at_1.validate_loadout_for_stage(1) and at_6.validate_loadout_for_stage(2) and at_11.validate_loadout_for_stage(3) and at_20.validate_loadout_for_stage(4),
-		"a Shield-Sworn's default hand grows up the ladder: nothing at Lv 1, the L card at 3, the buckler seal at 4, two and two at 6, three and three at 11, all seven at 20")
+		"a Shield-Sworn's Seals grow with its level: none at Lv 1, Old-Hob's Root-Bind on the weapon at 3, the Star-Bell on the buckler at 6, the Feather on the mantle at 11")
 	check.call(at_1.body_type == PlayerLoadoutResource.YouthBodyType.BODY_MALE_YOUTH and at_3.body_type == PlayerLoadoutResource.YouthBodyType.BODY_FEMALE_YOUTH
 		and at_1.armor_weight_class == EquipmentTierResource.ArmorWeightClass.ARMOR_HEAVY_SHIELD_SWORN and at_1.weapon_archetype == Arch.WEAPON_SWORD_BOARD
 		and catalog.default_seal_loadout(ClassLoadouts.SOUL_TETHER_HEALER, ClassLoadoutResource.Role.HEALER, EquipmentItemResource.WeaponType.STAFF, &"bell_keeper", 10, 0).armor_weight_class
@@ -325,19 +337,20 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	gate.progression_stage = 2
 	var stage_2: bool = gate.gate_command(CombatActionResource.Command.FORWARD_HEAVY) == CombatActionResource.Command.FORWARD_HEAVY \
 		and not gate.is_directional_attack_unlocked(EquipmentSealComponent.DirectionalAttack.SIDE_LIGHT_FLANK) \
-		and gate.is_trigger_slot_unlocked(Slot.R) and not gate.is_trigger_slot_unlocked(Slot.L_AND_R) and not gate.tucks_unlocked()
+		and GrimoireRules.socket_open_at(GrimoireRules.SOCKET_R, 4) and not GrimoireRules.socket_open_at(GrimoireRules.SOCKET_R, 3) \
+		and GrimoireRules.socket_open_at(GrimoireRules.SOCKET_L, 6) and not GrimoireRules.socket_open_at(GrimoireRules.SOCKET_L, 5)
 	gate.progression_stage = 3
-	var stage_3: bool = gate.is_directional_attack_unlocked(EquipmentSealComponent.DirectionalAttack.SIDE_LIGHT_FLANK) and gate.tucks_unlocked() \
-		and not gate.is_trigger_slot_unlocked(Slot.L_AND_R)
+	var stage_3: bool = gate.is_directional_attack_unlocked(EquipmentSealComponent.DirectionalAttack.SIDE_LIGHT_FLANK) \
+		and GrimoireRules.TUCK_OPEN_LEVEL == 11 and not GrimoireRules.socket_open_at(GrimoireRules.SOCKET_LR, 16)
 	gate.progression_stage = 4
-	var stage_4: bool = gate.is_trigger_slot_unlocked(Slot.L_AND_R)
+	var stage_4: bool = GrimoireRules.socket_open_at(GrimoireRules.SOCKET_LR, 17)
 	EquipmentSealComponent.graduated_apm_enabled = false
 	gate.progression_stage = 1
 	var gate_off: bool = gate.is_directional_attack_unlocked(EquipmentSealComponent.DirectionalAttack.SIDE_LIGHT_FLANK) \
 		and gate.gate_command(CombatActionResource.Command.FORWARD_HEAVY) == CombatActionResource.Command.FORWARD_HEAVY
 	gate.free()
 	check.call(stage_1 and stage_2 and stage_3 and stage_4 and gate_off,
-		"the Graduated APM gate: Forward and Back heavies fall back to the plain heavy until Stage 2, the flank waits for 3, tucks for 3, L+R for 4; off, every posture is open")
+		"the Graduated APM gate: Forward and Back heavies fall back to the plain heavy until Stage 2, the flank waits for 3; the sockets open by level (R at 4, L at 6, the Tuck at 11, L+R at 17); off, every posture is open")
 
 
 # --- Stage 3: the split-screen and network gate ----------------------------------------------
@@ -439,14 +452,16 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	var pulls_before: int = hero.visuals.pocket_pull_count()
 	var pips_before: int = hero.stats.resonance_pips()
 	var pulled: Dictionary = hero.seal.try_trigger_pocket_pull_invocation(Slot.R)
-	var pulled_card: ScribeCardResource = catalog.get_card(hand.slot_r_primary_id)
-	check.call(bool(pulled.get("success", false)) and pulled.get("card_id", &"") == hand.slot_r_primary_id and int(pulled.get("damage", 0)) > 0
-		and pulled.get("action_id", &"") == pulled_card.active_action_id and int(pulled.get("manifestation_mode", -1)) == int(pulled_card.manifestation_mode)
-		and hero.stats.resonance_pips() == pips_before - pulled_card.resonance_pip_cost and hero.visuals.is_flourishing()
-		and hero.visuals.pocket_pull_count() == pulls_before + 1 and hero.seal.is_coated() and hero.seal.invocations() >= 1
-		and cross.is_card_flipping() and cross.flipping_slot() == Slot.R and hero.trail.ink_override().is_equal_approx(pulled_card.ink_primary_color)
+	# The seven-card hand (22 GDD R5): R's own socket card comes out of the pouch.
+	var r_leaf: StringName = hero.seal.socket_card_id(GrimoireRules.SOCKET_R)
+	var pulled_card: ScribeCardResource = catalog.get_card(r_leaf)
+	var sign_ink: Color = catalog.sign_seal(pulled_card.scribe_sign).color if pulled_card != null else Color.BLACK
+	check.call(bool(pulled.get("success", false)) and pulled.get("card_id", &"") == r_leaf and bool(pulled.get("leaf_pull", false))
+		and hero.stats.resonance_pips() == pips_before - int(pulled.get("ink_cost", 99)) and hero.visuals.is_flourishing()
+		and hero.visuals.pocket_pull_count() == pulls_before + 1 and hero.seal.invocations() >= 1
+		and cross.is_card_flipping() and cross.flipping_slot() == Slot.R and hero.trail.ink_override().is_equal_approx(sign_ink)
 		and is_equal_approx(hero.visuals.seal_flare(), ActorVisuals.POCKET_PULL_FLARE),
-		"R in the 18-frame window pulls the %s: a pip spent, the flourish on, the seals flaring to 2.2, the ledger's R card flipping, the trail in its ink"
+		"R in the window pulls its own socket card, the %s: its cost spent, the flourish on, the seals flaring to 2.2, the ledger's R card flipping, the trail in its Sign's ink"
 		% (pulled_card.display_name if pulled_card != null else "card"))
 	await _frames(POCKET_PULL_HALF_FRAMES)
 	var card_up: bool = hero.visuals.is_card_out() or hero.visuals.card_peak_height() > 0.0
@@ -466,8 +481,8 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	var refused_grand: Dictionary = hero.seal.try_trigger_pocket_pull_invocation(Slot.L_AND_R)
 	var grand_reason: String = String(refused_grand.get("reason", ""))
 	check.call(not bool(refused_window.get("success", true)) and refused_window.get("reason", "") == EquipmentSealComponent.REASON_NO_WINDOW
-		and (expected_stage >= 4 or (not bool(refused_grand.get("success", true)) and grand_reason == EquipmentSealComponent.REASON_LOCKED)),
-		"with the window shut a pull is refused; the L+R Grand Invocation waits for Stage 4 (%s)" % grand_reason)
+		and (GrimoireRules.all_open() or expected_stage >= 4 or (not bool(refused_grand.get("success", true)) and grand_reason == EquipmentSealComponent.REASON_LOCKED)),
+		"with the window shut a pull is refused; the L+R Grand card waits for Lv 17 (%s)" % grand_reason)
 	hero.seal.flow_link_timer = 0.0
 	# A ward in play (§4.1): the Quiet Weir on the buckler against a Star-Tide blow.
 	var warded: PlayerLoadoutResource = hand.copy()
@@ -481,8 +496,9 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	blow.scribe_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
 	var warded_before: int = hero.seal.warded_blows()
 	hero.seal.filter_incoming(blow)
-	var ward_ok: bool = is_equal_approx(blow.damage, 65.0) and hero.seal.shrugs_off_stagger() and hero.seal.warded_blows() == warded_before + 1 \
-		and is_equal_approx(hero.seal.get_passive_ward_mitigation(&"SIGN_STAR_TIDE"), 0.35)
+	var star_ward: float = hero.seal.get_passive_ward_mitigation(&"SIGN_STAR_TIDE")
+	var ward_ok: bool = is_equal_approx(blow.damage, 100.0 * (1.0 - star_ward)) and star_ward >= 0.30 and hero.seal.shrugs_off_stagger() \
+		and hero.seal.warded_blows() == warded_before + 1
 	# A blow of a Sign none of the hand's seals ward lands whole (which Sign that is depends on the role's hand).
 	var unwarded: int = ScribeSignResource.Sign.NONE
 	for candidate: int in [ScribeSignResource.Sign.SIGN_IRON_ROOT, ScribeSignResource.Sign.SIGN_RIME_GALE, ScribeSignResource.Sign.SIGN_WARM_HEARTH]:
@@ -497,8 +513,8 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	check.call(ward_ok and unwarded != ScribeSignResource.Sign.NONE and is_equal_approx(plain_blow.damage, 100.0)
 		and hero.seal.loadout.offhand_seal_card_id == ArsenalCatalog.CARD_QUIET_WEIR
 		and hero.visuals.seal_state().get("offhand_seal", &"") == ArsenalCatalog.CARD_QUIET_WEIR,
-		"the Quiet Weir on the buckler takes a 100 Star-Tide blow to 65 and shrugs its stun; a %s blow lands whole; the crest shows the new seal"
-		% ArsenalCatalog.current.sign_seal(unwarded).display_name)
+		"the Star-Bell on the buckler takes a 100 Star-Tide blow to %d (its 30%% ward, more if the mantle wards Star-Tide too) and shrugs its stun; a %s blow lands whole; the crest shows the new seal"
+		% [roundi(100.0 * (1.0 - star_ward)), ArsenalCatalog.current.sign_seal(unwarded).display_name])
 	# A Weapon Seal shapes the hero's own strikes on the foe's owner: the flat bonus, and a pull's coat by id.
 	var swing: CombatEvent = CombatEvent.new()
 	swing.kind = CombatEvent.Kind.STRIKE
@@ -506,20 +522,10 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	swing.poise_damage = 10.0
 	hero.seal.shape_outgoing(swing)
 	var weapon_seal: ScribeCardResource = catalog.get_card(hero.seal.loadout.weapon_seal_card_id)
-	var flat: int = weapon_seal.passive_flat_damage_bonus if weapon_seal != null else 0
-	var coated: CombatEvent = CombatEvent.new()
-	coated.kind = CombatEvent.Kind.STRIKE
-	coated.damage = 10.0
-	coated.poise_damage = 10.0
-	coated.seal_card_id = hero.seal.loadout.slot_r_primary_id
-	coated.seal_burst = true
-	hero.seal.shape_outgoing(coated)
-	var r_card: ScribeCardResource = catalog.get_card(hero.seal.loadout.slot_r_primary_id)
-	var expected_coated: float = (10.0 + float(flat)) * r_card.active_damage_mult
-	check.call(is_equal_approx(swing.damage, 10.0 + float(flat)) and is_equal_approx(coated.damage, expected_coated)
-		and coated.poise_damage > swing.poise_damage and is_equal_approx(coated.poise_damage, 10.0 * hero.seal.passive_posture_break_mult() + r_card.active_posture_damage_bonus),
-		"on the foe's owner a strike carries the Weapon Seal's +%d and, named by its card id, the pull's %.2fx coat and %d posture burst"
-		% [flat, r_card.active_damage_mult, int(r_card.active_posture_damage_bonus)])
+	var flat: int = int(weapon_seal.slot_passive(ScribeCardResource.SealSlotMask.SEAL_WEAPON)["flat"]) if weapon_seal != null else 0
+	check.call(is_equal_approx(swing.damage, 10.0 + float(flat)) and is_equal_approx(swing.poise_damage, 10.0 * hero.seal.passive_posture_break_mult()),
+		"on the foe's owner a strike carries the Weapon Seal's +%d and its x%.2f stagger (the slot's own passive)"
+		% [flat, hero.seal.passive_posture_break_mult()])
 	hero.seal.clear_custom_loadout()
 	# The 1-Button Gambit Assist: the Squire's button pulls when the window is open and the pips are there.
 	var assist_was: bool = hero.seal.input_gambit_assist
@@ -541,16 +547,16 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	hero.seal.debug_stage_override = 1
 	hero.seal.refresh()
 	var gated: bool = hero.seal.gate_command(CombatActionResource.Command.FORWARD_HEAVY) == CombatActionResource.Command.HEAVY and hero.seal.progression_stage == 1 \
-		and hero.seal.loadout.seal_count() <= 1 and hero.seal.loadout.active_count() <= 1
+		and hero.seal.loadout.seal_count() <= 1 and hero.seal.loadout.active_count() == 0
 	hero.seal.debug_stage_override = 3
 	hero.seal.refresh()
 	var opened: bool = hero.seal.gate_command(CombatActionResource.Command.FORWARD_HEAVY) == CombatActionResource.Command.FORWARD_HEAVY \
-		and hero.seal.is_directional_attack_unlocked(EquipmentSealComponent.DirectionalAttack.SIDE_LIGHT_FLANK) and hero.seal.loadout.active_count() == 3
+		and hero.seal.is_directional_attack_unlocked(EquipmentSealComponent.DirectionalAttack.SIDE_LIGHT_FLANK) and hero.seal.loadout.seal_count() >= 2
 	EquipmentSealComponent.graduated_apm_enabled = false
 	hero.seal.debug_stage_override = 0
 	hero.seal.refresh()
 	check.call(gated and opened and hero.seal.progression_stage == expected_stage and hero.seal.loadout.validate_loadout_for_stage(expected_stage),
-		"forced to Stage 1 the hero's Forward heavy falls back to the plain heavy and its hand shrinks; at Stage 3 the flank and a third card open; the level's stage comes back")
+		"forced to Stage 1 the hero's Forward heavy falls back to the plain heavy and its Seals shrink to one; at Stage 3 the flank opens and the Seals come back; the level's stage comes back")
 	# Network (Gate 4): the hand as Strings and ints, the RPCs there, a JSON round trip.
 	var raid: PlayerLoadoutResource = _raid_hand()
 	var data: Dictionary = raid.to_network_dict()

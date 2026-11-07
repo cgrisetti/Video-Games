@@ -127,23 +127,22 @@ func _check_ladder() -> void:
 			full.trim_to_stage(stage, true_level)
 			for slot: int in PlayerLoadoutResource.HAND_SLOT_COUNT:
 				agrees = agrees and (full.card_in_slot(slot) != &"") == PlayerLoadoutResource.slot_open(slot, stage, true_level)
-	var levels_ok: bool = PlayerLoadoutResource.slot_open_level(Hand.L_PRIMARY) == 3 and PlayerLoadoutResource.slot_open_level(Hand.OFFHAND_SEAL) == 4 \
-		and PlayerLoadoutResource.slot_open_level(Hand.WEAPON_SEAL) == 6 and PlayerLoadoutResource.slot_open_level(Hand.R_PRIMARY) == 6 \
-		and PlayerLoadoutResource.slot_open_level(Hand.MANTLE_SEAL) == 11 and PlayerLoadoutResource.slot_open_level(Hand.L_TUCK) == 11 \
-		and PlayerLoadoutResource.slot_open_level(Hand.R_TUCK) == 16 and PlayerLoadoutResource.slot_opens_text(Hand.MANTLE_SEAL) == "opens at Stage 3 (Lv 11)" \
-		and PlayerLoadoutResource.slot_opens_text(Hand.OFFHAND_SEAL) == "opens at Lv 4"
+	var levels_ok: bool = PlayerLoadoutResource.slot_open_level(Hand.WEAPON_SEAL) == 3 and PlayerLoadoutResource.slot_open_level(Hand.OFFHAND_SEAL) == 6 \
+		and PlayerLoadoutResource.slot_open_level(Hand.MANTLE_SEAL) == 11 and PlayerLoadoutResource.slot_open_level(Hand.L_PRIMARY) > ArsenalCatalog.MAX_TRUE_LEVEL \
+		and PlayerLoadoutResource.slot_open_level(Hand.R_TUCK) > ArsenalCatalog.MAX_TRUE_LEVEL \
+		and PlayerLoadoutResource.slot_opens_text(Hand.MANTLE_SEAL) == "opens at Lv 11" and PlayerLoadoutResource.slot_opens_text(Hand.OFFHAND_SEAL) == "opens at Lv 6" \
+		and PlayerLoadoutResource.slot_opens_text(Hand.L_PRIMARY) == "is in the Cross now"
 	check.call(agrees and levels_ok,
-		"the bench's slot gates match trim_to_stage at all 4 stages and 20 levels: the L card at Lv 3, the off-hand seal at Lv 4, weapon and R at 6, mantle and L tuck at 11, R tuck at 16")
+		"the bench's slot gates match trim_to_stage at all 4 stages and 20 levels: the weapon Seal at Lv 3, the offhand's at 6, the mantle's at 11; the old pocket slots never open (their cards live in the Cross)")
 	var role: int = ClassLoadoutResource.Role.TANK
 	var chosen: PlayerLoadoutResource = PlayerLoadoutResource.new()
 	chosen.offhand_seal_card_id = ArsenalCatalog.CARD_WEST_WIND_PROMISE
-	var at_five: bool = catalog.apply_seal_milestone(chosen, role, 5)
-	var at_six: bool = catalog.apply_seal_milestone(chosen, role, 6)
-	check.call(not at_five and at_six and chosen.offhand_seal_card_id == ArsenalCatalog.CARD_WEST_WIND_PROMISE
+	var at_two: bool = catalog.apply_seal_milestone(chosen, role, 2)
+	var at_three: bool = catalog.apply_seal_milestone(chosen, role, 3)
+	check.call(not at_two and at_three and chosen.offhand_seal_card_id == ArsenalCatalog.CARD_WEST_WIND_PROMISE
 		and chosen.weapon_seal_card_id == ArsenalCatalog.starting_seal_for_slot(role, Hand.WEAPON_SEAL)
-		and chosen.slot_r_primary_id == ArsenalCatalog.starting_seal_for_slot(role, Hand.R_PRIMARY) and chosen.slot_l_primary_id == &""
-		and chosen.mantle_seal_card_id == &"",
-		"Lv 6 fills a chosen hand's newly opened weapon seal and R with the Fellowship's starting seals; the player's own off-hand choice and the slots that opened before stay as they were")
+		and chosen.active_count() == 0 and chosen.mantle_seal_card_id == &"",
+		"Lv 3 fills a chosen hand's newly opened weapon Seal with the Fellowship's starting seal; the player's own offhand choice stays as it was, and no pocket card appears")
 
 
 # --- The Reed-Light Scribery's Seal Cards ---------------------------------------------------
@@ -230,8 +229,8 @@ func _check_bench(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:
 	check.call(options.has(&"") and options.has(ArsenalCatalog.CARD_WEST_WIND_PROMISE) and options.has(ArsenalCatalog.starting_seal_for_slot(role, Hand.OFFHAND_SEAL))
 		and stepped and pressed and hero.seal.loadout.offhand_seal_card_id == ArsenalCatalog.CARD_WEST_WIND_PROMISE
 		and shown.get("offhand_seal", &"") == ArsenalCatalog.CARD_WEST_WIND_PROMISE and bool(shown.get("offhand_sealed", false)) and binder.preview_live()
-		and binder._seal_rows[Hand.OFFHAND_SEAL].text.contains("Seal of the West-Wind") and hero.seal.wears_chosen_hand(),
-		"↓ and → step the off-hand to its next card, then the West-Wind goes on: the hero's crest shows it in the preview at once and EquipmentSealComponent.loadout holds it")
+		and binder._seal_rows[Hand.OFFHAND_SEAL].text.contains("Firth-Squall Feather") and hero.seal.wears_chosen_hand(),
+		"↓ and → step the off-hand to its next card, then the Firth-Squall Feather goes on: the hero's crest shows it in the preview at once and EquipmentSealComponent.loadout holds it")
 	check.call(String(seat.seal_hand.get("offhand_seal", "")) == "CARD_WEST_WIND_PROMISE" and hero.seal.seat_hand() == seat.seal_hand
 		and String(progress.seal_hand_for(seat.class_id).get("offhand_seal", "")) == "CARD_WEST_WIND_PROMISE"
 		and String(_hand_on_disk(seat.class_id).get("offhand_seal", "")) == "CARD_WEST_WIND_PROMISE"

@@ -255,6 +255,7 @@ func _ready() -> void:
 	NetworkManager.current.kit_refused.connect(_on_kit_refused)
 	PartyProgress.current.progress_changed.connect(_on_progress_changed)
 	PartyProgress.current.trail_level_reached.connect(_on_trail_level_reached)
+	PartyProgress.current.character_level_reached.connect(_on_character_level_reached)
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	# Companions from the last instance leave (or new ones join) before anyone is seated.
 	_refresh_companions()
@@ -452,7 +453,7 @@ func _seal_hand_problem(role: int, stage: int, level: int, hand: Dictionary) -> 
 
 ## Host: why a seat may not take a Calling ("" when it may): they open at Level 10.
 func check_calling(_seat: PartyMember, calling: StringName) -> String:
-	if calling != Callings.UNSWORN_ID and not PartyProgress.current.callings_unlocked():
+	if calling != Callings.UNSWORN_ID and not PartyProgress.current.callings_unlocked_for(_seat.class_id):
 		return "The Secondary Callings open at Level %d" % ArsenalCatalog.CALLING_LEVEL
 	return ""
 
@@ -700,16 +701,37 @@ func _on_trail_level_reached(level: int) -> void:
 		if grant.get("unlocks_secondary_calling", false) and calling == Callings.UNSWORN_ID:
 			calling = pick_calling(seat.class_id, seat.companion)
 		NetworkManager.current.grant_seat(seat.player_id, kit.to_dict(), calling)
-	_open_seal_slots(level)
+
+
+## A Fellowship's hero reached a Character Level (22 GDD §2): its heroes re-equip in place on
+## every peer, so a socket the level just opened (R at 4, L at 6, the Tuck at 11, L+R at 17)
+## works on the very next press, and its seals grow the same way.
+func _on_character_level_reached(class_id: StringName, level: int) -> void:
+	for seat: PartyMember in NetworkManager.current.ordered_members():
+		if seat.class_id != class_id:
+			continue
+		var actor: ActorBase = actors.get(seat.player_id) as ActorBase
+		if actor == null:
+			continue
+		# Only when the level opened something: a re-equip rebuilds the hero.
+		var composed: ClassLoadoutResource = _compose_for(seat)
+		if not composed.kit.same_as(actor.loadout.kit):
+			actor.re_equip(composed)
+		if actor.seal != null:
+			actor.seal.refresh()
+	if NetworkManager.current.is_host():
+		_open_seal_slots(level, class_id)
 
 
 ## Host: a level that opens a slot of the Seal-and-Tuck hand fills it with the Fellowship's
 ## starting seal in every chosen hand (on the seats and in the saves), as milestones auto-slot
 ## kits; a hand nobody chose grows by itself (EquipmentSealComponent's default).
-func _open_seal_slots(level: int) -> void:
+func _open_seal_slots(level: int, only_class: StringName) -> void:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
 	var progress: PartyProgress = PartyProgress.current
 	for class_id: StringName in ClassLoadouts.PLAYER_CLASSES:
+		if class_id != only_class:
+			continue
 		var saved: Dictionary = progress.seal_hand_for(class_id)
 		if saved.is_empty():
 			continue
@@ -717,7 +739,7 @@ func _open_seal_slots(level: int) -> void:
 		if catalog.apply_seal_milestone(hand, ClassLoadouts.player_class(class_id).role, level):
 			progress.save_seal_hand(class_id, hand.to_network_dict())
 	for seat: PartyMember in NetworkManager.current.ordered_members():
-		if seat.companion or seat.seal_hand.is_empty():
+		if seat.companion or seat.seal_hand.is_empty() or seat.class_id != only_class:
 			continue
 		var worn: PlayerLoadoutResource = PlayerLoadoutResource.from_dict(seat.seal_hand)
 		if catalog.apply_seal_milestone(worn, ClassLoadouts.player_class(seat.class_id).role, level):
