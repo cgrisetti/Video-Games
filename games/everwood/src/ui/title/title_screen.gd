@@ -21,7 +21,9 @@ const GAME_INSTANCE: StringName = InstanceManager.CALDERA_ISLES
 const MUSIC_PROFILE: StringName = &"honey_wick"
 const MUSIC_DB: float = -6.0
 const MENU_ITEMS: Array[String] = ["New Game", "Continue", "Quit"]
-const NAME_PROMPT: String = "What is your hero called?"
+const NAME_PROMPT: String = "Who are they, and what are they called?"
+## The two youths as the New Game page names them (docs/26 §7).
+const STYLE_LABELS: Dictionary[StringName, String] = {&"boy": "The Boy", &"girl": "The Girl"}
 const PARCHMENT: Color = Color("#EFE6D2")
 const PARCHMENT_LIGHT: Color = Color("#FBF6E8")
 const PARCHMENT_TEXT: Color = Color("#F7EFDA")
@@ -46,6 +48,8 @@ var hint: Label
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _music: AudioStreamPlayer
 var _starting: bool = false
+## New Game's choice of youth (HeroAppearanceResource.YOUTH_BOY / _GIRL).
+var youth_style: StringName = HeroAppearanceResource.YOUTH_BOY
 var _menu_font: SystemFont
 var _body_font: SystemFont
 
@@ -261,6 +265,23 @@ func _build_new_game(root: Control) -> PanelContainer:
 	card.add_child(column)
 	column.add_child(_heading("A New Tale"))
 	column.add_child(_body("A youth of Miller's Oak wakes among the orchards. %s" % NAME_PROMPT))
+	# The boy or the girl (docs/26 §7): the youth on the knoll changes as you choose.
+	var who: HBoxContainer = HBoxContainer.new()
+	who.name = "WhoRow"
+	who.add_theme_constant_override("separation", 10)
+	column.add_child(who)
+	var group: ButtonGroup = ButtonGroup.new()
+	for style: StringName in [HeroAppearanceResource.YOUTH_BOY, HeroAppearanceResource.YOUTH_GIRL]:
+		var pick: Button = _card_button(STYLE_LABELS[style])
+		pick.name = "Pick%s" % String(style).capitalize()
+		pick.toggle_mode = true
+		pick.button_group = group
+		pick.button_pressed = style == youth_style
+		var chosen: StyleBoxFlat = (pick.get_theme_stylebox(&"focus") as StyleBoxFlat).duplicate() as StyleBoxFlat
+		chosen.bg_color = SAFFRON_GOLD.darkened(0.35)
+		pick.add_theme_stylebox_override(&"pressed", chosen)
+		pick.toggled.connect(_on_style_toggled.bind(style))
+		who.add_child(pick)
 	name_field = LineEdit.new()
 	name_field.name = "HeroName"
 	name_field.max_length = SaveSlots.MAX_NAME_LENGTH
@@ -408,6 +429,18 @@ func close_panels() -> void:
 	_show_hint()
 
 
+func _on_style_toggled(on: bool, style: StringName) -> void:
+	if on:
+		choose_style(style)
+
+
+## New Game's boy-or-girl choice, shown on the knoll at once.
+func choose_style(style: StringName) -> void:
+	youth_style = style
+	if diorama != null:
+		diorama.set_youth_style(style)
+
+
 func suggest_name() -> void:
 	name_field.text = SaveSlots.suggest_name(_rng, name_field.text)
 	name_field.caret_column = name_field.text.length()
@@ -425,7 +458,7 @@ func begin_new_tale() -> void:
 		return
 	SaveSlots.ensure_folder()
 	var path: String = SaveSlots.new_slot_path(hero)
-	if PartyProgress.current.begin_new_tale(path, hero) != OK:
+	if PartyProgress.current.begin_new_tale(path, hero, youth_style) != OK:
 		name_note.text = "That tale couldn't be written down. Try again?"
 		return
 	_begin(path)

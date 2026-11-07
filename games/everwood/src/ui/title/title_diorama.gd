@@ -51,6 +51,9 @@ var skeleton: Skeleton3D
 var kinematics: StorybookKinematicsModifier3D
 var _age: float = 0.0
 var _hero_look: HeroAppearanceResource
+var _material: ShaderMaterial
+## The boy or the girl (HeroAppearanceResource.YOUTH_BOY / _GIRL).
+var youth_style: StringName = HeroAppearanceResource.YOUTH_BOY
 
 
 func _ready() -> void:
@@ -254,9 +257,23 @@ func _build_orchard() -> void:
 		add_child(tuft)
 
 
+## Which youth stands on the knoll (docs/26 §7): New Game's choice shows here as it's made.
+func set_youth_style(style: StringName) -> void:
+	if style == youth_style and hero != null:
+		return
+	youth_style = style
+	if hero != null:
+		remove_child(hero)
+		hero.queue_free()
+		hero = null
+		skeleton = null
+	_build_hero()
+
+
 ## The Level 1 youth on the crest, turned a little toward the camera, in the easy idle.
 func _build_hero() -> void:
-	_hero_look = ArsenalCatalog.current.youth_appearance_for_seat(ClassLoadouts.DIRECTIONAL_FLOW_DPS, 0)
+	_hero_look = ArsenalCatalog.current.youth_appearance_for_seat(ClassLoadouts.DIRECTIONAL_FLOW_DPS, 0, youth_style)
+	_material = null
 	hero = Node3D.new()
 	hero.name = "Youth"
 	var foot: Vector3 = Vector3(HERO_AT.x, ground_height(HERO_AT.x, HERO_AT.y), HERO_AT.y)
@@ -268,6 +285,7 @@ func _build_hero() -> void:
 	skeleton.scale = Vector3.ONE * HeroAppearanceResource.YOUTH_SKELETON_SCALE
 	hero.add_child(skeleton)
 	var material: ShaderMaterial = HeroMeshAtelier.hero_material(_hero_look, _hero_look.patch_color)
+	_material = material
 	var meshes: Array[ArrayMesh] = HeroMeshAtelier.build_hero_surfaces(_hero_look, ArsenalCatalog.BRAMBLE_JERKIN)
 	for index: int in meshes.size():
 		var surface: MeshInstance3D = MeshInstance3D.new()
@@ -290,9 +308,12 @@ func _build_hero() -> void:
 func _pose_hero(delta: float) -> void:
 	if skeleton == null:
 		return
-	var frames: float = float(HeroCombatAnimator.clip_info(HeroCombatAnimator.YOUTH_IDLE).get("frames", 240))
+	var idle: StringName = HeroCombatAnimator.YOUTH_IDLE_GIRL if youth_style == HeroAppearanceResource.YOUTH_GIRL else HeroCombatAnimator.YOUTH_IDLE
+	var frames: float = float(HeroCombatAnimator.clip_info(idle).get("frames", 240))
 	var frame: float = fmod(_age * HeroCombatAnimator.FPS, frames)
-	var pose: Dictionary = HeroCombatAnimator.sample_pose(HeroCombatAnimator.YOUTH_IDLE, frame)
+	var pose: Dictionary = HeroCombatAnimator.sample_pose(idle, frame)
+	if _material != null:
+		_material.set_shader_parameter(&"eye_blink", HeroMeshAtelier.blink_amount(_age, 0.5))
 	var rotations: Array = pose["rotations"]
 	for bone: int in HeroRigBuilder.BONE_COUNT:
 		skeleton.set_bone_pose_rotation(bone, rotations[bone])

@@ -23,6 +23,7 @@ var material: ShaderMaterial
 var walk_speed: float = 0.0
 var _idle: StringName = ADULT_IDLE
 var _clock: float = 0.0
+var _clock_seed: float = 0.0
 var _cycle: float = 0.0
 var _since_pose: float = 1.0
 
@@ -34,8 +35,11 @@ func build(base: HeroAppearanceResource, coat: StringName, tunic: Color, trim: C
 	look.value_2_tunic_color = tunic
 	if look.is_youth():
 		look.patch_color = trim
-	_idle = HeroCombatAnimator.YOUTH_IDLE if look.is_youth() else ADULT_IDLE
+	_idle = ADULT_IDLE
+	if look.is_youth():
+		_idle = HeroCombatAnimator.YOUTH_IDLE_GIRL if look.youth_style == HeroAppearanceResource.YOUTH_GIRL else HeroCombatAnimator.YOUTH_IDLE
 	_clock = phase
+	_clock_seed = phase
 	skeleton = HeroRigBuilder.build_hero_skeleton()
 	if look.is_youth():
 		skeleton.scale = Vector3.ONE * HeroAppearanceResource.YOUTH_SKELETON_SCALE
@@ -71,6 +75,7 @@ func _process(delta: float) -> void:
 		_cycle = fmod(_cycle + walk_speed * delta / WALK_METRES, 1.0)
 	if _since_pose < 1.0 / ANIMATE_HZ or not _near_a_camera():
 		return
+	material.set_shader_parameter(&"eye_blink", HeroMeshAtelier.blink_amount(_clock, _clock_seed))
 	_pose(_since_pose)
 	_since_pose = 0.0
 

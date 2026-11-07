@@ -40,6 +40,8 @@ const PARTY_SIZE: int = 3
 const LENS: GDScript = preload("res://tools/test_mythopoetic_lens.gd")
 ## The Crown's zone design (docs/23), checked while The Crown is live.
 const CROWN_ZONES: GDScript = preload("res://tools/test_crown_zones.gd")
+## The roads laid over the land (docs/26), on all five isles.
+const LAID_ROADS: GDScript = preload("res://tools/test_laid_roads.gd")
 
 var tree: SceneTree
 var check: Callable
@@ -54,6 +56,7 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	state.reset_for_testing()
 	_check_atlas_and_state()
 	await _check_boot()
+	LAID_ROADS.new().run(level, check)
 	await _check_streaming_and_seams()
 	await _check_beacons()
 	_check_crown_areas()

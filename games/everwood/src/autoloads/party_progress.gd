@@ -119,6 +119,8 @@ var trail_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var save_path: String = SAVE_PATH
 ## The tale's hero, named on the title screen's New Game (docs/22; "" for a save from before names).
 var hero_name: String = ""
+## Whether the tale's hero is the boy or the girl youth (docs/26 §7; HeroAppearanceResource.YOUTH_BOY / _GIRL).
+var hero_style: StringName = HeroAppearanceResource.YOUTH_BOY
 ## When this tale was begun and last saved (Unix seconds; 0 when unknown).
 var created_unix: int = 0
 var last_played_unix: int = 0
@@ -732,11 +734,12 @@ func award_chimes(amount: int) -> void:
 
 ## Begins a new tale (the title screen's New Game): a fresh Level 1 party in a
 ## new save file at `path`, its hero named `hero`, written at once.
-func begin_new_tale(path: String, hero: String) -> Error:
+func begin_new_tale(path: String, hero: String, style: StringName = HeroAppearanceResource.YOUTH_BOY) -> Error:
 	end_playtest()
 	endgame_kits_for_testing = false
 	use_save_file(path)
 	hero_name = hero
+	hero_style = style
 	created_unix = int(Time.get_unix_time_from_system())
 	var error: Error = save()
 	progress_changed.emit()
@@ -767,11 +770,13 @@ func load_save() -> void:
 	pattern_seen.clear()
 	caldera_flags = 0
 	hero_name = ""
+	hero_style = HeroAppearanceResource.YOUTH_BOY
 	created_unix = 0
 	last_played_unix = 0
 	var file: ConfigFile = ConfigFile.new()
 	if file.load(save_path) == OK:
 		hero_name = str(file.get_value("hero", "name", ""))
+		hero_style = HeroAppearanceResource.YOUTH_GIRL if str(file.get_value("hero", "style", "boy")) == "girl" else HeroAppearanceResource.YOUTH_BOY
 		created_unix = maxi(0, int(file.get_value("hero", "created", 0)))
 		last_played_unix = maxi(0, int(file.get_value("hero", "last_played", 0)))
 		# Saves from before the Chimes were called Dojo Shards keep their pouch.
@@ -826,6 +831,7 @@ func save() -> Error:
 	last_played_unix = int(Time.get_unix_time_from_system())
 	if hero_name != "":
 		file.set_value("hero", "name", hero_name)
+	file.set_value("hero", "style", String(hero_style))
 	if created_unix > 0:
 		file.set_value("hero", "created", created_unix)
 	file.set_value("hero", "last_played", last_played_unix)

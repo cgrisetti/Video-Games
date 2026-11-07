@@ -48,6 +48,8 @@ const RIME_PIER_HEAD_Z: float = 462.0
 
 var shape: Dictionary = {}
 var inner: Vector2 = Vector2.ZERO
+## The steading's level ground: the land's own height round it (docs/26; it once sat in a pit up to 34 m deep).
+var _steading_y: float = 0.0
 
 
 func _define() -> void:
@@ -56,7 +58,8 @@ func _define() -> void:
 	var steading: Vector2 = shape["steading"]
 	var beacon: Vector2 = shape["beacon"]
 	var gate: Vector2 = shape["gate"]
-	add_pad(steading, 30.0, _steading_height(), 14.0)
+	_steading_y = _ground_round(steading, 30.0)
+	add_pad(steading, 30.0, _steading_height(), 24.0)
 	add_pad(beacon, 9.0, maxf(4.0, _base_height(beacon.x, beacon.y)), 8.0)
 	# The raid gate's cove, cut into the outer shore at -4.5 m, with a stair down from the cliff-top.
 	add_pad(gate + _outward(gate) * 8.0, 11.0, -4.5, 5.0)
@@ -67,8 +70,7 @@ func _define() -> void:
 		CalderaAtlas.ISLE_IRON_NESS:
 			var anchor: Vector3 = CalderaAtlas.seam(CalderaAtlas.SEAM_WEST_STRAIT).anchor(isle.isle_id)
 			add_pad(Vector2(anchor.x, anchor.z - 12.0), 10.0, anchor.y, 8.0)
-			add_ramp(Vector3(anchor.x, anchor.y, anchor.z - 14.0), Vector3(steading.x, _steading_height(), steading.y + 20.0), 3.0, 6.0)
-			add_ramp(Vector3(300.0, 1.6, -60.0), Vector3(steading.x + 24.0, _steading_height(), steading.y), 9.0, 12.0)
+			# The road up from the West Strait finds its own way now (docs/26): no straight trench to the steading.
 			arrival = Vector2(anchor.x, anchor.z - 16.0)
 			add_path(PackedVector2Array([arrival, Vector2(steading.x + 10.0, steading.y + 30.0), steading, beacon]), 2.0)
 		CalderaAtlas.ISLE_BARROW_EYOT:
@@ -85,20 +87,37 @@ func _define() -> void:
 			add_arrival(CalderaAtlas.ARRIVE_QUAY, arrival)
 	add_arrival(&"arrival", arrival)
 	add_arrival(CalderaAtlas.ARRIVE_BEACON, beacon - _outward(beacon) * 14.0)
-	add_path(PackedVector2Array([steading, steading.lerp(Vector2.ZERO, 0.5), Vector2(shape["landmark"])]), 1.6)
+	add_path(PackedVector2Array([steading, steading.lerp(Vector2.ZERO, 0.5), _landmark_lookout()]), 1.6)
 	add_place(String(shape["steading_line"]).get_slice("\n", 0), Vector3(steading.x, 0.0, steading.y), 80.0)
 	add_place("%s's Beacon" % isle.display_name, Vector3(beacon.x, 0.0, beacon.y), 40.0)
 	add_place(isle.landmark if isle.isle_id != CalderaAtlas.ISLE_BARROW_EYOT else "The Bell-Tower", Vector3(shape["landmark"].x, 0.0, shape["landmark"].y), 90.0)
 	add_place(String(shape["gate_name"]), Vector3(gate.x, -4.5, gate.y), 45.0)
 
 
-func _steading_height() -> float:
+## Where the path to the landmark ends: at the Forge Stacks themselves, on the Bell-Tower lagoon's
+## outer shore, at the Snow Peak's foot (docs/26: the paths once ran into the lagoon and up the peak).
+func _landmark_lookout() -> Vector2:
+	var landmark: Vector2 = shape["landmark"]
+	var home: Vector2 = shape["steading"]
 	match isle.isle_id:
-		CalderaAtlas.ISLE_IRON_NESS:
-			return 6.0
 		CalderaAtlas.ISLE_BARROW_EYOT:
-			return 2.2
-	return 7.0
+			return landmark + (home - landmark).normalized() * 84.0
+		CalderaAtlas.ISLE_RIME_FIRTH:
+			return landmark + (home - landmark).normalized() * 210.0
+	return landmark
+
+
+func _steading_height() -> float:
+	return _steading_y
+
+
+## The land's mean height at a spot and on a ring `radius` round it (never below 2.2 m, a fen steading's floor).
+func _ground_round(at: Vector2, radius: float) -> float:
+	var total: float = _base_height(at.x, at.y)
+	for step: int in 8:
+		var angle: float = TAU * float(step) / 8.0
+		total += _base_height(at.x + cos(angle) * radius, at.y + sin(angle) * radius)
+	return maxf(2.2, total / 9.0)
 
 
 ## Out to the open sea from a spot, as a unit x-z direction.

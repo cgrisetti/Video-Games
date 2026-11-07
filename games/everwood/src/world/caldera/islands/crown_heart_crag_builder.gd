@@ -145,9 +145,12 @@ func _define() -> void:
 	_build_ring()
 	# South Bay: the landing, the gully road up to the stair, and the waypost on the gully's west slope.
 	add_pad(LANDING_AT, 18.0, 1.4, 10.0)
-	add_ramp(Vector3(0.0, 1.6, 342.0), Vector3(-10.0, 9.0, 292.0), 3.5, 8.0)
-	add_ramp(Vector3(-10.0, 9.0, 292.0), Vector3(-22.0, 15.0, 256.0), 3.5, 8.0)
-	add_ramp(Vector3(-22.0, 15.0, 256.0), Vector3(STAIR_FOOT.x, STAIR_FOOT.y, STAIR_FOOT.z + 4.0), 3.5, 6.0)
+	# The gully road keeps to the ground's own grade up the gully (docs/26), steepening only into the stair's foot.
+	var gully_low: float = clampf(_terrace_height(-10.0, 292.0) + 0.3, 3.0, 9.0)
+	var gully_high: float = clampf(_terrace_height(-22.0, 256.0) + 0.3, gully_low + 2.0, 15.0)
+	add_ramp(Vector3(0.0, 1.6, 342.0), Vector3(-10.0, gully_low, 292.0), 3.5, 8.0)
+	add_ramp(Vector3(-10.0, gully_low, 292.0), Vector3(-22.0, gully_high, 256.0), 3.5, 8.0)
+	add_ramp(Vector3(-22.0, gully_high, 256.0), Vector3(STAIR_FOOT.x, STAIR_FOOT.y, STAIR_FOOT.z + 4.0), 3.5, 6.0)
 	add_pad(Vector2(WAYPOST_AT.x, WAYPOST_AT.z), 11.0, WAYPOST_AT.y, 24.0)
 	# The One Cliff Stair cut through the band, and the bell's ground in the glade.
 	add_ramp(STAIR_FOOT, STAIR_TOP, STAIR_HALF_WIDTH, 1.5)
@@ -155,21 +158,23 @@ func _define() -> void:
 	# The springs (each a level stone basin on the Ring Path) and the three trials' arenas.
 	for spring: Vector2 in SPRINGS:
 		add_pad(spring, 6.5, clampf(_terrace_height(spring.x, spring.y), 2.0, 14.0), 8.0)
-	add_pad(Vector2(IRON_SHORE_AT.x, IRON_SHORE_AT.z), ARENA_RADIUS, IRON_SHORE_AT.y, 10.0)
-	add_pad(Vector2(GALE_CLIFFS_AT.x, GALE_CLIFFS_AT.z), ARENA_RADIUS, GALE_CLIFFS_AT.y, 10.0)
-	add_pad(Vector2(TIDE_GROTTOS_AT.x, TIDE_GROTTOS_AT.z), ARENA_RADIUS, TIDE_GROTTOS_AT.y, 10.0)
+	# Each arena's edge eases over 18 m, so the spur up onto it is a road, not a bank (docs/26).
+	add_pad(Vector2(IRON_SHORE_AT.x, IRON_SHORE_AT.z), ARENA_RADIUS, IRON_SHORE_AT.y, 18.0)
+	add_pad(Vector2(GALE_CLIFFS_AT.x, GALE_CLIFFS_AT.z), ARENA_RADIUS, GALE_CLIFFS_AT.y, 18.0)
+	add_pad(Vector2(TIDE_GROTTOS_AT.x, TIDE_GROTTOS_AT.z), ARENA_RADIUS, TIDE_GROTTOS_AT.y, 18.0)
 	# The landmarks' footings.
 	add_pad(KILN_AT, 9.0, maxf(12.0, _base_height(KILN_AT.x, KILN_AT.y)), 8.0)
 	add_pad(SANCTUM_ARCH_AT, 10.0, maxf(20.0, _base_height(SANCTUM_ARCH_AT.x, SANCTUM_ARCH_AT.y)), 8.0)
 	# The Sea-Door's cove, cut into the east shore, and the stair down to it from the Ring Path.
 	add_pad(Vector2(SEA_DOOR_AT.x + 2.0, SEA_DOOR_AT.z), 12.0, SEA_DOOR_AT.y, 5.0)
-	add_ramp(Vector3(384.0, 5.0, 34.0), Vector3(414.0, 1.2, 44.0), 3.0, 3.0)
+	add_ramp(Vector3(384.0, 2.0, 34.0), Vector3(414.0, 1.2, 44.0), 3.0, 3.0)
 	add_ramp(Vector3(414.0, 1.2, 44.0), Vector3(428.0, -4.5, 58.0), 3.0, 3.0)
 	# The roads: the Ring Path, the gully road, the waypost's spur, the summit walk, the trials' spurs and the Sea-Door's stair.
 	var widths: Array[float] = [2.0, 2.2, 1.6, 1.8, 1.8, 1.8, 1.8, 1.8]
 	var all_roads: Array[PackedVector2Array] = roads()
 	for index: int in all_roads.size():
-		add_path(all_roads[index], widths[mini(index, widths.size() - 1)])
+		# The Ring Path is already drawn as a smooth loop through the springs: it's only rounded, never re-routed.
+		add_path(all_roads[index], widths[mini(index, widths.size() - 1)], index != 0)
 	# The shore tracks: faint loops out to each shore's landmark and its rare's walk.
 	for zone: int in RARE_TRACKS:
 		add_path(shore_track(zone), 1.1)
@@ -354,7 +359,7 @@ func ring_points(count: int) -> PackedVector2Array:
 func roads() -> Array[PackedVector2Array]:
 	var list: Array[PackedVector2Array] = [ring_points(72),
 		PackedVector2Array([Vector2(0.0, 346.0), Vector2(-10.0, 292.0), Vector2(-22.0, 256.0), Vector2(STAIR_FOOT.x, STAIR_FOOT.z), Vector2(STAIR_TOP.x, STAIR_TOP.z)]),
-		PackedVector2Array([Vector2(WAYPOST_AT.x + 8.0, WAYPOST_AT.z), Vector2(-10.0, 296.0)]),
+		PackedVector2Array([Vector2(WAYPOST_AT.x + 8.0, WAYPOST_AT.z), Vector2(-9.3, 296.0)]),
 		summit_walk()]
 	for arena: Vector3 in [IRON_SHORE_AT, GALE_CLIFFS_AT, TIDE_GROTTOS_AT]:
 		list.append(trial_spur(arena))

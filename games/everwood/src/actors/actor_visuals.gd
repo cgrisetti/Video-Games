@@ -331,7 +331,7 @@ func rebuild() -> void:
 	var loadout: ClassLoadoutResource = actor.loadout
 	var column: int = Callings.resolve(loadout.class_id, loadout.calling)
 	if is_youth_seat():
-		appearance = ArsenalCatalog.current.youth_appearance_for_seat(loadout.class_id, actor.party_slot)
+		appearance = ArsenalCatalog.current.youth_appearance_for_seat(loadout.class_id, actor.party_slot, youth_style_for_seat())
 	else:
 		appearance = ArsenalCatalog.current.hero_appearance_for_seat(loadout.class_id, column, actor.party_slot)
 	model = load_model(loadout.class_id)
@@ -371,6 +371,7 @@ func rebuild() -> void:
 	animator = HeroCombatAnimator.new()
 	animator.setup(actor, skeleton)
 	animator.youth = appearance.is_youth()
+	animator.youth_girl = appearance.is_youth() and appearance.youth_style == HeroAppearanceResource.YOUTH_GIRL
 	add_child(animator)
 	features = {
 		"calling": appearance.calling_id, "headgear": appearance.headgear_style, "headgear_crest": appearance.headgear_crest,
@@ -386,6 +387,15 @@ func rebuild() -> void:
 
 ## Whether this hero is drawn as the Level 1 youth: a player (not an AI
 ## companion) still Unsworn, on the trail before Level 10.
+## Which youth this seat is (docs/26 §7): Player 1 the tale's own choice (PartyProgress.hero_style),
+## the seats after alternate from it, so siblings on the couch read apart.
+func youth_style_for_seat() -> StringName:
+	var chosen: StringName = PartyProgress.current.hero_style if PartyProgress.current != null else HeroAppearanceResource.YOUTH_BOY
+	if actor == null or actor.party_slot % 2 == 0:
+		return chosen
+	return HeroAppearanceResource.YOUTH_BOY if chosen == HeroAppearanceResource.YOUTH_GIRL else HeroAppearanceResource.YOUTH_GIRL
+
+
 func is_youth_seat() -> bool:
 	if not youth_heroes or actor == null or actor.is_companion or actor.loadout == null:
 		return false
@@ -574,6 +584,8 @@ func update_rig(delta: float, moved: Vector3, frozen: bool = false) -> void:
 		_lantern.rotation.x = sin(_age * 1.7) * LANTERN_SWAY * 0.3
 	if not has_rig():
 		return
+	# Alive (docs/26 §8): the eyes blink on their own rhythm.
+	body_material.set_shader_parameter(&"eye_blink", HeroMeshAtelier.blink_amount(_age, float(actor.party_slot) + 0.37))
 	_hit_stop_left = maxf(0.0, _hit_stop_left - delta)
 	if frozen and _hit_stop_left <= 0.0:
 		_hit_stop_left = delta

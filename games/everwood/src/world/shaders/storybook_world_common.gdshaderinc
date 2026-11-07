@@ -287,9 +287,17 @@ vec4 terrain_class_weights(vec3 painted, vec3 n) {
 // average, so the ground keeps its value) and the ground's bent normal.
 vec3 terrain_detail(vec3 world_pos, vec3 n, vec4 w, float normal_strength, out vec3 bent) {
 	vec2 flat_uv = world_pos.xz;
-	vec3 turf = texture(atelier_albedo, vec3(flat_uv * 0.25, LAYER_TURF)).rgb / craft_average(LAYER_TURF);
+	// The turf at two scales, the second turned, blended by a slow noise, so its 4 m tile never reads as a grid (docs/26).
+	vec2 turned = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * flat_uv * 0.13 + vec2(0.37, 0.71);
+	float turf_mix = smoothstep(0.3, 0.7, world_noise(flat_uv * 0.045));
+	vec3 turf = mix(texture(atelier_albedo, vec3(flat_uv * 0.25, LAYER_TURF)).rgb, texture(atelier_albedo, vec3(turned, LAYER_TURF)).rgb, turf_mix)
+		/ craft_average(LAYER_TURF);
 	vec3 road = texture(atelier_albedo, vec3(flat_uv * 0.33, LAYER_FLAGSTONE)).rgb / craft_average(LAYER_FLAGSTONE);
 	vec3 loam = texture(atelier_albedo, vec3(flat_uv * 0.25, LAYER_LOAM)).rgb / craft_average(LAYER_LOAM);
+#ifdef STORYBOOK_DRAWN_ROADS
+	// In the Caldera the loam's orange leaf-litter muddied every bank: keep only a trace of it (docs/26).
+	loam = mix(vec3(1.0), loam, 0.3);
+#endif
 	vec3 tw = triplanar_weights(n);
 	vec3 crag = craft_sample(atelier_albedo, world_pos, tw, LAYER_GRANITE, 0.2).rgb / craft_average(LAYER_GRANITE);
 	vec3 tn_turf = texture(atelier_normal, vec3(flat_uv * 0.25, LAYER_TURF)).xyz * 2.0 - 1.0;
@@ -337,6 +345,21 @@ vec3 storybook_ground(vec3 painted, vec3 base, vec3 n, vec3 world_pos, float toe
 	}
 	vec4 classes = terrain_class_weights(painted, n);
 	float w_vertex = classes.y / max(classes.x + classes.y, 0.0001);
+	float sand = 0.0;
+	vec3 sandy = base;
+#ifdef STORYBOOK_DRAWN_ROADS
+	// Roads are drawn per pixel by the caller (docs/26): what the vertex colours call road here is a
+	// beach or a sandy bank, so it's sand (laid over the turf's detail below), eased softly into the
+	// turf, with no flagstones and no verge.
+	sand = smoothstep(0.25, 0.75, w_vertex + (world_noise(world_pos.xz * 0.7) - 0.5) * 0.3) * (1.0 - classes.w);
+	float grain = world_hash(floor(world_pos.xz * 22.0));
+	float ripple = 0.5 + 0.5 * sin(dot(world_pos.xz, vec2(0.8, 0.6)) * 5.0 + world_noise(world_pos.xz * 0.4) * 6.0);
+	// Damp and dry patches a few metres across, so a wide beach isn't one flat tone from afar.
+	float patches = world_noise(world_pos.xz * 0.35) * 0.6 + world_noise(world_pos.xz * 1.6 + vec2(4.0, 9.0)) * 0.4;
+	sandy = base * (0.84 + 0.18 * patches + 0.08 * grain + 0.05 * ripple) * (1.0 - step(0.985, grain) * 0.35);
+	classes = vec4(classes.x + classes.y, 0.0, classes.z, classes.w);
+	w_vertex = 0.0;
+#endif
 	float road = frayed_road(w_vertex, world_pos.xz);
 	// Across the edge band the colour switches per pixel between the biome's turf and road, not along the triangles.
 	float edge = smoothstep(0.03, 0.18, w_vertex) * (1.0 - smoothstep(0.82, 0.97, w_vertex)) * (1.0 - classes.w);
@@ -348,6 +371,7 @@ vec3 storybook_ground(vec3 painted, vec3 base, vec3 n, vec3 world_pos, float toe
 	classes = mix(classes, split, edge);
 	vec3 detail = terrain_detail(world_pos, n, classes, normal_strength, bent);
 	color *= mix(vec3(1.0), detail, detail_strength);
+	color = mix(color, sandy, sand);
 	// The trodden loam-and-clover verge along the outer band, 18% darker.
 	float verge = smoothstep(0.14, 0.24, w_vertex) * (1.0 - smoothstep(0.46, 0.56, w_vertex)) * (1.0 - road) * (1.0 - classes.w);
 	vec3 verge_color = ground_verge.a > 0.0 ? ground_verge.rgb : vec3(0.077, 0.110, 0.040);
@@ -357,6 +381,9 @@ vec3 storybook_ground(vec3 painted, vec3 base, vec3 n, vec3 world_pos, float toe
 	// A steep bank (26 to 45°): exposed loam, pebble scree and root-ribs.
 	float bank = bank_share(n) * (1.0 - road);
 	vec3 loam = texture(atelier_albedo, vec3(world_pos.xz * 0.25, LAYER_LOAM)).rgb;
+#ifdef STORYBOOK_DRAWN_ROADS
+	loam = mix(vec3(luminance(craft_average(LAYER_LOAM))) * vec3(1.05, 0.98, 0.9), loam, 0.3);
+#endif
 	float pebbles = smoothstep(0.6, 0.75, world_noise(world_pos.xz * 5.0 + world_pos.y));
 	float ribs = smoothstep(0.86, 0.95, world_noise(vec2(world_pos.y * 2.6, (world_pos.x + world_pos.z) * 0.45)));
 	vec3 scree = mix(loam * 0.9, loam * 1.35 + vec3(0.03), pebbles) * (1.0 - ribs * 0.45);
