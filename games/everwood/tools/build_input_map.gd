@@ -74,6 +74,8 @@ func _bindings() -> Dictionary[StringName, Array]:
 	map[InputComponent.ACTION_JOIN] = [_key(KEY_ENTER), _button(JOY_BUTTON_START)]
 	# The Options menu (13_PLAYTEST §2.1): Esc, or a tap of a seated pad's Options / Menu; holding Start still leaves.
 	map[InputComponent.ACTION_OPTIONS] = [_key(KEY_ESCAPE), _button(JOY_BUTTON_START)]
+	# The Developer Tools (13_PLAYTEST §2.13): F1; on a pad, hold Share and tap D-Pad ↑ (read in InputComponent).
+	map[InputComponent.ACTION_DEV_TOOLS] = [_key(KEY_F1)]
 	return map
 
 

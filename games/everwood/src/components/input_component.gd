@@ -46,6 +46,8 @@ signal binder_requested
 signal atlas_requested
 ## A tap of Esc or Options / Menu: the Options menu opens (or, over another menu, that menu closes).
 signal options_requested
+## F1, or Share held and D-Pad ↑: the Developer Tools open (or close).
+signal dev_tools_requested
 ## Up / down / accept / back for an open menu (MENU_* below).
 signal menu_input(action: StringName)
 
@@ -79,6 +81,8 @@ const ACTION_CHANGE_CALLING: StringName = &"player_change_calling"
 const ACTION_JOIN: StringName = &"player_join"
 ## The Options menu (13_PLAYTEST §2.1): Esc, or a tap of a seated pad's Options / Menu (Start).
 const ACTION_OPTIONS: StringName = &"player_options"
+## The Developer Tools (13_PLAYTEST §2.13), apart from the player's menus: F1; on a pad, hold Share and tap D-Pad ↑.
+const ACTION_DEV_TOOLS: StringName = &"player_dev_tools"
 ## Camera pitch and mouse-look (18 GDD §6).
 const ACTION_CAMERA_PITCH_UP: StringName = &"cam_pitch_up"
 const ACTION_CAMERA_PITCH_DOWN: StringName = &"cam_pitch_down"
@@ -93,6 +97,7 @@ const BUTTON_ACTIONS: Array[StringName] = [
 	ACTION_LIGHT, ACTION_HEAVY, ACTION_DODGE, ACTION_TRIGGER_L, ACTION_TRIGGER_R, ACTION_ULT,
 	ACTION_TETHER_UP, ACTION_TETHER_RIGHT, ACTION_TETHER_DOWN, ACTION_TETHER_LEFT,
 	ACTION_CHANGE_CLASS, ACTION_CHANGE_MODE, ACTION_CHANGE_CALLING, ACTION_JUMP, ACTION_SPRINT, ACTION_PLAYTEST_CYCLE, ACTION_OPTIONS,
+	ACTION_DEV_TOOLS,
 ]
 
 const MENU_UP: StringName = &"up"
@@ -517,6 +522,11 @@ func poll(dt: float) -> void:
 	if share_held and (_pressed(ACTION_TETHER_RIGHT) or _pressed(ACTION_TETHER_LEFT)):
 		playtest_cycle_requested.emit(1 if _pressed(ACTION_TETHER_RIGHT) else -1)
 		_share_chorded = true
+	if _pressed(ACTION_DEV_TOOLS):
+		dev_tools_requested.emit()
+	if share_held and _pressed(ACTION_TETHER_UP):
+		dev_tools_requested.emit()
+		_share_chorded = true
 	if not share_held and not _was_held.get(ACTION_CHANGE_CLASS, false):
 		_share_chorded = false
 	if _tapped(ACTION_OPTIONS):
@@ -606,6 +616,8 @@ func _poll_menu() -> void:
 		atlas_requested.emit()
 	if _tapped(ACTION_OPTIONS):
 		options_requested.emit()
+	if _pressed(ACTION_DEV_TOOLS):
+		dev_tools_requested.emit()
 	# Esc / Options' hold time counts in a menu too, so a long hold (leaving the party) isn't a tap.
 	if not _held.get(ACTION_OPTIONS, false):
 		_hold_time[ACTION_OPTIONS] = 0.0

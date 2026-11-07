@@ -49,6 +49,8 @@ const TAB_TOOLTIPS: Array[String] = [
 	"Button patterns your hero has learned. Play one in a row and its last move hits harder.",
 	"The Wayfarer's Atlas: where you are, and where to go next.",
 ]
+## A Place-Card's "when": it rides with the diamond's Ink Card.
+const PLACE_WHEN: String = "It rides with the Ink Card in this diamond: on the trail (INK READY) and in every cast in a fight."
 ## The Gear & Weapon tab's rows.
 enum GearRow { WEAPON, OFF_HAND, ARMOR, CALLING }
 
@@ -838,36 +840,99 @@ static func combo_tooltip(form: ComboChainResource) -> String:
 	return line
 
 
-## The highlighted Ink Card, Place-Card or diamond, in a sentence.
+## The highlighted Ink Card, Place-Card or diamond (13_PLAYTEST §2.13), in three
+## short lines: what it does; when to use it (on the trail, holding its button
+## makes your ink ready for the next fight; in a fight, a tap in the flash after
+## a hit casts it); and whether your level and binder take it.
 func _card_tooltip() -> String:
 	match column:
 		Column.LEAVES:
 			var leaves: Array[StringName] = leaf_options()
-			return _option_tooltip(leaves[clampi(leaf_row, 0, leaves.size() - 1)], Column.LEAVES)
+			return card_tooltip_for(leaves[clampi(leaf_row, 0, leaves.size() - 1)], Column.LEAVES)
 		Column.PLACES:
 			var places: Array[StringName] = place_options()
-			return _option_tooltip(places[clampi(place_row, 0, places.size() - 1)], Column.PLACES)
+			return card_tooltip_for(places[clampi(place_row, 0, places.size() - 1)], Column.PLACES)
 	var socket: int = DIAMOND_ROWS[diamond_row]
 	match socket:
 		ScribeCardResource.DioramaSocket.GUARD:
-			return "L: the card that rides your guard."
+			return "L: the card that rides your guard.\n" + when_to_use(socket)
 		ScribeCardResource.DioramaSocket.SKILL:
-			return "R: your skill. It costs one pip."
+			return "R: your skill. It costs one pip.\n" + when_to_use(socket)
 		ScribeCardResource.DioramaSocket.ULT:
-			return "L+R together: your big move. It costs three pips."
+			return "L+R together: your big move. It costs three pips.\n" + when_to_use(socket)
 	return "Every Ink Card and Place-Card you've found, and the ones still out there."
 
 
+## One option in the chosen diamond: what it does, when to use it, and whether it fits now.
+func card_tooltip_for(copy_key: StringName, page_column: int) -> String:
+	var socket: int = selected_socket()
+	var when: String = when_to_use(socket) if page_column == Column.LEAVES else PLACE_WHEN
+	return "%s\n%s\n%s" % [_option_tooltip(copy_key, page_column), when, fit_line(copy_key, page_column)]
+
+
+## When a diamond's card is used: on the trail (Trail-Prep) and in a fight (Sign-Flow).
+static func when_to_use(socket: int) -> String:
+	var hold: float = SignFlowComponent.HEARTH_RITE_HOLD_FRAMES / SignFlowComponent.FRAMES_PER_SECOND
+	var pips: int = int(ScribeCardResource.SOCKET_PIP_COSTS[socket])
+	var button: String = ["L", "R", "L+R"][socket]
+	var fight: String = "In a fight (Sign-Flow): land a hit, then tap %s in the flash: %s (%d pip%s)." % [button,
+		"a counter-brace" if socket == ScribeCardResource.DioramaSocket.GUARD else "it casts at once", pips, "" if pips == 1 else "s"]
+	if socket == ScribeCardResource.DioramaSocket.GUARD:
+		return fight + " It never readies on the trail."
+	return "On the trail (Trail-Prep, no foe near): hold %s for %.0f s: INK READY, and your next fight opens with it. %s" % [button, hold, fight]
+
+
+## Whether your level and binder take this option in the chosen diamond, or what stands in the way.
+func fit_line(copy_key: StringName, page_column: int) -> String:
+	var progress: PartyProgress = PartyProgress.current
+	var draft: EquipmentLoadoutResource = actor.loadout.kit.copy()
+	if page_column == Column.LEAVES:
+		draft.set_socket_leaf(selected_socket(), ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
+	else:
+		draft.set_socket_place(selected_socket(), ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
+	var problem: String = LoadoutComposer.kit_problem(_player_class(), draft, progress.grimoire_level(), progress.collection, progress.trail_level())
+	if problem != "":
+		return "Not yet (you're Level %d, Grimoire Lv %d): %s." % [progress.trail_level(), progress.grimoire_level(), problem]
+	return "Ready: it fits your binder at Level %d (Grimoire Lv %d)." % [progress.trail_level(), progress.grimoire_level()]
+
+
+## What an option does, in a sentence: its name, how it shows itself and its Ink-Sign, then the card's own words or its effect.
 static func _option_tooltip(copy_key: StringName, page_column: int) -> String:
 	if copy_key == &"":
 		return "Leave it empty: the weapon's own move plays." if page_column == Column.LEAVES else "No Place-Card round this diamond."
-	var listed: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key))
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var listed: ScribeCardResource = catalog.card(ScribeCardResource.copy_card_id(copy_key))
 	if listed == null:
 		return ""
+	var seal: ScribeSignResource = catalog.sign_seal(listed.scribe_sign)
+	var sign_name: String = "%s Ink-Sign" % seal.display_name if listed.scribe_sign != ScribeSignResource.Sign.NONE else "no Ink-Sign"
+	var kind: String = "Place-Card" if listed.is_place_card() else listed.mode_name()
 	var told: String = listed.description.strip_edges()
-	if told != "":
-		return told
-	return "A Place-Card: it frames a card and lends it the place's strength." if listed.is_place_card() else "%s: %s" % [listed.display_name, listed.mode_name()]
+	return "%s (%s, %s): %s" % [listed.display_name, kind, sign_name, told if told != "" else card_effect(listed)]
+
+
+## What a card does when it's cast, worked out from its numbers.
+static func card_effect(listed: ScribeCardResource) -> String:
+	var seal: String = ArsenalCatalog.current.sign_seal(listed.scribe_sign).display_name
+	if listed.is_place_card():
+		var gifts: PackedStringArray = PackedStringArray()
+		if listed.location_bonus_reach_m > 0.0:
+			gifts.append("+%.1f m reach" % listed.location_bonus_reach_m)
+		if listed.location_bonus_poise > 0.0:
+			gifts.append("+%d stagger" % roundi(listed.location_bonus_poise))
+		if listed.location_bonus_heal > 0.0:
+			gifts.append("+%d healing" % roundi(listed.location_bonus_heal))
+		if listed.location_stamina_refund > 0.0:
+			gifts.append("%d stamina back" % roundi(listed.location_stamina_refund))
+		return "frames the card in its diamond with this place's strength%s, and lasts longer near its own landmark." % (
+			(": " + ", ".join(gifts)) if not gifts.is_empty() else "")
+	match listed.manifestation_mode:
+		ScribeCardResource.ManifestationMode.WARD_MANTLE:
+			return "wraps you in an Ink Shield: a %s blow does %d%% less, stuns can't stop you, and friends shelter behind you." % [seal,
+				roundi(listed.ward_damage_mitigation_pct * 100.0)]
+		ScribeCardResource.ManifestationMode.LANTERN_TETHER:
+			return "lends the %s down your tether: friends' hits carry it for %d s and crack its locks." % [seal, roundi(listed.coat_duration_sec)]
+	return "coats your weapon in %s ink for %d s: every hit carries it and cracks its locks." % [seal, roundi(listed.coat_duration_sec)]
 
 
 ## What the off hand carries, by Fellowship (07 GDD §4.1).
@@ -915,7 +980,7 @@ func _fill_rows(page: VBoxContainer, rows: Array[Label], options: Array[StringNa
 		var worn: bool = ScribeCardResource.copy_card_id(key) == worn_id and (key == &"" or ScribeCardResource.copy_variant(key) == worn_variant)
 		var mark: String = "> " if column == page_column and index == cursor else "  "
 		row.text = "%s%s%s" % [mark, _option_text(key, page_column), "  (worn)" if worn else ""]
-		row.tooltip_text = _option_tooltip(key, page_column)
+		row.tooltip_text = card_tooltip_for(key, page_column)
 		row.modulate = SELECTED_COLOR if column == page_column and index == cursor else (ROW_COLOR if worn or key != &"" else DIM_COLOR)
 
 

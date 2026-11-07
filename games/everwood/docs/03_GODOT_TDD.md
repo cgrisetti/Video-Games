@@ -24,6 +24,8 @@ games/everwood/
     │   ├── instance_manager.gd         # SubViewport World3D switcher (Oakshire Vale, Bramble-Bridge, the expedition)
     │   ├── combat_director.gd          # Strikes, hit-stop, seals and Four-Sign detonations, telegraphs
     │   ├── party_progress.gd           # The family save: Chimes, cards, kits, trail level, sightings
+    │   ├── settings_manager.gd         # Autoload "Settings": the Options menu's settings, saved as JSON (doc 13)
+    │   ├── save_manager.gd             # JSON files written safely (a temp file, then renamed)
     │   └── audio_cues.gd               # Synthesized cues (positional ones through AudioDirector's pool)
     ├── core/
     │   ├── audio_director.gd           # Autoload "Score": buses, Deck A/B, combat stages, 32-voice 3D pool, stingers
@@ -84,7 +86,10 @@ games/everwood/
         ├── player_camera.gd            # Each player's camera: yaw, pitch (-12 to +52 degrees), boom, ground clamp
         ├── world_label_style.gd        # How every Label3D reads, and the station layer
         ├── cartography_baker.gd        # The parchment map of a level, painted in code
-        ├── wayfarer_minimap_widget.gd · cartography_atlas_panel.gd # The minimap and the Vellum Atlas
+        ├── wayfarer_minimap_widget.gd · world_map_panel.gd # The minimap, and the Zone and World Maps
+        ├── options_menu.gd             # Options: Audio, Video, Controls (key and pad drawings), Gameplay
+        ├── dev_admin_panel.gd          # The Developer Tools (F1): test tools only, apart from the player's menus
+        ├── enemy_nameplate.gd          # An enemy's level and danger badge
         └── split_screen_viewport_grid.gd # Dynamic 1-to-4 player SubViewport container
 ```
 

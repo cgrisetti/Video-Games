@@ -25,6 +25,15 @@
 ##       isle's shore wanders into bays and headlands, two or more river
 ##       inlets (or firths) hold the sea, and no quay, arrival, place or road
 ##       is moved or cut
+##   K5  the Developer Tools on F1 (and Share + D-Pad ↑ on a pad): their own
+##       hazard-banded panel with the old banner's lines and the test tools
+##       (debug hero, end the playtest, the warp, host / join / leave), none of
+##       it in the Binder or the Options menu; card tooltips that say what a
+##       card does, when to use it (on the trail it gets your ink ready; in a
+##       fight a tap in the flash casts it) and whether your level takes it,
+##       in Gate 6's words; level and danger badges over enemies ("[Lv. 3]",
+##       "[Lv. 10 Elite]", the boss's on its bar), coloured for the party's
+##       level and hidden from the Options menu
 extends RefCounted
 
 ## Hearthstead Market's green: flat ground to sprint on.
@@ -56,6 +65,9 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	await _check_strapped_cloak()
 	_check_atelier_foliage()
 	_check_organic_coasts()
+	await _check_dev_tools()
+	await _check_card_tooltips()
+	await _check_enemy_badges()
 
 
 # --- Helpers --------------------------------------------------------------------------
@@ -706,3 +718,246 @@ func _check_organic_coasts() -> void:
 		summary.append("%s %d inlets, shore %.2f to %.2f" % [builder.isle.display_name, inlets.size(), lowest, highest])
 	check.call(problems.is_empty(), "K4: organic coasts: %s; quays, arrivals and roads untouched%s"
 		% [", ".join(summary), "" if problems.is_empty() else " (" + "; ".join(problems.slice(0, 6)) + ")"])
+
+
+# --- K5: the Developer Tools, card tooltips and enemy badges ----------------------------
+
+const KAIZEN: GDScript = preload("res://tools/test_phase12_kaizen.gd")
+## Words that belong to the Developer Tools and never to a player's menu.
+const DEV_WORDS: Array[String] = ["F1", "F2", "F5", "F6", "F7", "F9", "Debug", "DEBUG", "Developer", "Playtest", "playtest"]
+
+
+func _texts(node: Node) -> PackedStringArray:
+	var found: PackedStringArray = PackedStringArray()
+	for label: Node in node.find_children("*", "Label", true, false):
+		found.append((label as Label).text)
+	return found
+
+
+func _pad_button(pad: int, button: JoyButton, pressed: bool) -> void:
+	var event: InputEventJoypadButton = InputEventJoypadButton.new()
+	event.device = pad
+	event.button_index = button
+	event.pressed = pressed
+	Input.parse_input_event(event)
+
+
+func _hud_of(actor: ActorBase) -> PlayerHUD:
+	return level.huds.get(actor.player_id) as PlayerHUD if actor != null else null
+
+
+func _check_dev_tools() -> void:
+	var hero: ActorBase = _keyboard_hero()
+	_stand(hero)
+	await _frames(3)
+	var hud: PlayerHUD = _hud_of(hero)
+	await _tap_key(KEY_F1)
+	await _frames(2)
+	var tools: DevAdminPanel = hud.dev_tools_panel() if hud != null else null
+	if tools == null:
+		check.call(false, "K5: F1 opens the Developer Tools")
+		return
+	var offered: Array[int] = tools.tools()
+	var shown: String = "\n".join(_texts(tools))
+	var banner_kept: bool = level.debug_banner_text() != "" and tools.info_text().contains(level.debug_banner_text())
+	check.call(hero.input.menu_open and shown.contains(DevAdminPanel.TITLE) and shown.contains("not part of your hero's gear") and banner_kept
+		and offered.has(DevAdminPanel.Tool.DEBUG_NEXT) and offered.has(DevAdminPanel.Tool.WARP) and offered.has(DevAdminPanel.Tool.HOST)
+		and not offered.has(DevAdminPanel.Tool.END_PLAYTEST),
+		"K5: F1 opens the Developer Tools, a hazard-banded workbench of their own (\"%s\"): the old banner's lines, the debug hero switch, the Caldera warp, host / join / leave"
+		% DevAdminPanel.SUBTITLE.get_slice(":", 0))
+	# The debug hero switch from the panel, then ending the playtest from it.
+	tools.row = offered.find(DevAdminPanel.Tool.DEBUG_NEXT)
+	tools.handle_menu(InputComponent.MENU_ACCEPT)
+	await _frames(6)
+	var switched: bool = PartyProgress.current.playtest
+	hero = _keyboard_hero()
+	hud = _hud_of(hero)
+	if hud.dev_tools_panel() == null:
+		hud.open_dev_tools()
+		await _frames(2)
+	tools = hud.dev_tools_panel()
+	var can_end: bool = tools != null and tools.tools().has(DevAdminPanel.Tool.END_PLAYTEST)
+	if tools != null:
+		tools.use(DevAdminPanel.Tool.END_PLAYTEST)
+	await _frames(2)
+	var ended: bool = not PartyProgress.current.playtest and not CalderaWorldState.current.playtest
+	await _tap_key(KEY_F1)
+	await _frames(2)
+	check.call(switched and can_end and ended and hud.dev_tools_panel() == null and not hero.input.menu_open,
+		"K5: from the panel the debug hero switch starts a playtest, \"End the playtest\" ends it, and F1 closes the tools")
+	# Neither the Binder nor the Options menu carries a test tool.
+	hud.close_menu()
+	await _frames(2)
+	hud.open_binder()
+	await _frames(3)
+	var binder: GrimoireBinderPanel = hud.binder_panel()
+	var had_binder: bool = binder != null
+	var leaks: PackedStringArray = PackedStringArray()
+	if binder != null:
+		for tab: int in [GrimoireBinderPanel.Tab.GEAR, GrimoireBinderPanel.Tab.CARDS, GrimoireBinderPanel.Tab.COMBOS]:
+			binder.show_tab(tab)
+			await _frames(2)
+			for text: String in _texts(binder):
+				for word: String in DEV_WORDS:
+					if text.contains(word):
+						leaks.append("Binder: " + text.get_slice("\n", 0))
+		hud.close_menu()
+		await _frames(2)
+	hud.open_options()
+	await _frames(2)
+	var options: OptionsMenu = hud.options_menu()
+	var had_options: bool = options != null
+	if options != null:
+		for tab: int in OptionsMenu.TAB_NAMES.size():
+			options.set_tab(tab)
+			await _frames(1)
+			for text: String in _texts(options):
+				for word: String in DEV_WORDS:
+					if text.contains(word):
+						leaks.append("Options: " + text.get_slice("\n", 0))
+		options.close()
+		await _frames(2)
+	# A pad opens them with Share held and D-Pad ↑, and the chord spends the Share press.
+	var pad_ok: bool = true
+	var pad_hero: ActorBase = null
+	for actor: ActorBase in level.party_in_order():
+		if actor.is_local_player() and actor.input != null and actor.input.device_id != InputComponent.KEYBOARD_DEVICE:
+			pad_hero = actor
+	if pad_hero != null:
+		var pad: int = pad_hero.input.device_id - 1
+		_pad_button(pad, JOY_BUTTON_BACK, true)
+		await _frames(3)
+		_pad_button(pad, JOY_BUTTON_DPAD_UP, true)
+		await _frames(3)
+		_pad_button(pad, JOY_BUTTON_DPAD_UP, false)
+		_pad_button(pad, JOY_BUTTON_BACK, false)
+		await _frames(4)
+		var pad_hud: PlayerHUD = _hud_of(pad_hero)
+		pad_ok = pad_hud != null and pad_hud.dev_tools_panel() != null and pad_hud.binder_panel() == null
+		if pad_hud != null:
+			pad_hud.close_menu()
+		await _frames(2)
+	check.call(had_binder and had_options and leaks.is_empty() and pad_ok,
+		"K5: the Binder (gear, cards, combos) and the Options menu show no test tool or key; %s%s%s"
+		% ["a pad opens the tools with Share + D-Pad ↑, no Binder" if pad_hero != null else "no pad seated for the chord", "" if leaks.is_empty() else " (" + ", ".join(leaks.slice(0, 4)) + ")",
+			"" if had_binder and had_options and pad_ok else " [binder %s, options %s, pad %s]" % [had_binder, had_options, pad_ok]])
+
+
+func _check_card_tooltips() -> void:
+	var hero: ActorBase = _keyboard_hero()
+	var hud: PlayerHUD = _hud_of(hero)
+	_stand(hero)
+	await _frames(2)
+	await _tap_key(KEY_TAB)
+	await _frames(3)
+	var binder: GrimoireBinderPanel = hud.binder_panel() if hud != null else null
+	if binder == null:
+		check.call(false, "K5: the Binder opens for the card tooltips")
+		return
+	binder.show_tab(GrimoireBinderPanel.Tab.CARDS)
+	var problems: PackedStringArray = PackedStringArray()
+	var cards: int = 0
+	var places: int = 0
+	var retired: Array = KAIZEN.RETIRED_WORDS
+	var sample: String = ""
+	for socket: int in [ScribeCardResource.DioramaSocket.GUARD, ScribeCardResource.DioramaSocket.SKILL, ScribeCardResource.DioramaSocket.ULT]:
+		binder._select_socket(socket)
+		for page: int in [GrimoireBinderPanel.Column.LEAVES, GrimoireBinderPanel.Column.PLACES]:
+			var options: Array[StringName] = binder.leaf_options() if page == GrimoireBinderPanel.Column.LEAVES else binder.place_options()
+			for key: StringName in options:
+				if key == &"":
+					continue
+				var tip: String = binder.card_tooltip_for(key, page)
+				var lines: PackedStringArray = tip.split("\n")
+				var fits: bool = lines.size() == 3 and (lines[2].begins_with("Ready:") or lines[2].begins_with("Not yet")) and lines[2].contains("Level")
+				var when: bool
+				if page == GrimoireBinderPanel.Column.PLACES:
+					when = lines.size() > 1 and lines[1] == GrimoireBinderPanel.PLACE_WHEN and lines[0].contains("Place-Card")
+					places += 1
+				elif socket == ScribeCardResource.DioramaSocket.GUARD:
+					when = lines.size() > 1 and lines[1].contains("In a fight") and lines[1].contains("never readies")
+					cards += 1
+				else:
+					when = lines.size() > 1 and lines[1].contains("On the trail") and lines[1].contains("INK READY") and lines[1].contains("In a fight")
+					cards += 1
+					if sample == "" and socket == ScribeCardResource.DioramaSocket.SKILL:
+						sample = tip
+				if not fits or not when:
+					problems.append(tip.replace("\n", " / "))
+				for word: Variant in retired:
+					if tip.contains(String(word)):
+						problems.append("retired word %s" % word)
+	# A Place-Card not in the binder says so, and when it would ride along.
+	binder._select_socket(ScribeCardResource.DioramaSocket.SKILL)
+	for listed: ScribeCardResource in ArsenalCatalog.current.cards():
+		if not listed.is_place_card() or places >= 3:
+			continue
+		var key: StringName = ScribeCardResource.copy_key(listed.card_id, ScribeCardResource.CardVariant.STANDARD)
+		var tip: String = binder.card_tooltip_for(key, GrimoireBinderPanel.Column.PLACES)
+		var lines: PackedStringArray = tip.split("\n")
+		places += 1
+		if lines.size() != 3 or not lines[0].contains("Place-Card") or lines[1] != GrimoireBinderPanel.PLACE_WHEN \
+				or not (lines[2].begins_with("Ready:") or lines[2].begins_with("Not yet")):
+			problems.append(tip.replace("\n", " / "))
+		elif sample.find("Not yet") < 0 and lines[2].begins_with("Not yet"):
+			sample += " · " + tip.replace("\n", " / ")
+	# The diamond rows say when they're used too.
+	binder.column = GrimoireBinderPanel.Column.DIAMONDS
+	binder.diamond_row = GrimoireBinderPanel.DIAMOND_ROWS.find(ScribeCardResource.DioramaSocket.ULT)
+	var diamond: String = binder.tooltip_text_now()
+	hud.close_menu()
+	await _frames(2)
+	check.call(problems.is_empty() and cards > 0 and places > 0 and diamond.contains("3 pips") and diamond.contains("INK READY"),
+		"K5: %d Ink Card and %d Place-Card tooltips say what each does, when to use it (on the trail: INK READY; in a fight: a tap in the flash) and whether your level takes it, e.g. \"%s\"%s"
+		% [cards, places, sample.replace("\n", " / "), "" if problems.is_empty() else " (" + "; ".join(problems.slice(0, 3)) + ")"])
+
+
+func _check_enemy_badges() -> void:
+	var Danger: Dictionary = EnemyNameplate.Danger
+	var texts_ok: bool = (EnemyNameplate.badge_text(3, "") == "[Lv. 3]" and EnemyNameplate.badge_text(10, "Elite") == "[Lv. 10 Elite]"
+		and EnemyNameplate.badge_text(25, "Boss") == "[Lv. 25 Boss]")
+	var scale_ok: bool = (EnemyNameplate.danger_for(1, "", 10) == Danger.TRIVIAL and EnemyNameplate.danger_for(7, "", 10) == Danger.EASY
+		and EnemyNameplate.danger_for(10, "", 10) == Danger.EVEN and EnemyNameplate.danger_for(11, "Elite", 10) == Danger.TOUGH
+		and EnemyNameplate.danger_for(12, "Boss", 10) == Danger.DEADLY)
+	# Grow the island's packs that aren't out yet (as streaming in their landblock would).
+	for node: Node in tree.get_nodes_in_group(&"caldera_streamed_spawners"):
+		var spawner: MobSpawner = node as MobSpawner
+		if spawner != null and level.streamer.structures != null and level.streamer.structures.is_ancestor_of(spawner) and spawner.mobs.is_empty() \
+				and not spawner.has_meta(&"beacon_guards"):
+			spawner.spawn_mobs()
+	await _frames(2)
+	var foes: Array[ActorBase] = []
+	for node: Node in level.find_children("*", "", true, false):
+		if node is WildMob or node is WoodlandMinion:
+			foes.append(node as ActorBase)
+	var badged: int = 0
+	var wrong: PackedStringArray = PackedStringArray()
+	var example: String = ""
+	for foe: ActorBase in foes:
+		var plate: EnemyNameplate = foe.get_node_or_null(^"LevelBadge") as EnemyNameplate
+		if plate == null:
+			wrong.append("%s has no badge" % foe.display_name())
+			continue
+		plate.refresh()
+		var expected: String = EnemyNameplate.badge_text(EnemyNameplate.level_of(foe), EnemyNameplate.rank_of(foe))
+		if foe.stats.is_downed:
+			continue
+		if not plate.visible or not plate.text.begins_with(expected):
+			wrong.append("%s reads %s" % [foe.display_name(), plate.text])
+			continue
+		badged += 1
+		var mob: WildMob = foe as WildMob
+		if example == "" or (mob != null and mob.variant.rank != MobVariantResource.Rank.COMMON):
+			example = "%s %s (%s)" % [foe.display_name(), plate.text, EnemyNameplate.DANGER_NAMES[EnemyNameplate.danger_for(plate.level, plate.rank, EnemyNameplate.party_level())]]
+	# The Options menu's Gameplay tab hides them all.
+	SettingsManager.current.set_value(&"enemy_level_badges", false)
+	var hidden: bool = true
+	for foe: ActorBase in foes:
+		var plate: EnemyNameplate = foe.get_node_or_null(^"LevelBadge") as EnemyNameplate
+		if plate != null:
+			plate.refresh()
+			hidden = hidden and not plate.visible
+	SettingsManager.current.set_value(&"enemy_level_badges", true)
+	check.call(texts_ok and scale_ok and badged > 0 and wrong.is_empty() and hidden,
+		"K5: %d enemies wear a level and danger badge over their health dots (e.g. %s), grey to red against the party's level; the Options menu hides them%s"
+		% [badged, example, "" if wrong.is_empty() else " (" + ", ".join(wrong.slice(0, 4)) + ")"])

@@ -187,6 +187,7 @@ func _ready() -> void:
 			actor.input.binder_requested.connect(toggle_binder)
 			actor.input.atlas_requested.connect(toggle_atlas)
 			actor.input.options_requested.connect(toggle_options)
+			actor.input.dev_tools_requested.connect(toggle_dev_tools)
 	add_to_group(GROUP)
 	CombatDirector.current.glimmer_opened.connect(_on_glimmer_opened)
 	CombatDirector.current.bravery_countered.connect(_on_bravery_countered)
@@ -337,6 +338,33 @@ func open_options() -> bool:
 
 func options_menu() -> OptionsMenu:
 	return _live_menu() as OptionsMenu
+
+
+## F1, or Share held and D-Pad ↑: the Developer Tools (13_PLAYTEST §2.13), a
+## panel of their own apart from the Binder and the Options menu. Over another
+## menu it closes that one and opens the tools.
+func toggle_dev_tools() -> void:
+	var open: Control = _live_menu()
+	if open is DevAdminPanel:
+		(open as DevAdminPanel).close()
+		return
+	if open != null:
+		close_menu()
+	open_dev_tools()
+
+
+func open_dev_tools() -> bool:
+	if _live_menu() != null or actor == null:
+		return false
+	var tools: DevAdminPanel = DevAdminPanel.new()
+	tools.setup(actor, _level())
+	_menu = tools
+	add_child(tools)
+	return true
+
+
+func dev_tools_panel() -> DevAdminPanel:
+	return _live_menu() as DevAdminPanel
 
 
 ## Closes whatever menu is open over this player's view.
@@ -569,6 +597,13 @@ func _refresh_boss() -> void:
 		title += " (KNOCKED DOWN)"
 	if primer != ScribeSignResource.Sign.NONE:
 		title += "  ·  %s seal" % ArsenalCatalog.current.sign_seal(primer).seal_name
+	# Its level and danger before its name (13_PLAYTEST §2.14), unless the Options menu hides badges.
+	if SettingsManager.badges_shown():
+		var level: int = EnemyNameplate.level_of(boss)
+		title = "%s  %s" % [EnemyNameplate.badge_text(level, "Boss"), title]
+		_boss_label.modulate = EnemyNameplate.danger_color(level, "Boss").lerp(Color.WHITE, 0.35)
+	else:
+		_boss_label.modulate = Color.WHITE
 	_boss_label.text = title
 	_boss_health.max_value = boss.stats.stats.max_health
 	_boss_health.value = boss.stats.health

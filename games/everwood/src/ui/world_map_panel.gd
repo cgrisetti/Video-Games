@@ -419,6 +419,7 @@ func _draw_cracks() -> void:
 
 
 func _draw_nodes(font: Font) -> void:
+	var shown: Array[int] = []
 	for index: int in nodes.size():
 		var node: Dictionary = nodes[index]
 		var spot: Vector2 = to_panel(node["at"])
@@ -430,12 +431,68 @@ func _draw_nodes(font: Font) -> void:
 		if index == selected:
 			draw_arc(spot, 13.0, 0.0, TAU, 24, SELECTED, 2.5)
 		if kind in ALWAYS_NAMED or index == selected:
-			var text_size: int = ISLE_SIZE if kind == NodeKind.ISLE else (TOWN_SIZE if kind == NodeKind.TOWN else LABEL_SIZE)
-			var label: String = String(node["label"])
-			var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, text_size).x
-			var at: Vector2 = spot + Vector2(-width * 0.5, -12.0 if kind != NodeKind.ISLE else 6.0)
-			draw_string_outline(font, at, label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, text_size, 4, Color(0.97, 0.93, 0.84, 0.9))
-			draw_string(font, at, label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, text_size, INK)
+			shown.append(index)
+	_draw_labels(font, shown)
+
+
+## The marks' names, kept from piling on each other: the chosen mark first, then
+## isles, towns, dungeons and quests, crossings, the rest; each tries above its
+## mark, then below, right and left, inside the map's frame, and a name with no
+## room is left off (its mark still shows, and choosing it names it). Only an
+## isle's name and the chosen mark's are always written.
+func _draw_labels(font: Font, shown: Array[int]) -> void:
+	shown.sort_custom(func(a: int, b: int) -> bool: return _label_rank(a) < _label_rank(b))
+	var taken: Array[Rect2] = []
+	for index: int in shown:
+		var spot: Vector2 = to_panel(nodes[index]["at"])
+		if int(nodes[index]["kind"]) != NodeKind.ISLE:
+			taken.append(Rect2(spot - Vector2(8.0, 8.0), Vector2(16.0, 16.0)))
+	for index: int in shown:
+		var node: Dictionary = nodes[index]
+		var kind: int = int(node["kind"])
+		var spot: Vector2 = to_panel(node["at"])
+		var text_size: int = ISLE_SIZE if kind == NodeKind.ISLE else (TOWN_SIZE if kind == NodeKind.TOWN else LABEL_SIZE)
+		var label: String = String(node["label"])
+		var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, text_size).x
+		var tall: float = float(text_size)
+		# Baseline positions: above, below, right, left (an isle's name sits on its middle first).
+		var tries: Array[Vector2] = [spot + Vector2(-width * 0.5, -12.0), spot + Vector2(-width * 0.5, tall + 12.0),
+			spot + Vector2(12.0, tall * 0.35), spot + Vector2(-width - 12.0, tall * 0.35)]
+		if kind == NodeKind.ISLE:
+			tries.push_front(spot + Vector2(-width * 0.5, 6.0))
+		var placed: bool = false
+		for at: Vector2 in tries:
+			var box: Rect2 = Rect2(at + Vector2(0.0, -tall), Vector2(width, tall + 4.0)).grow(2.0)
+			var clear: bool = _map_rect.encloses(box)
+			for other: Rect2 in taken:
+				if other.intersects(box) and not other.has_point(spot):
+					clear = false
+					break
+			if clear or (at == tries[tries.size() - 1] and (index == selected or kind == NodeKind.ISLE)):
+				var draw_at: Vector2 = at if clear else tries[0]
+				draw_string_outline(font, draw_at, label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, text_size, 4, Color(0.97, 0.93, 0.84, 0.9))
+				draw_string(font, draw_at, label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, text_size, INK)
+				taken.append(Rect2(draw_at + Vector2(0.0, -tall), Vector2(width, tall + 4.0)))
+				placed = true
+				break
+		if not placed:
+			continue
+
+
+## Which names get room first (lower first).
+func _label_rank(index: int) -> int:
+	if index == selected:
+		return 0
+	match int(nodes[index]["kind"]):
+		NodeKind.ISLE:
+			return 1
+		NodeKind.TOWN:
+			return 2
+		NodeKind.DUNGEON, NodeKind.QUEST:
+			return 3
+		NodeKind.CROSSING:
+			return 4
+	return 5
 
 
 func _draw_party(font: Font) -> void:

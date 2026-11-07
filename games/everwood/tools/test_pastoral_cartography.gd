@@ -142,6 +142,11 @@ func _check_labels(where: String) -> void:
 	var stations: int = 0
 	for node: Node in labels:
 		var label: Label3D = node as Label3D
+		# An enemy's level badge keeps its own look (13_PLAYTEST §2.14); nothing else may.
+		if label.has_meta(WorldLabelStyle.OWN_STYLE_META):
+			if not label is EnemyNameplate:
+				wrong.append("%s keeps its own style" % label.name)
+			continue
 		if (label.fixed_size or label.visibility_range_end > 30.0 or label.visibility_range_end <= 0.0 or not is_equal_approx(label.pixel_size, WorldLabelStyle.PIXEL_SIZE)
 				or label.font_size != WorldLabelStyle.FONT_SIZE or label.outline_size != WorldLabelStyle.OUTLINE_SIZE
 				or label.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF or not is_equal_approx(label.visibility_range_begin, 1.8)):
