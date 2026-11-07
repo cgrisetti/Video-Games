@@ -4,7 +4,7 @@
 ##     1  the five buses in order with their effects (the Music bus's low-pass,
 ##        warm EQ, chamber-hall reverb and SignTelegraphs-keyed compressor; the
 ##        SignTelegraphs hall; the limiters)
-##     2  the catalog: seven zone profiles, the Four Signs' chords, nine Callings,
+##     2  the catalog: twelve zone profiles (The Crown's five since docs/23), the Four Signs' chords, nine Callings,
 ##        the Cairnsman's suite; every zone's four baked acoustic stems (looping
 ##        Ogg Vorbis, its arrangement's length) in its _sync.tres; and the
 ##        fallback: ProceduralChamberSynth playing Moss-Oak-Hollow's score, and a
@@ -102,8 +102,8 @@ func _check_catalog() -> void:
 			stems_ok = stems_ok and ogg != null and ogg.loop and absf(ogg.get_length() - zone.loop_sec()) < 0.02 \
 				and is_equal_approx(ogg.bpm, zone.bpm) and ogg.beat_count == zone.loop_bars() * zone.beats_per_bar
 	ids.sort()
-	check.call(", ".join(ids) == "bramble_bridge_square, cairnsmans_vigil, dover_slap_falls, honey_wick, moss_oak_hollow, oakshire_vale, ring_of_the_cairnsman" and stems_ok,
-		"seven zone profiles, each with four phase-locked acoustic stems (looping Ogg Vorbis rendered from the SoundFont by tools/build_audio_stems.py, each exactly its arrangement's bars) in its baked AudioStreamSynchronized")
+	check.call(", ".join(ids) == "bramble_bridge_square, cairnsmans_vigil, crown_gale_cliffs, crown_iron_shore, crown_millers_oak, crown_south_bay, crown_tide_grottos, dover_slap_falls, honey_wick, moss_oak_hollow, oakshire_vale, ring_of_the_cairnsman" and stems_ok,
+		"twelve zone profiles (the vale's seven and The Crown's five), each with four phase-locked acoustic stems (looping Ogg Vorbis rendered from the SoundFont by tools/build_audio_stems.py, each exactly its arrangement's bars) in its baked AudioStreamSynchronized")
 	# Tier 2: without the stems, ProceduralChamberSynth plays the same score on its physical models.
 	var hollow: ZoneMusicProfileResource = AudioCatalog.zone(&"moss_oak_hollow")
 	var snap: Dictionary = ProceduralChamberSynth.snapshot(hollow)

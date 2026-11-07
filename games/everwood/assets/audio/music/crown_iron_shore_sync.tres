@@ -1,0 +1,17 @@
+[gd_resource type="AudioStreamSynchronized" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/music/crown_iron_shore/stem_0_folk_base.ogg" id="1_8s5vx"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/crown_iron_shore/stem_1_pastoral_lead.ogg" id="2_o80ak"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/crown_iron_shore/stem_2_holloway_discord.ogg" id="3_1885r"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/crown_iron_shore/stem_3_skirmish_drive.ogg" id="4_d8hg3"]
+
+[resource]
+stream_count = 4
+stream_0/stream = ExtResource("1_8s5vx")
+stream_0/volume = 0.0
+stream_1/stream = ExtResource("2_o80ak")
+stream_1/volume = 0.0
+stream_2/stream = ExtResource("3_1885r")
+stream_2/volume = -80.0
+stream_3/stream = ExtResource("4_d8hg3")
+stream_3/volume = -80.0

@@ -39,6 +39,7 @@
 ---
 
 ## PART II: THE CROWN — THE HEART-CRAG (MASTER CROWN V1)
+> **Redesigned in [docs/23](23_THE_CROWN_ZONE_REDESIGN.md):** four shore zones round **Miller's Oak** (the World-Tree's new name), trials off the Ring Path, springs on it, a landmark, scout, kin and suite per shore. Part III below describes the first build.
 **Architecture Budget:** `Zone 5 (Lv 15–20)` · `7 Areas` · `0 New Seams` · `0 Interior Gate Dungeons` · `+3 Trial Booleans`
 
 ### 1. Non-Negotiable Spatial & Game-Theory Rules

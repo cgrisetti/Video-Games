@@ -13,7 +13,7 @@
 ##     root_sanctum_cleared and the three lanes go dark
 ##   - North Quay, facing The Sound: the Salt Road and Crown Landing
 ##     Chime-Bells, and an open 180-degree sightline over the water to The
-##     Crown's World-Tree, the Forge Stacks, the Snow Peak and the Bell-Tower
+##     Crown's Miller's Oak, the Forge Stacks, the Snow Peak and the Bell-Tower
 ##   - the Old Quay Market (north-west shore, -4 m), under the Long Flood until
 ##     the Ebb bares it for the endgame's Chime and gear merchants
 ##   - the West Strait's causeway (north-west tip) and Eel Spit (north-east tip)

@@ -127,4 +127,4 @@ func _on_flag_changed(_flag: StringName, _value: bool) -> void:
 
 
 func _refresh_label() -> void:
-	_label.text = "%s\n%s" % [title, "complete: its bough blooms on the World-Tree" if is_complete() else pillar]
+	_label.text = "%s\n%s" % [title, "complete: its bough blooms on Miller's Oak" if is_complete() else pillar]

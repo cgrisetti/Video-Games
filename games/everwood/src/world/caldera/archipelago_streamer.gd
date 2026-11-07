@@ -585,7 +585,7 @@ func _build_impostors() -> void:
 		node.set_meta(&"isle_id", isle_id)
 		impostors.add_child(node)
 		if isle_id == CalderaAtlas.ISLE_THE_CROWN:
-			# The World-Tree answers each trial even from the far quays: its boughs share the live tree's materials.
+			# Miller's Oak answers each trial even from the far quays: its boughs share the live tree's materials.
 			var far_tree: Node3D = WorldTree.make_far_crown()
 			far_tree.position = CrownHeartCragBuilder.WORLD_TREE_AT
 			# Lifted with the island, and as broad as it is tall.

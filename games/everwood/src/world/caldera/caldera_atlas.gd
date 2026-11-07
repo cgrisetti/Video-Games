@@ -132,7 +132,7 @@ static func _ensure() -> void:
 		"Gale-Hall", "Snow Peak", "Raid Gate B: the Frost-Peak Aerie", CalderaWorldState.BEACON_GALE, "Gale Current",
 		WorldVisualCatalog.GULL_WICK_HAVEN, &"dover_slap_falls", Color(0.48, 0.72, 0.92))
 	_isle(ISLE_THE_CROWN, "The Crown", "Centre", 15, 20, ScribeSignResource.Sign.NONE, "", 8, Vector2.ZERO,
-		"Lantern-Bearers' Waypost", "World-Tree", "The Sea-Door to the Heart", &"", "",
+		"Lantern-Bearers' Waypost", "Miller's Oak", "The Sea-Door to the Heart", &"", "",
 		WorldVisualCatalog.SUNKEN_CROWN_FALLS, &"cairnsmans_vigil", Color(0.98, 0.84, 0.42))
 	_seam(SEAM_WEST_STRAIT, "The West Strait", LoadSeamResource.SeamSkin.WALKABLE_CAUSEWAY, false,
 		ISLE_OAKSHIRE_HOLM, Vector3(-600.0, 1.0, -96.0), ISLE_IRON_NESS, Vector3(250.0, 1.0, 512.0),

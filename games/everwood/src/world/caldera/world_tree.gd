@@ -1,4 +1,5 @@
-## The World-Tree in The Crown's Summit Glade (docs/20 Part II §1.2): the
+## Miller's Oak (the World-Tree of docs/20 Part II §1.2, renamed in docs/23;
+## the class keeps its old name) in The Crown's Summit Glade: the
 ## tallest thing for 5 km, so a 9-year-old navigates by it from every step on
 ## the island. A fluted, buttressed trunk; a warm golden spring at its roots;
 ## three canopy boughs that bloom one per trial (west Amber for the Anvil, north

@@ -1,5 +1,5 @@
 ## A Sap-Siphon Totem in the Tide Grottos (docs/20 Part II area 5): an old
-## carved sluice-stone weeping the World-Tree's violet sap into the sea, the
+## carved sluice-stone weeping Miller's Oak's violet sap into the sea, the
 ## source of the blight-mist on the grotto floor. A Star-Tide or Warm-Hearth
 ## detonation (Astral Chorus, Dawnburst) or card within its reach cleanses
 ## it: the sap stops and it glows Saffron-Gold.

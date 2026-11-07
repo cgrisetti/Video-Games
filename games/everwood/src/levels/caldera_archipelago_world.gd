@@ -16,7 +16,7 @@
 ## warp, unsaved), and the Crown Landing's Chime-Bell at North Quay glides there
 ## once its lane is open.
 ##
-## No minimap and no quest arrows (the Musk Razor): the World-Tree, the four
+## No minimap and no quest arrows (the Musk Razor): Miller's Oak, the four
 ## horizon silhouettes, the lantern-poles and the cliff band's shape do the
 ## guiding. World changes (a Beacon lit, a bough bloomed, the Ebb) show as one
 ## banner on every screen.
@@ -150,7 +150,7 @@ func level_hint() -> String:
 	if streamer == null or streamer.builder == null:
 		return TITLE
 	var isle: IslandGridResource = streamer.builder.isle
-	return "%s · %s · trail Level %d · steer by the World-Tree and the far isles · talk to anyone under a gold !\n%s" % [
+	return "%s · %s · trail Level %d · steer by Miller's Oak and the far isles · talk to anyone under a gold !\n%s" % [
 		isle.display_name, isle.level_band(), PartyProgress.current.trail_level(), CHANGE_KEYS]
 
 
@@ -158,21 +158,31 @@ func home_place() -> String:
 	return "Oakshire Holm"
 
 
-func music_profile_at(_position: Vector3) -> StringName:
-	return streamer.builder.isle.music_profile if streamer != null and streamer.builder != null else &"oakshire_vale"
+## Each island plays its score; on The Crown each shore and Miller's Oak play
+## their own suite (docs/23 §7), holding the one playing now for a few degrees
+## past an edge so a party at a spring hears one tune.
+func music_profile_at(position: Vector3) -> StringName:
+	if streamer == null or streamer.builder == null:
+		return &"oakshire_vale"
+	var crown: CrownHeartCragBuilder = streamer.builder as CrownHeartCragBuilder
+	if crown != null:
+		var playing: StringName = AudioDirector.current.zone_profile_id if AudioDirector.current != null else &""
+		return crown.music_at(position, playing)
+	return streamer.builder.isle.music_profile
 
 
 ## Each island wears its biome's sky and fog; The Crown's shores take on the isles they face.
 func visual_biome_at(position: Vector3) -> StringName:
 	if streamer == null or streamer.builder == null:
 		return WorldVisualCatalog.OAKSHIRE_WICK
-	if streamer.active_isle == CalderaAtlas.ISLE_THE_CROWN:
-		match streamer.builder.place_name_at(position):
-			"Iron Shore":
+	var crown: CrownHeartCragBuilder = streamer.builder as CrownHeartCragBuilder
+	if crown != null:
+		match crown.zone_at(position):
+			CrownHeartCragBuilder.Zone.IRON_SHORE:
 				return WorldVisualCatalog.QUARRY_WICK
-			"Gale Cliffs":
+			CrownHeartCragBuilder.Zone.GALE_CLIFFS:
 				return WorldVisualCatalog.GULL_WICK_HAVEN
-			"Tide Grottos", "The Sea-Door":
+			CrownHeartCragBuilder.Zone.TIDE_GROTTOS, CrownHeartCragBuilder.Zone.SAP_GALLERIES:
 				return WorldVisualCatalog.NINE_STONES_CROSSING
 	return streamer.builder.isle.visual_biome
 
@@ -684,9 +694,9 @@ func _on_world_flag_changed(flag: StringName, value: bool) -> void:
 				line += "\nAll three Beacons burn: the Crown Landing's bell rings at North Quay"
 		CalderaWorldState.TRIAL_ANVIL_COMPLETE, CalderaWorldState.TRIAL_GALE_COMPLETE, CalderaWorldState.TRIAL_TIDE_COMPLETE:
 			var names: Dictionary[StringName, Array] = {
-				CalderaWorldState.TRIAL_ANVIL_COMPLETE: ["THE TRIAL OF THE ANVIL IS DONE", "The World-Tree's western bough blooms Amber", CalderaKit.IRON_AMBER],
-				CalderaWorldState.TRIAL_GALE_COMPLETE: ["THE TRIAL OF THE GALE IS DONE", "The World-Tree's northern bough blooms Sea-Azure", CalderaKit.GALE_AZURE],
-				CalderaWorldState.TRIAL_TIDE_COMPLETE: ["THE TRIAL OF THE TIDE IS DONE", "The World-Tree's eastern bough blooms Twilight-Violet", CalderaKit.TIDE_VIOLET]}
+				CalderaWorldState.TRIAL_ANVIL_COMPLETE: ["THE TRIAL OF THE ANVIL IS DONE", "Miller's Oak's western bough blooms Amber", CalderaKit.IRON_AMBER],
+				CalderaWorldState.TRIAL_GALE_COMPLETE: ["THE TRIAL OF THE GALE IS DONE", "Miller's Oak's northern bough blooms Sea-Azure", CalderaKit.GALE_AZURE],
+				CalderaWorldState.TRIAL_TIDE_COMPLETE: ["THE TRIAL OF THE TIDE IS DONE", "Miller's Oak's eastern bough blooms Twilight-Violet", CalderaKit.TIDE_VIOLET]}
 			title = names[flag][0]
 			line = names[flag][1]
 			color = names[flag][2]

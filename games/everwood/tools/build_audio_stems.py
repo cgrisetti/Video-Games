@@ -231,6 +231,8 @@ def mode(tonic: str, steps: list[int]) -> list[int]:
 IONIAN = [0, 2, 4, 5, 7, 9, 11]
 LYDIAN = [0, 2, 4, 6, 7, 9, 11]
 DORIAN = [0, 2, 3, 5, 7, 9, 10]
+MIXOLYDIAN = [0, 2, 4, 5, 7, 9, 10]
+AEOLIAN = [0, 2, 3, 5, 7, 8, 10]
 HARMONIC_MINOR = [0, 2, 3, 5, 7, 8, 11]
 
 
@@ -561,7 +563,7 @@ def invention(s: Suite, high: str = "oboe", low: str = "bassoon", pads: bool = T
                 bellows.note(at, s.beats * 0.85, pitch, 50, gate=1.0)
 
 
-# --- The seven suites (docs/16 §3) ---------------------------------------------------
+# --- The seven suites of the vale (docs/16 §3) ---------------------------------------------------
 
 def bramble_bridge_square() -> Suite:
     """Bramble-Bridge, Chunk (0, 0): the Hisaishi flying waltz in G Lydian, 3/4 at 108, 24 bars."""
@@ -837,8 +839,140 @@ def oakshire_vale() -> Suite:
     return s
 
 
+# --- The Crown's five suites (docs/23 §7) ------------------------------------------------
+#
+# One island, one key signature, five modes: every suite keeps to the notes of D major (two
+# sharps), so a crossfade at a spring never clashes. Each states Miller's Oak's hymn (the fifth
+# below, the tonic, then a step up to the third and back: 5 1 2 3 2 1 5) in its own mode and
+# colour: D Ionian at the landing, A Mixolydian on Iron Shore, E Dorian on the Gale Cliffs,
+# B Aeolian in the Tide Grottos, and G Lydian round the oak itself.
+
+def crown_south_bay() -> Suite:
+    """South Bay and the Lantern-Bearers' Waypost: the hymn first heard, warm and wondering. D Ionian,
+    3/4 at 96, 16 bars, over a plucked weave."""
+    s = Suite("crown_south_bay", 96.0, "3/4", [
+        "D", "G/D", "Bm7", "A7sus4", "Gmaj7", "D/F#", "Em7", "A7",
+        "D", "G/D", "Bm7", "F#m", "Gmaj7", "Em7", "A7sus4", "D"], mode("D", IONIAN), [0.0, 0.0, -80.0, -80.0])
+    weave(s)
+    accordion = s.part(1, "accordion", 96)
+    violin = s.part(1, "violin", 98)
+    bassoon = s.part(1, "bassoon_legato", 80)
+    line(accordion, 1, "A4:1 D5:1.5 E5:.5 | F#5:2 E5:.5 D5:.5 | D5:1.5 C#5:.5 B4:1 | A4:2 r:1 |"
+                       "B4:1 D5:1.5 E5:.5 | F#5:1.5 G5:.5 A5:1 | G5:1 F#5:1 E5:1 | E5:2 r:1", vel=84)
+    line(violin, 9, "A5:1 D6:1.5 E6:.5 | F#6:2 E6:.5 D6:.5 | D6:1.5 C#6:.5 B5:1 | A5:1.5 F#5:.5 A5:1 |"
+                    "B5:1 G5:1 B5:1 | E6:1.5 D6:.5 B5:1 | A5:1 G5:1 E5:1 | D5:2 r:1", vel=84)
+    line(bassoon, 9, "D3:3 | D3:3 | B2:3 | A2:3 | G2:3 | E2:3 | A2:3 | D3:2 r:1", vel=70)
+    invention(s)
+    skirmish(s)
+    return s
+
+
+def crown_iron_shore() -> Suite:
+    """Iron Shore and Old King's Town: the hymn as a heavy march in A Mixolydian, an anvil ringing every
+    other bar. 4/4 at 92, 16 bars."""
+    s = Suite("crown_iron_shore", 92.0, "4/4", [
+        "A5", "G/A", "A5", "D/A", "A5", "G/A", "Em7", "A7sus4",
+        "D", "A/C#", "G", "D/F#", "Em7", "G", "A7sus4", "A5"], mode("A", MIXOLYDIAN), [0.0, 0.0, -80.0, -80.0])
+    march(s)
+    anvil = s.part(0, "tubular", 64)
+    stabs = s.part(0, "cello_stab", 88)
+    for index, at, chord in s.each_bar():
+        if index % 2 == 0:
+            anvil.note(at, 1, n("E6"), 70 if index % 4 == 0 else 58, gate=1.5)
+        stabs.note(at, 1, chord.bass(36), 92, gate=0.35)
+        stabs.note(at + 2, 1, chord.bass(36), 74, gate=0.35)
+    horn = s.part(1, "english_horn", 100)
+    cello = s.part(1, "cello", 96)
+    line(horn, 1, "E4:1 A4:1.5 B4:.5 C#5:1 | B4:2 A4:1 E4:1 | G4:1.5 A4:.5 B4:1 C#5:1 | D5:3 r:1 |"
+                  "E4:1 A4:1.5 B4:.5 C#5:1 | D5:2 C#5:1 B4:1 | G4:1.5 F#4:.5 E4:1 G4:1 | A4:3 r:1", vel=88)
+    line(cello, 9, "A2:1 D3:1.5 E3:.5 F#3:1 | E3:2 C#3:1 A2:1 | B2:1 D3:1 G3:1.5 F#3:.5 | F#3:3 r:1 |"
+                   "E3:1 G3:1.5 A3:.5 B3:1 | B3:2 A3:1 G3:1 | E3:1.5 F#3:.5 G3:1 B3:1 | A3:3 r:1", vel=92)
+    line(horn, 9, "D5:4 | E5:2 C#5:2 | D5:4 | A4:4 | B4:4 | D5:2 B4:2 | D5:2 E5:2 | A4:4", vel=72)
+    invention(s, high="english_horn")
+    skirmish(s)
+    return s
+
+
+def crown_gale_cliffs() -> Suite:
+    """The Gale Cliffs and the Breach Point: the hymn skirled on a tin whistle into the wind, E Dorian,
+    6/8 at 104, 16 bars, over a rolling guitar and harp harmonics."""
+    s = Suite("crown_gale_cliffs", 104.0, "6/8", [
+        "Em9", "Em9", "D/E", "D/E", "Cmaj7", "D", "Em7", "Bm7",
+        "Em9", "Em9", "A9", "A9", "Cmaj7", "D", "Bm7", "Em9"], mode("E", DORIAN), [0.0, 0.0, -80.0, -80.0])
+    rolling_sixths(s)
+    whistle = s.part(1, "whistle", 100)
+    flute = s.part(1, "flute", 92)
+    harmonics = s.part(1, "harp", 66)
+    line(whistle, 1, "B5:1 E6:1.5 F#6:.5 | G6:1.5 F#6:1 E6:.5 | A5:1.5 r:1.5 | F#5:.5 A5:.5 D6:.5 E6:1.5 |"
+                     "~F#6 G6:1 F#6:.5 E6:1 D6:.5 | E6:1.5 D6:1 B5:.5 | G5:1 A5:.5 B5:1 D6:.5 | B5:1.5 r:1.5", vel=86)
+    line(flute, 9, "B4:1 E5:1.5 F#5:.5 | G5:1.5 F#5:1 E5:.5 | E5:1 F#5:.5 A5:1 G5:.5 | E5:1.5 r:1.5 |"
+                   "G5:1 E5:.5 C5:1 E5:.5 | F#5:1 A5:.5 D6:1.5 | D6:1 C#6:.5 B5:1.5 | B5:1.5 r:1.5", vel=82)
+    for index, at, chord in s.each_bar():
+        if index % 2 == 1:
+            harmonics.note(at + 1.5, 1, chord.arp(81, 1)[0], 44, gate=3.0)
+    invention(s, high="english_horn", pads=False)
+    skirmish(s)
+    return s
+
+
+def crown_tide_grottos() -> Suite:
+    """The Tide Grottos and the Sap Galleries: the hymn low on an English horn in B Aeolian, harp and
+    celesta glinting like the rock pools over a tremolo cello. 3/4 at 84, 16 bars."""
+    s = Suite("crown_tide_grottos", 84.0, "3/4", [
+        "Bm9", "Bm9", "Gmaj7", "Gmaj7", "Em9", "F#m", "Gmaj7", "F#7sus4",
+        "Bm9", "Bm9", "Dmaj7", "A", "Gmaj7", "Em7", "F#7sus4", "Bm9"], mode("B", AEOLIAN), [0.0, 0.0, -80.0, -80.0])
+    sparse_harp(s)
+    glints = s.part(0, "celesta", 70)
+    deep = s.part(0, "tremolo", 58)
+    for index, at, chord in s.each_bar():
+        deep.note(at, 3, chord.bass(35), 50, gate=1.0)
+        if index % 2 == 0:
+            for step, pitch in enumerate(chord.arp(83, 2)):
+                glints.note(at + 1 + step * 0.5, 0.5, pitch, 52 - step * 6, gate=2.0)
+    horn = s.part(1, "english_horn", 100)
+    oboe = s.part(1, "oboe", 88)
+    line(horn, 1, "F#4:1 B4:1.5 C#5:.5 | D5:2 C#5:.5 B4:.5 | B4:1.5 A4:.5 G4:1 | F#4:2 r:1 |"
+                  "E4:1 G4:1.5 A4:.5 | C#5:2 B4:.5 A4:.5 | B4:1 D5:1 F#5:1 | E5:2 r:1", vel=84)
+    line(oboe, 9, "F#5:1 B5:1.5 C#6:.5 | D6:2 C#6:.5 B5:.5 | A5:1.5 F#5:.5 D5:1 | E5:2 C#5:1 |"
+                  "D5:1 B4:1 G5:1 | G5:1.5 F#5:.5 E5:1 | E5:1 C#5:1 A4:1 | B4:2 r:1", vel=80)
+    invention(s, high="english_horn", pads=False)
+    skirmish(s, fiddle=False)
+    return s
+
+
+def crown_millers_oak() -> Suite:
+    """Miller's Oak and the Summit Glade: the hymn in full, G Lydian, the oboe and then the solo violin
+    over harp, carillon and the accordion's held chords. 3/4 at 88, 16 bars."""
+    s = Suite("crown_millers_oak", 88.0, "3/4", [
+        "Gmaj7", "A/G", "Gmaj7", "A/G", "Em7", "F#m7", "Bm7", "D",
+        "Gmaj9", "A/G", "Bm7", "F#m7", "Em7", "A7sus4", "D/G", "A/G"], mode("G", LYDIAN), [0.0, 0.0, -80.0, -80.0])
+    harp = s.part(0, "harp", 92)
+    pedal = s.part(0, "bassoon_legato", 70)
+    bells = s.part(0, "carillon", 72)
+    for index, at, chord in s.each_bar():
+        for step, pitch in enumerate(chord.arp(55, 6)):
+            harp.note(at + step * 0.5, 0.5, pitch, 54 + step * 3, gate=3.0)
+        pedal.note(at, 3, chord.bass(36), 54, gate=1.0)
+        if index % 2 == 0:
+            bells.note(at, 1.5, chord.root_at(74), 62 if index % 4 == 0 else 52, gate=2.0)
+    oboe = s.part(1, "oboe", 96)
+    violin = s.part(1, "violin", 100)
+    accordion = s.part(1, "accordion", 74)
+    line(oboe, 1, "D5:1 G5:1.5 A5:.5 | B5:2 A5:.5 G5:.5 | D5:2 r:1 | C#6:1.5 B5:.5 A5:1 |"
+                  "B5:1 G5:1.5 E5:.5 | F#5:2 E5:.5 C#5:.5 | D5:1 F#5:1 B5:1 | A5:2 r:1", vel=84)
+    line(violin, 9, "D6:1 G6:1.5 A6:.5 | B6:2 A6:.5 G6:.5 | F#6:1.5 E6:.5 D6:1 | C#6:2 A5:1 |"
+                    "B5:1 G5:1.5 E5:.5 | E5:2 F#5:.5 G5:.5 | A5:1.5 G5:.5 F#5:1 | E5:2 r:1", vel=86)
+    for index, at, chord in s.each_bar():
+        if index >= 8:
+            for pitch in chord.upper(57, 3):
+                accordion.note(at, 3, pitch, 48, gate=1.0)
+    invention(s)
+    skirmish(s, fiddle=False)
+    return s
+
+
 SUITES = [oakshire_vale, honey_wick, bramble_bridge_square, moss_oak_hollow, dover_slap_falls, ring_of_the_cairnsman,
-          cairnsmans_vigil]
+          cairnsmans_vigil, crown_south_bay, crown_iron_shore, crown_gale_cliffs, crown_tide_grottos, crown_millers_oak]
 
 
 # --- One-shots (docs/16 §3, §4.1; AudioCues' musical cues) ---------------------------

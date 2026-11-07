@@ -3,7 +3,7 @@
 ## Star-Tide and the sea falls six metres on every isle. One full-screen
 ## camera over the live world (the other isles are their horizon
 ## silhouettes), cutting between four shots while CalderaWorldState lowers the
-## sea: the bell in the World-Tree, the Sound to the north-west, the Sea-Door
+## sea: the bell in Miller's Oak, the Sound to the north-west, the Sea-Door
 ## bared on the east shore, and back over the water toward home.
 class_name EbbCinematic
 extends CanvasLayer

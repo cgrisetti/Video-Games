@@ -2,7 +2,7 @@
 ## merged into vertex-coloured meshes (one draw each) in the storybook look:
 ## piers and causeways, Lantern-Skiffs, huts, ruins, arches and raid seals,
 ## the far landmarks North Quay looks at (Forge Stacks, Bell-Tower, the
-## World-Tree), and the scatter's trees, reeds and stones: near a camera the
+## Miller's Oak), and the scatter's trees, reeds and stones: near a camera the
 ## trees and ferns are sculpted atelier meshes (atelier_mesh), past it one-draw
 ## vertex-coloured stand-ins (species_mesh).
 ##
@@ -357,7 +357,7 @@ static func add_bell_tower(into: LandblockTerrain.MeshMerge, foot: Vector3) -> v
 	add_sphere(into, foot + Vector3(0.0, 35.0, 0.0), 2.2, BRASS, 1.1, 10)
 
 
-## The World-Tree's far silhouette (trunk and a broad crown), for the Crown's impostor.
+## Miller's Oak's far silhouette (trunk and a broad crown), for the Crown's impostor.
 static func add_world_tree_silhouette(into: LandblockTerrain.MeshMerge, foot: Vector3) -> void:
 	add_post(into, foot, 3.2, 6.5, 40.0, Color(0.42, 0.34, 0.26), 10)
 	for lobe: Vector4 in [Vector4(-16.0, 34.0, 0.0, 16.0), Vector4(0.0, 38.0, -16.0, 16.0), Vector4(16.0, 34.0, 0.0, 16.0),

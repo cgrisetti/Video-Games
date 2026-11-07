@@ -10,7 +10,7 @@
 ##                          and its Sign is earned (sign_granted)
 ##   trial_anvil_complete / _gale_ / _tide_
 ##                          The Crown's three open-air trials: each blooms one
-##                          bough of the World-Tree; all three open the One Stair
+##                          bough of Miller's Oak; all three open the One Stair
 ##   ebb_unlocked           the Harmonic Bell rung together: the Long Flood ends
 ##                          and the sea falls from 0 m to -6 m on every isle
 ##

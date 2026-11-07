@@ -1,4 +1,4 @@
-## The Harmonic Bell in the World-Tree's lower southern bough (docs/20 Part II
+## The Harmonic Bell in Miller's Oak's lower southern bough (docs/20 Part II
 ## §1.5, §1.6: "the bell is rung together"): one rope per seat, and every
 ## active hero in the party must pull within 2.5 s of each other. Nobody can
 ## ring it alone for the others or sit it out. When they do,

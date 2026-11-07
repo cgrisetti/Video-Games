@@ -19,7 +19,7 @@
 ##   4  The Crown's seven areas at their heights: the landing (0-8 m), the
 ##      waypost (+10), the Ring Path's three springs (8-18), the three trials'
 ##      arenas, the sheer +32 m cliff band, the One Cliff Stair, the +65 m
-##      Summit Glade with the World-Tree and the Harmonic Bell, the Sea-Door at
+##      Summit Glade with Miller's Oak and the Harmonic Bell, the Sea-Door at
 ##      -4.5 m and the Heart's chamber at -15 m; a spring is a checkpoint
 ##   5  the trials: each arena's foes grow when it streams in (the Colossus's
 ##      poise 180 and its carapace), the Breach Gale shoves the unsheltered
@@ -38,6 +38,8 @@ const CALDERA_SCENE: String = "res://scenes/worlds/caldera_isles.tscn"
 const EXTRA_PADS: Array[int] = [9, 10, 11]
 const PARTY_SIZE: int = 3
 const LENS: GDScript = preload("res://tools/test_mythopoetic_lens.gd")
+## The Crown's zone design (docs/23), checked while The Crown is live.
+const CROWN_ZONES: GDScript = preload("res://tools/test_crown_zones.gd")
 
 var tree: SceneTree
 var check: Callable
@@ -55,6 +57,7 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	await _check_streaming_and_seams()
 	await _check_beacons()
 	_check_crown_areas()
+	await CROWN_ZONES.new().run(level, check)
 	await _check_trials_and_stair()
 	await _check_bell_and_ebb()
 	state.reset_for_testing()
@@ -386,7 +389,8 @@ func _check_crown_areas() -> void:
 		springs.append(crown.height_at(spring.x, spring.y))
 	var springs_ok: bool = true
 	for h: float in springs:
-		springs_ok = springs_ok and h >= 8.0 and h <= 18.0
+		# On the Ring Path, which the PDF holds to 0-14 m (docs/23 lowered them from the old 8-18 m).
+		springs_ok = springs_ok and h >= 1.0 and h <= 14.5
 	check.call(landing >= 0.0 and landing <= 8.0 and absf(waypost - 10.0) < 0.6 and springs_ok and _structure("WarmSpring3") is WarmSpring
 		and _structure("Quartermaster") is TownsfolkNPC and _structure("RespawnAnchor") is WarmSpring,
 		"area 1-2: South Bay Landing at %.1f m, the Lantern-Bearers' Waypost at %.1f m (respawn, anvil, one quartermaster, no town), the three springs at %s m on the Ring Path"
@@ -403,8 +407,9 @@ func _check_crown_areas() -> void:
 	for index: int in 24:
 		var angle: float = TAU * (float(index) + 0.5) / 24.0
 		var dir: Vector2 = Vector2(sin(angle), -cos(angle))
-		var inner: Vector2 = CrownHeartCragBuilder.DOME_CENTER + dir * (CrownHeartCragBuilder.BAND_RADIUS - 12.0)
-		var outer: Vector2 = CrownHeartCragBuilder.DOME_CENTER + dir * (CrownHeartCragBuilder.BAND_RADIUS + 12.0)
+		var band: float = crown.band_radius_toward(dir)
+		var inner: Vector2 = CrownHeartCragBuilder.DOME_CENTER + dir * (band - 12.0)
+		var outer: Vector2 = CrownHeartCragBuilder.DOME_CENTER + dir * (band + 12.0)
 		var best_rise: float = 0.0
 		for step: int in 24:
 			var a: Vector2 = inner.lerp(outer, float(step) / 24.0)
@@ -427,7 +432,7 @@ func _check_crown_areas() -> void:
 	var bell: HarmonicBell = _structure("HarmonicBell") as HarmonicBell
 	check.call(absf(glade - 65.0) < 0.8 and world_tree != null and absf(world_tree.global_position.y - 65.0) < 1.0 and bell != null
 		and bell.global_position.distance_to(CrownHeartCragBuilder.BELL_AT) < 1.0,
-		"area 6: the Summit Glade at %.1f m, the World-Tree on it and the Harmonic Bell at (+35, +65, -10)" % glade)
+		"area 6: the Summit Glade at %.1f m, Miller's Oak on it and the Harmonic Bell beside it at (+5, +65, -26)" % glade)
 	var door: SeaGate = _structure("SeaDoor") as SeaGate
 	var cove: float = crown.height_at(CrownHeartCragBuilder.SEA_DOOR_AT.x, CrownHeartCragBuilder.SEA_DOOR_AT.z)
 	var chamber: Node3D = _structure("HeartChamber") as Node3D
@@ -557,7 +562,7 @@ func _check_bell_and_ebb() -> void:
 	await _frames(70)
 	var below: bool = true
 	for actor: ActorBase in _party():
-		below = below and actor.global_position.y < -9.0 and actor.global_position.x < 352.0
+		below = below and actor.global_position.y < -9.0 and actor.global_position.x < CrownHeartCragBuilder.GALLERY_ENTRANCE.x
 	check.call(door.is_bared() and threshold.enabled and below,
 		"the Sea-Door is bared at the Ebb, and the party gathered at it go down into the Sap Galleries (P1 at %.1f m)" % _p1().global_position.y)
 	level.travel_to(CalderaAtlas.ISLE_OAKSHIRE_HOLM, CalderaAtlas.ARRIVE_NORTH_QUAY)

@@ -33,6 +33,14 @@
 ##     leaves a wide window); the Trial of the Tide's Tarnished Scribe-Wights
 ##     and the Siphon-Prelate. Kin of the First-Quiet like the rest: bowed into
 ##     stewards, released as sea-swallows or lulled into cairns.
+##   8 The Crown's Shore-Kin (docs/23 §5, Lv 15-17): the kin of the three
+##     shores outside the trials, each teaching its trial's lesson in small.
+##     Iron Shore's Clinker Iron-Men shrug off chip blows until their poise
+##     breaks, and Cinder-Scuttlers swarm; the Gale Cliffs' Gust-Padfoots dash
+##     in long straight lines and Scree-Hobs dart; the Tide Grottos'
+##     Sap-Sodden Buccas wallow and rooted Blight-Lashers whip from the
+##     sluices. One named rare walks each shore's track: Old Bellows by the
+##     vents, the Grey Squall on the cliff-top, Mother Sluice on the shelf by the sea.
 class_name Bestiary
 extends RefCounted
 
@@ -45,6 +53,16 @@ const RIME_WING_HARRIER: StringName = &"rime_wing_harrier"
 const STORM_CALLER_VAELEN: StringName = &"storm_caller_vaelen"
 const TARNISHED_SCRIBE_WIGHT: StringName = &"tarnished_scribe_wight"
 const SIPHON_PRELATE: StringName = &"siphon_prelate"
+## The Crown's Shore-Kin, by id (docs/23 §5).
+const CLINKER_IRON_MAN: StringName = &"clinker_iron_man"
+const CINDER_SCUTTLER: StringName = &"cinder_scuttler"
+const OLD_BELLOWS: StringName = &"old_bellows"
+const GUST_PADFOOT: StringName = &"gust_padfoot"
+const SCREE_HOB: StringName = &"scree_hob"
+const GREY_SQUALL: StringName = &"grey_squall"
+const SAP_SODDEN_BUCCA: StringName = &"sap_sodden_bucca"
+const BLIGHT_LASHER: StringName = &"blight_lasher"
+const MOTHER_SLUICE: StringName = &"mother_sluice"
 ## The starting zone's creatures (families 1 to 6); the Crown's kin come after them.
 const STARTING_ZONE_COUNT: int = 16
 ## Ambient critters (AmbientFlock), by kind.
@@ -293,6 +311,7 @@ static func _ensure() -> void:
 	for kin: MobVariantResource in [husk, knell]:
 		kin.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
 	_add_crown_trial_kin()
+	_add_crown_shore_kin()
 
 
 ## Family 7: the guards and capstones of The Crown's three trials (Lv 15-18).
@@ -374,6 +393,111 @@ static func _add_crown_trial_kin() -> void:
 	for kin: MobVariantResource in [harrier, vaelen]:
 		kin.blow_sign = ScribeSignResource.Sign.SIGN_RIME_GALE
 	for kin: MobVariantResource in [wight, prelate]:
+		kin.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
+
+
+## Family 8: the kin of The Crown's three shores outside the trials (Lv 15-17),
+## tuned between the outer isles' elites and the trials' guards, each one the
+## trial's lesson in small (docs/23 §5).
+static func _add_crown_shore_kin() -> void:
+	# Iron Shore: posture. Their clinker shells glance blows until the poise breaks.
+	var clinker: MobVariantResource = _make(CLINKER_IRON_MAN, "Clinker Iron-Man", Family.CROWN_SHORE_KIN, 15, Body.HUMANOID, 420.0, 80.0, 20.0)
+	_hostile(clinker, 11.0, 1.0, 1.2)
+	clinker.mitigation = 0.55
+	clinker.knockdown_damage_taken = 3.0
+	clinker.radius = 0.55
+	clinker.height = 2.0
+	clinker.main_color = Color(0.36, 0.28, 0.24)
+	clinker.accent_color = Color(0.9, 0.48, 0.18)
+	clinker.eye_color = Color(1.0, 0.6, 0.2)
+	var scuttler: MobVariantResource = _make(CINDER_SCUTTLER, "Cinder-Scuttler Hob", Family.CROWN_SHORE_KIN, 15, Body.SCUTTLER, 200.0, 30.0, 14.0)
+	_hostile(scuttler, 10.0, 0.7, 3.0)
+	scuttler.move_speed = 5.0
+	scuttler.main_color = Color(0.24, 0.2, 0.2)
+	scuttler.accent_color = Color(1.0, 0.46, 0.16)
+	var bellows: MobVariantResource = _make(OLD_BELLOWS, "Old Bellows", Family.CROWN_SHORE_KIN, 17, Body.HULK, 2400.0, 140.0, 32.0)
+	_hostile(bellows, 12.0, 1.3, 1.4)
+	bellows.rank = Rank.RARE
+	# A rare walks its shore's track (its spawner's patrol) when it isn't fighting.
+	bellows.patrols = true
+	bellows.mitigation = 0.7
+	bellows.knockdown_damage_taken = 5.0
+	bellows.stomps = true
+	bellows.radius = 1.3
+	bellows.height = 3.3
+	bellows.reach = 2.6
+	bellows.hit_radius = 2.2
+	bellows.move_speed = 2.2
+	bellows.main_color = Color(0.28, 0.22, 0.2)
+	bellows.accent_color = Color(1.0, 0.56, 0.2)
+	bellows.eye_color = Color(1.0, 0.76, 0.32)
+	# Gale Cliffs: mobility. Long straight dashes to step aside from, darting hobs.
+	var gust: MobVariantResource = _make(GUST_PADFOOT, "Gust-Padfoot", Family.CROWN_SHORE_KIN, 15, Body.WOLF, 340.0, 40.0, 18.0)
+	_hostile(gust, 13.0, 0.75, 7.0)
+	gust.move_speed = 5.6
+	gust.recovery = 0.9
+	gust.main_color = Color(0.78, 0.84, 0.9)
+	gust.accent_color = Color(0.4, 0.58, 0.8)
+	gust.eye_color = Color(0.6, 0.9, 1.0)
+	var scree: MobVariantResource = _make(SCREE_HOB, "Scree-Hob", Family.CROWN_SHORE_KIN, 15, Body.SCUTTLER, 190.0, 28.0, 12.0)
+	_hostile(scree, 11.0, 0.7, 3.4)
+	scree.move_speed = 5.2
+	scree.main_color = Color(0.56, 0.58, 0.6)
+	scree.accent_color = Color(0.36, 0.5, 0.66)
+	var squall: MobVariantResource = _make(GREY_SQUALL, "The Grey Squall", Family.CROWN_SHORE_KIN, 17, Body.WOLF, 1800.0, 90.0, 28.0)
+	_hostile(squall, 14.0, 0.8, 10.0)
+	squall.rank = Rank.RARE
+	# A rare walks its shore's track (its spawner's patrol) when it isn't fighting.
+	squall.patrols = true
+	squall.move_speed = 6.6
+	# Its long charge's long recovery is the window to answer in.
+	squall.recovery = 1.3
+	squall.radius = 0.95
+	squall.height = 1.6
+	squall.reach = 2.0
+	squall.main_color = Color(0.62, 0.66, 0.7)
+	squall.accent_color = Color(0.3, 0.46, 0.72)
+	squall.eye_color = Color(0.7, 0.95, 1.0)
+	# Tide Grottos: darkness and cleansing. Wallowers in the pools, lashers rooted at the sluices.
+	var bucca: MobVariantResource = _make(SAP_SODDEN_BUCCA, "Sap-Sodden Bucca", Family.CROWN_SHORE_KIN, 15, Body.TOAD, 380.0, 40.0, 18.0)
+	_hostile(bucca, 11.0, 0.8, 3.0)
+	bucca.move_speed = 3.0
+	bucca.main_color = Color(0.3, 0.28, 0.38)
+	bucca.accent_color = Color(0.62, 0.38, 0.9)
+	bucca.eye_color = Color(0.8, 0.6, 1.0)
+	var lasher: MobVariantResource = _make(BLIGHT_LASHER, "Blight-Lasher Hob", Family.CROWN_SHORE_KIN, 15, Body.VINE, 340.0, 70.0, 18.0)
+	_hostile(lasher, 7.0, 0.9, 0.0)
+	_bark(lasher)
+	lasher.rooted = true
+	lasher.reach = 3.6
+	lasher.hit_radius = 1.4
+	lasher.main_color = Color(0.26, 0.3, 0.26)
+	lasher.accent_color = Color(0.56, 0.3, 0.86)
+	var sluice: MobVariantResource = _make(MOTHER_SLUICE, "Mother Sluice", Family.CROWN_SHORE_KIN, 17, Body.SHAMBLER, 2200.0, 120.0, 26.0)
+	_hostile(sluice, 12.0, 1.1, 0.0)
+	sluice.rank = Rank.RARE
+	# A rare walks its shore's track (its spawner's patrol) when it isn't fighting.
+	sluice.patrols = true
+	sluice.mitigation = 0.35
+	sluice.move_speed = 2.6
+	sluice.reach = 0.4
+	sluice.hit_radius = 3.0
+	sluice.radius = 1.2
+	sluice.height = 2.4
+	sluice.main_color = Color(0.3, 0.26, 0.36)
+	sluice.accent_color = Color(0.66, 0.4, 0.95)
+	sluice.eye_color = Color(0.85, 0.65, 1.0)
+	_spirit(clinker, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_STEWARD_HELPER, Form.SINK_TO_SLEEP)
+	_spirit(bellows, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_STEWARD_HELPER, Form.SINK_TO_SLEEP)
+	for kin: MobVariantResource in [scuttler, gust, scree, squall]:
+		_spirit(kin, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_UNBOGGART_RELEASE, Form.SEA_SWALLOW)
+	for kin: MobVariantResource in [bucca, lasher, sluice]:
+		_spirit(kin, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_LULLED_CAIRN, Form.HEDGE_WREN)
+	for kin: MobVariantResource in [clinker, scuttler, bellows]:
+		kin.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
+	for kin: MobVariantResource in [gust, scree, squall]:
+		kin.blow_sign = ScribeSignResource.Sign.SIGN_RIME_GALE
+	for kin: MobVariantResource in [bucca, lasher, sluice]:
 		kin.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
 
 

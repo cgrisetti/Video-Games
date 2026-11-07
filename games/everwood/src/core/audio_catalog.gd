@@ -28,6 +28,7 @@ const IONIAN: Array[int] = [0, 2, 4, 5, 7, 9, 11]
 const LYDIAN: Array[int] = [0, 2, 4, 6, 7, 9, 11]
 const DORIAN: Array[int] = [0, 2, 3, 5, 7, 9, 10]
 const AEOLIAN: Array[int] = [0, 2, 3, 5, 7, 8, 10]
+const MIXOLYDIAN: Array[int] = [0, 2, 4, 5, 7, 9, 10]
 const HARMONIC_MINOR: Array[int] = [0, 2, 3, 5, 7, 8, 11]
 
 static var _zones: Dictionary[StringName, ZoneMusicProfileResource] = {}
@@ -162,6 +163,22 @@ static func _build_zones() -> void:
 	vale.arrangement_bars = 16
 	for made: ZoneMusicProfileResource in [commons, square, hollow, falls, ring, vigil, vale]:
 		register(made)
+	_build_crown_zones()
+
+
+## The Crown's five suites (docs/23 §7): one key signature (D major's notes), five modes, and
+## Miller's Oak's hymn in each, so the crossfade at a spring never clashes.
+static func _build_crown_zones() -> void:
+	var made: Array[ZoneMusicProfileResource] = [
+		_zone(&"crown_south_bay", "The Lantern-Bearers' Landing", 62, &"D_IONIAN", 96.0, 3, false, IONIAN, HARMONIC_MINOR, [0, 3, 5, 4], &"ACCORDION"),
+		_zone(&"crown_iron_shore", "Old King's Anvil", 69, &"A_MIXOLYDIAN", 92.0, 4, false, MIXOLYDIAN, DORIAN, [0, 6, 3, 4], &"OBOE"),
+		_zone(&"crown_gale_cliffs", "Breach Wind", 64, &"E_DORIAN", 104.0, 3, true, DORIAN, AEOLIAN, [0, 6, 5, 0], &"WHISTLE"),
+		_zone(&"crown_tide_grottos", "The Weeping Sluices", 59, &"B_AEOLIAN", 84.0, 3, false, AEOLIAN, HARMONIC_MINOR, [0, 5, 3, 4], &"OBOE"),
+		_zone(&"crown_millers_oak", "Miller's Oak", 67, &"G_LYDIAN", 88.0, 3, false, LYDIAN, HARMONIC_MINOR, [0, 1, 6, 4], &"VIOLIN")]
+	for profile: ZoneMusicProfileResource in made:
+		profile.arrangement_bars = 16
+		profile.silence_interval_range_sec = Vector2(18.0, 32.0)
+		register(profile)
 
 
 static func _zone(id: StringName, title: String, root: int, mode: StringName, tempo: float, beats: int, compound: bool,
