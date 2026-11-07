@@ -30,6 +30,17 @@ const HEADS_TALL: float = 4.5
 const CROWN_HEIGHT_M: float = 1.75
 const HOOD_PEAK_M: float = 1.85
 
+## The Level 1 youth (21_WINGFEATHER_YOUTH_HERO.md; the Equipment & Grimoire
+## doc §2): a 14-year-old on the same 24-bone skeleton drawn at 0.9, the head
+## sculpted 1.18x round the neck joint and the hands and feet 1.22x round their
+## joints, about 5.5 heads tall to a 1.6 m crown.
+const BODY_ADULT: StringName = &"adult"
+const BODY_YOUTH: StringName = &"youth_wingfeather"
+const YOUTH_SKELETON_SCALE: float = 0.9
+const YOUTH_HEAD_SCALE: float = 1.18
+const YOUTH_EXTREMITY_SCALE: float = 1.22
+const YOUTH_HEADS_TALL: float = 5.5
+
 ## The four headgear styles.
 const HEADGEAR_STYLES: Array[StringName] = [&"wayfarer_hood_up", &"hood_back_shaved_crown", &"stout_kettle_cap", &"scribe_feather_hat"]
 const HEADGEAR_NAMES: Array[String] = ["Wayfarer Hood", "Shaved Crown and Folded Hood", "Stout Kettle-Cap", "Scribe Feather-Hat"]
@@ -49,6 +60,9 @@ const FELLOWSHIP_RIMS: Array[Color] = [Color(0.949, 0.718, 0.286), Color(0.322, 
 @export var display_name: String = "Iron-Woodsman"
 @export var heritage_id: StringName = &"tizzi_wed_green"
 @export var coat_dye_preset: StringName = &"tizzi_wed_pine"
+
+## &"adult" (a Calling's sculpted hero) or &"youth_wingfeather" (the Unsworn Level 1 youth).
+@export var body_build: StringName = BODY_ADULT
 
 @export_group("Value 1: the grounded base")
 ## #2E402B Deep Pine-Wool.
@@ -94,6 +108,8 @@ const FELLOWSHIP_RIMS: Array[Color] = [Color(0.949, 0.718, 0.286), Color(0.322, 
 @export var split_hewing_apron: bool = true
 ## The Fellowship's silhouette rim (#52C478 for the Wayfarers).
 @export var role_rim_color: Color = Color(0.322, 0.769, 0.471)
+## The youth's knee patch (the hero shader's Calling trim slot; an Unsworn youth has no tabard).
+@export var patch_color: Color = Color(0.494, 0.604, 0.416)
 ## A drop-in model that wins over the sculpted hero (res://assets/models/heroes/<calling_id>.glb).
 @export var glb_override_path: String = "res://assets/models/heroes/iron_woodsman.glb"
 
@@ -108,6 +124,11 @@ func with_dye(dye: HeroAppearanceResource) -> HeroAppearanceResource:
 	dyed.value_1_coat_color = dye.value_1_coat_color
 	dyed.appearance_id = StringName("%s_%s" % [appearance_id, dye.coat_dye_preset])
 	return dyed
+
+
+## Whether this is the Level 1 youth's body.
+func is_youth() -> bool:
+	return body_build == BODY_YOUTH
 
 
 ## The name of a style id from one of the style lists ("Wayfarer Hood").
@@ -135,5 +156,5 @@ static func value_band(color: Color) -> int:
 
 ## A key naming everything the sculpted body depends on, so identical heroes share meshes.
 func sculpt_key() -> String:
-	return "%s|%s|%s|%s|%s|%s|%s|%s" % [headgear_style, headgear_crest, beard_style, left_pauldron_style, right_pauldron_style,
+	return "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [body_build, headgear_style, headgear_crest, beard_style, left_pauldron_style, right_pauldron_style,
 		belt_trinket_id, back_buckler_targe, split_hewing_apron]

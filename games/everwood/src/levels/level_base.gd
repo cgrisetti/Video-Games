@@ -18,8 +18,9 @@
 ## seats them, and they step aside as people join. For the solo playtest boot
 ## (19_HERO_CHARACTER_ART_AND_ANIMATION_RIG_GDD.md, Stage 1) they stay home
 ## unless asked for: `--with-companions`, or set_companion_backfill_enabled(true).
-## Player 1 boots as the Iron-Woodsman (ClassLoadouts.SOLO_BOOT_*), alone, the
-## screen theirs.
+## Player 1 boots alone, the screen theirs, as the Level 1 youth: a Wayfarer
+## (ClassLoadouts.SOLO_BOOT_CLASS), Unsworn until the trail reaches Level 10,
+## in the kit the trail has earned (21_WINGFEATHER_YOUTH_HERO.md §4).
 ##
 ## Keys: F5 host · F6 join · F7 leave · click to steer the camera with the mouse, Esc to let go.
 ## Command line (after --): --players=N --mode=master|adventurer|squire
@@ -27,7 +28,6 @@
 ##   --boot-zone=oakshire|north_quay|crown (where in the Caldera Isles: Oakshire Holm's orchards, North Quay, or The Crown's landing)
 ##   --host --join=ADDRESS --demo --screenshot=PATH --screenshot-delay=S --quit-after=S
 ##   --with-companions (AI companions fill the missing trinity roles in raids and the wilds)
-##   --kit=saved (Player 1 boots in the Wayfarers' saved kit rather than the Wool-Mantle and Broad-Axe)
 ##   --weapon=ITEM_ID --armor=ITEM_ID (this screen's players start with them)
 ##   --save=PATH (another save file; read by PartyProgress)
 class_name LevelBase
@@ -84,12 +84,9 @@ static var _start_kit_given: Dictionary[int, bool] = {}
 ## Whether AI companions fill missing roles where a level wants them (off for
 ## the solo playtest boot; --with-companions or set_companion_backfill_enabled turn it on).
 static var auto_backfill_companions: bool = false
-## Whether Player 1 boots as the Iron-Woodsman (Stage 1). Tests that seat the
+## Whether Player 1 boots alone as the Wayfarer youth. Tests that seat the
 ## classic trinity turn it off.
-static var solo_iron_woodsman_boot: bool = true
-## The first seat of the session still to receive the Iron-Woodsman's Calling and kit.
-static var _boot_seat_pending: bool = false
-static var _boot_saved_kit: bool = false
+static var solo_youth_boot: bool = true
 
 
 # --- What each level fills in ---------------------------------------------
@@ -370,8 +367,8 @@ func least_used_class(roster: Dictionary[StringName, PartyMember]) -> StringName
 	for seat: PartyMember in roster.values():
 		if counts.has(seat.class_id) and not seat.companion:
 			counts[seat.class_id] += 1
-	# The playtest boot: the first person to sit down is the Iron-Woodsman's Wayfarer.
-	if solo_iron_woodsman_boot and counts.values().max() == 0:
+	# The boot: the first person to sit down is the Wayfarer youth.
+	if solo_youth_boot and counts.values().max() == 0:
 		return ClassLoadouts.SOLO_BOOT_CLASS
 	var best: StringName = ClassLoadouts.PLAYER_CLASSES[0]
 	for class_id: StringName in ClassLoadouts.PLAYER_CLASSES:
@@ -386,9 +383,6 @@ func least_used_class(roster: Dictionary[StringName, PartyMember]) -> StringName
 ## 10 (11 GDD §5.2); then the class's last saved one, otherwise its own column
 ## (Bridge-Warden, Hedge-Runner, Lantern-Scribe). Companions take their own column.
 func pick_calling(class_id: StringName, companion: bool) -> StringName:
-	# The playtest boot seat is the Iron-Woodsman from Level 1.
-	if _boot_seat_pending and not companion and class_id == ClassLoadouts.SOLO_BOOT_CLASS:
-		return ClassLoadouts.SOLO_BOOT_CALLING
 	if not PartyProgress.current.callings_unlocked():
 		return Callings.UNSWORN_ID
 	if companion:
@@ -401,10 +395,6 @@ func pick_calling(class_id: StringName, companion: bool) -> StringName:
 ## allowed, otherwise the kit the trail has earned it so far (PartyProgress.trail_kit:
 ## Tier 1 timber and an un-inked R and L+R at Level 1). Companions wear the trail kit.
 func pick_kit(class_id: StringName, calling: StringName, companion: bool) -> Dictionary:
-	if _boot_seat_pending and not companion and class_id == ClassLoadouts.SOLO_BOOT_CLASS:
-		_boot_seat_pending = false
-		if not _boot_saved_kit:
-			return PartyProgress.current.iron_woodsman_kit()
 	var earned: Dictionary = PartyProgress.current.trail_kit(class_id)
 	if companion:
 		return earned
@@ -832,17 +822,14 @@ func _start_session() -> void:
 			_start_armor = StringName(value)
 		elif arg == "--with-companions":
 			auto_backfill_companions = true
-		elif arg == "--kit=saved":
-			_boot_saved_kit = true
 	if host:
 		NetworkManager.current.host_game()
 	elif join:
 		NetworkManager.current.join_game(_join_address)
-	# Player 1 boots as the Iron-Woodsman (Stage 1): a Wayfarer with a Stout Heart.
+	# Player 1 boots as the Wayfarer youth (21 doc §4).
 	var first_class: StringName = NetworkManager.ANY_CLASS
-	if solo_iron_woodsman_boot and players != 0:
+	if solo_youth_boot and players != 0:
 		first_class = ClassLoadouts.SOLO_BOOT_CLASS
-		_boot_seat_pending = true
 	if players >= 0:
 		for device_id: int in players:
 			seat_local_player(device_id, first_class if device_id == 0 else NetworkManager.ANY_CLASS, _assist_mode)

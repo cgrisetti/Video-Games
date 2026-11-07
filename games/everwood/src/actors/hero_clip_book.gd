@@ -70,6 +70,7 @@ static func clips() -> Array[Array]:
 	_defence(book)
 	_stewardship(book)
 	_reactions(book)
+	_youth(book)
 	return book
 
 
@@ -523,3 +524,121 @@ static func _reactions(book: Array[Array]) -> void:
 	var pocket_l: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(-0.3, -0.85, -0.3), B.FOREARM_L: Vector3(0.45, -0.45, -0.75)})])
 	var sweep: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(0.15, -0.05, -1.0), B.FOREARM_L: Vector3(0.75, 0.35, -0.55)})])
 	_clip(book, "offhand_pocket_draw", 25, [[0, L_SHIELD], [5, pocket_l], [18, sweep], [25, L_SHIELD]])
+
+
+# --- The Level 1 youth (21_WINGFEATHER_YOUTH_HERO.md §3) ----------------------------
+
+## The youth's gaits: [frames, thigh swing (rad), thigh lean forward, knee bend
+## in stance, extra knee fold in swing, pelvis bob, sway, arm swing, elbow
+## bend, spine pitch (deg), head pitch (deg), pelvis yaw (deg)].
+const YOUTH_WALK_GAIT: Array[float] = [40.0, 0.36, 0.02, 0.08, 0.92, 0.011, 0.012, 0.36, 0.22, -2.0, 2.0, 6.0]
+const YOUTH_RUN_GAIT: Array[float] = [26.0, 0.6, 0.16, 0.24, 1.5, 0.022, 0.008, 0.6, 1.35, -10.0, 8.0, 9.0]
+
+
+static func _youth(book: Array[Array]) -> void:
+	_youth_idle(book)
+	_youth_gait(book, "locomotion_youth_walk", YOUTH_WALK_GAIT, false)
+	_youth_gait(book, "locomotion_youth_run", YOUTH_RUN_GAIT, true)
+	_youth_draws(book)
+
+
+## A country youth at ease: weight on the right hip, the right thumb hooked
+## in a brace, the left arm easy. Breathes; looks off left across the
+## orchard; glances back over the right shoulder; settles.
+static func _youth_idle(book: Array[Array]) -> void:
+	var legs: Dictionary = _aim({B.THIGH_R: Vector3(0.05, -1.0, 0.01), B.SHIN_R: Vector3(0.04, -1.0, 0.02),
+		B.THIGH_L: Vector3(-0.12, -1.0, -0.08), B.SHIN_L: Vector3(-0.07, -1.0, 0.07)})
+	var thumb_in_brace: Dictionary = _aim({B.UPPER_ARM_R: Vector3(0.25, -0.95, 0.15), B.FOREARM_R: Vector3(-0.63, 0.5, -0.58),
+		B.HAND_R: Vector3(-0.2, -0.9, -0.35)})
+	var easy_left: Dictionary = _aim({B.UPPER_ARM_L: Vector3(-0.11, -1.0, 0.03), B.FOREARM_L: Vector3(-0.04, -0.95, -0.28)})
+	var base: Dictionary = _p([legs, FEET_FLAT, thumb_in_brace, easy_left, _hips(Vector3(0.022, -0.008, 0.0)),
+		_e({B.HIPS: Vector3(0.0, -4.0, 3.5), B.SPINE: Vector3(-1.0, 1.0, -2.0), B.CHEST: Vector3(0.5, 2.0, -2.0), B.HEAD: Vector3(2.0, 2.0, 4.0)})])
+	var breathe: Dictionary = _p([base, _e({B.HIPS: Vector3(0.0, -4.0, 3.5), B.SPINE: Vector3(-0.5, 1.0, -2.0), B.CHEST: Vector3(3.0, 2.0, -2.0),
+		B.HEAD: Vector3(0.0, 2.0, 4.0), B.CLAVICLE_L: Vector3(0.0, 0.0, 3.0), B.CLAVICLE_R: Vector3(0.0, 0.0, -3.0)}), _hips(Vector3(0.022, -0.004, 0.0))])
+	var look_left: Dictionary = _p([base, _e({B.HIPS: Vector3(0.0, -2.0, 3.0), B.SPINE: Vector3(-1.0, 4.0, -1.5), B.CHEST: Vector3(2.0, 8.0, -1.0),
+		B.NECK: Vector3(0.0, 8.0, 0.0), B.HEAD: Vector3(-6.0, 22.0, 2.0)})])
+	var look_back: Dictionary = _p([base, _hips(Vector3(0.016, -0.01, 0.0)),
+		_e({B.HIPS: Vector3(0.0, -8.0, 2.5), B.SPINE: Vector3(-1.0, -6.0, -2.0), B.CHEST: Vector3(1.0, -10.0, -2.0), B.NECK: Vector3(0.0, -10.0, 0.0),
+			B.HEAD: Vector3(4.0, -26.0, -3.0)}),
+		_aim({B.UPPER_ARM_L: Vector3(-0.16, -1.0, -0.06), B.FOREARM_L: Vector3(-0.02, -0.9, -0.4)})])
+	var settle: Dictionary = _p([base, _hips(Vector3(0.026, -0.012, 0.0)), _e({B.HIPS: Vector3(0.0, -5.0, 4.0), B.CHEST: Vector3(1.5, 1.0, -2.5),
+		B.HEAD: Vector3(3.0, -4.0, 6.0)})])
+	_clip(book, "idle_youth_calm", 240, [[0, base], [30, breathe], [62, look_left], [88, look_left], [112, breathe], [146, look_back],
+		[168, look_back], [196, settle], [220, breathe], [240, base]], {"loop": true})
+
+
+## One of the youth's gaits, sampled every few frames from smooth curves: the
+## left heel strikes on frame 0 and the right halfway, the stance hip rides
+## high (the walk) or the body squashes through stance and lofts between
+## steps (the run); the pelvis yaws and rolls, the chest counter-turns, the
+## arms swing against the legs (pumping, elbows bent, on the run).
+static func _youth_gait(book: Array[Array], clip_name: String, gait: Array[float], run: bool) -> void:
+	var frames: int = int(gait[0])
+	var keys: Array = []
+	var samples: int = 13 if run else 10
+	for index: int in samples + 1:
+		var p: float = float(index) / float(samples)
+		var frame: int = roundi(p * float(frames))
+		var phase_l: float = TAU * p + PI * 0.5
+		var aims: Dictionary = {}
+		for side: float in [-1.0, 1.0]:
+			var phase: float = phase_l if side < 0.0 else phase_l + PI
+			var thigh_angle: float = gait[2] + gait[1] * sin(phase)
+			var swing: float = maxf(0.0, cos(phase))
+			var knee: float = gait[3] + gait[4] * pow(swing, 1.3)
+			if run:
+				# The heel kicks up behind as the leg leaves the ground.
+				knee += 0.5 * _bump(phase, PI * 1.5 + 0.5, 0.5)
+			var out: float = side * (0.035 if run else 0.025)
+			aims[B.THIGH_L if side < 0.0 else B.THIGH_R] = Vector3(out, -cos(thigh_angle), -sin(thigh_angle))
+			aims[B.SHIN_L if side < 0.0 else B.SHIN_R] = Vector3(out * 0.6, -cos(thigh_angle - knee), -sin(thigh_angle - knee))
+			var toe: float = -0.33 + 0.43 * _bump(phase, PI * 0.5, 0.45) - 0.5 * _bump(phase, PI * 1.5 - 0.25, 0.42) + 0.18 * swing
+			aims[B.FOOT_L if side < 0.0 else B.FOOT_R] = Vector3(0.0, sin(toe), -cos(toe))
+			# The arm on this side swings with the other leg.
+			var arm_phase: float = phase + PI
+			var beta: float = gait[7] * sin(arm_phase)
+			var elbow: float = gait[8] + (0.25 if run else 0.18) * maxf(0.0, sin(arm_phase))
+			var across: float = (0.06 if run else 0.0) * maxf(0.0, sin(arm_phase))
+			aims[B.UPPER_ARM_L if side < 0.0 else B.UPPER_ARM_R] = Vector3(side * (0.13 - across), -cos(beta), -sin(beta))
+			aims[B.FOREARM_L if side < 0.0 else B.FOREARM_R] = Vector3(side * (0.08 - across * 1.5), -cos(beta + elbow), -sin(beta + elbow))
+		var stance_l: float = sin(phase_l - PI * 0.5)
+		var bob: float = 0.0
+		if run:
+			# Squashed through the stance (phase_l at PI and 2 PI), lofted between steps.
+			bob = -gait[5] * 0.6 - gait[5] * cos(2.0 * (phase_l - PI))
+		else:
+			bob = -gait[5] * cos(2.0 * (phase_l - PI * 0.5)) - gait[5] * 0.4
+		var yaw: float = -gait[11] * sin(phase_l)
+		var roll: float = -3.0 * stance_l * (0.6 if run else 1.0)
+		var pose: Dictionary = _p([
+			{"aim": aims},
+			_hips(Vector3(-gait[6] * stance_l, bob, 0.0)),
+			_e({B.HIPS: Vector3(0.0, yaw, roll), B.SPINE: Vector3(gait[9], -0.5 * yaw, -0.5 * roll),
+				B.CHEST: Vector3(gait[9] * 0.4 + (1.5 if run else 0.5) * absf(stance_l), -1.3 * yaw, -0.6 * roll),
+				B.NECK: Vector3(0.0, 0.3 * yaw, 0.0), B.HEAD: Vector3(gait[10], 0.5 * yaw, 0.3 * roll)}),
+		])
+		keys.append([frame, pose])
+	_clip(book, clip_name, frames, keys, {"loop": true})
+
+
+## How close `phase` is to `center` round the circle: 1 there, falling off over `width` radians.
+static func _bump(phase: float, center: float, width: float) -> float:
+	var gap: float = wrapf(phase - center, -PI, PI)
+	return exp(-pow(gap / width, 2.0))
+
+
+## The draw as a fight starts (arm overlays): the left hand reaches back over
+## the shoulder for the bow and brings it round to the ready; the right hand
+## reaches behind the hip for a tool at the belt and brings it up.
+static func _youth_draws(book: Array[Array]) -> void:
+	var hang_l: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(-0.12, -1.0, 0.02), B.FOREARM_L: Vector3(-0.06, -0.95, -0.2)})])
+	var over_shoulder: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(-0.3, 0.55, 0.55), B.FOREARM_L: Vector3(0.25, 0.85, 0.35)}),
+		_wpn(B.HAND_L, Vector3(0.6, -0.2, 0.75))])
+	var round_front: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(-0.35, -0.45, -0.75), B.FOREARM_L: Vector3(-0.1, -0.2, -1.0)}), _wpn(B.HAND_L, Vector3(0.0, 1.0, 0.0))])
+	var ready_l: Dictionary = _p([L_BOW])
+	_clip(book, "youth_draw_tool_l", 18, [[0, hang_l], [6, over_shoulder], [12, round_front], [18, ready_l]])
+	var hang_r: Dictionary = _p([_aim({B.UPPER_ARM_R: Vector3(0.12, -1.0, 0.02), B.FOREARM_R: Vector3(0.06, -0.95, -0.2)})])
+	var behind_hip: Dictionary = _p([_aim({B.UPPER_ARM_R: Vector3(0.3, -0.8, 0.5), B.FOREARM_R: Vector3(0.1, -0.5, 0.86)}), _wpn(B.HAND_R, Vector3(0.0, -0.4, 0.9))])
+	var bring_up: Dictionary = _p([_aim({B.UPPER_ARM_R: Vector3(0.35, -0.7, -0.3), B.FOREARM_R: Vector3(0.1, 0.4, -0.9)}), _wpn(B.HAND_R, Vector3(0.0, 0.9, -0.4))])
+	var ready_r: Dictionary = _p([R_SWORD])
+	_clip(book, "youth_draw_tool_r", 18, [[0, hang_r], [6, behind_hip], [12, bring_up], [18, ready_r]])

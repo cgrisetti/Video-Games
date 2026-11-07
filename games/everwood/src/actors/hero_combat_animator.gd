@@ -36,6 +36,11 @@
 ##                       bravery_counter_strike
 ##   reactions           stagger_reel, downed_slump
 ##   overlays            overhead_pocket_blessing, offhand_pocket_draw (one arm each)
+##   the Level 1 youth   idle_youth_calm (240 f), locomotion_youth_walk (40 f,
+##   (21 doc)            1.5 m), locomotion_youth_run (26 f, 2.6 m), and the
+##                       youth_draw_tool_l / _r overlays (18 f) as a fight starts.
+##                       The youth starts calm and empty-handed; calm takes the
+##                       youth's clips, a fight the Tier 1 weapon's own.
 class_name HeroCombatAnimator
 extends Node
 
@@ -85,6 +90,24 @@ const WEAPON_CLIPS: Dictionary[int, Array] = {
 	Weapon.BOW: [&"bow_light_snap_shot_1", &"bow_heavy_piercing_draw", &"bow_flourish_r_vaulting_bough", &"bow_ult_lr_hail_of_hedgerow", &"idle_combat_ready_bow"],
 }
 const CARD_CLIPS: Array[StringName] = [&"card_invoke_forward", &"card_invoke_back", &"card_invoke_r", &"card_invoke_lr"]
+## The youth's clips (21_WINGFEATHER_YOUTH_HERO.md §3).
+const YOUTH_IDLE: StringName = &"idle_youth_calm"
+const YOUTH_WALK: StringName = &"locomotion_youth_walk"
+const YOUTH_RUN: StringName = &"locomotion_youth_run"
+const YOUTH_DRAW_LEFT: StringName = &"youth_draw_tool_l"
+const YOUTH_DRAW_RIGHT: StringName = &"youth_draw_tool_r"
+## The walk and the run, frames and metres a cycle, and where each foot plants (left first).
+const YOUTH_WALK_FRAMES: int = 40
+const YOUTH_WALK_METRES: float = 1.5
+const YOUTH_RUN_FRAMES: int = 26
+const YOUTH_RUN_METRES: float = 2.6
+const YOUTH_WALK_PLANTS: Array[int] = [0, 20]
+const YOUTH_RUN_PLANTS: Array[int] = [0, 13]
+## Below this the calm youth walks; above it, runs.
+const YOUTH_RUN_FROM: float = 3.2
+## A calm youth's jump holds the run at these frames (tucked rising, reaching falling).
+const YOUTH_JUMP_RISE_FRAME: float = 7.0
+const YOUTH_JUMP_FALL_FRAME: float = 17.0
 
 static var _library: AnimationLibrary
 static var _info: Dictionary[StringName, Dictionary] = {}
@@ -111,6 +134,8 @@ var feet_planted: int = 0
 var pose_rotations: Array[Quaternion] = []
 var hips_offset: Vector3 = Vector3.ZERO
 var hips_scale: Vector3 = Vector3.ONE
+## The Level 1 youth (ActorVisuals sets it before _ready): calm from the start, its own idle, walk and run.
+var youth: bool = false
 ## How fast the hero is rising (+) or falling (-), fed by ActorVisuals from how it moved (so copies on other peers jump too).
 var vertical_speed: float = 0.0
 ## The landing squash still to play (1 just landed, 0 done), and whether the hero was in the air last tick.
@@ -148,6 +173,11 @@ func _ready() -> void:
 	# The library's tracks are sampled here, frame-locked to the action's clock, so the player itself stays still.
 	player.active = false
 	pose_rotations = rest_rotations().duplicate()
+	if youth:
+		# The youth walks in empty-handed.
+		_since_fight = CALM_AFTER
+		calm = true
+		clip = YOUTH_IDLE
 
 
 # --- The library ---------------------------------------------------------------
@@ -329,7 +359,7 @@ func update(delta: float, frozen: bool = false) -> void:
 		if _overlay_frame >= float(overlay_info["frames"]):
 			_overlay = &""
 		else:
-			var arm: Array[int] = ARM_R if _overlay == &"overhead_pocket_blessing" else ARM_L
+			var arm: Array[int] = ARM_R if _overlay == &"overhead_pocket_blessing" or _overlay == YOUTH_DRAW_RIGHT else ARM_L
 			var over: Array[Quaternion] = rest_rotations().duplicate()
 			var unused: Array[Vector3] = [Vector3.ZERO, Vector3.ONE]
 			_sample(_overlay, _overlay_frame, over, unused)
@@ -375,7 +405,7 @@ func _choose_clip(step: float) -> Array:
 	_watch(action, phase, step)
 	var fighting: bool = action != null or state == &"guard" or state == &"stagger" or (actor.sign_flow != null and actor.sign_flow.is_in_combat)
 	_since_fight = 0.0 if fighting else _since_fight + step
-	calm = _since_fight >= CALM_AFTER and weapon_type != Weapon.BOW
+	calm = _since_fight >= CALM_AFTER and (youth or weapon_type != Weapon.BOW)
 	draw_weight = 0.0
 	foot_ik_weight = 1.0
 	var picked: StringName = family[4]
@@ -400,8 +430,12 @@ func _choose_clip(step: float) -> Array:
 			picked = &"guard_hold"
 			frame = _loop_frame(picked, step)
 		&"jump":
-			picked = &"locomotion_run_cycle"
-			frame = JUMP_RISE_FRAME if vertical_speed > 0.0 else JUMP_FALL_FRAME
+			if youth and calm:
+				picked = YOUTH_RUN
+				frame = YOUTH_JUMP_RISE_FRAME if vertical_speed > 0.0 else YOUTH_JUMP_FALL_FRAME
+			else:
+				picked = &"locomotion_run_cycle"
+				frame = JUMP_RISE_FRAME if vertical_speed > 0.0 else JUMP_FALL_FRAME
 		_:
 			var rite: float = actor.input.hearth_rite_progress() if actor.input != null else 0.0
 			if rite > 0.0:
@@ -409,7 +443,17 @@ func _choose_clip(step: float) -> Array:
 				frame = rite * float(clip_info(picked)["frames"])
 			else:
 				var speed: float = Vector2(actor.velocity.x, actor.velocity.z).length()
-				if speed > WALK_START_SPEED:
+				if youth and calm:
+					# The youth's own gait: an easy walk, an eager run; the cycle's phase carries across the two.
+					if speed > WALK_START_SPEED:
+						var running: bool = speed >= YOUTH_RUN_FROM
+						picked = YOUTH_RUN if running else YOUTH_WALK
+						frame = _cycle_frame(speed, step, YOUTH_RUN_FRAMES if running else YOUTH_WALK_FRAMES,
+							YOUTH_RUN_METRES if running else YOUTH_WALK_METRES, YOUTH_RUN_PLANTS if running else YOUTH_WALK_PLANTS)
+					else:
+						picked = YOUTH_IDLE
+						frame = _loop_frame(picked, step)
+				elif speed > WALK_START_SPEED:
 					picked = &"locomotion_run_cycle"
 					frame = _run_frame(speed, step)
 				else:
@@ -497,14 +541,21 @@ func _loop_frame(clip_name: StringName, step: float) -> float:
 
 ## The run cycle advances with distance, so feet never skate; plants call out on frames 4 and 18.
 func _run_frame(speed: float, step: float) -> float:
-	var before: float = _cycle * RUN_CYCLE_FRAMES
-	_cycle = fmod(_cycle + speed * step / RUN_CYCLE_METRES, 1.0)
-	var after: float = _cycle * RUN_CYCLE_FRAMES
-	for plant: int in FOOT_PLANT_FRAMES:
+	return _cycle_frame(speed, step, RUN_CYCLE_FRAMES, RUN_CYCLE_METRES, FOOT_PLANT_FRAMES)
+
+
+## A gait's frame: the shared cycle (0 to 1) advances `metres` a lap, and each plant frame crossed calls out (the first is the left foot).
+func _cycle_frame(speed: float, step: float, frames: int, metres: float, plants: Array[int]) -> float:
+	var before: float = _cycle * frames
+	_cycle = fmod(_cycle + speed * step / metres, 1.0)
+	var after: float = _cycle * frames
+	if is_zero_approx(step * speed):
+		return after
+	for plant: int in plants:
 		var crossed: bool = (before < plant and after >= plant) if after >= before else (before < plant or after >= plant)
 		if crossed:
 			feet_planted += 1
-			foot_planted.emit(plant == FOOT_PLANT_FRAMES[0])
+			foot_planted.emit(plant == plants[0])
 	return after
 
 

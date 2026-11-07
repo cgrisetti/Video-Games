@@ -126,7 +126,7 @@ const WORLD_VISUALS_CHECKS: GDScript = preload("res://tools/test_world_visuals.g
 ## Phase 18's checks (tools/test_pastoral_cartography.gd): the camera, labels, sculpted world and the Wayfarer's map, in every instance.
 const PASTORAL_CHECKS: GDScript = preload("res://tools/test_pastoral_cartography.gd")
 var _pastoral: RefCounted = PASTORAL_CHECKS.new()
-## Phase 19's checks (tools/test_hero_rig.gd): the solo Iron-Woodsman boot first, the hero rig in the expedition, companions in Oakshire Vale.
+## Phase 19's checks (tools/test_hero_rig.gd): the solo Level 1 youth boot first (and tools/test_youth_hero.gd), the hero rig in the expedition, companions in Oakshire Vale.
 const HERO_RIG_CHECKS: GDScript = preload("res://tools/test_hero_rig.gd")
 ## The Caldera Isles' checks (tools/test_caldera_isles.gd), last: the game's world since docs/20.
 const CALDERA_CHECKS: GDScript = preload("res://tools/test_caldera_isles.gd")
@@ -149,9 +149,9 @@ func _run() -> void:
 	# The machine's settings too: the smoke test never touches the real settings file.
 	SaveManager.remove(TEST_SETTINGS_PATH)
 	SettingsManager.current.use_settings_file(TEST_SETTINGS_PATH)
-	# The older checks play the classic full kits at trail Level 10, against foes
+	# The older checks play the classic full kits at trail Level 10 (run_boot
+	# switches to them once it has checked the Level 1 youth), against foes
 	# without their Braced Front Guard; the Phase 11 combat check sets up its own.
-	PartyProgress.current.apply_full_endgame_kit_for_testing()
 	BracedGuardComponent.enabled = false
 	# Sign-Flow and Glimmer-Spots too: the Phase 12 check switches them on for itself.
 	SignFlowComponent.enabled = false
@@ -165,7 +165,7 @@ func _run() -> void:
 	change_scene_to_file(HUB_SCENE)
 	await _seconds(0.2)
 	_connect_global_signals()
-	# A default boot is the solo Iron-Woodsman (Phase 19); then the classic trinity's tank takes the keyboard.
+	# A default boot is the solo Level 1 youth (docs/21); then the classic trinity's tank takes the keyboard.
 	await _hero_rig.run_boot(self, _check)
 
 	await _check_hub_and_input_map()

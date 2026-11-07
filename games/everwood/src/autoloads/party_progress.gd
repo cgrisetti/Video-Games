@@ -417,24 +417,6 @@ func trail_kit(class_id: StringName) -> Dictionary:
 	return ArsenalCatalog.current.trail_kit_for_role(ClassLoadouts.player_class(class_id).role, trail_level()).to_dict()
 
 
-## The Iron-Woodsman's boot kit (19 GDD, Stage 1): the Wayfarers' saved kit
-## (or the trail's, if none is saved or it no longer fits) in the Hedgerow
-## Wool-Mantle with the best Broad-Axe the trail has opened. The Scribe Desk
-## changes it as usual; the next boot starts from it again.
-func iron_woodsman_kit() -> Dictionary:
-	var kit: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(trail_kit(ClassLoadouts.SOLO_BOOT_CLASS))
-	var saved: Dictionary = kit_for(ClassLoadouts.SOLO_BOOT_CLASS)
-	if not saved.is_empty():
-		kit = EquipmentLoadoutResource.from_dict(saved)
-	kit.armor_id = ClassLoadouts.SOLO_BOOT_ARMOR
-	var tier: int = 1
-	for index: int in ArsenalCatalog.TIER_LEVELS.size():
-		if trail_level() >= ArsenalCatalog.TIER_LEVELS[index]:
-			tier = index + 1
-	kit.weapon_id = ArsenalCatalog.tier_weapon_id(ClassLoadouts.SOLO_BOOT_WEAPON_TYPE, tier)
-	return kit.to_dict()
-
-
 ## Test helper (tools/smoke_test.gd): the party at Level 10, every Calling open,
 ## and every class in its classic full kit, as before the trail, so the older
 ## checks measure what they always measured. Never called by the game.

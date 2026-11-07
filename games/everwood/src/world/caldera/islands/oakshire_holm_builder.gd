@@ -32,6 +32,12 @@ const NORTH_QUAY_AT: Vector2 = Vector2(40.0, -318.0)
 const PIER_ROOT: Vector3 = Vector3(40.0, 1.6, -332.0)
 const PIER_HEAD_Z: float = -414.0
 const OLD_QUAY_AT: Vector3 = Vector3(-290.0, -4.0, -322.0)
+## The orchard lane's foot, 10 m up from where it starts, and which way it climbs toward the market.
+const ORCHARD_LANE_FOOT: Vector2 = Vector2(354.0, 222.0)
+const ORCHARD_LANE_UP: Vector2 = Vector2(-0.6, -0.8)
+## The arrival point: Player 1's seat (the first of a row of four, 3.6 m left of
+## the row's middle) stands on the lane at ORCHARD_LANE_FOOT.
+const ORCHARD_ARRIVAL: Vector2 = Vector2(356.88, 219.84)
 
 
 func _define() -> void:
@@ -66,7 +72,10 @@ func _define() -> void:
 	add_place("The Old Quay Market", OLD_QUAY_AT, 50.0)
 	add_place("The West Strait", west, 60.0)
 	add_place("Eel Spit", east, 60.0)
-	add_arrival(CalderaAtlas.ARRIVE_ORCHARDS, Vector2(330.0, 200.0))
+	# The Level 1 start (21_WINGFEATHER_YOUTH_HERO.md §4): the foot of the orchard
+	# lane among the Lee-Shore Orchards, the youth facing up it toward the
+	# Windmill and Hearthstead Market.
+	add_arrival(CalderaAtlas.ARRIVE_ORCHARDS, ORCHARD_ARRIVAL, ORCHARD_LANE_UP)
 	add_arrival(CalderaAtlas.ARRIVE_NORTH_QUAY, Vector2(40.0, -324.0))
 	add_arrival(CalderaAtlas.ARRIVE_ROOT_SANCTUM, Vector2(-330.0, 146.0))
 

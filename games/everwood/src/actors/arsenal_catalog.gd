@@ -102,6 +102,8 @@ const TIZZI_WED_PINE: StringName = &"tizzi_wed_pine"
 const GULL_WICK_SLATE: StringName = &"gull_wick_slate"
 const BARLEY_BRIDGE_RUSSET: StringName = &"barley_bridge_russet"
 const BARROW_CRAG_HEATHER: StringName = &"barrow_crag_heather"
+## The youth's own heather-blue cape (not a seat dye: the first seat keeps it).
+const YOUTH_HEATHER: StringName = &"youth_heather"
 const HERITAGE_DYES: Array[StringName] = [TIZZI_WED_PINE, GULL_WICK_SLATE, BARLEY_BRIDGE_RUSSET, BARROW_CRAG_HEATHER]
 ## The Dover-Slap relics' glowing Sign-stone.
 const SIGN_STONE_COLOR: Color = Color(1.0, 0.9, 0.62)
@@ -243,6 +245,8 @@ var _card_order: Array[StringName] = []
 var _weapon_tiers: Array[WeaponVisualTierResource] = []
 var _appearances: Dictionary[StringName, HeroAppearanceResource] = {}
 var _appearance_order: Array[StringName] = []
+## The Unsworn Level 1 youth's look, one per Fellowship row (21_WINGFEATHER_YOUTH_HERO.md).
+var _youths: Array[HeroAppearanceResource] = []
 var _dyes: Dictionary[StringName, HeroAppearanceResource] = {}
 
 
@@ -1452,6 +1456,57 @@ func _build_hero_appearances() -> void:
 		TIZZI_WED_PINE, Color(0.94, 0.80, 0.68), Color(0.62, 0.42, 0.22))
 	_look(&"lantern_scribe", 2, &"scribe_feather_hat", &"mustache_sideburns", &"saffron_stole", &"none", &"quill_case",
 		BARROW_CRAG_HEATHER, Color(0.66, 0.48, 0.36), Color(0.30, 0.22, 0.16))
+	_build_youth_looks()
+
+
+## The Level 1 youth (21_WINGFEATHER_YOUTH_HERO.md §2): a 14-year-old in
+## homespun, the same for every Fellowship but for the neckerchief and
+## stocking stripes (the Fellowship's tunic colour) and the silhouette rim. A
+## heather-blue half-cape, russet breeches patched in sage, cream linen, saddle
+## braces, a chestnut mop.
+func _build_youth_looks() -> void:
+	for row: int in 3:
+		var look: HeroAppearanceResource = HeroAppearanceResource.new()
+		look.body_build = HeroAppearanceResource.BODY_YOUTH
+		look.appearance_id = StringName("youth_%s" % ["shield_sworn", "wayfarer", "lantern_bearer"][row])
+		look.calling_id = Callings.UNSWORN_ID
+		look.display_name = "Unsworn Youth"
+		look.heritage_id = &"oakshire_homestead"
+		look.coat_dye_preset = YOUTH_HEATHER
+		look.value_1_coat_color = Color(0.231, 0.29, 0.4)
+		look.value_1_breeches_color = Color(0.478, 0.227, 0.18)
+		look.value_1_boot_color = Color(0.29, 0.2, 0.141)
+		look.value_2_linen_color = Color(0.863, 0.812, 0.714)
+		look.value_2_leather_color = Color(0.627, 0.416, 0.29)
+		look.value_2_timber_leather_color = Color(0.612, 0.447, 0.314)
+		look.value_2_tunic_color = HeroAppearanceResource.FELLOWSHIP_TUNICS[row]
+		look.role_rim_color = HeroAppearanceResource.FELLOWSHIP_RIMS[row]
+		look.patch_color = Color(0.494, 0.604, 0.416)
+		look.skin_tone_color = Color(0.91, 0.725, 0.588)
+		# Chestnut hair (the shader draws hair at 70% of this).
+		look.beard_primary_color = Color(0.56, 0.34, 0.19)
+		look.iris_color = Color(0.36, 0.42, 0.22)
+		look.headgear_style = &"wind_tousled_mop"
+		look.beard_style = &"clean_youth"
+		look.left_pauldron_style = &"none"
+		look.right_pauldron_style = &"none"
+		look.belt_trinket_id = &"drawstring_pouch"
+		look.back_buckler_targe = false
+		look.split_hewing_apron = false
+		look.glb_override_path = "res://assets/models/heroes/youth.glb"
+		_youths.append(look)
+
+
+## The Unsworn youth's look for a seat: the Fellowship's youth in the seat's heritage dye on the cape.
+func youth_appearance_for_seat(fellowship_class_id: StringName, party_slot: int) -> HeroAppearanceResource:
+	var look: HeroAppearanceResource = _youths[clampi(Callings.fellowship_row(fellowship_class_id), 0, _youths.size() - 1)]
+	if party_slot <= 0:
+		return look
+	return look.with_dye(_dyes[HERITAGE_DYES[(party_slot - 1) % HERITAGE_DYES.size()]])
+
+
+func youth_appearances() -> Array[HeroAppearanceResource]:
+	return _youths.duplicate()
 
 
 func _dye(id: StringName, label: String, wool: Color) -> void:

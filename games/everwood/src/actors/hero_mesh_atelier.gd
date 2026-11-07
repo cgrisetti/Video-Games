@@ -111,6 +111,10 @@ static func build_hero_surfaces(look: HeroAppearanceResource, coat_id: StringNam
 		var cached: Array[ArrayMesh] = []
 		cached.assign(_surface_cache[key])
 		return cached
+	if look.is_youth():
+		var youth: Array[ArrayMesh] = HeroYouthAtelier.build_surfaces(look)
+		_surface_cache[key] = youth
+		return youth
 	var surfaces: Array[ArrayMesh] = [
 		_head_heritage(look),
 		_torso_coat(look, coat),
@@ -1822,6 +1826,10 @@ class Sculpt:
 	var tool: SurfaceTool = SurfaceTool.new()
 	var count: int = 0
 	var skinned: bool = false
+	## An optional (Vector3) -> Vector3 that moves every vertex as it's written
+	## (the youth's head and extremities, scaled round their joints). Weights,
+	## the face's portrait zones and the rest height are taken before it.
+	var warp: Callable = Callable()
 	var _points: PackedVector3Array = PackedVector3Array()
 	var _normals: PackedVector3Array = PackedVector3Array()
 
@@ -1832,6 +1840,8 @@ class Sculpt:
 		tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 
 	func vertex(p: Vector3, normal: Vector3, uv: Vector2, uv2: Vector2, color: Color, bones: Dictionary) -> int:
+		if warp.is_valid():
+			p = warp.call(p)
 		tool.set_color(color)
 		tool.set_uv(uv)
 		tool.set_uv2(uv2)

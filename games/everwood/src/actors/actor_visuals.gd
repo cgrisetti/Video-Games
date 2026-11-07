@@ -122,6 +122,11 @@ const SHIELD_ON_FOREARM: Transform3D = Transform3D(Basis(Vector3.RIGHT, PI * 0.5
 ## The Sign-stone's float and turn.
 const STONE_BOB: float = 0.012
 const STONE_SPIN: float = 2.0
+## The Level 1 youth (21_WINGFEATHER_YOUTH_HERO.md): the satchel rides
+## closer on the youth's slimmer hip; the Tier 1 tool and its quiver or shield
+## stay tucked away out of a fight and pop into hand over DRAW_POP_TIME.
+const YOUTH_SATCHEL_AT: Vector3 = Vector3(-0.178, -0.08, 0.05)
+const DRAW_POP_TIME: float = 0.16
 ## Feet look for the ground this far above and below them.
 const GROUND_PROBE_UP: float = 0.5
 const GROUND_PROBE_DOWN: float = 0.9
@@ -185,6 +190,13 @@ var _frost: float = 0.0
 var _warmth: float = 0.0
 var _hit_stop_left: float = 0.0
 var _hit_stop_total: float = 0.0
+## The youth's fight-only kit (a quiver, a shield), hidden with the tool while calm.
+var _combat_kit: Array[Node3D] = []
+## 1 just drawn, easing to 0: the tool grows into the youth's hand.
+var _draw_pop: float = 0.0
+
+## Whether an Unsworn player hero is drawn as the Level 1 youth (tests of the adult heroes on the trail turn it off).
+static var youth_heroes: bool = true
 
 
 static func model_path(id: StringName) -> String:
@@ -238,10 +250,15 @@ func rebuild() -> void:
 	_sign_stone = null
 	_stowed = false
 	_back_gear = false
+	_combat_kit.clear()
+	_draw_pop = 0.0
 	_choreo = Choreography.NONE
 	var loadout: ClassLoadoutResource = actor.loadout
 	var column: int = Callings.resolve(loadout.class_id, loadout.calling)
-	appearance = ArsenalCatalog.current.hero_appearance_for_seat(loadout.class_id, column, actor.party_slot)
+	if is_youth_seat():
+		appearance = ArsenalCatalog.current.youth_appearance_for_seat(loadout.class_id, actor.party_slot)
+	else:
+		appearance = ArsenalCatalog.current.hero_appearance_for_seat(loadout.class_id, column, actor.party_slot)
 	model = load_model(loadout.class_id)
 	if model == null:
 		model = HeroMeshAtelier.hero_override(appearance)
@@ -253,7 +270,12 @@ func rebuild() -> void:
 	var calling: SecondaryCallingResource = Callings.secondary(column)
 	var trim: Color = calling.trim_color if calling != null else Callings.UNSWORN_TRIM
 	var coat: StringName = loadout.armor.item_id if loadout.armor != null else &"ranger_leather"
+	if appearance.is_youth():
+		# The youth has no tabard: the trim slot paints the knee patch and the cape's lining.
+		trim = appearance.patch_color
 	skeleton = HeroRigBuilder.build_hero_skeleton()
+	if appearance.is_youth():
+		skeleton.scale = Vector3.ONE * HeroAppearanceResource.YOUTH_SKELETON_SCALE
 	add_child(skeleton)
 	body_material = HeroMeshAtelier.hero_material(appearance, trim)
 	materials.append(body_material)
@@ -273,19 +295,34 @@ func rebuild() -> void:
 	skeleton.add_child(kinematics)
 	animator = HeroCombatAnimator.new()
 	animator.setup(actor, skeleton)
+	animator.youth = appearance.is_youth()
 	add_child(animator)
 	features = {
 		"calling": appearance.calling_id, "headgear": appearance.headgear_style, "headgear_crest": appearance.headgear_crest,
 		"beard": appearance.beard_style, "left_pauldron": appearance.left_pauldron_style, "right_pauldron": appearance.right_pauldron_style,
 		"belt_trinket": appearance.belt_trinket_id, "back_buckler_targe": appearance.back_buckler_targe, "split_hewing_apron": appearance.split_hewing_apron,
 		"coat": coat, "dye": appearance.coat_dye_preset, "trim": trim, "tunic": appearance.value_2_tunic_color, "rim": appearance.role_rim_color,
+		"body_build": appearance.body_build,
 	}
+
+
+## Whether this hero is drawn as the Level 1 youth: a player (not an AI
+## companion) still Unsworn, on the trail before Level 10.
+func is_youth_seat() -> bool:
+	if not youth_heroes or actor == null or actor.is_companion or actor.loadout == null:
+		return false
+	return actor.loadout.calling == Callings.UNSWORN and ClassLoadouts.PLAYER_CLASSES.has(actor.loadout.class_id)
+
+
+## Whether this hero is the Level 1 youth.
+func is_youth() -> bool:
+	return appearance != null and appearance.is_youth() and has_rig()
 
 
 ## The Fellowship's kit on the sockets: the satchel, an off-hand piece, what's on the back.
 func _build_kit(row: int, loadout: ClassLoadoutResource) -> void:
 	var satchel: Node3D = HeroMeshAtelier.build_scribe_satchel(body_material)
-	satchel.position = Vector3(-0.215, -0.1, 0.07)
+	satchel.position = YOUTH_SATCHEL_AT if appearance.is_youth() else Vector3(-0.215, -0.1, 0.07)
 	socket(HeroRigBuilder.HIP_SATCHEL_SOCKET).add_child(satchel)
 	_satchel_flap = satchel.get_node(^"Flap") as Node3D
 	var weapon_type: int = loadout.weapon.weapon_type if loadout.weapon != null else EquipmentItemResource.WeaponType.LIGHT_SWORD
@@ -301,10 +338,14 @@ func _build_kit(row: int, loadout: ClassLoadoutResource) -> void:
 				# so it clears the shoulder, the head and the chest in every pose (13_PLAYTEST §2.7).
 				shield.transform = SHIELD_ON_FOREARM
 				socket(HeroRigBuilder.OFF_HAND_SOCKET).add_child(shield)
+				if appearance.is_youth():
+					_combat_kit.append(shield)
 			else:
 				shield.transform = Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(0.0, -0.06, BACK_GEAR_DEPTH + 0.04))
 				back.add_child(shield)
-				_back_gear = true
+				_back_gear = not appearance.is_youth()
+				if appearance.is_youth():
+					_combat_kit.append(shield)
 		2:
 			# The brass Tether-Lantern hanging at the left hip, really glowing.
 			_lantern = HeroMeshAtelier.build_tether_lantern(body_material, LANTERN_GLOW)
@@ -314,7 +355,9 @@ func _build_kit(row: int, loadout: ClassLoadoutResource) -> void:
 		var quiver: Node3D = HeroMeshAtelier.build_quiver(body_material)
 		quiver.transform = Transform3D(Basis(Vector3.BACK, -0.35), Vector3(0.12, 0.02, BACK_GEAR_DEPTH - 0.04))
 		back.add_child(quiver)
-		_back_gear = true
+		_back_gear = not appearance.is_youth()
+		if appearance.is_youth():
+			_combat_kit.append(quiver)
 	if appearance.back_buckler_targe and row != 0:
 		var targe: Node3D = HeroMeshAtelier.build_buckler_targe(body_material)
 		targe.position = Vector3(-0.05 if quivered else 0.0, -0.02, BACK_GEAR_DEPTH - 0.03)
@@ -351,9 +394,14 @@ func _hold(item: EquipmentItemResource) -> void:
 	_stowed = false
 
 
-## Out of a fight a while, the weapon goes on the back; any action draws it again.
+## Out of a fight a while, the weapon goes on the back; any action draws it
+## again. The youth tucks it away altogether (empty hands on the orchard
+## lanes) and draws it into hand when a fight starts.
 func _stow(stowed: bool) -> void:
 	if stowed == _stowed or not is_instance_valid(_weapon_mount) or _weapon_item == null:
+		return
+	if is_youth():
+		_tuck_away(stowed)
 		return
 	if not stowed:
 		_hold(_weapon_item)
@@ -363,6 +411,27 @@ func _stow(stowed: bool) -> void:
 	var half: float = HeroMeshAtelier.weapon_length(_weapon_item.weapon_type) * 0.5
 	_weapon_mount.transform = Transform3D(STOW_BASIS, -STOW_BASIS.y * half + Vector3(0.0, 0.04, BACK_GEAR_DEPTH))
 	_stowed = true
+
+
+## The youth's empty hands: hide the tool and its fight kit, or draw them with a pop and a reach.
+func _tuck_away(hidden: bool) -> void:
+	_stowed = hidden
+	_weapon_mount.visible = not hidden
+	for piece: Node3D in _combat_kit:
+		if is_instance_valid(piece):
+			piece.visible = not hidden
+	if hidden:
+		_draw_pop = 0.0
+		_weapon_mount.scale = Vector3.ONE
+		return
+	_draw_pop = 1.0
+	var bow: bool = _weapon_item.weapon_type == EquipmentItemResource.WeaponType.BOW
+	animator.play_overlay(HeroCombatAnimator.YOUTH_DRAW_LEFT if bow else HeroCombatAnimator.YOUTH_DRAW_RIGHT)
+
+
+## Whether the youth's hands are empty right now (the tool tucked away).
+func is_empty_handed() -> bool:
+	return is_youth() and (not is_instance_valid(_weapon_mount) or not _weapon_mount.visible)
 
 
 ## Whether the weapon is on the back right now.
@@ -428,6 +497,11 @@ func update_rig(delta: float, moved: Vector3, frozen: bool = false) -> void:
 	animator.vertical_speed = moved.y
 	animator.update(delta, frozen)
 	_stow(animator.calm)
+	if _draw_pop > 0.0 and is_instance_valid(_weapon_mount):
+		_draw_pop = maxf(0.0, _draw_pop - delta / DRAW_POP_TIME)
+		# Grows into the hand with a little overshoot.
+		var grow: float = 1.0 - _draw_pop
+		_weapon_mount.scale = Vector3.ONE * clampf(0.25 + 0.75 * grow + 0.12 * sin(grow * PI), 0.01, 1.2)
 	_feed_kinematics(delta, moved, frozen)
 	skeleton.advance(delta)
 	_update_kit(delta)
@@ -489,8 +563,10 @@ func _probe_ground(k: StorybookKinematicsModifier3D) -> void:
 			ActorBase.LAYER_WORLD | ActorBase.LAYER_LOW_SCENERY)
 		var hit: Dictionary = space.intersect_ray(query)
 		heights.append(clampf((hit["position"] as Vector3).y - origin_y, -GROUND_MAX_STEP, GROUND_MAX_STEP) if not hit.is_empty() else 0.0)
-	k.ground_left = heights[0]
-	k.ground_right = heights[1]
+	# The modifier works in the skeleton's space (the youth's is drawn at 0.9).
+	var scale_y: float = maxf(skeleton.scale.y, 0.01)
+	k.ground_left = heights[0] / scale_y
+	k.ground_right = heights[1] / scale_y
 
 
 ## A curious hob to parley with or an open Glimmer-Spot within 8 m (Vector3.INF for none).

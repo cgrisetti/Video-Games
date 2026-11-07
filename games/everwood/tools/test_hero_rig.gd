@@ -2,11 +2,11 @@
 ## run by tools/smoke_test.gd:
 ##   run_boot  first, in Bramble-Bridge's hub, before anything else: a default
 ##             boot seats one hero alone (no AI companions, one full-screen
-##             view), and Player 1 is the Iron-Woodsman (a Wayfarer with a Stout
-##             Heart, 120 health) in the Hedgerow Wool-Mantle with a Broad-Axe;
-##             a solo party needs one Maker-Seal Plate and meets a 1,400-health
-##             Cairnsman. Then it seats the classic trinity's tank on the
-##             keyboard and turns companions on for the older checks.
+##             view), and Player 1 is the Level 1 youth, Unsworn on the trail kit
+##             (tools/test_youth_hero.gd); a solo party needs one Maker-Seal Plate and meets a 1,400-health
+##             Cairnsman. Then it puts the party at Level 10 in the classic
+##             kits, seats the trinity's tank on the keyboard and turns
+##             companions on for the older checks.
 ##   run_rig   in the expedition, on the trinity: the weapon-tier and hero-look
 ##             registries and their Three-Value bands; the 24-bone skeleton in
 ##             parent-first order, its Skin and four read-only sockets; five
@@ -28,6 +28,8 @@
 extends RefCounted
 
 const B = HeroRigBuilder.Bone
+## The Level 1 youth's checks (docs/21), run on the boot seat.
+const YOUTH_CHECKS: GDScript = preload("res://tools/test_youth_hero.gd")
 const Cmd = CombatActionResource.Command
 const Weapon = EquipmentItemResource.WeaponType
 const Phase = ActionQueueComponent.Phase
@@ -72,16 +74,8 @@ func run_boot(scene_tree: SceneTree, checker: Callable) -> void:
 		"a default boot seats exactly one hero, Player 1, and no AI companions (%d people, %d bots)" % [people, network.companion_seats().size()])
 	if p1 == null:
 		return
-	var stout: SecondaryCallingResource = ArsenalCatalog.current.secondary_calling(ArsenalCatalog.STOUT_HEART)
-	check.call(p1.loadout.class_id == ClassLoadouts.DIRECTIONAL_FLOW_DPS and Callings.id_of(p1.loadout.calling) == ArsenalCatalog.STOUT_HEART
-		and p1.loadout.display_name == "Iron-Woodsman" and p1.loadout.calling_subtitle == "Hewn-Hand of the High Pines"
-		and is_equal_approx(p1.loadout.stats.max_health, 120.0) and is_equal_approx(stout.poise_damage_multiplier, 1.25)
-		and is_equal_approx(p1.loadout.stats.perfect_guard_window, 0.2 + 0.03),
-		"Player 1 is the Iron-Woodsman, \"Hewn-Hand of the High Pines\": a Wayfarer with a Stout Heart, 120 health, +25%% poise, a 230 ms Perfect Guard (%s)"
-		% p1.loadout.display_name)
-	check.call(p1.loadout.armor != null and p1.loadout.armor.item_id == ArsenalCatalog.RANGER_LEATHER and p1.loadout.weapon != null
-		and p1.loadout.weapon.weapon_type == Weapon.HEAVY_AXE and p1.visuals.has_rig() and p1.visuals.features.get("headgear") == &"wayfarer_hood_up",
-		"...in the Hedgerow Wool-Mantle with a Broad-Axe (%s), a sculpted, hooded hero" % (p1.loadout.weapon.display_name if p1.loadout.weapon != null else "none"))
+	# Player 1 is the Level 1 youth (docs/21): the seat, the sculpt, the clips, the start, empty hands.
+	await YOUTH_CHECKS.new().run(tree, check, p1)
 	var cells: GridContainer = level.grid.get_node(^"Cells") as GridContainer
 	check.call(level.grid.view_count() == 1 and cells.columns == 1 and level.grid.get_node(^"Cells").get_child_count() == 1,
 		"one hero fills the screen: a single full-screen 1x1 view")
@@ -90,8 +84,10 @@ func run_boot(scene_tree: SceneTree, checker: Callable) -> void:
 		"a solo party needs one Maker-Seal Plate (min(2, party)) and meets a 900 + 500 = 1,400-health Cairnsman")
 	check.call(LevelBase.wants_companions_flag(PackedStringArray(["--with-companions"])) and not LevelBase.wants_companions_flag(PackedStringArray()),
 		"--with-companions on the command line asks for AI companions")
-	# The older checks seat the classic trinity: companions on, and the keyboard back on the Shield-Sworn.
-	LevelBase.solo_iron_woodsman_boot = false
+	# The older checks play the classic full kits at trail Level 10 and seat the classic trinity:
+	# companions on, and the keyboard back on the Shield-Sworn (sworn, so a grown hero).
+	PartyProgress.current.apply_full_endgame_kit_for_testing()
+	LevelBase.solo_youth_boot = false
 	level.set_companion_backfill_enabled(true)
 	network.update_local_player(InputComponent.KEYBOARD_DEVICE, ClassLoadouts.SHIELD_TANK, p1.input.assist_mode)
 	await _frames(3)

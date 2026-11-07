@@ -75,6 +75,8 @@ var isle: IslandGridResource
 var places: Array[Dictionary] = []
 ## Where a party arrives (by CalderaAtlas.ARRIVE_* id), on the ground.
 var arrivals: Dictionary[StringName, Vector3] = {}
+## Which way the party faces on arriving (a yaw about +Y; 0 faces -Z, north).
+var arrival_yaws: Dictionary[StringName, float] = {}
 
 var _noise: FastNoiseLite
 var _detail: FastNoiseLite
@@ -172,8 +174,16 @@ func add_place(place_name: String, at: Vector3, radius: float) -> void:
 	places.append({"name": place_name, "at": at, "radius": radius})
 
 
-func add_arrival(id: StringName, at: Vector2) -> void:
+func add_arrival(id: StringName, at: Vector2, facing: Vector2 = Vector2.ZERO) -> void:
 	arrivals[id] = Vector3(at.x, 0.0, at.y)
+	if facing.length() > 0.001:
+		# Heroes face -Z: a yaw of atan2(-x, -z) turns them toward `facing`.
+		arrival_yaws[id] = atan2(-facing.x, -facing.y)
+
+
+## The way the party faces at an arrival, as a basis.
+func arrival_basis(id: StringName) -> Basis:
+	return Basis(Vector3.UP, arrival_yaws.get(id, 0.0))
 
 
 # --- Sampling (pure, worker-safe) --------------------------------------------------
@@ -225,9 +235,12 @@ func place(place_name: String) -> Dictionary:
 ## A party member's spot at an arrival (spread in a row of four, `slot` from 0), on the ground.
 func arrival_spot(id: StringName, slot: int = 0) -> Vector3:
 	var at: Vector3 = arrivals.get(id, arrivals.values()[0] if not arrivals.is_empty() else Vector3.ZERO)
-	var x: float = at.x + (float(slot % 4) - 1.5) * 2.4
+	# A row of four across the way the party faces, further rows behind.
+	var facing: Basis = arrival_basis(id)
 	@warning_ignore("integer_division")
-	var z: float = at.z + float(slot / 4) * 2.4
+	var spread: Vector3 = facing.x * (float(slot % 4) - 1.5) * 2.4 + facing.z * float(slot / 4) * 2.4
+	var x: float = at.x + spread.x
+	var z: float = at.z + spread.z
 	return Vector3(x, height_at(x, z) + 0.1, z)
 
 

@@ -303,7 +303,7 @@ func _start_point() -> Array[StringName]:
 func _place_spawn_points(arrival: StringName) -> void:
 	var markers: Array[Node] = spawn_points.get_children()
 	for index: int in markers.size():
-		(markers[index] as Node3D).global_position = streamer.builder.arrival_spot(arrival, index)
+		(markers[index] as Node3D).global_transform = Transform3D(streamer.builder.arrival_basis(arrival), streamer.builder.arrival_spot(arrival, index))
 
 
 # --- The party ------------------------------------------------------------------------------
@@ -349,7 +349,7 @@ func place_party_at(arrival: StringName) -> void:
 			seat += 1
 	streamer.load_now(points)
 	for index: int in placed.size():
-		var where: Transform3D = Transform3D(Basis.IDENTITY, points[index + 1])
+		var where: Transform3D = Transform3D(builder.arrival_basis(arrival), points[index + 1])
 		placed[index].spawn_at(where)
 		_safe[placed[index].player_id] = where.origin
 	_place_spawn_points(arrival)

@@ -23,7 +23,7 @@ func _run() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	PartyProgress.current.use_save_file(SAVE_PATH)
 	PartyProgress.current.apply_full_endgame_kit_for_testing()
-	LevelBase.solo_iron_woodsman_boot = false
+	LevelBase.solo_youth_boot = false
 	CalderaWorldState.current.reset_for_testing()
 	change_scene_to_file(CHECKS.CALDERA_SCENE)
 	for index: int in 6:
