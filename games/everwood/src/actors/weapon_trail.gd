@@ -27,6 +27,9 @@ var _mesh: ImmediateMesh
 var _material: StandardMaterial3D
 var _swing_time: float = -1.0
 var _colour: Color = Color.WHITE
+## A Pocket-Pull's ink, held on the ribbon while its coat lasts.
+var _ink_override: Color = Color.TRANSPARENT
+var _ink_override_left: float = 0.0
 
 
 func setup(owner_actor: ActorBase) -> void:
@@ -57,7 +60,19 @@ func colour() -> Color:
 	return _colour
 
 
+## A Pocket-Pull's coat (the Seal-and-Tuck Grimoire): the ribbon draws in the seal's ink for `seconds`.
+func set_ink_override(color: Color, seconds: float) -> void:
+	_ink_override = color
+	_ink_override_left = maxf(0.0, seconds)
+
+
+## The ink the ribbon is held to right now (TRANSPARENT when it draws its own colours).
+func ink_override() -> Color:
+	return _ink_override if _ink_override_left > 0.0 else Color.TRANSPARENT
+
+
 func _process(delta: float) -> void:
+	_ink_override_left = maxf(0.0, _ink_override_left - delta)
 	var weapon: EquipmentItemResource = actor.loadout.weapon
 	var action: CombatActionResource = actor.current_action()
 	var live: bool = weapon != null and action != null and action.trail and actor.current_phase() == ActionQueueComponent.Phase.ACTIVE
@@ -112,6 +127,8 @@ func _rebuild() -> void:
 
 
 func _colour_for(action: CombatActionResource) -> Color:
+	if _ink_override_left > 0.0:
+		return Color(_ink_override, TRAIL_ALPHA)
 	var colour: Color = ArsenalCatalog.current.sign_seal(action.scribe_sign).color
 	var kit: EquipmentLoadoutResource = actor.loadout.kit
 	if action.grimoire_slot >= 0 and kit != null and kit.lead_variant(action.grimoire_slot) == ScribeCardResource.CardVariant.GILDED_LEAF:

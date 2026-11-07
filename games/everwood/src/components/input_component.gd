@@ -645,7 +645,16 @@ func _issue_attack(base: int) -> void:
 	if assist_mode == AssistMode.SQUIRE_GAMBIT:
 		if _squire_buffer_counter():
 			return
-		_issue(_squire_pick())
+		# The 1-Button Gambit Assist: in the Pocket-Pull window with the pips in hand, the button pulls the card.
+		if actor.seal != null and actor.seal.input_gambit_assist:
+			var assist: Dictionary = actor.seal.execute_one_button_gambit()
+			if bool(assist.get("handled", false)):
+				return
+			var pull_command: int = int(assist.get("command", -1))
+			if pull_command >= 0:
+				_issue(pull_command)
+				return
+		_issue(_gated(_squire_pick()))
 		return
 	var command: int = base
 	if base == CombatActionResource.Command.HEAVY:
@@ -658,7 +667,12 @@ func _issue_attack(base: int) -> void:
 				and actor.distance_to_soft_target() > maxf(GAP_CLOSE_DISTANCE, _reach_of(CombatActionResource.Command.HEAVY)) \
 				and actor.loadout.has_opener(CombatActionResource.Command.FORWARD_HEAVY):
 			command = CombatActionResource.Command.FORWARD_HEAVY
-	_issue(command)
+	_issue(_gated(command))
+
+
+## The Graduated APM gate (EquipmentSealComponent): a directional heavy the hero's stage hasn't opened falls back to the plain heavy.
+func _gated(command: int) -> int:
+	return actor.seal.gate_command(command) if actor.seal != null else command
 
 
 ## +1 when the stick is pushed right, -1 for left, 0 otherwise: Heavy with the

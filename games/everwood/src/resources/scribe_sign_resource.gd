@@ -40,3 +40,14 @@ enum Glyph { RING, GEAR, STAR, SUN, MOON }
 
 func has_party_effect() -> bool:
 	return party_heal > 0.0 or party_stamina > 0.0 or party_pips > 0.0
+
+
+## A Sign's id as the Seal-and-Tuck Grimoire names it (&"SIGN_STAR_TIDE"; &"NONE" for none).
+static func id_of(scribe_sign: int) -> StringName:
+	return StringName(Sign.keys()[clampi(scribe_sign, 0, Sign.size() - 1)])
+
+
+## The Sign for an id (Sign.NONE for an empty or unknown one).
+static func from_id(id: StringName) -> int:
+	var index: int = Sign.keys().find(String(id))
+	return index if index >= 0 else Sign.NONE

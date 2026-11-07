@@ -366,7 +366,7 @@ func update(delta: float, frozen: bool = false) -> void:
 			var fade_in: float = smoothstep(0.0, 3.0, _overlay_frame) * (1.0 - smoothstep(float(overlay_info["frames"]) - 4.0, float(overlay_info["frames"]), _overlay_frame))
 			for bone: int in arm:
 				rotations[bone] = rotations[bone].slerp(over[bone], fade_in)
-			if _overlay == &"offhand_pocket_draw" or _overlay == &"overhead_pocket_blessing":
+			if _overlay == &"offhand_pocket_draw" or _overlay == &"overhead_pocket_blessing" or _overlay == &"pocket_pull_flourish":
 				grip_weight = 0.0
 	_apply_jump(offset, step)
 	pose_rotations = rotations

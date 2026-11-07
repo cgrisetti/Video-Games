@@ -61,6 +61,12 @@ var combo_id: StringName = &""
 var one_and_done: bool = false
 var finisher_card_id: StringName = &""
 var ink_share_from: StringName = &""
+## The Seal-and-Tuck Grimoire: the seal card whose Pocket-Pull coat this strike
+## carries (its multiplier is read from the card on the target's owner), whether
+## an Under-Card Tuck rides it, and whether it is the pull's own blow (the burst).
+var seal_card_id: StringName = &""
+var seal_tuck: bool = false
+var seal_burst: bool = false
 ## Worked out on the target's owner from the above (never sent): a stun to
 ## land, whether it cracks a martial lock or any lock or gate, and how far a
 ## Sign detonation riding it reaches.
@@ -133,6 +139,8 @@ func to_dict() -> Dictionary:
 		data["combo_id"] = combo_id
 	if one_and_done:
 		data.merge({"one_and_done": true, "finisher_card_id": finisher_card_id})
+	if seal_card_id != &"":
+		data.merge({"seal_card_id": seal_card_id, "seal_tuck": seal_tuck, "seal_burst": seal_burst})
 	if kind == Kind.STRIKE and action_id != &"":
 		data["action_id"] = action_id
 		return data
@@ -186,4 +194,7 @@ static func from_dict(data: Dictionary) -> CombatEvent:
 	event.combo_id = StringName(data.get("combo_id", &""))
 	event.one_and_done = bool(data.get("one_and_done", false))
 	event.finisher_card_id = StringName(data.get("finisher_card_id", &""))
+	event.seal_card_id = StringName(data.get("seal_card_id", &""))
+	event.seal_tuck = bool(data.get("seal_tuck", false))
+	event.seal_burst = bool(data.get("seal_burst", false))
 	return event

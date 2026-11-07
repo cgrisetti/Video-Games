@@ -524,6 +524,11 @@ static func _reactions(book: Array[Array]) -> void:
 	var pocket_l: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(-0.3, -0.85, -0.3), B.FOREARM_L: Vector3(0.45, -0.45, -0.75)})])
 	var sweep: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(0.15, -0.05, -1.0), B.FOREARM_L: Vector3(0.75, 0.35, -0.55)})])
 	_clip(book, "offhand_pocket_draw", 25, [[0, L_SHIELD], [5, pocket_l], [18, sweep], [25, L_SHIELD]])
+	# The Pocket-Pull flourish (left arm, 18 frames, the Seal-and-Tuck Grimoire): the hand darts to the
+	# pouch by frame 5, whips the card high overhead by 12, and slams its light into the weapon by 18.
+	var raise: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(-0.2, 1.0, -0.15), B.FOREARM_L: Vector3(0.1, 1.0, -0.1)})])
+	var slam: Dictionary = _p([_aim({B.UPPER_ARM_L: Vector3(0.1, -0.2, -1.0), B.FOREARM_L: Vector3(0.6, 0.1, -0.75)})])
+	_clip(book, "pocket_pull_flourish", 18, [[0, L_SHIELD], [5, pocket_l], [12, raise], [16, slam], [18, L_SHIELD]])
 
 
 # --- The Level 1 youth (21_WINGFEATHER_YOUTH_HERO.md §3) ----------------------------
