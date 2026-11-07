@@ -1,4 +1,4 @@
-## The seven-card hand and the Ink-Well (22_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md
+## The seven-card hand and the Ink-Well (24_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md
 ## R1, R2, R4, R5), run by tools/smoke_test.gd on Hearthstead Market's green after
 ## the Seal-and-Tuck checks:
 ##   1  the rules table: what a card costs in Ink-Drops, how deep the well is at

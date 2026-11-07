@@ -1,4 +1,4 @@
-## A hero's Seals and the frame they're pressed on (22_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md;
+## A hero's Seals and the frame they're pressed on (24_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md;
 ## the Google Doc *Everwood Equipment & Grimoire Architecture* §3): the material
 ## tiers its weapon and armour were promoted to, its youth silhouette, and the
 ## three Equipment Seals pressed onto the weapon, the offhand (buckler, quiver,
@@ -38,7 +38,7 @@ const STAGE_NAMES: Array[String] = ["", "Homestead Onboarding", "First Friction 
 const STAGE_MAX_LEVELS: Array[int] = [0, 5, 10, 16, 20]
 ## How many seal slots each stage opens (index = stage): the weapon's (Lv 3), the offhand's
 ## (Lv 6), the mantle's (Lv 11). The hand's four pocket slots never open any more: the L, R
-## and L+R cards and the Tuck live in the kit's sockets (22 GDD R4, R5).
+## and L+R cards and the Tuck live in the kit's sockets (24 GDD R4, R5).
 const SEALS_OPEN: Array[int] = [0, 1, 2, 3, 3]
 const ACTIVES_OPEN: Array[int] = [0, 0, 0, 0, 0]
 ## The level each slot opens at, in HandSlot order (the four pocket slots: never).
@@ -55,7 +55,7 @@ const HAND_SLOT_NAMES: Array[String] = ["Weapon", "Off-Hand", "Mantle", "L", "L 
 @export var armor_weight_class: int = EquipmentTierResource.ArmorWeightClass.ARMOR_HEAVY_SHIELD_SWORN
 ## The weapon's (and its offhand's) material tier, promoted at the Forge.
 @export var equipped_tier_id: StringName = &"TIER_1_HOMESTEAD"
-## The armour's material tier, promoted on its own (22 GDD §2). Empty reads as the weapon's.
+## The armour's material tier, promoted on its own (24 GDD §2). Empty reads as the weapon's.
 @export var armor_tier_id: StringName = &""
 
 @export_group("Layer 1: 3 Pre-Battle Equipment Seals")
@@ -291,7 +291,7 @@ static func trigger_open_at_stage(trigger_slot: int, stage: int) -> bool:
 
 
 ## Whether the hand fits a stage's slots: no more seals than it opened, no pocket cards,
-## and no title twice (22 GDD R5).
+## and no title twice (24 GDD R5).
 func validate_loadout_for_stage(progression_stage: int) -> bool:
 	var stage: int = clampi(progression_stage, STAGE_HOMESTEAD, STAGE_APEX)
 	return seal_count() <= seals_open_at_stage(stage) and active_count() == 0 \

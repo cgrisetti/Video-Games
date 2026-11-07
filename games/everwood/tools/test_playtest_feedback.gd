@@ -180,7 +180,7 @@ func _check_options_menu() -> void:
 	await tree.process_frame
 	var view: PlayerCamera = level.camera_for_seat(hero.party_slot + 1)
 	check.call(view != null and is_equal_approx(view.fov, 70.0), "K1: the cameras' field of view follows the Video tab (70°)")
-	# The Options wireframe's new rows (22 GDD §2).
+	# The Options wireframe's new rows (24 GDD §2).
 	settings.set_value(&"world_detail", SettingsManager.WorldDetail.NEAR)
 	settings.set_value(&"grass_density", SettingsManager.GrassDensity.FEW)
 	settings.set_value(&"craft_textures", SettingsManager.CraftTextures.SOFT)

@@ -24,7 +24,7 @@ var threat: float = 0.0
 var heal: float = 0.0
 ## Resonance pips granted (REWARD).
 var resonance: float = 0.0
-## A REWARD's resonance is Ink-Drops back into the well (22 GDD R2), not a swing's pip.
+## A REWARD's resonance is Ink-Drops back into the well (24 GDD R2), not a swing's pip.
 var ink_refill: bool = false
 ## Stamina restored (REWARD: Astral Chorus).
 var stamina: float = 0.0

@@ -259,7 +259,7 @@ func tier() -> EquipmentTierResource:
 
 
 func _derive_hand() -> void:
-	# The hero's own Character Level (22 GDD §2), not the party's trail level.
+	# The hero's own Character Level (24 GDD §2), not the party's trail level.
 	var class_id: StringName = actor.loadout.class_id if actor != null and actor.loadout != null else &""
 	true_level = clampi(PartyProgress.current.character_level(class_id) if PartyProgress.current != null else 1, 1, ArsenalCatalog.MAX_TRUE_LEVEL)
 	progression_stage = debug_stage_override if debug_stage_override > 0 else PlayerLoadoutResource.stage_for_true_level(true_level)
@@ -274,7 +274,7 @@ func _derive_hand() -> void:
 	var calling_id: StringName = calling.calling_id if calling != null else compiled.class_id
 	if _custom_hand and loadout != null:
 		loadout.trim_to_stage(progression_stage, true_level)
-		# Its cards stay; its tiers follow the Forge (22 GDD §2: a promotion reaches a chosen hand too).
+		# Its cards stay; its tiers follow the Forge (24 GDD §2: a promotion reaches a chosen hand too).
 		var forged: PlayerLoadoutResource = catalog.default_seal_loadout(compiled.class_id, actor.role(), weapon_type, calling_id, true_level,
 			actor.party_slot, debug_stage_override, true)
 		loadout.equipped_tier_id = forged.equipped_tier_id
@@ -330,7 +330,7 @@ func gate_command(command: int) -> int:
 	return command
 
 
-## Whether a trigger's socket is open at the hero's Character Level (22 GDD R4: R at 4, L at
+## Whether a trigger's socket is open at the hero's Character Level (24 GDD R4: R at 4, L at
 ## 6, L+R at 17), and inside a playtest's forced stage.
 func is_trigger_slot_unlocked(trigger_slot: int) -> bool:
 	var socket: int = SOCKET_TRIGGERS.find(trigger_slot)
@@ -344,7 +344,7 @@ func tucks_unlocked() -> bool:
 
 
 ## The card a trigger would pull: an old pocket seal card if one is still set, else the
-## socket's own card (22 GDD R5), or null.
+## socket's own card (24 GDD R5), or null.
 func card_for_trigger(trigger_slot: int) -> ScribeCardResource:
 	if loadout == null:
 		return null
@@ -552,7 +552,7 @@ func _on_sign_flow_cast(socket: int, _scribe_sign: int) -> void:
 		return
 	var trigger_slot: int = SOCKET_TRIGGERS[socket]
 	if legacy_pocket_card(trigger_slot) == null or not is_trigger_slot_unlocked(trigger_slot):
-		# The seven-card hand (22 GDD R5): the socket's own card is what comes out of the
+		# The seven-card hand (24 GDD R5): the socket's own card is what comes out of the
 		# pouch. Its Sign-Flow cast already coats the weapon, so the pull adds the look alone.
 		var leaf_id: StringName = socket_card_id(socket)
 		if leaf_id != &"":
@@ -583,7 +583,7 @@ func _invoke(trigger_slot: int, charge_pips: bool) -> Dictionary:
 	var primary_id: StringName = loadout.primary_for_trigger(trigger_slot)
 	if trigger_slot == PlayerLoadoutResource.TriggerSlot.L_AND_R and progression_stage < GRAND_INVOCATION_STAGE:
 		primary_id = &""
-	# The seven-card hand (22 GDD R5): with no old pocket card, the pull is the socket's own
+	# The seven-card hand (24 GDD R5): with no old pocket card, the pull is the socket's own
 	# card. It costs what the socket costs (GrimoireRules.ink_cost) and adds no coat of its
 	# own: the card's Sign-Flow cast is the coat.
 	var socket: int = SOCKET_TRIGGERS.find(trigger_slot)

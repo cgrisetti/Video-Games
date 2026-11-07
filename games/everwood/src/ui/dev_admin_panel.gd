@@ -8,26 +8,27 @@
 ##
 ## It gathers the test tools that were scattered over keys and the old top
 ## banner: the debug hero switch (F2), ending a playtest, the Caldera's
-## playtest warp (F9), hosting, joining and leaving a network game (F5, F6,
-## F7), and the lines the banner used to show (the level's hint and keys, the
-## network status). ↑/↓ choose, light (Enter) does it, dodge (Esc) or F1 closes.
+## playtest warp (F9), the telemetry badge with the live score (F4), hosting,
+## joining and leaving a network game (F5, F6, F7), and the lines the banner
+## used to show (the level's hint and keys, the network status). ↑/↓ choose, light (Enter) does it, dodge (Esc) or F1 closes.
 class_name DevAdminPanel
 extends Control
 
 signal closed
 
-enum Tool { DEBUG_NEXT, DEBUG_PREVIOUS, END_PLAYTEST, WARP, HOST, JOIN, LEAVE, CLOSE }
+enum Tool { DEBUG_NEXT, DEBUG_PREVIOUS, END_PLAYTEST, WARP, TELEMETRY, HOST, JOIN, LEAVE, CLOSE }
 const TOOL_NAMES: Array[String] = [
 	"Debug hero: next Calling and level",
 	"Debug hero: previous",
 	"End the playtest (back to the saved level)",
 	"Playtest warp: Miller's Oak ⇄ The Crown",
+	"Telemetry: the live score, mood and stems",
 	"Host a network game",
 	"Join a network game",
 	"Leave the network game",
 	"Close the Developer Tools",
 ]
-const TOOL_KEYS: Array[String] = ["F2 · Share + D-Pad →", "Share + D-Pad ←", "", "F9", "F5", "F6", "F7", "F1 · Esc"]
+const TOOL_KEYS: Array[String] = ["F2 · Share + D-Pad →", "Share + D-Pad ←", "", "F9", "F4", "F5", "F6", "F7", "F1 · Esc"]
 const TITLE: String = "DEVELOPER TOOLS"
 const SUBTITLE: String = "For testing the game: not part of your hero's gear, cards, combos or map. Playtest changes are never saved."
 ## The workbench's look: charcoal, hazard yellow and a typewriter face.
@@ -160,7 +161,7 @@ func tools() -> Array[int]:
 	if PartyProgress.current != null and PartyProgress.current.playtest:
 		offered.append(Tool.END_PLAYTEST)
 	if level is CalderaArchipelagoWorld:
-		offered.append(Tool.WARP)
+		offered.append_array([Tool.WARP, Tool.TELEMETRY])
 	offered.append_array([Tool.HOST, Tool.JOIN, Tool.LEAVE, Tool.CLOSE])
 	return offered
 
@@ -226,6 +227,11 @@ func use(tool: int) -> void:
 			if caldera != null and caldera.may_decide():
 				caldera.playtest_warp()
 				report = "Warped the party."
+		Tool.TELEMETRY:
+			var world: CalderaArchipelagoWorld = level as CalderaArchipelagoWorld
+			if world != null:
+				world.set_telemetry_visible(not world.is_telemetry_visible())
+				report = AudioDirector.current.telemetry_line() if world.is_telemetry_visible() and AudioDirector.current != null else "Telemetry hidden."
 		Tool.HOST:
 			NetworkManager.current.host_game()
 			report = NetworkManager.current.status

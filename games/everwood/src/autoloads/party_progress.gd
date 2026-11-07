@@ -27,7 +27,7 @@ signal progress_changed
 signal card_awarded(copy_key: StringName)
 ## The party reached a new trail level, on every peer (the host then grants its milestone).
 signal trail_level_reached(level: int)
-## A Fellowship's hero reached a new Character Level (22 GDD §2), on every peer.
+## A Fellowship's hero reached a new Character Level (24 GDD §2), on every peer.
 signal character_level_reached(class_id: StringName, level: int)
 
 const SAVE_PATH: String = "user://everwood_progress.cfg"
@@ -43,7 +43,7 @@ const UPGRADE_STEP: float = 0.1
 const MAX_UPGRADE_LEVEL: int = 5
 ## Level n costs this many Chimes times n: 4, 8, 12, 16, 20.
 const UPGRADE_BASE_COST: int = 4
-## Rubbings that draft a missing Plain Ink card at the Scribe Desk (22 GDD R3).
+## Rubbings that draft a missing Plain Ink card at the Scribe Desk (24 GDD R3).
 const DRAFT_RUBBINGS: int = 3
 ## XP the trail pays the party (11 GDD §5.2).
 const XP_PER_MOB: int = 35
@@ -52,7 +52,7 @@ const XP_PER_BOSS: int = 200
 ## Total XP for each level, Level 1 first. One expedition (7 mobs, the
 ## Gorge gate and the Cairnsman: 525 XP) reaches Level 5 at the Gatehouse; the
 ## second reaches Level 10 at the Cairnsman. Levels 11 to 20 (the Caldera's
-## Stages 3 and 4, 22 GDD §2) climb on from there [tuning TBD in 04_BALANCE].
+## Stages 3 and 4, 24 GDD §2) climb on from there [tuning TBD in 04_BALANCE].
 const LEVEL_XP: Array[int] = [0, 70, 105, 230, 320, 560, 700, 800, 850, 1050,
 	1300, 1600, 1950, 2350, 2800, 3300, 3850, 4450, 5100, 5800]
 ## The Bramble-Bridge trail's own top: its milestones stop here, and the older
@@ -80,10 +80,10 @@ var victories: int = 0
 var xp: int = 0
 ## Class id -> that Fellowship's own XP (character_level reads the hero's level
 ## from it). Each seated hero earns what the party earns, so heroes played apart
-## drift apart: a sibling's fresh Fellowship starts at Level 1 (22 GDD §2).
+## drift apart: a sibling's fresh Fellowship starts at Level 1 (24 GDD §2).
 var hero_xp: Dictionary[StringName, int] = {}
 ## Class id -> the material tier (1 to 7) each piece has been promoted to at the
-## Forge (22 GDD §2): PIECE_WEAPON is the weapon and its offhand, PIECE_ARMOR the armour.
+## Forge (24 GDD §2): PIECE_WEAPON is the weapon and its offhand, PIECE_ARMOR the armour.
 var promoted_tiers: Dictionary[StringName, Dictionary] = {}
 ## Tests only (apply_full_endgame_kit_for_testing): new seats wear the classic
 ## full kits. Survives load_save, so a test that reloads its save keeps it.
@@ -97,7 +97,7 @@ var callings: Dictionary[StringName, StringName] = {}
 var seal_hands: Dictionary[StringName, Dictionary] = {}
 ## Encounter id -> Glimmer-Spot openings the party has seen (14 GDD §3, N_seen).
 var pattern_seen: Dictionary[StringName, int] = {}
-## Copy key -> Ink-Binding Marks (22 GDD R3): earned by calming foes while the card is
+## Copy key -> Ink-Binding Marks (24 GDD R3): earned by calming foes while the card is
 ## worn, or by feeding it a spare copy; at ScribeCardResource.MARKS_TO_PRESS it is Ready to Press.
 var ink_marks: Dictionary[StringName, int] = {}
 ## Copy key -> who pressed it ("pressed by P3"), the Scribe's Maker-Seal on the card.
@@ -117,6 +117,11 @@ var drop_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var trail_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## Where progress is saved (the smoke test points this at its own file).
 var save_path: String = SAVE_PATH
+## The tale's hero, named on the title screen's New Game (docs/22; "" for a save from before names).
+var hero_name: String = ""
+## When this tale was begun and last saved (Unix seconds; 0 when unknown).
+var created_unix: int = 0
+var last_played_unix: int = 0
 
 ## True on a client while it shows the host's progress instead of its own.
 var _showing_host: bool = false
@@ -385,7 +390,7 @@ static func gilding_cost(copy_key: StringName) -> int:
 	return ScribeCardResource.GILDING_COSTS[next] if next < ScribeCardResource.GILDING_COSTS.size() else 0
 
 
-## The press finishes an owned card that is Ready to Press (22 GDD R3): Plain Ink to Gilded
+## The press finishes an owned card that is Ready to Press (24 GDD R3): Plain Ink to Gilded
 ## Leaf at 100 Ink-Binding Marks, Gilded Leaf to Star-Ink at 250.
 func can_gild(copy_key: StringName) -> bool:
 	var listed: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key))
@@ -552,7 +557,7 @@ func callings_unlocked() -> bool:
 	return trail_level() >= ArsenalCatalog.CALLING_LEVEL
 
 
-## A Fellowship's hero's Character Level, 1 to 20 (22 GDD §2): what opens its
+## A Fellowship's hero's Character Level, 1 to 20 (24 GDD §2): what opens its
 ## hand's slots, the material tiers it may be promoted to, and its Calling. A
 ## playtest's chosen level stands in for every hero.
 func character_level(class_id: StringName) -> int:
@@ -703,6 +708,19 @@ func award_chimes(amount: int) -> void:
 
 # --- Saving ---------------------------------------------------------------
 
+## Begins a new tale (the title screen's New Game): a fresh Level 1 party in a
+## new save file at `path`, its hero named `hero`, written at once.
+func begin_new_tale(path: String, hero: String) -> Error:
+	end_playtest()
+	endgame_kits_for_testing = false
+	use_save_file(path)
+	hero_name = hero
+	created_unix = int(Time.get_unix_time_from_system())
+	var error: Error = save()
+	progress_changed.emit()
+	return error
+
+
 ## Switches to another save file and loads it.
 func use_save_file(path: String) -> void:
 	save_path = path
@@ -726,8 +744,14 @@ func load_save() -> void:
 	seal_hands.clear()
 	pattern_seen.clear()
 	caldera_flags = 0
+	hero_name = ""
+	created_unix = 0
+	last_played_unix = 0
 	var file: ConfigFile = ConfigFile.new()
 	if file.load(save_path) == OK:
+		hero_name = str(file.get_value("hero", "name", ""))
+		created_unix = maxi(0, int(file.get_value("hero", "created", 0)))
+		last_played_unix = maxi(0, int(file.get_value("hero", "last_played", 0)))
 		# Saves from before the Chimes were called Dojo Shards keep their pouch.
 		chimes = maxi(0, int(file.get_value("party", "chimes", file.get_value("party", "shards", 0))))
 		victories = maxi(0, int(file.get_value("party", "victories", 0)))
@@ -777,6 +801,12 @@ func save() -> Error:
 	if playtest:
 		return OK
 	var file: ConfigFile = ConfigFile.new()
+	last_played_unix = int(Time.get_unix_time_from_system())
+	if hero_name != "":
+		file.set_value("hero", "name", hero_name)
+	if created_unix > 0:
+		file.set_value("hero", "created", created_unix)
+	file.set_value("hero", "last_played", last_played_unix)
 	file.set_value("party", "chimes", chimes)
 	file.set_value("party", "victories", victories)
 	file.set_value("trail", "xp", xp)

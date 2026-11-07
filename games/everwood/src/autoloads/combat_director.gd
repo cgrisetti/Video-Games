@@ -57,7 +57,7 @@ signal ink_shared(support: ActorBase, scribe_sign: int, recipients: Array[ActorB
 signal poise_reflected(defender: ActorBase, attacker: ActorBase, poise: float)
 
 ## Phase B impact freeze (02_COMBAT_GDD.md §2); each action scales it.
-## Heroes within this many metres of a calmed foe catch its Ink-Drops (22 GDD R2).
+## Heroes within this many metres of a calmed foe catch its Ink-Drops (24 GDD R2).
 const INK_REFILL_RADIUS: float = 25.0
 const BASE_HIT_STOP: float = 0.06
 ## Sakurai hit-stop by kind of blow (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §4.2,
@@ -175,7 +175,7 @@ func unregister_actor(actor: ActorBase) -> void:
 
 
 ## The trail's XP for a fallen foe (ActorBase.trail_xp: +35 a mob, +200 a boss). The host awards it.
-## Calming it also pours Ink-Drops back into the wells of the heroes near it (22 GDD R2):
+## Calming it also pours Ink-Drops back into the wells of the heroes near it (24 GDD R2):
 ## +1 for a plain foe, +2 for a Rare, +3 for a Great-Boggart (an Elite or a boss).
 func _on_enemy_down(enemy: ActorBase) -> void:
 	PartyProgress.current.award_xp(enemy.trail_xp())
@@ -191,7 +191,7 @@ func _on_enemy_down(enemy: ActorBase) -> void:
 		PartyProgress.current.add_rubbing()
 
 
-## Host: Ink-Binding Marks for every card the heroes near a calm wear (22 GDD R3): the
+## Host: Ink-Binding Marks for every card the heroes near a calm wear (24 GDD R3): the
 ## three socket cards (in their finishes), the Tuck and the three Seals.
 func _award_marks_near(near: Vector3, marks: int) -> void:
 	for member: ActorBase in party_actors():
@@ -230,7 +230,7 @@ func refill_ink(drops: float, near: Vector3 = Vector3.ZERO, radius: float = 0.0)
 
 
 ## A raid boss staggered, a gate cracked, or a PARRY & STRIKE! landed on its roar:
-## the boss sheds agitation motes, +2 Ink-Drops to every hero (22 GDD R2).
+## the boss sheds agitation motes, +2 Ink-Drops to every hero (24 GDD R2).
 func _on_boss_beat(_value: Variant = null) -> void:
 	refill_ink(GrimoireRules.REFILL_BOSS_BEAT)
 
@@ -1100,7 +1100,7 @@ func reward(target: ActorBase, pips: float, stamina: float = 0.0) -> void:
 ## owner refreshes its own; no threat, no healer's pips).
 func refresh_party() -> void:
 	for member: ActorBase in party_actors():
-		# A Hearth-Brazier fills the Ink-Well too (22 GDD R2).
+		# A Hearth-Brazier fills the Ink-Well too (24 GDD R2).
 		var drops: float = float(member.stats.stats.max_resonance_pips) if member.stats.uses_ink_well() else 0.0
 		var event: CombatEvent = _reward_event(member, drops, member.stats.stats.max_stamina)
 		event.heal = member.stats.stats.max_health

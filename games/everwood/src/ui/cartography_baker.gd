@@ -324,11 +324,12 @@ static func quest_goals() -> Array[Dictionary]:
 			goals.append({"isle": isle.isle_id, "place": "%s's Beacon" % isle.display_name, "label": "Quest: light %s's Beacon" % isle.display_name})
 	if not goals.is_empty() or not state.can_land_on_crown():
 		return goals
-	var trial_places: Dictionary[StringName, String] = {CalderaWorldState.TRIAL_ANVIL: "Iron Shore", CalderaWorldState.TRIAL_GALE: "Gale Cliffs",
-		CalderaWorldState.TRIAL_TIDE: "Tide Grottos"}
+	# Each points at its arena (off the Ring Path), named for its shore (docs/23).
+	var trial_places: Dictionary[StringName, Array] = {CalderaWorldState.TRIAL_ANVIL: ["The Trial of the Anvil", "Iron Shore"],
+		CalderaWorldState.TRIAL_GALE: ["The Trial of the Gale", "Gale Cliffs"], CalderaWorldState.TRIAL_TIDE: ["The Trial of the Tide", "Tide Grottos"]}
 	for trial: StringName in CalderaWorldState.TRIALS:
 		if not state.trial_complete(trial):
-			goals.append({"isle": CalderaAtlas.ISLE_THE_CROWN, "place": trial_places[trial], "label": "Quest: the trial at %s" % trial_places[trial]})
+			goals.append({"isle": CalderaAtlas.ISLE_THE_CROWN, "place": trial_places[trial][0], "label": "Quest: the trial at %s" % trial_places[trial][1]})
 	if goals.is_empty() and not state.get_flag(CalderaWorldState.EBB_UNLOCKED):
 		goals.append({"isle": CalderaAtlas.ISLE_THE_CROWN, "place": "The Summit Glade", "label": "Quest: ring the Harmonic Bell together"})
 	return goals

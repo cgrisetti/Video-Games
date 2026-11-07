@@ -30,7 +30,7 @@ const FONT_SIZE: int = 15
 const SMALL_FONT_SIZE: int = 12
 const REFERENCE_SIZE: Vector2 = Vector2(1600.0, 900.0)
 const MIN_FIT: float = 0.45
-## The living storybook atelier look (AtelierTheme, 22 GDD §3), one book with the Binder and the Desk.
+## The living storybook atelier look (AtelierTheme, 24 GDD §3), one book with the Binder and the Desk.
 const BACKDROP: Color = AtelierTheme.BACKDROP
 const EDGE_COLOR: Color = AtelierTheme.GILT
 const SELECTED_COLOR: Color = AtelierTheme.GOLD
@@ -262,7 +262,7 @@ func buy() -> bool:
 			_refuse("Needs %d more Ink-Binding Marks" % short if short > 0 else "Not ready to press")
 			return false
 		_pending_slot = {"copy_key": _finer(choice), "replaces": choice}
-		# The Scribe's Maker-Seal: who pressed it (22 GDD R3).
+		# The Scribe's Maker-Seal: who pressed it (24 GDD R3).
 		var presser: String = actor.display_name().get_slice(" ", 0) if is_instance_valid(actor) else ""
 		progress.request_gild(choice, presser)
 	else:

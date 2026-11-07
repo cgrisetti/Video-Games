@@ -88,7 +88,7 @@ const SOCKET_GRIMOIRE_SLOTS: Array[int] = [-1, GrimoireSlot.SIGNATURE, GrimoireS
 ## Pips a Sign-Flow cast from each socket costs in combat (L's Counter-Brace, R, L+R).
 const SOCKET_PIP_COSTS: Array[float] = [1.0, 1.0, 3.0]
 ## The Gilding Press's price to raise a copy to each finish: Gilded Leaf 50, Star-Inked Vellum 120 Chimes.
-## The Gilding Press no longer sells a finish for Chimes (22 GDD R3): a card is pressed
+## The Gilding Press no longer sells a finish for Chimes (24 GDD R3): a card is pressed
 ## once its Ink-Binding Marks reach MARKS_TO_PRESS for the next finish.
 const GILDING_COSTS: Array[int] = [0, 0, 0]
 ## Ink-Binding Marks a copy needs to be pressed to each finish (Gilded Leaf at 100, Star-Ink at 250).
@@ -183,7 +183,7 @@ const TUCK_SYNERGY_POSTURE_MULT: float = 1.25
 ## Every strike's posture damage, and the hero's stride, times these.
 @export var passive_posture_break_mult: float = 1.0
 @export var passive_move_speed_mult: float = 1.0
-## The Contextual Slot Rule (the Google Doc §3, 22 GDD): the same seal does a
+## The Contextual Slot Rule (the Google Doc §3, 24 GDD): the same seal does a
 ## different job on each piece. SealSlotMask flag -> {"ward": share of a blow of
 ## the card's Sign, "stun": bool, "flat": int, "posture": mult, "stride": mult,
 ## "text": what the Seal Press says}. A slot not listed reads the passive_* above.

@@ -1,0 +1,17 @@
+[gd_resource type="AudioStreamSynchronized" format=3]
+
+[ext_resource type="AudioStream" path="res://assets/audio/music/crown_millers_oak/stem_0_folk_base.ogg" id="1_2dwdd"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/crown_millers_oak/stem_1_pastoral_lead.ogg" id="2_ovavb"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/crown_millers_oak/stem_2_holloway_discord.ogg" id="3_1w2mr"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/crown_millers_oak/stem_3_skirmish_drive.ogg" id="4_pq7p0"]
+
+[resource]
+stream_count = 4
+stream_0/stream = ExtResource("1_2dwdd")
+stream_0/volume = 0.0
+stream_1/stream = ExtResource("2_ovavb")
+stream_1/volume = 0.0
+stream_2/stream = ExtResource("3_1w2mr")
+stream_2/volume = -80.0
+stream_3/stream = ExtResource("4_pq7p0")
+stream_3/volume = -80.0

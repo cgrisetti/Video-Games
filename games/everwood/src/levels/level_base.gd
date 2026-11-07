@@ -157,6 +157,13 @@ func music_world_z(position: Vector3) -> float:
 	return position.z
 
 
+## How a spot leans an Audio Mosaic's moods (16 GDD §7.1): sets `context`'s settled, wild, height
+## and underground, each 0 to 1. AudioDirector adds the hearths nearby, whether the party is
+## standing still or sprinting, and the threat and the fight itself. By default a spot leans nowhere.
+func music_mood_context(_position: Vector3, _context: MusicMoodEngine.Context) -> void:
+	pass
+
+
 ## Whether the HorizonVistaRing's far hills stand round this level (the Caldera Isles have the open sea and their own horizon silhouettes).
 func wants_horizon_ring() -> bool:
 	return true
@@ -703,7 +710,7 @@ func _on_trail_level_reached(level: int) -> void:
 		NetworkManager.current.grant_seat(seat.player_id, kit.to_dict(), calling)
 
 
-## A Fellowship's hero reached a Character Level (22 GDD §2): its heroes re-equip in place on
+## A Fellowship's hero reached a Character Level (24 GDD §2): its heroes re-equip in place on
 ## every peer, so a socket the level just opened (R at 4, L at 6, the Tuck at 11, L+R at 17)
 ## works on the very next press, and its seals grow the same way.
 func _on_character_level_reached(class_id: StringName, level: int) -> void:

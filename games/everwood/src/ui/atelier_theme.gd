@@ -1,4 +1,4 @@
-## The living storybook atelier look for every menu (22_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md
+## The living storybook atelier look for every menu (24_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md
 ## §3, the Everwood Menu Wireframes): dark timber under warm pages, a gilt edge,
 ## lime-wash ink, and the four Ink-Signs in the world doc's colours. The Options
 ## menu, the Grimoire Binder, the Seal Press, the Scribe Desk & Forge and the

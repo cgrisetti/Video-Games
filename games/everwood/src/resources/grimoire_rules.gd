@@ -1,4 +1,4 @@
-## The seven-card hand's rules in one place (22_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md
+## The seven-card hand's rules in one place (24_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md
 ## §1, the Creative Director's rulings of 2026-11-06), read by the composer, the
 ## seal component, the HUD, the Binder, the Seal Press and the host's checks:
 ##

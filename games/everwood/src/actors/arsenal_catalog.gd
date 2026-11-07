@@ -39,7 +39,7 @@ static var current: ArsenalCatalog
 ## Card resources saved as .tres files here are registered at startup too.
 const CARD_FOLDER: String = "res://data/cards/"
 ## Odds of a chest card being a Plain Vellum, Gilded Leaf or Star-Inked Vellum copy.
-## A dropped card's finish (22 GDD R3): nine in ten Plain Ink, one in ten Gilded Leaf;
+## A dropped card's finish (24 GDD R3): nine in ten Plain Ink, one in ten Gilded Leaf;
 ## Star-Ink never drops, it is pressed.
 const VARIANT_ODDS: Array[float] = [0.9, 0.1, 0.0]
 
@@ -268,7 +268,7 @@ const SEAL_CHIME_COST: int = 40
 ## R tuck (by ClassLoadoutResource.Role). Each slot's card is the Fellowship's starting seal there,
 ## which the bench always offers in that slot (like a starter Ink Card, it needs no copy).
 const ROLE_SEAL_HANDS: Dictionary[int, Array] = {
-	# Weapon, offhand and mantle: three different seals (22 GDD R5). The four pocket slots
+	# Weapon, offhand and mantle: three different seals (24 GDD R5). The four pocket slots
 	# are empty: the L, R and L+R cards live in the kit's sockets now.
 	ClassLoadoutResource.Role.TANK: [CARD_OLD_ROOT_BASTION, CARD_QUIET_WEIR, CARD_WEST_WIND_PROMISE, &"", &"", &"", &""],
 	ClassLoadoutResource.Role.HEALER: [CARD_WEST_WIND_PROMISE, CARD_EMBER_BOUGH, CARD_QUIET_WEIR, &"", &"", &"", &""],
@@ -2101,7 +2101,7 @@ func _place(id: StringName, label: String, scribe_sign: Sign, landmark: StringNa
 
 ## Each tier's names, bands, flat numbers and shader recipe, from the Google
 ## Doc's master table (§2): weapons in archetype order (sword and buckler, maul,
-## bow, staff), the offhand each seals (the maul's Pommel-Knot, 22 GDD R6),
+## bow, staff), the offhand each seals (the maul's Pommel-Knot, 24 GDD R6),
 ## armour by weight, Armor Guard by weight, and the recipe. Tier 7's light
 ## mantle reads "Star-Ink Great-Mantle" (Gate 6 retired "Vellum"), and its
 ## shield the Heart-Crag Bulwark (the Creative Director's ruling for "Aegis").

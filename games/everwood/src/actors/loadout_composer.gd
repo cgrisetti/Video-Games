@@ -18,7 +18,7 @@
 ##
 ## It also holds the Grimoire's rules (what a kit may hold), which the Binder and
 ## the Scribe Desk follow and the host checks again. Since the seven-card hand
-## (22 GDD R4, R5) a hero's own Character Level opens its sockets: R at Lv 4, L
+## (24 GDD R4, R5) a hero's own Character Level opens its sockets: R at Lv 4, L
 ## at 6, L+R at 17, and one Tuck (an under-card beneath R or L+R) at 11; a
 ## locked socket plays the weapon's own flourish. Grimoire Memory is gone. The
 ## older checks' classic full kits (GrimoireRules.all_open) keep the old rules.
@@ -119,7 +119,7 @@ static func hero_level(class_id: StringName) -> int:
 	return PartyProgress.current.character_level(class_id) if PartyProgress.current != null else PartyProgress.MAX_CHARACTER_LEVEL
 
 
-## The kit as a hero of `level` may wear it (22 GDD R4): a socket the level hasn't
+## The kit as a hero of `level` may wear it (24 GDD R4): a socket the level hasn't
 ## opened holds no card, and the one Tuck sits under R or L+R from Lv 11 (R's
 ## first if both were set). The Forward and Back cards are the Fellowship's
 ## stance moves and keep no under-card. Unchanged under the classic full kits.
@@ -330,7 +330,7 @@ static func kit_problem(player_class: PlayerClassResource, kit: EquipmentLoadout
 		if used > capacity:
 			return "Needs %d Grimoire Memory (Lv %d holds %d)" % [used, level, capacity]
 		return ""
-	# The seven-card hand (22 GDD R4, R5): one card per socket, one Tuck, seven different titles.
+	# The seven-card hand (24 GDD R4, R5): one card per socket, one Tuck, seven different titles.
 	var twice: StringName = GrimoireRules.duplicate_title(socket_cards(kit))
 	if twice != &"":
 		var worn_twice: ScribeCardResource = catalog.card(twice)
@@ -338,7 +338,7 @@ static func kit_problem(player_class: PlayerClassResource, kit: EquipmentLoadout
 	return ""
 
 
-# --- The Ink-Well (22 GDD R1) -----------------------------------------------
+# --- The Ink-Well (24 GDD R1) -----------------------------------------------
 
 ## A hero in play runs on the Ink-Well: the well as deep as its stage (and Wise Hand)
 ## allows, R's card costing 1 drop (2 for a mid-tier card or under its Tuck) and

@@ -5,8 +5,34 @@
 ## AudioDirector plays them: the acoustic stems tools/build_audio_stems.py bakes
 ## (res://assets/audio/music/<profile_id>/), otherwise ProceduralChamberSynth's
 ## physical-model rendition of the same score.
+##
+## A zone with mosaic_cells is a Chamber-Folk Audio Mosaic (16 §7): instead of one
+## loop it has twelve four-bar phrase cells, two in each of the six moods, and
+## MusicMoodEngine picks the next one at every phrase boundary, so the tune, its
+## chords and its lead voice keep changing. Each cell still has the four stems.
 class_name ZoneMusicProfileResource
 extends Resource
+
+## The six composed moods of a mosaic (16 §7.1), in suite order of the brief.
+enum MoodState {
+	WONDER = 0,      ## Hisaishi's skyward lift: Lydian, soaring sixths and octaves
+	INTEREST = 1,    ## the jaunty bustle: secondary dominants over a walking bass
+	MELLOW = 2,      ## late-afternoon sway: warm Ionian / Mixolydian in parallel sixths
+	PEACE = 3,       ## Shore's hearth: pentatonic over an open-fifth drone, then the silence breath
+	CURIOSITY = 4,   ## a two-part woodwind invention: Dorian, ending on a question
+	ANXIOUSNESS = 5  ## Into the Unknown: harmonic minor and a diminished seventh, the discord stem up
+}
+const MOOD_COUNT: int = 6
+const MOOD_NAMES: Array[String] = ["WONDER", "INTEREST", "MELLOW", "PEACE", "CURIOSITY", "ANXIOUSNESS"]
+
+## The four Hisaishi Quartet voicings a cell's lead is carried by (16 §7.2).
+enum LeadVoice {
+	OCEAN_VIEW = 0,         ## Variation A: pizzicato strings and accordion lead, bassoon counter-melody
+	SKY_SOAR = 1,           ## Variation B: legato violin (or cello) in sixths over guitar and harp
+	WOODWIND_DIALOGUE = 2,  ## Variation C: oboe and bassoon call and response over mandolin
+	PASTORAL_HEARTH = 3     ## Variation D: low whistle or recorder over harp and cello fifths
+}
+const VOICE_LETTERS: Array[String] = ["A", "B", "C", "D"]
 
 ## Canonical tuning constants (Godot 4.7.2 verified)
 const DEFAULT_BPM: float = 108.0
@@ -78,6 +104,53 @@ const STEM_COUNT: int = 4
 @export var melody_skips_degrees: PackedInt32Array = PackedInt32Array()
 ## The lead stem's voice: &"WHISTLE", &"ACCORDION", &"VIOLIN" or &"REED".
 @export var lead_timbre: StringName = &"ACCORDION"
+
+@export_group("Audio Mosaic (16 §7)")
+## The zone's phrase cells; empty for a classic single-loop score.
+@export var mosaic_cells: Array[MosaicCellResource] = []
+## Bars in one phrase cell (every cell of a zone is this long).
+@export var phrase_bars: int = 4
+## The cell the zone opens on when the party arrives with nothing chosen yet.
+@export var opening_cell: int = 0
+
+
+## A mood's name ("WONDER") for logs and the F4 line.
+static func mood_name(mood: int) -> String:
+	return MOOD_NAMES[mood] if mood >= 0 and mood < MOOD_NAMES.size() else "-"
+
+
+## A voicing's letter and instruments ("Var B: Violin/Harp").
+static func voice_name(voice: int, label: String) -> String:
+	return "Var %s: %s" % [VOICE_LETTERS[voice] if voice >= 0 and voice < VOICE_LETTERS.size() else "?", label]
+
+
+func is_mosaic() -> bool:
+	return not mosaic_cells.is_empty()
+
+
+## One phrase cell, in seconds.
+func cell_sec() -> float:
+	return bar_sec() * phrase_bars
+
+
+func cell(index: int) -> MosaicCellResource:
+	return mosaic_cells[index] if index >= 0 and index < mosaic_cells.size() else null
+
+
+## The index of a cell by id (-1 if it isn't one of this zone's).
+func cell_index(id: StringName) -> int:
+	for index: int in mosaic_cells.size():
+		if mosaic_cells[index].cell_id == id:
+			return index
+	return -1
+
+
+## The cell that follows `index` when nothing chooses (the suite order).
+func fallback_after(index: int) -> int:
+	var made: MosaicCellResource = cell(index)
+	if made == null:
+		return 0
+	return made.fallback_next if made.fallback_next >= 0 else (index + 1) % mosaic_cells.size()
 
 
 ## Seconds per quarter note.

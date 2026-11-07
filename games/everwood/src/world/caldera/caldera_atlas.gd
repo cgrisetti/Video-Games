@@ -120,7 +120,7 @@ static func _ensure() -> void:
 	if not _isles.is_empty():
 		return
 	_isle(ISLE_OAKSHIRE_HOLM, "Miller's Oak", "South", 1, 6, ScribeSignResource.Sign.SIGN_WARM_HEARTH, "", 12, Vector2(0.0, 1600.0),
-		"Hearthstead Market", "Windmill", "Old Quay Market", &"", "", WorldVisualCatalog.OAKSHIRE_WICK, &"oakshire_vale",
+		"Hearthstead Market", "Windmill", "Old Quay Market", &"", "", WorldVisualCatalog.OAKSHIRE_WICK, &"millers_holm",
 		Color(0.96, 0.78, 0.36))
 	_isle(ISLE_IRON_NESS, "Iron-Ness", "West", 6, 10, ScribeSignResource.Sign.SIGN_IRON_ROOT, "Shield-Sworn", 12, Vector2(-1650.0, 350.0),
 		"Forge-Gorge", "Forge Stacks", "Raid Gate A: the Under-Forge Abyss", CalderaWorldState.BEACON_IRON, "Iron Current",
@@ -131,9 +131,11 @@ static func _ensure() -> void:
 	_isle(ISLE_RIME_FIRTH, "Rime-Firth", "North", 10, 14, ScribeSignResource.Sign.SIGN_RIME_GALE, "Wayfarers", 12, Vector2(100.0, -1600.0),
 		"Gale-Hall", "Snow Peak", "Raid Gate B: the Frost-Peak Aerie", CalderaWorldState.BEACON_GALE, "Gale Current",
 		WorldVisualCatalog.GULL_WICK_HAVEN, &"dover_slap_falls", Color(0.48, 0.72, 0.92))
+	# The Crown plays its Audio Mosaic all over the isle (docs/16 §7, Clay's choice of 2026-11-06); a profile
+	# that isn't a mosaic here brings back its five shore suites (docs/23 §7, CrownHeartCragBuilder.music_at).
 	_isle(ISLE_THE_CROWN, "The Crown", "Centre", 15, 20, ScribeSignResource.Sign.NONE, "", 8, Vector2.ZERO,
 		"Lantern-Bearers' Waypost", "World-Tree", "The Sea-Door to the Heart", &"", "",
-		WorldVisualCatalog.SUNKEN_CROWN_FALLS, &"cairnsmans_vigil", Color(0.98, 0.84, 0.42))
+		WorldVisualCatalog.SUNKEN_CROWN_FALLS, &"crown_island", Color(0.98, 0.84, 0.42))
 	_seam(SEAM_WEST_STRAIT, "The West Strait", LoadSeamResource.SeamSkin.WALKABLE_CAUSEWAY, false,
 		ISLE_OAKSHIRE_HOLM, Vector3(-600.0, 1.0, -96.0), ISLE_IRON_NESS, Vector3(250.0, 1.0, 512.0),
 		CalderaWorldState.ROOT_SANCTUM_CLEARED, LANES_DARK_LINE)

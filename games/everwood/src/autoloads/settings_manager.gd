@@ -4,7 +4,7 @@
 ##   Audio      the main, music, effects and ambience volumes (an amplifier at
 ##              the end of each of AudioDirector's buses, so its own ducking stays its own)
 ##   Video      window or full screen, vertical sync, a frame cap, the 3D render
-##              scale, the cameras' field of view, and (22 GDD §2, the Options
+##              scale, the cameras' field of view, and (24 GDD §2, the Options
 ##              wireframe) how far you see, how thick the grass and flowers grow
 ##              and how sharp the hand-painted textures draw
 ##   Controls   invert Y (stick and mouse), camera speed, mouse sensitivity and
@@ -13,7 +13,7 @@
 ##              you steer sideways or back, stop, or press it again), enemy
 ##              level badges, the camera's push on a Sign-Flow cast, and the
 ##              numbers that pop off a hit, the rhyme ribbon's size and the
-##              INK READY border (22 GDD §2)
+##              INK READY border (24 GDD §2)
 ## Settings belong to the machine, not to a player or the family's progress.
 ## The smoke test points them at its own scratch file (use_settings_file).
 class_name SettingsManager
@@ -93,7 +93,7 @@ static var current: SettingsManager
 @export var damage_numbers: bool = true
 @export var rhyme_ribbon_size: RibbonSize = RibbonSize.NORMAL
 @export var ink_ready_border: bool = true
-# --- Video, the world (22 GDD §2) ---
+# --- Video, the world (24 GDD §2) ---
 @export var world_detail: WorldDetail = WorldDetail.FULL
 @export var grass_density: GrassDensity = GrassDensity.LOTS
 @export var craft_textures: CraftTextures = CraftTextures.SHARP
