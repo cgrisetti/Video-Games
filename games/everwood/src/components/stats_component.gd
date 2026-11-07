@@ -38,6 +38,9 @@ func setup(base_stats: CharacterStatsResource) -> void:
 	health = stats.max_health
 	stamina = stats.max_stamina
 	poise = stats.max_poise
+	# A hero starts the day with a full Ink-Well (rested at a Hearth-Brazier).
+	if stats.ink_well:
+		resonance_charge = float(stats.max_resonance_pips)
 	resonance_charge = 0.0
 	is_downed = false
 	knockdown_time_left = 0.0
@@ -115,11 +118,31 @@ func resonance_pips() -> int:
 
 
 func add_resonance(amount: float) -> void:
+	# The Ink-Well (22 GDD R1): a swing, a heal or a flow never fills it; spending still drains it.
+	if stats.ink_well and amount > 0.0:
+		return
 	var cap: float = float(stats.max_resonance_pips)
 	if amount > 0.0:
 		amount *= stats.resonance_gain_multiplier
 	resonance_charge = clampf(resonance_charge + amount, 0.0, cap)
 	resonance_changed.emit(resonance_pips(), resonance_charge)
+
+
+## Ink-Drops back into the well (22 GDD R2): a calmed foe, a boss's stagger or gate, a
+## Hearth-Brazier, a friend's gift. Without the Ink-Well it is a plain pip reward.
+func add_ink(drops: float) -> void:
+	if drops <= 0.0:
+		return
+	if not stats.ink_well:
+		add_resonance(drops)
+		return
+	resonance_charge = clampf(resonance_charge + drops, 0.0, float(stats.max_resonance_pips))
+	resonance_changed.emit(resonance_pips(), resonance_charge)
+
+
+## Whether this actor runs on the Ink-Well (a hero in play) rather than the old pips.
+func uses_ink_well() -> bool:
+	return stats != null and stats.ink_well
 
 
 # --- Guard and i-frames ---------------------------------------------------

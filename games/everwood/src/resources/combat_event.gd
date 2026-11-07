@@ -24,6 +24,8 @@ var threat: float = 0.0
 var heal: float = 0.0
 ## Resonance pips granted (REWARD).
 var resonance: float = 0.0
+## A REWARD's resonance is Ink-Drops back into the well (22 GDD R2), not a swing's pip.
+var ink_refill: bool = false
 ## Stamina restored (REWARD: Astral Chorus).
 var stamina: float = 0.0
 ## A heal's Hearth Echo: this share bounces on to the next most hurt ally.
@@ -151,6 +153,7 @@ func to_dict() -> Dictionary:
 		"threat": threat,
 		"heal": heal,
 		"resonance": resonance,
+		"ink_refill": ink_refill,
 		"stamina": stamina,
 		"echo": echo,
 		"primer": primer,
@@ -178,6 +181,7 @@ static func from_dict(data: Dictionary) -> CombatEvent:
 	event.threat = float(data.get("threat", 0.0))
 	event.heal = float(data.get("heal", 0.0))
 	event.resonance = float(data.get("resonance", 0.0))
+	event.ink_refill = bool(data.get("ink_refill", false))
 	event.stamina = float(data.get("stamina", 0.0))
 	event.echo = float(data.get("echo", 0.0))
 	event.primer = int(data.get("primer", ScribeSignResource.Sign.NONE))

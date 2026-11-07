@@ -357,6 +357,8 @@ func counter_brace() -> bool:
 	if not enabled or kit == null or kit.guard_leaf_id == &"":
 		return false
 	var cost: float = ScribeCardResource.SOCKET_PIP_COSTS[Socket.GUARD]
+	if actor.stats.uses_ink_well():
+		cost = float(GrimoireRules.ink_cost(GrimoireRules.SOCKET_L, ArsenalCatalog.current.card(kit.guard_leaf_id), false))
 	if actor.stats.resonance_charge < cost:
 		return false
 	actor.stats.add_resonance(-cost)

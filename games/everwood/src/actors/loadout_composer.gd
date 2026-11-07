@@ -96,6 +96,7 @@ static func compose(player_class: PlayerClassResource, requested: EquipmentLoado
 		if under != null and under.is_under():
 			apply_under(action, under)
 		cards.append(action)
+	_apply_ink_well(loadout, kit, cards, player_class)
 	_link_flows(lights, heavy, cards)
 	for action: CombatActionResource in lights + [heavy] + cards:
 		_apply_calling(action, player_class)
@@ -335,6 +336,27 @@ static func kit_problem(player_class: PlayerClassResource, kit: EquipmentLoadout
 		var worn_twice: ScribeCardResource = catalog.card(twice)
 		return "%s is already in another socket" % (worn_twice.display_name if worn_twice != null else String(twice))
 	return ""
+
+
+# --- The Ink-Well (22 GDD R1) -----------------------------------------------
+
+## A hero in play runs on the Ink-Well: the well as deep as its stage (and Wise Hand)
+## allows, R's card costing 1 drop (2 for a mid-tier card or under its Tuck) and
+## L+R's 3. Unchanged under the classic full kits the older checks use.
+static func _apply_ink_well(loadout: ClassLoadoutResource, kit: EquipmentLoadoutResource, cards: Array[CombatActionResource],
+		player_class: PlayerClassResource) -> void:
+	if GrimoireRules.all_open() or PartyProgress.current == null:
+		return
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var level: int = hero_level(player_class.class_id)
+	loadout.stats.ink_well = true
+	loadout.stats.max_resonance_pips = GrimoireRules.well_depth(PlayerLoadoutResource.stage_for_true_level(level), player_class.bonus_memory > 0)
+	const Slot = ScribeCardResource.GrimoireSlot
+	var r_card: ScribeCardResource = catalog.card(kit.lead_ids[Slot.SIGNATURE])
+	if r_card != null:
+		cards[Slot.SIGNATURE].resonance_cost = GrimoireRules.ink_cost(GrimoireRules.SOCKET_R, r_card, kit.under_ids[Slot.SIGNATURE] != &"")
+	if catalog.card(kit.lead_ids[Slot.ULTIMATE]) != null:
+		cards[Slot.ULTIMATE].resonance_cost = GrimoireRules.COST_GRAND
 
 
 # --- Building actions -----------------------------------------------------

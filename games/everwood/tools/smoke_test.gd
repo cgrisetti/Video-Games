@@ -139,6 +139,8 @@ const TEST_SETTINGS_PATH: String = "user://smoke_test_settings.json"
 const EQUIPMENT_GRIMOIRE_CHECKS: GDScript = preload("res://tools/test_equipment_grimoire_suite.gd")
 ## The Binder's stamping bench (tools/test_seal_bench.gd): choosing, saving, syncing and refusing a Seal-and-Tuck hand.
 const SEAL_BENCH_CHECKS: GDScript = preload("res://tools/test_seal_bench.gd")
+## The seven-card hand and the Ink-Well (tools/test_ink_well.gd, 22 GDD R1-R5).
+const INK_WELL_CHECKS: GDScript = preload("res://tools/test_ink_well.gd")
 var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
 
@@ -243,6 +245,8 @@ func _run() -> void:
 	await EQUIPMENT_GRIMOIRE_CHECKS.new().run(self, _check)
 	# The Binder's stamping bench, last.
 	await SEAL_BENCH_CHECKS.new().run(self, _check)
+	# The seven-card hand's rules and the Ink-Well, last.
+	await INK_WELL_CHECKS.new().run(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 	SaveManager.remove(TEST_SETTINGS_PATH)
 
@@ -1899,13 +1903,15 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 	_check(queue.winded and is_equal_approx(queue.recovery_time, ActorBase.STATIC_MASH_RECOVERY_MS / 1000.0),
 		"the third Light in place is winded: 550 ms of recovery")
 	var stamina_before: float = tank.stats.stamina
+	var ink_before: float = tank.stats.resonance_charge
 	var charge_from: Vector3 = tank.global_position
 	tank.input.inject_command(Cmd.FORWARD_HEAVY)
 	await _seconds(1.0)
 	var charge_cost: float = tank.loadout.opener_for(Cmd.FORWARD_HEAVY).stamina_cost
 	_check(pulses.has(Cmd.FORWARD_HEAVY) and is_equal_approx(tank.stats.stamina, stamina_before - charge_cost + ActorBase.FLOW_LINK_STAMINA_REFUND)
-		and is_equal_approx(tank.stats.resonance_charge, ActorBase.FLOW_LINK_BONUS_PIP) and _flat(tank.global_position - charge_from) >= ActorBase.STEP_FORWARD_HEAVY_M,
-		"weaving Forward+Heavy into its first 220 ms is a Flow-Link Pulse: +8 stamina, +0.15 pip, and a %.1f m charge" % _flat(tank.global_position - charge_from))
+		and is_equal_approx(tank.stats.resonance_charge, ink_before if tank.stats.uses_ink_well() else ActorBase.FLOW_LINK_BONUS_PIP)
+		and _flat(tank.global_position - charge_from) >= ActorBase.STEP_FORWARD_HEAVY_M,
+		"weaving Forward+Heavy into its first 220 ms is a Flow-Link Pulse: +8 stamina (and no Ink-Drop: swings never fill the Ink-Well), and a %.1f m charge" % _flat(tank.global_position - charge_from))
 	tank.action_queue.flow_link_pulsed.disconnect(pulse_hook)
 
 	# The Braced Front Guard: three frontal hits raise it; the front takes 30%; a flank breaks it.
@@ -2009,7 +2015,8 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 	network.update_local_kit(tank.device_id, tank_kit.to_dict())
 	_face_boss(dps, Vector3(1.5, 0.0, 8.0))
 	_face_boss(tank, Vector3(0.0, 0.0, 3.6))
-	dps.stats.resonance_charge = 1.0
+	# Rime-Lash with its Tuck costs 2 Ink-Drops (22 GDD R1); the old pips paid 1.
+	dps.stats.resonance_charge = float(dps.loadout.opener_for(Cmd.TRIGGER_R_SKILL).resonance_cost)
 	tank.stats.resonance_charge = 0.0
 	dps.input.inject_command(Cmd.TRIGGER_R_SKILL)
 	await _seconds(0.25)

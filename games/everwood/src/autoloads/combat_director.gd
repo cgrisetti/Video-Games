@@ -57,6 +57,8 @@ signal ink_shared(support: ActorBase, scribe_sign: int, recipients: Array[ActorB
 signal poise_reflected(defender: ActorBase, attacker: ActorBase, poise: float)
 
 ## Phase B impact freeze (02_COMBAT_GDD.md §2); each action scales it.
+## Heroes within this many metres of a calmed foe catch its Ink-Drops (22 GDD R2).
+const INK_REFILL_RADIUS: float = 25.0
 const BASE_HIT_STOP: float = 0.06
 ## Sakurai hit-stop by kind of blow (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §4.2,
 ## Layer 1): a Light, a Heavy or Un-Inked Flourish, an inked card, a Sign
@@ -154,6 +156,12 @@ func register_actor(actor: ActorBase) -> void:
 			_bosses.append(actor)
 		if not actor.went_down.is_connected(_on_enemy_down):
 			actor.went_down.connect(_on_enemy_down)
+		if actor.is_raid_boss() and actor.stats != null and not actor.stats.poise_broken.is_connected(_on_boss_beat):
+			actor.stats.poise_broken.connect(_on_boss_beat)
+			for gate: BossGateComponent in actor.find_children("*", "BossGateComponent", true, false):
+				gate.gate_entered.connect(_on_boss_beat)
+				gate.aegis_shattered.connect(_on_boss_beat)
+				gate.seal_turned.connect(_on_boss_beat)
 	else:
 		_actors[actor.player_id] = actor
 
@@ -167,8 +175,38 @@ func unregister_actor(actor: ActorBase) -> void:
 
 
 ## The trail's XP for a fallen foe (ActorBase.trail_xp: +35 a mob, +200 a boss). The host awards it.
+## Calming it also pours Ink-Drops back into the wells of the heroes near it (22 GDD R2):
+## +1 for a plain foe, +2 for a Rare, +3 for a Great-Boggart (an Elite or a boss).
 func _on_enemy_down(enemy: ActorBase) -> void:
 	PartyProgress.current.award_xp(enemy.trail_xp())
+	if NetworkManager.current.is_host() and is_instance_valid(enemy):
+		var rank: String = EnemyNameplate.rank_of(enemy)
+		var drops: int = GrimoireRules.REFILL_CALM
+		if rank == "Rare":
+			drops = GrimoireRules.REFILL_CALM_RARE
+		elif rank == "Elite" or rank == "Boss":
+			drops = GrimoireRules.REFILL_GREAT_BOGGART
+		refill_ink(drops, enemy.global_position, INK_REFILL_RADIUS)
+
+
+## Host: Ink-Drops into the well of every hero within `radius` of `near` (every hero when 0).
+func refill_ink(drops: float, near: Vector3 = Vector3.ZERO, radius: float = 0.0) -> void:
+	if not NetworkManager.current.is_host() or drops <= 0.0:
+		return
+	for member: ActorBase in party_actors():
+		if not is_instance_valid(member) or not member.stats.uses_ink_well():
+			continue
+		if radius > 0.0 and member.global_position.distance_to(near) > radius:
+			continue
+		var event: CombatEvent = _reward_event(member, drops)
+		event.ink_refill = true
+		deliver(event)
+
+
+## A raid boss staggered, a gate cracked, or a PARRY & STRIKE! landed on its roar:
+## the boss sheds agitation motes, +2 Ink-Drops to every hero (22 GDD R2).
+func _on_boss_beat(_value: Variant = null) -> void:
+	refill_ink(GrimoireRules.REFILL_BOSS_BEAT)
 
 
 func get_actor(player_id: StringName) -> ActorBase:
@@ -443,7 +481,10 @@ func _apply(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
 		CombatEvent.Kind.REWARD:
 			if event.heal > 0.0:
 				target.receive_heal(event.heal)
-			target.stats.add_resonance(event.resonance)
+			if event.ink_refill:
+				target.stats.add_ink(event.resonance)
+			else:
+				target.stats.add_resonance(event.resonance)
 			target.stats.restore_stamina(event.stamina)
 		CombatEvent.Kind.THREAT:
 			if target.threat != null:
@@ -1030,8 +1071,11 @@ func reward(target: ActorBase, pips: float, stamina: float = 0.0) -> void:
 ## owner refreshes its own; no threat, no healer's pips).
 func refresh_party() -> void:
 	for member: ActorBase in party_actors():
-		var event: CombatEvent = _reward_event(member, 0.0, member.stats.stats.max_stamina)
+		# A Hearth-Brazier fills the Ink-Well too (22 GDD R2).
+		var drops: float = float(member.stats.stats.max_resonance_pips) if member.stats.uses_ink_well() else 0.0
+		var event: CombatEvent = _reward_event(member, drops, member.stats.stats.max_stamina)
 		event.heal = member.stats.stats.max_health
+		event.ink_refill = drops > 0.0
 		deliver(event)
 
 
