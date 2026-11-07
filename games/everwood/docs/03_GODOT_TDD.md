@@ -6,7 +6,7 @@ The tree as it stands after Phase 18 (pastoral rendering, the living blight, the
 games/everwood/
 ├── CLAUDE.md                           # The engineering contract
 ├── project.godot                       # Main scene: scenes/worlds/oakshire_vale.tscn
-├── docs/                               # 01–18: vision, GDDs, this TDD, balance, the Mythopoetic Lens, audio, world visuals, wayfinding
+├── docs/                               # 01–22: vision, GDDs, this TDD, balance, the Mythopoetic Lens, audio, world visuals, wayfinding, heroes, the Caldera, levels and menus
 ├── scenes/worlds/oakshire_vale.tscn    # Oakshire Vale, the starting world
 ├── data/landblocks/                    # Baked 128 m Landblocks + HLOD proxies + cartography.json (tools/build_*.gd)
 ├── tools/
@@ -148,5 +148,13 @@ Every foe carries one. Its states are plain enums, so saves and RPCs never need 
 - **Kinematics.** `StorybookKinematicsModifier3D` (a GDScript `SkeletonModifier3D`, never `SpringBoneSimulator3D`) reads the pose, adds lean, bank, the winded heave, look-at and the hit-stop tremor, drops the hips on slopes, plants the feet and puts the off hand on a two-hander's `HaftGripMarker` (or the bow hand at the jaw) by two-bone IK, swings the cloak and beard on exact damped springs held outside a body capsule, squashes the hips through a hit-stop, and writes it back. `ActorVisuals` feeds it the velocity, stamina, ground heights (two rays a tick), the grip and the look target.
 - **The solo boot.** `LevelBase.solo_youth_boot` seats the first person as the Wayfarers, Unsworn on the trail kit like any seat; an Unsworn player hero is drawn as the Level 1 youth (`ActorVisuals.is_youth_seat()`, `HeroYouthAtelier`; docs/21). `LevelBase.auto_backfill_companions` gates companion backfill (`--with-companions`, `set_companion_backfill_enabled()`). The Network Manager still knows nothing about classes.
 
-### 2.9 Verification
+### 2.9 Levels, the Forge, the hand and the Atelier menus ([22_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md](22_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md) §5)
+- **Levels.** `PartyProgress.hero_xp` keeps each Fellowship's XP; `character_level(class_id)` (1 to 20) drives the hand, the Ink-Well and the Forge, while `trail_level()` (1 to 10) still paces the Bramble-Bridge trail. `steward_threat()` is Character Level plus the worn material's rank.
+- **The Forge.** `PartyProgress.promoted_tiers` holds each Fellowship's weapon and armour tier; `request_promotion` is host-checked. `ArsenalCatalog.default_seal_loadout(..., use_promotions = true)` builds the live hero's hand on those tiers (capped by level), and a chosen hand keeps its cards but takes the promoted tiers too.
+- **The hand.** `GrimoireRules` is the one table of unlock levels (Seals at 3, 6, 11; R at 4, L at 6, the Tuck at 11, L+R at 17), Ink-Drop costs and well depths. `GrimoireRules.all_open()` (the classic full kits, `PartyProgress.endgame_kits_for_testing`) keeps the older checks on the old rules. Seal cards carry `slot_passives` per piece (the Contextual Slot Rule).
+- **The Ink-Well.** `CharacterStatsResource.ink_well`, `StatsComponent.add_ink` and `CombatDirector.refill_ink` (calm foes by rank, a boss's beats, gifts, a Hearth-Brazier) with `CombatEvent.ink_refill` on the wire.
+- **Finishes.** `PartyProgress.ink_marks`, `ready_to_press`, `maker_seals` and `rubbings`; the Scribery presses, the Scribe Desk drafts.
+- **Menus.** `AtelierTheme` styles the Options menu, the Binder, the Scribe Desk and the Scribery. `SettingsManager` adds `world_detail` (cameras in the `player_cameras` group scale their horizon, `PlayerCamera.set_horizon`), `grass_density` (`ChunkClutterBaker.grass_count`), `craft_textures` (the views' mipmap bias), `damage_numbers`, `rhyme_ribbon_size` and `ink_ready_border`. The Seal Press opens near nodes in the `hearth_braziers` and `scribe_desks` groups.
+
+### 2.10 Verification
 `godot --headless --check-only -s <script>` on every changed script, a headless boot, and `tools/smoke_test.gd` (see the README). `tools/test_mythopoetic_lens.gd` lints every name the game shows against the four Linter Rules, the world's biome and kit names included. `tools/test_world_visuals.gd` checks the storybook world, and `tools/test_hero_rig.gd` the solo boot and the hero rig.

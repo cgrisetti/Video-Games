@@ -75,11 +75,11 @@ the raid board read as one book.
 | M1 | R8 renames in strings and docs; the bible's amendment; the Lens linter's exceptions. (R7's words join the Gate 6 linter in M7, when the menus that print them change.) | done |
 | M2 | Character Level per hero (1 to 20) and Steward Threat. | done |
 | M3 | The Google Doc's 7-tier ladder; promotion at the Forge; the Pommel-Knot. | done |
-| M4 | The seven-card hand: L, R, L+R and one Tuck; level unlocks; one card per slot; the hand's actives become the socket leaves. | |
-| M5 | The Ink-Well: costs, well sizes, refills; pips and Memory retired. | |
-| M6 | Finishes by Ink-Binding Marks and the press. | |
-| M7 | The Atelier menus: the Cross, Binder 1 to 3, the Seal Press, the Desk & Forge, Options rows, the pre-raid loadout. | |
-| M8 | Build notes, README, doc 03 and the doc index. | |
+| M4 | The seven-card hand: L, R, L+R and one Tuck; level unlocks; one card per slot; the hand's actives become the socket leaves. | done |
+| M5 | The Ink-Well: costs, well sizes, refills; pips and Memory retired. | done |
+| M6 | Finishes by Ink-Binding Marks and the press. | done |
+| M7 | The Atelier menus: the Cross, Binder 1 to 3, the Seal Press, the Desk & Forge, Options rows, the pre-raid loadout. | done, but for the pre-raid loadout board and a tab 2 redraw (§5, M7) |
+| M8 | Build notes, README, doc 03 and the doc index. | done |
 
 Status is kept in this table as each step lands, so a fresh session can pick
 up from the first empty row. The work lives on the branch
@@ -110,3 +110,47 @@ milestone" gate isn't wired (the level gate is); the trail's four weapon tiers
 (Apprentice Timber to the Doverslap Relic) still set the combat numbers of the
 Bramble-Bridge trail weapons, and folding them onto the ladder is the next step
 after this phase.
+
+**M4, the seven-card hand.** `GrimoireRules` (`src/resources/grimoire_rules.gd`) holds
+the unlock levels, the costs and the well depths in one place. The hand's L, R and
+L+R are the kit's socket leaves (`LoadoutComposer.socket_cards`); the four pocket
+slots in `PlayerLoadoutResource` stay as fields so old saves read, but nothing opens
+them (`slot_opens_text` says "is in the Cross now"). `LoadoutComposer.gated` clears what
+the hero's level hasn't opened and keeps one Tuck from Lv 11. Every seal card carries
+`slot_passives`, what it does on the weapon, the offhand and the mantle (the Contextual
+Slot Rule), read through `ScribeCardResource.slot_passive`. Deliberate differences:
+the Tuck goes under R or L+R only (the L card has no under-slot in the kit); the
+Forward and Back Heavy cards stay in the kit as the Fellowship's stance moves.
+
+**M5, the Ink-Well.** `CharacterStatsResource.ink_well` turns a hero onto drops:
+hits fill nothing, `StatsComponent.add_ink` and `CombatDirector.refill_ink` pour
+them back (a calm foe 1 or 2, a Great-Boggart 3, a boss's beat 2, a gift 1, a
+Hearth-Brazier fills it), and `GrimoireRules.ink_cost` prices each socket.
+Differences: Homing Heal costs 1 drop; the Astral Chorus gift still pays 0.5 pips
+in the classic full kits.
+
+**M6, finishes.** Worn cards earn Ink-Binding Marks near each calm foe
+(`PartyProgress.award_ink_marks`); a copy with enough Marks is Ready to Press and
+the Scribery presses it to the next finish for no Chimes [CD: confirm a Chime fee],
+keeping its Marks and the presser's Maker-Seal. Calm foes leave rubbings; three
+draft a Plain Ink copy of a missing card. Drop odds are the Google Doc's
+(`VARIANT_ODDS`).
+
+**M7, the Atelier menus.** `AtelierTheme` (`src/ui/atelier_theme.gd`) draws the
+Options menu, the Binder and the Scribe Desk. The Cross HUD shows the Ink-Well's
+beads, ink-dot costs, padlocked sockets with their level, the Tuck peeking under its
+card, the Seal gems and the material tier I to VII. Options adds World detail
+(camera reach as a share of each place's horizon), Grass & flowers (for ground
+baked from then on), Craft textures (the mipmap bias), Damage numbers, Rhyme ribbon
+size, the INK READY border, and each player's help for every seat on the screen.
+Binder tab 1 shows Steward Threat as a sum, what the kit adds up to and each Seal's
+Marks; light there opens the Seal Press at a rest point. Tab 4 is the **Seal Press**:
+three Seal rows with their slot text and Marks, changed only at a Hearth-Brazier or
+the Scribe Desk (anywhere in the classic full kits the older checks use). The Scribe
+Desk drops its card and link rows for Promote weapon & offhand, Promote armour and
+Draft a card. A chosen Seal hand now follows the Forge's promotions too. R7's words
+joined the Gate 6 linter; the screen reads Great-Boggart, Bulwark, Armor Guard,
+Breath Recovery, +Defender and +Striker (the ids and rank keys keep the old words).
+Not built: the trade row (the family shares one binder, so it has nothing to do),
+the pre-raid loadout board at the Quay Brazier, and a full card-bench redraw of
+Binder tab 2 (its fit lines already carry the Tuck and one-card-one-place rules).
