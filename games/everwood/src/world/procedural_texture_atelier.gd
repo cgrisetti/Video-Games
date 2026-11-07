@@ -15,7 +15,9 @@
 ## them into three Texture2DArrays and hands them to every world shader as the
 ## global parameters atelier_albedo, atelier_normal and atelier_roughness.
 ## A curated texture wins: res://assets/textures/world/<id>_albedo.png (and
-## _normal.png, _roughness.png) replaces the generated map of that name.
+## _normal.png, _roughness.png) replaces the generated map of that name. The
+## hand-painted set (tools/paint_atelier_textures.py, docs/24 §3) covers all
+## eight: then the arrays are CURATED_SIZE a side and nothing is generated.
 class_name ProceduralTextureAtelier
 extends RefCounted
 
@@ -25,6 +27,8 @@ const SET_IDS: Array[StringName] = [&"tex_cobbled_flagstone", &"tex_stepped_bric
 	&"tex_scallop_shingle", &"tex_meadow_turf", &"tex_hollow_loam", &"tex_crag_granite"]
 const SIZE: int = 256
 const HEADLESS_SIZE: int = 64
+## The arrays' side when every set has its curated albedo.
+const CURATED_SIZE: int = 1024
 const OVERRIDE_FOLDER: String = "res://assets/textures/world/"
 ## Metres of the world one tile covers (a craft material's triplanar scale is 1 / this).
 const TILE_METRES: Array[float] = [3.0, 2.0, 3.0, 2.0, 2.4, 4.0, 4.0, 5.0]
@@ -57,7 +61,35 @@ const HEATHER: Color = Color("#7B587D")
 
 
 static func size_for_this_run() -> int:
-	return HEADLESS_SIZE if DisplayServer.get_name() == "headless" else SIZE
+	if DisplayServer.get_name() == "headless":
+		return HEADLESS_SIZE
+	return CURATED_SIZE if all_curated() else SIZE
+
+
+## Whether a set has all three of its curated maps.
+static func has_curated(which: int) -> bool:
+	for map: String in MAPS:
+		if not ResourceLoader.exists("%s%s_%s.png" % [OVERRIDE_FOLDER, SET_IDS[which], map]):
+			return false
+	return true
+
+
+## Whether every set is curated (the hand-painted set is in place).
+static func all_curated() -> bool:
+	for which: int in SET_IDS.size():
+		if not has_curated(which):
+			return false
+	return true
+
+
+## A set's maps for a run: nothing to generate when its curated maps will replace them (blank stand-ins).
+static func render_or_blank(which: int, size: int) -> Array[Image]:
+	if has_curated(which) and size > HEADLESS_SIZE:
+		var blank: Array[Image] = []
+		for map: int in MAPS.size():
+			blank.append(Image.create_empty(size, size, true, Image.FORMAT_RGBA8))
+		return blank
+	return render_set(which, size)
 
 
 ## One set's three maps, [albedo, normal, roughness], each RGBA8 with mipmaps. Pure: safe on a worker thread.

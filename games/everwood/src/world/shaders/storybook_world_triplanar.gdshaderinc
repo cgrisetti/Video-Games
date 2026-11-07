@@ -2,7 +2,9 @@
 // its two-sided twin, storybook_world_triplanar_double.gdshader).
 
 #define STORYBOOK_CLOUD_POS v_world_pos
+#define STORYBOOK_RIM
 #include "res://src/world/shaders/storybook_world_common.gdshaderinc"
+#include "res://src/actors/storybook_brush.gdshaderinc"
 
 uniform vec4 albedo : source_color = vec4(1.0);
 // ProceduralTextureAtelier.Set (-1: the plain colour, no texture).
@@ -14,7 +16,9 @@ uniform float normal_strength = 0.6;
 // builder's palette colour reads the same, only crafted. Off: the craft's own colours times the tint.
 uniform bool keep_tint_value = true;
 // How much of the craft texture's own colour shows through the tint (0: only its light and shade).
-uniform float texture_chroma : hint_range(0.0, 1.0) = 0.4;
+uniform float texture_chroma : hint_range(0.0, 1.0) = 0.75;
+// Lived in (docs/24 §2): grime, fading and handled edges over the crafted surface.
+uniform float wear : hint_range(0.0, 1.0) = 0.7;
 // Moss (or heather) on faces looking up, 0 to 1.
 uniform float moss_amount = 0.0;
 uniform vec4 moss_color : source_color = vec4(0.29, 0.451, 0.243, 1.0);
@@ -63,14 +67,15 @@ void fragment() {
 	}
 	float moss = smoothstep(0.65, 0.9, n.y) * smoothstep(0.3, 0.7, world_noise(v_world_pos.xz * 0.45 + v_world_pos.y)) * moss_amount;
 	color = mix(color, moss_color.rgb * (0.85 + 0.3 * world_noise(v_world_pos.xz * 3.1)), moss);
+	color = sb_weather(color, v_world_pos, n, wear, 0.0, length(fwidth(v_world_normal)));
+	v_brush = sb_brush(v_world_pos);
 	vec3 emission = glow.rgb;
 	apply_succession(v_world_pos, color, emission, succession_strength);
 	ALBEDO = color;
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
 	NORMAL = normalize((VIEW_MATRIX * vec4(n, 0.0)).xyz);
-	float facing = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
-	EMISSION = emission + rim_color.rgb * pow(1.0 - facing, rim_power) * rim_strength;
+	EMISSION = emission;
 }
 
 #include "res://src/actors/storybook_cel_light.gdshaderinc"

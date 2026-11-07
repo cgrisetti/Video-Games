@@ -147,7 +147,7 @@ const TEST_SETTINGS_PATH: String = "user://smoke_test_settings.json"
 const EQUIPMENT_GRIMOIRE_CHECKS: GDScript = preload("res://tools/test_equipment_grimoire_suite.gd")
 ## The Binder's stamping bench (tools/test_seal_bench.gd): choosing, saving, syncing and refusing a Seal-and-Tuck hand.
 const SEAL_BENCH_CHECKS: GDScript = preload("res://tools/test_seal_bench.gd")
-## The seven-card hand and the Ink-Well (tools/test_ink_well.gd, 24 GDD R1-R5).
+## The seven-card hand and the Ink-Well (tools/test_ink_well.gd, 25 GDD R1-R5).
 const INK_WELL_CHECKS: GDScript = preload("res://tools/test_ink_well.gd")
 var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
@@ -435,7 +435,7 @@ func _check_arsenal_catalog() -> void:
 		rare_seen = rare_seen or dropped.rarity >= ScribeCardResource.CardRarity.RARE
 		plain_starter = plain_starter or (dropped.starter and variant == ScribeCardResource.CardVariant.STANDARD)
 	_check(seen_variants.has(ScribeCardResource.CardVariant.GILDED_LEAF) and not seen_variants.has(ScribeCardResource.CardVariant.STAR_INKED_VELLUM) and rare_seen and not plain_starter,
-		"boss chests drop Rare and Legendary cards, some as Gilded Leaf, never as Star-Ink (it is pressed, 24 GDD R3) and never a Plain Ink starter card")
+		"boss chests drop Rare and Legendary cards, some as Gilded Leaf, never as Star-Ink (it is pressed, 25 GDD R3) and never a Plain Ink starter card")
 
 
 ## The 3x3 Callings (06 §3, 07 GDD §1.3), without actors: the nine names,
@@ -1268,7 +1268,7 @@ func _check_card_invocations() -> void:
 	var shiny_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK, shiny_kit).card_action(0)
 	var plain_charge: CombatActionResource = ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK).card_action(0)
 	_check(is_equal_approx(shiny_charge.damage, plain_charge.damage * 1.15) and shiny_charge.action_id == plain_charge.action_id,
-		"a finish adds potency (24 GDD R3): a Gilded Leaf Shield Charge hits 15%% harder (%.1f vs %.1f), with the same action id" % [shiny_charge.damage,
+		"a finish adds potency (25 GDD R3): a Gilded Leaf Shield Charge hits 15%% harder (%.1f vs %.1f), with the same action id" % [shiny_charge.damage,
 			plain_charge.damage])
 	tank.re_equip(ClassLoadouts.compose(ClassLoadouts.SHIELD_TANK))
 
@@ -2000,7 +2000,7 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 		"Level 3: a Plain Vellum R card slots into every empty R (Taunt, Rime-Lash); the healer's own pick stays")
 	progress.award_xp(PartyProgress.LEVEL_XP[4] - progress.xp)
 	await _seconds(0.1)
-	# The seven-card hand (24 GDD R4): the L+R card goes into every kit, but its socket opens at Character Level 17.
+	# The seven-card hand (25 GDD R4): the L+R card goes into every kit, but its socket opens at Character Level 17.
 	var seat_kit: Callable = func(hero: ActorBase) -> EquipmentLoadoutResource:
 		return EquipmentLoadoutResource.from_dict(NetworkManager.current.roster[hero.player_id].kit)
 	_check(progress.trail_level() == 5 and tank.loadout.weapon.item_id == ArsenalCatalog.BRAMBLE_FALCHION
@@ -2028,7 +2028,7 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 	network.update_local_kit(tank.device_id, tank_kit.to_dict())
 	_face_boss(dps, Vector3(1.5, 0.0, 8.0))
 	_face_boss(tank, Vector3(0.0, 0.0, 3.6))
-	# Rime-Lash with its Tuck costs 2 Ink-Drops (24 GDD R1); the old pips paid 1.
+	# Rime-Lash with its Tuck costs 2 Ink-Drops (25 GDD R1); the old pips paid 1.
 	dps.stats.resonance_charge = float(dps.loadout.opener_for(Cmd.TRIGGER_R_SKILL).resonance_cost)
 	tank.stats.resonance_charge = 0.0
 	dps.input.inject_command(Cmd.TRIGGER_R_SKILL)
@@ -2447,7 +2447,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 		"charting the Barrow-Crag-Crossing takes 25 Chimes, saves it, and frames L+R in both the shop's diamonds and the HUD's")
 	shop.select_tab(ScriberyShopPanel.Tab.GILD)
 	var on_press: bool = shop.select_option(ArsenalCatalog.TAUNT)
-	# Seasoned in the field (24 GDD R3): not ready yet, then 100 Ink-Binding Marks make it Ready to Press.
+	# Seasoned in the field (25 GDD R3): not ready yet, then 100 Ink-Binding Marks make it Ready to Press.
 	var too_soon: bool = not progress.can_gild(ArsenalCatalog.TAUNT)
 	progress.ink_marks[ArsenalCatalog.TAUNT] = ScribeCardResource.MARKS_TO_PRESS[1]
 	var gilded: bool = shop.buy()
@@ -2985,7 +2985,7 @@ func test_phase_12_miyamoto_posture_trinity_and_grimoire_ux() -> void:
 	var gilded_r: float = LoadoutComposer.compose(dps_class, gilded_kit).opener_for(Cmd.TRIGGER_R_SKILL).damage
 	var star_r: float = LoadoutComposer.compose(dps_class, star_kit).opener_for(Cmd.TRIGGER_R_SKILL).damage
 	_check(plain_r > 0.0 and is_equal_approx(gilded_r, plain_r * 1.15) and is_equal_approx(star_r, plain_r * 1.3),
-		"the press adds potency (24 GDD R3): Gale Rush hits %.1f Plain Ink, %.1f Gilded Leaf (+15%%), %.1f Star-Ink (+30%%)" % [plain_r, gilded_r, star_r])
+		"the press adds potency (25 GDD R3): Gale Rush hits %.1f Plain Ink, %.1f Gilded Leaf (+15%%), %.1f Star-Ink (+30%%)" % [plain_r, gilded_r, star_r])
 	# Gild the DPS's worn Gale Rush at the Scribery: the shop's, the HUD's and the Binder's diamonds all show it.
 	dps.place_at(Transform3D(Basis.IDENTITY, boss.global_position + Vector3(0.0, 0.0, 26.0)))
 	await _seconds(0.1)
@@ -3329,7 +3329,7 @@ func _check_scribe_desk() -> void:
 	await _tap_key(KEY_A)
 	_check(keyboard.loadout.armor.item_id == ArsenalCatalog.RANGER_LEATHER and is_equal_approx(keyboard.loadout.stats.perfect_guard_window, 0.2),
 		"A on the Armor row trades Iron-Wood Ring-Coat for Hedgerow Wool-Mantle (and its 200 ms window)")
-	# The Forge (24 GDD §2): down past the weapon frame to Promote weapon & offhand, then right.
+	# The Forge (25 GDD §2): down past the weapon frame to Promote weapon & offhand, then right.
 	await _tap_key(KEY_S)
 	await _tap_key(KEY_S)
 	var forge: PartyProgress = PartyProgress.current

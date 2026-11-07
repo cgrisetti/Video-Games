@@ -446,7 +446,7 @@ static func _build_biomes() -> void:
 		Vector3i(800, 200, 130), [KIT_TREE_HIGHLAND_PINE, KIT_TREE_MOSS_OAK], [Color(0.55, 0.4, 0.82), Color(0.96, 0.95, 0.9), Color(0.6, 0.78, 0.92)], Color(0.4, 0.58, 0.38))
 	# Oakshire Vale: the village and its five petals.
 	_biome(OAKSHIRE_WICK, "Oakshire-Wick", Sign.SIGN_WARM_HEARTH, TURF, FLAGSTONE, LOAM, GRANITE,
-		Color(1.0, 0.95, 0.86), 1.15, SKY_TOP, SKY_HORIZON, Color(0.9, 0.89, 0.78), 0.0012,
+		Color(1.0, 0.92, 0.78), 1.2, SKY_TOP, SKY_HORIZON, Color(0.86, 0.88, 0.82), 0.0008,
 		Vector3i(1000, 240, 110), [KIT_TREE_MOSS_OAK, KIT_TREE_ORCHARD_APPLE], meadow_flowers, Color(0.42, 0.6, 0.32))
 	_biome(WAYFARER_GREEN, "Wayfarer-Green", Sign.SIGN_RIME_GALE, Color(0.4, 0.58, 0.33), Color(0.8, 0.78, 0.7), LOAM, GRANITE,
 		Color(1.0, 0.97, 0.9), 1.18, Color(0.3, 0.54, 0.78), Color(0.94, 0.92, 0.84), Color(0.86, 0.9, 0.86), 0.0014,

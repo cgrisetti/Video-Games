@@ -62,6 +62,8 @@ class LoadedChunk:
 	var body: StaticBody3D
 	## Species -> Array of Transform3D (for trunk colliders in the window).
 	var scatter: Dictionary = {}
+	## The near landblock's meadow of grass and wildflowers (docs/24 §4).
+	var meadow: Node3D
 	var far_job: ChunkJob
 	var near_job: ChunkJob
 
@@ -302,6 +304,9 @@ func _update_window() -> void:
 func _drop_near(record: LoadedChunk) -> void:
 	record.near_mesh.queue_free()
 	record.near_mesh = null
+	if record.meadow != null:
+		record.meadow.queue_free()
+		record.meadow = null
 	if record.body != null:
 		record.body.queue_free()
 		record.body = null
@@ -367,6 +372,8 @@ func _finish(job: ChunkJob) -> void:
 		record.root.add_child(record.near_mesh)
 		record.body = _collider(job.chunk, job.data, record.scatter)
 		record.root.add_child(record.body)
+		record.meadow = _meadow_node(job.data.get("meadow", []) as Array)
+		record.root.add_child(record.meadow)
 		if record.far_mesh != null:
 			record.far_mesh.visible = false
 		near_builds += 1
@@ -468,6 +475,54 @@ func _add_scatter(record: LoadedChunk) -> void:
 			node.visibility_range_end = CalderaKit.SMALL_RANGE
 			node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		record.root.add_child(node)
+
+
+## A near landblock's meadow (IslandBuilder._meadow): per 32 m cell a MultiMesh of
+## grass tufts, rooted in the ground's colour, and one per wildflower, each drawn
+## only within CalderaKit.MEADOW_CELL_RANGE of a camera and fading out per pixel.
+func _meadow_node(cells: Array) -> Node3D:
+	var meadow: Node3D = Node3D.new()
+	meadow.name = "Meadow"
+	var grass_material: Material = WorldVisualCatalog.grass_blades(CalderaKit.MEADOW_GRASS_TIP, CalderaKit.MEADOW_FADE_M)
+	var flower_material: Material = WorldVisualCatalog.foliage(Color.WHITE, 0.6, 0.35, 0.0, false, CalderaKit.MEADOW_FADE_M)
+	for index: int in cells.size():
+		var cell: Dictionary = cells[index]
+		var grass: Array = cell.get("grass", [])
+		if not grass.is_empty():
+			var colors: Array = cell.get("colors", [])
+			var multi: MultiMesh = MultiMesh.new()
+			multi.transform_format = MultiMesh.TRANSFORM_3D
+			multi.use_colors = true
+			multi.mesh = CalderaKit.meadow_grass_mesh()
+			multi.instance_count = grass.size()
+			for at: int in grass.size():
+				multi.set_instance_transform(at, grass[at] as Transform3D)
+				multi.set_instance_color(at, colors[at] as Color if at < colors.size() else Color.WHITE)
+			meadow.add_child(_meadow_cell_node("Grass_%d" % index, multi, grass_material))
+		var flowers: Array = cell.get("flowers", [])
+		for kind: int in flowers.size():
+			var spots: Array = flowers[kind]
+			if spots.is_empty():
+				continue
+			var bloom: MultiMesh = MultiMesh.new()
+			bloom.transform_format = MultiMesh.TRANSFORM_3D
+			bloom.mesh = CalderaKit.meadow_flower_mesh(kind)
+			bloom.instance_count = spots.size()
+			for at: int in spots.size():
+				bloom.set_instance_transform(at, spots[at] as Transform3D)
+			meadow.add_child(_meadow_cell_node("Flowers_%d_%d" % [index, kind], bloom, flower_material))
+	return meadow
+
+
+func _meadow_cell_node(node_name: String, multi: MultiMesh, material: Material) -> MultiMeshInstance3D:
+	var node: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	node.name = node_name
+	node.multimesh = multi
+	node.material_override = material
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.visibility_range_end = CalderaKit.MEADOW_CELL_RANGE
+	node.visibility_range_end_margin = 8.0
+	return node
 
 
 func _scatter_node(node_name: String, mesh: ArrayMesh, spots: Array) -> MultiMeshInstance3D:

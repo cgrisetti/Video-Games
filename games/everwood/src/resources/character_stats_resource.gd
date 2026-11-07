@@ -18,7 +18,7 @@ extends Resource
 
 @export_group("Resonance")
 @export var max_resonance_pips: int = 3
-## The Ink-Well (24 GDD R1, R2): the pips are Ink-Drops that swings never fill; only
+## The Ink-Well (25 GDD R1, R2): the pips are Ink-Drops that swings never fill; only
 ## refills do (calming foes, beating a boss's stagger or gate, a Hearth-Brazier, a gift).
 ## The composer sets it, and the well's depth in max_resonance_pips, for a hero in play.
 @export var ink_well: bool = false

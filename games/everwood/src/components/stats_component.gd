@@ -118,7 +118,7 @@ func resonance_pips() -> int:
 
 
 func add_resonance(amount: float) -> void:
-	# The Ink-Well (24 GDD R1): a swing, a heal or a flow never fills it; spending still drains it.
+	# The Ink-Well (25 GDD R1): a swing, a heal or a flow never fills it; spending still drains it.
 	if stats.ink_well and amount > 0.0:
 		return
 	var cap: float = float(stats.max_resonance_pips)
@@ -128,7 +128,7 @@ func add_resonance(amount: float) -> void:
 	resonance_changed.emit(resonance_pips(), resonance_charge)
 
 
-## Ink-Drops back into the well (24 GDD R2): a calmed foe, a boss's stagger or gate, a
+## Ink-Drops back into the well (25 GDD R2): a calmed foe, a boss's stagger or gate, a
 ## Hearth-Brazier, a friend's gift. Without the Ink-Well it is a plain pip reward.
 func add_ink(drops: float) -> void:
 	if drops <= 0.0:

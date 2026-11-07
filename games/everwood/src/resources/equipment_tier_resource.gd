@@ -1,5 +1,5 @@
 ## One of the seven folkloric material tiers (the Google Doc *Everwood
-## Equipment & Grimoire Architecture* §2, 24 GDD §2): what a hero's weapon,
+## Equipment & Grimoire Architecture* §2, 25 GDD §2): what a hero's weapon,
 ## offhand and armour are made of, the Character Levels that may wear it, the
 ## Steward Threat it reads (Character Level plus the tier's rank), its flat
 ## damage and Armor Guard, and the parametric PBR recipe equipment_seal.gdshader
@@ -69,7 +69,7 @@ const TIER_COUNT: int = 7
 ## The arm at this tier for each archetype (WeaponArchetype order): sword and buckler, maul, bow, staff.
 @export var weapon_names: PackedStringArray = PackedStringArray()
 ## The offhand piece each archetype seals at this tier: the buckler, the maul's
-## Pommel-Knot, the quiver, the lantern-censer (24 GDD R6: every weapon has three Seals).
+## Pommel-Knot, the quiver, the lantern-censer (25 GDD R6: every weapon has three Seals).
 @export var offhand_names: PackedStringArray = PackedStringArray()
 
 @export_group("Parametric Shader Recipe (ActorVisuals)")

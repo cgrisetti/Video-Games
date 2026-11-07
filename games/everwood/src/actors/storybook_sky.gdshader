@@ -14,7 +14,8 @@ uniform vec4 sky_top_color : source_color = vec4(0.36, 0.56, 0.84, 1.0);
 uniform vec4 sky_horizon_color : source_color = vec4(0.82, 0.86, 0.86, 1.0);
 uniform vec4 ground_horizon_color : source_color = vec4(0.62, 0.7, 0.72, 1.0);
 uniform vec4 ground_bottom_color : source_color = vec4(0.2, 0.32, 0.36, 1.0);
-uniform float sky_curve : hint_range(0.05, 1.0) = 0.42;
+// Lower: the deep blue comes further down toward the horizon (docs/24 §2, a Ghibli sky).
+uniform float sky_curve : hint_range(0.05, 1.0) = 0.27;
 uniform float sun_glow : hint_range(0.0, 2.0) = 0.55;
 uniform vec4 cloud_light : source_color = vec4(1.0, 0.98, 0.93, 1.0);
 uniform vec4 cloud_shade : source_color = vec4(0.6, 0.65, 0.78, 1.0);

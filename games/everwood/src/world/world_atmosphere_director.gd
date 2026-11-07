@@ -44,8 +44,15 @@ const HEARTBEAT: float = 0.4
 ## The time constant of the sky, sun and fog easing toward a new biome (they settle in about three).
 const BLEND_TAU: float = 1.0
 ## A biome's sun energy is scaled by this (1.15, the meadow's, is the old 0.95 sun).
-const SUN_SCALE: float = 0.82
+## The sun at full strength over the sky-lit shade (docs/24 §2; it was 0.82, which flattened every form).
+const SUN_SCALE: float = 1.02
 const SUN_SHADOW_BLUR: float = 1.4
+## Ambient occlusion and the grade (docs/24 §2): deep creases, a touch of punch.
+const SSAO_RADIUS: float = 1.4
+const SSAO_INTENSITY: float = 2.2
+const SSAO_POWER: float = 1.5
+const SSAO_LIGHT_AFFECT: float = 0.18
+const GRADE_CONTRAST: float = 1.07
 const MAX_CRACKS: int = 4
 const MAX_BLOOMS: int = 4
 ## How far a Reclamation Bloom's wave runs from a sealed crack.
@@ -135,7 +142,7 @@ class AtelierJob:
 	var task_id: int = -1
 
 	func run() -> void:
-		images = ProceduralTextureAtelier.render_set(which, size)
+		images = ProceduralTextureAtelier.render_or_blank(which, size)
 
 
 func _enter_tree() -> void:
@@ -247,10 +254,13 @@ func _attach(level: LevelBase) -> void:
 	if holder != null and holder.environment != null:
 		_environment = holder.environment
 		_environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+		# Contact shade in every crease and under every eave (docs/24 §2), a little of it in the sunlight too.
 		_environment.ssao_enabled = true
-		_environment.ssao_radius = 1.2
-		_environment.ssao_intensity = 1.1
-		_environment.ssao_light_affect = 0.0
+		_environment.ssao_radius = SSAO_RADIUS
+		_environment.ssao_intensity = SSAO_INTENSITY
+		_environment.ssao_power = SSAO_POWER
+		_environment.ssao_detail = 0.7
+		_environment.ssao_light_affect = SSAO_LIGHT_AFFECT
 		_environment.glow_enabled = true
 		_environment.fog_enabled = true
 		_environment.fog_sky_affect = 0.1
@@ -260,6 +270,7 @@ func _attach(level: LevelBase) -> void:
 		_environment.fog_height = FOG_HEIGHT
 		_environment.fog_height_density = FOG_HEIGHT_DENSITY
 		_environment.adjustment_enabled = true
+		_environment.adjustment_contrast = GRADE_CONTRAST
 	_sun = level.find_child("Sun", true, false) as DirectionalLight3D
 	if _sun != null:
 		_sun.shadow_blur = SUN_SHADOW_BLUR

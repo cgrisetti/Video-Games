@@ -710,7 +710,7 @@ func _on_trail_level_reached(level: int) -> void:
 		NetworkManager.current.grant_seat(seat.player_id, kit.to_dict(), calling)
 
 
-## A Fellowship's hero reached a Character Level (24 GDD §2): its heroes re-equip in place on
+## A Fellowship's hero reached a Character Level (25 GDD §2): its heroes re-equip in place on
 ## every peer, so a socket the level just opened (R at 4, L at 6, the Tuck at 11, L+R at 17)
 ## works on the very next press, and its seals grow the same way.
 func _on_character_level_reached(class_id: StringName, level: int) -> void:

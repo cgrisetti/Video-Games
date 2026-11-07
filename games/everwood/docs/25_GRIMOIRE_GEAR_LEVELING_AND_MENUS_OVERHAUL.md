@@ -1,4 +1,4 @@
-# 24_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md — The Ink-Well, the Seven-Card Hand, Per-Hero Levels and the Atelier Menus
+# 25_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md — The Ink-Well, the Seven-Card Hand, Per-Hero Levels and the Atelier Menus
 
 Sources, in order of authority:
 1. **Creative Director rulings, 2026-11-06** (pasted into the session that built

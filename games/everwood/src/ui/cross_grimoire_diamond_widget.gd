@@ -65,7 +65,7 @@ const PIP_RADIUS: float = 3.4
 const PIP_GAP: float = 11.0
 const PIP_EMPTY: Color = Color(0.32, 0.3, 0.28, 0.95)
 const TIER_NUMERALS: Array[String] = ["", "I", "II", "III", "IV", "V", "VI", "VII"]
-## The Ink-Well's beads round the middle of the Cross (24 GDD R1), and a locked socket's look.
+## The Ink-Well's beads round the middle of the Cross (25 GDD R1), and a locked socket's look.
 const INK_BEAD_RADIUS: float = 3.2
 const INK_RING: float = 0.62
 const INK_BEAD: Color = Color("#B993F2")
@@ -151,7 +151,7 @@ func socket_ready(socket: int) -> bool:
 	return follow.stats.resonance_charge >= float(socket_cost(socket))
 
 
-## What a socket's card costs the followed hero: Ink-Drops by the rules table (24 GDD R1)
+## What a socket's card costs the followed hero: Ink-Drops by the rules table (25 GDD R1)
 ## on the Ink-Well, the old pips otherwise.
 func socket_cost(socket: int) -> int:
 	if is_instance_valid(follow) and follow.stats != null and follow.stats.uses_ink_well():
@@ -168,7 +168,7 @@ func hero_level() -> int:
 	return PartyProgress.MAX_CHARACTER_LEVEL
 
 
-## Whether a socket is still padlocked at the hero's level (24 GDD R4).
+## Whether a socket is still padlocked at the hero's level (25 GDD R4).
 func socket_locked(socket: int) -> bool:
 	return not GrimoireRules.socket_open(socket, hero_level())
 
@@ -305,7 +305,7 @@ func _draw() -> void:
 	_draw_ink_well()
 
 
-## The Ink-Well (24 GDD R1): one bead a drop in a ring at the middle of the Cross,
+## The Ink-Well (25 GDD R1): one bead a drop in a ring at the middle of the Cross,
 ## lit while there's ink in it. Only for a hero on the Ink-Well.
 func _draw_ink_well() -> void:
 	if not is_instance_valid(follow) or follow.stats == null or not follow.stats.uses_ink_well():
@@ -338,7 +338,7 @@ func _draw_socket(socket: int) -> void:
 	var place: ScribeCardResource = ArsenalCatalog.current.card(view["place"])
 	var leaf: ScribeCardResource = ArsenalCatalog.current.card(view["leaf"])
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
-	# A socket the hero's level hasn't opened (24 GDD R4): a dashed frame, a padlock and the level.
+	# A socket the hero's level hasn't opened (25 GDD R4): a dashed frame, a padlock and the level.
 	if socket_locked(socket):
 		draw_colored_polygon(_diamond(center, outer), LOCKED_FRAME)
 		_dashed_outline(center, outer, LOCKED_EDGE)
@@ -363,7 +363,7 @@ func _draw_socket(socket: int) -> void:
 	else:
 		draw_colored_polygon(_diamond(center, outer), EMPTY_FRAME)
 		_dashed_outline(center, outer, EMPTY_EDGE)
-	# The Tuck (24 GDD R4): its bottom edge and Sign dot peek out under the portrait.
+	# The Tuck (25 GDD R4): its bottom edge and Sign dot peek out under the portrait.
 	if socket_has_tuck(socket):
 		var shown_kit: EquipmentLoadoutResource = _shown_kit()
 		var slot: int = ScribeCardResource.GrimoireSlot.SIGNATURE if socket == Socket.SKILL else ScribeCardResource.GrimoireSlot.ULTIMATE
@@ -457,7 +457,7 @@ func _draw_weapon() -> void:
 	_outline(center, outer, tier_trim, FRAME_BORDER * _ds)
 	_draw_weapon_icon(center, outer * 0.42, weapon.weapon_type if weapon != null else -1, body.lightened(0.5))
 	if weapon != null and weapon.is_weapon():
-		# The material tier, I to VII (24 GDD §2; the trail's four tiers with no hand to read), in the right corner.
+		# The material tier, I to VII (25 GDD §2; the trail's four tiers with no hand to read), in the right corner.
 		var font: Font = ThemeDB.fallback_font
 		var font_size: int = roundi(KEY_FONT_SIZE * 0.9 * _ds)
 		var at: Vector2 = center + Vector2(outer * 0.18, outer * 0.12)
@@ -518,7 +518,7 @@ func _draw_key(socket: int, center: Vector2, outer: float) -> void:
 	var at: Vector2 = center + Vector2(-outer, -outer * 0.5)
 	draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, outer * 2.0, font_size, roundi(4 * _ds), OUTLINE)
 	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, outer * 2.0, font_size, PARCHMENT)
-	# What it costs: Ink-Drop dots on the Ink-Well (24 GDD R1), the old gold pip gems otherwise.
+	# What it costs: Ink-Drop dots on the Ink-Well (25 GDD R1), the old gold pip gems otherwise.
 	var pips: int = socket_cost(socket)
 	var ink_dots: bool = is_instance_valid(follow) and follow.stats != null and follow.stats.uses_ink_well()
 	for gem: int in pips:

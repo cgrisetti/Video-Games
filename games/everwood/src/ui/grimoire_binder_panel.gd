@@ -10,7 +10,7 @@
 ##                                Desk), Steward Threat as a sum (Character Lv
 ##                                + the material's rank), what the kit adds up
 ##                                to, and the three Seals with their
-##                                Ink-Binding Marks (24 GDD §2, the Gear wireframe)
+##                                Ink-Binding Marks (25 GDD §2, the Gear wireframe)
 ##   [2. Quick Magic-Ink Cards]   the spread it opens on: the HUD's diamonds
 ##                                grow to 2.2x between two pages, Ink Cards
 ##                                (what you do) on the left and Place-Cards
@@ -20,7 +20,7 @@
 ##   [3. Combo Moves]             the directional forms the party knows, with
 ##                                their buttons, and the ones still to learn
 ##   [4. Seal Press]              the press beside the same live preview
-##                                (24 GDD R4, the Seals wireframe): the three
+##                                (25 GDD R4, the Seals wireframe): the three
 ##                                Seals on the weapon, offhand and mantle, each
 ##                                saying what it does on that piece (the
 ##                                Contextual Slot Rule) and its Marks; up / down
@@ -105,7 +105,7 @@ const TOOLTIP_FONT_SIZE: int = 14
 ## The panel is laid out for a cell this big and scales with the player's cell.
 const REFERENCE_SIZE: Vector2 = Vector2(1600.0, 900.0)
 const MIN_FIT: float = 0.45
-## The living storybook atelier look (AtelierTheme, 24 GDD §3).
+## The living storybook atelier look (AtelierTheme, 25 GDD §3).
 const BACKDROP: Color = AtelierTheme.BACKDROP
 const PAGE_EDGE: Color = AtelierTheme.GILT
 const SELECTED_COLOR: Color = AtelierTheme.GOLD
@@ -1011,7 +1011,7 @@ func seal_marks_text(card_id: StringName) -> String:
 	return "%s · %d / %d Marks" % [named, progress.marks_of(key), needed]
 
 
-## Whether the Seal Press takes changes here: at a Hearth-Brazier or the Scribe Desk (24 GDD §2),
+## Whether the Seal Press takes changes here: at a Hearth-Brazier or the Scribe Desk (25 GDD §2),
 ## anywhere in the classic full kits the older checks stand in.
 func seal_press_open() -> bool:
 	if GrimoireRules.all_open():
@@ -1094,7 +1094,7 @@ func press_seal(slot: int, card_id: StringName) -> bool:
 	if not is_instance_valid(actor) or actor.seal == null or actor.seal.loadout == null:
 		return false
 	var draft: PlayerLoadoutResource = actor.seal.loadout.copy()
-	# One card, one place (24 GDD R5): pressing a seal already on another piece moves it here.
+	# One card, one place (25 GDD R5): pressing a seal already on another piece moves it here.
 	if card_id != &"":
 		for other: int in PlayerLoadoutResource.HAND_SLOT_COUNT:
 			if other != slot and draft.card_in_slot(other) == card_id:
@@ -1196,7 +1196,7 @@ func fit_line(copy_key: StringName, page_column: int) -> String:
 		draft.set_socket_leaf(selected_socket(), ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
 	else:
 		draft.set_socket_place(selected_socket(), ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
-	# The hero's own level (24 GDD R4): a socket it hasn't opened says when; the hand's rules (one Tuck, seven
+	# The hero's own level (25 GDD R4): a socket it hasn't opened says when; the hand's rules (one Tuck, seven
 	# different cards) speak through the composer; a fit says what the card costs from the Ink-Well (R1).
 	var level: int = progress.character_level(actor.loadout.class_id)
 	var socket: int = selected_socket()

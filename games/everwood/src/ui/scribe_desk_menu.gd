@@ -1,6 +1,6 @@
 ## The Armory & Scribe Desk menu, drawn over one player's split-screen cell and
 ## driven by that player's own controller (05_ARSENAL_AND_CARDS_GDD.md §2–3, and
-## the Desk & Forge wireframe of 24_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md):
+## the Desk & Forge wireframe of 25_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md):
 ## up / down picks a row, left / right (or light) changes it, dodge closes.
 ##   Fellowship · Calling · Armor · Weapon · Promote weapon & offhand · Promote
 ##   armour · Draft a card
@@ -26,7 +26,7 @@ const WIDTH: float = 560.0
 const TITLE_SIZE: int = 22
 const FONT_SIZE: int = 15
 const SMALL_FONT_SIZE: int = 12
-## The living storybook atelier look (AtelierTheme, 24 GDD §3).
+## The living storybook atelier look (AtelierTheme, 25 GDD §3).
 const SELECTED_COLOR: Color = AtelierTheme.GOLD
 const LOCKED_COLOR: Color = AtelierTheme.INK_DIM
 const PROBLEM_COLOR: Color = AtelierTheme.BAD

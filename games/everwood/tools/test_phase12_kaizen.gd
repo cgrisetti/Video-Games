@@ -399,7 +399,7 @@ func _check_binder_tabs() -> void:
 const RETIRED_WORDS: Array[String] = ["Vellum", "VELLUM", "Folio", "FOLIO", "Weapon-Coat", "WEAPON-COAT", "Ward-Mantle", "WARD-MANTLE",
 	"Bravery Counter", "BRAVERY COUNTER", "Bravery-Counter", "Hearth-Rite Tuck", "HEARTH-RITE TUCK", "Four-Sign", "Four Signs", "Sign-Coat",
 	"Ink-Wheel", "Mantle & Tuck", "Glimmer-Spot", "GLIMMER-SPOT", "Action-Leaves", "Action-Leaf",
-	# R7 (24 GDD): Defender / Striker, Armor Guard, Breath Recovery, Marks, no frame counts,
+	# R7 (25 GDD): Defender / Striker, Armor Guard, Breath Recovery, Marks, no frame counts,
 	# Great-Boggart, Bulwark, Deep-Tide, hills and woods.
 	"+Tank", "+DPS", "the Tank", "the DPS", "mitigation", "Mitigation", "Stamina Regen", "stamina regen", " AP ", "18-frame",
 	"Elite", "ELITE", "Aegis", "AEGIS", "Abyssal", "ABYSSAL", "landblocks", "Landblocks"]

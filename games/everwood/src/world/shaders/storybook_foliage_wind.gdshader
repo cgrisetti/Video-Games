@@ -14,7 +14,9 @@ render_mode cull_disabled, specular_disabled;
 
 #define STORYBOOK_CLOUD_POS v_world_pos
 #define STORYBOOK_FOLIAGE_LIGHT
+#define STORYBOOK_RIM
 #include "res://src/world/shaders/storybook_world_common.gdshaderinc"
+#include "res://src/actors/storybook_brush.gdshaderinc"
 
 uniform vec4 albedo : source_color = vec4(1.0);
 // Metres over which the plant bends from its root (its tip moves most).
@@ -102,8 +104,9 @@ void fragment() {
 	ALBEDO = color;
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
-	float facing = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
-	EMISSION = emission + rim_color.rgb * pow(1.0 - facing, rim_power) * rim_strength * color;
+	// The rim is a backlight now (storybook_cel_light.gdshaderinc, docs/24 §2); leaves catch the strokes too.
+	v_brush = sb_brush(v_world_pos * 1.4);
+	EMISSION = emission;
 }
 
 #include "res://src/actors/storybook_cel_light.gdshaderinc"

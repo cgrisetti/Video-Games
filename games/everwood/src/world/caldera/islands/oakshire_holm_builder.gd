@@ -99,9 +99,10 @@ func _base_height(x: float, z: float) -> float:
 
 
 func _ground_color(x: float, z: float, height: float, up: float) -> Color:
-	var loam: Color = Color(0.46, 0.6, 0.3).lerp(Color(0.56, 0.6, 0.32), 0.5 + 0.5 * detail(x * 0.5, z * 0.5))
+	# Rich meadow greens (docs/24 §4), deep in the hollows and sunnier on the rises, never straw.
+	var loam: Color = Color(0.32, 0.5, 0.22).lerp(Color(0.44, 0.58, 0.26), 0.5 + 0.5 * detail(x * 0.5, z * 0.5))
 	var orchard: float = 1.0 - smoothstep(ORCHARDS_RADIUS * 0.8, ORCHARDS_RADIUS, Vector2(x - ORCHARDS_AT.x, z - ORCHARDS_AT.y).length())
-	loam = loam.lerp(Color(0.5, 0.56, 0.28), orchard * 0.5)
+	loam = loam.lerp(Color(0.38, 0.52, 0.22), orchard * 0.5)
 	return shore_or(height, up, loam, Color(0.46, 0.42, 0.38))
 
 
@@ -152,6 +153,8 @@ func _build_orchards_and_windmill(root: Node3D) -> void:
 	root.add_child(mill)
 	CalderaKit.solid_cylinder(root, "WindmillBody", ground(WINDMILL_AT.x, WINDMILL_AT.y), 5.2, 18.0)
 	CalderaKit.sign_label(root, "OrchardSign", "The Lee-Shore Orchards\nMiller's Oak · Lv 1-2", ground(320.0, 214.0) + Vector3(0.0, 2.6, 0.0))
+	# The orchard's own homestead pile beside the Level 1 start: apple crates, barrels and sacks from the harvest.
+	CalderaKit.lived_in_clutter(root, "OrchardHarvest", ground(ORCHARD_LANE_FOOT.x + 6.5, ORCHARD_LANE_FOOT.y - 2.5), 410, 6, 0.4, 3.0, ground, true)
 	for index: int in 3:
 		var at: Vector2 = [Vector2(330.0, 250.0), Vector2(470.0, 170.0), Vector2(260.0, 130.0)][index]
 		var hobs: MobSpawner = MobSpawner.new()
@@ -181,6 +184,8 @@ func _build_market(root: Node3D) -> void:
 			house.scale = Vector3.ONE * 1.35
 		root.add_child(house)
 		CalderaKit.solid_box(root, "HouseBody%d" % index, spot + Vector3(0.0, 2.5, 0.0), Vector3(6.0, 5.0, 6.0), -angle + PI * 0.5)
+		# What a family leaves about a cottage (docs/24 §5): barrels, crates, a woodpile, sacks, a flower tub.
+		CalderaKit.lived_in_clutter(root, "HouseClutter%d" % index, spot, 300 + index, 5, 4.6, 6.4, ground)
 	for index: int in 2:
 		root.add_child(WorldKitInstance.make("Pavilion%d" % index, WorldVisualCatalog.KIT_MARKET_PAVILION,
 			ground(at.x - 12.0 + index * 24.0, at.z + 10.0), 0.0))

@@ -1,6 +1,8 @@
-## One of Oakshire Vale's friendly folk (12_WORLD_OAKSHIRE_VALE_GDD.md §5), built
-## in code from simple shapes and running a deterministic idle loop (the same
-## on every peer, from the game clock and its seed):
+## One of the isles' friendly folk (12_WORLD_OAKSHIRE_VALE_GDD.md §5): a sculpted
+## storybook figure (StorybookFigure, docs/24 §5) on the heroes' own skeleton, in
+## a Calling's look dyed in their colours (a village child as a youth), posed
+## from the clip library, running a deterministic idle loop (the same on every
+## peer, from the game clock and its seed):
 ##   QUEST_GIVER  a cloaked figure under a floating gold "!", in a three-quest
 ##                hub; light shows their quests (quests_offered)
 ##   VENDOR       an aproned merchant at a stall: weapons, armour, an
@@ -44,6 +46,7 @@ const APRON_COLOR: Color = Color(0.86, 0.8, 0.66)
 @export var npc_seed: int = 1
 
 var _body: Node3D
+var _figure: StorybookFigure
 var _marker: Label3D
 var _home: Vector3 = Vector3.ZERO
 var _home_yaw: float = 0.0
@@ -89,8 +92,7 @@ func _process(_delta: float) -> void:
 			_body.rotation.y = sin(now * 0.8) * 0.15
 		Role.QUEST_GIVER:
 			_marker.position.y = 2.45 + sin(now * 2.4) * 0.12
-	if role != Role.VILLAGER:
-		_body.position.y = sin(now * 1.6) * 0.02
+
 
 
 ## Walk the round: home, then each waypoint, pausing at each, at a stroll.
@@ -118,45 +120,31 @@ func _stroll(now: float) -> void:
 	if progress > 0.0 and progress < 1.0:
 		var heading: Vector3 = to - from
 		rotation.y = atan2(-heading.x, -heading.z)
-		_body.position.y = absf(sin(now * 8.0)) * 0.05
+		_figure.walk_speed = WALK_SPEED
 	else:
-		_body.position.y = 0.0
+		_figure.walk_speed = 0.0
 
 
 func _build() -> void:
 	_body = Node3D.new()
 	_body.name = "Body"
 	add_child(_body)
-	var tunic: Material = StorybookMaterial.actor(body_color, accent_color)
-	var trim: Material = StorybookMaterial.make(accent_color, StorybookMaterial.ACTOR_RIM * 0.6, accent_color.lightened(0.4))
-	var skin: Material = StorybookMaterial.make(SKIN)
-	for side: float in [-1.0, 1.0]:
-		_body.add_child(ShapeKit.capsule("Leg", 0.1, 0.7, Vector3(side * 0.12, 0.35, 0.0), trim))
-		var arm: MeshInstance3D = ShapeKit.capsule("Arm", 0.075, 0.55, Vector3(side * 0.34, 1.12, 0.0), tunic)
-		arm.rotation.z = side * 0.12
-		_body.add_child(arm)
-	_body.add_child(ShapeKit.cylinder("Tunic", 0.27, 0.33, 0.7, Vector3(0.0, 1.0, 0.0), tunic, 10))
-	_body.add_child(ShapeKit.sphere("Head", 0.19, Vector3(0.0, 1.55, 0.0), skin))
-	var eyes: StandardMaterial3D = StandardMaterial3D.new()
-	eyes.albedo_color = Color(0.12, 0.1, 0.1)
-	for side: float in [-1.0, 1.0]:
-		_body.add_child(ShapeKit.sphere("Eye", 0.03, Vector3(side * 0.07, 1.58, -0.17), eyes))
+	_figure = StorybookFigure.new()
+	_figure.name = "Figure"
+	var picked: Array = _pick_look()
+	_figure.build(picked[0], picked[1], body_color, accent_color, float(npc_seed) * 1.37)
+	_body.add_child(_figure)
 	match role:
 		Role.GUARD:
+			# A long ash spear in the hand and the banded greatshield on the off forearm.
 			var steel: Material = StorybookMaterial.make(GUARD_STEEL, StorybookMaterial.ACTOR_RIM * 0.6)
-			_body.add_child(ShapeKit.cylinder("Helm", 0.21, 0.21, 0.16, Vector3(0.0, 1.66, 0.0), steel, 10))
-			_body.add_child(ShapeKit.box("Crest", Vector3(0.05, 0.14, 0.32), Vector3(0.0, 1.82, 0.0), trim))
-			_body.add_child(ShapeKit.cylinder("Spear", 0.025, 0.025, 2.4, Vector3(0.42, 1.2, -0.05), StorybookMaterial.make(Color(0.42, 0.3, 0.18)), 6))
-			_body.add_child(ShapeKit.cone("Spearhead", 0.06, 0.25, Vector3(0.42, 2.5, -0.05), steel))
-			_body.add_child(ShapeKit.box("Shield", Vector3(0.08, 0.7, 0.55), Vector3(-0.42, 1.05, -0.08), trim))
-		Role.VENDOR:
-			_body.add_child(ShapeKit.box("Apron", Vector3(0.42, 0.6, 0.04), Vector3(0.0, 0.95, -0.32), StorybookMaterial.make(APRON_COLOR)))
-			_body.add_child(ShapeKit.stretched(ShapeKit.sphere("Cap", 0.2, Vector3(0.0, 1.68, 0.0), trim), Vector3(1.1, 0.5, 1.1)))
+			var spear: Node3D = Node3D.new()
+			spear.name = "Spear"
+			spear.add_child(ShapeKit.cylinder("Haft", 0.022, 0.022, 2.3, Vector3(0.0, 0.55, 0.0), StorybookMaterial.make(Color(0.42, 0.3, 0.18)), 6))
+			spear.add_child(ShapeKit.cone("Spearhead", 0.05, 0.22, Vector3(0.0, 1.8, 0.0), steel))
+			_figure.hold(HeroRigBuilder.MAIN_HAND_SOCKET, spear, HeroMeshAtelier.GRIP_MOUNT)
+			_figure.hold(HeroRigBuilder.OFF_HAND_SOCKET, HeroMeshAtelier.build_greatshield(_figure.material), ActorVisuals.SHIELD_ON_FOREARM)
 		Role.QUEST_GIVER:
-			var cloak: MeshInstance3D = ShapeKit.box("Cloak", Vector3(0.6, 0.95, 0.05), Vector3(0.0, 0.95, 0.3), trim)
-			cloak.rotation.x = -0.15
-			_body.add_child(cloak)
-			_body.add_child(ShapeKit.tilted(ShapeKit.cone("Hood", 0.22, 0.32, Vector3(0.0, 1.74, 0.06), trim), Vector3(-0.25, 0.0, 0.0)))
 			_marker = Label3D.new()
 			_marker.name = "QuestMarker"
 			_marker.text = "!"
@@ -167,8 +155,6 @@ func _build() -> void:
 			_marker.modulate = QUEST_GOLD
 			_marker.position = Vector3(0.0, 2.45, 0.0)
 			add_child(_marker)
-		_:
-			_body.add_child(ShapeKit.stretched(ShapeKit.sphere("Hat", 0.22, Vector3(0.0, 1.7, 0.0), trim), Vector3(1.3, 0.35, 1.3)))
 	if role == Role.QUEST_GIVER or role == Role.VENDOR or role == Role.GUARD:
 		var label: Label3D = Label3D.new()
 		label.name = "NameLabel"
@@ -181,3 +167,33 @@ func _build() -> void:
 		label.position = Vector3(0.0, 2.05, 0.0)
 		label.visibility_range_end = 26.0
 		add_child(label)
+
+
+## [look, coat] for this townsperson, by role, from their seed: guards in the
+## Shield-Sworn's kettle-caps and ring-coats, merchants and quest-givers in
+## linen, villagers in any Calling's look or, one in three, a village child.
+func _pick_look() -> Array:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = npc_seed * 7919 + int(role)
+	var ids: Array[StringName] = []
+	var coat: StringName = ArsenalCatalog.BRAMBLE_JERKIN
+	match role:
+		Role.GUARD:
+			ids = [&"bridge_warden", &"hearth_guard", &"weald_captain"]
+			coat = ArsenalCatalog.IRONWOOD_PLATE
+		Role.VENDOR:
+			ids = [&"bell_keeper", &"sign_seeker", &"lantern_scribe", &"hearth_guard"]
+			coat = ArsenalCatalog.HEARTH_LINEN
+		Role.QUEST_GIVER:
+			ids = [&"hedge_runner", &"wind_mender", &"iron_woodsman"]
+			coat = ArsenalCatalog.HEARTH_LINEN
+		_:
+			if rng.randf() < 0.34:
+				var youth: Array[HeroAppearanceResource] = catalog.youth_appearances()
+				return [youth[rng.randi_range(0, youth.size() - 1)], ArsenalCatalog.BRAMBLE_JERKIN]
+			ids = [&"iron_woodsman", &"hedge_runner", &"sign_seeker", &"bell_keeper", &"wind_mender", &"bridge_warden", &"lantern_scribe"]
+			coat = [ArsenalCatalog.BRAMBLE_JERKIN, ArsenalCatalog.RANGER_LEATHER, ArsenalCatalog.HEARTH_LINEN][rng.randi_range(0, 2)]
+	var base: HeroAppearanceResource = catalog.hero_appearance(ids[rng.randi_range(0, ids.size() - 1)])
+	var dyes: Array[HeroAppearanceResource] = catalog.heritage_dyes()
+	return [base.with_dye(dyes[rng.randi_range(0, dyes.size() - 1)]), coat]

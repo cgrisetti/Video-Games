@@ -3,7 +3,7 @@
 ## tabs, stepped with Q / E or L1 / R1 (or a click):
 ##   Audio     main, music, effects and world-sound volumes
 ##   Video     display mode, vertical sync, frame cap, render scale, field of view,
-##             World detail, Grass & flowers and Craft textures (24 GDD §2)
+##             World detail, Grass & flowers and Craft textures (25 GDD §2)
 ##   Controls  invert Y, camera speed, mouse sensitivity, pad button names, and
 ##             a keyboard and a PlayStation / Xbox pad drawn with what each key
 ##             and button does, read from the Input Map so they never go stale

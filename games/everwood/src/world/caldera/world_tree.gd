@@ -1,5 +1,5 @@
 ## The World-Tree (docs/20 Part II §1.2; docs/23 named it Miller's Oak for a
-## while, and the starting isle took that name, docs/24 R8) in The Crown's Summit Glade: the
+## while, and the starting isle took that name, docs/25 R8) in The Crown's Summit Glade: the
 ## tallest thing for 5 km, so a 9-year-old navigates by it from every step on
 ## the island. A fluted, buttressed trunk; a warm golden spring at its roots;
 ## three canopy boughs that bloom one per trial (west Amber for the Anvil, north

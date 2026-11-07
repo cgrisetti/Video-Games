@@ -452,7 +452,7 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	var pulls_before: int = hero.visuals.pocket_pull_count()
 	var pips_before: int = hero.stats.resonance_pips()
 	var pulled: Dictionary = hero.seal.try_trigger_pocket_pull_invocation(Slot.R)
-	# The seven-card hand (24 GDD R5): R's own socket card comes out of the pouch.
+	# The seven-card hand (25 GDD R5): R's own socket card comes out of the pouch.
 	var r_leaf: StringName = hero.seal.socket_card_id(GrimoireRules.SOCKET_R)
 	var pulled_card: ScribeCardResource = catalog.get_card(r_leaf)
 	var sign_ink: Color = catalog.sign_seal(pulled_card.scribe_sign).color if pulled_card != null else Color.BLACK

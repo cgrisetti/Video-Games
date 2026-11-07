@@ -1,7 +1,7 @@
 # 23 · The Crown, redesigned: four shores round the World-Tree
 
 > **Source:** `Everwood — The Crown Island-selection.pdf` (the Crown's council ruling and the Master Crown v1 map, the same content as `docs/atlas_sources/03_design_and_game_theory_loop_musk_razor.pdf` and `04_master_crown_heart_crag.pdf`), read with MMO zone-design and game-theory practice.
-> **Name:** this redesign first renamed the tree at the Crown's centre "Miller's Oak". The Creative Director gave that name to the starting isle instead (docs/24 R8, 2026-11-06), so the tree is **the World-Tree** on every screen again. The music id `crown_millers_oak` and the image file keep the interim spelling, as ids do.
+> **Name:** this redesign first renamed the tree at the Crown's centre "Miller's Oak". The Creative Director gave that name to the starting isle instead (docs/25 R8, 2026-11-06), so the tree is **the World-Tree** on every screen again. The music id `crown_millers_oak` and the image file keep the interim spelling, as ids do.
 > **Scope:** The Crown only (Zone 5). The other four isles, the seams, the trials' rules, the Harmonic Bell and the Ebb are unchanged.
 
 ![The Crown, redesigned](images/23_crown_map_after.jpg)
