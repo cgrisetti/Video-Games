@@ -160,6 +160,20 @@ const OAK_KNOT_TETHER: StringName = &"leaf_oak_knot_tether"
 const RIME_MANTLE_BASH: StringName = &"leaf_rime_mantle_bash"
 const MIST_LANTERN_MEND: StringName = &"leaf_mist_lantern_mend"
 const EMBER_COAT_CUT: StringName = &"leaf_ember_coat_cut"
+## The Ink Card Deck (25 GDD §7): an attack (an R Ink Blade) and a defense (an L Ink Shield) for each Sign.
+const CAIRN_CLEAVE: StringName = &"deck_cairn_cleave"
+const HEDGE_ROOT_BRACE: StringName = &"deck_hedge_root_brace"
+const SQUALL_LASH: StringName = &"deck_squall_lash"
+const HOARFROST_MANTLE: StringName = &"deck_hoarfrost_mantle"
+const EMBER_WICK_CUT: StringName = &"deck_ember_wick_cut"
+const KINDLE_HEARTH_WARD: StringName = &"deck_kindle_hearth_ward"
+const TIDE_TURN_THRUST: StringName = &"deck_tide_turn_thrust"
+const MOON_WEIR_GUARD: StringName = &"deck_moon_weir_guard"
+## The deck in its order: Iron-Root, Rime-Gale, Warm-Hearth, Star-Tide; attack then defense.
+const INK_DECK: Array[StringName] = [CAIRN_CLEAVE, HEDGE_ROOT_BRACE, SQUALL_LASH, HOARFROST_MANTLE, EMBER_WICK_CUT,
+	KINDLE_HEARTH_WARD, TIDE_TURN_THRUST, MOON_WEIR_GUARD]
+## How much of a blow of its own Sign a deck shield soaks.
+const DECK_SHIELD_WARD: float = 0.7
 const HEARTH_MANTLE_BRACE: StringName = &"leaf_hearth_mantle_brace"
 const STAR_THREAD_MEND: StringName = &"leaf_star_thread_mend"
 ## The lead cards that manifest as a Ward-Mantle or a Lantern-Tether; every other lead card is a Weapon-Coat.
@@ -345,6 +359,7 @@ func _init() -> void:
 	_build_lead_cards()
 	_build_under_cards()
 	_build_action_leaves()
+	_build_ink_deck()
 	_build_place_cards()
 	_build_seal_cards()
 	_build_callings()
@@ -1891,10 +1906,14 @@ func _build_hero_appearances() -> void:
 ## heather-blue half-cape, russet breeches patched in sage, cream linen, saddle
 ## braces, a chestnut mop.
 func _build_youth_looks() -> void:
-	for row: int in 3:
+	for index: int in 6:
+		# The boy for each Fellowship, then the girl (docs/26 §7).
+		var row: int = index % 3
+		var girl: bool = index >= 3
 		var look: HeroAppearanceResource = HeroAppearanceResource.new()
+		look.youth_style = HeroAppearanceResource.YOUTH_GIRL if girl else HeroAppearanceResource.YOUTH_BOY
 		look.body_build = HeroAppearanceResource.BODY_YOUTH
-		look.appearance_id = StringName("youth_%s" % ["shield_sworn", "wayfarer", "lantern_bearer"][row])
+		look.appearance_id = StringName("youth_%s%s" % [["shield_sworn", "wayfarer", "lantern_bearer"][row], "_girl" if girl else ""])
 		look.calling_id = Callings.UNSWORN_ID
 		look.display_name = "Unsworn Youth"
 		look.heritage_id = &"oakshire_homestead"
@@ -1920,12 +1939,23 @@ func _build_youth_looks() -> void:
 		look.back_buckler_targe = false
 		look.split_hewing_apron = false
 		look.glb_override_path = "res://assets/models/heroes/youth.glb"
+		# The character design language (docs/26 §4): freckles, a rosy flush, a rose smile.
+		look.freckle_amount = 0.85 if girl else 0.6
+		look.cheek_flush = 0.5
+		look.lip_color = Color(0.72, 0.36, 0.34) if girl else Color(0.66, 0.33, 0.29)
+		if girl:
+			# Auburn hair, hazel-brown eyes.
+			look.beard_primary_color = Color(0.72, 0.34, 0.17)
+			look.iris_color = Color(0.42, 0.3, 0.16)
+			look.headgear_style = &"auburn_braid"
 		_youths.append(look)
 
 
 ## The Unsworn youth's look for a seat: the Fellowship's youth in the seat's heritage dye on the cape.
-func youth_appearance_for_seat(fellowship_class_id: StringName, party_slot: int) -> HeroAppearanceResource:
-	var look: HeroAppearanceResource = _youths[clampi(Callings.fellowship_row(fellowship_class_id), 0, _youths.size() - 1)]
+## The seat's youth is the boy or the girl (`style`, HeroAppearanceResource.YOUTH_BOY / _GIRL).
+func youth_appearance_for_seat(fellowship_class_id: StringName, party_slot: int, style: StringName = HeroAppearanceResource.YOUTH_BOY) -> HeroAppearanceResource:
+	var row: int = clampi(Callings.fellowship_row(fellowship_class_id), 0, 2)
+	var look: HeroAppearanceResource = _youths[row + (3 if style == HeroAppearanceResource.YOUTH_GIRL else 0)]
 	if party_slot <= 0:
 		return look
 	return look.with_dye(_dyes[HERITAGE_DYES[(party_slot - 1) % HERITAGE_DYES.size()]])
@@ -2058,6 +2088,138 @@ func _build_action_leaves() -> void:
 			ScribeCardResource.RoleDelivery.SUPPORT_INK_SHARE:
 				leaf.shares_ink_to_party = true
 				leaf.grants_stun_immunity = true
+
+
+## The Ink Card Deck (25 GDD §7, workshopped on the "Everwood Ink Card Deck" page): an
+## attack card for R (an Ink Blade: its strike, and a coat that carries the Sign) and a
+## defense card for L (an Ink Shield, put up by the counter-brace) for each Sign, each
+## with one twist of its own (CardTwists). Ember-Wick Cut is the starting card; the
+## other Commons are inscribed at the Scribery; any of them can be found out on its
+## Sign's isle (PartyProgress.roll_deck_find).
+func _build_ink_deck() -> void:
+	var Twist: Dictionary = CardTwists.Twist
+	# Iron-Root.
+	var cleave: CombatActionResource = _strike(CAIRN_CLEAVE, "Cairn-Cleave", Cmd.TRIGGER_R_SKILL, 0.24, 0.18, 0.32, 0.0, 24.0)
+	cleave.poise_damage = 30.0
+	cleave.lunge_distance = 1.5
+	cleave.reach = 2.0
+	cleave.hit_stop_scale = 1.4
+	cleave.resonance_gain = 0.0
+	_deck_card(_lead(cleave, Slot.SIGNATURE, Sign.SIGN_IRON_ROOT,
+		"Coat your weapon in Iron-Root for 8 s: every hit staggers harder, and every third hit rings a big foe for SHATTERPOINT."),
+		ScribeCardResource.CardRarity.COMMON, Twist.RING_EVERY_THIRD, &"cairn",
+		"Big, heavy swings that make huge foes wobble. Every third hit puts a glowing ring under a big foe, and a friend's Heavy knocks it flat!",
+		"Lay stone on stone, and strike the way the cairn-wright strikes: once, with all your weight.", "chalked on a waymarker cairn, Iron-Ness",
+		"Iron-Ness, from the Furrow Iron-Men you turn the right way up. The Scribery inscribes it too.")
+	var hedge: CombatActionResource = _strike(HEDGE_ROOT_BRACE, "Hedge-Root Brace", Cmd.BACK_HEAVY, 0.2, 0.16, 0.3, 0.0, 10.0)
+	hedge.poise_damage = 16.0
+	hedge.resonance_gain = 0.0
+	_deck_shield(_deck_card(_lead(hedge, Slot.BACK, Sign.SIGN_IRON_ROOT,
+		"An Ink Shield of laid hedge for 8 s: Iron-Root blows do 70% less and can't shove you. Its counter-brace roots the foe you hit."),
+		ScribeCardResource.CardRarity.COMMON, Twist.ROOT_COUNTER, &"hedge",
+		"A shield of tangled roots. Iron-Root hits hardly hurt, nothing can push you, and the foe you just hit gets stuck to the ground!",
+		"Cut it half through and lay it down, and it grows thicker than before.", "a hedger's saying, Moss-Oak Hollow",
+		"Iron-Ness: the Shield-Sworn who keep the Moss-Oak Hollow hedges give it out. The Scribery inscribes it too."))
+	# Rime-Gale.
+	var squall: CombatActionResource = _strike(SQUALL_LASH, "Squall-Lash", Cmd.TRIGGER_R_SKILL, 0.16, 0.2, 0.26, 0.0, 20.0)
+	squall.reach = 2.6
+	squall.hit_radius = 1.4
+	squall.resonance_gain = 0.0
+	_deck_card(_lead(squall, Slot.SIGNATURE, Sign.SIGN_RIME_GALE,
+		"Coat your weapon in Rime-Gale for 8 s: hits frost-slow the foe, and every fourth bursts in GLACIAL RUPTURE."),
+		ScribeCardResource.CardRarity.UNCOMMON, Twist.SQUALL_LASH, &"squall",
+		"A whip of icy wind! Every foe you hit goes slow, and every fourth hit bursts into a ring of frost.",
+		"The firth wind has no anger in it. It is only ever in a hurry to be somewhere else.", "a Gale-Haven weaver",
+		"Rime-Firth: calm the foes of the frozen isle and it may turn up.")
+	var mantle: CombatActionResource = _strike(HOARFROST_MANTLE, "Hoarfrost Mantle", Cmd.BACK_HEAVY, 0.2, 0.16, 0.3, 0.0, 10.0)
+	mantle.poise_damage = 12.0
+	mantle.resonance_gain = 0.0
+	_deck_shield(_deck_card(_lead(mantle, Slot.BACK, Sign.SIGN_RIME_GALE,
+		"An Ink Shield of hoarfrost for 8 s: Rime-Gale blows do 70% less and nothing can slow you. Its counter-brace breathes out a frost ring."),
+		ScribeCardResource.CardRarity.COMMON, Twist.FROST_RING_COUNTER, &"mantle",
+		"A cloak of frost. Icy hits hardly hurt, nothing can slow you down, and you puff out a frost ring that slows every foe near you.",
+		"Frost settles on the ones who stand still. So the old ferrymen never stood still.", "told at Doverslap Bridge",
+		"Rime-Firth, behind the falls. The Scribery inscribes it too."))
+	# Warm-Hearth.
+	var wick: CombatActionResource = _strike(EMBER_WICK_CUT, "Ember-Wick Cut", Cmd.TRIGGER_R_SKILL, 0.18, 0.18, 0.28, 0.0, 20.0)
+	wick.poise_damage = 10.0
+	wick.lunge_distance = 1.5
+	wick.reach = 2.0
+	wick.hit_radius = 1.6
+	wick.resonance_gain = 0.0
+	wick.primer = Sign.SIGN_WARM_HEARTH
+	var wick_card: ScribeCardResource = _deck_card(_lead(wick, Slot.SIGNATURE, Sign.SIGN_WARM_HEARTH,
+		"Coat your weapon in Warm-Hearth for 8 s: hits leave a stacking Ember-Burn, and the cut rings a big foe for DAWNBURST."),
+		ScribeCardResource.CardRarity.COMMON, Twist.EMBER_BURN, &"ember",
+		"A glowing ember cut. Each hit makes a foe wobble a bit more, and a friend's Heavy turns the glow into healing for everyone!",
+		"Trim the wick and it burns all night. Leave it long, and it burns the house.", "a chandler's warning, Hearthstead Market",
+		"Miller's Oak, where every tale begins. Every hero starts with one.")
+	wick_card.starter = true
+	var ward: CombatActionResource = _strike(KINDLE_HEARTH_WARD, "Kindle-Hearth Ward", Cmd.BACK_HEAVY, 0.2, 0.16, 0.3, 0.0, 10.0)
+	ward.poise_damage = 12.0
+	ward.resonance_gain = 0.0
+	_deck_shield(_deck_card(_lead(ward, Slot.BACK, Sign.SIGN_WARM_HEARTH,
+		"An Ink Shield like a banked fire for 8 s: Warm-Hearth blows do 70% less and friends behind you mend. Its counter-brace sets off DAWNBURST."),
+		ScribeCardResource.CardRarity.UNCOMMON, Twist.HEARTH_MEND, &"hearth",
+		"Stand in front like a warm fire. Friends standing behind you slowly heal, and your counter heals the whole team!",
+		"No fire is ever really out. It is only waiting for someone to kneel and blow on it.", "the miller's grandmother",
+		"Miller's Oak: calm the orchard's foes and it may turn up."))
+	# Star-Tide.
+	var thrust: CombatActionResource = _strike(TIDE_TURN_THRUST, "Tide-Turn Thrust", Cmd.TRIGGER_R_SKILL, 0.14, 0.16, 0.24, 0.0, 18.0)
+	thrust.lunge_distance = 3.0
+	thrust.reach = 2.4
+	thrust.resonance_gain = 0.0
+	thrust.primer = Sign.SIGN_STAR_TIDE
+	_deck_card(_lead(thrust, Slot.SIGNATURE, Sign.SIGN_STAR_TIDE,
+		"Coat your weapon in Star-Tide for 8 s: hits give you Breath back, and the thrust rings a big foe for ASTRAL CHORUS."),
+		ScribeCardResource.CardRarity.UNCOMMON, Twist.TIDE_BREATH, &"thrust",
+		"A quick moonlit poke that gives you breath back. A friend's Heavy fills everyone's ink!",
+		"Wait for the turn of the tide, then go with it. The sea does half the work.", "an Old Quay boatman",
+		"Barrow-Eyot: calm the foes of the barrow isle and it may turn up.")
+	var weir: CombatActionResource = _strike(MOON_WEIR_GUARD, "Moon-Weir Guard", Cmd.BACK_HEAVY, 0.2, 0.16, 0.3, 0.0, 10.0)
+	weir.poise_damage = 12.0
+	weir.resonance_gain = 0.0
+	_deck_shield(_deck_card(_lead(weir, Slot.BACK, Sign.SIGN_STAR_TIDE,
+		"An Ink Shield like a weir across the tide for 8 s: Star-Tide blows do 70% less, and a Perfect Guard pours an Ink-Drop into your well."),
+		ScribeCardResource.CardRarity.COMMON, Twist.MOON_WEIR, &"weir",
+		"A moon shield. Block a hit at just the right moment and you get an Ink-Drop back! Friends behind you catch their breath.",
+		"The weir does not fight the river. It only keeps a little of everything that passes.", "carved on the weir posts, Barrow-Eyot",
+		"Barrow-Eyot, by the Lantern-Bearers' tide-weir. The Scribery inscribes it too."))
+
+
+## One deck card's own words and picture. Commons are inscribed at the Scribery; every deck card
+## but the starter can be found out on its Sign's isle (PartyProgress.roll_deck_find).
+func _deck_card(card: ScribeCardResource, rarity: ScribeCardResource.CardRarity, twist: int, motif: StringName,
+		kid: String, flavor: String, flavor_by: String, found: String) -> ScribeCardResource:
+	card.rarity = rarity
+	card.starter = false
+	# Kept out of the boss chest's table, so its seeded drops stay as they were.
+	card.drop_weight = 0.0
+	card.chime_cost = 25 if rarity == ScribeCardResource.CardRarity.COMMON else 0
+	card.twist = twist as CardTwists.Twist
+	card.art_motif = motif
+	card.kid_text = kid
+	card.flavor_text = flavor
+	card.flavor_by = flavor_by
+	card.found_text = found
+	card.coat_duration_sec = 8.0
+	return card
+
+
+## A deck defense card: an Ink Shield that soaks its Sign's blows and shrugs stuns.
+func _deck_shield(card: ScribeCardResource) -> ScribeCardResource:
+	card.manifestation_mode = ScribeCardResource.ManifestationMode.WARD_MANTLE
+	card.ward_damage_mitigation_pct = DECK_SHIELD_WARD
+	card.grants_stun_immunity = true
+	return card
+
+
+## The Ink Card Deck's cards in their order.
+func ink_deck() -> Array[ScribeCardResource]:
+	var deck: Array[ScribeCardResource] = []
+	for id: StringName in INK_DECK:
+		deck.append(card(id))
+	return deck
 
 
 ## A Common leaf the Scribery inscribes: not a starter, never in a chest.

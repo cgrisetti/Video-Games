@@ -1,37 +1,42 @@
 ## Binder tab 2, Quick Magic-Ink Cards, as the card bench of the Cards wireframe
-## (25_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md §2, R4, R5) on the Binder's
-## 1600 x 900 sheet:
+## (25_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md §2, R4, R5), made for a young
+## player with the Ink Card Deck (§7), on the Binder's 1600 x 900 sheet:
 ##   left    the Cross at 2.2x: pick a diamond (L, R, L+R); under it, what the
 ##           chosen diamond's pair does together
-##   middle  your hand at your level (the seven slots, the Ink-Well's depth),
-##           the chosen diamond and what it costs, and its three layers:
-##           1 the Place-Card that frames it, 2 the Ink card (what you do),
-##           3 the one Tuck that slides half under it
-##   right   the Ink Card Collection for the chosen layer (Cards, Tucks,
-##           Place-Cards), every row saying whether it fits and why not
-## Left / right picks the diamond, up / down the layer, light opens the
-## collection; there up / down chooses, left / right turns the filter, light
-## slots the card and dodge goes back. Every change goes to the host at once.
+##   middle  on the bench: your hand (the seven slots, the Ink-Well), the chosen
+##           diamond and its three layers (1 the frame, a Place-Card; 2 the card,
+##           what you do; 3 the helper, a Tuck), and "How does a diamond work?"
+##           (DiamondGuide). Choosing cards: the highlighted card big (InkCardFace),
+##           what it does in a child's words, and whether it fits
+##   right   your cards as a grid of pictures for the chosen layer, each saying
+##           with its look whether it's in use, fits, or can't go in yet
+## Left / right picks the diamond, up / down the layer, light opens your cards; there
+## the arrows move round the grid, light puts the card in (a sparkle where it lands)
+## and dodge goes back. Every change goes to the host at once.
 class_name BinderCardBench
 extends Control
 
 const LEFT: Rect2 = Rect2(34.0, 252.0, 516.0, 572.0)
 const MIDDLE: Rect2 = Rect2(576.0, 252.0, 494.0, 572.0)
 const RIGHT: Rect2 = Rect2(1096.0, 252.0, 464.0, 572.0)
-## How many collection rows show at once (the list scrolls with the cursor).
-const LIST_ROWS: int = 6
+## The grid of your cards: this many across, this many rows showing (it scrolls with the cursor).
+const GRID_COLUMNS: int = 3
+const GRID_ROWS: int = 2
+const MINI_CARD: Vector2 = Vector2(140.0, 196.0)
+const SPOTLIGHT_CARD: Vector2 = Vector2(280.0, 392.0)
 const HAND_TILE: Vector2 = Vector2(64.0, 62.0)
-const LAYER_NAMES: Array[String] = ["1 · Place-Card · the frame", "2 · Ink card · what you do", "3 · Tuck · slides half under"]
+const LAYER_NAMES: Array[String] = ["1 · Frame · a Place-Card", "2 · Card · what you do", "3 · Helper · a Tuck underneath"]
 ## The collection's filter tabs, in the wireframe's order, and the layer each shows.
 const FILTERS: Array[int] = [GrimoireBinderPanel.Layer.CARD, GrimoireBinderPanel.Layer.TUCK, GrimoireBinderPanel.Layer.PLACE]
-const TUCK_NOTE: String = "Same Sign as the card: a Maker-Sleight, one stronger move. A different Sign: a Dual-Sign Strike that cracks two gates. The Tuck is never used up."
-const RULES_NOTE: String = "No Memory meter: your level sets the hand, Ink-Drops set the cost. 7 slots, 7 different cards. Every row says why it can or can't go in."
+const RULES_NOTE: String = "Your level opens the diamonds, ink pays for the cards. Seven slots, seven different cards."
 
 var binder: GrimoireBinderPanel
 var _cross_box: VBoxContainer
 var _pair_text: Label
 var _middle: VBoxContainer
 var _right: VBoxContainer
+## The big card in the spotlight while you choose (the celebration flies from here).
+var spotlight: InkCardFace
 
 
 func build(owner: GrimoireBinderPanel) -> void:
@@ -54,7 +59,7 @@ func build(owner: GrimoireBinderPanel) -> void:
 	_cross_box.add_child(_pair_text)
 	_middle = BinderKit.column(8)
 	BinderKit.place(self, _middle, MIDDLE.position, MIDDLE.size.x)
-	_right = BinderKit.column(6)
+	_right = BinderKit.column(8)
 	BinderKit.place(self, _right, RIGHT.position, RIGHT.size.x)
 
 
@@ -64,13 +69,17 @@ func refresh() -> void:
 	var synergy: Dictionary = binder.widget.socket_view(binder.selected_socket())["synergy"]
 	_pair_text.text = GrimoireBinderPanel._diorama_text(synergy)
 	_pair_text.add_theme_color_override(&"font_color", AtelierTheme.GOLD if synergy["is_home_ground_harmony"] else AtelierTheme.INK)
-	_fill_middle()
+	if binder.column == GrimoireBinderPanel.Column.DIAMONDS:
+		spotlight = null
+		_fill_bench()
+	else:
+		_fill_spotlight()
 	_fill_collection()
 
 
-# --- Middle: the hand, the diamond and its three layers ---------------------------------------
+# --- Middle, on the bench: the hand, the diamond and its layers ---------------------------------
 
-func _fill_middle() -> void:
+func _fill_bench() -> void:
 	BinderKit.clear(_middle)
 	var progress: PartyProgress = PartyProgress.current
 	var level: int = progress.character_level(binder.actor.loadout.class_id)
@@ -89,12 +98,13 @@ func _fill_middle() -> void:
 	_middle.add_child(BinderKit.text(binder.socket_cost_line(socket), AtelierTheme.SMALL_SIZE + 1, AtelierTheme.INK_MUTED))
 	if not GrimoireRules.socket_open(socket, level):
 		var shut: PanelContainer = BinderKit.row_box(false, true)
-		shut.add_child(BinderKit.text("▢ %s. You're Lv %d." % [GrimoireRules.socket_opens_text(socket), level], AtelierTheme.BODY_SIZE, AtelierTheme.INK_DIM))
+		shut.add_child(BinderKit.text("▢ %s. You're Lv %d: keep going, it opens soon!" % [GrimoireRules.socket_opens_text(socket), level],
+			AtelierTheme.BODY_SIZE, AtelierTheme.INK_DIM, MIDDLE.size.x - 30.0))
 		_middle.add_child(shut)
-		return
-	for layer: int in LAYER_NAMES.size():
-		_middle.add_child(_layer_row(layer))
-	_middle.add_child(BinderKit.text(TUCK_NOTE, AtelierTheme.SMALL_SIZE, AtelierTheme.INK_DIM, MIDDLE.size.x))
+	else:
+		for layer: int in LAYER_NAMES.size():
+			_middle.add_child(_layer_row(layer))
+	_middle.add_child(_guide_row())
 
 
 ## One of the seven slots: its name, and the card in it (or the level it opens at).
@@ -119,27 +129,27 @@ func _hand_tile(tile: Array) -> PanelContainer:
 ## A layer of the chosen diamond: what's in it now, and (for the Tuck) where it sits.
 func _layer_row(layer: int) -> PanelContainer:
 	var chosen: bool = binder.bench_layer == layer
-	var box: PanelContainer = BinderKit.row_box(chosen)
+	var box: PanelContainer = BinderKit.row_box(chosen, false, 10.0)
 	BinderKit.on_click(box, binder.open_layer.bind(layer))
-	var stack: VBoxContainer = BinderKit.column(4)
+	var stack: VBoxContainer = BinderKit.column(3)
 	box.add_child(stack)
 	var top: HBoxContainer = BinderKit.line(8)
 	var kicker: Label = BinderKit.kicker(LAYER_NAMES[layer])
 	kicker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(kicker)
-	top.add_child(BinderKit.chip("light · swap" if chosen else "swap", AtelierTheme.GOLD if chosen else AtelierTheme.LINE_DIM))
+	top.add_child(BinderKit.chip("light · choose" if chosen else "choose", AtelierTheme.GOLD if chosen else AtelierTheme.LINE_DIM))
 	stack.add_child(top)
 	var held: StringName = binder.layer_copy(layer)
 	var card: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(held)) if held != &"" else null
 	var title: HBoxContainer = BinderKit.line(8)
-	title.add_child(BinderKit.text(card.display_name if card != null else binder.empty_layer_text(layer), BinderKit.NAME_SIZE - 2,
+	title.add_child(BinderKit.text(card.display_name if card != null else binder.empty_layer_text(layer), BinderKit.NAME_SIZE - 3,
 		AtelierTheme.INK if card != null else AtelierTheme.INK_DIM))
 	if card != null:
 		title.add_child(BinderKit.sign_chip(card.scribe_sign))
 	stack.add_child(title)
-	var about: String = binder.layer_about(layer, held)
+	var about: String = card.kid_text if card != null and card.kid_text != "" else binder.layer_about(layer, held)
 	if about != "":
-		stack.add_child(BinderKit.text(about, AtelierTheme.SMALL_SIZE + 1, AtelierTheme.INK_MUTED, MIDDLE.size.x - 30.0))
+		stack.add_child(BinderKit.text(about, AtelierTheme.SMALL_SIZE, AtelierTheme.INK_MUTED, MIDDLE.size.x - 30.0))
 	if layer == GrimoireBinderPanel.Layer.TUCK:
 		var spots: HBoxContainer = BinderKit.line(6)
 		for spot: Array in binder.tuck_spots():
@@ -151,51 +161,97 @@ func _layer_row(layer: int) -> PanelContainer:
 	return box
 
 
-# --- Right: the Ink Card Collection -------------------------------------------------------------
+## The last row on the bench: the picture guide to a diamond.
+func _guide_row() -> PanelContainer:
+	var chosen: bool = binder.bench_layer == GrimoireBinderPanel.GUIDE_ROW
+	var box: PanelContainer = BinderKit.row_box(chosen, false, 10.0)
+	BinderKit.on_click(box, binder.show_guide)
+	var row: HBoxContainer = BinderKit.line(10)
+	box.add_child(row)
+	row.add_child(BinderKit.chip("?", AtelierTheme.GOLD))
+	row.add_child(BinderKit.text("How does a diamond work?", AtelierTheme.BODY_SIZE + 1, AtelierTheme.GOLD if chosen else AtelierTheme.INK))
+	return box
+
+
+# --- Middle, choosing: the highlighted card, big ---------------------------------------------------
+
+func _fill_spotlight() -> void:
+	BinderKit.clear(_middle)
+	var layer: int = binder.shown_layer()
+	var options: Array[StringName] = binder.layer_options(layer)
+	var key: StringName = options[clampi(binder.layer_row(layer), 0, options.size() - 1)]
+	var holder: CenterContainer = CenterContainer.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.custom_minimum_size = Vector2(MIDDLE.size.x, SPOTLIGHT_CARD.y + 8.0)
+	_middle.add_child(holder)
+	spotlight = InkCardFace.new(key)
+	spotlight.custom_minimum_size = SPOTLIGHT_CARD
+	spotlight.socket_word = GrimoireRules.SOCKET_NAMES[binder.selected_socket()] if layer == GrimoireBinderPanel.Layer.CARD else ""
+	holder.add_child(spotlight)
+	var verdict: Array = binder.fit_verdict(layer, key)
+	var fits: bool = bool(verdict[1])
+	var go: PanelContainer = BinderKit.row_box(fits, not fits, 10.0)
+	go.add_child(BinderKit.text(binder.spotlight_words(layer, key, verdict), AtelierTheme.BODY_SIZE + 1, AtelierTheme.GOLD if fits else AtelierTheme.BAD,
+		MIDDLE.size.x - 30.0))
+	BinderKit.on_click(go, binder.accept)
+	_middle.add_child(go)
+	var card: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(key)) if key != &"" else null
+	if card != null and card.flavor_text != "":
+		_middle.add_child(BinderKit.text("“%s”" % card.flavor_text, AtelierTheme.SMALL_SIZE, AtelierTheme.sign_text(card.scribe_sign), MIDDLE.size.x))
+
+
+# --- Right: your cards as pictures ------------------------------------------------------------------
 
 func _fill_collection() -> void:
 	BinderKit.clear(_right)
-	_right.add_child(BinderKit.text("The Ink Card Collection", BinderKit.NAME_SIZE, AtelierTheme.INK))
+	var layer: int = binder.shown_layer()
+	_right.add_child(BinderKit.text("Your cards", BinderKit.NAME_SIZE, AtelierTheme.INK))
 	var filters: HBoxContainer = BinderKit.line(6)
-	for layer: int in FILTERS:
-		var on: bool = binder.bench_layer == layer
+	for shown: int in FILTERS:
+		var on: bool = layer == shown
 		var tab: PanelContainer = BinderKit.panel(AtelierTheme.tab_style(on))
-		tab.add_child(BinderKit.text(binder.filter_name(layer), AtelierTheme.SMALL_SIZE + 1, AtelierTheme.INK if on else AtelierTheme.INK_MUTED))
-		BinderKit.on_click(tab, binder.open_layer.bind(layer))
+		tab.add_child(BinderKit.text(binder.filter_name(shown), AtelierTheme.SMALL_SIZE + 1, AtelierTheme.INK if on else AtelierTheme.INK_MUTED))
+		BinderKit.on_click(tab, binder.open_layer.bind(shown))
 		filters.add_child(tab)
 	_right.add_child(filters)
-	var layer: int = binder.bench_layer
 	var options: Array[StringName] = binder.layer_options(layer)
 	var cursor: int = binder.layer_row(layer)
 	var browsing: bool = binder.column != GrimoireBinderPanel.Column.DIAMONDS
-	var first: int = clampi(cursor - (LIST_ROWS >> 1), 0, maxi(0, options.size() - LIST_ROWS))
+	var last_row: int = maxi(0, (options.size() - 1) / GRID_COLUMNS)
+	var first_row: int = clampi(cursor / GRID_COLUMNS - (GRID_ROWS - 1), 0, maxi(0, last_row - (GRID_ROWS - 1)))
+	var first: int = first_row * GRID_COLUMNS
 	if first > 0:
-		_right.add_child(BinderKit.text("↑ %d more" % first, AtelierTheme.SMALL_SIZE, AtelierTheme.INK_DIM))
-	for index: int in range(first, mini(options.size(), first + LIST_ROWS)):
-		_right.add_child(_collection_row(layer, options[index], index, browsing and index == cursor))
-	var below: int = options.size() - (first + LIST_ROWS)
-	if below > 0:
-		_right.add_child(BinderKit.text("↓ %d more" % below, AtelierTheme.SMALL_SIZE, AtelierTheme.INK_DIM))
+		_right.add_child(BinderKit.text("↑ more cards", AtelierTheme.SMALL_SIZE, AtelierTheme.INK_DIM))
+	var grid: GridContainer = GridContainer.new()
+	grid.columns = GRID_COLUMNS
+	grid.add_theme_constant_override(&"h_separation", 12)
+	grid.add_theme_constant_override(&"v_separation", 10)
+	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_right.add_child(grid)
+	for index: int in range(first, mini(options.size(), first + GRID_COLUMNS * GRID_ROWS)):
+		grid.add_child(_mini_card(layer, options[index], index, browsing and index == cursor))
+	if options.size() > first + GRID_COLUMNS * GRID_ROWS:
+		_right.add_child(BinderKit.text("↓ more cards", AtelierTheme.SMALL_SIZE, AtelierTheme.INK_DIM))
 	_right.add_child(BinderKit.text(RULES_NOTE, AtelierTheme.SMALL_SIZE, AtelierTheme.INK_DIM, RIGHT.size.x))
 
 
-## A row of the collection: the card, its Sign and a note, and a chip saying whether it fits.
-func _collection_row(layer: int, copy_key: StringName, index: int, chosen: bool) -> PanelContainer:
+## One card in the grid: its picture, and a little ribbon saying "in use", "fits" or why not.
+func _mini_card(layer: int, copy_key: StringName, index: int, chosen: bool) -> Control:
 	var verdict: Array = binder.fit_verdict(layer, copy_key)
-	var box: PanelContainer = BinderKit.row_box(chosen, not bool(verdict[1]), 8.0)
-	BinderKit.on_click(box, binder.pick_layer_row.bind(layer, index))
-	var split: HBoxContainer = BinderKit.line(8)
-	box.add_child(split)
-	var stack: VBoxContainer = BinderKit.column(2)
-	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	split.add_child(stack)
-	var card: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key)) if copy_key != &"" else null
-	stack.add_child(BinderKit.text(card.display_name if card != null else binder.empty_layer_text(layer), AtelierTheme.BODY_SIZE,
-		AtelierTheme.INK if card != null else AtelierTheme.INK_MUTED))
-	stack.add_child(BinderKit.text(binder.collection_note(layer, copy_key), AtelierTheme.SMALL_SIZE, AtelierTheme.sign_text(card.scribe_sign) if card != null else AtelierTheme.INK_DIM,
-		RIGHT.size.x - 140.0))
-	var chip_colour: Color = AtelierTheme.GOOD if bool(verdict[1]) else AtelierTheme.BAD
-	if String(verdict[0]) == "in use" or String(verdict[0]) == "tucked":
-		chip_colour = AtelierTheme.GOLD
-	split.add_child(BinderKit.chip(String(verdict[0]), chip_colour))
-	return box
+	var stack: VBoxContainer = BinderKit.column(3)
+	var face: InkCardFace = InkCardFace.new(copy_key, true)
+	face.custom_minimum_size = MINI_CARD
+	face.chosen = chosen
+	face.shut = not bool(verdict[1])
+	BinderKit.on_click(face, binder.pick_layer_row.bind(layer, index))
+	stack.add_child(face)
+	var said: String = String(verdict[0])
+	var colour: Color = AtelierTheme.GOOD if bool(verdict[1]) else AtelierTheme.BAD
+	if said == "in use" or said == "tucked":
+		colour = AtelierTheme.GOLD
+	var ribbon: Label = BinderKit.text(said, AtelierTheme.SMALL_SIZE - 1, colour)
+	ribbon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ribbon.custom_minimum_size = Vector2(MINI_CARD.x, 0.0)
+	ribbon.clip_text = true
+	stack.add_child(ribbon)
+	return stack

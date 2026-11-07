@@ -40,6 +40,9 @@ const YOUTH_SKELETON_SCALE: float = 0.9
 const YOUTH_HEAD_SCALE: float = 1.18
 const YOUTH_EXTREMITY_SCALE: float = 1.22
 const YOUTH_HEADS_TALL: float = 5.5
+## The two Level 1 youths (docs/26 §7).
+const YOUTH_BOY: StringName = &"boy"
+const YOUTH_GIRL: StringName = &"girl"
 
 ## The four headgear styles.
 const HEADGEAR_STYLES: Array[StringName] = [&"wayfarer_hood_up", &"hood_back_shaved_crown", &"stout_kettle_cap", &"scribe_feather_hat"]
@@ -63,6 +66,8 @@ const FELLOWSHIP_RIMS: Array[Color] = [Color(0.949, 0.718, 0.286), Color(0.322, 
 
 ## &"adult" (a Calling's sculpted hero) or &"youth_wingfeather" (the Unsworn Level 1 youth).
 @export var body_build: StringName = BODY_ADULT
+## Which youth (&"boy" or &"girl", docs/26 §7) when body_build is the youth.
+@export var youth_style: StringName = YOUTH_BOY
 
 @export_group("Value 1: the grounded base")
 ## #2E402B Deep Pine-Wool.
@@ -108,6 +113,14 @@ const FELLOWSHIP_RIMS: Array[Color] = [Color(0.949, 0.718, 0.286), Color(0.322, 
 @export var split_hewing_apron: bool = true
 ## The Fellowship's silhouette rim (#52C478 for the Wayfarers).
 @export var role_rim_color: Color = Color(0.322, 0.769, 0.471)
+@export_group("Character (docs/26)")
+## Freckles over the nose and cheeks (0 none, 1 a summer's worth).
+@export_range(0.0, 1.0) var freckle_amount: float = 0.0
+## How rosy the cheeks, nose tip and ear tips run (the shader's malar_mix).
+@export_range(0.0, 1.0) var cheek_flush: float = 0.32
+## The lips' rose.
+@export var lip_color: Color = Color(0.62, 0.3, 0.27)
+
 ## The youth's knee patch (the hero shader's Calling trim slot; an Unsworn youth has no tabard).
 @export var patch_color: Color = Color(0.494, 0.604, 0.416)
 ## A drop-in model that wins over the sculpted hero (res://assets/models/heroes/<calling_id>.glb).
@@ -156,5 +169,5 @@ static func value_band(color: Color) -> int:
 
 ## A key naming everything the sculpted body depends on, so identical heroes share meshes.
 func sculpt_key() -> String:
-	return "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [body_build, headgear_style, headgear_crest, beard_style, left_pauldron_style, right_pauldron_style,
+	return "%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [body_build, youth_style, headgear_style, headgear_crest, beard_style, left_pauldron_style, right_pauldron_style,
 		belt_trinket_id, back_buckler_targe, split_hewing_apron]

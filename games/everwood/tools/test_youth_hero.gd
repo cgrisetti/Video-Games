@@ -25,6 +25,7 @@ func run(scene_tree: SceneTree, checker: Callable, p1: ActorBase) -> void:
 	_check_seat(p1)
 	_check_sculpt(p1)
 	_check_clips()
+	_check_character(p1)
 	_check_start_spot()
 	await _check_motion(p1)
 
@@ -71,8 +72,8 @@ func _check_sculpt(p1: ActorBase) -> void:
 		for color: Color in [youth.value_1_coat_color, youth.value_1_breeches_color, youth.value_1_boot_color]:
 			bands_ok = bands_ok and HeroAppearanceResource.value_band(color) == 1
 		bands_ok = bands_ok and HeroAppearanceResource.value_band(youth.value_2_leather_color) == 2 and youth.is_youth()
-	check.call(bands_ok and ArsenalCatalog.current.youth_appearances().size() == 3,
-		"a youth for each Fellowship, the cape, breeches and boots in Value 1 and the braces' leather in Value 2")
+	check.call(bands_ok and ArsenalCatalog.current.youth_appearances().size() == 6,
+		"a boy and a girl youth for each Fellowship, the cape, breeches and boots in Value 1 and the braces' leather in Value 2")
 	check.call(visuals.body_material.get_shader_parameter(&"calling_trim_color") == look.patch_color,
 		"the trim slot paints the knee patch and the cape's lining (an Unsworn youth wears no tabard)")
 
@@ -97,6 +98,42 @@ static func _head_measure(mesh: ArrayMesh) -> Vector3:
 		if v.y > 1.55 and v.z < -0.02 and absf(v.x) < 0.25:
 			half = maxf(half, absf(v.x))
 	return Vector3(chin, top, half)
+
+
+## The character design language (docs/26): the ink line, painted faces, the girl, blinks.
+func _check_character(p1: ActorBase) -> void:
+	var material: ShaderMaterial = p1.visuals.body_material
+	var ink: ShaderMaterial = material.next_pass as ShaderMaterial
+	check.call(ink != null and ink.shader == HeroMeshAtelier.INK_SHADER and is_equal_approx(float(ink.get_shader_parameter(&"ink_width")), HeroMeshAtelier.INK_WIDTH_PX)
+		and (ink.get_shader_parameter(&"ink_color") as Color).get_luminance() > 0.05,
+		"every person wears the storybook ink line: a warm umber contour %.1f px wide, never black (docs/26 §5)" % HeroMeshAtelier.INK_WIDTH_PX)
+	check.call(float(material.get_shader_parameter(&"freckle_amount")) > 0.3 and float(material.get_shader_parameter(&"malar_mix")) > 0.4,
+		"the youth's face is painted: freckles over the nose and cheeks, a rosy flush (docs/26 §4)")
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var boy: HeroAppearanceResource = catalog.youth_appearance_for_seat(ClassLoadouts.DIRECTIONAL_FLOW_DPS, 0, HeroAppearanceResource.YOUTH_BOY)
+	var girl: HeroAppearanceResource = catalog.youth_appearance_for_seat(ClassLoadouts.DIRECTIONAL_FLOW_DPS, 0, HeroAppearanceResource.YOUTH_GIRL)
+	var boy_parts: Array[ArrayMesh] = HeroMeshAtelier.build_hero_surfaces(boy, ArsenalCatalog.BRAMBLE_JERKIN)
+	var girl_parts: Array[ArrayMesh] = HeroMeshAtelier.build_hero_surfaces(girl, ArsenalCatalog.BRAMBLE_JERKIN)
+	var different: bool = girl.youth_style == HeroAppearanceResource.YOUTH_GIRL and boy.sculpt_key() != girl.sculpt_key()
+	for index: int in 4:
+		different = different and boy_parts[index] != girl_parts[index]
+	check.call(different and girl.beard_primary_color != boy.beard_primary_color and girl.appearance_id == &"youth_wayfarer_girl",
+		"the girl youth has her own sculpt (her braid, laced waistcoat and split skirt) and her own auburn hair (docs/26 §7)")
+	var girl_idle: Dictionary = HeroCombatAnimator.clip_info(HeroCombatAnimator.YOUTH_IDLE_GIRL)
+	check.call(int(girl_idle.get("frames", 0)) == 240 and bool(girl_idle.get("loop", false)),
+		"...and her own idle: a hand at her braid")
+	var shut: float = 0.0
+	var open_frames: int = 0
+	for step: int in 600:
+		var amount: float = HeroMeshAtelier.blink_amount(step / 60.0, 0.37)
+		shut = maxf(shut, amount)
+		open_frames += 1 if amount <= 0.0 else 0
+	check.call(shut > 0.9 and open_frames > 540,
+		"the eyes blink: shut for a moment every few seconds, open the rest (%d of 600 frames open)" % open_frames)
+	# The shoulders follow the arms: a vertex out on the shoulder leans onto that arm's bones.
+	var leaning: Dictionary = HeroYouthAtelier.shoulder_weights(Vector3(0.19, 1.34, 0.0), {HeroRigBuilder.Bone.CHEST: 1.0})
+	check.call(float(leaning.get(HeroRigBuilder.Bone.CLAVICLE_R, 0.0)) > 0.3 and float(leaning.get(HeroRigBuilder.Bone.UPPER_ARM_R, 0.0)) > 0.2,
+		"the shirt and capelet shoulders follow the arms, so a raised arm stretches the seam instead of opening a gap (docs/26 §3)")
 
 
 func _check_clips() -> void:

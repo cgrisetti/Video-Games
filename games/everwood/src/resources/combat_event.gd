@@ -73,6 +73,9 @@ var seal_burst: bool = false
 ## land, whether it cracks a martial lock or any lock or gate, and how far a
 ## Sign detonation riding it reaches.
 var stun_seconds: float = 0.0
+## A slow the strike leaves on its target (CardTwists): a share of its pace (1.0 roots it) for this long.
+var slow_fraction: float = 0.0
+var slow_seconds: float = 0.0
 var breaks_martial_lock: bool = false
 var cracks_lock: bool = false
 var detonation_radius_mult: float = 1.0
@@ -154,6 +157,8 @@ func to_dict() -> Dictionary:
 		"heal": heal,
 		"resonance": resonance,
 		"ink_refill": ink_refill,
+		"slow_fraction": slow_fraction,
+		"slow_seconds": slow_seconds,
 		"stamina": stamina,
 		"echo": echo,
 		"primer": primer,
@@ -182,6 +187,8 @@ static func from_dict(data: Dictionary) -> CombatEvent:
 	event.heal = float(data.get("heal", 0.0))
 	event.resonance = float(data.get("resonance", 0.0))
 	event.ink_refill = bool(data.get("ink_refill", false))
+	event.slow_fraction = clampf(float(data.get("slow_fraction", 0.0)), 0.0, 1.0)
+	event.slow_seconds = clampf(float(data.get("slow_seconds", 0.0)), 0.0, 5.0)
 	event.stamina = float(data.get("stamina", 0.0))
 	event.echo = float(data.get("echo", 0.0))
 	event.primer = int(data.get("primer", ScribeSignResource.Sign.NONE))

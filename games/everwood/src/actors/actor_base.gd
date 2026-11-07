@@ -184,6 +184,9 @@ var _prop: Node3D
 var _weapon_prop: Node3D
 var _name_label: Label3D
 var _hit_stop_left: float = 0.0
+## A deck card's slow (apply_slow): how much of the pace it takes and when it ends (CombatDirector.game_time()).
+var _slow_fraction: float = 0.0
+var _slow_until: float = 0.0
 var _flash_left: float = 0.0
 var _flow_glow_left: float = 0.0
 var _pull_from: Vector3 = Vector3.ZERO
@@ -803,10 +806,26 @@ func is_hit_stopped() -> bool:
 	return _hit_stop_left > 0.0
 
 
+## A slow from a deck card's frost or root (CardTwists): `fraction` of the pace gone (1.0 roots) for `seconds`.
+## The stronger or longer of two slows holds. Hoarfrost Mantle's shield shrugs every slow off.
+func apply_slow(fraction: float, seconds: float) -> void:
+	if CardTwists.shrugs_slows(self):
+		return
+	var now: float = CombatDirector.game_time()
+	if now >= _slow_until or fraction >= _slow_fraction:
+		_slow_fraction = clampf(fraction, 0.0, 1.0)
+	_slow_until = maxf(_slow_until, now + seconds)
+
+
+## The share of its pace this actor keeps under a slow (1.0 with none).
+func slow_factor() -> float:
+	return 1.0 - _slow_fraction if CombatDirector.game_time() < _slow_until else 1.0
+
+
 # --- Movement helpers (used by the states) -------------------------------
 
 func steer_horizontal(direction: Vector3, speed: float, dt: float) -> void:
-	var wanted: Vector3 = Vector3(direction.x, 0.0, direction.z) * speed
+	var wanted: Vector3 = Vector3(direction.x, 0.0, direction.z) * speed * slow_factor()
 	var horizontal: Vector3 = Vector3(velocity.x, 0.0, velocity.z).move_toward(wanted, ACCELERATION * dt)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z

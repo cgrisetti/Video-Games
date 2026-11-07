@@ -92,6 +92,7 @@ const WEAPON_CLIPS: Dictionary[int, Array] = {
 const CARD_CLIPS: Array[StringName] = [&"card_invoke_forward", &"card_invoke_back", &"card_invoke_r", &"card_invoke_lr"]
 ## The youth's clips (21_WINGFEATHER_YOUTH_HERO.md §3).
 const YOUTH_IDLE: StringName = &"idle_youth_calm"
+const YOUTH_IDLE_GIRL: StringName = &"idle_youth_calm_girl"
 const YOUTH_WALK: StringName = &"locomotion_youth_walk"
 const YOUTH_RUN: StringName = &"locomotion_youth_run"
 const YOUTH_DRAW_LEFT: StringName = &"youth_draw_tool_l"
@@ -136,6 +137,8 @@ var hips_offset: Vector3 = Vector3.ZERO
 var hips_scale: Vector3 = Vector3.ONE
 ## The Level 1 youth (ActorVisuals sets it before _ready): calm from the start, its own idle, walk and run.
 var youth: bool = false
+## The girl youth (docs/26 §7): her own idle, a hand at her braid.
+var youth_girl: bool = false
 ## How fast the hero is rising (+) or falling (-), fed by ActorVisuals from how it moved (so copies on other peers jump too).
 var vertical_speed: float = 0.0
 ## The landing squash still to play (1 just landed, 0 done), and whether the hero was in the air last tick.
@@ -177,7 +180,7 @@ func _ready() -> void:
 		# The youth walks in empty-handed.
 		_since_fight = CALM_AFTER
 		calm = true
-		clip = YOUTH_IDLE
+		clip = YOUTH_IDLE_GIRL if youth_girl else YOUTH_IDLE
 
 
 # --- The library ---------------------------------------------------------------
@@ -451,7 +454,7 @@ func _choose_clip(step: float) -> Array:
 						frame = _cycle_frame(speed, step, YOUTH_RUN_FRAMES if running else YOUTH_WALK_FRAMES,
 							YOUTH_RUN_METRES if running else YOUTH_WALK_METRES, YOUTH_RUN_PLANTS if running else YOUTH_WALK_PLANTS)
 					else:
-						picked = YOUTH_IDLE
+						picked = YOUTH_IDLE_GIRL if youth_girl else YOUTH_IDLE
 						frame = _loop_frame(picked, step)
 				elif speed > WALK_START_SPEED:
 					picked = &"locomotion_run_cycle"

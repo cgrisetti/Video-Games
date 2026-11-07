@@ -125,6 +125,14 @@ var coat_time_left: float = 0.0
 var coat_synergy: Dictionary = {}
 ## Seconds the Flow-Link Window stays open.
 var flow_window_left: float = 0.0
+## The Ink Card Deck's twists (CardTwists): the card whose coat or shield is up, coated hits and
+## Ember-Burn stacks per foe (by instance id), the mend tick, Moon-Weir's next Ink-Drop, the foe last hit.
+var twist_card: ScribeCardResource
+var twist_hits: Dictionary[int, int] = {}
+var twist_stacks: Dictionary[int, int] = {}
+var twist_mend_left: float = 0.0
+var twist_guard_ready_at: float = 0.0
+var _last_struck: NodePath = NodePath()
 
 ## The Ward Blessing: seconds left once a fight starts (it waits, full, until then), and the foe it's turned toward.
 var ward_blessing_left: float = 0.0
@@ -185,6 +193,7 @@ func tick(delta: float) -> void:
 		if ink_share_left <= 0.0:
 			_end_ink_share()
 	if coat_time_left > 0.0:
+		CardTwists.tick_shield(self, delta)
 		coat_time_left -= delta
 		if coat_time_left <= 0.0:
 			_clear_coat()
@@ -339,11 +348,15 @@ func on_strike_landed(action: CombatActionResource, event: CombatEvent) -> void:
 		event.coat_sign = _one_and_done_sign
 		event.coat_poise = 0.0
 		return
+	_last_struck = event.target_path
 	if opening_strike_empowered and is_in_combat:
 		_discharge_into(event)
 	elif coat_time_left > 0.0 and coat_sign != NO_SIGN:
 		event.coat_sign = coat_sign
 		event.coat_poise = coat_synergy.get("bonus_poise", 0.0)
+		# The deck card's own twist (rings, frost, Ember-Burn, Breath).
+		if coat_mode == ScribeCardResource.ManifestationMode.WEAPON_COAT:
+			CardTwists.on_coated_hit(self, event)
 	elif ink_share_left > 0.0 and shared_party_sign_override != NO_SIGN and physical:
 		# A Support's Ink-Share: this physical blow strikes in their Sign.
 		event.coat_sign = shared_party_sign_override
@@ -364,7 +377,14 @@ func counter_brace() -> bool:
 	actor.stats.add_resonance(-cost)
 	flow_window_left = 0.0
 	_cast(Socket.GUARD)
+	CardTwists.on_counter_brace(self, twist_card)
 	return true
+
+
+## The foe this hero last landed a blow on (a counter-brace's root grabs it), or null.
+func last_blocked_attacker() -> ActorBase:
+	var foe: ActorBase = actor.get_node_or_null(_last_struck) as ActorBase if not _last_struck.is_empty() else null
+	return foe if foe != null and foe.is_targetable() and foe.global_position.distance_to(actor.global_position) <= CardTwists.COUNTER_REACH + foe.body_radius() + 1.0 else null
 
 
 ## A command the hero's controller just issued (ActorBase calls this before
@@ -437,6 +457,11 @@ func _cast(socket: int) -> void:
 	coat_sign = scribe_sign
 	coat_mode = mode
 	coat_time_left = synergy["coat_duration_sec"]
+	# A fresh coat counts its own hits for the deck twists.
+	twist_card = ArsenalCatalog.current.card(actor.loadout.kit.socket_leaf_id(socket)) if actor.loadout != null and actor.loadout.kit != null else null
+	twist_hits.clear()
+	twist_stacks.clear()
+	twist_mend_left = 0.0
 	director.show_sign_coat(actor, CoatLook.FLARE, scribe_sign, mode, synergy["location_card_id"], SIGN_FLOW_FLARE_TIME)
 	director.show_sign_coat(actor, CoatLook.COAT, scribe_sign, mode, synergy["location_card_id"], coat_time_left)
 	match mode:
@@ -565,6 +590,9 @@ func filter_incoming(event: CombatEvent) -> void:
 
 ## After the guard maths: a Perfect Guard of any Sign's blow under a Ward-Mantle wards it too.
 func after_incoming(event: CombatEvent, outcome: int) -> void:
+	# Moon-Weir Guard: a Perfect Guard of any blow under its shield pours an Ink-Drop.
+	if outcome == StatsComponent.StrikeOutcome.PERFECT_GUARD:
+		CardTwists.on_perfect_guard(self)
 	if _warded_this_hit or not is_mantled() or event.scribe_sign == NO_SIGN or outcome != StatsComponent.StrikeOutcome.PERFECT_GUARD:
 		return
 	var attacker: ActorBase = actor.get_node_or_null(event.attacker_path) as ActorBase
@@ -630,6 +658,7 @@ func _clear_coat() -> void:
 	coat_time_left = 0.0
 	coat_sign = NO_SIGN
 	coat_synergy = {}
+	twist_card = null
 	if has_hearth_rite_tuck:
 		CombatDirector.current.show_sign_coat(actor, CoatLook.TRAIL_TUCK, active_trail_coat_sign, _trail_synergy.get("manifestation_mode", 0),
 			active_location_card_id, 0.0)
