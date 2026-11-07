@@ -5,7 +5,7 @@
 ##       own file; the Controls tab's keyboard and pad drawn from the Input
 ##       Map; invert Y; toggle sprint (a click keeps running until you turn
 ##       aside, stop or click again; off, it's held)
-##   K2  the map: Miller's Oak's Zone Map painted from its island (sea, an
+##   K2  the map: Embershore's Zone Map painted from its island (sea, an
 ##       inked shore, roads and the huts' footprints), its towns, dungeon and
 ##       four crossings named, a legend, the hero's turning arrow; a click on
 ##       a mark, a click on open ground and the pad's keys each set a

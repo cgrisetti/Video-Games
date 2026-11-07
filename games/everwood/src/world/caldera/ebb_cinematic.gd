@@ -26,7 +26,7 @@ var _camera: Camera3D
 var _title: Label
 
 
-## `crown` and `home` are The Crown's and Miller's Oak's offsets in the live island's frame.
+## `crown` and `home` are The Crown's and Embershore's offsets in the live island's frame.
 func setup(world: World3D, crown: Vector3, home: Vector3) -> void:
 	_world = world
 	_crown = crown

@@ -1,7 +1,7 @@
 ## The Caldera Isles' checks (docs/20_CALDERA_ATLAS_AND_CROWN_BIBLE.md), run
 ## last by tools/smoke_test.gd (and alone by tools/run_caldera_checks.gd):
 ##   0  the atlas and the state: five grids (Embershore's 16 x 8, three 12 x 12 and The Crown's 8 x 8),
-##      four seams in two skins, eight booleans, the two derived properties,
+##      four seams in two skins, ten booleans (docs/20's eight and Embershore's two), the two derived properties,
 ##      and the Lens's Rule 4 over every name the Caldera shows
 ##   1  the boot: the main scene is the Caldera Isles; it boots at Bramblebridge's
 ##      green on Embershore (and with --boot-zone=crown at The Crown's South Bay
@@ -42,6 +42,8 @@ const LENS: GDScript = preload("res://tools/test_mythopoetic_lens.gd")
 const CROWN_ZONES: GDScript = preload("res://tools/test_crown_zones.gd")
 ## The roads laid over the land (docs/26), on all five isles.
 const LAID_ROADS: GDScript = preload("res://tools/test_laid_roads.gd")
+## Embershore's acceptance checks (docs/27 §12).
+const EMBERSHORE: GDScript = preload("res://tools/test_embershore.gd")
 
 var tree: SceneTree
 var check: Callable
@@ -57,6 +59,7 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	_check_atlas_and_state()
 	await _check_boot()
 	LAID_ROADS.new().run(level, check)
+	await EMBERSHORE.new().run(level, check, tree)
 	await _check_streaming_and_seams()
 	await _check_beacons()
 	_check_crown_areas()
@@ -175,7 +178,7 @@ func _check_atlas_and_state() -> void:
 	var mapped: Vector3 = mid_a + west.remap_offset(west.isle_a)
 	check.call(mapped.distance_to(west.midpoint(west.isle_b)) < 0.01 and is_equal_approx(west.corridor_s(west.isle_b, west.point_at(west.isle_b, 90.0)), 90.0),
 		"a seam's swap is a translation: the corridor's middle in Embershore's frame lands on its middle in Iron-Ness's, and s carries across")
-	check.call(CalderaWorldState.FLAGS.size() == 8 and state.bits() == 0 and not state.can_land_on_crown() and not state.cliff_stair_open()
+	check.call(CalderaWorldState.FLAGS.size() == 10 and state.bits() == 0 and not state.can_land_on_crown() and not state.cliff_stair_open()
 		and state.sea_level_y == CalderaWorldState.SEA_LEVEL_FLOOD,
 		"eight world-state booleans, all false at first: the Crown landing shut, the stair sealed, the sea at the Long Flood's 0 m")
 	state.beacon_iron = true

@@ -17,7 +17,7 @@ enum SeamSkin { WALKABLE_CAUSEWAY, LANTERN_SKIFF }
 @export var skin: SeamSkin = SeamSkin.WALKABLE_CAUSEWAY
 ## Eel Spit's look: low shingle instead of a dressed stone causeway.
 @export var shingle: bool = false
-## Miller's Oak's side.
+## Embershore's side.
 @export var isle_a: StringName = &""
 @export var isle_b: StringName = &""
 ## The shore end (or the pier head a skiff leaves) in each island's own frame.

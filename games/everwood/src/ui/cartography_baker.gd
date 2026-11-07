@@ -377,7 +377,7 @@ static func _archipelago_nodes(nodes: Array[Dictionary]) -> void:
 
 ## Where a way-marker on a node leads the hero now, in the level's own frame:
 ## {"target": Vector2, "via": String}. A node on another island leads to the
-## crossing that heads there (straight there, else back toward Miller's Oak).
+## crossing that heads there (straight there, else back toward Embershore).
 static func route_to(level: LevelBase, isle_id: StringName, local: Vector2) -> Dictionary:
 	var here: StringName = active_isle(level)
 	if here == &"" or isle_id == &"" or isle_id == here:

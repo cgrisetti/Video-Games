@@ -21,7 +21,7 @@ const TOOL_NAMES: Array[String] = [
 	"Debug hero: next Calling and level",
 	"Debug hero: previous",
 	"End the playtest (back to the saved level)",
-	"Playtest warp: Miller's Oak ⇄ The Crown",
+	"Playtest warp: Embershore ⇄ The Crown",
 	"Telemetry: the live score, mood and stems",
 	"Host a network game",
 	"Join a network game",

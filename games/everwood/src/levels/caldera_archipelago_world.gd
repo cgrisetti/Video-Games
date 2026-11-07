@@ -198,7 +198,7 @@ func home_place() -> String:
 ## Each island plays its score; on The Crown each shore and the World-Tree play
 ## their own suite (docs/23 §7), holding the one playing now for a few degrees
 ## past an edge so a party at a spring hears one tune. An island whose score is an
-## Audio Mosaic (16 §7) plays it everywhere on it: Miller's Oak's millers_holm and,
+## Audio Mosaic (16 §7) plays it everywhere on it: Embershore's millers_holm and,
 ## since Clay chose it over the shore suites, The Crown's crown_island.
 func music_profile_at(position: Vector3) -> StringName:
 	if streamer == null or streamer.builder == null:

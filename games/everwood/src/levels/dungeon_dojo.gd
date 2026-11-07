@@ -375,7 +375,7 @@ func _on_boss_defeated() -> void:
 	var chimes: int = chest_chimes(NetworkManager.current.human_count())
 	var card_key: String = String(ArsenalCatalog.current.roll_card_drop(PartyProgress.current.drop_rng))
 	PartyProgress.current.record_victory()
-	# Entered through Miller's Oak's Root-Sanctum: the Cairnsman lulled clears it, and the trade lanes go dark (docs/20 Part I §1.4).
+	# Entered through Embershore's Root-Sanctum: the Cairnsman lulled clears it, and the trade lanes go dark (docs/20 Part I §1.4).
 	if InstanceManager.current.home_instance == InstanceManager.CALDERA_ISLES and CalderaWorldState.current != null:
 		CalderaWorldState.current.clear_root_sanctum()
 	_begin_victory(spot, chimes, card_key)

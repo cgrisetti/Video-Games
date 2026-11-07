@@ -2,7 +2,7 @@
 ## Wayfarer's Atlas of 18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md §7.3):
 ## the parchment map over the player's view, opened out of combat with a tap of
 ## M / R3, or from the Grimoire Binder's Atlas Map tab.
-##   - a header naming where you are ("Miller's Oak · Lv 1–6 · Hearthstead
+##   - a header naming where you are ("Embershore · Lv 1–6 · Hearthstead
 ##     Market"), and the Zone Map / World Map tabs: the island you're on, or
 ##     all five isles of the Caldera (on a single-map level, a close crop of
 ##     the place you're in, or the whole map)

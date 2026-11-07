@@ -17,7 +17,7 @@
 ##   cairnsmans_vigil        the Cairnsman's suite                         D Dorian / Lydian 6/8 gallop at 132, 16 bars
 ## and oakshire_vale, the legacy Oakshire Vale's F Lydian waltz (104 BPM, 16 bars). The Caldera
 ## Isles' two Audio Mosaics (16 §7), twelve four-bar phrase cells each in six moods:
-##   millers_holm            Miller's Oak, the mill-isle where every launch begins  F Lydian / D Dorian 6/8 at 104
+##   millers_holm            Embershore (once Miller's Oak), the mill-isle where every launch begins  F Lydian / D Dorian 6/8 at 104
 ##   crown_island            The Crown                                            G Lydian / E Dorian 3/4 at 110
 ## (The audio doc's suite names map on: kindled_bivouac is honey_wick, bramblebridge_square
 ## bramble_bridge_square, ariundle_holloway moss_oak_hollow, doverslap_gorge dover_slap_falls,
@@ -231,11 +231,11 @@ static func _build_mosaics() -> void:
 	# Arriving by skiff at South Bay with the World-Tree ahead: it opens in Wonder.
 	crown.opening_cell = 2
 	register(crown)
-	# Miller's Oak, the mill-isle (the brief's Miller's Holm): Howard Shore's Concerning Hobbits
+	# Embershore, the mill-isle (the brief's Miller's Holm, then Miller's Oak): Howard Shore's Concerning Hobbits
 	# and Hisaishi's Mother's Broom. F Lydian and D Dorian at 104 in 6/8, a guitar and hammered
 	# dulcimer turning like the waterwheel, a warm low whistle, cello, and oboe-and-bassoon
 	# inventions. Every launch begins in its orchards, so it opens in Peace.
-	var holm: ZoneMusicProfileResource = _zone(&"millers_holm", "Miller's Oak's Mill-Wheel Mosaic", 65, &"F_LYDIAN", 104.0, 3, true,
+	var holm: ZoneMusicProfileResource = _zone(&"millers_holm", "Embershore's Mill-Wheel Mosaic", 65, &"F_LYDIAN", 104.0, 3, true,
 		LYDIAN, HARMONIC_MINOR, [0, 1, 3, 0], &"WHISTLE")
 	_mosaic(holm, [
 		[&"peace_a", MOOD_PEACE, VAR_B, "Fiddle/Harp", &"F", &"F_PENTATONIC", ["Fadd9", "Bb/F", "Dm7/F", "C/F"]],

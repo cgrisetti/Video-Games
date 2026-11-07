@@ -260,7 +260,7 @@ func _build_new_game(root: Control) -> PanelContainer:
 	column.add_theme_constant_override("separation", 14)
 	card.add_child(column)
 	column.add_child(_heading("A New Tale"))
-	column.add_child(_body("A youth of Miller's Oak wakes among the orchards. %s" % NAME_PROMPT))
+	column.add_child(_body("A youth of Embershore wakes on Bramblebridge's green. %s" % NAME_PROMPT))
 	name_field = LineEdit.new()
 	name_field.name = "HeroName"
 	name_field.max_length = SaveSlots.MAX_NAME_LENGTH

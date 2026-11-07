@@ -8,7 +8,7 @@
 ## is promoted to a tier at the Forge once its level opens it (PartyProgress).
 ##
 ##   Tier  Material                Lv      Threat  Rank  Light  Earned
-##   1     Orchard-Wood            1-4     1-7     +0    2.4    Miller's Oak
+##   1     Orchard-Wood            1-4     1-7     +0    2.4    Embershore
 ##   2     Bog-Bronze              5-7     8-13    +3    5.5    the Barrows, Hearthstead
 ##   3     Forge-Iron              8-10    14-19   +6    9.5    Iron-Ness
 ##   4     Barrow-Steel            11-13   20-25   +10   14.5   Barrow-Eyot
@@ -43,7 +43,7 @@ const TIER_COUNT: int = 7
 @export var light_armor_name: String = "Mended-Linen Smock"
 @export var unlock_island_id: StringName = &"ISLAND_OAKSHIRE_HOLM"
 ## Where in the Caldera the tier is earned, as the market stall reads it.
-@export var unlock_source: String = "Miller's Oak (Homestead Start)"
+@export var unlock_source: String = "Embershore (Homestead Start)"
 ## The Character Levels the tier is forged for (promotion opens at the first).
 @export var min_true_level: int = 1
 @export var max_true_level: int = 4

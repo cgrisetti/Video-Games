@@ -558,7 +558,7 @@ func _place(at: Vector3) -> void:
 func _grow(at: Vector3) -> WildMob:
 	var spawner: MobSpawner = MobSpawner.new()
 	spawner.name = "MosaicSpawner%d" % _spawners.size()
-	spawner.territory = "Miller's Oak"
+	spawner.territory = "Embershore"
 	spawner.variant_ids = [&"grey_pelt_prowler"]
 	spawner.leash = 40.0
 	level.add_child(spawner)

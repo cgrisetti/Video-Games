@@ -2107,12 +2107,12 @@ func _place(id: StringName, label: String, scribe_sign: Sign, landmark: StringNa
 ## shield the Heart-Crag Bulwark (the Creative Director's ruling for "Aegis").
 func _build_material_tiers() -> void:
 	_register_tier(TIER_1_HOMESTEAD, 1, "Orchard-Wood", "Oak-Bark & Boiled-Hide", "Bracken-Pelt Jerkin", "Mended-Linen Smock",
-		&"ISLAND_OAKSHIRE_HOLM", "Miller's Oak (homestead chests)", 1, 4, 1, 7, 0, 2.4, 3.5, 1.00, 14.0, [0.08, 0.05, 0.03], 0,
+		&"ISLAND_OAKSHIRE_HOLM", "Embershore (homestead chests)", 1, 4, 1, 7, 0, 2.4, 3.5, 1.00, 14.0, [0.08, 0.05, 0.03], 0,
 		["Orchard-Wood Stick & Bark-Buckler", "Cooper's Split-Rail Mallet", "Bent-Twig Bow & Reed-Shafts", "Rowan Walking-Stick & Tallow-Jar"],
 		["Bark-Buckler", "Oak-Knot Pommel", "Reed-Shaft Quiver", "Tallow-Jar"],
 		Color("#7A5438"), 0.00, 0.88, 0.18, Color("#D2B48C"), 1.40, 0.00)
 	_register_tier(TIER_2_BOG_BRONZE, 2, "Bog-Bronze", "Kettle-Link Coat", "Boiled-Buckskin Coat", "Orchard-Wool Mantle",
-		&"ISLAND_BARROW_EYOT", "the Miller's Oak Barrows and the Hearthstead stall", 5, 7, 8, 13, 3, 5.5, 8.0, 1.20, 20.0, [0.16, 0.12, 0.08], 25,
+		&"ISLAND_BARROW_EYOT", "the Embershore Barrows and the Hearthstead stall", 5, 7, 8, 13, 3, 5.5, 8.0, 1.20, 20.0, [0.16, 0.12, 0.08], 25,
 		["Bog-Bronze Short-Blade & Bossed-Buckler", "Peat-Cutter's Bronze Broad-Axe", "Ash-Bough Bow & Goose-Fletch", "Hazel-Crook & Brass-Lantern"],
 		["Bossed-Buckler", "Bog-Bronze Pommel-Knot", "Goose-Fletch Quiver", "Brass-Lantern"],
 		Color("#9E6B3B"), 0.72, 0.46, 0.25, Color("#F4A460"), 1.15, 0.00)

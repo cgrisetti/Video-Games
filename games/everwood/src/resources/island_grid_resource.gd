@@ -29,7 +29,7 @@ const CHUNK_SIZE: float = 128.0
 @export var landmark: String = ""
 ## What the -6 m Ebb bares on its shore.
 @export var ebb_reveal: String = ""
-## The CalderaWorldState flag its Beacon sets (&"" for Miller's Oak and The Crown).
+## The CalderaWorldState flag its Beacon sets (&"" for Embershore and The Crown).
 @export var beacon_flag: StringName = &""
 ## The current round The Crown its Beacon calms ("Iron Current").
 @export var current_name: String = ""
