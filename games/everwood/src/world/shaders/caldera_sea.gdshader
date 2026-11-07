@@ -5,8 +5,14 @@
 // Star-Tide's violet bleed off The Crown's east shore clears at the Ebb.
 // `mist` is a seam's sea-fog. Colours from the raw vertex stream are converted;
 // uniforms with source_color already are.
+//
+// The water reads the ground under it (docs/27 §4): over a shelving beach it
+// pales to the shore colour, a line of surf breaks and fades a few metres out,
+// and foam laps where it meets sand, rock, a pier or a sea stack.
 shader_type spatial;
-render_mode specular_schlick_ggx, cull_disabled;
+render_mode blend_mix, depth_draw_opaque, specular_schlick_ggx, cull_disabled;
+
+#include "res://src/world/shaders/storybook_world_common.gdshaderinc"
 
 uniform vec4 deep_color : source_color = vec4(0.13, 0.31, 0.38, 1.0);
 uniform vec4 shallow_color : source_color = vec4(0.27, 0.5, 0.52, 1.0);
@@ -22,6 +28,13 @@ uniform vec4 tide_color : source_color = vec4(0.6, 0.36, 0.92, 1.0);
 uniform float star_tide : hint_range(0.0, 1.0) = 1.0;
 uniform float mist : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 mist_color : source_color = vec4(0.84, 0.86, 0.85, 1.0);
+// The shallows: the colour the water pales to over a beach, and the depth it's fully deep by.
+uniform vec4 shore_color : source_color = vec4(0.46, 0.74, 0.7, 1.0);
+uniform float shallow_fade = 3.5;
+// Surf: how far out from the shore the lines of surf break, and how much foam.
+uniform float surf_reach = 2.6;
+uniform float surf_amount : hint_range(0.0, 1.0) = 0.85;
+uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 
 varying vec3 world_pos;
 
@@ -37,6 +50,11 @@ float swell(vec2 p, float t, float rough) {
 void fragment() {
 	vec2 p = world_pos.xz;
 	float t = TIME;
+	// How much water lies over the ground behind this pixel.
+	float scene_depth = texture(depth_tex, SCREEN_UV).r;
+	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, scene_depth, 1.0);
+	behind.xyz /= behind.w;
+	float thickness = clamp(VERTEX.z - behind.z, 0.0, 60.0);
 	vec2 d = p - crown_center;
 	float r = length(d);
 	// 0 north (-Z), +PI/2 east (+X), -PI/2 west.
@@ -67,8 +85,19 @@ void fragment() {
 	// The Star-Tide: the sap the old kingdom drained bleeds violet off The Crown's east shore.
 	float bleed = star_tide * east * (1.0 - smoothstep(380.0, 900.0, r)) * smoothstep(300.0, 420.0, r);
 	col = mix(col, tide_color.rgb * 0.55, bleed * 0.35);
+	// The shallows pale over the beach, and the surf breaks in lines that fade out to sea.
+	float shallow = 1.0 - smoothstep(0.0, shallow_fade, thickness);
+	col = mix(col, shore_color.rgb, shallow * 0.75);
+	float grain = world_noise(p * 0.35 + vec2(t * 0.07, -t * 0.05));
+	float lines = 0.5 + 0.5 * sin(thickness * 5.5 - t * 1.7 + grain * 3.0);
+	float surf = (1.0 - smoothstep(0.0, surf_reach, thickness)) * smoothstep(0.35, 0.75, lines);
+	float lap = 1.0 - smoothstep(0.0, 0.3, thickness);
+	float foam = clamp((surf * 0.8 + lap) * surf_amount * (0.7 + 0.3 * grain), 0.0, 1.0);
+	col = mix(col, vec3(0.95, 0.97, 0.98), foam);
 	col = mix(col, mist_color.rgb, mist * 0.85);
 	ALBEDO = col;
-	ROUGHNESS = mix(0.12, 0.3, wild);
+	ALPHA = mix(1.0, 0.88, shallow * (1.0 - foam));
+	ROUGHNESS = mix(mix(0.12, 0.3, wild), 0.6, foam);
 	SPECULAR = 0.6;
+	EMISSION = vec3(0.95, 0.97, 0.98) * foam * 0.08;
 }

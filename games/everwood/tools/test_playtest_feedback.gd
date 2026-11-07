@@ -325,14 +325,14 @@ func _check_zone_map() -> void:
 		and inks["road"] > 30 and inks["footprint"] > 4 and title.begins_with("Embershore · Lv 1–6 · "),
 		"K2: the Zone Map is Embershore itself (2,048 x 1,024 m), painted from its island: the sea and its inked shore, the roads and the huts (%s); the header reads \"%s\""
 		% [inks, title])
-	var market: Dictionary = _node_named(panel, "Hearthstead Market")
+	var market: Dictionary = _node_named(panel, "Hearthstead")
 	var sanctum: Dictionary = _node_named(panel, "The Root-Sanctum")
 	var crossings: Array[Dictionary] = panel.nodes_of(CartographyBaker.NodeKind.CROSSING)
 	var quests: Array[Dictionary] = panel.nodes_of(CartographyBaker.NodeKind.QUEST)
 	var goal: String = String(quests[0]["label"]) if not quests.is_empty() else "none"
 	check.call(not market.is_empty() and int(market["kind"]) == CartographyBaker.NodeKind.TOWN and not sanctum.is_empty()
 		and int(sanctum["kind"]) == CartographyBaker.NodeKind.DUNGEON and crossings.size() == 4 and not quests.is_empty(),
-		"K2: towns, dungeons, crossings and quests are named on it: Hearthstead Market (a town), The Root-Sanctum (a dungeon), the four crossings (%s) and the quest \"%s\""
+		"K2: towns, dungeons, crossings and quests are named on it: Hearthstead (a town), The Root-Sanctum (a dungeon), the four crossings (%s) and the quest \"%s\""
 		% [", ".join(crossings.map(func(node: Dictionary) -> String: return String(node["label"]))), goal])
 	var up: PackedVector2Array = WorldMapPanel.arrow_points(Vector2.ZERO, 0.0, 10.0)
 	var left: PackedVector2Array = WorldMapPanel.arrow_points(Vector2.ZERO, PI * 0.5, 10.0)

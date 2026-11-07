@@ -609,9 +609,10 @@ func _tide(actor: ActorBase, delta: float) -> void:
 	if at.y < ground_y - 2.5:
 		_deep[actor.player_id] = 0.0
 		return # Underground: the Sap Galleries.
-	if actor.is_on_floor() and at.y > sea - 0.3:
+	var hushed: bool = streamer.builder.beyond_seal(at.x, at.z)
+	if actor.is_on_floor() and at.y > sea - 0.3 and not hushed:
 		_safe[actor.player_id] = at
-	if at.y >= sea - DEEP_WATER:
+	if at.y >= sea - DEEP_WATER and not hushed:
 		_deep[actor.player_id] = 0.0
 		return
 	var held: float = _deep.get(actor.player_id, 0.0) + delta
@@ -623,7 +624,7 @@ func _tide(actor: ActorBase, delta: float) -> void:
 	var back: Vector3 = _safe.get(actor.player_id, actor.spawn_transform.origin)
 	streamer.ensure_ground_at(back)
 	actor.place_at(Transform3D(actor.global_transform.basis, back + Vector3(0.0, 0.3, 0.0)))
-	CombatDirector.current.announce(back + Vector3.UP * 2.2, "The tide carries you back", Color(0.7, 0.9, 1.0), &"wade")
+	CombatDirector.current.announce(back + Vector3.UP * 2.2, "The Deep-Hush turns you back" if hushed else "The tide carries you back", Color(0.7, 0.9, 1.0), &"wade")
 
 
 func _name_region(actor: ActorBase) -> void:

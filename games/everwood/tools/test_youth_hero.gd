@@ -123,8 +123,9 @@ func _check_start_spot() -> void:
 	var spot: Vector3 = builder.arrival_spot(CalderaAtlas.ARRIVE_START, 0)
 	var facing: Vector3 = -builder.arrival_basis(CalderaAtlas.ARRIVE_START).z
 	var toward_bridge: Vector2 = EmbershoreBuilder.START_FACING.normalized()
-	check.call(Vector2(spot.x, spot.z).distance_to(EmbershoreBuilder.START_AT) < 0.05 and Vector2(facing.x, facing.z).dot(toward_bridge) > 0.999,
-		"a Level 1 start stands Player 1 at Bramblebridge's chime-post on Embershore at %s, facing the stone bridge (docs/27 §7)"
+	# The party's row of four spreads 3.6 m either side of the arrival across the green.
+	check.call(Vector2(spot.x, spot.z).distance_to(EmbershoreBuilder.START_AT) < 4.0 and Vector2(facing.x, facing.z).dot(toward_bridge) > 0.999,
+		"a Level 1 start stands Player 1 on Bramblebridge's green by its chime-post on Embershore at %s, facing the stone bridge (docs/27 §7)"
 		% Vector2(spot.x, spot.z))
 	var second: Vector3 = builder.arrival_spot(CalderaAtlas.ARRIVE_START, 1)
 	check.call(absf((second - spot).normalized().dot(Vector3(facing.x, 0.0, facing.z))) < 0.01,

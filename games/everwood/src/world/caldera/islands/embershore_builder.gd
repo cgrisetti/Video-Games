@@ -246,6 +246,11 @@ func collision_heights_for(chunk: Vector2i) -> PackedFloat32Array:
 	return out
 
 
+## The Deep-Hush (docs/27 §4): the sea past the south-east seal, within 160 m of its line.
+func beyond_seal(x: float, z: float) -> bool:
+	return EmbershoreWater.beyond_seal(points_of("boundary_seal"), Vector2(x, z), 160.0)
+
+
 ## Cobbles through the two villages; packed earth everywhere else, however wide the road.
 func road_surface_at(x: float, z: float, _half_width: float) -> int:
 	var at: Vector2 = Vector2(x, z)
@@ -387,9 +392,68 @@ func landmark_silhouette(into: LandblockTerrain.MeshMerge) -> void:
 
 # --- Structures ----------------------------------------------------------------------------
 
+## The kin along the corridor, by stage (docs/13 §2, docs/27 §9): each pack a MobSpawner
+## beside a path (18-25 m leash), grown as its landblock streams in.
+##   Lv 1-2 Bramblebridge and the orchards: Curious Weald-Wights (parley first)
+##   Lv 2-3 the Ariundle Moss-Oaks and the Bramble: Padfoot Boggarts
+##   Lv 3-4 the Sunken Holloway and the gorge: Furrow Iron-Men in three-spirit pulls
+##   Lv 4-5 the Coast Road and its coves: Bramble-Hobs, a Bog-Hulk at Seal Cove
+##   Lv 5   Mill-Downs: Crag-Spriggans at the Downs Gate
+##   Lv 6   under the Elder Oak: the Root-Sanctum's briar guard
+const ENCOUNTERS: Array[Dictionary] = [
+	{"name": "OrchardHobs1", "road": "lane", "at": 0.12, "side": 1.0, "place": "The Heirloom Orchards", "pack": [&"cider_thief_bristleboar", &"cider_thief_bristleboar"]},
+	{"name": "OrchardHobs2", "road": "lane", "at": 0.24, "side": -1.0, "place": "The Heirloom Orchards", "pack": [&"thorn_tail_scuttler", &"cider_thief_bristleboar"]},
+	{"name": "OrchardHobs3", "road": "lane", "at": 0.36, "side": 1.0, "place": "The Heirloom Orchards", "pack": [&"cider_thief_bristleboar", &"thorn_tail_scuttler", &"old_tusk_crag"]},
+	{"name": "MossPadfoots1", "road": "lane", "at": 0.58, "side": -1.0, "place": "The Ariundle Moss-Oaks", "pack": [&"grey_pelt_prowler", &"grey_pelt_prowler"]},
+	{"name": "MossPadfoots2", "road": "lane", "at": 0.74, "side": 1.0, "place": "The Ariundle Moss-Oaks", "pack": [&"river_snapper_toad", &"grey_pelt_prowler"]},
+	{"name": "MossPadfoots3", "road": "hollow", "at": 0.1, "side": -1.0, "place": "The Ariundle Moss-Oaks", "pack": [&"grey_pelt_prowler", &"river_snapper_toad", &"alpha_frost_fang"]},
+	{"name": "HollowayIronMen1", "road": "hollow", "at": 0.42, "side": 1.0, "place": "The Sunken Holloway", "pack": [&"soot_paw_cutthroat", &"soot_paw_cutthroat", &"quarry_sling_shotter"]},
+	{"name": "HollowayIronMen2", "road": "hollow", "at": 0.64, "side": -1.0, "place": "The Sunken Holloway", "pack": [&"foreman_iron_gavel", &"soot_paw_cutthroat", &"quarry_sling_shotter"]},
+	{"name": "GorgeIronMen", "road": "hollow", "at": 0.86, "side": 1.0, "place": "The Rim Shoulder", "pack": [&"soot_paw_cutthroat", &"quarry_sling_shotter", &"quarry_sling_shotter"]},
+	{"name": "CoastBrambleHobs1", "road": "coast", "at": 0.2, "side": -1.0, "place": "The Coast Road", "pack": [&"bramble_lasher_vine", &"spore_puff_shambler"]},
+	{"name": "SealCoveHulk", "road": "coast", "at": 0.4, "side": -1.0, "place": "Seal Cove", "pack": [&"bog_hulk_tangler", &"bramble_lasher_vine"]},
+	{"name": "CoastBrambleHobs2", "road": "coast", "at": 0.66, "side": 1.0, "place": "The Coast Road", "pack": [&"bramble_lasher_vine", &"bramble_lasher_vine", &"spore_puff_shambler"]},
+	{"name": "DownsSpriggans1", "road": "downs", "at": 0.08, "side": -1.0, "place": "Mill-Downs", "pack": [&"risen_shield_sworn_husk", &"hollow_scribe_acolyte"]},
+	{"name": "DownsSpriggans2", "road": "downs", "at": 0.2, "side": 1.0, "place": "Mill-Downs", "pack": [&"risen_shield_sworn_husk", &"risen_shield_sworn_husk", &"barrow_warden_knell"]},
+	{"name": "SanctumBriar", "road": "lane", "at": 0.9, "side": 1.0, "place": "The Root-Sanctum", "pack": [&"bramble_lasher_vine", &"bog_hulk_tangler"]},
+]
+## A pack stands this far off its path.
+const PACK_OFFSET: float = 18.0
+
+
+func _build_encounters(root: Node3D) -> void:
+	for spec: Dictionary in ENCOUNTERS:
+		var points: PackedVector3Array = road_points(String(spec["road"]))
+		if points.size() < 2:
+			continue
+		var index: int = clampi(int(float(spec["at"]) * float(points.size() - 1)), 1, points.size() - 2)
+		var along: Vector2 = Vector2(points[index + 1].x - points[index - 1].x, points[index + 1].z - points[index - 1].z).normalized()
+		var across: Vector2 = Vector2(-along.y, along.x) * float(spec["side"])
+		var at: Vector2 = Vector2(points[index].x, points[index].z) + across * PACK_OFFSET
+		var spot: Vector3 = ground(at.x, at.y)
+		if spot.y < 1.0 or mask(&"river", at.x, at.y) > 0.0:
+			# Off the far bank or in the water: stand on the other side.
+			at = Vector2(points[index].x, points[index].z) - across * PACK_OFFSET
+			spot = ground(at.x, at.y)
+		var pack: MobSpawner = MobSpawner.new()
+		pack.name = String(spec["name"])
+		pack.territory = String(spec["place"])
+		var ids: Array[StringName] = []
+		for id: Variant in spec["pack"]:
+			ids.append(StringName(String(id)))
+		pack.variant_ids = ids
+		pack.leash = 20.0
+		pack.position = spot
+		pack.add_to_group(&"caldera_streamed_spawners")
+		root.add_child(pack)
+
 func build_structures(root: Node3D) -> void:
+	EmbershoreWater.build(root, self)
 	_build_start(root)
+	_build_cottages(root, "bramblebridge_houses", "Bramblebridge", 20)
+	_build_cottages(root, "hearthstead_houses", "Hearthstead", 60)
 	_build_hearthstead(root)
+	_build_encounters(root)
 	_build_north_quay(root)
 	_build_old_quay(root)
 	_build_root_sanctum(root)
@@ -404,6 +468,26 @@ func _build_start(root: Node3D) -> void:
 	post.position = ground(START_AT.x + 3.0, START_AT.y + 1.0)
 	root.add_child(post)
 	CalderaKit.sign_label(root, "StartSign", "Bramblebridge\nEmbershore · Lv 1-2 · the stone bridge lies north", ground(START_AT.x, START_AT.y - 6.0) + Vector3(0.0, 2.6, 0.0))
+
+
+## A village's cottages where the generator set them (docs/27 §7: twelve each), each facing its
+## village's middle, with what a family leaves about a cottage (docs/24 §5).
+func _build_cottages(root: Node3D, key: String, village: String, seed_from: int) -> void:
+	var middle: Vector2 = BRAMBLEBRIDGE_AT if village == "Bramblebridge" else HEARTHSTEAD_AT
+	var houses: PackedVector2Array = points_of(key)
+	for index: int in houses.size():
+		var at: Vector2 = houses[index]
+		var spot: Vector3 = ground(at.x, at.y)
+		var toward: Vector2 = middle - at
+		var yaw: float = atan2(toward.x, toward.y)
+		var house: WorldKitInstance = WorldKitInstance.make("%sHouse%d" % [village, index], WorldVisualCatalog.KIT_HOUSE_STEPPED_GABLE, spot, yaw,
+			{"seed_value": seed_from + index})
+		if index == 0:
+			house.name = "%sInn" % village
+			house.scale = Vector3.ONE * 1.3
+		root.add_child(house)
+		CalderaKit.solid_box(root, "%sHouseBody%d" % [village, index], spot + Vector3(0.0, 2.5, 0.0), Vector3(6.0, 5.0, 6.0), yaw)
+		CalderaKit.lived_in_clutter(root, "%sHouseClutter%d" % [village, index], spot, seed_from * 10 + index, 4, 4.6, 6.4, ground)
 
 
 ## Hearthstead's market: the three lane stalls along the green's north side, shuttered until their Beacons burn

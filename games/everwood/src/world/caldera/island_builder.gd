@@ -204,6 +204,11 @@ func road_surface_at(_x: float, _z: float, _half_width: float) -> int:
 	return -1
 
 
+## Whether a spot lies past the island's sealed edge (Embershore's Deep-Hush): the tide turns a party back from there.
+func beyond_seal(_x: float, _z: float) -> bool:
+	return false
+
+
 ## The island's ground before pads and ramps.
 func _base_height(_x: float, _z: float) -> float:
 	return -10.0

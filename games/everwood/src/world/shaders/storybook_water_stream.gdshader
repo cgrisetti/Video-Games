@@ -21,6 +21,9 @@ uniform bool waterfall = false;
 // Water painted over a solid floor (a canal on the square, a basin's top) has no
 // depth to read: this fixes its depth (0 to 1) and turns the shoreline foam off. -1: read the depth.
 uniform float fixed_depth = -1.0;
+// A river ribbon: the ripples run along its UVs (x across, y downstream, both in
+// metres) at flow.y metres a second, so they follow every bend.
+uniform bool along_uv = false;
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 
 varying vec3 v_world_pos;
@@ -35,7 +38,8 @@ void fragment() {
 	behind.xyz /= behind.w;
 	float thickness = clamp(VERTEX.z - behind.z, 0.0, 50.0);
 	float deep = waterfall ? 0.35 : (fixed_depth >= 0.0 ? fixed_depth : clamp(thickness / depth_fade, 0.0, 1.0));
-	vec2 along = waterfall ? UV * vec2(6.0, 2.0) - vec2(0.0, TIME * flow.y * 2.0) : v_world_pos.xz * ripple_scale - flow * TIME;
+	vec2 along = waterfall ? UV * vec2(6.0, 2.0) - vec2(0.0, TIME * flow.y * 2.0)
+		: (along_uv ? (UV - vec2(0.0, TIME * flow.y)) * ripple_scale : v_world_pos.xz * ripple_scale - flow * TIME);
 	float ripple = world_noise(along * 1.7) * 0.6 + world_noise(along * 3.9 + vec2(TIME * 0.21, -TIME * 0.17)) * 0.4;
 	float crest = smoothstep(0.66, 0.86, ripple) * foam_amount;
 	float shore = (waterfall || fixed_depth >= 0.0) ? 0.0 : 1.0 - smoothstep(0.0, 0.22, thickness);
