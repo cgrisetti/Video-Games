@@ -8,6 +8,7 @@
     "music": "node tools/audio/make-music.mjs"
   },
   "dependencies": {
+    "postprocessing": "^6.39.5",
     "three": "^0.186.1"
   },
   "devDependencies": {
