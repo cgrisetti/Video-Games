@@ -64,7 +64,15 @@ const GROW_TIME: float = 0.22
 const PIP_RADIUS: float = 3.4
 const PIP_GAP: float = 11.0
 const PIP_EMPTY: Color = Color(0.32, 0.3, 0.28, 0.95)
-const TIER_NUMERALS: Array[String] = ["", "I", "II", "III", "IV"]
+const TIER_NUMERALS: Array[String] = ["", "I", "II", "III", "IV", "V", "VI", "VII"]
+## The Ink-Well's beads round the middle of the Cross (22 GDD R1), and a locked socket's look.
+const INK_BEAD_RADIUS: float = 3.2
+const INK_RING: float = 0.62
+const INK_BEAD: Color = Color("#B993F2")
+const INK_BEAD_EDGE: Color = Color("#E4DBFF")
+const INK_BEAD_EMPTY: Color = Color(0.07, 0.05, 0.035, 0.95)
+const LOCKED_FRAME: Color = Color(0.1, 0.08, 0.06, 0.92)
+const LOCKED_EDGE: Color = Color(0.43, 0.36, 0.29, 0.9)
 const PULSE_TIME: float = 0.28
 const UNREADY_DIM: Color = Color(0.02, 0.02, 0.04, 0.5)
 const GUARD_GLOW: Color = Color(0.7, 0.82, 1.0)
@@ -136,11 +144,42 @@ func is_pulsing(index: int) -> bool:
 	return index >= 0 and index < _pulses.size() and _pulses[index] > 0.0
 
 
-## Whether the followed hero has the pips for a socket's card (always, with no hero).
+## Whether the followed hero has the drops for a socket's card (always, with no hero).
 func socket_ready(socket: int) -> bool:
 	if not is_instance_valid(follow) or follow.stats == null:
 		return true
-	return follow.stats.resonance_charge >= ScribeCardResource.SOCKET_PIP_COSTS[socket]
+	return follow.stats.resonance_charge >= float(socket_cost(socket))
+
+
+## What a socket's card costs the followed hero: Ink-Drops by the rules table (22 GDD R1)
+## on the Ink-Well, the old pips otherwise.
+func socket_cost(socket: int) -> int:
+	if is_instance_valid(follow) and follow.stats != null and follow.stats.uses_ink_well():
+		var shown: EquipmentLoadoutResource = _shown_kit()
+		var leaf: ScribeCardResource = ArsenalCatalog.current.card(shown.socket_leaf_id(socket)) if shown != null else null
+		return GrimoireRules.ink_cost(socket, leaf, socket_has_tuck(socket))
+	return roundi(ScribeCardResource.SOCKET_PIP_COSTS[socket])
+
+
+## The level the shown hero has reached (Lv 20 with nobody to follow, so nothing reads locked).
+func hero_level() -> int:
+	if is_instance_valid(follow) and follow.loadout != null and PartyProgress.current != null:
+		return PartyProgress.current.character_level(follow.loadout.class_id)
+	return PartyProgress.MAX_CHARACTER_LEVEL
+
+
+## Whether a socket is still padlocked at the hero's level (22 GDD R4).
+func socket_locked(socket: int) -> bool:
+	return not GrimoireRules.socket_open(socket, hero_level())
+
+
+## Whether the one Tuck sits under a socket (R or L+R) on the shown kit.
+func socket_has_tuck(socket: int) -> bool:
+	var shown: EquipmentLoadoutResource = _shown_kit()
+	if shown == null or socket == Socket.GUARD:
+		return false
+	var slot: int = ScribeCardResource.GrimoireSlot.SIGNATURE if socket == Socket.SKILL else ScribeCardResource.GrimoireSlot.ULTIMATE
+	return shown.under_ids[slot] != &""
 
 
 ## The combo-chain pips the weapon diamond shows now: steps played and the form's length (0, 0 for none).
@@ -263,6 +302,31 @@ func _draw() -> void:
 	for socket: int in EquipmentLoadoutResource.SOCKET_COUNT:
 		_draw_socket(socket)
 	_draw_weapon()
+	_draw_ink_well()
+
+
+## The Ink-Well (22 GDD R1): one bead a drop in a ring at the middle of the Cross,
+## lit while there's ink in it. Only for a hero on the Ink-Well.
+func _draw_ink_well() -> void:
+	if not is_instance_valid(follow) or follow.stats == null or not follow.stats.uses_ink_well():
+		return
+	var depth: int = follow.stats.stats.max_resonance_pips
+	var drops: int = follow.stats.resonance_pips()
+	var middle: Vector2 = (diamond_center(Socket.GUARD) + diamond_center(Socket.SKILL)) * 0.5
+	var ring: float = diamond_radius() * INK_RING
+	for bead: int in depth:
+		var angle: float = TAU * float(bead) / float(maxi(depth, 1)) - PI * 0.5
+		var at: Vector2 = middle + Vector2(cos(angle), sin(angle)) * ring
+		var full: bool = bead < drops
+		draw_circle(at, INK_BEAD_RADIUS * _ds + 1.0 * _ds, INK_BEAD_EDGE if full else LOCKED_EDGE)
+		draw_circle(at, INK_BEAD_RADIUS * _ds, INK_BEAD if full else INK_BEAD_EMPTY)
+
+
+## How many beads the well shows lit and in all (0, 0 with no well).
+func ink_beads() -> Vector2i:
+	if not is_instance_valid(follow) or follow.stats == null or not follow.stats.uses_ink_well():
+		return Vector2i.ZERO
+	return Vector2i(follow.stats.resonance_pips(), follow.stats.stats.max_resonance_pips)
 
 
 func _draw_socket(socket: int) -> void:
@@ -274,6 +338,21 @@ func _draw_socket(socket: int) -> void:
 	var place: ScribeCardResource = ArsenalCatalog.current.card(view["place"])
 	var leaf: ScribeCardResource = ArsenalCatalog.current.card(view["leaf"])
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	# A socket the hero's level hasn't opened (22 GDD R4): a dashed frame, a padlock and the level.
+	if socket_locked(socket):
+		draw_colored_polygon(_diamond(center, outer), LOCKED_FRAME)
+		_dashed_outline(center, outer, LOCKED_EDGE)
+		_draw_padlock(center + Vector2(0.0, -outer * 0.12), outer * 0.26, LOCKED_EDGE.lightened(0.35))
+		var font: Font = ThemeDB.fallback_font
+		var font_size: int = roundi(KEY_FONT_SIZE * _ds)
+		var text: String = "Lv %d" % GrimoireRules.SOCKET_OPEN_LEVELS[socket]
+		var at: Vector2 = center + Vector2(-outer, outer * 0.42)
+		draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, outer * 2.0, font_size, roundi(4 * _ds), OUTLINE)
+		draw_string(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, outer * 2.0, font_size, PARCHMENT)
+		_draw_key(socket, center, outer)
+		if interactive and socket == selected_socket:
+			_outline(center, outer + 4.0 * _ds, Color(SELECT_COLOR, 0.8), 2.0 * _ds)
+		return
 	# The outer panoramic frame: the Place-Card.
 	if place != null:
 		var palette: Color = catalog.sign_seal(place.scribe_sign).color
@@ -284,6 +363,16 @@ func _draw_socket(socket: int) -> void:
 	else:
 		draw_colored_polygon(_diamond(center, outer), EMPTY_FRAME)
 		_dashed_outline(center, outer, EMPTY_EDGE)
+	# The Tuck (22 GDD R4): its bottom edge and Sign dot peek out under the portrait.
+	if socket_has_tuck(socket):
+		var shown_kit: EquipmentLoadoutResource = _shown_kit()
+		var slot: int = ScribeCardResource.GrimoireSlot.SIGNATURE if socket == Socket.SKILL else ScribeCardResource.GrimoireSlot.ULTIMATE
+		var tuck: ScribeCardResource = catalog.card(shown_kit.under_ids[slot])
+		var tuck_ink: Color = catalog.sign_seal(tuck.scribe_sign).color if tuck != null else PARCHMENT
+		var peek: Vector2 = center + Vector2(0.0, inner * 0.32)
+		draw_colored_polygon(_diamond(peek, inner * 0.86), Color(0.16, 0.12, 0.09, 0.95))
+		_outline(peek, inner * 0.86, tuck_ink, FRAME_BORDER * _ds)
+		draw_circle(peek + Vector2(0.0, inner * 0.62), 2.6 * _ds, tuck_ink)
 	# The inner portrait: the Action-Leaf.
 	var ink: Color = catalog.sign_seal(leaf.scribe_sign).color if leaf != null else UNINKED
 	draw_colored_polygon(_diamond(center, inner), Color(0.07, 0.07, 0.1, 0.95))
@@ -320,7 +409,7 @@ func _draw_live(socket: int, center: Vector2, outer: float) -> void:
 			and socket_view(socket)["synergy"]["scribe_sign"] == flow.coat_sign:
 		var share: float = flow.coat_time_left / maxf(0.1, flow.coat_synergy.get("coat_duration_sec", 1.0))
 		_partial_outline(center, outer + 3.0 * _ds, share, ArsenalCatalog.current.sign_seal(flow.coat_sign).color.lightened(0.3), line)
-	if flow.is_flow_window_open() and follow.stats.resonance_charge >= ScribeCardResource.SOCKET_PIP_COSTS[socket]:
+	if flow.is_flow_window_open() and socket_ready(socket):
 		_outline(center, outer * 0.62, Color(1.0, 0.96, 0.82, 0.9), line)
 	if _counters_open_glimmer(socket):
 		var beat: float = 0.5 + 0.5 * sin(_age * 9.0)
@@ -368,15 +457,35 @@ func _draw_weapon() -> void:
 	_outline(center, outer, tier_trim, FRAME_BORDER * _ds)
 	_draw_weapon_icon(center, outer * 0.42, weapon.weapon_type if weapon != null else -1, body.lightened(0.5))
 	if weapon != null and weapon.is_weapon():
-		# The trail tier, I to IV, in the right corner.
+		# The material tier, I to VII (22 GDD §2; the trail's four tiers with no hand to read), in the right corner.
 		var font: Font = ThemeDB.fallback_font
 		var font_size: int = roundi(KEY_FONT_SIZE * 0.9 * _ds)
 		var at: Vector2 = center + Vector2(outer * 0.18, outer * 0.12)
-		var numeral: String = TIER_NUMERALS[clampi(weapon.equipment_tier, 0, TIER_NUMERALS.size() - 1)]
+		var tier_index: int = weapon.equipment_tier
+		if is_instance_valid(follow) and follow.seal != null and follow.seal.tier() != null:
+			tier_index = follow.seal.tier().tier_index
+		var numeral: String = TIER_NUMERALS[clampi(tier_index, 0, TIER_NUMERALS.size() - 1)]
 		draw_string_outline(font, at, numeral, HORIZONTAL_ALIGNMENT_CENTER, outer * 0.9, font_size, roundi(3 * _ds), OUTLINE)
 		draw_string(font, at, numeral, HORIZONTAL_ALIGNMENT_CENTER, outer * 0.9, font_size, tier_trim.lightened(0.3))
 	_draw_combo_pips(center, outer)
+	_draw_seal_gems(center, outer)
 	_draw_hud_marks(WEAPON, center, outer)
+
+
+## The three Seals as gems along the weapon diamond's top, each in its card's Sign
+## (weapon, offhand, mantle), hollow where nothing is pressed.
+func _draw_seal_gems(center: Vector2, outer: float) -> void:
+	if not is_instance_valid(follow) or follow.seal == null or follow.seal.loadout == null:
+		return
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var ids: Array[StringName] = follow.seal.loadout.seal_card_ids()
+	for index: int in ids.size():
+		var at: Vector2 = center + Vector2((index - 1) * 9.0 * _ds, -outer * 0.48)
+		var seal_card: ScribeCardResource = catalog.get_card(ids[index])
+		if seal_card != null:
+			draw_colored_polygon(_diamond(at, 3.8 * _ds), catalog.sign_seal(seal_card.scribe_sign).color)
+		else:
+			_outline(at, 3.8 * _ds, LOCKED_EDGE, maxf(1.0, _ds))
 
 
 ## The live combo-chain pips under the weapon diamond: o - o - > (steps played lit gold, the finisher an arrow).
@@ -409,11 +518,22 @@ func _draw_key(socket: int, center: Vector2, outer: float) -> void:
 	var at: Vector2 = center + Vector2(-outer, -outer * 0.5)
 	draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, outer * 2.0, font_size, roundi(4 * _ds), OUTLINE)
 	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_CENTER, outer * 2.0, font_size, PARCHMENT)
-	# Pip gems: one for L and R, three for L+R.
-	var pips: int = roundi(ScribeCardResource.SOCKET_PIP_COSTS[socket])
+	# What it costs: Ink-Drop dots on the Ink-Well (22 GDD R1), the old gold pip gems otherwise.
+	var pips: int = socket_cost(socket)
+	var ink_dots: bool = is_instance_valid(follow) and follow.stats != null and follow.stats.uses_ink_well()
 	for gem: int in pips:
 		var gem_center: Vector2 = center + Vector2((gem - (pips - 1) * 0.5) * 8.0 * _ds, -outer - 2.0 * _ds)
-		draw_colored_polygon(_diamond(gem_center, 3.6 * _ds), GOLD)
+		if ink_dots:
+			draw_circle(gem_center, 3.2 * _ds, INK_BEAD)
+		else:
+			draw_colored_polygon(_diamond(gem_center, 3.6 * _ds), GOLD)
+
+
+## A small padlock: a shackle over a body.
+func _draw_padlock(center: Vector2, size: float, color: Color) -> void:
+	var body: Rect2 = Rect2(center + Vector2(-size, -size * 0.1), Vector2(size * 2.0, size * 1.4))
+	draw_rect(body, color)
+	draw_arc(center + Vector2(0.0, -size * 0.1), size * 0.62, PI, TAU, 12, color, maxf(1.5, 2.0 * _ds))
 
 
 ## A finish's trim round the portrait: Plain Vellum's ivory edge, Gilded Leaf's
