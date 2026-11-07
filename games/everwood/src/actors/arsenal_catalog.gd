@@ -252,8 +252,12 @@ const HOMESTEAD_FIGHT_MAX_SEC: float = 15.0
 ## Posture-bearing heavies a raiding hero lands a second (one every eleven, between roars and rolls), and a child's honest stick swings.
 const RAID_POSTURE_STRIKES_PER_SEC: float = 0.09
 const HOMESTEAD_STRIKES_PER_SEC: float = 0.8
-## Each role's default hand, auto-stamped by stage until the Binder has a stamping bench: the weapon,
-## off-hand and mantle seals, then the L primary, L tuck, R primary and R tuck (by ClassLoadoutResource.Role).
+## What the Reed-Light Scribery asks for a seal card (bought once, it fits every slot).
+const SEAL_CHIME_COST: int = 40
+## Each role's default hand, auto-stamped by stage until a player chooses their own at the Binder's
+## stamping bench: the weapon, off-hand and mantle seals, then the L primary, L tuck, R primary and
+## R tuck (by ClassLoadoutResource.Role). Each slot's card is the Fellowship's starting seal there,
+## which the bench always offers in that slot (like a starter Ink Card, it needs no copy).
 const ROLE_SEAL_HANDS: Dictionary[int, Array] = {
 	ClassLoadoutResource.Role.TANK: [CARD_OLD_ROOT_BASTION, CARD_QUIET_WEIR, CARD_WEST_WIND_PROMISE,
 		CARD_QUIET_WEIR, CARD_WEST_WIND_PROMISE, CARD_OLD_ROOT_BASTION, CARD_EMBER_BOUGH],
@@ -916,6 +920,90 @@ func default_seal_loadout(class_id: StringName, role: int, weapon_type: int, cal
 	var stage: int = stage_override if stage_override > 0 else compute_progression_stage(level)
 	hand.trim_to_stage(stage, level)
 	return hand
+
+
+# --- The Binder's stamping bench ------------------------------------------------------------
+
+## A Fellowship's starting seal in one of the hand's seven slots (PlayerLoadoutResource.HandSlot), &"" for none.
+static func starting_seal_for_slot(role: int, slot: int) -> StringName:
+	var picks: Array = ROLE_SEAL_HANDS.get(role, ROLE_SEAL_HANDS[ClassLoadoutResource.Role.DPS])
+	return picks[slot] if slot >= 0 and slot < picks.size() else &""
+
+
+## Whether the party has a copy of a card in any finish.
+static func owns_any_finish(card_id: StringName, collection: Dictionary[StringName, int]) -> bool:
+	for variant: int in ScribeCardResource.CardVariant.size():
+		if LoadoutComposer.owns(ScribeCardResource.copy_key(card_id, variant as ScribeCardResource.CardVariant), 1, collection):
+			return true
+	return false
+
+
+## Whether a hero of `role` may press a seal card into a slot: the party owns a copy, or it is the
+## Fellowship's starting seal for that slot (lent, like a starter Ink Card).
+func seal_available(card_id: StringName, role: int, slot: int, collection: Dictionary[StringName, int]) -> bool:
+	var listed: ScribeCardResource = get_card(card_id)
+	if listed == null or not listed.is_seal_card():
+		return false
+	if PlayerLoadoutResource.is_seal_slot(slot) and not listed.can_stamp_into_slot(PlayerLoadoutResource.seal_flag_for_slot(slot)):
+		return false
+	return card_id == starting_seal_for_slot(role, slot) or owns_any_finish(card_id, collection)
+
+
+## What a slot cycles through on the bench: none (&""), the Fellowship's starting seal for it,
+## then every other seal card the party owns, in SEAL_CARD_IDS order.
+func seal_options_for_slot(role: int, slot: int, collection: Dictionary[StringName, int]) -> Array[StringName]:
+	var options: Array[StringName] = [&""]
+	var starter: StringName = starting_seal_for_slot(role, slot)
+	if starter != &"" and seal_available(starter, role, slot, collection):
+		options.append(starter)
+	for card_id: StringName in SEAL_CARD_IDS:
+		if not options.has(card_id) and seal_available(card_id, role, slot, collection):
+			options.append(card_id)
+	return options
+
+
+## Why a hero of `role` may not wear `hand` at a stage and level, in a few plain words ("" when it may):
+## every card is a seal card the party owns (or the Fellowship's starting seal for that slot), pressed
+## only where it fits, in a slot the ladder has opened (PlayerLoadoutResource.slot_open), and the hand
+## fits the stage's counts (validate_loadout_for_stage). The host asks this of every hand a player sends.
+func seal_hand_problem(hand: PlayerLoadoutResource, role: int, stage: int, true_level: int, collection: Dictionary[StringName, int]) -> String:
+	if hand == null:
+		return "No hand to wear"
+	for slot: int in PlayerLoadoutResource.HAND_SLOT_COUNT:
+		var card_id: StringName = hand.card_in_slot(slot)
+		if card_id == &"":
+			continue
+		var slot_name: String = PlayerLoadoutResource.HAND_SLOT_NAMES[slot]
+		var listed: ScribeCardResource = get_card(card_id)
+		if listed == null or not listed.is_seal_card():
+			return "Only seal cards go in the %s slot" % slot_name
+		if not PlayerLoadoutResource.slot_open(slot, stage, true_level):
+			return "The %s slot %s" % [slot_name, PlayerLoadoutResource.slot_opens_text(slot)]
+		if PlayerLoadoutResource.is_seal_slot(slot) and not listed.can_stamp_into_slot(PlayerLoadoutResource.seal_flag_for_slot(slot)):
+			return "%s can't go on the %s" % [listed.display_name, slot_name]
+		if not seal_available(card_id, role, slot, collection):
+			return "Get %s at the Reed-Light Scribery first" % listed.display_name
+	if not hand.validate_loadout_for_stage(stage):
+		return "Too many cards for Stage %d" % stage
+	return ""
+
+
+## A trail level opened new slots: fills each slot that opens at `level` and is still empty with the
+## Fellowship's starting seal, the way a milestone auto-slots a kit. Returns whether anything went in.
+func apply_seal_milestone(hand: PlayerLoadoutResource, role: int, level: int) -> bool:
+	var before: int = maxi(1, level - 1)
+	var stage_before: int = compute_progression_stage(before)
+	var stage_now: int = compute_progression_stage(level)
+	var filled: bool = false
+	for slot: int in PlayerLoadoutResource.HAND_SLOT_COUNT:
+		if hand.card_in_slot(slot) != &"" or PlayerLoadoutResource.slot_open(slot, stage_before, before) \
+				or not PlayerLoadoutResource.slot_open(slot, stage_now, level):
+			continue
+		var starter: StringName = starting_seal_for_slot(role, slot)
+		if starter != &"":
+			hand.set_card_in_slot(slot, starter)
+			filled = true
+	return filled
 
 
 ## The armour weight a role wears (EquipmentTierResource.ArmorWeightClass): tanks heavy, menders light, the rest medium.
@@ -2029,8 +2117,8 @@ func _archetype(id: StringName, archetype: EquipmentTierResource.WeaponArchetype
 
 ## Four canonical seals, one a Sign: each may be pressed on any of the three
 ## pieces (its ward, flat bonus, posture or stride comes with it) and pulled
-## from the pouch on L, R or L+R. Never in a chest; the Binder's bench will
-## trade them.
+## from the pouch on L, R or L+R. Never in a chest: the Reed-Light Scribery
+## sells them (SEAL_CHIME_COST), and the Binder's stamping bench presses them.
 func _build_seal_cards() -> void:
 	const Foil = ScribeCardResource.FoilGrade
 	_seal_card(CARD_QUIET_WEIR, "Seal of the Quiet Weir", Sign.SIGN_STAR_TIDE, Foil.FOIL_GILDED_LEAF, &"SCRIPT_STAR_WARD",
@@ -2082,6 +2170,7 @@ func _seal_card(id: StringName, label: String, scribe_sign: Sign, foil: ScribeCa
 	seal.active_posture_damage_bonus = posture_bonus
 	seal.active_buff_duration_sec = 8.0
 	seal.under_card_tuck_synergy_id = tuck
+	seal.chime_cost = SEAL_CHIME_COST
 	register_card(seal)
 	return seal
 

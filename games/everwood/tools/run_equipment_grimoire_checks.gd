@@ -1,12 +1,14 @@
 ## Runs only the Seal-and-Tuck Grimoire's 3-Stage Verification Suite
-## (tools/test_equipment_grimoire_suite.gd) in the Caldera Isles, with a party
-## of three, against a scratch save. The full smoke test runs it too, last.
+## (tools/test_equipment_grimoire_suite.gd) and the Binder's stamping bench
+## (tools/test_seal_bench.gd) in the Caldera Isles, with a party of three,
+## against a scratch save. The full smoke test runs them too, last.
 ## Run from games/everwood:
 ##   godot --headless --path . --fixed-fps 60 -s res://tools/run_equipment_grimoire_checks.gd
 ## Exits 0 when every check passes, 1 otherwise.
 extends SceneTree
 
 const CHECKS: GDScript = preload("res://tools/test_equipment_grimoire_suite.gd")
+const BENCH_CHECKS: GDScript = preload("res://tools/test_seal_bench.gd")
 const CALDERA_CHECKS: GDScript = preload("res://tools/test_caldera_isles.gd")
 const SAVE_PATH: String = "user://equipment_grimoire_checks_progress.cfg"
 ## Fake pads (high indices, so a real pad plugged in can't collide).
@@ -35,6 +37,7 @@ func _run() -> void:
 	for index: int in 30:
 		await physics_frame
 	await CHECKS.new().run(self, _check)
+	await BENCH_CHECKS.new().run(self, _check)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	print("%d passed, %d failed" % [_passes, _failures.size()])
 	if _failures.is_empty():

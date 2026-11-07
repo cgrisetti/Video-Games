@@ -12,7 +12,8 @@
 ## Each seat carries its equipment kit (a Dictionary of ids). The host picks a
 ## new seat's kit (kit_picker) and checks every change a player asks for
 ## (kit_validator); both are set by the level, so this file knows nothing about
-## equipment either.
+## equipment either. Its Seal-and-Tuck hand from the Binder's stamping bench
+## rides the seat the same way (seal_hand_picker, seal_hand_validator).
 ##
 ## The host can also seat AI companions (set_companions). They sit on the
 ## host's peer with device ids from COMPANION_DEVICE_BASE up, never count
@@ -32,6 +33,8 @@ signal player_unregistered(player_id: StringName)
 signal registration_refused(device_id: int, reason: String)
 ## The host turned down a kit change for one of this machine's controllers.
 signal kit_refused(device_id: int, reason: String)
+## The host turned down a seal hand (the Binder's stamping bench) for one of this machine's controllers.
+signal seal_hand_refused(device_id: int, reason: String)
 signal status_changed(status: String)
 
 const PORT: int = 7777
@@ -56,6 +59,10 @@ var kit_picker: Callable
 var kit_validator: Callable
 ## Why a seat may not take a Calling, or "": (seat: PartyMember, calling: StringName) -> String.
 var calling_validator: Callable
+## The seal hand a seat gets for a class: (class_id: StringName, companion: bool) -> Dictionary ({} wears the role's default).
+var seal_hand_picker: Callable
+## Why a seat may not carry a seal hand, or "": (seat: PartyMember, hand: Dictionary) -> String.
+var seal_hand_validator: Callable
 
 ## Ask for this class to let the host pick one (see class_picker).
 const ANY_CLASS: StringName = &""
@@ -220,6 +227,16 @@ func update_local_kit(device_id: int, kit: Dictionary) -> void:
 		_request_kit.rpc_id(1, device_id, kit)
 
 
+## Asks to carry a seal hand (the Binder's stamping bench). The host checks it.
+func update_local_seal_hand(device_id: int, hand: Dictionary) -> void:
+	if not _local_wishes.has(device_id):
+		return
+	if is_host():
+		_server_set_seal_hand(local_peer_id(), device_id, hand)
+	elif is_online():
+		_request_seal_hand.rpc_id(1, device_id, hand)
+
+
 func drop_local_player(device_id: int) -> void:
 	if not _local_wishes.has(device_id):
 		return
@@ -246,6 +263,7 @@ func _server_register(peer_id: int, device_id: int, class_id: StringName, assist
 		if class_id != existing.class_id:
 			existing.calling = _pick_calling(class_id, false)
 			existing.kit = _pick_kit(class_id, existing.calling, false)
+			existing.seal_hand = _pick_seal_hand(class_id, false)
 		existing.class_id = class_id
 		existing.assist_mode = assist_mode
 		player_updated.emit(existing)
@@ -268,6 +286,7 @@ func _server_register(peer_id: int, device_id: int, class_id: StringName, assist
 	seat.assist_mode = assist_mode
 	seat.calling = _pick_calling(class_id, false)
 	seat.kit = _pick_kit(class_id, seat.calling, false)
+	seat.seal_hand = _pick_seal_hand(class_id, false)
 	seat.slot = _free_slot(false)
 	roster[player_id] = seat
 	player_registered.emit(seat)
@@ -308,6 +327,7 @@ func _seat_companion(class_id: StringName) -> void:
 	seat.companion = true
 	seat.calling = _pick_calling(class_id, true)
 	seat.kit = _pick_kit(class_id, seat.calling, true)
+	seat.seal_hand = _pick_seal_hand(class_id, true)
 	seat.slot = _free_slot(true)
 	roster[seat.player_id] = seat
 	player_registered.emit(seat)
@@ -321,6 +341,10 @@ func _pick_calling(class_id: StringName, companion: bool) -> StringName:
 
 func _pick_kit(class_id: StringName, calling: StringName, companion: bool) -> Dictionary:
 	return kit_picker.call(class_id, calling, companion) if kit_picker.is_valid() else {}
+
+
+func _pick_seal_hand(class_id: StringName, companion: bool) -> Dictionary:
+	return seal_hand_picker.call(class_id, companion) if seal_hand_picker.is_valid() else {}
 
 
 func _server_set_calling(peer_id: int, device_id: int, calling: StringName) -> bool:
@@ -391,6 +415,49 @@ func _request_kit(device_id: int, kit: Dictionary) -> void:
 @rpc("authority", "call_remote", "reliable")
 func _kit_refused(device_id: int, reason: String) -> void:
 	kit_refused.emit(device_id, reason)
+
+
+func _server_set_seal_hand(peer_id: int, device_id: int, hand: Dictionary) -> bool:
+	var player_id: StringName = PartyMember.make_player_id(peer_id, device_id)
+	if not roster.has(player_id):
+		return false
+	var seat: PartyMember = roster[player_id]
+	var reason: String = seal_hand_validator.call(seat, hand) if seal_hand_validator.is_valid() else ""
+	if reason != "":
+		if peer_id == local_peer_id():
+			seal_hand_refused.emit(device_id, reason)
+		elif is_online() and has_peer(peer_id):
+			_seal_hand_refused.rpc_id(peer_id, device_id, reason)
+		return false
+	if seat.seal_hand == hand:
+		return true
+	seat.seal_hand = hand.duplicate(true)
+	player_updated.emit(seat)
+	_broadcast_roster()
+	return true
+
+
+## Host only: a trail level opened a slot and its starting seal went in. The host built it, so it goes on unchecked.
+func grant_seal_hand(player_id: StringName, hand: Dictionary) -> void:
+	if not is_host() or not roster.has(player_id):
+		return
+	var seat: PartyMember = roster[player_id]
+	if seat.seal_hand == hand:
+		return
+	seat.seal_hand = hand.duplicate(true)
+	player_updated.emit(seat)
+	_broadcast_roster()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_seal_hand(device_id: int, hand: Dictionary) -> void:
+	if multiplayer.is_server():
+		_server_set_seal_hand(multiplayer.get_remote_sender_id(), device_id, hand)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _seal_hand_refused(device_id: int, reason: String) -> void:
+	seal_hand_refused.emit(device_id, reason)
 
 
 ## A person who just joined may have the same player number as a companion:
@@ -495,9 +562,10 @@ func _receive_roster(entries: Array) -> void:
 		if roster.has(incoming.player_id):
 			var existing: PartyMember = roster[incoming.player_id]
 			if existing.class_id != incoming.class_id or existing.slot != incoming.slot or existing.assist_mode != incoming.assist_mode \
-					or existing.kit != incoming.kit or existing.calling != incoming.calling:
+					or existing.kit != incoming.kit or existing.calling != incoming.calling or existing.seal_hand != incoming.seal_hand:
 				existing.companion = incoming.companion
 				existing.kit = incoming.kit
+				existing.seal_hand = incoming.seal_hand
 				existing.calling = incoming.calling
 				existing.class_id = incoming.class_id
 				existing.slot = incoming.slot

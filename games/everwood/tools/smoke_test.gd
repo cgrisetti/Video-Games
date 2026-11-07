@@ -134,6 +134,8 @@ const CALDERA_CHECKS: GDScript = preload("res://tools/test_caldera_isles.gd")
 const KAIZEN_CHECKS: GDScript = preload("res://tools/test_phase12_kaizen.gd")
 ## The Seal-and-Tuck Grimoire's 3-Stage Verification Suite (tools/test_equipment_grimoire_suite.gd): the linter, the maths, the split-screen and the network.
 const EQUIPMENT_GRIMOIRE_CHECKS: GDScript = preload("res://tools/test_equipment_grimoire_suite.gd")
+## The Binder's stamping bench (tools/test_seal_bench.gd): choosing, saving, syncing and refusing a Seal-and-Tuck hand.
+const SEAL_BENCH_CHECKS: GDScript = preload("res://tools/test_seal_bench.gd")
 var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
 
@@ -232,6 +234,8 @@ func _run() -> void:
 	await KAIZEN_CHECKS.new().run(self, _check)
 	# The Seal-and-Tuck Grimoire's three gates, on the same green.
 	await EQUIPMENT_GRIMOIRE_CHECKS.new().run(self, _check)
+	# The Binder's stamping bench, last.
+	await SEAL_BENCH_CHECKS.new().run(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])
@@ -3065,7 +3069,7 @@ func _check_reed_light_scribery() -> void:
 	await _seconds(0.1)
 	_check(keyboard.interactable == station and hud.prompt_text().contains("Reed-Light Scribery"), "at its counter the prompt names the Reed-Light Scribery")
 	await _tap_key(KEY_J)
-	_check(hud.scribery_panel() != null and keyboard.input.menu_open and not keyboard.action_queue.is_busy(), "J at the counter opens the Scribery's three tabs")
+	_check(hud.scribery_panel() != null and keyboard.input.menu_open and not keyboard.action_queue.is_busy(), "J at the counter opens the Scribery's four tabs")
 	await _tap_key(KEY_SPACE)
 	_check(hud.scribery_panel() == null, "Space closes it")
 	await _tap_key(KEY_TAB)

@@ -1,7 +1,7 @@
 ## The party's progress (autoload "Progress"): the Chimes earned on raids (07 GDD
 ## §1.2) and the upgrades bought with them at Bramble-Bridge's Chime-Shrine, the
-## Scribe Card binder (collected copies, by copy key), each class's last kit and Calling,
-## and the victories that set the Grimoire level, all saved between sessions
+## Scribe Card binder (collected copies, by copy key), each class's last kit, Calling and
+## Seal-and-Tuck hand, and the victories that set the Grimoire level, all saved between sessions
 ## in user://everwood_progress.cfg. Everything is ids and numbers, so the file
 ## (or a JSON or SQLite store later) never holds game data, only references.
 ##
@@ -69,6 +69,9 @@ var endgame_kits_for_testing: bool = false
 var kits: Dictionary[StringName, Dictionary] = {}
 ## Class id -> the Secondary Calling id its players last chose (&"swift_foot").
 var callings: Dictionary[StringName, StringName] = {}
+## Class id -> the Seal-and-Tuck hand its players last chose at the Binder's stamping bench
+## (PlayerLoadoutResource.to_network_dict: Strings and ints).
+var seal_hands: Dictionary[StringName, Dictionary] = {}
 ## Encounter id -> Glimmer-Spot openings the party has seen (14 GDD §3, N_seen).
 var pattern_seen: Dictionary[StringName, int] = {}
 ## The Caldera Isles' eight world-state booleans as bits (CalderaWorldState.FLAGS order).
@@ -218,6 +221,26 @@ func save_kit(class_id: StringName, kit: Dictionary) -> void:
 	_commit()
 
 
+## The seal hand a class's players last chose at the stamping bench ({} if none was saved).
+func seal_hand_for(class_id: StringName) -> Dictionary:
+	return seal_hands.get(class_id, {})
+
+
+## Host only: remembers a class's seal hand for its next seat (and next session), as
+## PlayerLoadoutResource.to_network_dict keys alone. A playtest keeps it for the session only.
+func save_seal_hand(class_id: StringName, hand: Dictionary) -> void:
+	if not NetworkManager.current.is_host() or class_id == &"":
+		return
+	var plain: Dictionary = PlayerLoadoutResource.from_dict(hand).to_network_dict() if not hand.is_empty() else {}
+	if seal_hands.get(class_id, {}) == plain:
+		return
+	if plain.is_empty():
+		seal_hands.erase(class_id)
+	else:
+		seal_hands[class_id] = plain
+	_commit()
+
+
 ## The Secondary Calling id a class's players last chose (&"" if none was saved).
 func calling_for(class_id: StringName) -> StringName:
 	return callings.get(class_id, &"")
@@ -278,12 +301,12 @@ func best_finish(card_id: StringName) -> int:
 	return -1
 
 
-## Whether the Scribery sells this card: its Common Action-Leaves and the Place-Cards.
+## Whether the Scribery sells this card: its Common Action-Leaves, the Place-Cards and the seal cards.
 static func is_scribery_card(card_id: StringName) -> bool:
 	var listed: ScribeCardResource = ArsenalCatalog.current.card(card_id)
 	if listed == null:
 		return false
-	return listed.is_place_card() or ArsenalCatalog.current.scribery_leaves().has(listed)
+	return listed.is_place_card() or listed.is_seal_card() or ArsenalCatalog.current.scribery_leaves().has(listed)
 
 
 ## Chimes for a fresh Plain Vellum copy (an Action-Leaf inscribed, a Place-Card charted).
@@ -292,11 +315,13 @@ func scribery_cost(card_id: StringName) -> int:
 	return listed.chime_cost if listed != null else 0
 
 
-## A leaf can be inscribed again (a second copy for another socket); a place is charted once and frames every socket.
+## A leaf can be inscribed again (a second copy for another socket); a place is charted once and
+## frames every socket, and a seal card is made once and fits every slot of the hand.
 func can_inscribe(card_id: StringName) -> bool:
 	if not is_scribery_card(card_id) or chimes < scribery_cost(card_id):
 		return false
-	return not (ArsenalCatalog.current.card(card_id).is_place_card() and owns_card(card_id))
+	var listed: ScribeCardResource = ArsenalCatalog.current.card(card_id)
+	return not ((listed.is_place_card() or listed.is_seal_card()) and owns_card(card_id))
 
 
 ## Buys a Plain Vellum copy at the Scribery. The host checks the price and applies it.
@@ -471,6 +496,7 @@ func load_save() -> void:
 	collection.clear()
 	kits.clear()
 	callings.clear()
+	seal_hands.clear()
 	pattern_seen.clear()
 	caldera_flags = 0
 	var file: ConfigFile = ConfigFile.new()
@@ -488,6 +514,11 @@ func load_save() -> void:
 		var saved_kits: Dictionary = file.get_value("kits", "by_class", {}) as Dictionary
 		for class_id: Variant in saved_kits:
 			kits[StringName(str(class_id))] = saved_kits[class_id] as Dictionary
+		var saved_hands: Dictionary = file.get_value("seal_hands", "by_class", {}) as Dictionary
+		for class_id: Variant in saved_hands:
+			var saved_hand: Variant = saved_hands[class_id]
+			if saved_hand is Dictionary:
+				seal_hands[StringName(str(class_id))] = PlayerLoadoutResource.from_dict(saved_hand as Dictionary).to_network_dict()
 		var saved_callings: Dictionary = file.get_value("callings", "by_class", {}) as Dictionary
 		for class_id: Variant in saved_callings:
 			var saved: Variant = saved_callings[class_id]
@@ -517,6 +548,10 @@ func save() -> Error:
 	for class_id: StringName in callings:
 		plain_callings[String(class_id)] = String(callings[class_id])
 	file.set_value("callings", "by_class", plain_callings)
+	var plain_hands: Dictionary = {}
+	for class_id: StringName in seal_hands:
+		plain_hands[String(class_id)] = seal_hands[class_id]
+	file.set_value("seal_hands", "by_class", plain_hands)
 	file.set_value("glimmer", "seen", _plain_pattern_seen())
 	file.set_value("caldera", "flags", caldera_flags)
 	return file.save(save_path)

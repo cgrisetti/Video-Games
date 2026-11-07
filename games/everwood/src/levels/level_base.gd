@@ -240,6 +240,8 @@ func _ready() -> void:
 	NetworkManager.current.kit_picker = pick_kit
 	NetworkManager.current.kit_validator = check_kit
 	NetworkManager.current.calling_validator = check_calling
+	NetworkManager.current.seal_hand_picker = pick_seal_hand
+	NetworkManager.current.seal_hand_validator = check_seal_hand
 	grid.set_world(get_world_3d())
 	_setup_level()
 	# Every sign and nameplate reads the same (18 GDD §6.2), built by any script or baked into the scene.
@@ -420,6 +422,39 @@ func check_kit_for_class(class_id: StringName, calling: StringName, kit: Diction
 		progress.grimoire_level(), progress.collection, progress.trail_level())
 
 
+## The seal hand a new seat carries: the class's last one from the Binder's stamping bench
+## while it still fits (PartyProgress.seal_hand_for), otherwise {} and the role's default
+## hand by stage. Companions always wear the default.
+func pick_seal_hand(class_id: StringName, companion: bool) -> Dictionary:
+	if companion:
+		return {}
+	var saved: Dictionary = PartyProgress.current.seal_hand_for(class_id)
+	if saved.is_empty():
+		return {}
+	var level: int = clampi(PartyProgress.current.trail_level(), 1, ArsenalCatalog.MAX_TRUE_LEVEL)
+	var problem: String = _seal_hand_problem(ClassLoadouts.player_class(class_id).role, PlayerLoadoutResource.stage_for_true_level(level), level, saved)
+	return saved if problem == "" else {}
+
+
+## Host: why a seat may not carry a seal hand ("" when it may): only seal cards the party
+## owns (or the Fellowship's starting seal for the slot), only in slots its hero's stage has
+## opened (ArsenalCatalog.seal_hand_problem). A client can't claim a locked slot this way.
+func check_seal_hand(seat: PartyMember, hand: Dictionary) -> String:
+	if hand.is_empty():
+		return ""
+	var level: int = clampi(PartyProgress.current.trail_level(), 1, ArsenalCatalog.MAX_TRUE_LEVEL)
+	var stage: int = PlayerLoadoutResource.stage_for_true_level(level)
+	var hero: ActorBase = actors.get(seat.player_id) as ActorBase
+	if hero != null and hero.seal != null:
+		level = hero.seal.true_level
+		stage = hero.seal.progression_stage
+	return _seal_hand_problem(ClassLoadouts.player_class(seat.class_id).role, stage, level, hand)
+
+
+func _seal_hand_problem(role: int, stage: int, level: int, hand: Dictionary) -> String:
+	return ArsenalCatalog.current.seal_hand_problem(PlayerLoadoutResource.from_dict(hand), role, stage, level, PartyProgress.current.collection)
+
+
 ## Host: why a seat may not take a Calling ("" when it may): they open at Level 10.
 func check_calling(_seat: PartyMember, calling: StringName) -> String:
 	if calling != Callings.UNSWORN_ID and not PartyProgress.current.callings_unlocked():
@@ -521,6 +556,11 @@ func _on_player_updated(seat: PartyMember) -> void:
 		if NetworkManager.current.is_host() and not seat.companion:
 			PartyProgress.current.save_kit(seat.class_id, seat.kit)
 			PartyProgress.current.save_calling(seat.class_id, seat.calling)
+	# A hand from the Binder's stamping bench: every peer's copy wears it at once, and the host keeps it for the Fellowship.
+	if actor.seal != null:
+		actor.seal.wear_seat_hand(seat.seal_hand)
+	if NetworkManager.current.is_host() and not seat.companion and not seat.seal_hand.is_empty():
+		PartyProgress.current.save_seal_hand(seat.class_id, seat.seal_hand)
 	actor.party_slot = seat.slot
 	actor.refresh_name_label()
 	if actor.input != null and actor.input.assist_mode != seat.assist_mode:
@@ -665,6 +705,28 @@ func _on_trail_level_reached(level: int) -> void:
 		if grant.get("unlocks_secondary_calling", false) and calling == Callings.UNSWORN_ID:
 			calling = pick_calling(seat.class_id, seat.companion)
 		NetworkManager.current.grant_seat(seat.player_id, kit.to_dict(), calling)
+	_open_seal_slots(level)
+
+
+## Host: a level that opens a slot of the Seal-and-Tuck hand fills it with the Fellowship's
+## starting seal in every chosen hand (on the seats and in the saves), as milestones auto-slot
+## kits; a hand nobody chose grows by itself (EquipmentSealComponent's default).
+func _open_seal_slots(level: int) -> void:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var progress: PartyProgress = PartyProgress.current
+	for class_id: StringName in ClassLoadouts.PLAYER_CLASSES:
+		var saved: Dictionary = progress.seal_hand_for(class_id)
+		if saved.is_empty():
+			continue
+		var hand: PlayerLoadoutResource = PlayerLoadoutResource.from_dict(saved)
+		if catalog.apply_seal_milestone(hand, ClassLoadouts.player_class(class_id).role, level):
+			progress.save_seal_hand(class_id, hand.to_network_dict())
+	for seat: PartyMember in NetworkManager.current.ordered_members():
+		if seat.companion or seat.seal_hand.is_empty():
+			continue
+		var worn: PlayerLoadoutResource = PlayerLoadoutResource.from_dict(seat.seal_hand)
+		if catalog.apply_seal_milestone(worn, ClassLoadouts.player_class(seat.class_id).role, level):
+			NetworkManager.current.grant_seal_hand(seat.player_id, worn.to_network_dict())
 
 
 func _on_telegraph_cast(_decal: RaidTelegraphDecal) -> void:

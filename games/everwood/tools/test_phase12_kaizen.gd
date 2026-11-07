@@ -334,13 +334,13 @@ func _check_binder_tabs() -> void:
 		check.call(false, "the Grimoire Binder opens on the green")
 		return
 	var Tab: Dictionary = GrimoireBinderPanel.Tab
-	var names_ok: bool = "|".join(GrimoireBinderPanel.TAB_NAMES) == "1. Gear & Weapon|2. Quick Magic-Ink Cards|3. Combo Moves|Atlas Map"
+	var names_ok: bool = "|".join(GrimoireBinderPanel.TAB_NAMES) == "1. Gear & Weapon|2. Quick Magic-Ink Cards|3. Combo Moves|4. Seals & Pocket Cards|Atlas Map"
 	var tips: int = 0
 	for index: int in GrimoireBinderPanel.TAB_TOOLTIPS.size():
 		tips += 1 if GrimoireBinderPanel.TAB_TOOLTIPS[index].length() > 30 else 0
 	var on_cards: bool = binder.tab == Tab.CARDS and binder.tooltip_text_now().contains(GrimoireBinderPanel.TAB_TOOLTIPS[Tab.CARDS])
-	check.call(names_ok and tips == 4 and on_cards and not binder.preview_live(),
-		"the Binder has the tabs 1. Gear & Weapon, 2. Quick Magic-Ink Cards, 3. Combo Moves and the Atlas Map, each with a tooltip, and opens on the cards")
+	check.call(names_ok and tips == 5 and on_cards and not binder.preview_live(),
+		"the Binder has the tabs 1. Gear & Weapon, 2. Quick Magic-Ink Cards, 3. Combo Moves, 4. Seals & Pocket Cards and the Atlas Map, each with a tooltip, and opens on the cards")
 	await _tap_key(KEY_E)
 	await _frames(2)
 	var forms: Array[ComboChainResource] = ArsenalCatalog.current.combos()
@@ -348,13 +348,18 @@ func _check_binder_tabs() -> void:
 	check.call(binder.tab == Tab.COMBOS and binder._combo_rows.size() == forms.size() and tip.begins_with("Press %s in a row" % forms[0].glyphs())
 		and tip.contains("hits"), "E turns to Combo Moves: a row per form, and the tooltip says how to play the first (%s)" % tip.get_slice("\n", 0))
 	await _tap_key(KEY_E)
+	await _frames(2)
+	var on_bench: bool = binder.tab == Tab.SEALS and binder.preview_live()
+	await _tap_key(KEY_E)
 	await _frames(3)
 	var on_atlas: bool = binder.tab == Tab.ATLAS and is_instance_valid(binder.atlas)
 	await _tap_key(KEY_Q)
 	await _tap_key(KEY_Q)
 	await _tap_key(KEY_Q)
+	await _tap_key(KEY_Q)
 	await _frames(3)
-	check.call(on_atlas and binder.tab == Tab.GEAR and binder.atlas == null, "E again opens the Atlas Map; Q steps back through Combo Moves and the cards to Gear & Weapon")
+	check.call(on_bench and on_atlas and binder.tab == Tab.GEAR and binder.atlas == null,
+		"E again opens Seals & Pocket Cards (the hero in the preview) and then the Atlas Map; Q steps back through the tabs to Gear & Weapon")
 	var lit: bool = true
 	for node: Node in hero.find_children("*", "MeshInstance3D", true, false):
 		lit = lit and (node as MeshInstance3D).get_layer_mask_value(GrimoireBinderPanel.PREVIEW_LAYER)

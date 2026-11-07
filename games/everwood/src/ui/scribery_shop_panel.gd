@@ -1,8 +1,11 @@
 ## The Reed-Light Scribery's counter (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §6), on
-## the player's own screen. Three tabs along the top, the player's own
+## the player's own screen. Four tabs along the top, the player's own
 ## Cross-Grimoire diamonds at 2.2x along the bottom:
 ##   Inscribe Action-Leaves   the Scribery's Common leaves, for Chimes
 ##   Chart Place-Cards        the four Place-Cards, for Chimes (one frames every diamond)
+##   Seal Cards               the four seal cards, for Chimes (made once, each fits
+##                            every slot of the hand at the Binder's stamping bench);
+##                            highlighting one has the hero pull it from the pouch
 ##   The Gilding Press        a finer finish for a card the party owns:
 ##                            Plain Vellum to Gilded Leaf (50), to Star-Inked Vellum (120)
 ## Highlighting a card shows it in the diamonds and, on the hero's own puppet
@@ -18,9 +21,9 @@ extends Control
 
 signal closed
 
-enum Tab { INSCRIBE, CHART, GILD }
+enum Tab { INSCRIBE, CHART, SEALS, GILD }
 
-const TAB_NAMES: Array[String] = ["Make Ink Cards", "Chart Place-Cards", "The Gilding Press"]
+const TAB_NAMES: Array[String] = ["Make Ink Cards", "Chart Place-Cards", "Seal Cards", "The Gilding Press"]
 const LIST_WIDTH: float = 620.0
 const TITLE_SIZE: int = 24
 const FONT_SIZE: int = 15
@@ -175,6 +178,9 @@ func options() -> Array[StringName]:
 		Tab.CHART:
 			for place: ScribeCardResource in ArsenalCatalog.current.place_cards():
 				listed.append(place.card_id)
+		Tab.SEALS:
+			for seal_card: ScribeCardResource in ArsenalCatalog.current.seal_cards():
+				listed.append(seal_card.card_id)
 		Tab.GILD:
 			listed = gildable_copies()
 	return listed
@@ -262,7 +268,9 @@ func buy() -> bool:
 		progress.request_gild(choice)
 	else:
 		if not progress.can_inscribe(choice):
-			_refuse("Already charted" if tab == Tab.CHART and progress.owns_card(choice) else "Needs %d Chimes" % progress.scribery_cost(choice))
+			var have: bool = progress.owns_card(choice)
+			_refuse("Already charted" if tab == Tab.CHART and have else ("Already made" if tab == Tab.SEALS and have
+				else "Needs %d Chimes" % progress.scribery_cost(choice)))
 			return false
 		_pending_slot = {"copy_key": ScribeCardResource.copy_key(choice, ScribeCardResource.CardVariant.STANDARD), "replaces": &""}
 		progress.request_inscribe(choice)
@@ -305,6 +313,10 @@ func _slot_new_copy(copy_key: StringName, replaces: StringName) -> void:
 		draft.set_socket_leaf(Socket.SKILL, listed.card_id, variant)
 		changed = true
 	var verb: String = "Pressed" if replaces != &"" else ("Charted" if listed.is_place_card() else "Made")
+	if listed.is_seal_card():
+		# A seal goes on at the Binder's stamping bench, not into the diamonds.
+		_show_note("Made %s: press it on your gear in the Binder (tab 4)" % listed.display_name, GOOD_COLOR)
+		return
 	_show_note("%s %s" % [verb, catalog.copy_name(copy_key)], GOOD_COLOR)
 	if not changed:
 		return
@@ -390,6 +402,8 @@ func _row_text(id: StringName) -> String:
 	var owned: int = progress.copies_of(ScribeCardResource.copy_key(id, ScribeCardResource.CardVariant.STANDARD))
 	var status: String = ("charted ✓" if owned > 0 else "%d Chimes" % listed.chime_cost) if listed.is_place_card() \
 		else "%d Chimes%s" % [listed.chime_cost, "  (have %d)" % owned if owned > 0 else ""]
+	if listed.is_seal_card():
+		status = "made ✓" if owned > 0 else "%d Chimes" % listed.chime_cost
 	var tether: String = "  needs a Soul Tether" if listed.needs_soul_tether and not actor.loadout.has_soul_tethers else ""
 	return "%s  [%s]  %s%s" % [listed.display_name, kind, status, tether]
 
@@ -400,6 +414,9 @@ func _preview(id: StringName) -> void:
 	var key: StringName = id if tab == Tab.GILD else ScribeCardResource.copy_key(id, ScribeCardResource.CardVariant.STANDARD)
 	var shown: StringName = _finer(key) if tab == Tab.GILD else key
 	var listed: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(shown))
+	if listed.is_seal_card():
+		_preview_seal(listed)
+		return
 	var socket: int = widget.selected_socket
 	if listed.is_action_leaf():
 		socket = _socket_wearing(key, Socket.SKILL)
@@ -419,6 +436,16 @@ func _preview(id: StringName) -> void:
 		SignFlowComponent.SIGN_FLOW_FLARE_TIME)
 	director.show_sign_coat_here(actor, SignFlowComponent.CoatLook.TRAIL_TUCK, inked, synergy["manifestation_mode"],
 		synergy["location_card_id"], 0.0)
+	previews_played += 1
+
+
+## A seal card: what it does pressed and pulled, and the hero pulling it from the pouch (on this screen only).
+func _preview_seal(listed: ScribeCardResource) -> void:
+	widget.clear_preview()
+	_detail.text = "%s  ·  %s seal, %s when pulled" % [listed.description, ArsenalCatalog.current.sign_seal(listed.scribe_sign).display_name,
+		listed.mode_name()]
+	if EquipmentSealComponent.enabled and actor.visuals != null and actor.visuals.has_rig():
+		actor.visuals.play_pocket_pull_flourish(ArsenalCatalog.current, listed.card_id, PlayerLoadoutResource.TriggerSlot.R)
 	previews_played += 1
 
 
