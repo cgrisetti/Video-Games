@@ -1,4 +1,4 @@
-// One bough of the World-Tree (docs/20 Part II §1.2, "the tree answers each
+// One bough of Miller's Oak (the World-Tree of docs/20 Part II §1.2, "the tree answers each
 // trial"): leafy green until its trial is done, then `bloom` eases to 1 and
 // it blossoms in its Sign's colour (Amber west, Sea-Azure north,
 // Twilight-Violet east; the heart-leaves are Saffron from the start), glowing

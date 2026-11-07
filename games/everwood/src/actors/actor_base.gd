@@ -539,7 +539,11 @@ func is_local_player() -> bool:
 
 
 ## A hero's nameplate (18 GDD §6.2): "P2 · Bell-Keeper", companion or not.
+## The first hero on the host's screen wears the tale's own name ("P1 · Wren", docs/22).
 func display_name() -> String:
+	var hero: String = PartyProgress.current.hero_name if PartyProgress.current != null else ""
+	if hero != "" and party_slot == 0 and is_local_player() and not is_companion and NetworkManager.current.is_host():
+		return "P%d · %s" % [party_slot + 1, hero]
 	return "P%d · %s" % [party_slot + 1, loadout.display_name]
 
 

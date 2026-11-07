@@ -201,7 +201,7 @@ func _check_atlas_and_state() -> void:
 # --- 1: the boot ------------------------------------------------------------------------
 
 func _check_boot() -> void:
-	check.call(ProjectSettings.get_setting("application/run/main_scene") == CALDERA_SCENE, "the main scene is the Caldera Isles")
+	check.call(InstanceManager.scene_path(TitleScreen.GAME_INSTANCE) == CALDERA_SCENE, "the title screen's tales start in the Caldera Isles")
 	await _load(CalderaArchipelagoWorld.ZONE_OAKSHIRE)
 	if level == null:
 		check.call(false, "the Caldera Isles load")

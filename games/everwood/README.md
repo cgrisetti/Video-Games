@@ -108,7 +108,9 @@ Terrain3D is optional and not in git (`addons/` is ignored). Without it the worl
 tools/fetch_terrain3d.sh
 ```
 
-The keyboard player joins as soon as it starts, as the **Level 1 youth**: a 14-year-old Wayfarer, Unsworn, standing on the orchard lane in Oakshire Holm's Lee-Shore Orchards and facing up it toward the Windmill and Hearthstead Market, alone: no AI companions unless you start with `-- --with-companions`. The youth wears the kit the trail has earned (at Level 1 the Willow-Coppice Longbow and the Bramble-Spun Jerkin, 100 health) and walks the lanes empty-handed: the bow comes out of its tuck the moment a fight starts and goes away again 4 s after. To see a true Level 1 start without touching the family's save, run `godot --path . -- --save=user://fresh_youth.cfg`. Each pad joins with **Start**. Later players fill out the trinity automatically; switch with Tab / Select. The Cross-Grimoire HUD shows each move's keys on your own screen.
+The game opens on the **title screen** ([docs/22](docs/22_TITLE_SCREEN_AND_TALES.md)): the Everwood wordmark over a living picture of the youth on an orchard knoll above The Sound. **New Game** asks for your hero's name (type one or pick Suggest a Name), starts a fresh Level 1 tale and writes it to its own save file; **Continue** lists every tale on this machine, newest played first (the family's older save shows as "The Family Tale"), and plays the one you pick. Launching with game options after `--` (`--save=`, `--instance=`, `--players=` ...) skips the title.
+
+Once a tale starts, the keyboard player joins at once as the **Level 1 youth**: a 14-year-old Wayfarer, Unsworn, standing on the orchard lane in Oakshire Holm's Lee-Shore Orchards and facing up it toward the Windmill and Hearthstead Market, alone: no AI companions unless you start with `-- --with-companions`. The youth wears the kit the trail has earned (at Level 1 the Willow-Coppice Longbow and the Bramble-Spun Jerkin, 100 health) and walks the lanes empty-handed: the bow comes out of its tuck the moment a fight starts and goes away again 4 s after. New Game gives a true Level 1 start in its own save file without touching any other tale. Each pad joins with **Start**. Later players fill out the trinity automatically; switch with Tab / Select. The Cross-Grimoire HUD shows each move's keys on your own screen.
 
 | | Keyboard | Pad |
 |---|---|---|
@@ -157,7 +159,8 @@ assets/audio/                 the baked score: music/<zone>/ four .ogg stems and
 deprecated/legacy_maps/       the retired maps, still loadable: oakshire_vale/ (OakshireVale, its layout, field, baked
                               Landblocks, builder and checks), bramble_bridge_corridor/ (EverwoodWorld, DoverslapLayout,
                               its Landblocks and HLODs from tools/build_levels.gd, test_world_grid.gd), hub_town/
-scenes/worlds/                caldera_isles.tscn (the main scene: one node, CalderaArchipelagoWorld builds the rest)
+scenes/title/                 title_screen.tscn (the main scene: one node, TitleScreen builds the rest)
+scenes/worlds/                caldera_isles.tscn (where every tale starts: one node, CalderaArchipelagoWorld builds the rest)
 src/autoloads/                NetworkManager (ENet + party roster, Callings and kits), CombatDirector (hit-stop, Sign
                               seals, projectiles, shelter, routing), InstanceManager (Bramble-Bridge / expedition
                               changes), AudioCues, PartyProgress (Chimes, upgrades, card binder, kits, Callings, Grimoire),
@@ -172,7 +175,8 @@ src/resources/                CombatActionResource (frame data), CharacterStatsR
                               WorldPropKitResource, ZoneSuccessionVisualResource, HeroAppearanceResource (a Calling's
                               look), WeaponVisualTierResource (a weapon tier's look), WorldMapZoneResource (a place on the
                               Wayfarer's map), PropPartResource, CombatEvent, PartyMember
-src/core/                     AudioDirector (autoload "Score": the buses, the two music decks, the combat stages, the
+src/core/                     SaveSlots (the tales in user://saves/: names, new save files, the Continue list),
+                              AudioDirector (autoload "Score": the buses, the two music decks, the combat stages, the
                               32-voice 3D pool, stingers), AudioCatalog (every zone, Sign, Calling and boss sound
                               profile by id), ProceduralChamberSynth (physically modelled instruments: the fallback
                               stems, runtime phrases and the campfire and water ambience)
@@ -225,6 +229,7 @@ src/world/                    the legacy Landblock world: WorldGridConfig, World
                               (the kits) and WorldKitInstance, ChunkClutterBaker, HorizonVistaRing; shaders/ (the
                               triplanar, terrain splat, foliage wind, water stream and hush-ring shaders, and the
                               Caldera's sea, horizon impostor and Miller's Oak bough shaders)
+src/ui/title/                 TitleScreen (New Game, Continue, Quit), EverwoodWordmark, TitleDiorama (the living picture)
 src/ui/                       SplitScreenViewportGrid, PlayerCamera (yaw and pitch), PlayerHUD, CrossGrimoireHUD (the
                               diamonds and their arcs), CrossGrimoireDiamondWidget (HUD 1.3x, Binder and Scribery 2.2x),
                               GrimoireBinderPanel (three tabs and the live preview), ScriberyShopPanel, HubUpgradeMenu, ScribeDeskMenu, WorldTelemetryBadge,
