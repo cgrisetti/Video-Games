@@ -118,7 +118,26 @@ uniform vec4 promise_color : source_color = vec4(0.98, 0.72, 0.18, 1.0);
 // Closer than this, the hero dithers away so the camera never looks out through their head.
 uniform float camera_fade_distance = 1.1;
 
+group_uniforms character;
+// The character design language (docs/26): painted, joyful faces and honest materials.
+// Freckles over the nose and cheeks (0 none), and how rosy the cheeks run.
+uniform float freckle_amount : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 freckle_color : source_color = vec4(0.62, 0.36, 0.24, 1.0);
+// The lips' rose and the upper lash line's ink.
+uniform vec4 lip_color : source_color = vec4(0.62, 0.3, 0.27, 1.0);
+uniform vec4 lash_color : source_color = vec4(0.13, 0.08, 0.06, 1.0);
+// 0 open, 1 shut: the upper lid comes down over the eye (ActorVisuals blinks it).
+uniform float eye_blink : hint_range(0.0, 1.0) = 0.0;
+// The eyes' rest height and half-height (HeroMeshAtelier._eye), for the lid and lash line.
+uniform float eye_center_y = 1.598;
+uniform float eye_half_height = 0.0108;
+// The hair's light streaks and its sheen band across the crown.
+uniform float hair_streaks = 0.35;
+uniform float hair_sheen = 0.45;
+
 varying float v_aa;
+// The skinned surface's own position, for freckles, hair streaks and the painter's mottling.
+varying vec3 v_obj;
 // What the light needs to know: x cloth, y skin, z the leather's burnish, w an eye.
 varying vec4 v_mat;
 
@@ -179,6 +198,10 @@ float strand_speckle(vec3 p, float ratio) {
 	return step(pick, ratio) * (1.0 - smoothstep(0.55, 0.9, best));
 }
 
+void vertex() {
+	v_obj = VERTEX;
+}
+
 float bayer4(vec2 frag) {
 	int x = int(mod(frag.x, 4.0));
 	int y = int(mod(frag.y, 4.0));
@@ -219,8 +242,24 @@ void fragment() {
 		vec2 uv = UV * weave_density;
 		float weave = sin((uv.x + uv.y) * 110.0) * sin((uv.x - uv.y) * 110.0);
 		weave *= 1.0 - smoothstep(0.35, 1.2, length(fwidth(uv)) * 110.0 / 6.2832);
-		nudge += vec2(weave, weave * 0.6) * weave_strength;
-		base *= 1.0 + weave * 0.06;
+		// The weave is felt, not seen (docs/26 §5): a faint slub up close, never a knitted pattern.
+		nudge += vec2(weave, weave * 0.6) * weave_strength * 0.45;
+		base *= 1.0 + weave * 0.02;
+		// Painted cloth: soft fold strokes running down the garment, and broad handled patches.
+		float folds = sb_noise(v_obj * vec3(9.0, 2.2, 9.0));
+		float patches = sb_noise(v_obj * 3.1 + 7.0);
+		base *= 0.9 + 0.12 * folds + 0.08 * (patches - 0.5);
+		if (m < 0.04) {
+			// Wool and canvas: pilling flecks, a darker, frayed hem.
+			float pill = step(0.86, hash13(floor(v_obj * 160.0)));
+			base *= 1.0 - pill * 0.12;
+			base *= mix(0.86, 1.0, smoothstep(0.0, 0.08, rest_y - 0.98));
+		}
+		if (m > 0.25 && m < 0.28) {
+			// Linen is oat, never white: warmed, and greyed where hands and necks wear it.
+			base *= vec3(0.96, 0.93, 0.85);
+			base = mix(base, base * vec3(0.86, 0.84, 0.8), (1.0 - COLOR.r) * 0.6);
+		}
 		rough = m < 0.10 ? 0.9 : 0.82;
 		mat.x = 1.0;
 	} else if (m < 0.42) {
@@ -249,6 +288,8 @@ void fragment() {
 		float tick = step(0.55, fract(UV.y / 0.015)) * seam * (1.0 - smoothstep(0.4, 1.0, fwidth(UV.y) / 0.015));
 		nudge.y += tick * 0.3;
 		base *= 1.0 - tick * 0.18;
+		// Oiled and creased (docs/26 §5): darker where it folds, a mottled patina.
+		base *= 0.88 + 0.18 * sb_noise(v_obj * 14.0) - crease * 0.08;
 		mat.z = 0.65 * burnish;
 	} else if (m < 0.7) {
 		// Forged metals: iron, ring-mail, brass, steel.
@@ -285,7 +326,16 @@ void fragment() {
 			base = skin_tone_color.rgb;
 			base *= mix(vec3(1.0), vec3(1.06, 1.03, 0.94), clamp(UV.y, 0.0, 1.0));
 			base = mix(base, malar_color.rgb, clamp(UV.x, 0.0, 1.0) * malar_mix);
+			// Freckles over the nose and cheeks (docs/26 §4): little painted dots in the flush.
+			vec3 cell = floor(v_obj * 150.0);
+			float dot_d = length(fract(v_obj * 150.0) - 0.5);
+			float freckle = step(0.78, hash13(cell)) * (1.0 - smoothstep(0.18, 0.34, dot_d)) * smoothstep(0.12, 0.4, UV.x);
+			base = mix(base, freckle_color.rgb * base * 1.6, freckle * freckle_amount * 0.55);
 			base = mix(base, cool_undertone_color.rgb, clamp(UV2.y, 0.0, 1.0) * 0.28);
+			if (m > 0.776) {
+				// The lips (HeroMeshAtelier.MAT_LIP): a small rosy smile.
+				base = lip_color.rgb;
+			}
 			rough = 0.56;
 		} else if (m < 0.84) {
 			// The speckled woodsman beard: bark-brown strands, a share of them light ash-gray.
@@ -295,10 +345,13 @@ void fragment() {
 			rough = 0.9;
 			mat.y = 0.0;
 		} else if (m < 0.88) {
-			// Brows, lashes and hair.
-			base = beard_primary_color.rgb * 0.7;
+			// Brows, lashes and hair: two painted tones in streaks along the locks (docs/26 §4),
+			// and a sheen band across the crown in light().
+			float streak = value_noise(vec2(atan(v_obj.x, v_obj.z + 0.0001) * 16.0, v_obj.y * 3.0));
+			base = beard_primary_color.rgb * mix(0.55, 0.95, mix(0.5, streak, hair_streaks * 2.0));
 			rough = 0.9;
 			mat.y = 0.0;
+			mat.z = -1.0;
 		} else if (m < 0.92) {
 			base = sclera_color.rgb;
 			rough = 0.25;
@@ -311,6 +364,20 @@ void fragment() {
 			base = eye_color.rgb;
 			rough = 0.15;
 			mat = vec4(0.0, 0.0, 0.0, 1.0);
+		}
+		if (m >= 0.88) {
+			// The eyes (docs/26 §4): a bold inked upper lash line along the lid, and the lid
+			// coming down over the eye as it blinks (eye_blink, 0 open to 1 shut).
+			float lid = eye_center_y + eye_half_height - eye_blink * eye_half_height * 2.2;
+			if (rest_y > lid) {
+				base = skin_tone_color.rgb * vec3(0.95, 0.88, 0.86);
+				rough = 0.56;
+				mat = vec4(0.0, 1.0, 0.0, 0.0);
+			} else if (rest_y > lid - eye_half_height * 0.34) {
+				base = lash_color.rgb;
+				rough = 0.9;
+				mat = vec4(0.0);
+			}
 		}
 	}
 	NORMAL = normalize(NORMAL + TANGENT * nudge.x + BINORMAL * nudge.y);
@@ -388,6 +455,12 @@ void light() {
 		// Burnished leather: a waxy sheen on the worn edges.
 		if (v_mat.z > 0.0) {
 			SPECULAR_LIGHT += smoothstep(0.72, 0.9, reflect_dot) * v_mat.z * lit * ATTENUATION * LIGHT_COLOR * 0.5;
+		}
+		// Hair: a soft sheen band where the sun skims the crown.
+		if (v_mat.z < -0.5) {
+			float skim = dot(NORMAL, normalize(LIGHT + VIEW));
+			float band = smoothstep(0.62, 0.8, skim) * (1.0 - smoothstep(0.9, 0.99, skim));
+			DIFFUSE_LIGHT += vec3(1.0, 0.93, 0.8) * band * hair_sheen * lit * ATTENUATION * LIGHT_COLOR / PI;
 		}
 		// Eyes: the sun's own corneal catchlight spark.
 		if (v_mat.w > 0.5) {

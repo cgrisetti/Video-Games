@@ -541,21 +541,27 @@ const YOUTH_RUN_GAIT: Array[float] = [26.0, 0.6, 0.16, 0.24, 1.5, 0.022, 0.008, 
 
 
 static func _youth(book: Array[Array]) -> void:
-	_youth_idle(book)
+	_youth_idle(book, false)
+	_youth_idle(book, true)
 	_youth_gait(book, "locomotion_youth_walk", YOUTH_WALK_GAIT, false)
 	_youth_gait(book, "locomotion_youth_run", YOUTH_RUN_GAIT, true)
 	_youth_draws(book)
 
 
-## A country youth at ease: weight on the right hip, the right thumb hooked
-## in a brace, the left arm easy. Breathes; looks off left across the
-## orchard; glances back over the right shoulder; settles.
-static func _youth_idle(book: Array[Array]) -> void:
+## A country youth at ease (docs/26 §8): weight on the right hip; the boy's
+## right fist on his hip, elbow out (it never sinks into his chest), the left arm
+## easy; the girl's left hand at her braid on her chest, her right arm easy.
+## Breathes; looks off left across the orchard; glances back over the right
+## shoulder; settles.
+static func _youth_idle(book: Array[Array], girl: bool) -> void:
 	var legs: Dictionary = _aim({B.THIGH_R: Vector3(0.05, -1.0, 0.01), B.SHIN_R: Vector3(0.04, -1.0, 0.02),
 		B.THIGH_L: Vector3(-0.12, -1.0, -0.08), B.SHIN_L: Vector3(-0.07, -1.0, 0.07)})
-	var thumb_in_brace: Dictionary = _aim({B.UPPER_ARM_R: Vector3(0.25, -0.95, 0.15), B.FOREARM_R: Vector3(-0.63, 0.5, -0.58),
-		B.HAND_R: Vector3(-0.2, -0.9, -0.35)})
+	var thumb_in_brace: Dictionary = _aim({B.UPPER_ARM_R: Vector3(0.55, -0.8, 0.2), B.FOREARM_R: Vector3(-0.69, -0.65, -0.32),
+		B.HAND_R: Vector3(-0.5, -0.8, -0.1)})
 	var easy_left: Dictionary = _aim({B.UPPER_ARM_L: Vector3(-0.11, -1.0, 0.03), B.FOREARM_L: Vector3(-0.04, -0.95, -0.28)})
+	if girl:
+		thumb_in_brace = _aim({B.UPPER_ARM_R: Vector3(0.12, -1.0, 0.03), B.FOREARM_R: Vector3(0.05, -0.95, -0.28)})
+		easy_left = _aim({B.UPPER_ARM_L: Vector3(-0.2, -0.95, -0.12), B.FOREARM_L: Vector3(0.42, 0.62, -0.66), B.HAND_L: Vector3(0.3, 0.1, -0.95)})
 	var base: Dictionary = _p([legs, FEET_FLAT, thumb_in_brace, easy_left, _hips(Vector3(0.022, -0.008, 0.0)),
 		_e({B.HIPS: Vector3(0.0, -4.0, 3.5), B.SPINE: Vector3(-1.0, 1.0, -2.0), B.CHEST: Vector3(0.5, 2.0, -2.0), B.HEAD: Vector3(2.0, 2.0, 4.0)})])
 	var breathe: Dictionary = _p([base, _e({B.HIPS: Vector3(0.0, -4.0, 3.5), B.SPINE: Vector3(-0.5, 1.0, -2.0), B.CHEST: Vector3(3.0, 2.0, -2.0),
@@ -565,10 +571,10 @@ static func _youth_idle(book: Array[Array]) -> void:
 	var look_back: Dictionary = _p([base, _hips(Vector3(0.016, -0.01, 0.0)),
 		_e({B.HIPS: Vector3(0.0, -8.0, 2.5), B.SPINE: Vector3(-1.0, -6.0, -2.0), B.CHEST: Vector3(1.0, -10.0, -2.0), B.NECK: Vector3(0.0, -10.0, 0.0),
 			B.HEAD: Vector3(4.0, -26.0, -3.0)}),
-		_aim({B.UPPER_ARM_L: Vector3(-0.16, -1.0, -0.06), B.FOREARM_L: Vector3(-0.02, -0.9, -0.4)})])
+		_aim({B.UPPER_ARM_L: Vector3(-0.16, -1.0, -0.06), B.FOREARM_L: Vector3(-0.02, -0.9, -0.4)}) if not girl else {}])
 	var settle: Dictionary = _p([base, _hips(Vector3(0.026, -0.012, 0.0)), _e({B.HIPS: Vector3(0.0, -5.0, 4.0), B.CHEST: Vector3(1.5, 1.0, -2.5),
 		B.HEAD: Vector3(3.0, -4.0, 6.0)})])
-	_clip(book, "idle_youth_calm", 240, [[0, base], [30, breathe], [62, look_left], [88, look_left], [112, breathe], [146, look_back],
+	_clip(book, "idle_youth_calm_girl" if girl else "idle_youth_calm", 240, [[0, base], [30, breathe], [62, look_left], [88, look_left], [112, breathe], [146, look_back],
 		[168, look_back], [196, settle], [220, breathe], [240, base]], {"loop": true})
 
 

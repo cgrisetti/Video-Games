@@ -30,12 +30,15 @@ extends RefCounted
 const B = HeroRigBuilder.Bone
 ## The head scales round the middle of the face, so it grows up and out more than down onto the neck.
 const HEAD_PIVOT: Vector3 = Vector3(0.0, 1.52, -0.01)
-## The eyes are drawn this much bigger again, round their own centres.
-const EYE_SCALE: float = 1.14
+## The eyes are drawn this much bigger again, round their own centres, set this
+## much wider apart and lower (docs/26 §4: big, a little wide, a little low).
+const EYE_SCALE: float = 1.3
+const EYE_SPREAD: float = 0.004
+const EYE_DROP: float = 0.003
 ## The adult brow (HeroMeshAtelier._eye, everything above BROW_FROM) lifts this far, its inner end further.
 const BROW_FROM: float = 1.6135
-const BROW_LIFT: float = 0.004
-const BROW_INNER_LIFT: float = 0.007
+const BROW_LIFT: float = 0.0015
+const BROW_INNER_LIFT: float = 0.005
 ## The shirt, hips to shoulders: (height, half-width, half-depth, centre z).
 const SHIRT_RINGS: Array[Vector4] = [
 	Vector4(0.94, 0.15, 0.113, 0.0), Vector4(1.02, 0.152, 0.113, -0.004), Vector4(1.1, 0.157, 0.115, -0.008), Vector4(1.18, 0.168, 0.12, -0.012),
@@ -47,7 +50,7 @@ const CAPE_HEM: float = 1.0
 
 ## The youth's five skinned surfaces, in HeroMeshAtelier.REGIONS order.
 static func build_surfaces(look: HeroAppearanceResource) -> Array[ArrayMesh]:
-	return [_head(look), _torso(), _braces_scarf(), _limbs(), _belt_cape()]
+	return [_head(look), _torso(), _braces_scarf(look), _limbs(look), _belt_cape()]
 
 
 # --- Helpers ---------------------------------------------------------------------
@@ -98,9 +101,12 @@ static func _head(look: HeroAppearanceResource) -> ArrayMesh:
 	var s: HeroMeshAtelier.Sculpt = HeroMeshAtelier.Sculpt.new(true)
 	var head: Dictionary = _w([B.HEAD, 1.0])
 	var warp: Callable = head_warp()
+	var girl: bool = is_girl(look)
 	s.warp = warp
 	# A young face, still planed (doc: "clear brow-ridge planes"), but soft: a
-	# gentle brow, shallow sockets, full cheeks, smooth temples, a rounded chin.
+	# gentle brow, shallow sockets, full cheeks, smooth temples, a rounded chin
+	# (the girl's a touch narrower).
+	var jaw_narrow: float = 0.16 if girl else 0.1
 	var planes_fn: Callable = func(theta: float, _t: float, p: Vector3) -> Vector3:
 		var front: float = smoothstep(0.35, 0.85, maxf(0.0, -sin(theta)))
 		var side: float = signf(p.x)
@@ -110,7 +116,7 @@ static func _head(look: HeroAppearanceResource) -> ArrayMesh:
 		var jaw: float = 1.0 - smoothstep(1.49, 1.54, p.y)
 		var moved: Vector3 = p + Vector3(0.0, 0.0, -0.004 * brow + 0.015 * socket - 0.012 * cheek)
 		moved.x += side * 0.008 * cheek
-		moved.x *= 1.0 - 0.1 * jaw
+		moved.x *= 1.0 - jaw_narrow * jaw
 		return moved
 	_loft(s, [
 		_r(Vector3(0.0, 1.48, -0.006), 0.058, 0.058, _w([B.NECK, 0.5, B.HEAD, 0.5]), HeroMeshAtelier.MAT_FACE, {"ao": 0.6}),
@@ -125,96 +131,146 @@ static func _head(look: HeroAppearanceResource) -> ArrayMesh:
 		_r(Vector3(0.0, 1.735, 0.012), 0.092, 0.096, head, HeroMeshAtelier.MAT_FACE),
 		_r(Vector3(0.0, 1.75, 0.012), 0.03, 0.03, head, HeroMeshAtelier.MAT_FACE),
 	], {"n": 2.2, "cap_end": true, "sides": 24, "subdiv": 3, "offset_fn": planes_fn, "face_zones": true})
-	# A small, upturned nose: a short soft bridge to a round button tip.
+	# A button nose (docs/26 §4): a short soft bridge to a round, lit tip, a little upturned, with its wings.
 	_loft(s, [
 		_r(Vector3(0.0, 1.598, -0.142), 0.008, 0.007, head, HeroMeshAtelier.MAT_FACE),
-		_r(Vector3(0.0, 1.583, -0.152), 0.009, 0.008, head, HeroMeshAtelier.MAT_FACE),
-		_r(Vector3(0.0, 1.57, -0.16), 0.011, 0.009, head, HeroMeshAtelier.MAT_FACE),
+		_r(Vector3(0.0, 1.583, -0.153), 0.01, 0.009, head, HeroMeshAtelier.MAT_FACE),
+		_r(Vector3(0.0, 1.571, -0.162), 0.012, 0.01, head, HeroMeshAtelier.MAT_FACE),
 	], {"n": 2.6, "sides": 8, "face_zones": true})
-	HeroMeshAtelier._ellipsoid(s, Vector3(0.0, 1.566, -0.1615), Vector3(0.017, 0.014, 0.011), head, HeroMeshAtelier.MAT_FACE, Vector3.FORWARD, {},
+	# One smooth button tip (separate wings drew an ink line round each, a snout).
+	HeroMeshAtelier._ellipsoid(s, Vector3(0.0, 1.567, -0.1625), Vector3(0.019, 0.015, 0.012), head, HeroMeshAtelier.MAT_FACE, Vector3.FORWARD, {},
 		{"face_zones": true})
-	# The mouth: an easy half-smile pressed into the face, its corners turned up.
+	# The mouth: a small closed smile in rose, its corners turned up, and the lower lip's soft curve under it.
 	var lip: Dictionary = _w([B.HEAD, 0.6, B.JAW_BEARD, 0.4])
 	var mouth: Array[Dictionary] = []
-	for index: int in 7:
-		var u: float = lerpf(-1.0, 1.0, float(index) / 6.0)
-		var x: float = u * 0.024
-		var depth: float = -0.1305 * sqrt(maxf(0.0, 1.0 - pow(x / 0.105, 2.0))) - 0.0055
-		mouth.append(_r(Vector3(x, 1.519 + 0.0045 * u * u + 0.0012 * u, depth), 0.0032, 0.0026, lip, HeroMeshAtelier.MAT_FACE, {"ao": 0.18}))
-	_loft(s, mouth, {"sides": 6, "subdiv": 2, "cap_start": true, "cap_end": true, "side": Vector3.UP, "face_zones": true})
+	for index: int in 9:
+		var u: float = lerpf(-1.0, 1.0, float(index) / 8.0)
+		var x: float = u * 0.026
+		var depth: float = -0.1305 * sqrt(maxf(0.0, 1.0 - pow(x / 0.105, 2.0))) - 0.0068
+		var thick: float = 0.0036 * (1.0 - 0.45 * u * u)
+		mouth.append(_r(Vector3(x, 1.518 + 0.0068 * u * u, depth), thick, thick * 0.8, lip, HeroMeshAtelier.MAT_LIP))
+	_loft(s, mouth, {"sides": 6, "subdiv": 2, "cap_start": true, "cap_end": true, "side": Vector3.UP})
+	HeroMeshAtelier._ellipsoid(s, Vector3(0.0, 1.5105, -0.1335), Vector3(0.012, 0.0045, 0.004), lip, HeroMeshAtelier.MAT_FACE, Vector3.RIGHT,
+		{"ao": 0.85}, {"face_zones": true})
 	for side: float in [-1.0, 1.0]:
-		# Cupped ears, half under the hair: the rim, and the hollow of the bowl.
-		HeroMeshAtelier._ellipsoid(s, Vector3(side * 0.152, 1.596, 0.014), Vector3(0.012, 0.033, 0.024), head, HeroMeshAtelier.MAT_FACE, Vector3.RIGHT * side, {},
-			{"face_zones": true})
-		HeroMeshAtelier._ellipsoid(s, Vector3(side * 0.159, 1.592, 0.012), Vector3(0.005, 0.019, 0.013), head, HeroMeshAtelier.MAT_FACE, Vector3.RIGHT * side,
-			{"ao": 0.3}, {"face_zones": true})
-		# Big, bright eyes, drawn larger again round their own centres.
+		_ear(s, side, head)
+		# Big, bright eyes (docs/26 §4), drawn larger again round their own centres, set a little wide,
+		# under thick brows tilted up at their inner ends.
 		var eye_center: Vector3 = Vector3(side * 0.052, 1.598, -0.131)
+		var wide: Vector3 = Vector3(side * EYE_SPREAD, -EYE_DROP, 0.0)
 		s.warp = func(p: Vector3) -> Vector3:
 			var q: Vector3 = p
 			if q.y > BROW_FROM:
-				# The brows ride higher, their inner ends most: open and curious, not the adults' set frown.
 				q.y += BROW_LIFT + BROW_INNER_LIFT * (1.0 - smoothstep(0.02, 0.075, absf(q.x)))
-			return warp.call(eye_center + (q - eye_center) * EYE_SCALE)
+			return warp.call(eye_center + wide + (q - eye_center) * EYE_SCALE)
 		HeroMeshAtelier._eye(s, side, head)
 		s.warp = warp
-	_hair(s, look)
+	if girl:
+		_hair_braided(s)
+	else:
+		_hair_mop(s)
 	return s.commit(&"mesh_head_heritage")
 
 
-## The wind-tousled mop: a cap of hair with its hairline over the brow, and a
-## dozen chunky locks (bangs swept to the youth's left, a cowlick at the crown,
-## locks over the ears and at the nape) so the silhouette reads at any pitch.
-static func _hair(s: HeroMeshAtelier.Sculpt, _look: HeroAppearanceResource) -> void:
+## A shaped ear (docs/26 §4): the curled rim (helix), the lobe, and the shadowed bowl, tucked half under the hair.
+static func _ear(s: HeroMeshAtelier.Sculpt, side: float, head: Dictionary) -> void:
+	var at: Vector3 = Vector3(side * 0.153, 1.594, 0.016)
+	var rim: Array[Dictionary] = []
+	for index: int in 9:
+		var a: float = lerpf(-0.4, PI * 1.25, float(index) / 8.0)
+		var p: Vector3 = at + Vector3(side * 0.006, cos(a) * 0.03 + 0.004, -sin(a) * 0.018 + 0.006)
+		rim.append(_r(p, 0.0075, 0.0055, head, HeroMeshAtelier.MAT_FACE))
+	_loft(s, rim, {"sides": 7, "subdiv": 2, "cap_start": true, "cap_end": true, "side": Vector3.RIGHT * side, "face_zones": true})
+	HeroMeshAtelier._ellipsoid(s, at + Vector3(side * 0.002, -0.026, 0.006), Vector3(0.007, 0.011, 0.009), head, HeroMeshAtelier.MAT_FACE, Vector3.RIGHT * side,
+		{}, {"face_zones": true})
+	HeroMeshAtelier._ellipsoid(s, at + Vector3(side * 0.001, 0.002, 0.004), Vector3(0.004, 0.019, 0.012), head, HeroMeshAtelier.MAT_FACE, Vector3.RIGHT * side,
+		{"ao": 0.3}, {"face_zones": true})
+
+
+## Whether this youth is the girl (HeroAppearanceResource.youth_style).
+static func is_girl(look: HeroAppearanceResource) -> bool:
+	return look.youth_style == HeroAppearanceResource.YOUTH_GIRL
+
+
+## The hair's cap: a mass over the crown and down the nape, its hairline low over
+## a fuller fringe (docs/26 §4: the forehead framed, never a bare dome).
+static func _hair_cap(s: HeroMeshAtelier.Sculpt, front_hairline: float, nape: float) -> void:
 	var head: Dictionary = _w([B.HEAD, 1.0])
 	var hair: float = HeroMeshAtelier.MAT_HAIR
 	var cap_fn: Callable = func(theta: float, _t: float, p: Vector3) -> Vector3:
 		var front: float = smoothstep(0.3, 0.8, maxf(0.0, -sin(theta)))
-		# The hairline: low over the temples, up across the forehead.
-		var hairline: float = lerpf(1.575, 1.672, front)
+		var hairline: float = lerpf(1.572, front_hairline, front)
 		if p.y >= hairline:
 			return p
-		# Below it the cap tucks inside the head.
 		var tuck: float = smoothstep(hairline, hairline - 0.02, p.y)
 		return Vector3(p.x * (1.0 - 0.14 * tuck), p.y, lerpf(p.z, p.z * 0.55, tuck))
 	_loft(s, [
-		_r(Vector3(0.0, 1.548, 0.014), 0.138, 0.146, head, hair, {"ao": 0.6}),
-		_r(Vector3(0.0, 1.59, 0.01), 0.152, 0.158, head, hair),
-		_r(Vector3(0.0, 1.63, 0.007), 0.156, 0.16, head, hair),
-		_r(Vector3(0.0, 1.67, 0.008), 0.153, 0.157, head, hair),
-		_r(Vector3(0.0, 1.705, 0.012), 0.139, 0.144, head, hair),
-		_r(Vector3(0.0, 1.734, 0.015), 0.11, 0.114, head, hair),
-		_r(Vector3(0.0, 1.755, 0.015), 0.066, 0.068, head, hair),
-		_r(Vector3(0.0, 1.764, 0.015), 0.016, 0.016, head, hair),
-	], {"n": 2.2, "cap_start": true, "cap_end": true, "sides": 22, "subdiv": 2, "offset_fn": cap_fn})
+		_r(Vector3(0.0, nape, 0.03), 0.122, 0.13, _w([B.NECK, 0.35, B.HEAD, 0.65]), hair, {"ao": 0.55}),
+		_r(Vector3(0.0, 1.548, 0.014), 0.142, 0.15, head, hair, {"ao": 0.7}),
+		_r(Vector3(0.0, 1.59, 0.01), 0.156, 0.162, head, hair),
+		_r(Vector3(0.0, 1.63, 0.007), 0.16, 0.164, head, hair),
+		_r(Vector3(0.0, 1.67, 0.008), 0.157, 0.161, head, hair),
+		_r(Vector3(0.0, 1.705, 0.012), 0.143, 0.148, head, hair),
+		_r(Vector3(0.0, 1.735, 0.015), 0.114, 0.118, head, hair),
+		_r(Vector3(0.0, 1.757, 0.015), 0.07, 0.072, head, hair),
+		_r(Vector3(0.0, 1.767, 0.015), 0.018, 0.018, head, hair),
+	], {"n": 2.2, "cap_start": true, "cap_end": true, "sides": 24, "subdiv": 2, "offset_fn": cap_fn})
+
+
+## The boy's wind-tousled mop: the cap, a full fringe swept to his left (-X), a
+## cowlick and tousled crown, locks over the ears and at the nape.
+static func _hair_mop(s: HeroMeshAtelier.Sculpt) -> void:
+	var head: Dictionary = _w([B.HEAD, 1.0])
+	_hair_cap(s, 1.648, 1.5)
 	# [root, direction, length, width, droop]
 	var locks: Array[Array] = [
-		# The fringe, swept to the youth's left (-X), short enough to show the brows.
-		[Vector3(0.075, 1.7, -0.118), Vector3(-0.3, -0.85, -0.38), 0.062, 0.03, 0.012],
-		[Vector3(0.035, 1.712, -0.124), Vector3(-0.42, -0.8, -0.36), 0.074, 0.033, 0.014],
-		[Vector3(-0.012, 1.712, -0.124), Vector3(-0.52, -0.76, -0.32), 0.07, 0.031, 0.014],
-		[Vector3(-0.058, 1.7, -0.114), Vector3(-0.6, -0.74, -0.22), 0.06, 0.028, 0.01],
-		# The tousled top and the cowlick at the crown.
-		[Vector3(0.05, 1.752, -0.06), Vector3(0.45, 0.18, -0.8), 0.07, 0.036, 0.022],
-		[Vector3(-0.045, 1.758, -0.035), Vector3(-0.55, 0.2, -0.65), 0.072, 0.036, 0.024],
-		[Vector3(0.0, 1.758, 0.03), Vector3(0.12, 0.4, 0.85), 0.05, 0.03, 0.012],
-		[Vector3(0.065, 1.746, 0.065), Vector3(0.65, 0.1, 0.62), 0.066, 0.034, 0.024],
-		[Vector3(-0.07, 1.742, 0.07), Vector3(-0.65, 0.08, 0.6), 0.066, 0.034, 0.024],
-		# Locks over the ears.
-		[Vector3(0.132, 1.662, -0.03), Vector3(0.35, -0.9, -0.22), 0.07, 0.031, 0.008],
-		[Vector3(0.14, 1.65, 0.045), Vector3(0.32, -0.9, 0.25), 0.075, 0.033, 0.008],
-		[Vector3(-0.132, 1.662, -0.03), Vector3(-0.35, -0.9, -0.22), 0.07, 0.031, 0.008],
-		[Vector3(-0.14, 1.65, 0.045), Vector3(-0.32, -0.9, 0.25), 0.075, 0.033, 0.008],
-		# The nape.
-		[Vector3(0.0, 1.62, 0.148), Vector3(0.0, -0.85, 0.5), 0.07, 0.04, 0.006],
-		[Vector3(0.075, 1.62, 0.132), Vector3(0.38, -0.84, 0.4), 0.066, 0.036, 0.006],
-		[Vector3(-0.075, 1.62, 0.132), Vector3(-0.38, -0.84, 0.4), 0.066, 0.036, 0.006],
+		[Vector3(0.09, 1.7, -0.11), Vector3(-0.25, -0.88, -0.35), 0.07, 0.042, 0.012],
+		[Vector3(0.05, 1.712, -0.122), Vector3(-0.38, -0.84, -0.34), 0.082, 0.046, 0.016],
+		[Vector3(0.008, 1.716, -0.126), Vector3(-0.48, -0.8, -0.3), 0.086, 0.046, 0.016],
+		[Vector3(-0.036, 1.712, -0.122), Vector3(-0.56, -0.76, -0.26), 0.078, 0.042, 0.014],
+		[Vector3(-0.078, 1.7, -0.11), Vector3(-0.62, -0.74, -0.18), 0.066, 0.038, 0.01],
+		[Vector3(0.05, 1.752, -0.06), Vector3(0.45, 0.18, -0.8), 0.07, 0.046, 0.024],
+		[Vector3(-0.045, 1.758, -0.035), Vector3(-0.55, 0.2, -0.65), 0.072, 0.046, 0.026],
+		[Vector3(0.0, 1.758, 0.03), Vector3(0.12, 0.4, 0.85), 0.05, 0.036, 0.012],
+		[Vector3(0.065, 1.746, 0.065), Vector3(0.65, 0.1, 0.62), 0.07, 0.044, 0.026],
+		[Vector3(-0.07, 1.742, 0.07), Vector3(-0.65, 0.08, 0.6), 0.07, 0.044, 0.026],
+		[Vector3(0.132, 1.662, -0.03), Vector3(0.35, -0.9, -0.22), 0.07, 0.04, 0.008],
+		[Vector3(0.14, 1.65, 0.045), Vector3(0.32, -0.9, 0.25), 0.075, 0.042, 0.008],
+		[Vector3(-0.132, 1.662, -0.03), Vector3(-0.35, -0.9, -0.22), 0.07, 0.04, 0.008],
+		[Vector3(-0.14, 1.65, 0.045), Vector3(-0.32, -0.9, 0.25), 0.075, 0.042, 0.008],
+		[Vector3(0.0, 1.6, 0.152), Vector3(0.0, -0.85, 0.5), 0.07, 0.05, 0.006],
+		[Vector3(0.075, 1.6, 0.136), Vector3(0.38, -0.84, 0.4), 0.066, 0.046, 0.006],
+		[Vector3(-0.075, 1.6, 0.136), Vector3(-0.38, -0.84, 0.4), 0.066, 0.046, 0.006],
 	]
 	for entry: Array in locks:
 		_lock(s, entry[0], entry[1], entry[2], entry[3], entry[4], head)
 
 
-## One lock of hair: a flattened, tapering clump from `root` along `dir`, drooping at its tip.
+## The girl's hair: the cap, a side fringe swept to her right (+X), soft locks
+## down over her ears, and the hair gathered back to the braid (the braid itself
+## hangs from the torso surface, unscaled: _braid).
+static func _hair_braided(s: HeroMeshAtelier.Sculpt) -> void:
+	var head: Dictionary = _w([B.HEAD, 1.0])
+	_hair_cap(s, 1.652, 1.49)
+	var locks: Array[Array] = [
+		[Vector3(-0.085, 1.712, -0.11), Vector3(0.3, -0.86, -0.38), 0.074, 0.044, 0.014],
+		[Vector3(-0.04, 1.718, -0.122), Vector3(0.42, -0.82, -0.34), 0.086, 0.048, 0.016],
+		[Vector3(0.005, 1.716, -0.124), Vector3(0.52, -0.78, -0.3), 0.084, 0.046, 0.016],
+		[Vector3(0.05, 1.708, -0.118), Vector3(0.6, -0.74, -0.24), 0.072, 0.04, 0.012],
+		# Soft locks framing the face, down past the ears.
+		[Vector3(0.13, 1.67, -0.05), Vector3(0.22, -0.95, -0.12), 0.11, 0.042, 0.004],
+		[Vector3(-0.13, 1.67, -0.05), Vector3(-0.22, -0.95, -0.12), 0.11, 0.042, 0.004],
+		[Vector3(0.142, 1.64, 0.04), Vector3(0.25, -0.94, 0.2), 0.09, 0.044, 0.004],
+		[Vector3(-0.142, 1.64, 0.04), Vector3(-0.25, -0.94, 0.2), 0.09, 0.044, 0.004],
+		# Swept back to the braid.
+		[Vector3(0.06, 1.74, 0.05), Vector3(-0.35, -0.5, 0.79), 0.11, 0.05, 0.004],
+		[Vector3(-0.06, 1.74, 0.06), Vector3(-0.1, -0.55, 0.83), 0.1, 0.05, 0.004],
+	]
+	for entry: Array in locks:
+		_lock(s, entry[0], entry[1], entry[2], entry[3], entry[4], head)
+
+
+## One lock of hair: a fuller, softly rounded clump from `root` along `dir`, drooping and tapering to its tip.
 static func _lock(s: HeroMeshAtelier.Sculpt, root: Vector3, dir: Vector3, length: float, width: float, droop: float, bones: Dictionary) -> void:
 	var d: Vector3 = dir.normalized()
 	var outward: Vector3 = (root - Vector3(0.0, 1.63, 0.0)).normalized()
@@ -222,15 +278,33 @@ static func _lock(s: HeroMeshAtelier.Sculpt, root: Vector3, dir: Vector3, length
 	if across.length() < 0.2:
 		across = Vector3.RIGHT
 	var rings: Array[Dictionary] = []
-	for index: int in 4:
-		var u: float = float(index) / 3.0
+	for index: int in 5:
+		var u: float = float(index) / 4.0
 		var center: Vector3 = root + d * length * u + Vector3(0.0, -droop * u * u, 0.0)
-		var w: float = width * (1.0 - 0.82 * u)
-		rings.append(_r(center, w, w * 0.45, bones, HeroMeshAtelier.MAT_HAIR, {"ao": 0.7 if index == 0 else 1.0, "g": 0.3 * u}))
-	_loft(s, rings, {"sides": 6, "subdiv": 2, "cap_end": true, "side": across.normalized(), "proxy": 0.2})
+		var w: float = width * (1.0 - 0.85 * pow(u, 1.4))
+		rings.append(_r(center, w, w * 0.55, bones, HeroMeshAtelier.MAT_HAIR, {"ao": 0.7 if index == 0 else 1.0, "g": 0.3 * u}))
+	_loft(s, rings, {"sides": 8, "subdiv": 2, "cap_end": true, "side": across.normalized(), "proxy": 0.35})
 
 
 # --- The shirt and the breeches' seat -------------------------------------------------
+
+## The shirt's shoulders follow the arm (docs/26 §3: one continuous figure): above
+## the chest and out toward each shoulder, a vertex leans from the torso's bones
+## onto that side's clavicle and upper arm, so a raised arm stretches the shoulder
+## seam instead of opening a gap.
+static func shoulder_weights(point: Vector3, bones: Dictionary) -> Dictionary:
+	var share: float = smoothstep(0.11, 0.2, absf(point.x)) * smoothstep(1.2, 1.33, point.y)
+	if share <= 0.0:
+		return bones
+	var clavicle: int = B.CLAVICLE_L if point.x < 0.0 else B.CLAVICLE_R
+	var upper: int = B.UPPER_ARM_L if point.x < 0.0 else B.UPPER_ARM_R
+	var blended: Dictionary = {}
+	for bone: Variant in bones:
+		blended[bone] = float(bones[bone]) * (1.0 - share)
+	blended[clavicle] = float(blended.get(clavicle, 0.0)) + share * 0.55
+	blended[upper] = float(blended.get(upper, 0.0)) + share * 0.45
+	return blended
+
 
 static func _torso() -> ArrayMesh:
 	var s: HeroMeshAtelier.Sculpt = HeroMeshAtelier.Sculpt.new(true)
@@ -249,7 +323,8 @@ static func _torso() -> ArrayMesh:
 		shirt.append(_r(Vector3(0.0, ring.x, ring.w), ring.y, ring.z, HeroMeshAtelier._torso_bones(ring.x), HeroMeshAtelier.MAT_LINEN))
 	shirt.append(_r(Vector3(0.0, 1.432, 0.004), 0.057, 0.059, _w([B.CHEST, 0.2, B.NECK, 0.8]), HeroMeshAtelier.MAT_SKIN))
 	shirt.append(_r(Vector3(0.0, 1.5, 0.004), 0.054, 0.056, _w([B.NECK, 0.5, B.HEAD, 0.5]), HeroMeshAtelier.MAT_SKIN))
-	_loft(s, shirt, {"n": 2.3, "cap_start": true, "sides": 20, "offset_fn": fold_fn, "color_fn": shade_fn})
+	_loft(s, shirt, {"n": 2.3, "cap_start": true, "sides": 20, "offset_fn": fold_fn, "color_fn": shade_fn,
+		"weight_at": func(point: Vector3, _t: float, bones: Dictionary) -> Dictionary: return shoulder_weights(point, bones)})
 	# The open collar's two soft points, lying on the collarbones under the neckerchief.
 	for side: float in [-1.0, 1.0]:
 		_loft(s, [
@@ -272,11 +347,15 @@ static func _torso() -> ArrayMesh:
 
 # --- Braces and neckerchief --------------------------------------------------------------
 
-static func _braces_scarf() -> ArrayMesh:
+static func _braces_scarf(look: HeroAppearanceResource) -> ArrayMesh:
 	var s: HeroMeshAtelier.Sculpt = HeroMeshAtelier.Sculpt.new(true)
-	# Saddle-leather braces: buttoned at the front waistband, up over each
+	var girl: bool = is_girl(look)
+	if girl:
+		_waistcoat(s)
+		_braid(s)
+	# The boy's saddle-leather braces: buttoned at the front waistband, up over each
 	# shoulder, crossing in an X between the shoulder blades, buttoned at the back.
-	for side: float in [-1.0, 1.0]:
+	for side: float in ([] if girl else [-1.0, 1.0]):
 		var path: Array[Dictionary] = []
 		# [height, angle round from the front, how far off the shirt]
 		var stations: Array[Vector3] = [
@@ -290,7 +369,8 @@ static func _braces_scarf() -> ArrayMesh:
 				Vector3(1.12, PI, 0.012), Vector3(1.06, -side * (PI - 0.24), 0.008), Vector3(0.995, -side * (PI - 0.42), 0.011)]:
 			path.append(_r(shirt_point(station.x, station.y, station.z + (0.004 if side > 0.0 else 0.0)), 0.016, 0.0028,
 				HeroMeshAtelier._torso_bones(station.x), HeroMeshAtelier.MAT_LEATHER))
-		_loft(s, path, {"n": 5.0, "sides": 8, "subdiv": 3, "cap_start": true, "cap_end": true, "side": Vector3.RIGHT, "proxy": 0.0})
+		_loft(s, path, {"n": 5.0, "sides": 8, "subdiv": 3, "cap_start": true, "cap_end": true, "side": Vector3.RIGHT, "proxy": 0.0,
+			"weight_at": func(point: Vector3, _t: float, bones: Dictionary) -> Dictionary: return shoulder_weights(point, bones)})
 		# Horn buttons where the braces meet the waistband.
 		HeroMeshAtelier._stud(s, shirt_point(0.985, side * 0.44, 0.016), shirt_point(0.985, side * 0.44, 1.0) - shirt_point(0.985, side * 0.44, 0.0),
 			0.008, _w([B.HIPS, 1.0]), HeroMeshAtelier.MAT_TIMBER)
@@ -315,17 +395,101 @@ static func _braces_scarf() -> ArrayMesh:
 			_r(mid, 0.016, 0.004, _w([B.CHEST, 1.0]), scarf),
 			_r(tip, 0.003, 0.003, _w([B.CHEST, 1.0]), scarf, {"g": 0.6}),
 		], {"sides": 6, "subdiv": 2, "cap_start": true, "cap_end": true, "side": Vector3.RIGHT, "n": 3.0})
+	_talisman(s, girl)
 	return s.commit(&"mesh_pauldrons_tabard")
+
+
+## The girl's laced waistcoat (docs/26 §7): moss-green wool over the blouse,
+## sleeveless, open down the front and laced across it with hemp cord.
+static func _waistcoat(s: HeroMeshAtelier.Sculpt) -> void:
+	var gap: float = 0.24
+	var span: float = PI - gap
+	var thick: float = 0.008
+	var arc_fn: Callable = func(theta: float, _t: float, w: float, d: float) -> Vector2:
+		var outer: bool = theta < PI
+		var phi: float = lerpf(-span, span, theta / PI) if outer else lerpf(span, -span, (theta - PI) / PI)
+		var rw: float = w + (thick if outer else -thick)
+		var rd: float = d + (thick if outer else -thick)
+		return Vector2(rw * sin(phi), rd * cos(phi))
+	var rings: Array[Dictionary] = []
+	for y: float in [0.985, 1.06, 1.14, 1.22, 1.29, 1.345]:
+		var at: Vector3 = shirt_at(y)
+		rings.append(_r(Vector3(0.0, y, at.z), at.x + 0.013, at.y + 0.013, HeroMeshAtelier._torso_bones(y), HeroMeshAtelier.MAT_TABARD,
+			{"g": 0.6 if y > 1.3 or y < 1.0 else 0.0}))
+	_loft(s, rings, {"sides": 26, "subdiv": 2, "section": arc_fn, "proxy": 0.0,
+		"weight_at": func(point: Vector3, _t: float, bones: Dictionary) -> Dictionary: return shoulder_weights(point, bones)})
+	# The lacing: hemp cord criss-crossing the opening.
+	var lace: Array[Dictionary] = []
+	for step: int in 9:
+		var y: float = lerpf(1.0, 1.31, float(step) / 8.0)
+		var swing: float = -1.0 if step % 2 == 0 else 1.0
+		lace.append(_r(shirt_point(y, swing * gap * 0.62, 0.016), 0.003, 0.003, HeroMeshAtelier._torso_bones(y), HeroMeshAtelier.MAT_ROPE))
+	_loft(s, lace, {"sides": 5, "subdiv": 2, "cap_start": true, "cap_end": true})
+
+
+## The girl's braid (docs/26 §7): from the back of her head over her left shoulder
+## and down onto her chest, plaited in alternating lobes, tied off with a ribbon in
+## the Fellowship's colour. Drawn unscaled: its root meets the head's 1.18x hair.
+static func _braid(s: HeroMeshAtelier.Sculpt) -> void:
+	var warp: Callable = head_warp()
+	# Over the capelet, never under it: out round the neck, across the left shoulder's top, down the front.
+	var path: Array[Vector3] = [warp.call(Vector3(-0.07, 1.55, 0.11)), Vector3(-0.13, 1.475, 0.1), Vector3(-0.2, 1.445, 0.0),
+		Vector3(-0.235, 1.4, -0.1), Vector3(-0.21, 1.31, -0.18), Vector3(-0.17, 1.21, -0.17)]
+	var weights: Array[Dictionary] = [_w([B.HEAD, 0.8, B.NECK, 0.2]), _w([B.NECK, 0.6, B.CHEST, 0.4]), _w([B.CHEST, 0.6, B.CLAVICLE_L, 0.4]),
+		_w([B.CHEST, 1.0]), _w([B.CHEST, 1.0]), _w([B.CHEST, 1.0])]
+	var hair: float = HeroMeshAtelier.MAT_HAIR
+	var lobes: int = 15
+	for lobe: int in lobes:
+		var u: float = float(lobe) / float(lobes - 1)
+		var along: float = u * float(path.size() - 1)
+		var index: int = mini(int(along), path.size() - 2)
+		var f: float = along - float(index)
+		var at: Vector3 = path[index].lerp(path[index + 1], f)
+		var dir: Vector3 = (path[index + 1] - path[index]).normalized()
+		var across: Vector3 = dir.cross(Vector3.FORWARD).normalized() * (0.007 if lobe % 2 == 0 else -0.007)
+		var bones: Dictionary = HeroMeshAtelier._blend_bones(weights[index], weights[index + 1], f)
+		var r: float = lerpf(0.026, 0.017, u)
+		_loft(s, [_r(at + across - dir * r * 0.9, r * 0.45, r * 0.4, bones, hair), _r(at + across, r, r * 0.82, bones, hair),
+			_r(at + across + dir * r * 0.9, r * 0.45, r * 0.4, bones, hair)], {"sides": 8, "subdiv": 2, "cap_start": true, "cap_end": true})
+	var end: Vector3 = path[path.size() - 1]
+	var chest: Dictionary = _w([B.CHEST, 1.0])
+	HeroMeshAtelier._band(s, end + Vector3(0.0, 0.006, 0.0), Vector3.DOWN, 0.017, 0.016, 0.014, chest, HeroMeshAtelier.MAT_TUNIC)
+	for tail: float in [-1.0, 1.0]:
+		_loft(s, [_r(end + Vector3(0.006 * tail, 0.004, -0.004), 0.008, 0.002, chest, HeroMeshAtelier.MAT_TUNIC),
+			_r(end + Vector3(0.022 * tail, -0.03, -0.01), 0.006, 0.002, chest, HeroMeshAtelier.MAT_TUNIC)], {"sides": 5, "cap_start": true, "cap_end": true})
+	_loft(s, [_r(end - Vector3(0.0, 0.01, 0.0), 0.016, 0.014, chest, hair), _r(end - Vector3(0.0, 0.05, -0.004), 0.004, 0.004, chest, hair)],
+		{"sides": 7, "subdiv": 2, "cap_end": true})
+
+
+## A talisman on a cord under the neckerchief (docs/26 §2, Susan Cooper): the boy's carved acorn, the girl's brass button.
+static func _talisman(s: HeroMeshAtelier.Sculpt, girl: bool) -> void:
+	var chest: Dictionary = _w([B.CHEST, 1.0])
+	var at: Vector3 = shirt_point(1.285, 0.04, 0.02)
+	for side: float in [-1.0, 1.0]:
+		_loft(s, [_r(shirt_point(1.4, side * 0.5, 0.006), 0.0018, 0.0018, chest, HeroMeshAtelier.MAT_ROPE),
+			_r(shirt_point(1.34, side * 0.25, 0.012), 0.0018, 0.0018, chest, HeroMeshAtelier.MAT_ROPE),
+			_r(at + Vector3(0.0, 0.016, 0.0), 0.0018, 0.0018, chest, HeroMeshAtelier.MAT_ROPE)], {"sides": 4, "subdiv": 2})
+	if girl:
+		_loft(s, [_r(at + Vector3(0.0, 0.0, 0.003), 0.013, 0.013, chest, HeroMeshAtelier.MAT_BRASS, {"ao": 0.6}),
+			_r(at - Vector3(0.0, 0.0, 0.002), 0.012, 0.012, chest, HeroMeshAtelier.MAT_BRASS, {"g": 1.0})],
+			{"sides": 12, "subdiv": 1, "cap_end": true, "side": Vector3.RIGHT})
+	else:
+		HeroMeshAtelier._ellipsoid(s, at, Vector3(0.011, 0.014, 0.011), chest, HeroMeshAtelier.MAT_TIMBER, Vector3.DOWN, {"g": 0.4})
+		HeroMeshAtelier._ellipsoid(s, at + Vector3(0.0, 0.011, 0.0), Vector3(0.012, 0.006, 0.012), chest, HeroMeshAtelier.MAT_BARK, Vector3.UP)
 
 
 # --- Arms, hands, legs and boots ------------------------------------------------------------
 
-static func _limbs() -> ArrayMesh:
+static func _limbs(look: HeroAppearanceResource) -> ArrayMesh:
 	var s: HeroMeshAtelier.Sculpt = HeroMeshAtelier.Sculpt.new(true)
+	var girl: bool = is_girl(look)
 	for side: float in [-1.0, 1.0]:
 		_arm(s, side)
 		_hand(s, side)
-		_leg(s, side)
+		if girl:
+			_split_skirt(s, side)
+		else:
+			_leg(s, side)
 		_boot(s, side)
 	return s.commit(&"mesh_limbs_boots")
 
@@ -345,8 +509,10 @@ static func _arm(s: HeroMeshAtelier.Sculpt, side: float) -> void:
 		# The sleeve's soft creases, gathering toward the roll.
 		return Color(c.r * (0.86 + 0.14 * cos(theta * 3.0 + t * 9.0)), c.g, c.b, c.a) if absf(c.b - linen) < 0.01 else c
 	_loft(s, [
-		_r(shoulder + Vector3(-0.016 * side, 0.032, 0.0), 0.062, 0.066, _w([clavicle, 0.4, upper, 0.6]), linen, {"ao": 0.8}),
-		_r(shoulder.lerp(elbow, 0.15), 0.066, 0.068, _w([clavicle, 0.1, upper, 0.9]), linen),
+		# The sleeve starts inside the shoulder (a set-in seam), so the shirt and sleeve meet without a step or a gap.
+		_r(shoulder + Vector3(-0.05 * side, -0.034, 0.0), 0.044, 0.052, _w([clavicle, 0.5, upper, 0.5]), linen, {"ao": 0.8}),
+		_r(shoulder + Vector3(-0.012 * side, -0.026, 0.0), 0.052, 0.056, _w([clavicle, 0.3, upper, 0.7]), linen),
+		_r(shoulder.lerp(elbow, 0.15), 0.06, 0.063, _w([clavicle, 0.1, upper, 0.9]), linen),
 		_r(shoulder.lerp(elbow, 0.45), 0.062, 0.063, _w([upper, 1.0]), linen),
 		_r(shoulder.lerp(elbow, 0.68), 0.058, 0.059, _w([upper, 1.0]), linen),
 		_r(shoulder.lerp(elbow, 0.78), 0.054, 0.055, _w([upper, 0.95, fore, 0.05]), linen, {"ao": 0.75}),
@@ -369,7 +535,8 @@ static func _arm(s: HeroMeshAtelier.Sculpt, side: float) -> void:
 	], {"side": Vector3.FORWARD})
 
 
-## A big, bare, capable hand (1.22x): the palm, a four-finger block with knuckle creases, and a thumb.
+## A big, bare, capable hand (1.22x, docs/26 §3): a palm, four fingers in a
+## gentle curl toward it, each in two joints, and a thumb. Never a mitten.
 static func _hand(s: HeroMeshAtelier.Sculpt, side: float) -> void:
 	var fore: int = B.FOREARM_L if side < 0.0 else B.FOREARM_R
 	var hand: int = B.HAND_L if side < 0.0 else B.HAND_R
@@ -380,28 +547,36 @@ static func _hand(s: HeroMeshAtelier.Sculpt, side: float) -> void:
 	var before: Callable = s.warp
 	var k: float = HeroAppearanceResource.YOUTH_EXTREMITY_SCALE
 	s.warp = scale_about(wrist, Vector3(k, k, k))
-	var knuckle_fn: Callable = func(theta: float, t: float, c: Color) -> Color:
-		# Three shallow grooves between the fingers on the back and the palm, past the knuckles.
-		if t < 0.62:
-			return c
-		var across: float = cos(theta)
-		var groove: float = 1.0 - 0.35 * exp(-pow(sin(across * PI * 2.0) / 0.25, 2.0)) * absf(across)
-		return Color(c.r * groove, c.g, c.b, c.a)
+	# The palm: the heel of the hand to the knuckles, broad front to back.
 	_loft(s, [
-		_r(wrist + down * 0.004, 0.03, 0.026, _w([fore, 0.3, hand, 0.7]), skin),
-		_r(wrist + down * 0.03, 0.04, 0.023, on_hand, skin),
-		_r(wrist + down * 0.058, 0.044, 0.021, on_hand, skin),
-		_r(wrist + down * 0.08, 0.043, 0.02, on_hand, skin, {"g": 0.3}),
-		_r(wrist + down * 0.1, 0.039, 0.018, on_hand, skin),
-		_r(wrist + down * 0.12, 0.034, 0.016, on_hand, skin),
-		_r(wrist + down * 0.133, 0.018, 0.012, on_hand, skin),
-	], {"cap_end": true, "side": Vector3.FORWARD, "n": 2.4, "color_fn": knuckle_fn})
-	# The thumb, out from the heel of the hand toward the front.
+		_r(wrist + down * 0.004, 0.03, 0.025, _w([fore, 0.3, hand, 0.7]), skin),
+		_r(wrist + down * 0.028, 0.038, 0.022, on_hand, skin),
+		_r(wrist + down * 0.052, 0.041, 0.02, on_hand, skin),
+		_r(wrist + down * 0.07, 0.038, 0.017, on_hand, skin, {"g": 0.4}),
+		_r(wrist + down * 0.078, 0.03, 0.013, on_hand, skin),
+	], {"cap_end": true, "side": Vector3.FORWARD, "n": 2.4})
+	# Four fingers, index (front) to little, curling a little toward the palm (-side in x).
+	var spreads: Array[float] = [-0.026, -0.009, 0.008, 0.024]
+	var lengths: Array[float] = [0.05, 0.055, 0.052, 0.042]
+	for finger: int in 4:
+		var base: Vector3 = wrist + down * 0.07 + Vector3(0.0, 0.0, spreads[finger])
+		var length: float = lengths[finger]
+		var curl: Vector3 = Vector3(-side, 0.0, 0.0)
+		var knuckle: Vector3 = base + down * length * 0.45 + curl * length * 0.08
+		var tip: Vector3 = base + down * length * 0.85 + curl * length * 0.38
+		var r: float = 0.0085 if finger < 3 else 0.0075
+		_loft(s, [
+			_r(base, r * 1.05, r, on_hand, skin),
+			_r(knuckle, r, r * 0.95, on_hand, skin, {"g": 0.35}),
+			_r(tip, r * 0.8, r * 0.78, on_hand, skin),
+		], {"sides": 7, "subdiv": 2, "cap_end": true, "side": Vector3.FORWARD})
+	# The thumb, out from the heel of the hand toward the front, bending in at its tip.
 	_loft(s, [
-		_r(wrist + down * 0.028 + Vector3(-side * 0.008, 0.0, -0.028), 0.016, 0.015, on_hand, skin),
-		_r(wrist + down * 0.058 + Vector3(-side * 0.012, 0.0, -0.05), 0.014, 0.013, on_hand, skin),
-		_r(wrist + down * 0.082 + Vector3(-side * 0.013, 0.0, -0.058), 0.009, 0.009, on_hand, skin),
-	], {"sides": 8, "cap_end": true})
+		_r(wrist + down * 0.022 + Vector3(-side * 0.008, 0.0, -0.024), 0.014, 0.013, on_hand, skin),
+		_r(wrist + down * 0.046 + Vector3(-side * 0.014, 0.0, -0.042), 0.012, 0.011, on_hand, skin),
+		_r(wrist + down * 0.068 + Vector3(-side * 0.02, 0.0, -0.05), 0.0095, 0.009, on_hand, skin, {"g": 0.3}),
+		_r(wrist + down * 0.082 + Vector3(-side * 0.024, 0.0, -0.048), 0.007, 0.007, on_hand, skin),
+	], {"sides": 7, "subdiv": 2, "cap_end": true})
 	s.warp = before
 
 
@@ -438,6 +613,37 @@ static func _leg(s: HeroMeshAtelier.Sculpt, side: float) -> void:
 	var stocking: float = HeroMeshAtelier.MAT_LINEN
 	_loft(s, [
 		_r(Vector3(x * 1.04, 0.455, -0.006), 0.054, 0.055, _w([shin, 1.0]), stocking),
+		_r(Vector3(x * 1.05, 0.39, -0.002), 0.057, 0.058, _w([shin, 1.0]), stocking),
+		_r(Vector3(x * 1.06, 0.31, 0.004), 0.049, 0.05, _w([shin, 1.0]), stocking),
+		_r(Vector3(x * 1.07, 0.24, 0.01), 0.043, 0.045, _w([shin, 1.0]), stocking),
+	], {"subdiv": 2})
+	for y: float in [0.415, 0.38, 0.345]:
+		var r: float = 0.058 - absf(y - 0.39) * 0.08
+		HeroMeshAtelier._band(s, Vector3(x * 1.05, y, -0.002), Vector3.DOWN, r + 0.002, r + 0.003, 0.014, _w([shin, 1.0]), HeroMeshAtelier.MAT_TUNIC)
+
+
+## The girl's split riding skirt (docs/26 §7): each leg a full, flared panel of
+## russet wool from the hip to just below the knee, its hem rolled, so she runs
+## and climbs freely; then the same striped stocking.
+static func _split_skirt(s: HeroMeshAtelier.Sculpt, side: float) -> void:
+	var thigh: int = B.THIGH_L if side < 0.0 else B.THIGH_R
+	var shin: int = B.SHIN_L if side < 0.0 else B.SHIN_R
+	var x: float = 0.104 * side
+	var cloth: float = HeroMeshAtelier.MAT_BREECHES
+	var drape_fn: Callable = func(theta: float, t: float, c: Color) -> Color:
+		return Color(c.r * (0.86 + 0.14 * sin(theta * 5.0 + t * 3.0) * smoothstep(0.2, 1.0, t)), c.g, c.b, c.a)
+	_loft(s, [
+		_r(Vector3(x * 0.95, 0.93, 0.004), 0.104, 0.104, _w([B.HIPS, 0.7, thigh, 0.3]), cloth, {"ao": 0.7}),
+		_r(Vector3(x * 1.02, 0.84, 0.0), 0.106, 0.106, _w([B.HIPS, 0.3, thigh, 0.7]), cloth),
+		_r(Vector3(x * 1.06, 0.72, -0.004), 0.108, 0.108, _w([thigh, 1.0]), cloth),
+		_r(Vector3(x * 1.1, 0.6, -0.008), 0.114, 0.112, _w([thigh, 0.85, shin, 0.15]), cloth),
+		_r(Vector3(x * 1.14, 0.5, -0.01), 0.122, 0.118, _w([thigh, 0.5, shin, 0.5]), cloth),
+		_r(Vector3(x * 1.16, 0.45, -0.008), 0.126, 0.121, _w([thigh, 0.3, shin, 0.7]), cloth, {"g": 0.5}),
+	], {"color_fn": drape_fn, "sides": 16})
+	HeroMeshAtelier._band(s, Vector3(x * 1.16, 0.452, -0.008), Vector3.DOWN, 0.128, 0.123, 0.016, _w([thigh, 0.3, shin, 0.7]), cloth)
+	var stocking: float = HeroMeshAtelier.MAT_LINEN
+	_loft(s, [
+		_r(Vector3(x * 1.04, 0.5, -0.008), 0.05, 0.051, _w([thigh, 0.4, shin, 0.6]), stocking),
 		_r(Vector3(x * 1.05, 0.39, -0.002), 0.057, 0.058, _w([shin, 1.0]), stocking),
 		_r(Vector3(x * 1.06, 0.31, 0.004), 0.049, 0.05, _w([shin, 1.0]), stocking),
 		_r(Vector3(x * 1.07, 0.24, 0.01), 0.043, 0.045, _w([shin, 1.0]), stocking),
@@ -508,25 +714,40 @@ static func _belt_cape() -> ArrayMesh:
 	return s.commit(&"mesh_belt_cloak")
 
 
-## The hood, folded down round the shoulders: a thick roll of wool open at the throat.
+## The hooded capelet (docs/26 §7): heather-blue wool draped over both shoulders
+## from the throat, open at the front, its hem cut in soft dags; the shoulders
+## follow the arms (shoulder_weights), so it lifts with them instead of clipping;
+## and the hood lying folded on the back.
 static func _hood_folds(s: HeroMeshAtelier.Sculpt) -> void:
-	var span: float = 2.25
-	var arc_fn: Callable = func(theta: float, t: float, w: float, d: float) -> Vector2:
+	var span: float = 2.22
+	var thick: float = 0.016
+	var arc_fn: Callable = func(theta: float, _t: float, w: float, d: float) -> Vector2:
 		var outer: bool = theta < PI
 		var phi: float = lerpf(-span, span, theta / PI) if outer else lerpf(span, -span, (theta - PI) / PI)
-		var thick: float = lerpf(0.016, 0.026, t)
 		var rw: float = w + (thick if outer else -thick)
 		var rd: float = d + (thick if outer else -thick)
-		return Vector2(rw * sin(phi), rd * cos(phi))
-	var chest: Dictionary = _w([B.CHEST, 1.0])
+		# The rings run down from the throat, which turns the loft's depth axis to the front:
+		# minus puts phi 0 at the back, so the opening is at the front.
+		return Vector2(rw * sin(phi), -rd * cos(phi))
+	var dag_fn: Callable = func(theta: float, t: float, p: Vector3) -> Vector3:
+		var across: float = fmod(theta, PI) / PI
+		# Soft folds falling from the throat (they deepen toward the hem), and the hem cut in shallow dags.
+		var outward: Vector3 = Vector3(p.x, 0.0, p.z - 0.012).normalized()
+		var fold: float = sin(across * PI * 7.0) * 0.012 * smoothstep(0.2, 1.0, t)
+		var lifted: Vector3 = p + outward * fold
+		if t < 0.85:
+			return lifted
+		return lifted + Vector3(0.0, 0.016 * maxf(0.0, cos(across * PI * 9.0)) * smoothstep(0.85, 1.0, t), 0.0)
+	var weights: Callable = func(point: Vector3, _t: float, bones: Dictionary) -> Dictionary: return shoulder_weights(point, bones)
 	_loft(s, [
-		_r(Vector3(0.0, 1.315, 0.014), 0.198, 0.142, chest, HeroMeshAtelier.MAT_COAT, {"ao": HeroMeshAtelier.UNDER_LIP_AO}),
-		_r(Vector3(0.0, 1.355, 0.014), 0.204, 0.142, chest, HeroMeshAtelier.MAT_COAT),
-		_r(Vector3(0.0, 1.398, 0.024), 0.17, 0.128, chest, HeroMeshAtelier.MAT_COAT, {"g": 0.4}),
-		_r(Vector3(0.0, 1.43, 0.04), 0.125, 0.112, _w([B.CHEST, 0.6, B.NECK, 0.4]), HeroMeshAtelier.MAT_COAT, {"g": 0.75}),
-	], {"sides": 28, "subdiv": 2, "section": arc_fn, "proxy": 0.0})
-	# The hood itself, lying folded on the upper back.
-	HeroMeshAtelier._ellipsoid(s, Vector3(0.0, 1.355, 0.165), Vector3(0.105, 0.066, 0.038), chest, HeroMeshAtelier.MAT_COAT, Vector3.DOWN, {"g": 0.3})
+		_r(Vector3(0.0, 1.452, 0.02), 0.078, 0.082, _w([B.CHEST, 0.4, B.NECK, 0.6]), HeroMeshAtelier.MAT_COAT, {"g": 0.6}),
+		_r(Vector3(0.0, 1.428, 0.016), 0.14, 0.112, _w([B.CHEST, 0.8, B.NECK, 0.2]), HeroMeshAtelier.MAT_COAT),
+		_r(Vector3(0.0, 1.408, 0.014), 0.205, 0.136, _w([B.CHEST, 1.0]), HeroMeshAtelier.MAT_COAT),
+		_r(Vector3(0.0, 1.375, 0.012), 0.262, 0.156, _w([B.CHEST, 1.0]), HeroMeshAtelier.MAT_COAT),
+		_r(Vector3(0.0, 1.33, 0.012), 0.29, 0.168, _w([B.CHEST, 1.0]), HeroMeshAtelier.MAT_COAT),
+		_r(Vector3(0.0, 1.285, 0.014), 0.298, 0.174, _w([B.CHEST, 1.0]), HeroMeshAtelier.MAT_COAT, {"ao": HeroMeshAtelier.UNDER_LIP_AO}),
+	], {"sides": 30, "subdiv": 2, "section": arc_fn, "proxy": 0.0, "offset_fn": dag_fn, "weight_at": weights})
+	HeroMeshAtelier._ellipsoid(s, Vector3(0.0, 1.37, 0.188), Vector3(0.11, 0.064, 0.036), _w([B.CHEST, 1.0]), HeroMeshAtelier.MAT_COAT, Vector3.DOWN, {"g": 0.3})
 
 
 ## The short half-cape on Cloak_01..03: heather-blue wool lined in the patch's

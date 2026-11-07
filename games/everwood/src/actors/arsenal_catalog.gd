@@ -1891,10 +1891,14 @@ func _build_hero_appearances() -> void:
 ## heather-blue half-cape, russet breeches patched in sage, cream linen, saddle
 ## braces, a chestnut mop.
 func _build_youth_looks() -> void:
-	for row: int in 3:
+	for index: int in 6:
+		# The boy for each Fellowship, then the girl (docs/26 §7).
+		var row: int = index % 3
+		var girl: bool = index >= 3
 		var look: HeroAppearanceResource = HeroAppearanceResource.new()
+		look.youth_style = HeroAppearanceResource.YOUTH_GIRL if girl else HeroAppearanceResource.YOUTH_BOY
 		look.body_build = HeroAppearanceResource.BODY_YOUTH
-		look.appearance_id = StringName("youth_%s" % ["shield_sworn", "wayfarer", "lantern_bearer"][row])
+		look.appearance_id = StringName("youth_%s%s" % [["shield_sworn", "wayfarer", "lantern_bearer"][row], "_girl" if girl else ""])
 		look.calling_id = Callings.UNSWORN_ID
 		look.display_name = "Unsworn Youth"
 		look.heritage_id = &"oakshire_homestead"
@@ -1920,12 +1924,23 @@ func _build_youth_looks() -> void:
 		look.back_buckler_targe = false
 		look.split_hewing_apron = false
 		look.glb_override_path = "res://assets/models/heroes/youth.glb"
+		# The character design language (docs/26 §4): freckles, a rosy flush, a rose smile.
+		look.freckle_amount = 0.85 if girl else 0.6
+		look.cheek_flush = 0.5
+		look.lip_color = Color(0.72, 0.36, 0.34) if girl else Color(0.66, 0.33, 0.29)
+		if girl:
+			# Auburn hair, hazel-brown eyes.
+			look.beard_primary_color = Color(0.72, 0.34, 0.17)
+			look.iris_color = Color(0.42, 0.3, 0.16)
+			look.headgear_style = &"auburn_braid"
 		_youths.append(look)
 
 
 ## The Unsworn youth's look for a seat: the Fellowship's youth in the seat's heritage dye on the cape.
-func youth_appearance_for_seat(fellowship_class_id: StringName, party_slot: int) -> HeroAppearanceResource:
-	var look: HeroAppearanceResource = _youths[clampi(Callings.fellowship_row(fellowship_class_id), 0, _youths.size() - 1)]
+## The seat's youth is the boy or the girl (`style`, HeroAppearanceResource.YOUTH_BOY / _GIRL).
+func youth_appearance_for_seat(fellowship_class_id: StringName, party_slot: int, style: StringName = HeroAppearanceResource.YOUTH_BOY) -> HeroAppearanceResource:
+	var row: int = clampi(Callings.fellowship_row(fellowship_class_id), 0, 2)
+	var look: HeroAppearanceResource = _youths[row + (3 if style == HeroAppearanceResource.YOUTH_GIRL else 0)]
 	if party_slot <= 0:
 		return look
 	return look.with_dye(_dyes[HERITAGE_DYES[(party_slot - 1) % HERITAGE_DYES.size()]])

@@ -55,6 +55,8 @@ const MAT_BRASS: float = 0.62
 const MAT_STEEL: float = 0.67
 const MAT_SKIN: float = 0.74
 const MAT_FACE: float = 0.765
+## The lips (docs/26 §4): in the face's band, painted lip_color.
+const MAT_LIP: float = 0.782
 const MAT_BEARD: float = 0.82
 const MAT_HAIR: float = 0.86
 const MAT_SCLERA: float = 0.90
@@ -63,6 +65,12 @@ const MAT_EYE: float = 0.97
 ## The AO under each armour layer's lip, where it steps out over the one beneath.
 const UNDER_LIP_AO: float = 0.25
 const SHADER: Shader = preload("res://src/actors/shaders/storybook_hero_atelier.gdshader")
+## The storybook ink line every person wears (docs/26 §5), the hero material's next pass.
+const INK_SHADER: Shader = preload("res://src/actors/shaders/storybook_ink_outline.gdshader")
+const INK_COLOR: Color = Color(0.17, 0.11, 0.08)
+const INK_WIDTH_PX: float = 1.7
+## A blink's length (docs/26 §8).
+const BLINK_SECONDS: float = 0.14
 const HERO_MODEL_FOLDER: String = "res://assets/models/heroes/"
 const REGIONS: Array[StringName] = [&"mesh_head_heritage", &"mesh_torso_coat", &"mesh_pauldrons_tabard", &"mesh_limbs_boots", &"mesh_belt_cloak"]
 ## Around each ring, and Catmull-Rom steps between control rings.
@@ -97,6 +105,7 @@ const GRIP_MOUNT: Transform3D = Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vect
 const B = HeroRigBuilder.Bone
 
 static var _surface_cache: Dictionary[String, Array] = {}
+static var _ink: ShaderMaterial
 static var _weapon_cache: Dictionary[String, ArrayMesh] = {}
 
 
@@ -167,7 +176,30 @@ static func hero_material(look: HeroAppearanceResource, trim: Color) -> ShaderMa
 	material.set_shader_parameter(&"rim_color", look.role_rim_color)
 	material.set_shader_parameter(&"rim_strength", StorybookMaterial.ACTOR_RIM)
 	material.set_shader_parameter(&"value_3_emission_mult", HeroAppearanceResource.VALUE_3_EMISSION_MULT)
+	# The character design language (docs/26): freckles, a rosier flush and the youth's warmer lips.
+	material.set_shader_parameter(&"freckle_amount", look.freckle_amount)
+	material.set_shader_parameter(&"malar_mix", look.cheek_flush)
+	material.set_shader_parameter(&"lip_color", look.lip_color)
+	material.next_pass = ink_material()
 	return material
+
+
+## How shut a person's eyes are at time `t` (docs/26 §8: they blink every 3 to 6 s,
+## a quick 140 ms lid), each person on their own rhythm by `seed`: 0 open, 1 shut.
+static func blink_amount(t: float, seed: float) -> float:
+	var period: float = 3.0 + fposmod(seed * 1.618, 3.0)
+	var phase: float = fposmod(t + seed * 7.13, period)
+	return sin(clampf(phase / BLINK_SECONDS, 0.0, 1.0) * PI) if phase < BLINK_SECONDS else 0.0
+
+
+## The shared ink line (docs/26 §5): one material for every person, as the hero material's next pass.
+static func ink_material() -> ShaderMaterial:
+	if _ink == null:
+		_ink = ShaderMaterial.new()
+		_ink.shader = INK_SHADER
+		_ink.set_shader_parameter(&"ink_color", INK_COLOR)
+		_ink.set_shader_parameter(&"ink_width", INK_WIDTH_PX)
+	return _ink
 
 
 # --- Weapons ------------------------------------------------------------------

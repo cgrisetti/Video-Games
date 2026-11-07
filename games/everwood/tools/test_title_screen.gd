@@ -109,6 +109,10 @@ func _check_new_game(title: TitleScreen) -> void:
 	var begun: Array[String] = []
 	title.tale_begun.connect(func(path: String) -> void: begun.append(path))
 	title.name_field.text = "Wren"
+	var girl_pick: Button = title.new_game_panel.find_child("PickGirl", true, false) as Button
+	if girl_pick != null:
+		girl_pick.button_pressed = true
+	var knoll_girl: bool = title.diorama.youth_style == HeroAppearanceResource.YOUTH_GIRL
 	title.begin_new_tale()
 	var path: String = PartyProgress.current.save_path
 	var file: ConfigFile = ConfigFile.new()
@@ -117,6 +121,10 @@ func _check_new_game(title: TitleScreen) -> void:
 		and PartyProgress.current.hero_name == "Wren" and PartyProgress.current.trail_level() == 1 and PartyProgress.current.chimes == 0
 		and not PartyProgress.current.endgame_kits_for_testing,
 		"Begin the Tale starts a fresh Level 1 tale for Wren in a new save file (%s)" % path.get_file())
+	check.call(girl_pick != null and knoll_girl and PartyProgress.current.hero_style == HeroAppearanceResource.YOUTH_GIRL
+		and str(file.get_value("hero", "style", "")) == "girl",
+		"New Game asks boy or girl: choosing The Girl shows her on the knoll and the tale remembers her (docs/26 §7)")
+	PartyProgress.current.hero_style = HeroAppearanceResource.YOUTH_BOY
 
 
 func _check_continue(title: TitleScreen) -> void:
