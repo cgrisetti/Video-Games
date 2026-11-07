@@ -296,8 +296,8 @@ func _build_hero() -> void:
 		skeleton.add_child(surface)
 		surface.skeleton = surface.get_path_to(skeleton)
 	var satchel: Node3D = HeroMeshAtelier.build_scribe_satchel(material)
-	satchel.position = ActorVisuals.YOUTH_SATCHEL_AT
 	HeroRigBuilder.socket(skeleton, HeroRigBuilder.HIP_SATCHEL_SOCKET).add_child(satchel)
+	ActorVisuals.hang_youth_satchel(satchel, skeleton, youth_style == HeroAppearanceResource.YOUTH_GIRL, material)
 	kinematics = StorybookKinematicsModifier3D.new()
 	kinematics.name = "StorybookKinematics"
 	kinematics.move_speed = 6.6

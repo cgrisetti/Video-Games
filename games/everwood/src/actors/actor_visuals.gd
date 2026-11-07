@@ -174,7 +174,12 @@ const STONE_SPIN: float = 2.0
 ## The Level 1 youth (21_WINGFEATHER_YOUTH_HERO.md): the satchel rides
 ## closer on the youth's slimmer hip; the Tier 1 tool and its quiver or shield
 ## stay tucked away out of a fight and pop into hand over DRAW_POP_TIME.
-const YOUTH_SATCHEL_AT: Vector3 = Vector3(-0.178, -0.08, 0.05)
+const YOUTH_SATCHEL_AT: Vector3 = Vector3(-0.25, -0.06, 0.12)
+## The girl's satchel rides a little further out, clear of her flared skirt.
+const YOUTH_GIRL_SATCHEL_AT: Vector3 = Vector3(-0.272, -0.06, 0.12)
+## The youth's satchel and quiver are a little smaller and further out (docs/26 §3: nothing passes through anything).
+const YOUTH_SATCHEL_SCALE: float = 0.85
+const YOUTH_QUIVER_EXTRA_DEPTH: float = 0.06
 const DRAW_POP_TIME: float = 0.16
 ## Feet look for the ground this far above and below them.
 const GROUND_PROBE_UP: float = 0.5
@@ -407,11 +412,26 @@ func is_youth() -> bool:
 	return appearance != null and appearance.is_youth() and has_rig()
 
 
+## Hangs the youth's satchel (already on the hip socket) behind the hip and outboard
+## of the thigh, so a swinging leg never passes through it, on a leather hanger from
+## the belt (docs/26 §3). The title's knoll uses it too.
+static func hang_youth_satchel(satchel: Node3D, rig: Skeleton3D, girl: bool, material: Material) -> void:
+	satchel.position = YOUTH_GIRL_SATCHEL_AT if girl else YOUTH_SATCHEL_AT
+	satchel.scale = Vector3.ONE * YOUTH_SATCHEL_SCALE
+	var hip: BoneAttachment3D = satchel.get_parent() as BoneAttachment3D
+	var bone: int = rig.find_bone(hip.bone_name) if hip != null else -1
+	if bone < 0:
+		return
+	satchel.add_child(HeroYouthAtelier.build_satchel_hanger(material, rig.get_bone_global_rest(bone) * satchel.transform))
+
+
 ## The Fellowship's kit on the sockets: the satchel, an off-hand piece, what's on the back.
 func _build_kit(row: int, loadout: ClassLoadoutResource) -> void:
 	var satchel: Node3D = HeroMeshAtelier.build_scribe_satchel(body_material)
-	satchel.position = YOUTH_SATCHEL_AT if appearance.is_youth() else Vector3(-0.215, -0.1, 0.07)
+	satchel.position = Vector3(-0.215, -0.1, 0.07)
 	socket(HeroRigBuilder.HIP_SATCHEL_SOCKET).add_child(satchel)
+	if appearance.is_youth():
+		hang_youth_satchel(satchel, skeleton, appearance.youth_style == HeroAppearanceResource.YOUTH_GIRL, body_material)
 	_satchel_flap = satchel.get_node(^"Flap") as Node3D
 	var weapon_type: int = loadout.weapon.weapon_type if loadout.weapon != null else EquipmentItemResource.WeaponType.LIGHT_SWORD
 	var free_off_hand: bool = weapon_type == EquipmentItemResource.WeaponType.LIGHT_SWORD
@@ -442,7 +462,8 @@ func _build_kit(row: int, loadout: ClassLoadoutResource) -> void:
 			socket(HeroRigBuilder.HIP_SATCHEL_SOCKET).add_child(_lantern)
 	if quivered:
 		var quiver: Node3D = HeroMeshAtelier.build_quiver(body_material)
-		quiver.transform = Transform3D(Basis(Vector3.BACK, -0.35), Vector3(0.12, 0.02, BACK_GEAR_DEPTH - 0.04))
+		quiver.transform = Transform3D(Basis(Vector3.BACK, -0.35), Vector3(0.12, 0.02, BACK_GEAR_DEPTH - 0.04
+			+ (YOUTH_QUIVER_EXTRA_DEPTH if appearance.is_youth() else 0.0)))
 		back.add_child(quiver)
 		_back_gear = not appearance.is_youth()
 		if appearance.is_youth():

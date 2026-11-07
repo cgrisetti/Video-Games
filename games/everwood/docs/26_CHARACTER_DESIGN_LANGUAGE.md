@@ -157,6 +157,26 @@ are drawn as youths.
   own sculpt and idle, blinks, shoulder weights, six youth looks) and
   `tools/test_title_screen.gd` (the boy-or-girl choice).
 
+**The fit pass (2026-11-07): nothing passes through anything**
+
+- **Boots** (`HeroYouthAtelier._boot`): a flat sole slab, thicker under the heel
+  with a heel step, its welt standing proud; the upper seated on the sole and
+  running heel to a rounded toe; a straight shaft under the turned-down cuff.
+  The round "potato" lofts are gone.
+- **Hair at the neck**: the hair cap's hairline runs high over the brow, at the
+  ear tops at the sides (`HAIRLINE_SIDES`) and down behind the ears to the nape.
+  Below it the cap tucks inside the skull. Its first ring sits straight under the
+  next one: a loft turns each ring to face along its path, and the old ring, set
+  further back, stood on edge and hung out under the jaw as brown patches.
+- **Neckerchief**: the knot rides the chest, 2.6 cm proud of the shirt, with a
+  band dipping from the collar to it and its tails lying on the shirt front.
+- **Satchel and pouch**: the youth's satchel hangs outside the left thigh
+  (`ActorVisuals.YOUTH_SATCHEL_AT`, further out for the girl's skirt, 0.85 scale);
+  the belt pouch moved to the right hip; the quiver sits further off the capelet.
+- **Checks**: `tools/test_youth_hero.gd` measures both youths' sculpts: boot soles
+  flat on the ground heel to toe, no hair below the jaw, the knot in front of the
+  shirt, and the satchel's inner face outside the breeches.
+
 **Deliberate differences**
 
 1. **No expression rig.** Faces don't change expression beyond the blink;

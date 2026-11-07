@@ -187,6 +187,38 @@ static func _ear(s: HeroMeshAtelier.Sculpt, side: float, head: Dictionary) -> vo
 		{"ao": 0.3}, {"face_zones": true})
 
 
+## The youth's satchel hanger (docs/26 §3: nothing floats): two short leather straps
+## from the belt down over the outside of the hip to the bag's top. `bag_in_body` is
+## the bag's place in the body's rest space (the socket bone's rest times the bag's
+## own transform), so the straps meet the belt and the bag in any seat. Built in the
+## bag's own space, a child of the bag.
+static func build_satchel_hanger(material: Material, bag_in_body: Transform3D) -> MeshInstance3D:
+	var to_bag: Transform3D = bag_in_body.affine_inverse()
+	var s: HeroMeshAtelier.Sculpt = HeroMeshAtelier.Sculpt.new(false)
+	var leather: float = HeroMeshAtelier.MAT_LEATHER
+	var side: Vector3 = (to_bag.basis * Vector3.RIGHT).normalized()
+	for along: float in [-0.055, 0.035]:
+		var top: Vector3 = bag_in_body * Vector3(0.028, 0.004, along)
+		var out: float = signf(top.x)
+		# Where the belt passes at this depth (its half-widths 0.172 across and 0.13 deep), a little proud of it.
+		var z: float = clampf(top.z, -0.11, 0.11)
+		var belt_x: float = BELT_HALF_WIDTH * sqrt(maxf(0.0, 1.0 - pow(z / BELT_HALF_DEPTH, 2.0))) + 0.006
+		var belt: Vector3 = Vector3(out * belt_x, BELT_Y, z)
+		# Bowed out over the hip, so the strap lies on the breeches instead of sinking into them.
+		var mid: Vector3 = belt.lerp(top, 0.5) + Vector3(out * 0.014, 0.0, 0.0)
+		var path: Array[Vector3] = [belt + Vector3(0.0, 0.012, 0.0), belt, mid, top, top + Vector3(0.0, -0.012, 0.0)]
+		var rings: Array[Dictionary] = []
+		for point: Vector3 in path:
+			rings.append(_r(to_bag * point, 0.004, 0.011, {}, leather, {"g": 0.6}))
+		_loft(s, rings, {"sides": 8, "subdiv": 2, "cap_start": true, "cap_end": true, "side": side})
+	var hanger: MeshInstance3D = MeshInstance3D.new()
+	hanger.name = "Hanger"
+	hanger.mesh = s.commit(&"satchel_hanger")
+	hanger.material_override = material
+	hanger.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return hanger
+
+
 ## Whether this youth is the girl (HeroAppearanceResource.youth_style).
 static func is_girl(look: HeroAppearanceResource) -> bool:
 	return look.youth_style == HeroAppearanceResource.YOUTH_GIRL
@@ -194,18 +226,34 @@ static func is_girl(look: HeroAppearanceResource) -> bool:
 
 ## The hair's cap: a mass over the crown and down the nape, its hairline low over
 ## a fuller fringe (docs/26 §4: the forehead framed, never a bare dome).
+## The belt round the breeches: its height and half-widths (the satchel hanger meets it).
+const BELT_Y: float = 0.97
+const BELT_HALF_WIDTH: float = 0.172
+const BELT_HALF_DEPTH: float = 0.13
+## The hair's side hairline: at the top of the ears.
+const HAIRLINE_SIDES: float = 1.585
+
+
 static func _hair_cap(s: HeroMeshAtelier.Sculpt, front_hairline: float, nape: float) -> void:
 	var head: Dictionary = _w([B.HEAD, 1.0])
 	var hair: float = HeroMeshAtelier.MAT_HAIR
+	# The hairline follows the head round: high over the forehead, at the top of the
+	# ears at the sides, down to the nape at the back. Below it the cap tucks well inside
+	# the head and jaw, so no hair ever shows through the cheeks, jaw or neck.
 	var cap_fn: Callable = func(theta: float, _t: float, p: Vector3) -> Vector3:
 		var front: float = smoothstep(0.3, 0.8, maxf(0.0, -sin(theta)))
-		var hairline: float = lerpf(1.572, front_hairline, front)
+		# The back starts right behind the ears, so the hair comes down behind them, not just at the nape.
+		var back: float = smoothstep(0.0, 0.55, maxf(0.0, sin(theta)))
+		var hairline: float = lerpf(lerpf(HAIRLINE_SIDES, front_hairline, front), nape, back)
 		if p.y >= hairline:
 			return p
-		var tuck: float = smoothstep(hairline, hairline - 0.02, p.y)
-		return Vector3(p.x * (1.0 - 0.14 * tuck), p.y, lerpf(p.z, p.z * 0.55, tuck))
+		var tuck: float = smoothstep(hairline, hairline - 0.015, p.y)
+		return Vector3(p.x * (1.0 - 0.3 * tuck), p.y, lerpf(p.z, p.z * 0.45, tuck))
 	_loft(s, [
-		_r(Vector3(0.0, nape, 0.03), 0.122, 0.13, _w([B.NECK, 0.35, B.HEAD, 0.65]), hair, {"ao": 0.55}),
+		# The cap starts at the nape, just outside the back of the skull and tucked inside the
+		# jaw and cheeks. Its centre sits straight under the next ring's: a loft turns each ring
+		# to face along its path, and a ring set further back stood on edge and hung below the jaw.
+		_r(Vector3(0.0, nape + 0.02, 0.014), 0.125, 0.115, head, hair, {"ao": 0.6}),
 		_r(Vector3(0.0, 1.548, 0.014), 0.142, 0.15, head, hair, {"ao": 0.7}),
 		_r(Vector3(0.0, 1.59, 0.01), 0.156, 0.162, head, hair),
 		_r(Vector3(0.0, 1.63, 0.007), 0.16, 0.164, head, hair),
@@ -221,7 +269,7 @@ static func _hair_cap(s: HeroMeshAtelier.Sculpt, front_hairline: float, nape: fl
 ## cowlick and tousled crown, locks over the ears and at the nape.
 static func _hair_mop(s: HeroMeshAtelier.Sculpt) -> void:
 	var head: Dictionary = _w([B.HEAD, 1.0])
-	_hair_cap(s, 1.648, 1.5)
+	_hair_cap(s, 1.648, 1.52)
 	# [root, direction, length, width, droop]
 	var locks: Array[Array] = [
 		[Vector3(0.09, 1.7, -0.11), Vector3(-0.25, -0.88, -0.35), 0.07, 0.042, 0.012],
@@ -251,7 +299,7 @@ static func _hair_mop(s: HeroMeshAtelier.Sculpt) -> void:
 ## hangs from the torso surface, unscaled: _braid).
 static func _hair_braided(s: HeroMeshAtelier.Sculpt) -> void:
 	var head: Dictionary = _w([B.HEAD, 1.0])
-	_hair_cap(s, 1.652, 1.49)
+	_hair_cap(s, 1.652, 1.515)
 	var locks: Array[Array] = [
 		[Vector3(-0.085, 1.712, -0.11), Vector3(0.3, -0.86, -0.38), 0.074, 0.044, 0.014],
 		[Vector3(-0.04, 1.718, -0.122), Vector3(0.42, -0.82, -0.34), 0.086, 0.048, 0.016],
@@ -385,15 +433,21 @@ static func _braces_scarf(look: HeroAppearanceResource) -> ArrayMesh:
 		_r(Vector3(0.0, 1.438, 0.004), 0.074, 0.075, neck, scarf, {"g": 0.35}),
 		_r(Vector3(0.0, 1.452, 0.006), 0.061, 0.063, _w([B.NECK, 1.0]), scarf, {"ao": HeroMeshAtelier.UNDER_LIP_AO}),
 	], {"subdiv": 2, "sides": 18})
-	var knot: Vector3 = Vector3(0.014, 1.415, -0.086)
-	HeroMeshAtelier._ellipsoid(s, knot, Vector3(0.021, 0.018, 0.015), neck, scarf, Vector3.FORWARD, {"g": 0.4})
-	for tail: Array in [[shirt_point(1.37, -0.12, 0.012), shirt_point(1.31, -0.2, 0.014)], [shirt_point(1.375, 0.2, 0.012), shirt_point(1.325, 0.3, 0.013)]]:
+	# The knot sits proud of the shirt on the chest (riding the chest, so a turned head
+	# never drags it into the shirt), and its two tails lie on the shirt front, not in it.
+	var chest_only: Dictionary = _w([B.CHEST, 1.0])
+	var knot: Vector3 = shirt_point(1.392, 0.04, 0.026)
+	HeroMeshAtelier._ellipsoid(s, knot, Vector3(0.024, 0.02, 0.017), chest_only, scarf, Vector3.FORWARD, {"g": 0.4})
+	# The band's front dips to meet the knot.
+	_loft(s, [_r(shirt_point(1.41, -0.5, 0.012), 0.012, 0.006, chest_only, scarf), _r(knot + Vector3(-0.012, 0.004, 0.006), 0.014, 0.007, chest_only, scarf),
+		_r(shirt_point(1.41, 0.5, 0.012), 0.012, 0.006, chest_only, scarf)], {"sides": 6, "subdiv": 2, "side": Vector3.UP})
+	for tail: Array in [[shirt_point(1.355, -0.12, 0.016), shirt_point(1.3, -0.2, 0.016)], [shirt_point(1.36, 0.2, 0.016), shirt_point(1.31, 0.3, 0.016)]]:
 		var mid: Vector3 = tail[0]
 		var tip: Vector3 = tail[1]
 		_loft(s, [
-			_r(knot + Vector3(0.0, -0.01, -0.004), 0.017, 0.004, neck, scarf, {"ao": 0.7}),
-			_r(mid, 0.016, 0.004, _w([B.CHEST, 1.0]), scarf),
-			_r(tip, 0.003, 0.003, _w([B.CHEST, 1.0]), scarf, {"g": 0.6}),
+			_r(knot + Vector3(0.0, -0.012, 0.004), 0.018, 0.0045, chest_only, scarf, {"ao": 0.7}),
+			_r(mid, 0.016, 0.0045, chest_only, scarf),
+			_r(tip, 0.003, 0.003, chest_only, scarf, {"g": 0.6}),
 		], {"sides": 6, "subdiv": 2, "cap_start": true, "cap_end": true, "side": Vector3.RIGHT, "n": 3.0})
 	_talisman(s, girl)
 	return s.commit(&"mesh_pauldrons_tabard")
@@ -653,34 +707,61 @@ static func _split_skirt(s: HeroMeshAtelier.Sculpt, side: float) -> void:
 		HeroMeshAtelier._band(s, Vector3(x * 1.05, y, -0.002), Vector3.DOWN, r + 0.002, r + 0.003, 0.014, _w([shin, 1.0]), HeroMeshAtelier.MAT_TUNIC)
 
 
-## A big turned-down soft-leather boot (1.22x round the sole): a round toe, a
-## slouched shaft and a wide cuff folded down to show its paler lining.
+## A big turned-down soft-leather boot (1.22x round the sole, docs/26 §3): a flat
+## stacked sole with a raised heel and a welt, the upper sitting flat on it (a
+## low, round toe box, never a potato), a straight shaft and a wide cuff folded
+## down to show its paler lining. The sole's underside is a true flat plane at
+## the ground, so the boot plants like a boot.
 static func _boot(s: HeroMeshAtelier.Sculpt, side: float) -> void:
 	var shin: int = B.SHIN_L if side < 0.0 else B.SHIN_R
 	var foot: int = B.FOOT_L if side < 0.0 else B.FOOT_R
 	var x: float = 0.122 * side
 	var on_foot: Dictionary = _w([foot, 1.0])
+	var heel_bones: Dictionary = _w([shin, 0.15, foot, 0.85])
 	var before: Callable = s.warp
 	var k: float = HeroAppearanceResource.YOUTH_EXTREMITY_SCALE
 	s.warp = scale_about(Vector3(x, 0.0, 0.03), Vector3(k, k, k))
 	var boot: float = HeroMeshAtelier.MAT_BOOT
-	var sole_fn: Callable = func(theta: float, _t: float, c: Color) -> Color:
-		return Color(c.r * 0.5, c.g, c.b, c.a) if sin(theta) < -0.6 else c
+	# The sole: a flat slab from heel to toe, thicker under the heel, its edge (the welt) standing proud of the upper.
+	var flat_fn: Callable = func(_theta: float, _t: float, p: Vector3) -> Vector3:
+		return Vector3(p.x, maxf(p.y, 0.0), p.z)
+	var sole_dark: Callable = func(_theta: float, _t: float, c: Color) -> Color:
+		return Color(c.r * 0.55, c.g, c.b, c.a)
 	_loft(s, [
-		_r(Vector3(x, 0.054, 0.068), 0.046, 0.044, _w([shin, 0.15, foot, 0.85]), boot, {"ao": 0.75}),
-		_r(Vector3(x, 0.054, 0.028), 0.055, 0.05, on_foot, boot),
-		_r(Vector3(x, 0.05, -0.038), 0.056, 0.044, on_foot, boot),
-		_r(Vector3(x * 0.99, 0.048, -0.088), 0.053, 0.039, on_foot, boot, {"g": 0.4}),
-		_r(Vector3(x * 0.98, 0.05, -0.122), 0.041, 0.031, on_foot, boot, {"g": 0.8}),
-		_r(Vector3(x * 0.98, 0.054, -0.138), 0.017, 0.015, on_foot, boot, {"g": 0.9}),
-	], {"n": 2.6, "cap_start": true, "cap_end": true, "side": Vector3.RIGHT, "color_fn": sole_fn})
-	# The slouched shaft, wrinkling at the ankle.
+		_r(Vector3(x, 0.017, 0.078), 0.04, 0.017, heel_bones, boot, {"n": 4.0}),
+		_r(Vector3(x, 0.017, 0.05), 0.05, 0.017, on_foot, boot, {"n": 4.0}),
+		_r(Vector3(x, 0.011, 0.012), 0.047, 0.011, on_foot, boot, {"n": 4.0}),
+		_r(Vector3(x, 0.011, -0.05), 0.06, 0.011, on_foot, boot, {"n": 4.0, "g": 0.5}),
+		_r(Vector3(x * 0.99, 0.011, -0.105), 0.056, 0.011, on_foot, boot, {"n": 4.0}),
+		_r(Vector3(x * 0.98, 0.012, -0.138), 0.038, 0.011, on_foot, boot, {"n": 3.0}),
+		_r(Vector3(x * 0.98, 0.013, -0.152), 0.012, 0.009, on_foot, boot, {"n": 2.5}),
+	], {"cap_start": true, "cap_end": true, "side": Vector3.RIGHT, "offset_fn": flat_fn, "color_fn": sole_dark, "sides": 16, "proxy": 0.0})
+	# The heel's breast: a step where the raised heel meets the waist of the sole.
+	_loft(s, [_r(Vector3(x, 0.014, 0.034), 0.042, 0.014, on_foot, boot, {"n": 5.0, "ao": 0.5}),
+		_r(Vector3(x, 0.014, 0.03), 0.042, 0.014, on_foot, boot, {"n": 5.0, "ao": 0.5})],
+		{"subdiv": 1, "sides": 12, "cap_start": true, "cap_end": true, "side": Vector3.RIGHT, "offset_fn": flat_fn, "color_fn": sole_dark})
+	# The upper: soft leather sitting flat on the sole (its underside pressed to the sole's top),
+	# rounded over the toe and the instep, the counter cupping the heel.
+	var sole_top: float = 0.021
+	var seat_fn: Callable = func(_theta: float, _t: float, p: Vector3) -> Vector3:
+		return Vector3(p.x, maxf(p.y, sole_top), p.z)
+	_loft(s, [
+		_r(Vector3(x, 0.07, 0.066), 0.044, 0.05, heel_bones, boot, {"ao": 0.75}),
+		_r(Vector3(x, 0.07, 0.03), 0.051, 0.054, on_foot, boot),
+		_r(Vector3(x, 0.054, -0.035), 0.053, 0.045, on_foot, boot),
+		_r(Vector3(x * 0.99, 0.044, -0.085), 0.05, 0.036, on_foot, boot, {"g": 0.35}),
+		_r(Vector3(x * 0.985, 0.04, -0.12), 0.04, 0.03, on_foot, boot, {"g": 0.6}),
+		_r(Vector3(x * 0.98, 0.038, -0.14), 0.02, 0.02, on_foot, boot, {"g": 0.8}),
+	], {"n": 2.4, "cap_start": true, "cap_end": true, "side": Vector3.RIGHT, "offset_fn": seat_fn, "sides": 18})
+	# The welt: a stitched rim where the upper meets the sole.
+	HeroMeshAtelier._band(s, Vector3(x * 0.99, sole_top + 0.002, -0.03), Vector3.UP, 0.055, 0.105, 0.006, on_foot, HeroMeshAtelier.MAT_LEATHER)
+	# The shaft, straight with a soft wrinkle at the ankle.
 	var slouch_fn: Callable = func(theta: float, t: float, c: Color) -> Color:
-		return Color(c.r * (0.85 + 0.15 * cos(theta * 2.0 + t * 14.0)), c.g, c.b, c.a)
+		return Color(c.r * (0.88 + 0.12 * cos(theta * 2.0 + t * 14.0)), c.g, c.b, c.a)
 	_loft(s, [
-		_r(Vector3(x, 0.07, 0.03), 0.05, 0.054, _w([shin, 0.3, foot, 0.7]), boot),
-		_r(Vector3(x, 0.11, 0.022), 0.05, 0.052, _w([shin, 0.75, foot, 0.25]), boot),
-		_r(Vector3(x * 1.01, 0.17, 0.014), 0.049, 0.05, _w([shin, 1.0]), boot),
+		_r(Vector3(x, 0.08, 0.034), 0.046, 0.05, _w([shin, 0.3, foot, 0.7]), boot),
+		_r(Vector3(x, 0.115, 0.026), 0.047, 0.05, _w([shin, 0.75, foot, 0.25]), boot),
+		_r(Vector3(x * 1.01, 0.17, 0.016), 0.048, 0.05, _w([shin, 1.0]), boot),
 		_r(Vector3(x * 1.01, 0.225, 0.008), 0.05, 0.051, _w([shin, 1.0]), boot),
 	], {"subdiv": 2, "color_fn": slouch_fn})
 	# The wide cuff folded down over the shaft, its lighter lining out.
@@ -707,8 +788,9 @@ static func _belt_cape() -> ArrayMesh:
 		_r(Vector3(0.0, 0.988, 0.0), 0.162, 0.122, hips, HeroMeshAtelier.MAT_LEATHER, {"ao": HeroMeshAtelier.UNDER_LIP_AO}),
 	], {"subdiv": 1, "sides": 22, "n": 2.4})
 	HeroMeshAtelier._buckle(s, Vector3(0.0, 0.97, -0.133), hips, Vector3.RIGHT)
-	HeroMeshAtelier._ellipsoid(s, Vector3(0.13, 0.915, -0.08), Vector3(0.032, 0.04, 0.026), hips, HeroMeshAtelier.MAT_LEATHER, Vector3.DOWN, {"g": 0.4})
-	HeroMeshAtelier._ellipsoid(s, Vector3(0.13, 0.952, -0.082), Vector3(0.02, 0.008, 0.017), hips, HeroMeshAtelier.MAT_ROPE, Vector3.UP)
+	# The drawstring pouch hangs at the right side of the belt, outboard of the thigh (it rode the front of the thigh and clipped on the stride).
+	HeroMeshAtelier._ellipsoid(s, Vector3(0.188, 0.925, 0.03), Vector3(0.024, 0.038, 0.03), hips, HeroMeshAtelier.MAT_LEATHER, Vector3.DOWN, {"g": 0.4})
+	HeroMeshAtelier._ellipsoid(s, Vector3(0.188, 0.962, 0.03), Vector3(0.016, 0.008, 0.02), hips, HeroMeshAtelier.MAT_ROPE, Vector3.UP)
 	_hood_folds(s)
 	_cape(s)
 	return s.commit(&"mesh_belt_cloak")

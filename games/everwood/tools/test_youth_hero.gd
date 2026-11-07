@@ -10,6 +10,8 @@
 ##     the reach-back overlay when a fight starts and tucked away again after
 ##   - the start: Embershore's Bramblebridge arrival stands Player 1 at the chime-post
 ##     facing up it toward the Windmill and Hearthstead Market
+##   - nothing passes through anything (docs/26 §3): flat-soled boots, no hair
+##     under the jaw, the neckerchief knot proud of the shirt, the satchel clear of the thigh
 ##   - adults stay adults: a companion, or a sworn hero, is never the youth
 extends RefCounted
 
@@ -26,6 +28,7 @@ func run(scene_tree: SceneTree, checker: Callable, p1: ActorBase) -> void:
 	_check_sculpt(p1)
 	_check_clips()
 	_check_character(p1)
+	_check_fit(p1)
 	_check_start_spot()
 	await _check_motion(p1)
 
@@ -134,6 +137,85 @@ func _check_character(p1: ActorBase) -> void:
 	var leaning: Dictionary = HeroYouthAtelier.shoulder_weights(Vector3(0.19, 1.34, 0.0), {HeroRigBuilder.Bone.CHEST: 1.0})
 	check.call(float(leaning.get(HeroRigBuilder.Bone.CLAVICLE_R, 0.0)) > 0.3 and float(leaning.get(HeroRigBuilder.Bone.UPPER_ARM_R, 0.0)) > 0.2,
 		"the shirt and capelet shoulders follow the arms, so a raised arm stretches the seam instead of opening a gap (docs/26 §3)")
+
+
+## The clipping fixes (docs/26 §10): measured on the sculpt itself, both youths.
+func _check_fit(p1: ActorBase) -> void:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var soles_flat: bool = true
+	var hair_clear: bool = true
+	var knot_proud: bool = true
+	var notes: PackedStringArray = PackedStringArray()
+	for style: StringName in [HeroAppearanceResource.YOUTH_BOY, HeroAppearanceResource.YOUTH_GIRL]:
+		var look: HeroAppearanceResource = catalog.youth_appearance_for_seat(ClassLoadouts.DIRECTIONAL_FLOW_DPS, 0, style)
+		var parts: Array[ArrayMesh] = HeroMeshAtelier.build_hero_surfaces(look, ArsenalCatalog.BRAMBLE_JERKIN)
+		# Boots: the lowest boot vertices lie flat on the ground along the whole foot, heel to toe.
+		var lowest: float = 9.0
+		var flat_back: float = -9.0
+		var flat_front: float = 9.0
+		for v: Vector3 in _material_points(parts[3], HeroMeshAtelier.MAT_BOOT):
+			lowest = minf(lowest, v.y)
+			if v.y < 0.002 and v.x < 0.0:
+				flat_back = maxf(flat_back, v.z)
+				flat_front = minf(flat_front, v.z)
+		soles_flat = soles_flat and lowest > -0.001 and flat_back - flat_front > 0.18
+		# Hair: none below the jaw (the hair cap once hung out under the chin and on the neck).
+		var hair_low: float = 9.0
+		for v: Vector3 in _material_points(parts[0], HeroMeshAtelier.MAT_HAIR):
+			hair_low = minf(hair_low, v.y)
+		hair_clear = hair_clear and hair_low > 1.49
+		# The neckerchief knot stands in front of the shirt, not inside it.
+		var scarf_front: float = 9.0
+		for v: Vector3 in _material_points(parts[2], HeroMeshAtelier.MAT_TUNIC):
+			if v.y > 1.36 and v.y < 1.42 and absf(v.x) < 0.04:
+				scarf_front = minf(scarf_front, v.z)
+		var shirt_front: float = 9.0
+		for index: int in [1, 2]:
+			for v: Vector3 in _material_points(parts[index], HeroMeshAtelier.MAT_LINEN):
+				if v.y > 1.36 and v.y < 1.42 and absf(v.x) < 0.04:
+					shirt_front = minf(shirt_front, v.z)
+		knot_proud = knot_proud and scarf_front < shirt_front - 0.01
+		notes.append("%s: soles flat over %.2f m, hair down to %.3f, knot %.3f in front of the shirt" % [style, flat_back - flat_front, hair_low, shirt_front - scarf_front])
+	check.call(soles_flat and hair_clear and knot_proud,
+		"the youths' clothes sit on each other (docs/26 §3): flat-soled boots, no hair under the jaw, the neckerchief knot in front of the shirt (%s)" % "; ".join(notes))
+	# The satchel hangs outside the left thigh, not in it: in the rest pose, every point of
+	# the bag lies outboard of the breeches at its own height and depth.
+	var visuals: ActorVisuals = p1.visuals
+	var hip: BoneAttachment3D = visuals.socket(HeroRigBuilder.HIP_SATCHEL_SOCKET)
+	var bag: MeshInstance3D = hip.find_child("Bag", true, false) as MeshInstance3D
+	var hanger: MeshInstance3D = hip.find_child("Hanger", true, false) as MeshInstance3D
+	var breeches: PackedVector3Array = PackedVector3Array()
+	for v: Vector3 in _material_points(HeroMeshAtelier.build_hero_surfaces(visuals.appearance, ArsenalCatalog.BRAMBLE_JERKIN)[3], HeroMeshAtelier.MAT_BREECHES):
+		if v.x < 0.0:
+			breeches.append(v)
+	var worst: float = -9.0
+	var touching: int = 0
+	if bag != null:
+		var satchel: Node3D = bag.get_parent() as Node3D
+		var bag_in_body: Transform3D = visuals.skeleton.get_bone_global_rest(visuals.skeleton.find_bone(hip.bone_name)) * satchel.transform * bag.transform
+		for corner: Vector3 in _material_points(bag.mesh as ArrayMesh, HeroMeshAtelier.MAT_LEATHER):
+			var point: Vector3 = bag_in_body * corner
+			var outside: float = 9.0
+			for v: Vector3 in breeches:
+				if absf(v.y - point.y) < 0.02 and absf(v.z - point.z) < 0.02:
+					outside = minf(outside, v.x)
+			if outside < 9.0:
+				touching += 1
+				worst = maxf(worst, point.x - outside)
+	check.call(bag != null and hanger != null and worst < 0.0,
+		"the satchel hangs outside the left thigh on a leather hanger from the belt (%d of its points beside the breeches, the closest %.3f m outboard)" % [touching, -worst])
+
+
+static func _material_points(mesh: ArrayMesh, material_id: float) -> PackedVector3Array:
+	var points: PackedVector3Array = PackedVector3Array()
+	for surface: int in mesh.get_surface_count():
+		var arrays: Array = mesh.surface_get_arrays(surface)
+		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+		for i: int in verts.size():
+			if absf(colors[i].b - material_id) < 0.005:
+				points.append(verts[i])
+	return points
 
 
 func _check_clips() -> void:
