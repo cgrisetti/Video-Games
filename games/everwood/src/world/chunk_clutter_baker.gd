@@ -84,7 +84,8 @@ const BUTTERCUP_GOLD: Color = Color("#F2C230")
 static func grass_count(look: ZoneBiomeResource) -> int:
 	if DisplayServer.get_name() == "headless":
 		return GRASS_HEADLESS
-	return clampi(int(look.grass_clump_count * GRASS_DENSITY), GRASS_WINDOWED_MIN, GRASS_WINDOWED_MAX)
+	# Grass & flowers (the Options menu) thins it for ground baked from now on.
+	return clampi(int(look.grass_clump_count * GRASS_DENSITY * SettingsManager.grass_scale()), GRASS_WINDOWED_MIN, GRASS_WINDOWED_MAX)
 
 
 ## The batches for a chunk of `biome_id`: {"biome", GRASS: {"count", "buffer"}, FLOWERS: ..., ..., VERGES: ...}.

@@ -84,6 +84,12 @@ func apply_render_scale(scale: float) -> void:
 		viewport.scaling_3d_scale = scale
 
 
+## Settings: Craft textures (the mipmap bias every view draws its textures at).
+func apply_texture_bias(bias: float) -> void:
+	for viewport: SubViewport in _viewports.values():
+		viewport.texture_mipmap_bias = bias
+
+
 func add_player_view(actor: ActorBase) -> Control:
 	if _cells.has(actor.player_id):
 		return _overlays[actor.player_id]

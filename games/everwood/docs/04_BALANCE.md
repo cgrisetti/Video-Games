@@ -95,7 +95,7 @@ Ranged cards keep their numbers but are planted: forward lunges are dropped (Ris
 | Slot | Tank | Healer | DPS | Boss drops |
 |---|---|---|---|---|
 | Forward + Heavy | Shield Charge (detonates) | Sunlit Lance (Warm-Hearth primer) | Rising Drive (Iron-Root primer) | Moonfall Cleave (Rare, Star-Tide primer) |
-| Back + Heavy | Shadow Sanctuary (60% shield cone) | Green Sanctuary (1 pip, 8 HP/s) | Frost Crescent (Rime-Gale primer) | Aegis of Embers (Rare, wider cone) |
+| Back + Heavy | Shadow Sanctuary (60% shield cone) | Green Sanctuary (1 pip, 8 HP/s) | Frost Crescent (Rime-Gale primer) | Bulwark of Embers (Rare, wider cone) |
 | R (signature) | Taunt (1 pip) | Homing Heal (12 stamina, 22 HP) | Gale Rush (1 pip, Star-Tide primer) | Starlit Volley (Rare, 1 pip, Rime-Gale primer) |
 | L + R (ultimate) | Bulwark Quake (3 pips) | Lifeline Pull (2 pips) | Tempest Flow (3 pips) | Dawnbreaker (Legendary, 3 pips, detonates and stamps Warm-Hearth) |
 

@@ -529,7 +529,7 @@ func _end_ink_share() -> void:
 ## On this hero's peer: a Support's Aegis Ward. The next stun or knockdown is shrugged off.
 func receive_aegis_ward() -> void:
 	if not aegis_ward:
-		CombatDirector.current.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.4), "AEGIS WARD",
+		CombatDirector.current.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.4), "BULWARK WARD",
 			AEGIS_TEXT_COLOR, 26)
 	aegis_ward = true
 
@@ -597,7 +597,7 @@ func shrugs_off_stagger() -> bool:
 		return true
 	if aegis_ward:
 		aegis_ward = false
-		CombatDirector.current.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.4), "AEGIS!",
+		CombatDirector.current.show_float_text(actor.global_position + Vector3.UP * (actor.body_height() + 0.4), "BULWARK!",
 			AEGIS_TEXT_COLOR, 30)
 		aegis_ward_spent.emit()
 		return true

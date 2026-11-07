@@ -213,7 +213,7 @@ func _leap_back() -> void:
 
 func _shatter_aegis() -> void:
 	_tell_all(&"_show_aegis", [false])
-	CombatDirector.current.announce(actor.global_position + Vector3.UP * (actor.body_height() + 1.0), "AEGIS MANTLE SHATTERED!", AEGIS_COLOR,
+	CombatDirector.current.announce(actor.global_position + Vector3.UP * (actor.body_height() + 1.0), "BULWARK MANTLE SHATTERED!", AEGIS_COLOR,
 		&"knockdown")
 	# Gate 2's own Glimmer-Spot opens at once.
 	actor.glimmer.open_window()

@@ -42,7 +42,7 @@ static func player_class(class_id: StringName, secondary: int = -1) -> PlayerCla
 		DIRECTIONAL_FLOW_DPS:
 			made = _flow_dps()
 		_:
-			push_warning("ClassLoadouts: unknown class %s, using the DPS" % class_id)
+			push_warning("ClassLoadouts: unknown class %s, using the Striker" % class_id)
 			made = _flow_dps()
 	Callings.apply(made, secondary)
 	return made

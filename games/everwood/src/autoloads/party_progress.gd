@@ -147,7 +147,7 @@ static func upgrade_name(id: StringName) -> String:
 		MAX_HEALTH:
 			return "Max Health"
 		STAMINA_REGEN:
-			return "Stamina Regen"
+			return "Breath Recovery"
 	return String(id)
 
 

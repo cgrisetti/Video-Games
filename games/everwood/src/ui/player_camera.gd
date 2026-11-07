@@ -78,14 +78,30 @@ func _ready() -> void:
 	name = "PlayerCamera"
 	fov = FIELD_OF_VIEW
 	near = 0.1
-	# Ring 3's horizon stands out to 2.3 km (17 GDD §6.1).
-	far = WorldAtmosphereDirector.CAMERA_FAR
+	# Ring 3's horizon stands out to 2.3 km (17 GDD §6.1), as far as World detail lets it.
+	add_to_group(SettingsManager.CAMERA_GROUP)
+	set_horizon(WorldAtmosphereDirector.CAMERA_FAR)
 	# Moved every rendered frame from the actor's interpolated position.
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	current = true
 	if is_instance_valid(actor):
 		_focus = actor.global_position
 		_place()
+
+
+## The place's own horizon, kept so World detail can draw short of it.
+var horizon: float = WorldAtmosphereDirector.CAMERA_FAR
+
+
+## Sets the place's horizon and draws out to as much of it as World detail allows.
+func set_horizon(distance: float) -> void:
+	horizon = distance
+	apply_view_distance()
+
+
+## Settings: World detail changed.
+func apply_view_distance() -> void:
+	far = horizon * SettingsManager.view_distance_scale()
 
 
 ## The Sign-Flow cast's push toward the shoulder and back.

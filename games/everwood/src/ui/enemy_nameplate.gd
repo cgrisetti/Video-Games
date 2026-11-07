@@ -22,6 +22,8 @@ const TOUGH_FROM: int = 3
 const DEADLY_FROM: int = 6
 ## How many levels harder each rank fights.
 const RANK_WEIGHT: Dictionary[String, int] = {"": 0, "Rare": 1, "Elite": 2, "Boss": 4}
+## What a rank key reads as on screen (22 GDD R7: Great-Boggart, never Elite).
+const RANK_SHOWN: Dictionary[String, String] = {"Elite": "Great-Boggart"}
 const SKULL: String = "☠"
 ## Metres from a camera past which the badge is gone.
 const SHOW_RANGE: float = 40.0
@@ -87,9 +89,10 @@ func refresh() -> void:
 	modulate = DANGER_COLORS[danger]
 
 
-## "[Lv. 10 Elite]".
+## "[Lv. 10 Great-Boggart]". The rank keys stay the old words; the screen reads R7's (22 GDD).
 static func badge_text(enemy_level: int, enemy_rank: String) -> String:
-	return "[Lv. %d%s]" % [enemy_level, (" " + enemy_rank) if enemy_rank != "" else ""]
+	var shown: String = RANK_SHOWN.get(enemy_rank, enemy_rank)
+	return "[Lv. %d%s]" % [enemy_level, (" " + shown) if shown != "" else ""]
 
 
 static func danger_for(enemy_level: int, enemy_rank: String, at_party_level: int) -> int:

@@ -4,12 +4,16 @@
 ##   Audio      the main, music, effects and ambience volumes (an amplifier at
 ##              the end of each of AudioDirector's buses, so its own ducking stays its own)
 ##   Video      window or full screen, vertical sync, a frame cap, the 3D render
-##              scale and the cameras' field of view
+##              scale, the cameras' field of view, and (22 GDD §2, the Options
+##              wireframe) how far you see, how thick the grass and flowers grow
+##              and how sharp the hand-painted textures draw
 ##   Controls   invert Y (stick and mouse), camera speed, mouse sensitivity and
 ##              which pad's button names to show
 ##   Gameplay   toggle sprint (L3 / Shift starts a sprint that keeps going until
 ##              you steer sideways or back, stop, or press it again), enemy
-##              level badges and the camera's push on a Sign-Flow cast
+##              level badges, the camera's push on a Sign-Flow cast, and the
+##              numbers that pop off a hit, the rhyme ribbon's size and the
+##              INK READY border (22 GDD §2)
 ## Settings belong to the machine, not to a player or the family's progress.
 ## The smoke test points them at its own scratch file (use_settings_file).
 class_name SettingsManager
@@ -19,14 +23,35 @@ signal changed(key: StringName)
 
 enum WindowMode { WINDOWED, FULLSCREEN, BORDERLESS }
 enum PadGlyphs { AUTO, PLAYSTATION, XBOX }
+enum WorldDetail { NEAR, MID, FULL }
+enum GrassDensity { FEW, SOME, LOTS }
+enum CraftTextures { SOFT, SHARP }
+enum RibbonSize { NORMAL, LARGE }
 
 const SETTINGS_PATH: String = "user://everwood_settings.json"
 const VERSION: int = 1
 ## Every setting, in the order the Options menu lists them.
 const KEYS: Array[StringName] = [&"master_volume", &"music_volume", &"effects_volume", &"ambience_volume",
 	&"window_mode", &"vsync", &"frame_cap", &"render_scale", &"field_of_view",
+	&"world_detail", &"grass_density", &"craft_textures",
 	&"invert_y_axis", &"camera_speed", &"mouse_sensitivity", &"pad_glyphs",
-	&"toggle_sprint_mode", &"enemy_level_badges", &"camera_pulse"]
+	&"toggle_sprint_mode", &"enemy_level_badges", &"camera_pulse",
+	&"damage_numbers", &"rhyme_ribbon_size", &"ink_ready_border"]
+## The choices that cycle (left / right), and how many each has.
+const CHOICES: Dictionary[StringName, int] = {
+	&"window_mode": 3, &"pad_glyphs": 3, &"world_detail": 3, &"grass_density": 3, &"craft_textures": 2, &"rhyme_ribbon_size": 2,
+}
+## How far the cameras see at each World detail, as a share of the place's own horizon
+## (Full: far villages and woods out to 512 m and the isles' horizon to 2.5 km).
+const VIEW_DISTANCE_SCALES: Array[float] = [0.3, 0.6, 1.0]
+## How much grass and flowers each Grass & flowers setting grows, as a share of the most.
+const GRASS_SCALES: Array[float] = [0.4, 0.7, 1.0]
+## The texture mipmap bias at each Craft textures setting (Soft draws smaller mips: kinder on a laptop).
+const TEXTURE_BIASES: Array[float] = [1.0, 0.0]
+## The rhyme ribbon's font size at Normal and Large (read aloud).
+const RIBBON_FONT_SIZES: Array[int] = [21, 28]
+## Cameras join this group so a World detail change reaches every view.
+const CAMERA_GROUP: StringName = &"player_cameras"
 ## Each number's range: [low, high, step].
 const RANGES: Dictionary[StringName, Vector3] = {
 	&"master_volume": Vector3(0.0, 1.0, 0.05), &"music_volume": Vector3(0.0, 1.0, 0.05), &"effects_volume": Vector3(0.0, 1.0, 0.05),
@@ -65,6 +90,13 @@ static var current: SettingsManager
 @export var toggle_sprint_mode: bool = true
 @export var enemy_level_badges: bool = true
 @export var camera_pulse: bool = true
+@export var damage_numbers: bool = true
+@export var rhyme_ribbon_size: RibbonSize = RibbonSize.NORMAL
+@export var ink_ready_border: bool = true
+# --- Video, the world (22 GDD §2) ---
+@export var world_detail: WorldDetail = WorldDetail.FULL
+@export var grass_density: GrassDensity = GrassDensity.LOTS
+@export var craft_textures: CraftTextures = CraftTextures.SHARP
 
 var _path: String = SETTINGS_PATH
 var _defaults: Dictionary = {}
@@ -119,6 +151,32 @@ static func pulse_on() -> bool:
 
 static func glyphs() -> PadGlyphs:
 	return current.pad_glyphs if current != null else PadGlyphs.AUTO
+
+
+## How far the cameras see, as a share of the place's horizon (1.0 with no settings).
+static func view_distance_scale() -> float:
+	return VIEW_DISTANCE_SCALES[current.world_detail] if current != null else 1.0
+
+
+## How much grass and flowers grow, as a share of the most.
+static func grass_scale() -> float:
+	return GRASS_SCALES[current.grass_density] if current != null else 1.0
+
+
+static func texture_bias() -> float:
+	return TEXTURE_BIASES[current.craft_textures] if current != null else 0.0
+
+
+static func damage_numbers_shown() -> bool:
+	return current == null or current.damage_numbers
+
+
+static func ribbon_font_size() -> int:
+	return RIBBON_FONT_SIZES[current.rhyme_ribbon_size] if current != null else RIBBON_FONT_SIZES[0]
+
+
+static func ink_ready_border_shown() -> bool:
+	return current == null or current.ink_ready_border
 
 
 # --- Files ---------------------------------------------------------------------------
@@ -176,10 +234,8 @@ func step_value(key: StringName, step: int) -> void:
 		set_value(key, not now)
 	elif key == &"frame_cap":
 		set_value(key, FRAME_CAPS[wrapi(FRAME_CAPS.find(int(now)) + step, 0, FRAME_CAPS.size())])
-	elif key == &"window_mode":
-		set_value(key, wrapi(int(now) + step, 0, WindowMode.size()))
-	elif key == &"pad_glyphs":
-		set_value(key, wrapi(int(now) + step, 0, PadGlyphs.size()))
+	elif CHOICES.has(key):
+		set_value(key, wrapi(int(now) + step, 0, CHOICES[key]))
 	elif RANGES.has(key):
 		var range_of: Vector3 = RANGES[key]
 		set_value(key, clampf(snappedf(float(now) + range_of.z * step, range_of.z), range_of.x, range_of.y))
@@ -204,10 +260,8 @@ func _assign(key: StringName, value: Variant) -> void:
 		var number: int = int(value)
 		if key == &"frame_cap":
 			number = number if FRAME_CAPS.has(number) else 0
-		elif key == &"window_mode":
-			number = clampi(number, 0, WindowMode.size() - 1)
-		elif key == &"pad_glyphs":
-			number = clampi(number, 0, PadGlyphs.size() - 1)
+		elif CHOICES.has(key):
+			number = clampi(number, 0, CHOICES[key] - 1)
 		set(key, number)
 	elif now is float:
 		var range_of: Vector3 = RANGES.get(key, Vector3(-INF, INF, 0.0))
@@ -248,6 +302,15 @@ func apply(key: StringName) -> void:
 				get_tree().root.scaling_3d_scale = render_scale
 				for grid: Node in get_tree().get_nodes_in_group(GRID_GROUP):
 					grid.call(&"apply_render_scale", render_scale)
+		&"world_detail":
+			if is_inside_tree():
+				for camera: Node in get_tree().get_nodes_in_group(CAMERA_GROUP):
+					camera.call(&"apply_view_distance")
+		&"craft_textures":
+			if is_inside_tree():
+				get_tree().root.texture_mipmap_bias = texture_bias()
+				for grid: Node in get_tree().get_nodes_in_group(GRID_GROUP):
+					grid.call(&"apply_texture_bias", texture_bias())
 
 
 ## Turns one volume's buses with an amplifier at the end of each (silence at 0).

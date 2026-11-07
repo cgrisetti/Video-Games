@@ -32,7 +32,7 @@
 ##       card does, when to use it (on the trail it gets your ink ready; in a
 ##       fight a tap in the flash casts it) and whether your level takes it,
 ##       in Gate 6's words; level and danger badges over enemies ("[Lv. 3]",
-##       "[Lv. 10 Elite]", the boss's on its bar), coloured for the party's
+##       "[Lv. 10 Great-Boggart]", the boss's on its bar), coloured for the party's
 ##       level and hidden from the Options menu
 extends RefCounted
 
@@ -180,6 +180,36 @@ func _check_options_menu() -> void:
 	await tree.process_frame
 	var view: PlayerCamera = level.camera_for_seat(hero.party_slot + 1)
 	check.call(view != null and is_equal_approx(view.fov, 70.0), "K1: the cameras' field of view follows the Video tab (70°)")
+	# The Options wireframe's new rows (22 GDD §2).
+	settings.set_value(&"world_detail", SettingsManager.WorldDetail.NEAR)
+	settings.set_value(&"grass_density", SettingsManager.GrassDensity.FEW)
+	settings.set_value(&"craft_textures", SettingsManager.CraftTextures.SOFT)
+	settings.set_value(&"rhyme_ribbon_size", SettingsManager.RibbonSize.LARGE)
+	await tree.process_frame
+	check.call(view != null and is_equal_approx(view.far, view.horizon * SettingsManager.VIEW_DISTANCE_SCALES[0])
+		and is_equal_approx(SettingsManager.grass_scale(), SettingsManager.GRASS_SCALES[0])
+		and is_equal_approx(tree.root.texture_mipmap_bias, SettingsManager.TEXTURE_BIASES[0])
+		and SettingsManager.ribbon_font_size() == SettingsManager.RIBBON_FONT_SIZES[1]
+		and OptionsMenu.ROWS[OptionsMenu.Tab.VIDEO].has(&"world_detail") and OptionsMenu.ROWS[OptionsMenu.Tab.GAMEPLAY].has(&"ink_ready_border"),
+		"K1: World detail Near draws the cameras to %.0f m, Grass & flowers, Craft textures Soft and the Large rhyme ribbon all take hold" % (view.far if view != null else 0.0))
+	options = hud.options_menu()
+	if options != null:
+		options.set_tab(OptionsMenu.Tab.GAMEPLAY)
+		await _frames(2)
+		var help_rows: int = 0
+		for key: StringName in options.rows():
+			help_rows += 1 if OptionsMenu.help_seat(key) != null else 0
+		var help_seat: PartyMember = OptionsMenu.help_seat(&"help_0")
+		var mode_before: int = help_seat.assist_mode if help_seat != null else -1
+		options.change(&"help_0", 1)
+		await _frames(3)
+		var stepped: PartyMember = OptionsMenu.help_seat(&"help_0")
+		var mode_after: int = stepped.assist_mode if stepped != null else -1
+		options.change(&"help_0", -1)
+		await _frames(3)
+		check.call(help_rows == OptionsMenu.help_seats().size() and help_rows >= 1 and mode_after == wrapi(mode_before + 1, 0, InputComponent.MODE_NAMES.size()),
+			"K1: the Gameplay tab sets each player's help on this screen (%d rows): P1 steps from %s to %s" % [help_rows,
+			InputComponent.MODE_NAMES[maxi(mode_before, 0)], InputComponent.MODE_NAMES[maxi(mode_after, 0)]])
 	await _tap_key(KEY_ESCAPE)
 	await _frames(2)
 	check.call(hud.options_menu() == null and not hero.input.menu_open, "K1: Esc closes it again")
@@ -869,7 +899,7 @@ func _check_card_tooltips() -> void:
 					continue
 				var tip: String = binder.card_tooltip_for(key, page)
 				var lines: PackedStringArray = tip.split("\n")
-				var fits: bool = lines.size() == 3 and (lines[2].begins_with("Ready:") or lines[2].begins_with("Not yet")) and lines[2].contains("Level")
+				var fits: bool = lines.size() == 3 and (lines[2].begins_with("Ready:") or lines[2].begins_with("Not yet")) and lines[2].contains("Lv ")
 				var when: bool
 				if page == GrimoireBinderPanel.Column.PLACES:
 					when = lines.size() > 1 and lines[1] == GrimoireBinderPanel.PLACE_WHEN and lines[0].contains("Place-Card")
@@ -914,7 +944,7 @@ func _check_card_tooltips() -> void:
 
 func _check_enemy_badges() -> void:
 	var Danger: Dictionary = EnemyNameplate.Danger
-	var texts_ok: bool = (EnemyNameplate.badge_text(3, "") == "[Lv. 3]" and EnemyNameplate.badge_text(10, "Elite") == "[Lv. 10 Elite]"
+	var texts_ok: bool = (EnemyNameplate.badge_text(3, "") == "[Lv. 3]" and EnemyNameplate.badge_text(10, "Elite") == "[Lv. 10 Great-Boggart]"
 		and EnemyNameplate.badge_text(25, "Boss") == "[Lv. 25 Boss]")
 	var scale_ok: bool = (EnemyNameplate.danger_for(1, "", 10) == Danger.TRIVIAL and EnemyNameplate.danger_for(7, "", 10) == Danger.EASY
 		and EnemyNameplate.danger_for(10, "", 10) == Danger.EVEN and EnemyNameplate.danger_for(11, "Elite", 10) == Danger.TOUGH

@@ -334,7 +334,8 @@ func _build_ribbon() -> void:
 	_ribbon_label.scroll_active = false
 	_ribbon_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_ribbon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ribbon_label.add_theme_font_size_override("normal_font_size", RIBBON_FONT_SIZE)
+	# Rhyme ribbon size (the Options menu): Large for reading aloud to a small player.
+	_ribbon_label.add_theme_font_size_override("normal_font_size", SettingsManager.ribbon_font_size())
 	_ribbon_label.add_theme_constant_override("outline_size", 6)
 	_ribbon_label.add_theme_color_override("font_outline_color", OUTLINE)
 	_ribbon_label.add_theme_color_override("default_color", Color(0.98, 0.94, 0.84))
@@ -358,7 +359,8 @@ func _place_ribbon(delta: float, cross_scale: float) -> void:
 
 ## A pulsing Saffron-Gold border with embers drifting up from its foot.
 func _draw_ember() -> void:
-	if not hearth_rite_border_lit():
+	# The Options menu's INK READY border can turn the glow off (the card is still ready).
+	if not hearth_rite_border_lit() or not SettingsManager.ink_ready_border_shown():
 		return
 	var pulse: float = 0.6 + 0.3 * sin(_ember_age * 3.2)
 	var rect: Rect2 = Rect2(Vector2.ZERO, _ember.size).grow(-EMBER_WIDTH * 0.5)

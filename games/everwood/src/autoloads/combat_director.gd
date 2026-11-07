@@ -389,7 +389,8 @@ func report_hit(attacker: ActorBase, target: ActorBase, action: CombatActionReso
 	if attacker.is_local_player():
 		AudioCues.play_at(&"hit", target.global_position, 1.15 / maxf(0.7, action.hit_stop_scale), -4.0)
 	if action.damage > 0.0:
-		show_float_text(_above(target), str(roundi(action.damage)), Color(1.0, 0.94, 0.78))
+		if SettingsManager.damage_numbers_shown():
+			show_float_text(_above(target), str(roundi(action.damage)), Color(1.0, 0.94, 0.78))
 	var event: CombatEvent = CombatEvent.strike_from(attacker, target, action)
 	if attacker.sign_flow != null:
 		attacker.sign_flow.on_strike_landed(action, event)
@@ -496,7 +497,8 @@ func _apply(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
 			if event.echo > 0.0:
 				_echo_heal(target, event)
 			if healed > 0.0:
-				show_float_text(_above(target), "+%d" % roundi(healed), Color(0.5, 1.0, 0.6))
+				if SettingsManager.damage_numbers_shown():
+					show_float_text(_above(target), "+%d" % roundi(healed), Color(0.5, 1.0, 0.6))
 				AudioCues.play(&"heal", 1.0, -6.0)
 				for boss: ActorBase in _bosses:
 					if is_instance_valid(boss) and boss.is_engaged():
@@ -558,7 +560,8 @@ func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> 
 		if target.threat != null:
 			target.threat.add_threat(event.attacker_player_id, event.threat)
 		if from_remote and target.stats.last_damage_taken > 0.0:
-			show_float_text(_above(target), str(roundi(target.stats.last_damage_taken)), Color(1.0, 0.6, 0.55))
+			if SettingsManager.damage_numbers_shown():
+				show_float_text(_above(target), str(roundi(target.stats.last_damage_taken)), Color(1.0, 0.6, 0.55))
 	if from_remote:
 		request_hit_stop([target], event.hit_stop_scale)
 	hit_resolved.emit(event, outcome)

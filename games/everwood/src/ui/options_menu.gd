@@ -2,11 +2,16 @@
 ## keyboard, a tap of Options / Menu on a pad, over the player's own screen. Four
 ## tabs, stepped with Q / E or L1 / R1 (or a click):
 ##   Audio     main, music, effects and world-sound volumes
-##   Video     display mode, vertical sync, frame cap, render scale, field of view
+##   Video     display mode, vertical sync, frame cap, render scale, field of view,
+##             World detail, Grass & flowers and Craft textures (22 GDD §2)
 ##   Controls  invert Y, camera speed, mouse sensitivity, pad button names, and
 ##             a keyboard and a PlayStation / Xbox pad drawn with what each key
 ##             and button does, read from the Input Map so they never go stale
-##   Gameplay  toggle sprint, enemy level badges, the camera's push on a cast
+##   Gameplay  toggle sprint, enemy level badges, the camera's push on a cast,
+##             damage numbers, the rhyme ribbon's size, the INK READY border, and
+##             each player's help (Master, Adventurer or Squire Gambit) for every
+##             player on this screen, so a parent can set it for a small player
+## The page is drawn in the living storybook atelier look (AtelierTheme).
 ## Up / down choose a row, left / right change it (light flips a switch), and
 ## Esc, Options or dodge closes it. The mouse works too: click a row's arrows.
 ## Every change saves at once (SettingsManager). The settings are the machine's,
@@ -23,9 +28,20 @@ enum Category { MOVE, FIGHT, CARDS, PARTY, MENUS }
 const TAB_NAMES: Array[String] = ["Audio", "Video", "Controls", "Gameplay"]
 const ROWS: Array[Array] = [
 	[&"master_volume", &"music_volume", &"effects_volume", &"ambience_volume"],
-	[&"window_mode", &"vsync", &"frame_cap", &"render_scale", &"field_of_view"],
+	[&"window_mode", &"vsync", &"frame_cap", &"render_scale", &"field_of_view", &"world_detail", &"grass_density", &"craft_textures",
+		&"fade_note"],
 	[&"invert_y_axis", &"camera_speed", &"mouse_sensitivity", &"pad_glyphs"],
-	[&"toggle_sprint_mode", &"enemy_level_badges", &"camera_pulse"],
+	[&"toggle_sprint_mode", &"enemy_level_badges", &"camera_pulse", &"damage_numbers", &"rhyme_ribbon_size", &"ink_ready_border"],
+]
+## A row that only tells (trees and roofs fade when they block the view: always on).
+const NOTE_ROW: StringName = &"fade_note"
+## Each player's help rows on the Gameplay tab are "help_0", "help_1", ... (this screen's seats by slot).
+const HELP_PREFIX: String = "help_"
+const HELP_HEADING: String = "Each player's help"
+const HELP_HINTS: Array[String] = [
+	"Master: every combo, card and dodge is yours to play.",
+	"Adventurer: a smart combo on Light and Heavy, and the card cast for you when the ink is ready.",
+	"Squire Gambit: one button plays smart combos, casts the card for you and steps out of red rings. Holding the Map button still changes it in play.",
 ]
 ## The last row of every tab puts every setting back.
 const RESET_ROW: StringName = &"reset"
@@ -35,6 +51,9 @@ const NAMES: Dictionary[StringName, String] = {
 	&"field_of_view": "Field of view", &"invert_y_axis": "Invert Y (camera up and down)", &"camera_speed": "Camera speed",
 	&"mouse_sensitivity": "Mouse sensitivity", &"pad_glyphs": "Pad button names", &"toggle_sprint_mode": "Toggle sprint",
 	&"enemy_level_badges": "Enemy level badges", &"camera_pulse": "Camera push on card casts", RESET_ROW: "Put everything back",
+	&"world_detail": "World detail", &"grass_density": "Grass & flowers", &"craft_textures": "Craft textures",
+	NOTE_ROW: "Trees and roofs fade when they block your view", &"damage_numbers": "Damage numbers",
+	&"rhyme_ribbon_size": "Rhyme ribbon size", &"ink_ready_border": "INK READY border",
 }
 const HINTS: Dictionary[StringName, String] = {
 	&"master_volume": "Everything you hear.", &"music_volume": "The band that plays where you are.",
@@ -45,16 +64,22 @@ const HINTS: Dictionary[StringName, String] = {
 	&"camera_speed": "How fast the stick and the keys turn and tilt the camera.", &"mouse_sensitivity": "How far the camera turns for each nudge of the mouse.",
 	&"pad_glyphs": "Show PlayStation shapes or Xbox letters (or whatever pad you have).",
 	&"toggle_sprint_mode": "On: click L3 / Shift once and keep running until you turn aside, stop, or click again. Off: hold it.",
-	&"enemy_level_badges": "A badge like [Lv. 3] or [Lv. 10 Elite] over every foe.",
+	&"enemy_level_badges": "A badge like [Lv. 3] or [Lv. 10 Great-Boggart] over every foe.",
 	&"camera_pulse": "The little push toward your shoulder when you cast a card.", RESET_ROW: "Every setting back as it came (light to do it).",
+	&"world_detail": "How far you see. Full draws far villages and woods out to 512 m and the isles' horizon to 2.5 km. Near stops at the closest hills and woods: kinder on a laptop.",
+	&"grass_density": "How thick the grass and flowers grow (on the ground drawn from now on). Fewer is kinder on a laptop.",
+	&"craft_textures": "Sharp draws the hand-painted bark, stone and cloth crisp. Soft blurs them a little: kinder on a laptop.",
+	NOTE_ROW: "So you never lose your hero behind a tree or a roof. Always on.",
+	&"damage_numbers": "The numbers that pop off a hit or a heal.",
+	&"rhyme_ribbon_size": "The rhyme that unfurls when you walk into a new place. Large is easy to read aloud to a small player.",
+	&"ink_ready_border": "The glowing gold border round your screen while a card is INK READY on the trail.",
 }
-const BACKDROP: Color = Color(0.03, 0.03, 0.05, 0.74)
-const PAGE_COLOR: Color = Color(0.13, 0.1, 0.08, 0.95)
-const PAGE_EDGE: Color = Color(0.85, 0.7, 0.42)
-const ROW_COLOR: Color = Color(0.95, 0.92, 0.85)
-const DIM_COLOR: Color = Color(0.62, 0.6, 0.56)
-const SELECTED_COLOR: Color = Color(1.0, 0.88, 0.5)
-const BAR_FILL: Color = Color(0.86, 0.66, 0.3)
+const BACKDROP: Color = AtelierTheme.BACKDROP
+const PAGE_EDGE: Color = AtelierTheme.GILT
+const ROW_COLOR: Color = AtelierTheme.INK
+const DIM_COLOR: Color = AtelierTheme.INK_DIM
+const SELECTED_COLOR: Color = AtelierTheme.GOLD
+const BAR_FILL: Color = AtelierTheme.GILT
 const BAR_BACK: Color = Color(0.06, 0.05, 0.04, 0.9)
 const TITLE_SIZE: int = 26
 const FONT_SIZE: int = 17
@@ -75,7 +100,7 @@ const ACTION_NAMES: Dictionary[StringName, Array] = {
 	InputComponent.ACTION_MOUSE_LOOK: ["Mouse-look", Category.MOVE], InputComponent.ACTION_SPRINT: ["Sprint", Category.MOVE],
 	InputComponent.ACTION_JUMP: ["Jump", Category.MOVE], InputComponent.ACTION_DODGE: ["Roll", Category.FIGHT],
 	InputComponent.ACTION_LIGHT: ["Light attack", Category.FIGHT], InputComponent.ACTION_HEAVY: ["Heavy attack", Category.FIGHT],
-	InputComponent.ACTION_TRIGGER_L: ["Guard · L card", Category.CARDS], InputComponent.ACTION_TRIGGER_R: ["R card", Category.CARDS],
+	InputComponent.ACTION_TRIGGER_L: ["Guard (hold) · L card (tap)", Category.CARDS], InputComponent.ACTION_TRIGGER_R: ["R card", Category.CARDS],
 	InputComponent.ACTION_ULT: ["Big move (L+R)", Category.CARDS],
 	InputComponent.ACTION_TETHER_UP: ["Soul Tether", Category.PARTY], InputComponent.ACTION_TETHER_RIGHT: ["Soul Tether", Category.PARTY],
 	InputComponent.ACTION_TETHER_DOWN: ["Soul Tether", Category.PARTY], InputComponent.ACTION_TETHER_LEFT: ["Soul Tether", Category.PARTY],
@@ -91,6 +116,9 @@ var row: int = 0
 
 var _root: VBoxContainer
 var _tab_labels: Array[Label] = []
+var _tab_panels: Array[PanelContainer] = []
+## The help section's heading (not a row).
+var _extras: Array[Control] = []
 var _rows_box: VBoxContainer
 var _row_nodes: Array[Control] = []
 var _hint: Label
@@ -125,21 +153,19 @@ func _ready() -> void:
 	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
 	tabs.add_theme_constant_override(&"separation", 26)
 	_root.add_child(tabs)
+	tabs.add_theme_constant_override(&"separation", 6)
 	for index: int in TAB_NAMES.size():
+		var tab_panel: PanelContainer = PanelContainer.new()
+		tab_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+		tab_panel.gui_input.connect(_on_tab_clicked.bind(index))
+		tabs.add_child(tab_panel)
+		_tab_panels.append(tab_panel)
 		var tab_label: Label = _label(FONT_SIZE + 2, ROW_COLOR)
-		tab_label.mouse_filter = Control.MOUSE_FILTER_STOP
-		tab_label.gui_input.connect(_on_tab_clicked.bind(index))
-		tabs.add_child(tab_label)
+		tab_panel.add_child(tab_label)
 		_tab_labels.append(tab_label)
 	var page: PanelContainer = PanelContainer.new()
 	page.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = PAGE_COLOR
-	style.border_color = PAGE_EDGE
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(10)
-	style.set_content_margin_all(16.0)
-	page.add_theme_stylebox_override(&"panel", style)
+	page.add_theme_stylebox_override(&"panel", AtelierTheme.page_style(true))
 	_root.add_child(page)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override(&"separation", 6)
@@ -154,11 +180,15 @@ func _ready() -> void:
 	_diagram.custom_minimum_size = Vector2(ROW_WIDTH * 1.9, 300.0)
 	_diagram.device_id = actor.device_id if actor != null else InputComponent.KEYBOARD_DEVICE
 	column.add_child(_diagram)
-	_hint = _label(SMALL_FONT_SIZE + 1, Color(0.82, 0.84, 0.9))
+	var hint_box: PanelContainer = PanelContainer.new()
+	hint_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint_box.add_theme_stylebox_override(&"panel", AtelierTheme.tooltip_style())
+	_root.add_child(hint_box)
+	_hint = _label(SMALL_FONT_SIZE + 1, AtelierTheme.INK_MUTED)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hint.custom_minimum_size = Vector2(ROW_WIDTH, 0.0)
-	_root.add_child(_hint)
+	hint_box.add_child(_hint)
 	if actor != null and actor.input != null:
 		actor.input.menu_open = true
 		actor.input.menu_input.connect(handle_menu)
@@ -198,12 +228,37 @@ func _process(_delta: float) -> void:
 
 # --- What's on the page --------------------------------------------------------------
 
-## The keys of the rows on the open tab (the reset row last).
+## The keys of the rows on the open tab (each player's help on Gameplay, the reset row last).
 func rows() -> Array[StringName]:
 	var list: Array[StringName] = []
 	list.assign(ROWS[tab])
+	if tab == Tab.GAMEPLAY:
+		for index: int in help_seats().size():
+			list.append(StringName(HELP_PREFIX + str(index)))
 	list.append(RESET_ROW)
 	return list
+
+
+## The players on this screen, by seat, whose help the Gameplay tab sets.
+static func help_seats() -> Array[PartyMember]:
+	var seats: Array[PartyMember] = []
+	var network: NetworkManager = NetworkManager.current
+	if network == null:
+		return seats
+	for seat: PartyMember in network.roster.values():
+		if seat.peer_id == network.local_peer_id() and not seat.companion:
+			seats.append(seat)
+	seats.sort_custom(func(a: PartyMember, b: PartyMember) -> bool: return a.slot < b.slot)
+	return seats
+
+
+## The seat a help row sets, or null.
+static func help_seat(key: StringName) -> PartyMember:
+	if not String(key).begins_with(HELP_PREFIX):
+		return null
+	var index: int = String(key).trim_prefix(HELP_PREFIX).to_int()
+	var seats: Array[PartyMember] = help_seats()
+	return seats[index] if index >= 0 and index < seats.size() else null
 
 
 ## The highlighted row's key.
@@ -214,6 +269,11 @@ func selected_key() -> StringName:
 
 ## A setting's value as the menu shows it ("80%", "On", "Full screen").
 static func value_text(key: StringName) -> String:
+	var seat: PartyMember = help_seat(key)
+	if seat != null:
+		return InputComponent.MODE_NAMES[clampi(seat.assist_mode, 0, InputComponent.MODE_NAMES.size() - 1)]
+	if key == NOTE_ROW:
+		return "Always on"
 	var settings: SettingsManager = SettingsManager.current
 	if settings == null or key == RESET_ROW:
 		return ""
@@ -237,6 +297,14 @@ static func value_text(key: StringName) -> String:
 			return "Click to keep running" if bool(value) else "Hold to sprint"
 		&"enemy_level_badges":
 			return "Shown" if bool(value) else "Hidden"
+		&"world_detail":
+			return ["Near", "Middling", "Full"][clampi(int(value), 0, 2)]
+		&"grass_density":
+			return ["A little", "Some", "Lots"][clampi(int(value), 0, 2)]
+		&"craft_textures":
+			return ["Soft", "Sharp"][clampi(int(value), 0, 1)]
+		&"rhyme_ribbon_size":
+			return ["Normal", "Large (read aloud)"][clampi(int(value), 0, 1)]
 	return "On" if value is bool and bool(value) else ("Off" if value is bool else str(value))
 
 
@@ -244,12 +312,19 @@ func _rebuild() -> void:
 	for index: int in _tab_labels.size():
 		_tab_labels[index].text = ("◆ %s" if index == tab else "%s") % TAB_NAMES[index]
 		_tab_labels[index].modulate = SELECTED_COLOR if index == tab else DIM_COLOR
-	for node: Control in _row_nodes:
+		_tab_panels[index].add_theme_stylebox_override(&"panel", AtelierTheme.tab_style(index == tab))
+	for node: Control in _row_nodes + _extras:
 		node.queue_free()
 	_row_nodes.clear()
+	_extras.clear()
 	var list: Array[StringName] = rows()
 	row = clampi(row, 0, list.size() - 1)
 	for index: int in list.size():
+		if String(list[index]) == HELP_PREFIX + "0":
+			var heading: Label = AtelierTheme.label(HELP_HEADING.to_upper(), SMALL_FONT_SIZE, AtelierTheme.GILT)
+			heading.name = "HelpHeading"
+			_rows_box.add_child(heading)
+			_extras.append(heading)
 		var line: Control = _make_row(list[index], index)
 		_rows_box.add_child(line)
 		_row_nodes.append(line)
@@ -258,16 +333,22 @@ func _rebuild() -> void:
 	_refresh()
 
 
+## One row: a page-ink box (gold-edged when chosen) holding its name, a bar for a number, and its value.
 func _make_row(key: StringName, index: int) -> Control:
+	var box: PanelContainer = PanelContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_STOP
+	box.gui_input.connect(_on_row_clicked.bind(index))
+	box.add_theme_stylebox_override(&"panel", AtelierTheme.row_style(false))
 	var line: HBoxContainer = HBoxContainer.new()
-	line.custom_minimum_size = Vector2(ROW_WIDTH, 30.0)
+	line.name = "Line"
+	line.custom_minimum_size = Vector2(ROW_WIDTH, 26.0)
 	line.add_theme_constant_override(&"separation", 12)
-	line.mouse_filter = Control.MOUSE_FILTER_STOP
-	line.gui_input.connect(_on_row_clicked.bind(index))
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(line)
 	var name_label: Label = _label(FONT_SIZE, ROW_COLOR)
 	name_label.name = "Name"
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.text = NAMES.get(key, String(key))
+	name_label.text = _row_name(key)
 	line.add_child(name_label)
 	if SettingsManager.RANGES.has(key):
 		var bar: ProgressBar = ProgressBar.new()
@@ -294,7 +375,16 @@ func _make_row(key: StringName, index: int) -> Control:
 	value.custom_minimum_size = Vector2(210.0, 0.0)
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	line.add_child(value)
-	return line
+	return box
+
+
+## A row's name: a setting's, or "P1 · keyboard" for a player's help.
+func _row_name(key: StringName) -> String:
+	var seat: PartyMember = help_seat(key)
+	if seat != null:
+		var device: String = "keyboard" if seat.device_id == InputComponent.KEYBOARD_DEVICE else "pad %d" % seat.device_id
+		return "P%d · %s" % [seat.slot + 1, device]
+	return NAMES.get(key, String(key))
 
 
 ## Fills every row's value, bar and highlight, and the hint.
@@ -304,16 +394,26 @@ func _refresh() -> void:
 		var line: Control = _row_nodes[index]
 		var key: StringName = list[index]
 		var chosen: bool = index == row
-		(line.get_node(^"Name") as Label).modulate = SELECTED_COLOR if chosen else ROW_COLOR
-		(line.get_node(^"Value") as Label).text = ("◀ %s ▶" % value_text(key)) if chosen and key != RESET_ROW else value_text(key)
-		var bar: ProgressBar = line.get_node_or_null(^"Bar") as ProgressBar
+		line.add_theme_stylebox_override(&"panel", AtelierTheme.row_style(chosen))
+		var fixed: bool = key == RESET_ROW or key == NOTE_ROW
+		(line.get_node(^"Line/Name") as Label).modulate = SELECTED_COLOR if chosen else (DIM_COLOR if key == NOTE_ROW else ROW_COLOR)
+		(line.get_node(^"Line/Value") as Label).text = ("◀ %s ▶" % value_text(key)) if chosen and not fixed else value_text(key)
+		var bar: ProgressBar = line.get_node_or_null(^"Line/Bar") as ProgressBar
 		if bar != null and SettingsManager.current != null:
 			bar.value = float(SettingsManager.current.get(key))
 	var device: int = actor.device_id if actor != null else InputComponent.KEYBOARD_DEVICE
 	var keys_hint: String = "↑/↓ choose · ←/→ change · %s / %s tabs · %s or %s closes" % [
 		InputComponent.binding_label(InputComponent.ACTION_TRIGGER_L, device), InputComponent.binding_label(InputComponent.ACTION_TRIGGER_R, device),
 		InputComponent.binding_label(InputComponent.ACTION_OPTIONS, device), InputComponent.binding_label(InputComponent.ACTION_DODGE, device)]
-	_hint.text = "%s\n%s" % [HINTS.get(selected_key(), ""), keys_hint]
+	_hint.text = "%s\n%s" % [_hint_for(selected_key()), keys_hint]
+
+
+## The hint under the page for a row (a help row tells what its mode does).
+func _hint_for(key: StringName) -> String:
+	var seat: PartyMember = help_seat(key)
+	if seat != null:
+		return HELP_HINTS[clampi(seat.assist_mode, 0, HELP_HINTS.size() - 1)] + " A parent can set it here for a small player."
+	return HINTS.get(key, "")
 
 
 # --- Moving and changing ---------------------------------------------------------------
@@ -359,6 +459,14 @@ func change(key: StringName, step: int) -> void:
 		if step > 0:
 			settings.reset_to_defaults()
 		return
+	if key == NOTE_ROW:
+		return
+	var seat: PartyMember = help_seat(key)
+	if seat != null:
+		var mode: int = wrapi(seat.assist_mode + step, 0, InputComponent.MODE_NAMES.size())
+		NetworkManager.current.update_local_player(seat.device_id, seat.class_id, mode)
+		_refresh()
+		return
 	settings.step_value(key, step)
 
 
@@ -380,10 +488,11 @@ func _on_row_clicked(event: InputEvent, index: int) -> void:
 		return
 	row = index
 	var line: Control = _row_nodes[index]
-	var value: Control = line.get_node(^"Value") as Control
-	var at: float = click.position.x
-	if at >= value.position.x:
-		change(selected_key(), -1 if at < value.position.x + value.size.x * 0.5 else 1)
+	var value: Control = line.get_node(^"Line/Value") as Control
+	var at: Vector2 = line.get_global_transform() * click.position
+	var spot: Rect2 = value.get_global_rect()
+	if at.x >= spot.position.x:
+		change(selected_key(), -1 if at.x < spot.position.x + spot.size.x * 0.5 else 1)
 	_refresh()
 	accept_event()
 

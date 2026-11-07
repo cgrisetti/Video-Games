@@ -252,14 +252,14 @@ func _on_player_registered(seat: PartyMember) -> void:
 	super._on_player_registered(seat)
 	var view: PlayerCamera = grid.camera_for(seat.player_id)
 	if view != null:
-		view.far = CAMERA_FAR
+		view.set_horizon(CAMERA_FAR)
 
 
 func _report_extra() -> String:
 	if streamer == null:
 		return ""
 	var counts: Dictionary = streamer.counts()
-	return " · Caldera: %s, %d/%d landblocks near, %d crossings, sea %.1f m · " % [streamer.active_isle, int(counts["near"]), int(counts["chunks"]),
+	return " · Caldera: %s, %d/%d hills and woods near, %d crossings, sea %.1f m · " % [streamer.active_isle, int(counts["near"]), int(counts["chunks"]),
 		seams.crossings, CalderaWorldState.current.sea_level_y]
 
 

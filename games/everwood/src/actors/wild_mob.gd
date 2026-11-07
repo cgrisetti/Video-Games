@@ -83,7 +83,7 @@ func display_name() -> String:
 		MobVariantResource.Rank.RARE:
 			return "%s (Rare)" % variant.display_name
 		MobVariantResource.Rank.ELITE:
-			return "%s (Elite)" % variant.display_name
+			return "%s (Great-Boggart)" % variant.display_name
 	return variant.display_name
 
 
