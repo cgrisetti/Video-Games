@@ -1,83 +1,81 @@
-## The Grimoire Binder (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §6), opened out of
-## combat with a tap of Tab / View on the player's own screen. Since the Phase
-## 12 Kaizen pass (K4) it has numbered tabs, plus the Atlas Map, stepped
-## with Q / E on the keyboard or L / R on a pad (or a click on the tab):
+## The Grimoire Binder (14_SIGN_FLOW_AND_GRIMOIRE_UX_GDD.md §6, rebuilt to the
+## Menu Wireframes of 25_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md), opened
+## out of combat with a tap of Tab / View on the player's own screen. It is one
+## 1600 x 900 sheet in the living storybook atelier look (AtelierTheme, BinderKit),
+## scaled to the player's cell: a header, the tabs (Q / E or L1 / R1, or a click),
+## a two-part tooltip box saying what's highlighted and what it does, the page,
+## and the controls along the foot.
 ##
-##   [1. Gear & Weapon]           the hero turning slowly in a lit preview
-##                                window (the live hero, not a copy), with
-##                                their weapon and its material tier, offhand,
-##                                armour and Calling (change them at the Scribe
-##                                Desk), Steward Threat as a sum (Character Lv
-##                                + the material's rank), what the kit adds up
-##                                to, and the three Seals with their
-##                                Ink-Binding Marks (25 GDD §2, the Gear wireframe)
-##   [2. Quick Magic-Ink Cards]   the spread it opens on: the HUD's diamonds
-##                                grow to 2.2x between two pages, Ink Cards
-##                                (what you do) on the left and Place-Cards
-##                                (where you stand) on the right; the middle
-##                                column picks the diamond (L+R, L, R) or opens
-##                                the Ink Card Collection
+##   [1. Gear & Weapon]           BinderGearPage: the hero, Steward Threat as a
+##                                sum, the kit's totals and Seal wards; the live
+##                                hero turning in a lit preview; the weapon,
+##                                offhand and mantle, each with its Seal and
+##                                Marks. Light (at a rest point) opens the Seal Press
+##   [2. Quick Magic-Ink Cards]   BinderCardBench, where it opens: the Cross at
+##                                2.2x, your seven-slot hand and Ink-Well, the
+##                                chosen diamond's three layers (Place-Card,
+##                                Ink card, Tuck), and the Ink Card Collection
 ##   [3. Combo Moves]             the directional forms the party knows, with
 ##                                their buttons, and the ones still to learn
-##   [4. Seal Press]              the press beside the same live preview
-##                                (25 GDD R4, the Seals wireframe): the three
-##                                Seals on the weapon, offhand and mantle, each
-##                                saying what it does on that piece (the
-##                                Contextual Slot Rule) and its Marks; up / down
-##                                picks a Seal, left / right (or light) changes
-##                                its card among none, the Fellowship's starting
-##                                seal and every seal card the party owns; the
-##                                hero wears it at once and the host keeps it
-##                                for the Fellowship (EquipmentSealComponent.choose_hand).
-##                                Seals change at a rest point: a Hearth-Brazier
-##                                or the Scribe Desk. A Seal the hero's level
-##                                hasn't opened is locked and says when it opens.
-##                                (The pocket cards left for the Cross: L, R and
-##                                L+R are the socket cards on tab 2.)
+##   [4. Seal Press]              BinderSealPressPage: the three Seals, the cards
+##                                you can press, the highlighted card slot by
+##                                slot with what you lose and gain, its
+##                                Ink-Binding ladder, the preview and Press;
+##                                presses only at a Hearth-Brazier or the Scribe Desk
+##   [Atlas Map]                  the Wayfarer's Atlas (18 GDD §7.3) in place of
+##                                the sheet; dodge there turns back
 ##
-## A tooltip box under the tabs says what the tab is for and what the
-## highlighted row does, in plain words, for a pad as much as the mouse (rows
-## and tabs carry the same text as mouse tooltips too).
-##
-## On the cards tab: left / right moves between the pages and the diamonds,
-## up / down along them, light picks, dodge (or Tab again) closes. The mouse
-## works too: click a diamond, then a card. A change the kit's rules allow is
-## equipped at once through the host, as the Scribe Desk does; otherwise the
-## binder says why.
-##
-## The Atlas Map tab (18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md §7.3)
-## turns the spread into the Wayfarer's Atlas (a tap of M / R3, or a click on the
-## tab); dodge there turns back to the tab you came from.
+## On the cards tab: left / right picks the diamond (L, R, L+R), up / down the
+## layer, light opens the collection; there up / down chooses, left / right
+## turns the filter, light slots it and dodge goes back. The mouse works too:
+## click a diamond, a layer, a filter or a card. A change the kit's rules allow
+## is equipped at once through the host; otherwise the Binder says why.
 ##
 ## The preview's lighting is its own: the camera carries a brighter copy of the
 ## sky and fog with the far world softly blurred, and a warm key light and a
 ## cool rim light reach only the hero (light cull layer 13, which the hero's
-## meshes wear while the Gear tab shows).
+## meshes wear while the Gear tab or the Seal Press shows).
 class_name GrimoireBinderPanel
 extends Control
 
 signal closed
 
-enum Column { LEAVES, DIAMONDS, PLACES }
+## LEAVES, DIAMONDS and PLACES keep their old values (the checks name them); TUCKS is the
+## collection open on the Tuck layer.
+enum Column { LEAVES, DIAMONDS, PLACES, TUCKS }
 enum Tab { GEAR, CARDS, COMBOS, SEALS, ATLAS }
+## The card bench's three layers, top to bottom.
+enum Layer { PLACE, CARD, TUCK }
 const TAB_NAMES: Array[String] = ["1. Gear & Weapon", "2. Quick Magic-Ink Cards", "3. Combo Moves", "4. Seal Press", "Atlas Map"]
+## The letter in the header's diamond, by tab (the wireframes' C, E, D...).
+const TAB_GLYPHS: Array[String] = ["C", "E", "F", "D", "M"]
 ## What each tab is for, in the tooltip box and as the tab's mouse tooltip.
 const TAB_TOOLTIPS: Array[String] = [
 	"Your hero, your weapon and what you wear. Seals change in the Seal Press at a Hearth-Brazier or the Scribe Desk; weapon and armour at the Scribe Desk.",
-	"Slot Ink Cards into your diamonds: L guards, R is your skill, L+R your big move. A Place-Card framing a card makes it stronger.",
+	"Pick a diamond, then its Place-Card, its card and the one Tuck. Changes go to the host as you make them.",
 	"Button patterns your hero has learned. Play one in a row and its last move hits harder.",
 	"Press a Seal onto your weapon, offhand and mantle. One card does what its piece is for: hits on the weapon, wards on the offhand, footing on the mantle. Change them at a Hearth-Brazier or the Scribe Desk.",
 	"The Wayfarer's Atlas: where you are, and where to go next.",
 ]
+## The line under the header's title, by tab (the wireframes' own words).
+const TAB_SUBTITLES: Array[String] = [
+	"Tab 1 shows the hero. Seals change at a Hearth-Brazier or the Scribe Desk; weapon and armour at the Scribe Desk.",
+	"Tab 2. Pick a diamond, then its Place-Card, its card and the one Tuck. Changes go to the host as you make them.",
+	"Button patterns your hero has learned. Play one in a row and its last move hits harder.",
+	"From Binder tab 1 at a Hearth-Brazier or the Scribe Desk. One card does a different job in each slot.",
+	"Where you are, and where to go next.",
+]
 ## A Place-Card's "when": it rides with the diamond's Ink Card.
 const PLACE_WHEN: String = "It rides with the Ink Card in this diamond: on the trail (INK READY) and in every cast in a fight."
+## A Tuck's "when": it rides under the card above it.
+const TUCK_WHEN: String = "It rides under the card above it every time that card is cast, and it's never used up."
 ## The Gear & Weapon tab's rows.
 enum GearRow { WEAPON, OFF_HAND, ARMOR, CALLING }
-## The stamping bench's slot shapes: a pressed card, an open empty slot, a slot still locked.
+## The Seal Press's slot shapes: a pressed card, an open empty slot, a slot still locked.
 const SEAL_PRESSED: String = "◆"
 const SEAL_EMPTY: String = "◇"
 const SEAL_LOCKED: String = "▢"
-## The Seal Press's rows: the three Seals (PlayerLoadoutResource.HandSlot's first three).
+## The Seal Press's slots: the three Seals (PlayerLoadoutResource.HandSlot's first three).
 const SEAL_ROWS: Array[int] = [PlayerLoadoutResource.HandSlot.WEAPON_SEAL, PlayerLoadoutResource.HandSlot.OFFHAND_SEAL,
 	PlayerLoadoutResource.HandSlot.MANTLE_SEAL]
 ## How near a Hearth-Brazier or the Scribe Desk the Seal Press opens (metres).
@@ -97,16 +95,20 @@ const SEAL_SLOT_TIPS: Array[String] = [
 	"Tucked under your %s card: it makes that pull stronger.",
 ]
 
+## The sheet the wireframes are drawn on, scaled to fit the player's cell.
+const SHEET_SIZE: Vector2 = Vector2(1600.0, 900.0)
+const REFERENCE_SIZE: Vector2 = SHEET_SIZE
+const MIN_FIT: float = 0.3
 const PAGE_WIDTH: float = 330.0
-const TITLE_SIZE: int = 24
+const TITLE_SIZE: int = 30
 const FONT_SIZE: int = 15
 const SMALL_FONT_SIZE: int = 12
 const TOOLTIP_FONT_SIZE: int = 14
-## The panel is laid out for a cell this big and scales with the player's cell.
-const REFERENCE_SIZE: Vector2 = Vector2(1600.0, 900.0)
-const MIN_FIT: float = 0.45
+## The tooltip box: across the sheet under the tabs, its heading column this wide.
+const TOOLTIP_RECT: Rect2 = Rect2(40.0, 142.0, 1520.0, 76.0)
+const TOOLTIP_HEAD_WIDTH: float = 250.0
 ## The living storybook atelier look (AtelierTheme, 25 GDD §3).
-const BACKDROP: Color = AtelierTheme.BACKDROP
+const BACKDROP: Color = Color(0.071, 0.051, 0.035, 0.94)
 const PAGE_EDGE: Color = AtelierTheme.GILT
 const SELECTED_COLOR: Color = AtelierTheme.GOLD
 const ROW_COLOR: Color = AtelierTheme.INK
@@ -114,11 +116,14 @@ const DIM_COLOR: Color = AtelierTheme.INK_DIM
 const PROBLEM_COLOR: Color = AtelierTheme.BAD
 const HARMONY_COLOR: Color = Color(1.0, 0.85, 0.35)
 const NOTE_TIME: float = 2.5
-## The middle column's rows, top to bottom: the three diamonds as they sit in the cross, then the Collection.
+## The diamonds in the order left / right steps through them on the card bench: L, R, L+R.
+const BENCH_SOCKETS: Array[int] = [ScribeCardResource.DioramaSocket.GUARD, ScribeCardResource.DioramaSocket.SKILL,
+	ScribeCardResource.DioramaSocket.ULT]
+## The old middle column's rows (kept for the checks that name a diamond by row): the three diamonds, then the Collection.
 const DIAMOND_ROWS: Array[int] = [ScribeCardResource.DioramaSocket.ULT, ScribeCardResource.DioramaSocket.GUARD,
 	ScribeCardResource.DioramaSocket.SKILL, -1]
 ## The live preview: its window, the camera's orbit round the hero, and its lights.
-const PREVIEW_SIZE: Vector2i = Vector2i(300, 380)
+const PREVIEW_SIZE: Vector2i = Vector2i(344, 404)
 const PREVIEW_LAYER: int = 13
 const PREVIEW_DISTANCE: float = 3.2
 const PREVIEW_HEIGHT: float = 1.3
@@ -137,51 +142,54 @@ const PREVIEW_FOG_SCALE: float = 0.25
 
 var actor: ActorBase
 var widget: CrossGrimoireDiamondWidget
+## DIAMONDS while the bench picks a diamond and a layer; LEAVES, PLACES or TUCKS while the collection is open on that layer.
 var column: int = Column.DIAMONDS
 var leaf_row: int = 0
 var place_row: int = 0
+var tuck_row: int = 0
 var diamond_row: int = 2
+## The card bench's highlighted layer (Layer).
+var bench_layer: int = Layer.CARD
 var gear_row: int = GearRow.WEAPON
 var combo_row: int = 0
-## The stamping bench's highlighted slot (PlayerLoadoutResource.HandSlot).
+## The Seal Press's chosen slot (PlayerLoadoutResource.HandSlot), and the highlighted card in its list.
 var seal_row: int = PlayerLoadoutResource.HandSlot.WEAPON_SEAL
+var press_row: int = 0
 var folio_open: bool = false
 var tab: int = Tab.CARDS
 var atlas: WorldMapPanel
-## The live preview on the Gear & Weapon tab.
+## The live preview on the Gear & Weapon tab and the Seal Press.
 var preview_viewport: SubViewport
 var preview_camera: Camera3D
 var key_light: SpotLight3D
 var rim_light: OmniLight3D
 var _tab_labels: Array[Label] = []
+var _tab_panels: Array[PanelContainer] = []
 ## The tab the Atlas turns back to.
 var _page_tab: int = Tab.CARDS
 var _preview_angle: float = 0.0
 var _lit: Array[GeometryInstance3D] = []
 
+## The sheet everything is drawn on; _root is the part the Atlas hides (the tooltip and the pages).
+var _sheet: Control
 var _root: Control
 var _tabs: HBoxContainer
-## The tallest page seen, so every tab's page (and the tab bar over it) starts on the same line.
-var _tallest: float = 0.0
+var _glyph: Label
 var _title: Label
+var _subtitle: Label
+var _tooltip_head: Label
 var _tooltip: Label
 var _pages: Array[Control] = []
-var _leaf_page: VBoxContainer
-var _place_page: VBoxContainer
-var _leaf_rows: Array[Label] = []
-var _place_rows: Array[Label] = []
+var _gear_page: BinderGearPage
+var _bench: BinderCardBench
+var _press_page: BinderSealPressPage
+var _preview_frame: Control
+## The name labels the pages draw (the checks read them): the gear pieces, the Seals, the combo forms.
 var _gear_rows: Array[Label] = []
-var _gear_stats: Label
-## The Gear & Weapon page and the stamping bench share one row with the live preview.
-var _gear_panel: Control
-var _seal_panel: Control
 var _seal_rows: Array[Label] = []
-var _seal_stats: Label
 var _combo_rows: Array[Label] = []
-var _detail: Label
 var _note: Label
 var _hint: Label
-var _folio: Label
 var _note_left: float = 0.0
 
 
@@ -198,42 +206,44 @@ func _ready() -> void:
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(backdrop)
-	_root = VBoxContainer.new()
+	_sheet = Control.new()
+	_sheet.name = "Sheet"
+	_sheet.size = SHEET_SIZE
+	_sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_sheet)
+	_build_header()
+	_root = Control.new()
 	_root.name = "Spread"
-	_root.alignment = BoxContainer.ALIGNMENT_CENTER
-	_root.add_theme_constant_override(&"separation", 8)
+	_root.size = SHEET_SIZE
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_root)
-	_title = _label(TITLE_SIZE, PAGE_EDGE.lightened(0.3))
-	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_root.add_child(_title)
+	_sheet.add_child(_root)
 	_root.add_child(_build_tooltip())
-	_pages.append(_build_gear_page())
-	_pages.append(_build_cards_page())
-	_pages.append(_build_combo_page())
+	widget = CrossGrimoireDiamondWidget.new()
+	widget.name = "Diamonds"
+	widget.follow = actor
+	widget.set_presentation_mode(CrossGrimoireDiamondWidget.BINDER_SCALE, true)
+	widget.grow_from(CrossGrimoireDiamondWidget.HUD_SCALE)
+	widget.socket_picked.connect(_on_socket_picked)
+	_preview_frame = _build_preview()
+	_gear_page = BinderGearPage.new()
+	_gear_page.build(self)
+	_bench = BinderCardBench.new()
+	_bench.build(self)
+	var combos: Control = _build_combo_page()
+	_press_page = BinderSealPressPage.new()
+	_press_page.build(self)
+	_pages = [_gear_page, _bench, combos, _press_page]
 	for page: Control in _pages:
 		_root.add_child(page)
-	_note = _label(FONT_SIZE, PROBLEM_COLOR)
+	_note = AtelierTheme.label("", FONT_SIZE + 1, PROBLEM_COLOR)
 	_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_root.add_child(_note)
-	_hint = _label(SMALL_FONT_SIZE, Color(0.82, 0.84, 0.9))
-	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_root.add_child(_hint)
-	# The tabs, just above the title (clear of the level's notices along the top of the screen).
-	var tabs: HBoxContainer = HBoxContainer.new()
-	tabs.name = "Tabs"
-	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
-	tabs.add_theme_constant_override(&"separation", 22)
-	add_child(tabs)
-	_tabs = tabs
-	for index: int in TAB_NAMES.size():
-		var tab_label: Label = _label(FONT_SIZE + 2, ROW_COLOR)
-		tab_label.text = TAB_NAMES[index]
-		tab_label.tooltip_text = TAB_TOOLTIPS[index]
-		tab_label.mouse_filter = Control.MOUSE_FILTER_STOP
-		tab_label.gui_input.connect(_on_tab_clicked.bind(index))
-		tabs.add_child(tab_label)
-		_tab_labels.append(tab_label)
+	_note.position = Vector2(40.0, 826.0)
+	_note.size = Vector2(1520.0, 24.0)
+	_sheet.add_child(_note)
+	_hint = AtelierTheme.label("", SMALL_FONT_SIZE + 1, AtelierTheme.INK_MUTED)
+	_hint.position = Vector2(40.0, 858.0)
+	_hint.size = Vector2(1520.0, 24.0)
+	_sheet.add_child(_hint)
 	if actor != null and actor.input != null:
 		actor.input.menu_open = true
 		actor.input.menu_input.connect(_on_menu_input)
@@ -245,67 +255,88 @@ func _ready() -> void:
 	_show_page(Tab.CARDS)
 
 
-## The tooltip box under the title: what the tab is for and what the highlighted row does.
+## The header (the tab's letter in a gilt diamond, the title and what the tab is for) and the tabs under it.
+func _build_header() -> void:
+	var diamond: Panel = Panel.new()
+	diamond.name = "Glyph"
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = AtelierTheme.PAGE
+	style.border_color = AtelierTheme.GILT
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(10)
+	diamond.add_theme_stylebox_override(&"panel", style)
+	diamond.size = Vector2(52.0, 52.0)
+	diamond.pivot_offset = Vector2(26.0, 26.0)
+	diamond.rotation = PI * 0.25
+	diamond.position = Vector2(46.0, 30.0)
+	diamond.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sheet.add_child(diamond)
+	_glyph = AtelierTheme.label("", 24, AtelierTheme.INK)
+	_glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_glyph.position = Vector2(46.0, 30.0)
+	_glyph.size = Vector2(52.0, 52.0)
+	_sheet.add_child(_glyph)
+	_title = AtelierTheme.label("", TITLE_SIZE, AtelierTheme.INK)
+	_title.position = Vector2(122.0, 24.0)
+	_sheet.add_child(_title)
+	_subtitle = AtelierTheme.label("", FONT_SIZE, AtelierTheme.INK_MUTED)
+	_subtitle.position = Vector2(122.0, 66.0)
+	_subtitle.size = Vector2(1430.0, 22.0)
+	_subtitle.clip_text = true
+	_sheet.add_child(_subtitle)
+	_tabs = HBoxContainer.new()
+	_tabs.name = "Tabs"
+	_tabs.add_theme_constant_override(&"separation", 8)
+	_tabs.position = Vector2(40.0, 100.0)
+	_tabs.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sheet.add_child(_tabs)
+	for index: int in TAB_NAMES.size():
+		var tab_panel: PanelContainer = PanelContainer.new()
+		tab_panel.tooltip_text = TAB_TOOLTIPS[index]
+		tab_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+		tab_panel.gui_input.connect(_on_tab_clicked.bind(index))
+		_tabs.add_child(tab_panel)
+		_tab_panels.append(tab_panel)
+		var tab_label: Label = AtelierTheme.label(TAB_NAMES[index], FONT_SIZE, AtelierTheme.INK_MUTED)
+		tab_panel.add_child(tab_label)
+		_tab_labels.append(tab_label)
+	var keys: Label = AtelierTheme.label("Q / E or L1 / R1: tabs", SMALL_FONT_SIZE + 1, AtelierTheme.INK_MUTED)
+	keys.name = "TabKeys"
+	keys.position = Vector2(1360.0, 110.0)
+	keys.size = Vector2(200.0, 20.0)
+	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_sheet.add_child(keys)
+
+
+## The tooltip box under the tabs: what's highlighted on the left, what it does (and when, and whether it fits) on the right.
 func _build_tooltip() -> PanelContainer:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.name = "Tooltip"
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.custom_minimum_size = Vector2(PAGE_WIDTH * 2.6, 0.0)
-	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	panel.add_theme_stylebox_override(&"panel", AtelierTheme.tooltip_style())
-	_tooltip = _label(TOOLTIP_FONT_SIZE, AtelierTheme.INK_MUTED)
-	_tooltip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var style: StyleBoxFlat = AtelierTheme.tooltip_style()
+	style.corner_radius_top_left = 0
+	style.content_margin_left = 18.0
+	style.content_margin_right = 18.0
+	style.content_margin_top = 10.0
+	style.content_margin_bottom = 10.0
+	panel.add_theme_stylebox_override(&"panel", style)
+	panel.position = TOOLTIP_RECT.position
+	panel.custom_minimum_size = Vector2(TOOLTIP_RECT.size.x, 0.0)
+	panel.size = TOOLTIP_RECT.size
+	var split: HBoxContainer = HBoxContainer.new()
+	split.add_theme_constant_override(&"separation", 18)
+	split.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(split)
+	_tooltip_head = AtelierTheme.label("", FONT_SIZE, AtelierTheme.GILT)
+	_tooltip_head.custom_minimum_size = Vector2(TOOLTIP_HEAD_WIDTH, 0.0)
+	_tooltip_head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	split.add_child(_tooltip_head)
+	_tooltip = AtelierTheme.label("", TOOLTIP_FONT_SIZE, AtelierTheme.INK)
 	_tooltip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tooltip.custom_minimum_size = Vector2(PAGE_WIDTH * 2.6 - 16.0, 0.0)
-	panel.add_child(_tooltip)
-	return panel
-
-
-## Tab 1: the lit preview window beside the gear rows. Tab 4's stamping bench shares the row and the
-## preview, standing where the gear rows stand.
-func _build_gear_page() -> Control:
-	var row: HBoxContainer = HBoxContainer.new()
-	row.name = "GearPage"
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override(&"separation", 18)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(_build_preview())
-	var page: VBoxContainer = _page("Gear & Weapon")
-	for index: int in GearRow.size():
-		var gear: Label = _label(FONT_SIZE, ROW_COLOR)
-		gear.mouse_filter = Control.MOUSE_FILTER_STOP
-		gear.gui_input.connect(_on_gear_clicked.bind(index))
-		page.add_child(gear)
-		_gear_rows.append(gear)
-	_gear_stats = _label(SMALL_FONT_SIZE, DIM_COLOR.lightened(0.2))
-	page.add_child(_gear_stats)
-	_gear_panel = page.get_parent() as Control
-	row.add_child(_gear_panel)
-	_seal_panel = _build_seal_bench()
-	row.add_child(_seal_panel)
-	return row
-
-
-## Tab 4: the Seal Press, a row per Seal: weapon, offhand and mantle.
-func _build_seal_bench() -> Control:
-	var page: VBoxContainer = _page("Seal Press")
-	var panel: Control = page.get_parent() as Control
-	panel.name = "SealBench"
-	panel.custom_minimum_size = Vector2(PAGE_WIDTH * 1.45, 0.0)
-	var heading: Label = _label(SMALL_FONT_SIZE, PAGE_EDGE.lightened(0.15))
-	heading.text = "One card does what its piece is for"
-	page.add_child(heading)
-	for slot: int in SEAL_ROWS:
-		var line: Label = _label(FONT_SIZE, ROW_COLOR)
-		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		line.custom_minimum_size = Vector2(PAGE_WIDTH * 1.4, 0.0)
-		line.mouse_filter = Control.MOUSE_FILTER_STOP
-		line.gui_input.connect(_on_seal_clicked.bind(slot))
-		page.add_child(line)
-		_seal_rows.append(line)
-	_seal_stats = _label(SMALL_FONT_SIZE, DIM_COLOR.lightened(0.2))
-	page.add_child(_seal_stats)
-	panel.visible = false
+	_tooltip.custom_minimum_size = Vector2(TOOLTIP_RECT.size.x - TOOLTIP_HEAD_WIDTH - 60.0, 0.0)
+	_tooltip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	split.add_child(_tooltip)
 	return panel
 
 
@@ -367,51 +398,24 @@ func _build_preview() -> Control:
 	return frame
 
 
-## Tab 2: the spread of Ink Cards, diamonds and Place-Cards, with the pair's line and the Collection under it.
-func _build_cards_page() -> Control:
-	var column_box: VBoxContainer = VBoxContainer.new()
-	column_box.name = "CardsPage"
-	column_box.add_theme_constant_override(&"separation", 8)
-	column_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var spread: HBoxContainer = HBoxContainer.new()
-	spread.alignment = BoxContainer.ALIGNMENT_CENTER
-	spread.add_theme_constant_override(&"separation", 18)
-	spread.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column_box.add_child(spread)
-	_leaf_page = _page("Ink Cards: What You Do")
-	spread.add_child(_leaf_page.get_parent())
-	widget = CrossGrimoireDiamondWidget.new()
-	widget.name = "Diamonds"
-	widget.follow = actor
-	widget.set_presentation_mode(CrossGrimoireDiamondWidget.BINDER_SCALE, true)
-	widget.grow_from(CrossGrimoireDiamondWidget.HUD_SCALE)
-	widget.socket_picked.connect(_on_socket_picked)
-	spread.add_child(widget)
-	_place_page = _page("Place-Cards: Where You Stand")
-	spread.add_child(_place_page.get_parent())
-	_detail = _label(FONT_SIZE, ROW_COLOR)
-	_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column_box.add_child(_detail)
-	_folio = _label(SMALL_FONT_SIZE, ROW_COLOR)
-	_folio.visible = false
-	column_box.add_child(_folio)
-	return column_box
-
-
-## Tab 3: one row per combo form.
+## Tab 3: one row per combo form, on a page under the tooltip.
 func _build_combo_page() -> Control:
+	var holder: Control = Control.new()
+	holder.name = "CombosPage"
+	holder.size = SHEET_SIZE
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var page: VBoxContainer = _page("Combo Moves: How You Flow")
 	var panel: Control = page.get_parent() as Control
-	panel.name = "CombosPage"
-	panel.custom_minimum_size = Vector2(PAGE_WIDTH * 2.0, 0.0)
-	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	panel.custom_minimum_size = Vector2(900.0, 0.0)
+	panel.position = Vector2(350.0, 240.0)
+	holder.add_child(panel)
 	for form: ComboChainResource in ArsenalCatalog.current.combos():
-		var row: Label = _label(FONT_SIZE, ROW_COLOR)
+		var row: Label = _label(FONT_SIZE + 2, ROW_COLOR)
 		row.mouse_filter = Control.MOUSE_FILTER_STOP
 		row.gui_input.connect(_on_combo_clicked.bind(_combo_rows.size()))
 		page.add_child(row)
 		_combo_rows.append(row)
-	return panel
+	return holder
 
 
 func _exit_tree() -> void:
@@ -435,16 +439,9 @@ func _exit_tree() -> void:
 func _process(delta: float) -> void:
 	_note_left = maxf(0.0, _note_left - delta)
 	_note.modulate.a = minf(1.0, _note_left)
-	var fit: float = clampf(minf(size.x / REFERENCE_SIZE.x, size.y / REFERENCE_SIZE.y), MIN_FIT, 1.0)
-	_root.scale = Vector2.ONE * fit
-	_root.size = _root.get_combined_minimum_size()
-	if _root.visible:
-		_tallest = maxf(_tallest, _root.size.y)
-	_tabs.scale = Vector2.ONE * fit
-	_tabs.size = _tabs.get_combined_minimum_size()
-	var top: float = maxf((_tabs.size.y + 18.0) * fit, (size.y - _tallest * fit) * 0.5)
-	_root.position = Vector2((size.x - _root.size.x * fit) * 0.5, top)
-	_tabs.position = Vector2((size.x - _tabs.size.x * fit) * 0.5, top - (_tabs.size.y + 10.0) * fit)
+	var fit: float = clampf(minf(size.x / SHEET_SIZE.x, size.y / SHEET_SIZE.y), MIN_FIT, 1.0)
+	_sheet.scale = Vector2.ONE * fit
+	_sheet.position = (size - SHEET_SIZE * fit) * 0.5
 	if _shows_preview(tab):
 		_preview_angle = wrapf(_preview_angle + PREVIEW_ORBIT_SPEED * delta, 0.0, TAU)
 		_place_preview()
@@ -491,6 +488,15 @@ func place_options() -> Array[StringName]:
 	return options
 
 
+## The Tuck cards the party owns, after "no Tuck" (&""): any one slides under R or L+R.
+func tuck_options() -> Array[StringName]:
+	var options: Array[StringName] = [&""]
+	for under: ScribeCardResource in ArsenalCatalog.current.under_cards():
+		if LoadoutComposer.owns(under.card_id, 1, PartyProgress.current.collection):
+			options.append(under.card_id)
+	return options
+
+
 static func _owned_copies(listed: ScribeCardResource) -> Array[StringName]:
 	var copies: Array[StringName] = []
 	for variant: int in ScribeCardResource.CardVariant.size():
@@ -498,6 +504,36 @@ static func _owned_copies(listed: ScribeCardResource) -> Array[StringName]:
 		if LoadoutComposer.owns(key, 1, PartyProgress.current.collection):
 			copies.append(key)
 	return copies
+
+
+## A layer's options in the collection.
+func layer_options(layer: int) -> Array[StringName]:
+	match layer:
+		Layer.PLACE:
+			return place_options()
+		Layer.TUCK:
+			return tuck_options()
+	return leaf_options()
+
+
+## The collection's cursor on a layer.
+func layer_row(layer: int) -> int:
+	match layer:
+		Layer.PLACE:
+			return place_row
+		Layer.TUCK:
+			return tuck_row
+	return leaf_row
+
+
+## The collection column a layer opens (Column).
+static func layer_column(layer: int) -> int:
+	match layer:
+		Layer.PLACE:
+			return Column.PLACES
+		Layer.TUCK:
+			return Column.TUCKS
+	return Column.LEAVES
 
 
 # --- Moving and picking ---------------------------------------------------------
@@ -513,13 +549,21 @@ func _on_menu_input(action: StringName) -> void:
 			atlas.handle_menu(action)
 		return
 	if action == InputComponent.MENU_BACK:
-		close()
+		# Dodge closes a browse first, then the Seal Press goes back to the Gear page, then the Binder closes.
+		if tab == Tab.CARDS and column != Column.DIAMONDS:
+			column = Column.DIAMONDS
+			AudioCues.play(&"menu_move")
+			_refresh()
+		elif tab == Tab.SEALS:
+			show_tab(Tab.GEAR)
+		else:
+			close()
 		return
 	match tab:
 		Tab.GEAR:
 			if action == InputComponent.MENU_UP or action == InputComponent.MENU_DOWN:
 				gear_row = wrapi(gear_row + (-1 if action == InputComponent.MENU_UP else 1), 0, GearRow.size())
-			elif action == InputComponent.MENU_ACCEPT:
+			elif action == InputComponent.MENU_ACCEPT or action == InputComponent.MENU_RIGHT:
 				# At a rest point light opens the Seal Press (the Gear wireframe); the gear itself changes at the Scribe Desk.
 				if seal_press_open():
 					show_tab(Tab.SEALS)
@@ -530,24 +574,35 @@ func _on_menu_input(action: StringName) -> void:
 				combo_row = wrapi(combo_row + (-1 if action == InputComponent.MENU_UP else 1), 0, maxi(1, _combo_rows.size()))
 		Tab.SEALS:
 			match action:
+				InputComponent.MENU_LEFT, InputComponent.MENU_RIGHT:
+					pick_seal_slot(SEAL_ROWS[wrapi(SEAL_ROWS.find(seal_row) + (-1 if action == InputComponent.MENU_LEFT else 1), 0, SEAL_ROWS.size())])
+					return
 				InputComponent.MENU_UP, InputComponent.MENU_DOWN:
-					seal_row = wrapi(seal_row + (-1 if action == InputComponent.MENU_UP else 1), 0, SEAL_ROWS.size())
-				InputComponent.MENU_LEFT:
-					step_seal(-1)
-				InputComponent.MENU_RIGHT, InputComponent.MENU_ACCEPT:
-					step_seal(1)
-		_:
-			match action:
-				InputComponent.MENU_LEFT:
-					column = maxi(Column.LEAVES, column - 1)
-				InputComponent.MENU_RIGHT:
-					column = mini(Column.PLACES, column + 1)
-				InputComponent.MENU_UP:
-					_move(-1)
-				InputComponent.MENU_DOWN:
-					_move(1)
+					press_row = wrapi(press_row + (-1 if action == InputComponent.MENU_UP else 1), 0, maxi(1, seal_options(seal_row).size()))
 				InputComponent.MENU_ACCEPT:
-					accept()
+					press_highlighted()
+		_:
+			if column == Column.DIAMONDS:
+				match action:
+					InputComponent.MENU_LEFT, InputComponent.MENU_RIGHT:
+						var at: int = BENCH_SOCKETS.find(selected_socket())
+						_select_socket(BENCH_SOCKETS[wrapi(at + (-1 if action == InputComponent.MENU_LEFT else 1), 0, BENCH_SOCKETS.size())])
+					InputComponent.MENU_UP, InputComponent.MENU_DOWN:
+						bench_layer = wrapi(bench_layer + (-1 if action == InputComponent.MENU_UP else 1), 0, Layer.size())
+					InputComponent.MENU_ACCEPT:
+						accept()
+			else:
+				match action:
+					InputComponent.MENU_UP:
+						_move(-1)
+					InputComponent.MENU_DOWN:
+						_move(1)
+					InputComponent.MENU_LEFT, InputComponent.MENU_RIGHT:
+						var filter: Array[int] = BinderCardBench.FILTERS
+						open_layer(filter[wrapi(filter.find(bench_layer) + (-1 if action == InputComponent.MENU_LEFT else 1), 0, filter.size())])
+						return
+					InputComponent.MENU_ACCEPT:
+						accept()
 	AudioCues.play(&"menu_move")
 	_refresh()
 
@@ -558,10 +613,10 @@ func _move(step: int) -> void:
 			leaf_row = wrapi(leaf_row + step, 0, leaf_options().size())
 		Column.PLACES:
 			place_row = wrapi(place_row + step, 0, place_options().size())
+		Column.TUCKS:
+			tuck_row = wrapi(tuck_row + step, 0, tuck_options().size())
 		Column.DIAMONDS:
-			diamond_row = wrapi(diamond_row + step, 0, DIAMOND_ROWS.size())
-			if DIAMOND_ROWS[diamond_row] >= 0:
-				_select_socket(DIAMOND_ROWS[diamond_row])
+			bench_layer = wrapi(bench_layer + step, 0, Layer.size())
 
 
 # --- The tabs ---------------------------------------------------------------------
@@ -594,8 +649,9 @@ func show_atlas_tab() -> void:
 	atlas = WorldMapPanel.new()
 	atlas.setup(actor, level, hud, true)
 	add_child(atlas)
-	move_child(get_node("Tabs"), -1)
+	move_child(_sheet, -1)
 	_refresh_tabs()
+	_refresh_header()
 	AudioCues.play(&"menu_move")
 
 
@@ -622,9 +678,14 @@ func _show_page(index: int) -> void:
 	_page_tab = index
 	_root.visible = true
 	for page: int in _pages.size():
-		_pages[page].visible = page == (Tab.GEAR if index == Tab.SEALS else index)
-	_gear_panel.visible = index != Tab.SEALS
-	_seal_panel.visible = index == Tab.SEALS
+		_pages[page].visible = page == index
+	# The one preview window moves to the page that shows the hero.
+	var slot: Control = _press_page.preview_slot if index == Tab.SEALS else _gear_page.preview_slot
+	if _preview_frame.get_parent() != slot:
+		if _preview_frame.get_parent() != null:
+			_preview_frame.get_parent().remove_child(_preview_frame)
+		slot.add_child(_preview_frame)
+		slot.move_child(_preview_frame, 0)
 	_light_hero(_shows_preview(index))
 	if _shows_preview(index):
 		_place_preview()
@@ -640,8 +701,10 @@ func _on_tab_clicked(event: InputEvent, index: int) -> void:
 
 func _refresh_tabs() -> void:
 	for index: int in _tab_labels.size():
-		_tab_labels[index].modulate = SELECTED_COLOR if index == tab else DIM_COLOR
-		_tab_labels[index].text = ("◆ %s" if index == tab else "%s") % TAB_NAMES[index]
+		var open: bool = index == tab
+		_tab_panels[index].add_theme_stylebox_override(&"panel", AtelierTheme.tab_style(open))
+		_tab_labels[index].text = TAB_NAMES[index]
+		_tab_labels[index].add_theme_color_override(&"font_color", AtelierTheme.INK if open else AtelierTheme.INK_MUTED)
 
 
 # --- The live preview ------------------------------------------------------------
@@ -704,18 +767,53 @@ func _light_hero(on: bool) -> void:
 	preview_camera.environment = studio
 
 
-## Light: slot the highlighted leaf or place into the chosen diamond, or pick a diamond, or open the Folio.
+## Light: slot the highlighted card in the chosen diamond's layer, or (on the bench) open the collection on it.
 func accept() -> void:
 	match column:
 		Column.LEAVES:
-			slot_leaf(leaf_options()[clampi(leaf_row, 0, leaf_options().size() - 1)])
+			if slot_leaf(leaf_options()[clampi(leaf_row, 0, leaf_options().size() - 1)]):
+				column = Column.DIAMONDS
 		Column.PLACES:
-			slot_place(place_options()[clampi(place_row, 0, place_options().size() - 1)])
+			if slot_place(place_options()[clampi(place_row, 0, place_options().size() - 1)]):
+				column = Column.DIAMONDS
+		Column.TUCKS:
+			if slot_tuck(tuck_options()[clampi(tuck_row, 0, tuck_options().size() - 1)]):
+				column = Column.DIAMONDS
 		Column.DIAMONDS:
-			if DIAMOND_ROWS[diamond_row] < 0:
-				folio_open = not folio_open
-			else:
-				column = Column.LEAVES
+			open_layer(bench_layer)
+
+
+## Opens the collection on a layer (a click on a layer or a filter, or light on the bench).
+func open_layer(layer: int) -> void:
+	bench_layer = layer
+	column = layer_column(layer)
+	var worn: StringName = layer_copy(layer)
+	var options: Array[StringName] = layer_options(layer)
+	var at: int = maxi(0, options.find(worn))
+	match layer:
+		Layer.PLACE:
+			place_row = at
+		Layer.TUCK:
+			tuck_row = at
+		_:
+			leaf_row = at
+	AudioCues.play(&"menu_move")
+	_refresh()
+
+
+## A click on a collection row: highlight it, then slot it.
+func pick_layer_row(layer: int, index: int) -> void:
+	bench_layer = layer
+	column = layer_column(layer)
+	match layer:
+		Layer.PLACE:
+			place_row = index
+		Layer.TUCK:
+			tuck_row = index
+		_:
+			leaf_row = index
+	accept()
+	_refresh()
 
 
 ## Puts an Action-Leaf copy (&"" un-inks it) in the chosen diamond. Returns whether it was equipped.
@@ -730,6 +828,27 @@ func slot_place(copy_key: StringName) -> bool:
 	var draft: EquipmentLoadoutResource = actor.loadout.kit.copy()
 	draft.set_socket_place(selected_socket(), ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
 	return _equip(draft)
+
+
+## Slides a Tuck (&"" lifts it) under the chosen diamond's card: R or L+R, never L, and only one in the hand.
+## Returns whether it was equipped.
+func slot_tuck(card_id: StringName) -> bool:
+	var socket: int = selected_socket()
+	if card_id != &"" and socket == GrimoireRules.SOCKET_L:
+		_show_note("The L card takes no Tuck: slide it under R or L+R")
+		AudioCues.play(&"refuse")
+		return false
+	var draft: EquipmentLoadoutResource = actor.loadout.kit.copy()
+	draft.under_ids[ScribeCardResource.GrimoireSlot.SIGNATURE] = &""
+	draft.under_ids[ScribeCardResource.GrimoireSlot.ULTIMATE] = &""
+	if card_id != &"":
+		draft.under_ids[_tuck_slot_for(socket)] = card_id
+	return _equip(draft)
+
+
+## The kit slot a diamond's Tuck sits in: R's card is the Signature, L+R's the Ultimate.
+static func _tuck_slot_for(socket: int) -> int:
+	return ScribeCardResource.GrimoireSlot.ULTIMATE if socket == GrimoireRules.SOCKET_LR else ScribeCardResource.GrimoireSlot.SIGNATURE
 
 
 func _equip(draft: EquipmentLoadoutResource) -> bool:
@@ -749,27 +868,15 @@ func _equip(draft: EquipmentLoadoutResource) -> bool:
 func _on_socket_picked(socket: int) -> void:
 	_select_socket(socket)
 	column = Column.DIAMONDS
-	diamond_row = DIAMOND_ROWS.find(socket)
 	_refresh()
 
 
 func _select_socket(socket: int) -> void:
 	widget.selected_socket = socket
+	diamond_row = maxi(0, DIAMOND_ROWS.find(socket))
 	leaf_row = 0
 	place_row = 0
-
-
-func _on_row_clicked(event: InputEvent, page: int, row: int) -> void:
-	var click: InputEventMouseButton = event as InputEventMouseButton
-	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
-		return
-	column = page
-	if page == Column.LEAVES:
-		leaf_row = row
-	else:
-		place_row = row
-	accept()
-	_refresh()
+	tuck_row = 0
 
 
 func _on_kit_refused(device_id: int, reason: String) -> void:
@@ -782,79 +889,268 @@ func _show_note(text: String) -> void:
 	_note_left = NOTE_TIME
 
 
+# --- The card bench's words ------------------------------------------------------------
+
+## What a layer of the chosen diamond holds now (a copy key, a Tuck's card id, or &"").
+func layer_copy(layer: int) -> StringName:
+	var kit: EquipmentLoadoutResource = actor.loadout.kit
+	var socket: int = selected_socket()
+	match layer:
+		Layer.PLACE:
+			return ScribeCardResource.copy_key(kit.place_ids[socket], kit.socket_place_variant(socket) as ScribeCardResource.CardVariant) if kit.place_ids[socket] != &"" else &""
+		Layer.TUCK:
+			return kit.under_ids[_tuck_slot_for(socket)] if socket != GrimoireRules.SOCKET_L else &""
+	var leaf: StringName = kit.socket_leaf_id(socket)
+	return ScribeCardResource.copy_key(leaf, kit.socket_leaf_variant(socket) as ScribeCardResource.CardVariant) if leaf != &"" else &""
+
+
+## What an empty layer says.
+static func empty_layer_text(layer: int) -> String:
+	match layer:
+		Layer.PLACE:
+			return "No Place-Card"
+		Layer.TUCK:
+			return "No Tuck"
+	return "Un-inked (the weapon's own move)"
+
+
+## A layer's second line: the Sign, mode and finish of its card, or what a Tuck does with the card above it.
+func layer_about(layer: int, copy_key: StringName) -> String:
+	if copy_key == &"":
+		match layer:
+			Layer.TUCK:
+				return "L takes no Tuck." if selected_socket() == GrimoireRules.SOCKET_L else "One Tuck in the hand, under R or L+R."
+			Layer.CARD:
+				return "The weapon swings its own flourish."
+		return ""
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var card: ScribeCardResource = catalog.card(ScribeCardResource.copy_card_id(copy_key))
+	if card == null:
+		return ""
+	var sign_name: String = catalog.sign_seal(card.scribe_sign).display_name
+	match layer:
+		Layer.PLACE:
+			var leaf: ScribeCardResource = catalog.card(actor.loadout.kit.socket_leaf_id(selected_socket()))
+			var same: bool = leaf != null and leaf.scribe_sign == card.scribe_sign and card.scribe_sign != ScribeSignResource.Sign.NONE
+			return "%s · %s" % [sign_name, "same Sign as its card: Home-Ground Harmony, the coat lasts longer" if same else "frames the card with this place's strength"]
+		Layer.TUCK:
+			return "%s · %s" % [sign_name, tuck_pairing(card)]
+	var told: String = card.description.strip_edges()
+	return "%s · %s · %s. %s" % [sign_name, card.mode_name(), ScribeCardResource.VARIANT_NAMES[ScribeCardResource.copy_variant(copy_key)],
+		told if told != "" else card_effect(card)]
+
+
+## What a Tuck does with the chosen diamond's card: a Maker-Sleight on the same Sign, a Dual-Sign Strike on another.
+func tuck_pairing(tuck: ScribeCardResource) -> String:
+	var leaf: ScribeCardResource = ArsenalCatalog.current.card(actor.loadout.kit.socket_leaf_id(selected_socket()))
+	if leaf == null:
+		return "slides under whichever card is above it"
+	if leaf.scribe_sign == tuck.scribe_sign:
+		return "Maker-Sleight with %s (one stronger move)" % leaf.display_name
+	return "Dual-Sign Strike with %s (cracks two gates)" % leaf.display_name
+
+
+## Where the one Tuck can go, as [words, it's here now, it can go here]: under L (never), R, L+R.
+func tuck_spots() -> Array[Array]:
+	var kit: EquipmentLoadoutResource = actor.loadout.kit
+	var level: int = PartyProgress.current.character_level(actor.loadout.class_id)
+	var under: int = LoadoutComposer.tuck_slot_of(kit)
+	var spots: Array[Array] = []
+	spots.append(["L takes none", false, false])
+	var r_open: bool = GrimoireRules.tuck_open(level) and GrimoireRules.socket_open(GrimoireRules.SOCKET_R, level)
+	spots.append(["Under R%s" % (" · now" if under == ScribeCardResource.GrimoireSlot.SIGNATURE else ""),
+		under == ScribeCardResource.GrimoireSlot.SIGNATURE, r_open])
+	var lr_open: bool = GrimoireRules.tuck_open(level) and GrimoireRules.socket_open(GrimoireRules.SOCKET_LR, level)
+	spots.append(["Under L+R%s" % (" · now" if under == ScribeCardResource.GrimoireSlot.ULTIMATE else (" · Lv %d" % GrimoireRules.SOCKET_OPEN_LEVELS[GrimoireRules.SOCKET_LR] if not lr_open else "")),
+		under == ScribeCardResource.GrimoireSlot.ULTIMATE, lr_open])
+	return spots
+
+
+## The collection's filter tab for a layer ("Cards for R", "Tucks", "Place-Cards").
+func filter_name(layer: int) -> String:
+	match layer:
+		Layer.PLACE:
+			return "Place-Cards"
+		Layer.TUCK:
+			return "Tucks"
+	return "Cards for %s" % GrimoireRules.SOCKET_NAMES[selected_socket()]
+
+
+## A collection row's second line.
+func collection_note(layer: int, copy_key: StringName) -> String:
+	if copy_key == &"":
+		match layer:
+			Layer.PLACE:
+				return "the diamond stands bare"
+			Layer.TUCK:
+				return "nothing under the card"
+		return "the weapon's own move"
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var card: ScribeCardResource = catalog.card(ScribeCardResource.copy_card_id(copy_key))
+	if card == null:
+		return ""
+	var sign_name: String = catalog.sign_seal(card.scribe_sign).display_name
+	match layer:
+		Layer.TUCK:
+			return "%s · %s" % [sign_name, tuck_pairing(card)]
+		Layer.PLACE:
+			return "%s · %s" % [sign_name, ScribeCardResource.VARIANT_NAMES[ScribeCardResource.copy_variant(copy_key)]]
+	var socket: int = selected_socket()
+	var cost: int = GrimoireRules.ink_cost(socket, card, layer_copy(Layer.TUCK) != &"")
+	return "%s · %s · %s · %d drop%s" % [sign_name, card.mode_name(), ScribeCardResource.VARIANT_NAMES[ScribeCardResource.copy_variant(copy_key)],
+		cost, "" if cost == 1 else "s"]
+
+
+## Whether a collection row goes in, as [the chip's words, it fits]: "in use", "tucked", "fits", or what's in the way.
+func fit_verdict(layer: int, copy_key: StringName) -> Array:
+	if copy_key == layer_copy(layer):
+		return ["tucked" if layer == Layer.TUCK and copy_key != &"" else "in use", true]
+	var line: String = fit_line(copy_key, layer_column(layer))
+	if line.begins_with("Ready"):
+		return ["fits", true]
+	var why: String = line.get_slice(": ", 1).trim_suffix(".")
+	if why.length() > 24:
+		why = why.substr(0, 22) + "…"
+	return [why if why != "" else "not yet", false]
+
+
+## The seven slots of the hand as tiles, [name, what's in it, open]: the three Seals, L, R, the Tuck, L+R.
+func hand_tiles() -> Array[Array]:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var level: int = PartyProgress.current.character_level(actor.loadout.class_id)
+	var kit: EquipmentLoadoutResource = actor.loadout.kit
+	var tiles: Array[Array] = []
+	var names: Array[String] = ["Weapon Seal", "Offhand Seal", "Mantle Seal"]
+	for slot: int in SEAL_ROWS:
+		var card: ScribeCardResource = catalog.get_card(actor.seal.loadout.card_in_slot(slot)) if actor.seal != null and actor.seal.loadout != null else null
+		var open: bool = GrimoireRules.seal_open(slot, level)
+		tiles.append([names[slot], _tile_word(card, open, GrimoireRules.SEAL_OPEN_LEVELS[slot]), open])
+	for socket: int in [GrimoireRules.SOCKET_L, GrimoireRules.SOCKET_R]:
+		var open: bool = GrimoireRules.socket_open(socket, level)
+		tiles.append(["%s card" % GrimoireRules.SOCKET_NAMES[socket], _tile_word(catalog.card(kit.socket_leaf_id(socket)), open, GrimoireRules.SOCKET_OPEN_LEVELS[socket]), open])
+	var tuck_slot: int = LoadoutComposer.tuck_slot_of(kit)
+	var tuck: ScribeCardResource = catalog.card(kit.under_ids[tuck_slot]) if tuck_slot >= 0 else null
+	tiles.append(["Tuck", _tile_word(tuck, GrimoireRules.tuck_open(level), GrimoireRules.TUCK_OPEN_LEVEL), GrimoireRules.tuck_open(level)])
+	var lr_open: bool = GrimoireRules.socket_open(GrimoireRules.SOCKET_LR, level)
+	tiles.append(["L+R", _tile_word(catalog.card(kit.socket_leaf_id(GrimoireRules.SOCKET_LR)), lr_open, GrimoireRules.SOCKET_OPEN_LEVELS[GrimoireRules.SOCKET_LR]), lr_open])
+	return tiles
+
+
+static func _tile_word(card: ScribeCardResource, open: bool, opens: int) -> String:
+	if not open:
+		return "Lv %d" % opens
+	return BinderGearPage._short_name(card.display_name) if card != null else "empty"
+
+
+## The chosen diamond's name and what it's for ("R · your skill").
+func socket_title(socket: int) -> String:
+	return ["L · your guard card", "R · your skill", "L+R · your Grand card"][clampi(socket, 0, 2)]
+
+
+## What casting the chosen diamond's card costs, and its button.
+func socket_cost_line(socket: int) -> String:
+	var button: String = _key([InputComponent.ACTION_TRIGGER_L, InputComponent.ACTION_TRIGGER_R, InputComponent.ACTION_ULT][clampi(socket, 0, 2)])
+	var cost: int = _socket_cost(socket)
+	var words: String = _cost_words(cost)
+	if socket == GrimoireRules.SOCKET_LR:
+		return "%s · %s, the Grand card" % [button, words]
+	if socket == GrimoireRules.SOCKET_R:
+		return "%s · %s, one more with its Tuck" % [button, words]
+	return "%s · tap in the flash after a hit: %s" % [button, words]
+
+
+## What the chosen diamond's card costs now: Ink-Drops on the Ink-Well, the old pips otherwise.
+func _socket_cost(socket: int) -> int:
+	if _on_ink_well():
+		var card: ScribeCardResource = ArsenalCatalog.current.card(actor.loadout.kit.socket_leaf_id(socket))
+		return GrimoireRules.ink_cost(socket, card, socket != GrimoireRules.SOCKET_L and actor.loadout.kit.under_ids[_tuck_slot_for(socket)] != &"")
+	return int(ScribeCardResource.SOCKET_PIP_COSTS[socket])
+
+
+func _cost_words(cost: int) -> String:
+	if _on_ink_well():
+		return "%d Ink-Drop%s" % [cost, "" if cost == 1 else "s"]
+	return "%d pip%s" % [cost, "" if cost == 1 else "s"]
+
+
+func _on_ink_well() -> bool:
+	return is_instance_valid(actor) and actor.stats != null and actor.stats.uses_ink_well()
+
+
+## How many Ink-Drops the hero's well holds (its stage's depth, with Wise Hand's extra).
+func well_depth() -> int:
+	if _on_ink_well():
+		return actor.stats.stats.max_resonance_pips
+	var level: int = PartyProgress.current.character_level(actor.loadout.class_id)
+	return GrimoireRules.well_depth(PlayerLoadoutResource.stage_for_true_level(level), _player_class().bonus_memory > 0)
+
+
 # --- Drawing the pages ------------------------------------------------------------
 
 func _refresh() -> void:
 	if not is_instance_valid(actor) or widget == null:
 		return
-	var chimes: int = PartyProgress.current.chimes
-	var tabs: String = "%s / %s: tabs" % [_key(InputComponent.ACTION_TRIGGER_L), _key(InputComponent.ACTION_TRIGGER_R)]
+	_refresh_header()
 	match tab:
 		Tab.GEAR:
-			_title.text = "GRIMOIRE BINDER  ·  %s  ·  %d Chimes" % [actor.loadout.display_name, chimes]
-			_refresh_gear()
-			_hint.text = "%s  ·  ↑/↓ look over your gear  ·  %s  ·  dodge or Tab closes" % [tabs,
-				"light opens the Seal Press" if seal_press_open() else "look only away from a Hearth-Brazier"]
+			_gear_page.refresh()
+			_hint.text = "↑ ↓ look over your gear  ·  %s  ·  dodge or Tab closes  ·  everything here is look-only" % (
+				"light opens the Seal Press" if seal_press_open() else "the Seal Press opens at a Hearth-Brazier")
 		Tab.COMBOS:
-			_title.text = "GRIMOIRE BINDER  ·  Combo Moves  ·  %d Chimes" % chimes
 			_refresh_combos()
-			_hint.text = "%s  ·  ↑/↓ choose a move  ·  dodge or Tab closes" % tabs
+			_hint.text = "↑ ↓ choose a move  ·  dodge or Tab closes"
 		Tab.SEALS:
-			_title.text = "GRIMOIRE BINDER  ·  Seal Press  ·  %d Chimes" % chimes
-			_refresh_seals()
-			_hint.text = ("%s  ·  ↑/↓ choose a Seal  ·  ←/→ or light change it  ·  dodge or Tab closes" if seal_press_open()
-				else "%s  ·  look only: " + PRESS_SHUT + "  ·  dodge or Tab closes") % tabs
+			press_row = clampi(press_row, 0, maxi(0, seal_options(seal_row).size() - 1))
+			_press_page.refresh()
+			_hint.text = ("← → weapon, offhand, mantle  ·  ↑ ↓ choose a card  ·  light presses it  ·  dodge goes back to the Binder" if seal_press_open()
+				else "← → weapon, offhand, mantle  ·  ↑ ↓ look at a card  ·  look only: %s  ·  dodge goes back" % PRESS_SHUT)
 		_:
-			_refresh_cards(chimes, tabs)
-	_tooltip.text = tooltip_text_now()
+			_refresh_cards()
+	# The box shows what's highlighted; what the tab is for already sits under the title.
+	var said: String = tooltip_text_now()
+	_tooltip.text = said.trim_suffix("\n" + TAB_TOOLTIPS[tab]) if said != TAB_TOOLTIPS[tab] else said
+	_tooltip_head.text = tooltip_heading()
 	widget.queue_redraw()
 
 
-func _refresh_cards(chimes: int, tabs: String) -> void:
+## The header: the tab's letter, its title with the hero or the diamond and the Chimes, and what it's for.
+func _refresh_header() -> void:
+	var chimes: int = PartyProgress.current.chimes
+	_glyph.text = TAB_GLYPHS[tab]
+	match tab:
+		Tab.GEAR:
+			_title.text = "GRIMOIRE BINDER · %s · %d Chimes" % [actor.loadout.display_name, chimes]
+		Tab.CARDS:
+			_title.text = "GRIMOIRE BINDER · %s card · %d Chimes" % [GrimoireRules.SOCKET_NAMES[selected_socket()], chimes]
+		Tab.COMBOS:
+			_title.text = "GRIMOIRE BINDER · Combo Moves · %d Chimes" % chimes
+		Tab.SEALS:
+			_title.text = "SEAL PRESS · %s" % ("open: you're at a rest point" if seal_press_open() else "look only")
+		_:
+			_title.text = "GRIMOIRE BINDER · Atlas Map"
+	_subtitle.text = TAB_SUBTITLES[tab]
+
+
+func _refresh_cards() -> void:
 	var socket: int = selected_socket()
-	_title.text = "GRIMOIRE BINDER  ·  %s  ·  %d Chimes" % [ScribeCardResource.SOCKET_NAMES[socket], chimes]
-	var leaves: Array[StringName] = leaf_options()
-	var places: Array[StringName] = place_options()
-	leaf_row = clampi(leaf_row, 0, leaves.size() - 1)
-	place_row = clampi(place_row, 0, places.size() - 1)
-	_fill_rows(_leaf_page, _leaf_rows, leaves, Column.LEAVES, leaf_row, actor.loadout.kit.socket_leaf_id(socket), actor.loadout.kit.socket_leaf_variant(socket))
-	_fill_rows(_place_page, _place_rows, places, Column.PLACES, place_row, actor.loadout.kit.place_ids[socket], actor.loadout.kit.socket_place_variant(socket))
+	leaf_row = clampi(leaf_row, 0, leaf_options().size() - 1)
+	place_row = clampi(place_row, 0, place_options().size() - 1)
+	tuck_row = clampi(tuck_row, 0, tuck_options().size() - 1)
 	# Preview what's highlighted in the chosen diamond.
 	var view: Dictionary = widget.socket_view(socket)
 	widget.clear_preview()
 	match column:
 		Column.LEAVES:
-			var key: StringName = leaves[leaf_row]
+			var key: StringName = leaf_options()[leaf_row]
 			widget.preview_socket(socket, ScribeCardResource.copy_card_id(key), ScribeCardResource.copy_variant(key), view["place"], view["place_variant"])
 		Column.PLACES:
-			var key: StringName = places[place_row]
+			var key: StringName = place_options()[place_row]
 			widget.preview_socket(socket, view["leaf"], view["leaf_variant"], ScribeCardResource.copy_card_id(key), ScribeCardResource.copy_variant(key))
-	_detail.text = _diorama_text(widget.socket_view(socket)["synergy"])
-	_detail.modulate = HARMONY_COLOR if widget.socket_view(socket)["synergy"]["is_home_ground_harmony"] else ROW_COLOR
-	_folio.visible = folio_open
-	if folio_open:
-		_folio.text = _folio_text()
-	var middle: String = "Ink Card Collection" if DIAMOND_ROWS[diamond_row] < 0 else ScribeCardResource.SOCKET_NAMES[DIAMOND_ROWS[diamond_row]]
-	_hint.text = "%s  ·  %s  ·  ←/→ pages and diamonds · ↑/↓ choose · light picks · dodge or Tab closes" % [tabs,
-		("> " + middle) if column == Column.DIAMONDS else ["Ink Cards", "", "Place-Cards"][column]]
-
-
-func _refresh_gear() -> void:
-	var loadout: ClassLoadoutResource = actor.loadout
-	var weapon: EquipmentItemResource = loadout.weapon
-	var texts: Array[String] = [
-		"Weapon:  %s" % _weapon_line(weapon),
-		"Off-hand:  %s" % off_hand_name(loadout),
-		"Armour:  %s" % (loadout.armor.display_name if loadout.armor != null else "None"),
-		"Calling:  %s" % loadout.display_name,
-	]
-	for index: int in _gear_rows.size():
-		var row: Label = _gear_rows[index]
-		row.text = ("> " if index == gear_row else "  ") + texts[index]
-		row.modulate = SELECTED_COLOR if index == gear_row else ROW_COLOR
-		row.tooltip_text = gear_tooltip(index)
-	if loadout.stats != null:
-		_gear_stats.text = gear_summary()
+	_bench.refresh()
+	if column == Column.DIAMONDS:
+		_hint.text = "← → pick a diamond  ·  ↑ ↓ pick a layer  ·  light opens the collection  ·  dodge or Tab closes"
+	else:
+		_hint.text = "↑ ↓ choose  ·  ← → Cards, Tucks, Place-Cards  ·  light slots it  ·  dodge goes back"
 
 
 ## The weapon row: the material's own name, the frame, and its tier of seven ("Barrow-Steel Long-Blade  ·  Falchion  (Tier IV of VII)").
@@ -866,6 +1162,56 @@ func _weapon_line(weapon: EquipmentItemResource) -> String:
 		return "%s  (Tier %s)" % [weapon.display_name, CrossGrimoireDiamondWidget.TIER_NUMERALS[clampi(weapon.equipment_tier, 0, 4)]]
 	var arch: EquipmentTierResource.WeaponArchetype = actor.seal.loadout.weapon_archetype as EquipmentTierResource.WeaponArchetype
 	return "%s  ·  %s  (Tier %s of VII)" % [tier.weapon_name(arch), weapon.display_name, CrossGrimoireDiamondWidget.TIER_NUMERALS[tier.tier_index]]
+
+
+## The weapon's name now: its material's own blade for the frame ("Barrow-Steel Long-Blade").
+func weapon_title() -> String:
+	var tier: EquipmentTierResource = actor.seal.tier() if actor.seal != null else null
+	if tier == null:
+		return actor.loadout.weapon.display_name if actor.loadout.weapon != null else "Hands"
+	return tier.weapon_name(actor.seal.loadout.weapon_archetype as EquipmentTierResource.WeaponArchetype)
+
+
+## The tier the hero's armour is forged in (the weapon's when the hand names none).
+func armour_tier() -> EquipmentTierResource:
+	var tier: EquipmentTierResource = ArsenalCatalog.current.get_tier(actor.seal.loadout.armor_tier_id) if actor.seal != null and actor.seal.loadout != null else null
+	return tier if tier != null else (actor.seal.tier() if actor.seal != null else null)
+
+
+## A piece's four lines on the Gear page: its kind, its name, its numbers, what's next.
+func piece_words(piece: int) -> PackedStringArray:
+	var loadout: ClassLoadoutResource = actor.loadout
+	var progress: PartyProgress = PartyProgress.current
+	var tier: EquipmentTierResource = actor.seal.tier() if actor.seal != null else null
+	var hand: PlayerLoadoutResource = actor.seal.loadout if actor.seal != null else null
+	if tier == null or hand == null:
+		return PackedStringArray(["Gear", loadout.weapon.display_name if loadout.weapon != null else "Hands", "", ""])
+	var arch: EquipmentTierResource.WeaponArchetype = hand.weapon_archetype as EquipmentTierResource.WeaponArchetype
+	var frame: WeaponArchetypeResource = ArsenalCatalog.current.archetype_for_weapon_type(loadout.weapon.weapon_type) if loadout.weapon != null else null
+	match piece:
+		GearRow.WEAPON:
+			var next: int = progress.next_promotion(loadout.class_id, PartyProgress.PIECE_WEAPON)
+			var ahead: String = "Next: %s, ready to promote at the Scribe Desk." % ArsenalCatalog.current.tier_at(next).weapon_name(arch) if next > 0 \
+				else "Next: %s." % progress.promotion_problem(loadout.class_id, PartyProgress.PIECE_WEAPON)
+			return PackedStringArray(["Weapon · %s" % (frame.frame_noun if frame != null else "frame"), weapon_title(),
+				"Tier %d of 7 · rank %+d · Light %.1f · Heavy %.1f · stagger ×%.2f · %s frame" % [tier.tier_index, tier.gear_threat_rank,
+					tier.get_weapon_damage(false, arch), tier.get_weapon_damage(true, arch), tier.posture_multiplier,
+					loadout.weapon.display_name if loadout.weapon != null else "no"], ahead])
+		GearRow.OFF_HAND:
+			var guard: String = "hold L to guard" if loadout.role == ClassLoadoutResource.Role.TANK else (
+				"the D-Pad ties it to a friend" if loadout.role == ClassLoadoutResource.Role.HEALER else "it rides with the weapon")
+			return PackedStringArray(["Offhand · %s" % off_hand_name(loadout), tier.offhand_name(arch),
+				"Tier %d · %s · %s" % [tier.tier_index, tier.weapon_material_name, guard],
+				"Bows carry a quiver here, staffs a censer, mauls a Pommel-Knot."])
+	var armour: EquipmentTierResource = armour_tier()
+	var weight: EquipmentTierResource.ArmorWeightClass = hand.armor_weight_class as EquipmentTierResource.ArmorWeightClass
+	var weights: Array[String] = ["Heavy armour", "Medium armour", "Light armour"]
+	var next_armour: int = progress.next_promotion(loadout.class_id, PartyProgress.PIECE_ARMOR)
+	var later: String = ("Next: %s (%d%%), ready to promote at the Scribe Desk." % [ArsenalCatalog.current.tier_at(next_armour).get_armor_display_name(weight),
+		ArsenalCatalog.current.tier_at(next_armour).armor_guard_percent(weight)]) if next_armour > 0 \
+		else "Next: %s." % progress.promotion_problem(loadout.class_id, PartyProgress.PIECE_ARMOR)
+	return PackedStringArray(["Mantle · %s" % weights[clampi(int(weight), 0, 2)], armour.get_armor_display_name(weight),
+		"Tier %d · Armor Guard %d%% · the weight set by your Fellowship" % [armour.tier_index, armour.armor_guard_percent(weight)], later])
 
 
 ## Under the gear rows: Steward Threat as a sum, what the kit adds up to, and each Seal with its Marks.
@@ -928,6 +1274,26 @@ func tooltip_text_now() -> String:
 	return TAB_TOOLTIPS[tab] if item == "" else "%s\n%s" % [item, TAB_TOOLTIPS[tab]]
 
 
+## The tooltip box's left column: what kind of thing is highlighted, and its name.
+func tooltip_heading() -> String:
+	match tab:
+		Tab.GEAR:
+			var named: Array[String] = [weapon_title(), piece_words(GearRow.OFF_HAND)[1], piece_words(GearRow.ARMOR)[1], actor.loadout.display_name]
+			return "HIGHLIGHTED · %s\n%s" % [["WEAPON", "OFFHAND", "MANTLE", "CALLING"][gear_row], named[gear_row]]
+		Tab.CARDS:
+			if column == Column.DIAMONDS:
+				return "HIGHLIGHTED · %s\n%s" % [["PLACE-CARD", "INK CARD", "TUCK"][bench_layer], socket_title(selected_socket())]
+			var key: StringName = layer_options(bench_layer)[clampi(layer_row(bench_layer), 0, layer_options(bench_layer).size() - 1)]
+			var card: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(key)) if key != &"" else null
+			return "HIGHLIGHTED · %s\n%s" % [["PLACE-CARD", "INK CARD", "TUCK"][bench_layer], card.display_name if card != null else empty_layer_text(bench_layer)]
+		Tab.SEALS:
+			var seal: ScribeCardResource = ArsenalCatalog.current.get_card(press_candidate())
+			return "HIGHLIGHTED · %s SEAL\n%s" % [GrimoireRules.SEAL_NAMES[seal_row].to_upper(), seal.display_name if seal != null else "an empty slot"]
+		Tab.COMBOS:
+			return "COMBO MOVES"
+	return ""
+
+
 ## What a gear row means, in a sentence.
 func gear_tooltip(row: int) -> String:
 	var loadout: ClassLoadoutResource = actor.loadout
@@ -965,25 +1331,6 @@ func gear_tooltip(row: int) -> String:
 				return "Unsworn: no Calling yet. One opens at Level %d (hold C, or the Scribe Desk)." % ArsenalCatalog.CALLING_LEVEL
 			return ("%s: %s" % [sub, secondary.summary()]) if sub != "" else secondary.summary()
 	return ""
-
-
-## The Seal Press's rows: each Seal, its card (or none), the shape that says which, and what it does on that piece.
-func _refresh_seals() -> void:
-	for slot: int in _seal_rows.size():
-		var line: Label = _seal_rows[slot]
-		line.text = ("> " if slot == seal_row else "  ") + seal_row_text(slot)
-		var effect: String = seal_effect_text(slot)
-		if effect != "":
-			line.text += "\n      " + effect
-		line.modulate = SELECTED_COLOR if slot == seal_row else (ROW_COLOR if seal_slot_open(slot) else DIM_COLOR)
-		line.tooltip_text = seal_tooltip(slot)
-	if actor.seal == null or actor.seal.loadout == null:
-		_seal_stats.text = ""
-		return
-	var hand: PlayerLoadoutResource = actor.seal.loadout
-	var tier: EquipmentTierResource = actor.seal.tier()
-	_seal_stats.text = "Stage %d · Lv %d · %s gear  ·  %d of 3 Seals pressed%s" % [actor.seal.progression_stage, actor.seal.true_level,
-		tier.weapon_material_name if tier != null else "Orchard-Wood", hand.seal_count(), "" if seal_press_open() else "  ·  " + PRESS_SHUT]
 
 
 ## What the Seal in a slot does on that piece (the Contextual Slot Rule), or "".
@@ -1059,7 +1406,7 @@ func seal_tooltip(slot: int) -> String:
 	return "%s %s" % [tip, listed.description.strip_edges()]
 
 
-# --- The stamping bench ------------------------------------------------------------
+# --- The Seal Press ------------------------------------------------------------------
 
 ## The cards a slot of the hand cycles through: none (&""), the Fellowship's starting seal, then every seal card the party owns.
 func seal_options(slot: int) -> Array[StringName]:
@@ -1069,6 +1416,53 @@ func seal_options(slot: int) -> Array[StringName]:
 ## Whether a slot of the hand is open at the hero's stage and level.
 func seal_slot_open(slot: int) -> bool:
 	return is_instance_valid(actor) and actor.seal != null and PlayerLoadoutResource.slot_open(slot, actor.seal.progression_stage, actor.seal.true_level)
+
+
+## A Seal tile's line: the card's name with its shape, or that the slot is empty or still locked.
+func seal_tile_text(slot: int) -> String:
+	if not seal_slot_open(slot):
+		return "%s opens at Lv %d" % [SEAL_LOCKED, GrimoireRules.SEAL_OPEN_LEVELS[slot]]
+	var card: ScribeCardResource = ArsenalCatalog.current.get_card(actor.seal.loadout.card_in_slot(slot)) if actor.seal.loadout != null else null
+	return "%s %s" % [SEAL_PRESSED, card.display_name] if card != null else "%s empty" % SEAL_EMPTY
+
+
+## Picks one of the three Seals (left / right, or a click on its tile); the list starts on the card it holds.
+func pick_seal_slot(slot: int) -> void:
+	seal_row = slot
+	var options: Array[StringName] = seal_options(slot)
+	var worn: StringName = actor.seal.loadout.card_in_slot(slot) if actor.seal != null and actor.seal.loadout != null else &""
+	press_row = maxi(0, options.find(worn))
+	AudioCues.play(&"menu_move")
+	_refresh()
+
+
+## A click on a card in the press's list: highlight it.
+func pick_press_row(index: int) -> void:
+	press_row = index
+	AudioCues.play(&"menu_move")
+	_refresh()
+
+
+## The card highlighted in the press's list (&"" for leaving the slot empty).
+func press_candidate() -> StringName:
+	var options: Array[StringName] = seal_options(seal_row)
+	return options[clampi(press_row, 0, options.size() - 1)] if not options.is_empty() else &""
+
+
+## Light in the Seal Press: presses the highlighted card into the chosen slot (refused, with why, when the slot
+## is locked or the press is shut away from a rest point). Returns whether the hero now wears it.
+func press_highlighted() -> bool:
+	if not is_instance_valid(actor) or actor.seal == null or actor.seal.loadout == null:
+		return false
+	if not seal_slot_open(seal_row):
+		_show_note("The %s slot %s" % [PlayerLoadoutResource.HAND_SLOT_NAMES[seal_row], PlayerLoadoutResource.slot_opens_text(seal_row)])
+		AudioCues.play(&"refuse")
+		return false
+	if not seal_press_open():
+		_show_note(PRESS_SHUT)
+		AudioCues.play(&"refuse")
+		return false
+	return press_seal(seal_row, press_candidate())
 
 
 ## Left / right (or light) on the bench: the highlighted slot's next (or previous) card, pressed at
@@ -1110,12 +1504,44 @@ func press_seal(slot: int, card_id: StringName) -> bool:
 	return true
 
 
-func _on_seal_clicked(event: InputEvent, slot: int) -> void:
-	var click: InputEventMouseButton = event as InputEventMouseButton
-	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
-		seal_row = slot
-		step_seal(1)
-		_refresh()
+## Where a seal card is now, for its chip in the press's list: "on the weapon", "in use" (a socket card), or "".
+## (Pressing one that's on another piece moves it here: the list's foot says so.)
+func seal_whereabouts(card_id: StringName) -> String:
+	if card_id == &"" or actor.seal == null or actor.seal.loadout == null:
+		return ""
+	var pieces: Array[String] = ["on the weapon", "on the offhand", "on the mantle"]
+	for slot: int in SEAL_ROWS:
+		if actor.seal.loadout.card_in_slot(slot) == card_id:
+			return pieces[slot]
+	if LoadoutComposer.socket_cards(actor.loadout.kit).has(card_id):
+		return "in use"
+	return "free"
+
+
+## A seal card's second line in the press's list: its Sign, finish, Marks and spare copies.
+func seal_candidate_note(card_id: StringName) -> String:
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var card: ScribeCardResource = catalog.get_card(card_id)
+	if card == null:
+		return ""
+	var progress: PartyProgress = PartyProgress.current
+	var finish: int = progress.best_finish(card_id)
+	if finish < 0:
+		return "%s · the Fellowship's starting Seal" % catalog.sign_seal(card.scribe_sign).display_name
+	var key: StringName = ScribeCardResource.copy_key(card_id, finish as ScribeCardResource.CardVariant)
+	var spare: int = maxi(0, progress.copies_of(key) - 1)
+	return "%s · %s · %d Marks%s" % [catalog.sign_seal(card.scribe_sign).display_name, ScribeCardResource.VARIANT_NAMES[finish],
+		progress.marks_of(key), (" · %d spare cop%s" % [spare, "y" if spare == 1 else "ies"]) if spare > 0 else ""]
+
+
+## What a seal card does in one slot (the Contextual Slot Rule), or "nothing" for none.
+func seal_slot_text(card_id: StringName, slot: int) -> String:
+	var card: ScribeCardResource = ArsenalCatalog.current.get_card(card_id)
+	if card == null:
+		return "Nothing: the slot is empty now."
+	var flags: Array[int] = [ScribeCardResource.SealSlotMask.SEAL_WEAPON, ScribeCardResource.SealSlotMask.SEAL_OFFHAND_BUCKLER,
+		ScribeCardResource.SealSlotMask.SEAL_MANTLE_ARMOR]
+	return "%s: %s" % [card.display_name, String(card.slot_passive(flags[clampi(slot, 0, 2)]).get("text", "")).strip_edges()]
 
 
 ## The hero's hand changed (the bench, the host's answer, a level): the rows follow it.
@@ -1146,43 +1572,44 @@ static func combo_tooltip(form: ComboChainResource) -> String:
 	return line
 
 
-## The highlighted Ink Card, Place-Card or diamond (13_PLAYTEST §2.13), in three
+## The highlighted card, Place-Card, Tuck or layer (13_PLAYTEST §2.13), in three
 ## short lines: what it does; when to use it (on the trail, holding its button
 ## makes your ink ready for the next fight; in a fight, a tap in the flash after
 ## a hit casts it); and whether your level and binder take it.
 func _card_tooltip() -> String:
 	match column:
-		Column.LEAVES:
-			var leaves: Array[StringName] = leaf_options()
-			return card_tooltip_for(leaves[clampi(leaf_row, 0, leaves.size() - 1)], Column.LEAVES)
-		Column.PLACES:
-			var places: Array[StringName] = place_options()
-			return card_tooltip_for(places[clampi(place_row, 0, places.size() - 1)], Column.PLACES)
-	var socket: int = DIAMOND_ROWS[diamond_row]
+		Column.LEAVES, Column.PLACES, Column.TUCKS:
+			var options: Array[StringName] = layer_options(bench_layer)
+			return card_tooltip_for(options[clampi(layer_row(bench_layer), 0, options.size() - 1)], column)
+	var socket: int = DIAMOND_ROWS[diamond_row] if DIAMOND_ROWS[diamond_row] >= 0 else selected_socket()
+	var cost: String = _cost_words(_socket_cost(socket))
 	match socket:
 		ScribeCardResource.DioramaSocket.GUARD:
-			return "L: the card that rides your guard.\n" + when_to_use(socket)
+			return "L: the card that rides your guard. It costs %s.\n%s" % [cost, when_to_use(socket, _socket_cost(socket), _on_ink_well())]
 		ScribeCardResource.DioramaSocket.SKILL:
-			return "R: your skill. It costs one pip.\n" + when_to_use(socket)
-		ScribeCardResource.DioramaSocket.ULT:
-			return "L+R together: your big move. It costs three pips.\n" + when_to_use(socket)
-	return "Every Ink Card and Place-Card you've found, and the ones still out there."
+			return "R: your skill. It costs %s.\n%s" % [cost, when_to_use(socket, _socket_cost(socket), _on_ink_well())]
+	return "L+R together: your Grand card. It costs %s.\n%s" % [cost, when_to_use(socket, _socket_cost(socket), _on_ink_well())]
 
 
 ## One option in the chosen diamond: what it does, when to use it, and whether it fits now.
 func card_tooltip_for(copy_key: StringName, page_column: int) -> String:
 	var socket: int = selected_socket()
-	var when: String = when_to_use(socket) if page_column == Column.LEAVES else PLACE_WHEN
+	var when: String = PLACE_WHEN
+	if page_column == Column.LEAVES:
+		when = when_to_use(socket, _socket_cost(socket), _on_ink_well())
+	elif page_column == Column.TUCKS:
+		when = TUCK_WHEN
 	return "%s\n%s\n%s" % [_option_tooltip(copy_key, page_column), when, fit_line(copy_key, page_column)]
 
 
-## When a diamond's card is used: on the trail (Trail-Prep) and in a fight (Sign-Flow).
-static func when_to_use(socket: int) -> String:
+## When a diamond's card is used: on the trail (Trail-Prep) and in a fight (Sign-Flow), and what it costs.
+static func when_to_use(socket: int, cost: int = -1, ink: bool = false) -> String:
 	var hold: float = SignFlowComponent.HEARTH_RITE_HOLD_FRAMES / SignFlowComponent.FRAMES_PER_SECOND
-	var pips: int = int(ScribeCardResource.SOCKET_PIP_COSTS[socket])
+	var paid: int = cost if cost >= 0 else int(ScribeCardResource.SOCKET_PIP_COSTS[socket])
+	var unit: String = "Ink-Drop" if ink else "pip"
 	var button: String = ["L", "R", "L+R"][socket]
-	var fight: String = "In a fight (Sign-Flow): land a hit, then tap %s in the flash: %s (%d pip%s)." % [button,
-		"a counter-brace" if socket == ScribeCardResource.DioramaSocket.GUARD else "it casts at once", pips, "" if pips == 1 else "s"]
+	var fight: String = "In a fight (Sign-Flow): land a hit, then tap %s in the flash: %s (%d %s%s)." % [button,
+		"a counter-brace" if socket == ScribeCardResource.DioramaSocket.GUARD else "it casts at once", paid, unit, "" if paid == 1 else "s"]
 	if socket == ScribeCardResource.DioramaSocket.GUARD:
 		return fight + " It never readies on the trail."
 	return "On the trail (Trail-Prep, no foe near): hold %s for %.0f s: INK READY, and your next fight opens with it. %s" % [button, hold, fight]
@@ -1192,40 +1619,56 @@ static func when_to_use(socket: int) -> String:
 func fit_line(copy_key: StringName, page_column: int) -> String:
 	var progress: PartyProgress = PartyProgress.current
 	var draft: EquipmentLoadoutResource = actor.loadout.kit.copy()
+	var socket: int = selected_socket()
 	if page_column == Column.LEAVES:
-		draft.set_socket_leaf(selected_socket(), ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
+		draft.set_socket_leaf(socket, ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
+	elif page_column == Column.TUCKS:
+		draft.under_ids[ScribeCardResource.GrimoireSlot.SIGNATURE] = &""
+		draft.under_ids[ScribeCardResource.GrimoireSlot.ULTIMATE] = &""
+		if copy_key != &"" and socket != GrimoireRules.SOCKET_L:
+			draft.under_ids[_tuck_slot_for(socket)] = copy_key
 	else:
-		draft.set_socket_place(selected_socket(), ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
+		draft.set_socket_place(socket, ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
 	# The hero's own level (25 GDD R4): a socket it hasn't opened says when; the hand's rules (one Tuck, seven
 	# different cards) speak through the composer; a fit says what the card costs from the Ink-Well (R1).
 	var level: int = progress.character_level(actor.loadout.class_id)
-	var socket: int = selected_socket()
 	if not GrimoireRules.socket_open(socket, level):
 		return "Not yet (you're Lv %d): %s." % [level, GrimoireRules.socket_opens_text(socket)]
+	if page_column == Column.TUCKS and copy_key != &"":
+		if socket == GrimoireRules.SOCKET_L:
+			return "Not yet (you're Lv %d): L takes no Tuck." % level
+		if not GrimoireRules.tuck_open(level):
+			return "Not yet (you're Lv %d): the Tuck opens at Lv %d." % [level, GrimoireRules.TUCK_OPEN_LEVEL]
 	var problem: String = LoadoutComposer.kit_problem(_player_class(), draft, progress.grimoire_level(), progress.collection, progress.trail_level())
 	if problem != "":
 		return "Not yet (you're Lv %d): %s." % [level, problem]
 	if page_column == Column.LEAVES:
 		var listed: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key))
-		var tucked: bool = socket != GrimoireRules.SOCKET_L and draft.under_ids[ScribeCardResource.GrimoireSlot.SIGNATURE
-			if socket == GrimoireRules.SOCKET_R else ScribeCardResource.GrimoireSlot.ULTIMATE] != &""
+		var tucked: bool = socket != GrimoireRules.SOCKET_L and draft.under_ids[_tuck_slot_for(socket)] != &""
 		var cost: int = GrimoireRules.ink_cost(socket, listed, tucked)
 		return "Ready: it fits your hand at Lv %d and costs %d Ink-Drop%s in %s." % [level, cost, "" if cost == 1 else "s",
 			GrimoireRules.SOCKET_NAMES[socket]]
+	if page_column == Column.TUCKS:
+		return "Ready: it slides under %s at Lv %d (one Tuck in the hand)." % [GrimoireRules.SOCKET_NAMES[socket], level]
 	return "Ready: it frames this card at Lv %d." % level
 
 
 ## What an option does, in a sentence: its name, how it shows itself and its Ink-Sign, then the card's own words or its effect.
 static func _option_tooltip(copy_key: StringName, page_column: int) -> String:
 	if copy_key == &"":
-		return "Leave it empty: the weapon's own move plays." if page_column == Column.LEAVES else "No Place-Card round this diamond."
+		match page_column:
+			Column.LEAVES:
+				return "Leave it empty: the weapon's own move plays."
+			Column.TUCKS:
+				return "No Tuck under this card."
+		return "No Place-Card round this diamond."
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
 	var listed: ScribeCardResource = catalog.card(ScribeCardResource.copy_card_id(copy_key))
 	if listed == null:
 		return ""
 	var seal: ScribeSignResource = catalog.sign_seal(listed.scribe_sign)
 	var sign_name: String = "%s Ink-Sign" % seal.display_name if listed.scribe_sign != ScribeSignResource.Sign.NONE else "no Ink-Sign"
-	var kind: String = "Place-Card" if listed.is_place_card() else listed.mode_name()
+	var kind: String = "Place-Card" if listed.is_place_card() else ("Tuck" if listed.is_under() else listed.mode_name())
 	var told: String = listed.description.strip_edges()
 	return "%s (%s, %s): %s" % [listed.display_name, kind, sign_name, told if told != "" else card_effect(listed)]
 
@@ -1268,39 +1711,11 @@ func _key(action: StringName) -> String:
 	return actor.input.label(action) if actor != null and actor.input != null else InputComponent.binding_label(action, InputComponent.KEYBOARD_DEVICE)
 
 
-func _on_gear_clicked(event: InputEvent, row: int) -> void:
-	var click: InputEventMouseButton = event as InputEventMouseButton
-	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
-		gear_row = row
-		_refresh()
-
-
 func _on_combo_clicked(event: InputEvent, row: int) -> void:
 	var click: InputEventMouseButton = event as InputEventMouseButton
 	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
 		combo_row = row
 		_refresh()
-
-
-func _fill_rows(page: VBoxContainer, rows: Array[Label], options: Array[StringName], page_column: int, cursor: int,
-		worn_id: StringName, worn_variant: int) -> void:
-	while rows.size() < options.size():
-		var row: Label = _label(FONT_SIZE, ROW_COLOR)
-		row.mouse_filter = Control.MOUSE_FILTER_STOP
-		row.gui_input.connect(_on_row_clicked.bind(page_column, rows.size()))
-		page.add_child(row)
-		rows.append(row)
-	for index: int in rows.size():
-		var row: Label = rows[index]
-		row.visible = index < options.size()
-		if not row.visible:
-			continue
-		var key: StringName = options[index]
-		var worn: bool = ScribeCardResource.copy_card_id(key) == worn_id and (key == &"" or ScribeCardResource.copy_variant(key) == worn_variant)
-		var mark: String = "> " if column == page_column and index == cursor else "  "
-		row.text = "%s%s%s" % [mark, _option_text(key, page_column), "  (worn)" if worn else ""]
-		row.tooltip_text = card_tooltip_for(key, page_column)
-		row.modulate = SELECTED_COLOR if column == page_column and index == cursor else (ROW_COLOR if worn or key != &"" else DIM_COLOR)
 
 
 static func _option_text(copy_key: StringName, page_column: int) -> String:
@@ -1403,3 +1818,4 @@ func _label(font_size: int, color: Color) -> Label:
 	label.modulate = color
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
+

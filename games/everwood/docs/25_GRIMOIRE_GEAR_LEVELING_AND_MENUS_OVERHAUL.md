@@ -154,3 +154,24 @@ Breath Recovery, +Defender and +Striker (the ids and rank keys keep the old word
 Not built: the trade row (the family shares one binder, so it has nothing to do),
 the pre-raid loadout board at the Quay Brazier, and a full card-bench redraw of
 Binder tab 2 (its fit lines already carry the Tuck and one-card-one-place rules).
+
+**M7b, the Binder rebuilt to the wireframes (2026-11-07).** The first pass kept the
+old Binder layout and added text; Clay asked for the wireframes' layouts. The Binder
+is now one 1600 x 900 sheet (the wireframes' own coordinates) scaled to the player's
+cell: header, tabs, a two-part tooltip box (what's highlighted · what it does, when,
+whether it fits) and the controls along the foot. Each page is its own class in
+`src/ui/binder/`: `BinderGearPage` (hero and Threat sum, kit totals, Seal wards; the
+live preview with Seal callouts; weapon, offhand and mantle rows with their Seal,
+finish, maker and Marks), `BinderCardBench` (the Cross; the seven-slot hand and
+Ink-Well; Place-Card, Ink card and Tuck layers; the collection with Cards / Tucks /
+Place-Cards filters and a fit chip on every row) and `BinderSealPressPage` (the three
+Seal tiles; the cards you can press with where each is now; the card slot by slot,
+what you lose and gain, the Ink-Binding ladder; preview and Press). `BinderKit`
+builds every box from `AtelierTheme`. Navigation follows the wireframes: on the
+bench ← → diamond, ↑ ↓ layer, light opens the collection, light slots, dodge backs
+out; in the Seal Press ← → piece, ↑ ↓ card, light presses, dodge returns to tab 1.
+The Tuck slides under R or L+R (`slot_tuck`), never L. Not built from the wireframes:
+the coat-dye swatches (no dye choice exists yet), turning the preview with the right
+stick (it still turns on its own), and the Seal Press as a page reached only from tab 1
+(it keeps its tab, look-only away from a rest point).
+
