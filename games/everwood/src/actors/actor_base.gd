@@ -135,6 +135,9 @@ var glimmer: GlimmerSpotComponent
 var spectrum: HobSpectrumComponent
 ## Heroes: the directional combo forms (14 GDD §8).
 var combo: ComboChainComponent
+## Heroes: the Seal-and-Tuck Grimoire (docs/everwood_equipment_grimoire_architecture.md): the
+## material tier, the youth silhouette, the three pressed seals and the Pocket-Pull.
+var seal: EquipmentSealComponent
 ## Foes with an encounter: the Miyamoto armour-drop and its locks (14 GDD §8).
 var posture: PostureEscalationComponent
 ## Raid bosses: the four gates (14 GDD §8).
@@ -316,6 +319,11 @@ func _build_components() -> void:
 		combo = ComboChainComponent.new()
 		combo.setup(self)
 		add_child(combo)
+		seal = EquipmentSealComponent.new()
+		seal.setup(self)
+		add_child(seal)
+		if input != null:
+			seal.input_gambit_assist = input.assist_mode == InputComponent.AssistMode.SQUIRE_GAMBIT
 
 	if companion != null:
 		add_child(companion)
@@ -350,6 +358,8 @@ func apply_assist_mode() -> void:
 	action_queue.buffer_window = input.buffer_window()
 	action_queue.flow_speed_bonus = input.flow_speed_bonus()
 	action_queue.assisted_chaining = input.assisted_chaining()
+	if seal != null:
+		seal.input_gambit_assist = input.assist_mode == InputComponent.AssistMode.SQUIRE_GAMBIT
 
 
 func _build_visual() -> void:
@@ -439,6 +449,9 @@ func re_equip(new_loadout: ClassLoadoutResource) -> void:
 		visual.remove_child(_prop)
 		_prop.queue_free()
 	_weapon_prop = null
+	if seal != null:
+		# A new kit may change the armament; the rebuilt puppet then wears the hand.
+		seal.refresh()
 	if visuals != null:
 		visuals.rebuild()
 		_glow = Color.BLACK
@@ -614,6 +627,8 @@ func _physics_process(delta: float) -> void:
 		sign_flow.tick(delta)
 	if combo != null:
 		combo.tick(delta)
+	if seal != null:
+		seal.tick(delta)
 	if _pull_duration > 0.0:
 		_update_pull(delta)
 	else:
@@ -661,7 +676,9 @@ func _can_regen_stamina() -> bool:
 
 ## How fast this actor runs right now: its stats' pace, half again while sprinting.
 func locomotion_speed() -> float:
-	return loadout.stats.move_speed * (SPRINT_SPEED_SCALE if sprinting else 1.0)
+	# A stride seal on the mantle (the West-Wind's 15%) quickens the hero.
+	var stride: float = seal.move_speed_mult() if seal != null else 1.0
+	return loadout.stats.move_speed * stride * (SPRINT_SPEED_SCALE if sprinting else 1.0)
 
 
 ## A hero on the ground, standing or running, and free to act can jump.
@@ -964,6 +981,9 @@ func receive_strike(event: CombatEvent) -> int:
 		posture.filter_strike(event)
 	if sign_flow != null:
 		sign_flow.filter_incoming(event)
+	if seal != null:
+		# A seal of the blow's Sign on the buckler or mantle takes its ward off, and shrugs the stun.
+		seal.filter_incoming(event)
 	var multiplier: float = CombatDirector.current.damage_taken_multiplier(self)
 	var outcome: StatsComponent.StrikeOutcome = stats.mitigate_strike(
 		event.damage * multiplier, event.poise_damage, _faces_toward(event.origin), event.unavoidable)
@@ -994,8 +1014,10 @@ func _faces_toward(point: Vector3) -> bool:
 
 
 func stagger(seconds: float) -> void:
-	# A Ward-Mantle or a Support's Aegis Ward shrugs the stun off (14 GDD §8).
+	# A Ward-Mantle or a Support's Aegis Ward shrugs the stun off (14 GDD §8); so does a seal of the blow's Sign.
 	if sign_flow != null and sign_flow.shrugs_off_stagger():
+		return
+	if seal != null and seal.shrugs_off_stagger():
 		return
 	action_queue.interrupt()
 	hitbox.deactivate()

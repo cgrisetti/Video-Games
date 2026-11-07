@@ -40,12 +40,61 @@
 ##   pocket and the weapon is drawn again, glowing at 1.35x;
 ## - the Offhand Pocket-Draw (a Sign-Flow cast): the off hand flicks the card
 ##   out of the pocket and sweeps it along the weapon as it ignites at 2.0x.
+##
+## And the Seal-and-Tuck Grimoire (docs/everwood_equipment_grimoire_architecture.md
+## Part II §2.1, §3.2, §4.2, §6.6), driven by the hero's EquipmentSealComponent:
+## - the Wingfeather youth proportions (apply_wingfeather_youth_proportions):
+##   a 14-year-old's silhouette read from the 4.8 m camera, the head 1.22x,
+##   the hands 1.28x, the boots 1.18x and the weapon 1.25x, with a Male Youth's
+##   wider shoulders or a Female Youth's flared mantle, all as bone pose scales
+##   on the same 24-bone rig;
+## - the seven material tiers and the three pressed seals
+##   (apply_equipment_tier_and_seals): one equipment_seal.gdshader, washed over
+##   the sculpted weapon as a next_pass and worn by a buckler crest and a mantle
+##   band, no new mesh per tier;
+## - the Pocket-Pull flourish (play_pocket_pull_flourish): 18 frames (0.30 s)
+##   in the hero's own space, the off hand to the pouch, a 1.6x card raised
+##   overhead (never above 2.5 m), then slammed into the weapon as every seal
+##   flares. It never touches a Camera3D.
 class_name ActorVisuals
 extends Node3D
 
-enum Choreography { NONE, OVERHEAD_BLESSING, POCKET_DRAW }
+enum Choreography { NONE, OVERHEAD_BLESSING, POCKET_DRAW, POCKET_PULL }
+
+signal pocket_pull_started(card_id: StringName, slot_index: int)
+signal pocket_pull_completed(card_id: StringName, slot_index: int)
 
 const MODEL_FOLDER: String = "res://assets/models/"
+## The Seal-and-Tuck Grimoire's master equipment shader.
+const SEAL_SHADER: Shader = preload("res://src/actors/shaders/equipment_seal.gdshader")
+## The Pocket-Pull: 18 frames at 60 fps, the card at 1.6x overhead with its top under 2.5 m,
+## the seals flaring to 2.2 then settling to a 0.75 afterglow that fades away.
+const POCKET_PULL_DURATION_SEC: float = 0.30
+const POCKET_PULL_FRAMES: int = 18
+const POCKET_PULL_CARD_SCALE: float = 1.6
+const POCKET_PULL_CARD_HEIGHT: float = 2.15
+const POCKET_PULL_CARD_CAP: float = 2.5
+const POCKET_PULL_FLARE: float = 2.2
+const POCKET_PULL_AFTERGLOW: float = 0.75
+const AFTERGLOW_FADE_PER_SEC: float = 0.5
+## The Wingfeather youth rig (§2.1): 5.5 heads tall, read from the 4.8 m camera.
+const YOUTH_HEADS_TALL: float = 5.5
+const YOUTH_HEAD_SCALE: Vector3 = Vector3(1.22, 1.22, 1.22)
+const YOUTH_HAND_SCALE: Vector3 = Vector3(1.28, 1.28, 1.28)
+const YOUTH_FOOT_SCALE: Vector3 = Vector3(1.18, 1.18, 1.18)
+const YOUTH_WEAPON_SCALE: Vector3 = Vector3(1.25, 1.25, 1.25)
+const YOUTH_MALE_SHOULDER: Vector3 = Vector3(1.04, 1.0, 1.0)
+const YOUTH_FEMALE_SHOULDER: Vector3 = Vector3(0.96, 1.0, 1.0)
+const YOUTH_MALE_MANTLE: Vector3 = Vector3(1.0, 1.0, 1.0)
+const YOUTH_FEMALE_MANTLE: Vector3 = Vector3(1.08, 1.0, 1.08)
+## The seal shader over the sculpted weapon: how much of the tier's tint washes the sculpt.
+const WEAPON_SEAL_BLEND: float = 0.35
+## The buckler crest on the off hand and the mantle band at the collar (one mesh each, every tier).
+const CREST_RADIUS: float = 0.075
+const CREST_THICKNESS: float = 0.012
+const MANTLE_BAND_RADIUS: float = 0.25
+const MANTLE_BAND_WIDTH: float = 0.045
+const MANTLE_BAND_RISE: float = 0.17
 const LANTERN_GLOW: Color = Color(1.0, 0.78, 0.4)
 const VELLUM_COLOR: Color = Color(0.97, 0.93, 0.8)
 const LANTERN_SWAY: float = 0.25
@@ -176,6 +225,26 @@ var _frost: float = 0.0
 var _warmth: float = 0.0
 var _hit_stop_left: float = 0.0
 var _hit_stop_total: float = 0.0
+## The Seal-and-Tuck Grimoire: the shield on the off hand, the three seal
+## materials (the weapon's is a next_pass over the sculpt), the crest and band
+## they paint, the youth scales in force, and the Pocket-Pull in flight.
+var _shield: Node3D
+var _weapon_seal_pass: ShaderMaterial
+var _offhand_seal_material: ShaderMaterial
+var _mantle_seal_material: ShaderMaterial
+var _offhand_crest: MeshInstance3D
+var _mantle_band: MeshInstance3D
+var _overhead_card: MeshInstance3D
+var _current_youth_scales: Dictionary = {}
+var _body_type: int = -1
+var _applied_tier_id: StringName = &""
+var _seal_state: Dictionary = {}
+var _is_flourishing: bool = false
+var _flourish_card: StringName = &""
+var _flourish_slot: int = -1
+var _seal_flare: float = 0.0
+var _seal_flare_shown: float = -1.0
+var _pocket_pulls: int = 0
 
 
 static func model_path(id: StringName) -> String:
@@ -227,6 +296,11 @@ func rebuild() -> void:
 	_weapon = null
 	_weapon_mount = null
 	_sign_stone = null
+	_shield = null
+	_offhand_crest = null
+	_mantle_band = null
+	_overhead_card = null
+	_applied_tier_id = &""
 	_stowed = false
 	_choreo = Choreography.NONE
 	var loadout: ClassLoadoutResource = actor.loadout
@@ -270,6 +344,9 @@ func rebuild() -> void:
 		"belt_trinket": appearance.belt_trinket_id, "back_buckler_targe": appearance.back_buckler_targe, "split_hewing_apron": appearance.split_hewing_apron,
 		"coat": coat, "dye": appearance.coat_dye_preset, "trim": trim, "tunic": appearance.value_2_tunic_color, "rim": appearance.role_rim_color,
 	}
+	# The Seal-and-Tuck Grimoire dresses the fresh rig: its youth silhouette, its tier and its seals.
+	if actor.seal != null:
+		actor.seal.apply_visuals()
 
 
 ## The Fellowship's kit on the sockets: the satchel, an off-hand piece, what's on the back.
@@ -292,6 +369,7 @@ func _build_kit(row: int, loadout: ClassLoadoutResource) -> void:
 			else:
 				shield.transform = Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(0.0, -0.06, 0.27))
 				back.add_child(shield)
+			_shield = shield
 		2:
 			# The brass Tether-Lantern hanging at the left hip, really glowing.
 			_lantern = HeroMeshAtelier.build_tether_lantern(body_material, LANTERN_GLOW)
@@ -333,6 +411,8 @@ func _hold(item: EquipmentItemResource) -> void:
 		_weapon_mount.get_parent().remove_child(_weapon_mount)
 	hand.add_child(_weapon_mount)
 	_weapon_mount.transform = HeroMeshAtelier.GRIP_MOUNT
+	# A youth's hand is already 1.28x; the weapon itself reads at 1.25x.
+	_weapon_mount.scale = Vector3.ONE * _youth_weapon_scale() / _youth_hand_scale()
 	_stowed = false
 
 
@@ -347,6 +427,7 @@ func _stow(stowed: bool) -> void:
 	socket(HeroRigBuilder.BACK_STOW_SOCKET).add_child(_weapon_mount)
 	var half: float = HeroMeshAtelier.weapon_length(_weapon_item.weapon_type) * 0.5
 	_weapon_mount.transform = Transform3D(STOW_BASIS, -STOW_BASIS.y * half + Vector3(0.0, 0.04, 0.27))
+	_weapon_mount.scale = Vector3.ONE * _youth_weapon_scale()
 	_stowed = true
 
 
@@ -371,6 +452,7 @@ func set_weapon(weapon_root: Node3D, item: EquipmentItemResource) -> void:
 			material = (shape.mesh as PrimitiveMesh).material
 		if material is ShaderMaterial:
 			_weapon_materials.append(material)
+	_attach_weapon_seal_pass()
 
 
 ## How big the weapon is drawn right now (2.0 at the height of an R channel).
@@ -590,6 +672,7 @@ func play_perfect_guard_parry() -> void:
 ## Starts the swell when an R or L+R begins, and plays it out (every peer calls
 ## this each frame with the action the hero is doing).
 func update_channel(delta: float, action: CombatActionResource) -> void:
+	_update_seal_flare(delta)
 	var action_id: StringName = action.action_id if action != null else &""
 	if action_id != _channel_action:
 		_channel_action = action_id
@@ -761,7 +844,13 @@ func _start_choreography(kind: Choreography, color: Color) -> void:
 	_card_peak = 0.0
 	_played[kind] = _played.get(kind, 0) + 1
 	var hand: BoneAttachment3D = socket(HeroRigBuilder.MAIN_HAND_SOCKET if kind == Choreography.OVERHEAD_BLESSING else HeroRigBuilder.OFF_HAND_SOCKET)
-	animator.play_overlay(&"overhead_pocket_blessing" if kind == Choreography.OVERHEAD_BLESSING else &"offhand_pocket_draw")
+	match kind:
+		Choreography.OVERHEAD_BLESSING:
+			animator.play_overlay(&"overhead_pocket_blessing")
+		Choreography.POCKET_PULL:
+			animator.play_overlay(&"pocket_pull_flourish")
+		_:
+			animator.play_overlay(&"offhand_pocket_draw")
 	if _card_material == null:
 		_card_material = StorybookMaterial.glowing(VELLUM_COLOR, CARD_GLOW)
 		_card_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -796,15 +885,25 @@ func _update_choreography(delta: float) -> void:
 	if _choreo == Choreography.NONE:
 		return
 	_choreo_time += delta
-	if _choreo == Choreography.OVERHEAD_BLESSING:
-		_play_blessing(_choreo_time)
-	else:
-		_play_pocket_draw(_choreo_time)
+	var length: float = POCKET_DRAW_TIME
+	match _choreo:
+		Choreography.OVERHEAD_BLESSING:
+			_play_blessing(_choreo_time)
+			length = BLESSING_TIME
+		Choreography.POCKET_PULL:
+			_play_pocket_pull(_choreo_time)
+			length = POCKET_PULL_DURATION_SEC
+		_:
+			_play_pocket_draw(_choreo_time)
 	if is_instance_valid(_card) and _card.visible:
 		_card_peak = maxf(_card_peak, _card.global_position.y + CARD_SIZE.y * 0.5 - global_position.y)
-	var length: float = BLESSING_TIME if _choreo == Choreography.OVERHEAD_BLESSING else POCKET_DRAW_TIME
+	if is_instance_valid(_overhead_card) and _overhead_card.visible:
+		_card_peak = maxf(_card_peak, _overhead_card.global_position.y + CARD_SIZE.y * POCKET_PULL_CARD_SCALE * 0.5 - global_position.y)
 	if _choreo_time >= length:
+		var finished: Choreography = _choreo
 		_end_choreography()
+		if finished == Choreography.POCKET_PULL:
+			_finish_pocket_pull_flourish()
 
 
 ## 0-0.25 s to the pocket as the weapon is put away; up overhead with the card
@@ -839,9 +938,275 @@ func _end_choreography() -> void:
 		_card.queue_free()
 	if is_instance_valid(_ink_column):
 		_ink_column.queue_free()
+	if is_instance_valid(_overhead_card):
+		_overhead_card.queue_free()
 	_card = null
 	_ink_column = null
+	_overhead_card = null
 	_choreo = Choreography.NONE
+
+
+# --- The Seal-and-Tuck Grimoire (docs/everwood_equipment_grimoire_architecture.md) ------------
+
+## The Wingfeather youth silhouette (§2.1), read from the 4.8 m camera: the head
+## 1.22x, the hands 1.28x, the boots 1.18x and the weapon 1.25x, with a Male
+## Youth's shoulders 4% wider or a Female Youth's mantle flared 8%. All of it is
+## bone pose scale on the same rig, so the hitbox, pace and clips never change.
+func apply_wingfeather_youth_proportions(body_type: int) -> void:
+	var male: bool = body_type == PlayerLoadoutResource.YouthBodyType.BODY_MALE_YOUTH
+	_body_type = body_type
+	_current_youth_scales = {
+		"head": YOUTH_HEAD_SCALE,
+		"hand": YOUTH_HAND_SCALE,
+		"foot": YOUTH_FOOT_SCALE,
+		"weapon": YOUTH_WEAPON_SCALE,
+		"shoulder": YOUTH_MALE_SHOULDER if male else YOUTH_FEMALE_SHOULDER,
+		"mantle": YOUTH_MALE_MANTLE if male else YOUTH_FEMALE_MANTLE,
+		"heads_tall": YOUTH_HEADS_TALL,
+	}
+	if not has_rig():
+		return
+	const B = HeroRigBuilder.Bone
+	skeleton.set_bone_pose_scale(B.HEAD, YOUTH_HEAD_SCALE)
+	skeleton.set_bone_pose_scale(B.HAND_L, YOUTH_HAND_SCALE)
+	skeleton.set_bone_pose_scale(B.HAND_R, YOUTH_HAND_SCALE)
+	skeleton.set_bone_pose_scale(B.FOOT_L, YOUTH_FOOT_SCALE)
+	skeleton.set_bone_pose_scale(B.FOOT_R, YOUTH_FOOT_SCALE)
+	# A clavicle's local Y runs along it to the shoulder, so its width is its Y.
+	var shoulder: Vector3 = _current_youth_scales["shoulder"]
+	var along: Vector3 = Vector3(1.0, shoulder.x, 1.0)
+	skeleton.set_bone_pose_scale(B.CLAVICLE_L, along)
+	skeleton.set_bone_pose_scale(B.CLAVICLE_R, along)
+	# The mantle hangs from the first cloak bone; it flares across and out, never down.
+	skeleton.set_bone_pose_scale(B.CLOAK_01, _current_youth_scales["mantle"])
+	if is_instance_valid(_weapon_mount):
+		_weapon_mount.scale = Vector3.ONE * (_youth_weapon_scale() if _stowed else _youth_weapon_scale() / _youth_hand_scale())
+	if is_instance_valid(_shield):
+		_shield.scale = Vector3.ONE * (_youth_weapon_scale() / _youth_hand_scale() if _shield.get_parent() == socket(HeroRigBuilder.OFF_HAND_SOCKET)
+			else _youth_weapon_scale())
+
+
+## The scales in force ("head", "hand", "foot", "weapon", "shoulder", "mantle"), empty before any were applied.
+func get_current_youth_scales() -> Dictionary:
+	return _current_youth_scales
+
+
+## The youth silhouette applied (PlayerLoadoutResource.YouthBodyType), -1 for the classic rig.
+func youth_body_type() -> int:
+	return _body_type
+
+
+func _youth_weapon_scale() -> float:
+	return YOUTH_WEAPON_SCALE.x if _body_type >= 0 else 1.0
+
+
+func _youth_hand_scale() -> float:
+	return YOUTH_HAND_SCALE.x if _body_type >= 0 else 1.0
+
+
+## Dresses the weapon, the off hand and the mantle in a tier's recipe and the
+## seals pressed on them (§3.2, §6.6): the same meshes, new uniforms. The weapon
+## wears the shader as a next_pass over its sculpt; a buckler crest on the off
+## hand and a band at the collar wear it outright, and show only while sealed.
+func apply_equipment_tier_and_seals(catalog: ArsenalCatalog, loadout: PlayerLoadoutResource) -> void:
+	_ensure_seal_materials()
+	var tier: EquipmentTierResource = catalog.get_tier(loadout.equipped_tier_id) if loadout != null else null
+	if tier == null:
+		return
+	_applied_tier_id = tier.tier_id
+	var weapon_seal: ScribeCardResource = catalog.get_card(loadout.weapon_seal_card_id)
+	var offhand_seal: ScribeCardResource = catalog.get_card(loadout.offhand_seal_card_id)
+	var mantle_seal: ScribeCardResource = catalog.get_card(loadout.mantle_seal_card_id)
+	_apply_tier_to_material(_weapon_seal_pass, tier, weapon_seal, 0.5, 0.2, WEAPON_SEAL_BLEND)
+	_apply_tier_to_material(_offhand_seal_material, tier, offhand_seal, 0.5, 0.5, 1.0)
+	_apply_tier_to_material(_mantle_seal_material, tier, mantle_seal, 0.5, 0.6, 1.0)
+	_attach_weapon_seal_pass()
+	if has_rig():
+		_ensure_offhand_crest().visible = offhand_seal != null
+		_ensure_mantle_band().visible = mantle_seal != null
+	_seal_state = {
+		"tier_id": tier.tier_id,
+		"weapon_sealed": weapon_seal != null,
+		"offhand_sealed": offhand_seal != null,
+		"mantle_sealed": mantle_seal != null,
+		"weapon_seal": weapon_seal.card_id if weapon_seal != null else &"",
+		"offhand_seal": offhand_seal.card_id if offhand_seal != null else &"",
+		"mantle_seal": mantle_seal.card_id if mantle_seal != null else &"",
+	}
+
+
+## The tier and seals shown now ("tier_id", "weapon_sealed", ...), empty before any were applied.
+func seal_state() -> Dictionary:
+	return _seal_state
+
+
+## The seal materials, for checks: the weapon's pass, the off hand's and the mantle's.
+func seal_materials() -> Array[ShaderMaterial]:
+	_ensure_seal_materials()
+	return [_weapon_seal_pass, _offhand_seal_material, _mantle_seal_material]
+
+
+func _ensure_seal_materials() -> void:
+	if _weapon_seal_pass != null:
+		return
+	_weapon_seal_pass = ShaderMaterial.new()
+	_offhand_seal_material = ShaderMaterial.new()
+	_mantle_seal_material = ShaderMaterial.new()
+	for material: ShaderMaterial in [_weapon_seal_pass, _offhand_seal_material, _mantle_seal_material]:
+		material.shader = SEAL_SHADER
+	_weapon_seal_pass.set_shader_parameter(&"base_blend", WEAPON_SEAL_BLEND)
+
+
+func _apply_tier_to_material(material: ShaderMaterial, tier: EquipmentTierResource, seal_card: ScribeCardResource,
+		band_center: float, band_width: float, blend: float) -> void:
+	if material == null:
+		return
+	var recipe: Dictionary = tier.shader_uniforms()
+	for uniform: String in recipe:
+		material.set_shader_parameter(StringName(uniform), recipe[uniform])
+	material.set_shader_parameter(&"seal_band_center", band_center)
+	material.set_shader_parameter(&"seal_band_width", band_width)
+	material.set_shader_parameter(&"base_blend", blend)
+	if seal_card != null:
+		material.set_shader_parameter(&"has_scribe_seal", true)
+		material.set_shader_parameter(&"ink_primary_color", seal_card.ink_primary_color)
+		material.set_shader_parameter(&"ink_secondary_color", seal_card.ink_secondary_color)
+		material.set_shader_parameter(&"foil_grade", int(seal_card.foil_grade))
+	else:
+		material.set_shader_parameter(&"has_scribe_seal", false)
+		material.set_shader_parameter(&"foil_grade", 0)
+
+
+## The weapon's sculpt keeps its own atelier material; the seal shader rides it as a next_pass.
+func _attach_weapon_seal_pass() -> void:
+	if _weapon_seal_pass == null or _applied_tier_id == &"":
+		return
+	for material: Material in _weapon_materials:
+		if material != _weapon_seal_pass:
+			material.next_pass = _weapon_seal_pass
+
+
+## The buckler crest: a disc on the off hand's forearm (on the Greatshield's face for a Shield-Sworn).
+func _ensure_offhand_crest() -> MeshInstance3D:
+	if is_instance_valid(_offhand_crest):
+		return _offhand_crest
+	_offhand_crest = ShapeKit.no_shadow(ShapeKit.cylinder("SealCrest", CREST_RADIUS, CREST_RADIUS, CREST_THICKNESS,
+		Vector3(-0.1, -0.13, -0.045), _offhand_seal_material))
+	_offhand_crest.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	socket(HeroRigBuilder.OFF_HAND_SOCKET).add_child(_offhand_crest)
+	return _offhand_crest
+
+
+## The mantle band: a ring at the collar, hung from the chest so it rides the hero's lean.
+func _ensure_mantle_band() -> MeshInstance3D:
+	if is_instance_valid(_mantle_band):
+		return _mantle_band
+	_mantle_band = ShapeKit.no_shadow(ShapeKit.torus("SealMantleBand", MANTLE_BAND_RADIUS - MANTLE_BAND_WIDTH, MANTLE_BAND_RADIUS,
+		Vector3(0.0, MANTLE_BAND_RISE, 0.0), _mantle_seal_material))
+	socket(HeroRigBuilder.BACK_STOW_SOCKET).add_child(_mantle_band)
+	return _mantle_band
+
+
+## The 18-frame (0.30 s) Pocket-Pull (§4.2, §6.6), in the hero's own space: the
+## off hand darts to the pouch (frames 1-5), whips a 1.6x glowing card high
+## overhead (6-12) and slams its light into the weapon (13-18) as every seal
+## flares and the swing trail takes the card's ink. No Camera3D is touched: the
+## 4.8 m split-screen view never zooms, cuts or turns for it.
+func play_pocket_pull_flourish(catalog: ArsenalCatalog, card_id: StringName, slot_index: int) -> void:
+	var card: ScribeCardResource = catalog.get_card(card_id) if catalog != null else null
+	if card == null:
+		return
+	_ensure_seal_materials()
+	_is_flourishing = true
+	_flourish_card = card_id
+	_flourish_slot = slot_index
+	_pocket_pulls += 1
+	_seal_flare = POCKET_PULL_FLARE
+	_push_seal_flare()
+	pocket_pull_started.emit(card_id, slot_index)
+	if has_rig():
+		_start_choreography(Choreography.POCKET_PULL, card.ink_primary_color)
+		_overhead_card = _build_overhead_card(card)
+	elif is_inside_tree():
+		var timer: SceneTreeTimer = get_tree().create_timer(POCKET_PULL_DURATION_SEC)
+		timer.timeout.connect(_finish_pocket_pull_flourish)
+	else:
+		_finish_pocket_pull_flourish()
+
+
+## Whether a Pocket-Pull is in flight, and how many have played on this hero.
+func is_flourishing() -> bool:
+	return _is_flourishing
+
+
+func pocket_pull_count() -> int:
+	return _pocket_pulls
+
+
+## The seals' ignition flare right now (2.2 at the slam, fading from 0.75 after).
+func seal_flare() -> float:
+	return _seal_flare
+
+
+## The 1.6x card raised overhead: a glowing slab in the card's inks with its own halo, its top under 2.5 m.
+func _build_overhead_card(card: ScribeCardResource) -> MeshInstance3D:
+	var face: StandardMaterial3D = StorybookMaterial.glowing(VELLUM_COLOR.lerp(card.ink_secondary_color, 0.35), CARD_GLOW)
+	face.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var size: Vector3 = CARD_SIZE * POCKET_PULL_CARD_SCALE
+	var height: float = minf(POCKET_PULL_CARD_HEIGHT, POCKET_PULL_CARD_CAP - size.y * 0.5)
+	var raised: MeshInstance3D = ShapeKit.no_shadow(ShapeKit.box("OverheadCard", size, Vector3(0.0, height, 0.0), face))
+	var halo: StandardMaterial3D = StorybookMaterial.glowing(card.ink_primary_color, 2.2)
+	halo.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	halo.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	halo.albedo_color = Color(card.ink_primary_color, 0.7)
+	raised.add_child(ShapeKit.no_shadow(ShapeKit.box("SignHalo", Vector3(size.x + CARD_HALO * 2.0, size.y + CARD_HALO * 2.0, size.z * 0.4),
+		Vector3.ZERO, halo)))
+	raised.visible = false
+	add_child(raised)
+	return raised
+
+
+## Frames 1-5 the small card leaves the pouch in the off hand; 6-12 the big one
+## hangs overhead; 13-18 the slam: the hand card is tucked, the seals at their brightest.
+func _play_pocket_pull(t: float) -> void:
+	var frame: float = t * 60.0
+	if is_instance_valid(_card):
+		_card.visible = frame >= 3.0 and frame < 6.0
+	if is_instance_valid(_overhead_card):
+		_overhead_card.visible = frame >= 6.0 and frame < 13.0
+		_overhead_card.rotation.y = sin(t * 14.0) * 0.25
+	if frame >= 13.0:
+		_seal_flare = POCKET_PULL_FLARE
+		_push_seal_flare()
+
+
+func _finish_pocket_pull_flourish() -> void:
+	if not _is_flourishing:
+		return
+	_is_flourishing = false
+	_seal_flare = POCKET_PULL_AFTERGLOW
+	_push_seal_flare()
+	var card_id: StringName = _flourish_card
+	var slot: int = _flourish_slot
+	_flourish_card = &""
+	_flourish_slot = -1
+	pocket_pull_completed.emit(card_id, slot)
+
+
+## The afterglow fades once the pull is done.
+func _update_seal_flare(delta: float) -> void:
+	if _is_flourishing or _seal_flare <= 0.0:
+		return
+	_seal_flare = maxf(0.0, _seal_flare - AFTERGLOW_FADE_PER_SEC * delta)
+	_push_seal_flare()
+
+
+func _push_seal_flare() -> void:
+	if _weapon_seal_pass == null or is_equal_approx(_seal_flare, _seal_flare_shown):
+		return
+	_seal_flare_shown = _seal_flare
+	for material: ShaderMaterial in [_weapon_seal_pass, _offhand_seal_material, _mantle_seal_material]:
+		material.set_shader_parameter(&"active_invocation_flare", _seal_flare)
 
 
 static func _tint_children(root: Node3D, color: Color) -> void:

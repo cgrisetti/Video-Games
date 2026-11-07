@@ -132,6 +132,8 @@ const HERO_RIG_CHECKS: GDScript = preload("res://tools/test_hero_rig.gd")
 const CALDERA_CHECKS: GDScript = preload("res://tools/test_caldera_isles.gd")
 ## The Phase 12 Combat Kaizen refinement's checks (tools/test_phase12_kaizen.gd): jump, sprint, the playtest switcher, the diamond HUD, the Grimoire's tabs, the playground names.
 const KAIZEN_CHECKS: GDScript = preload("res://tools/test_phase12_kaizen.gd")
+## The Seal-and-Tuck Grimoire's 3-Stage Verification Suite (tools/test_equipment_grimoire_suite.gd): the linter, the maths, the split-screen and the network.
+const EQUIPMENT_GRIMOIRE_CHECKS: GDScript = preload("res://tools/test_equipment_grimoire_suite.gd")
 var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
 
@@ -156,6 +158,8 @@ func _run() -> void:
 	ComboChainComponent.enabled = false
 	PostureEscalationComponent.enabled = false
 	BossGateComponent.enabled = false
+	# The Seal-and-Tuck Grimoire's live seals and youth rig too: its own suite switches them on, last.
+	EquipmentSealComponent.enabled = false
 	change_scene_to_file(HUB_SCENE)
 	await _seconds(0.2)
 	_connect_global_signals()
@@ -226,6 +230,8 @@ func _run() -> void:
 	await CALDERA_CHECKS.new().run(self, _check)
 	# The Phase 12 Combat Kaizen refinement (K1 to K5) on Hearthstead Market's green.
 	await KAIZEN_CHECKS.new().run(self, _check)
+	# The Seal-and-Tuck Grimoire's three gates, on the same green.
+	await EQUIPMENT_GRIMOIRE_CHECKS.new().run(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 
 	print("%d passed, %d failed" % [_passes, _failures.size()])

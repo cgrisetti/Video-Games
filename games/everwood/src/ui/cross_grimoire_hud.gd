@@ -30,6 +30,15 @@
 ##   coal" in Saffron-Gold), so a parent can read it aloud from the couch;
 ## - the Hearth-Rite border: while the hero carries a Hearth-Rite Tuck, a
 ##   Saffron-Gold ember border glows round their cell.
+##
+## The Seal-and-Tuck Grimoire (docs/everwood_equipment_grimoire_architecture.md
+## §4.2, §6.8) adds the Seal Ledger in the cell's bottom-left corner, under 8%
+## of the quadrant and drawn by shape and colour alone: three badges for the
+## seals pressed on the weapon, the off hand and the mantle (each in its card's
+## ink, edged in its foil), a swatch of the material tier, and the L, R and L+R
+## slots with the Under-Card Tuck tabbed beneath each; a slot the stage hasn't
+## opened sits faint. A Pocket-Pull flips its slot's card over for 0.30 s, in
+## step with the hero's flourish, and rings it in the card's ink.
 class_name CrossGrimoireHUD
 extends Control
 
@@ -86,6 +95,23 @@ const RIBBON_EDGE: Color = Color(0.86, 0.68, 0.36, 0.9)
 const EMBER_COLOR: Color = Color(1.0, 0.76, 0.28)
 const EMBER_WIDTH: float = 5.0
 const EMBER_SPARKS: int = 9
+## The Seal Ledger (in cross units at scale 1): its box, the seal badges, the slot cards and
+## their tuck tabs, the card-flip's time, and the most of a cell it may take (under 8%).
+const LEDGER_SIZE: Vector2 = Vector2(150.0, 58.0)
+const LEDGER_PAD: float = 7.0
+const LEDGER_BADGE: float = 16.0
+const LEDGER_CARD: Vector2 = Vector2(18.0, 24.0)
+const LEDGER_TUCK: Vector2 = Vector2(14.0, 7.0)
+const LEDGER_GAP: float = 6.0
+const LEDGER_SLOTS_X: float = 78.0
+const LEDGER_BACK: Color = Color(0.08, 0.06, 0.05, 0.72)
+const LEDGER_EDGE: Color = Color(0.6, 0.48, 0.3, 0.9)
+const LEDGER_LOCKED: Color = Color(0.5, 0.48, 0.45, 0.3)
+const LEDGER_EMPTY: Color = Color(0.3, 0.28, 0.26, 0.75)
+const LEDGER_MAX_SHARE: float = 0.08
+const CARD_FLIP_TIME: float = 0.30
+## The foil edge of a card's printing: Plain Ink parchment, Gilded Leaf gold, Star-Ink violet.
+const FOIL_EDGES: Array[Color] = [Color(0.86, 0.8, 0.66), Color(1.0, 0.82, 0.3), Color(0.58, 0.4, 0.95)]
 
 const Cmd = CombatActionResource.Command
 const Diorama = ScribeCardResource.DioramaSocket
@@ -114,6 +140,13 @@ var _ribbon_plain: String = ""
 var _couplet_turn: Dictionary[StringName, int] = {}
 var _ember: Control
 var _ember_age: float = 0.0
+## The Seal Ledger, and the card-flip playing on it (its slot, its card, its time left).
+var _ledger: Control
+var _ledger_age: float = 0.0
+var _flip_slot: int = -1
+var _flip_card: StringName = &""
+var _flip_left: float = 0.0
+var _flips: int = 0
 
 
 func setup(target_actor: ActorBase) -> void:
@@ -142,12 +175,21 @@ func _ready() -> void:
 	_ember.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_ember.draw.connect(_draw_ember)
 	add_child(_ember)
+	_ledger = Control.new()
+	_ledger.name = "SealLedger"
+	_ledger.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ledger.size = LEDGER_SIZE
+	_ledger.visible = false
+	_ledger.draw.connect(_draw_ledger)
+	add_child(_ledger)
 	if actor != null:
 		actor.action_queue.action_started.connect(_on_action_started)
 		actor.action_queue.buffer_changed.connect(_on_buffer_changed)
 		CombatDirector.current.synergy_detonated.connect(_on_synergy_detonated)
 		if actor.sign_flow != null:
 			actor.sign_flow.hearth_rite_prepared.connect(_on_hearth_rite_prepared)
+		if actor.seal != null:
+			actor.seal.pocket_pull_invoked.connect(_on_pocket_pull_invoked)
 		_last_resonance = actor.stats.resonance_charge
 		diorama.key_texts = socket_keys(actor.input)
 
@@ -221,6 +263,7 @@ func _process(delta: float) -> void:
 	_place_ribbon(delta, cross_scale)
 	_ember_age += delta
 	_ember.queue_redraw()
+	_place_ledger(delta, cross_scale)
 
 
 # --- The Chime-Post ribbon and the Hearth-Rite border (15 GDD §6.2) ------------------
@@ -325,6 +368,178 @@ func _draw_ember() -> void:
 		var x: float = _ember.size.x * (index + 0.5) / EMBER_SPARKS + sin(_ember_age * 2.0 + index) * 8.0
 		var y: float = _ember.size.y - EMBER_WIDTH - rise * _ember.size.y * 0.12
 		_ember.draw_circle(Vector2(x, y), 3.0 * (1.0 - rise), Color(EMBER_COLOR.lightened(0.2), (1.0 - rise) * pulse))
+
+
+# --- The Seal Ledger (docs/everwood_equipment_grimoire_architecture.md §6.8) --------------------
+
+## The ledger control (the bottom-left corner card), for checks.
+func seal_ledger() -> Control:
+	return _ledger
+
+
+## The ledger's rectangle on this cell, in pixels.
+func ledger_rect() -> Rect2:
+	return Rect2(_ledger.position, LEDGER_SIZE * _ledger.scale)
+
+
+## The share of a cell of `cell_size` the ledger takes (under LEDGER_MAX_SHARE at every split).
+static func ledger_area_share(cell_size: Vector2) -> float:
+	var cross_scale: float = scale_for(cell_size)
+	var shown: Vector2 = LEDGER_SIZE * cross_scale
+	return (shown.x * shown.y) / maxf(cell_size.x * cell_size.y, 1.0)
+
+
+## Flips a slot's card over for 0.30 s (a Pocket-Pull), in the card's ink.
+func flash_pocket_pull(trigger_slot: int, card_id: StringName) -> void:
+	_flip_slot = trigger_slot
+	_flip_card = card_id
+	_flip_left = CARD_FLIP_TIME
+	_flips += 1
+
+
+## Whether a card is mid-flip, which slot, and how many flips have played.
+func is_card_flipping() -> bool:
+	return _flip_left > 0.0
+
+
+func flipping_slot() -> int:
+	return _flip_slot if _flip_left > 0.0 else -1
+
+
+func card_flips() -> int:
+	return _flips
+
+
+func _on_pocket_pull_invoked(card_id: StringName, trigger_slot: int, _has_tuck: bool) -> void:
+	flash_pocket_pull(trigger_slot, card_id)
+
+
+func _place_ledger(delta: float, cross_scale: float) -> void:
+	_ledger_age += delta
+	_flip_left = maxf(0.0, _flip_left - delta)
+	var shown: bool = is_instance_valid(actor) and actor.seal != null and actor.seal.loadout != null and EquipmentSealComponent.enabled
+	_ledger.visible = shown
+	if not shown:
+		return
+	_ledger.scale = Vector2.ONE * cross_scale
+	_ledger.position = Vector2(MARGIN, size.y - MARGIN - LEDGER_SIZE.y * cross_scale)
+	_ledger.queue_redraw()
+
+
+## The ledger: the three seal badges and the tier swatch on the left, the L, R and L+R
+## slots with their tuck tabs on the right. Shapes and colours, no words.
+func _draw_ledger() -> void:
+	if not is_instance_valid(actor) or actor.seal == null or actor.seal.loadout == null:
+		return
+	var hand: PlayerLoadoutResource = actor.seal.loadout
+	var stage: int = actor.seal.progression_stage
+	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var box: Rect2 = Rect2(Vector2.ZERO, LEDGER_SIZE)
+	_ledger.draw_rect(box, LEDGER_BACK, true)
+	_ledger.draw_rect(box.grow(-0.5), LEDGER_EDGE, false, 1.0)
+	# The seal badges: a diamond for the weapon, a disc for the off hand, a trapezoid for the mantle.
+	var seals_open: int = PlayerLoadoutResource.seals_open_at_stage(stage)
+	var open_flags: Array[int] = []
+	if seals_open >= 1:
+		open_flags.append(ScribeCardResource.SealSlotMask.SEAL_OFFHAND_BUCKLER)
+	if seals_open >= 2:
+		open_flags.append(ScribeCardResource.SealSlotMask.SEAL_WEAPON)
+	if seals_open >= 3:
+		open_flags.append(ScribeCardResource.SealSlotMask.SEAL_MANTLE_ARMOR)
+	for index: int in ScribeCardResource.SEAL_SLOT_FLAGS.size():
+		var flag: int = ScribeCardResource.SEAL_SLOT_FLAGS[index]
+		var center: Vector2 = Vector2(LEDGER_PAD + LEDGER_BADGE * 0.5 + index * (LEDGER_BADGE + LEDGER_GAP), LEDGER_PAD + 4.0 + LEDGER_BADGE * 0.5)
+		var seal_card: ScribeCardResource = catalog.get_card(hand.seal_in_slot(flag))
+		_badge(index, center, seal_card, open_flags.has(flag))
+	# The material tier: a swatch of its tint under the badges, and a pip for each tier reached.
+	var tier: EquipmentTierResource = catalog.get_tier(hand.equipped_tier_id)
+	if tier != null:
+		var swatch: Rect2 = Rect2(Vector2(LEDGER_PAD, LEDGER_PAD + 28.0), Vector2(LEDGER_BADGE * 3.0 + LEDGER_GAP * 2.0, 6.0))
+		_ledger.draw_rect(swatch, tier.albedo_tint, true)
+		_ledger.draw_rect(swatch, tier.rim_tint.lerp(LEDGER_EDGE, 0.5), false, 1.0)
+		for pip: int in EquipmentTierResource.TIER_COUNT:
+			var at: Vector2 = Vector2(LEDGER_PAD + 3.0 + pip * (swatch.size.x - 6.0) / float(EquipmentTierResource.TIER_COUNT - 1), LEDGER_PAD + 41.0)
+			_ledger.draw_circle(at, 2.0, tier.rim_tint if pip < tier.tier_index else LEDGER_EMPTY)
+	# The trigger slots: L, R, L+R, each a card with its tuck tabbed beneath.
+	for trigger_slot: int in PlayerLoadoutResource.TriggerSlot.size():
+		var left: float = LEDGER_SLOTS_X + trigger_slot * (LEDGER_CARD.x + LEDGER_GAP)
+		var card_rect: Rect2 = Rect2(Vector2(left, LEDGER_PAD + 1.0), LEDGER_CARD)
+		var tuck_rect: Rect2 = Rect2(Vector2(left + (LEDGER_CARD.x - LEDGER_TUCK.x) * 0.5, card_rect.end.y + 3.0), LEDGER_TUCK)
+		var open: bool = PlayerLoadoutResource.trigger_open_at_stage(trigger_slot, stage)
+		var primary: ScribeCardResource = catalog.get_card(hand.primary_for_trigger(trigger_slot))
+		var tuck: ScribeCardResource = catalog.get_card(hand.tuck_for_trigger(trigger_slot))
+		var tucks_open: bool = PlayerLoadoutResource.tucks_open_at_stage(stage) or trigger_slot == PlayerLoadoutResource.TriggerSlot.L_AND_R
+		var flipping: bool = _flip_left > 0.0 and _flip_slot == trigger_slot
+		_slot_card(card_rect, primary, open, flipping)
+		_slot_tuck(tuck_rect, tuck, open and tucks_open)
+		if flipping:
+			var progress: float = 1.0 - _flip_left / CARD_FLIP_TIME
+			var ink: Color = primary.ink_primary_color if primary != null else GOLD
+			_ledger.draw_arc(card_rect.get_center(), lerpf(10.0, 24.0, progress), 0.0, TAU, 28, Color(ink, 1.0 - progress), 2.0)
+
+
+## A seal badge: in the card's ink edged in its foil; an empty open slot outlined; a locked one faint.
+func _badge(index: int, center: Vector2, seal_card: ScribeCardResource, open: bool) -> void:
+	var half: float = LEDGER_BADGE * 0.5
+	var points: PackedVector2Array
+	match index:
+		0:
+			points = PackedVector2Array([center + Vector2(0.0, -half), center + Vector2(half * 0.7, 0.0), center + Vector2(0.0, half), center + Vector2(-half * 0.7, 0.0)])
+		2:
+			points = PackedVector2Array([center + Vector2(-half * 0.55, -half * 0.6), center + Vector2(half * 0.55, -half * 0.6),
+				center + Vector2(half, half * 0.7), center + Vector2(-half, half * 0.7)])
+	if seal_card != null:
+		if index == 1:
+			_ledger.draw_circle(center, half * 0.85, seal_card.ink_primary_color)
+			_ledger.draw_arc(center, half * 0.85, 0.0, TAU, 24, FOIL_EDGES[clampi(seal_card.foil_grade, 0, FOIL_EDGES.size() - 1)], 1.5)
+			_ledger.draw_arc(center, half * 0.45, 0.0, TAU, 16, seal_card.ink_secondary_color, 1.5)
+		else:
+			_ledger.draw_colored_polygon(points, seal_card.ink_primary_color)
+			var outline: PackedVector2Array = points.duplicate()
+			outline.append(points[0])
+			_ledger.draw_polyline(outline, FOIL_EDGES[clampi(seal_card.foil_grade, 0, FOIL_EDGES.size() - 1)], 1.5)
+			_ledger.draw_line(center + Vector2(-half * 0.35, 0.0), center + Vector2(half * 0.35, 0.0), seal_card.ink_secondary_color, 1.5)
+		return
+	var tint: Color = LEDGER_EMPTY if open else LEDGER_LOCKED
+	if index == 1:
+		_ledger.draw_arc(center, half * 0.85, 0.0, TAU, 24, tint, 1.2)
+	else:
+		var outline: PackedVector2Array = points.duplicate()
+		outline.append(points[0])
+		_ledger.draw_polyline(outline, tint, 1.2)
+
+
+## A slot's card: its ink with a Deep-Ink stripe and a foil edge; flipping, it narrows about its middle and brightens.
+func _slot_card(rect: Rect2, card: ScribeCardResource, open: bool, flipping: bool) -> void:
+	if card == null:
+		_ledger.draw_rect(rect, LEDGER_EMPTY if open else LEDGER_LOCKED, false, 1.2)
+		if not open:
+			_ledger.draw_line(rect.position, rect.end, LEDGER_LOCKED, 1.0)
+		return
+	var drawn: Rect2 = rect
+	var fill: Color = card.ink_primary_color
+	var foil: Color = FOIL_EDGES[clampi(card.foil_grade, 0, FOIL_EDGES.size() - 1)]
+	if flipping:
+		var progress: float = 1.0 - _flip_left / CARD_FLIP_TIME
+		var width: float = maxf(2.0, rect.size.x * absf(cos(progress * PI)))
+		drawn = Rect2(Vector2(rect.get_center().x - width * 0.5, rect.position.y), Vector2(width, rect.size.y))
+		fill = fill.lerp(foil, sin(progress * PI))
+	if not open:
+		fill = Color(fill, 0.35)
+	_ledger.draw_rect(drawn, fill, true)
+	_ledger.draw_rect(drawn, foil if open else LEDGER_LOCKED, false, 1.2)
+	var stripe: Rect2 = Rect2(Vector2(drawn.position.x + 2.0, drawn.position.y + drawn.size.y * 0.45), Vector2(maxf(drawn.size.x - 4.0, 0.0), 3.0))
+	if stripe.size.x > 0.0:
+		_ledger.draw_rect(stripe, Color(card.ink_secondary_color, 0.9 if open else 0.35), true)
+
+
+## The Under-Card Tuck tabbed under a slot.
+func _slot_tuck(rect: Rect2, tuck: ScribeCardResource, open: bool) -> void:
+	if tuck == null:
+		_ledger.draw_rect(rect, LEDGER_EMPTY if open else LEDGER_LOCKED, false, 1.0)
+		return
+	_ledger.draw_rect(rect, Color(tuck.ink_primary_color, 1.0 if open else 0.35), true)
+	_ledger.draw_rect(rect, FOIL_EDGES[clampi(tuck.foil_grade, 0, FOIL_EDGES.size() - 1)] if open else LEDGER_LOCKED, false, 1.0)
 
 
 ## The floating verb over the cross right now ("" when none is showing).

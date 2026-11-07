@@ -331,6 +331,8 @@ func report_hit(attacker: ActorBase, target: ActorBase, action: CombatActionReso
 		attacker.sign_flow.on_strike_landed(action, event)
 	if attacker.combo != null:
 		attacker.combo.on_strike_landed(action, event)
+	if attacker.seal != null:
+		attacker.seal.on_strike_landed(action, event)
 	deliver(event)
 
 
@@ -379,6 +381,10 @@ func _is_plausible(event: CombatEvent, target: ActorBase, sender: int) -> bool:
 		return false
 	if event.one_and_done and (event.command != CombatActionResource.Command.TRIGGER_BOTH_ULT
 			or not _diorama_has_leaf(attacker, event.finisher_card_id)):
+		return false
+	# A Pocket-Pull's coat must name a seal card in the attacker's hand (the hand every peer holds).
+	if event.seal_card_id != &"" and (attacker.seal == null or attacker.seal.loadout == null
+			or not attacker.seal.loadout.has_active_card(event.seal_card_id)):
 		return false
 	var limit: float = event.reach + target.body_radius() + VALIDATION_SLACK
 	return attacker.global_position.distance_to(target.global_position) <= limit
@@ -450,10 +456,17 @@ func _apply(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
 			# Aegis Ward shrugs it off. A friend's Lifeline Pull names the healer, so it still lands.
 			if event.attacker_path == event.target_path and target.sign_flow != null and target.sign_flow.shrugs_off_stagger():
 				return
+			if event.attacker_path == event.target_path and target.seal != null and target.seal.shrugs_off_stagger():
+				return
 			target.start_forced_move(event.origin, event.duration)
 
 
 func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> void:
+	# The striker's seals, read from the hand every peer holds: a Weapon Seal's flat bonus and
+	# posture, and a Pocket-Pull's coat (docs/everwood_equipment_grimoire_architecture.md §4).
+	var striker: ActorBase = _actor_at(event.attacker_path)
+	if striker != null and striker.seal != null:
+		striker.seal.shape_outgoing(event)
 	if event.coat_sign != ScribeSignResource.Sign.NONE:
 		# A coat's Place-Card poise (never more than any Place-Card lends), and a Hearth-Rite opening strike's seal.
 		event.coat_poise = clampf(event.coat_poise, 0.0, ArsenalCatalog.current.max_place_poise())

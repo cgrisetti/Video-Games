@@ -214,8 +214,11 @@ func _emit(step: int, steps: int, label: String) -> void:
 	combo_step_advanced.emit(step, steps, label)
 
 
-## Heavy with the stick pushed sideways (and not up or down) is a SIDE_HEAVY.
+## Heavy with the stick pushed sideways (and not up or down) is a SIDE_HEAVY (once the
+## Graduated APM gate, when it's on, has opened the flank at Stage 3).
 func _sideways() -> bool:
+	if actor.seal != null and not actor.seal.is_directional_attack_unlocked(EquipmentSealComponent.DirectionalAttack.SIDE_LIGHT_FLANK):
+		return false
 	return actor.input != null and actor.input.stick_side() != 0 and actor.input.stick_direction() == 0
 
 

@@ -20,6 +20,18 @@
 ## teammate on the Soul Tether or within 10 m strikes in its Sign. A finer
 ## finish adds potency: Gilded Leaf +10%, Star-Inked Vellum +20%.
 ##
+## The Seal-and-Tuck Grimoire (docs/everwood_equipment_grimoire_architecture.md
+## Part II §4) adds a third kind, the EQUIPMENT_SEAL card, with two layers:
+## - Layer 1, pressed onto the 3D gear before battle: which slots it may be
+##   stamped into (weapon, off-hand / buckler, mantle), its Deep-Ink script and
+##   two ink colours for the shader, its foil, and its passive: a ward against
+##   one Sign (less damage, no stun), a flat damage bonus, a posture-break
+##   multiplier or a stride.
+## - Layer 2, pulled from the pouch mid-combat on L, R or L+R: how it manifests
+##   (the same three modes), its pip cost, the action it releases, its damage
+##   multiplier and posture burst, how long its coat lasts, and the synergy its
+##   Under-Card Tuck adds.
+##
 ## Cards are data: adding one is a register_card() call in ArsenalCatalog (or a
 ## .tres file), and nothing that plays cards changes.
 class_name ScribeCardResource
@@ -27,10 +39,14 @@ extends Resource
 
 ## Whether a card leads a Grimoire slot or links beneath one (05 GDD §3.1).
 enum LinkRole { LEAD, UNDER }
-## What the card is in a diorama: the hero's verb, or the place behind it.
-enum CardKind { ACTION_LEAF = 0, LOCATION_PLACE = 1 }
+## What the card is in a diorama: the hero's verb, the place behind it, or a seal pressed onto the gear.
+enum CardKind { ACTION_LEAF = 0, LOCATION_PLACE = 1, EQUIPMENT_SEAL = 2 }
 ## How an Action-Leaf shows its Sign: on the weapon, on the shield and shoulders, or down the Soul Tether.
 enum ManifestationMode { WEAPON_COAT = 0, WARD_MANTLE = 1, LANTERN_TETHER = 2 }
+## The gear a seal card may be stamped into (a bit each; the doc's SealSlotMask).
+enum SealSlotMask { SEAL_NONE = 0, SEAL_WEAPON = 1, SEAL_OFFHAND_BUCKLER = 2, SEAL_MANTLE_ARMOR = 4, SEAL_ANY_EQUIPMENT = 7 }
+## A seal card's printing, one per CardVariant and in the same order (the doc's FoilGrade; the names players read are VARIANT_NAMES).
+enum FoilGrade { FOIL_PLAIN_VELLUM = 0, FOIL_GILDED_LEAF = 1, FOIL_STAR_INKED_VELLUM = 2 }
 ## The same three as each role delivers them (DPS, Tank, Support): one value, two names.
 enum RoleDelivery { DPS_WEAPON_COAT = 0, TANK_WARD_MANTLE = 1, SUPPORT_INK_SHARE = 2 }
 ## The diamond sockets that hold a diorama pair: L Guard, R Skill and L+R Ult.
@@ -76,6 +92,16 @@ const GILDING_COSTS: Array[int] = [0, 50, 120]
 ## What each finish adds to a card's potency (damage, poise, heals, a Place-Card's bonuses): +10% and +20%.
 const FINISH_POTENCY: Array[float] = [1.0, 1.1, 1.2]
 const ROLE_DELIVERY_NAMES: Array[String] = ["Ink Blade", "Ink Shield", "Ink-Share"]
+## The manifestations by the doc's names (the same three values).
+const MODE_WEAPON_COAT: int = ManifestationMode.WEAPON_COAT
+const MODE_WARD_MANTLE: int = ManifestationMode.WARD_MANTLE
+const MODE_LANTERN_TETHER: int = ManifestationMode.LANTERN_TETHER
+## The three seal slots in order, their flags, and how they read on the Binder.
+const SEAL_SLOT_FLAGS: Array[int] = [SealSlotMask.SEAL_WEAPON, SealSlotMask.SEAL_OFFHAND_BUCKLER, SealSlotMask.SEAL_MANTLE_ARMOR]
+const SEAL_SLOT_NAMES: Array[String] = ["Weapon Seal", "Off-Hand Seal", "Mantle Seal"]
+## An Under-Card Tuck under an invocation: 1.2x its damage and 1.25x its posture burst.
+const TUCK_SYNERGY_DAMAGE_MULT: float = 1.20
+const TUCK_SYNERGY_POSTURE_MULT: float = 1.25
 
 @export var card_id: StringName = &""
 @export var display_name: String = ""
@@ -129,6 +155,37 @@ const ROLE_DELIVERY_NAMES: Array[String] = ["Ink Blade", "Ink Shield", "Ink-Shar
 ## DPS: L+R spends a live Weapon-Coat on a finisher this many times the weapon's damage.
 @export var one_and_done_finisher_mult: float = 3.2
 
+@export_group("Layer 1: Pre-Battle Equipment Seal-Stamping")
+## Which gear the card may be pressed onto (SealSlotMask bits). SEAL_NONE: not a seal card.
+@export_flags("Weapon:1", "Offhand_Buckler:2", "Mantle_Armor:4") var allowed_seal_slots: int = SealSlotMask.SEAL_NONE
+## The printing this seal was registered at (a copy's own finish, CardVariant, is the same scale).
+@export var foil_grade: FoilGrade = FoilGrade.FOIL_PLAIN_VELLUM
+## The calligraphic script the shader writes along the blade, across the buckler or round the collar.
+@export var deep_ink_script_id: StringName = &""
+@export var ink_primary_color: Color = Color(0.58, 0.44, 0.86, 1.0)
+@export var ink_secondary_color: Color = Color(0.88, 0.82, 1.0, 1.0)
+## The Sign the seal wards against (ScribeSignResource.id_of), and how much of a blow of it comes off.
+@export var passive_ward_sign: StringName = &""
+@export_range(0.0, 0.60) var passive_ward_mitigation: float = 0.0
+## A blow of the warded Sign can't stun a hero wearing this seal.
+@export var grants_sign_stun_immunity: bool = false
+## A Weapon Seal adds this to every strike's damage.
+@export var passive_flat_damage_bonus: int = 0
+## Every strike's posture damage, and the hero's stride, times these.
+@export var passive_posture_break_mult: float = 1.0
+@export var passive_move_speed_mult: float = 1.0
+
+@export_group("Layer 2: Mid-Combat Pocket-Pull Invocation")
+## Pips the pull costs (1 to 3), and the action it releases, by id.
+@export_range(1, 3) var resonance_pip_cost: int = 1
+@export var active_action_id: StringName = &""
+## For the coat's time every strike does this much more; the pull's own blow adds this posture.
+@export var active_damage_mult: float = 1.0
+@export var active_posture_damage_bonus: float = 0.0
+@export var active_buff_duration_sec: float = 8.0
+## What an Under-Card Tuck beneath it adds, by id.
+@export var under_card_tuck_synergy_id: StringName = &""
+
 ## The role that delivers this leaf (the manifestation under its role's name). Not stored: it is manifestation_mode.
 var role_delivery: RoleDelivery:
 	get:
@@ -152,6 +209,39 @@ func is_action_leaf() -> bool:
 
 func is_place_card() -> bool:
 	return card_kind == CardKind.LOCATION_PLACE
+
+
+## A card that can be pressed onto the gear (and pulled from the pouch in a fight).
+func is_seal_card() -> bool:
+	return card_kind == CardKind.EQUIPMENT_SEAL and allowed_seal_slots != SealSlotMask.SEAL_NONE
+
+
+## Whether the seal may be stamped into a slot (a SealSlotMask flag).
+func can_stamp_into_slot(slot_flag: int) -> bool:
+	return (allowed_seal_slots & slot_flag) != 0
+
+
+## The warded Sign as the ScribeSignResource.Sign value (NONE when the seal wards nothing).
+func passive_ward_sign_enum() -> int:
+	return ScribeSignResource.from_id(passive_ward_sign)
+
+
+## Whether the seal wards against a Sign (by its id, &"SIGN_STAR_TIDE").
+func wards_against(incoming_sign: StringName) -> bool:
+	return passive_ward_sign != &"" and passive_ward_mitigation > 0.0 and passive_ward_sign == incoming_sign
+
+
+func has_tuck_synergy() -> bool:
+	return under_card_tuck_synergy_id != &""
+
+
+## The printing's name as players read it: Plain Ink, Gilded Leaf, Star-Ink.
+func foil_name() -> String:
+	return foil_grade_name(foil_grade)
+
+
+static func foil_grade_name(grade: int) -> String:
+	return VARIANT_NAMES[clampi(grade, 0, VARIANT_NAMES.size() - 1)]
 
 
 func mode_name() -> String:

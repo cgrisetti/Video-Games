@@ -22,6 +22,14 @@
 ## Tank's Ward-Mantle shrugs off stuns; a Support's leaf shares its ink), the
 ## Miyamoto tiers of every foe with their locks, and the henchmen a boss can
 ## summon in its second gate.
+##
+## And the Seal-and-Tuck Grimoire (docs/everwood_equipment_grimoire_architecture.md
+## Part II): the seven material tiers (EquipmentTierResource) a frame is
+## promoted through, the four base armaments (WeaponArchetypeResource), the
+## seal cards pressed onto gear and pulled from the pouch, the Rank 40 Elder
+## Cairn-Drake, the Dual-Readout level maths (True Level 1-20 inside, Renown
+## Rank 1-40 on the banners), evaluate_hit_damage and evaluate_incoming_hit,
+## and the default hand a hero wears by stage (default_seal_loadout).
 class_name ArsenalCatalog
 extends Node
 
@@ -194,6 +202,67 @@ const HENCHMAN_SCREE_WORM: StringName = &"mob_scree_worm"
 const HENCHMAN_BRAMBLE_HOB: StringName = &"mob_bramble_hob"
 const HENCHMAN_WISP_BOGGLE: StringName = &"mob_wisp_boggle"
 
+# The Seal-and-Tuck Grimoire (docs/everwood_equipment_grimoire_architecture.md Part II).
+## Words Gate 3 (the Four Philological Linter Rules) keeps off every tier, armament and seal card.
+const BANNED_LINTER_WORDS: PackedStringArray = [
+	"construct", "rune", "aspect", "wharf", "silt",
+	"lamellar", "hauberk", "rubric", "inscription",
+	"vibranium", "palladium", "platinum", "cannabis", "chain mail",
+]
+## The seven material tiers (§3.1), Tier 1 first.
+const TIER_1_HOMESTEAD: StringName = &"TIER_1_HOMESTEAD"
+const TIER_2_BOG_BRONZE: StringName = &"TIER_2_BOG_BRONZE"
+const TIER_3_FORGE_IRON: StringName = &"TIER_3_FORGE_IRON"
+const TIER_4_RIME_SILVER: StringName = &"TIER_4_RIME_SILVER"
+const TIER_5_SAFFRON_GOLD: StringName = &"TIER_5_SAFFRON_GOLD"
+const TIER_6_CAIRN_HEART: StringName = &"TIER_6_CAIRN_HEART"
+const TIER_7_STAR_HEART: StringName = &"TIER_7_STAR_HEART"
+const MATERIAL_TIER_IDS: Array[StringName] = [TIER_1_HOMESTEAD, TIER_2_BOG_BRONZE, TIER_3_FORGE_IRON, TIER_4_RIME_SILVER,
+	TIER_5_SAFFRON_GOLD, TIER_6_CAIRN_HEART, TIER_7_STAR_HEART]
+## The four base armaments (§2.2), in EquipmentTierResource.WeaponArchetype order.
+const WEAPON_SWORD_BOARD: StringName = &"WEAPON_SWORD_BOARD"
+const WEAPON_GREAT_MALLET: StringName = &"WEAPON_GREAT_MALLET"
+const WEAPON_BOUGH_BOW: StringName = &"WEAPON_BOUGH_BOW"
+const WEAPON_LANTERN_STAFF: StringName = &"WEAPON_LANTERN_STAFF"
+const WEAPON_ARCHETYPE_IDS: Array[StringName] = [WEAPON_SWORD_BOARD, WEAPON_GREAT_MALLET, WEAPON_BOUGH_BOW, WEAPON_LANTERN_STAFF]
+## The canonical seal cards (§6.4), one per Sign.
+const CARD_QUIET_WEIR: StringName = &"CARD_QUIET_WEIR"
+const CARD_EMBER_BOUGH: StringName = &"CARD_EMBER_BOUGH"
+const CARD_OLD_ROOT_BASTION: StringName = &"CARD_OLD_ROOT_BASTION"
+const CARD_WEST_WIND_PROMISE: StringName = &"CARD_WEST_WIND_PROMISE"
+const SEAL_CARD_IDS: Array[StringName] = [CARD_QUIET_WEIR, CARD_EMBER_BOUGH, CARD_OLD_ROOT_BASTION, CARD_WEST_WIND_PROMISE]
+## The Rank 40 apex threat (§5.1): True Level 20, 18,500 health, 1,200 posture.
+const ELDER_CAIRN_DRAKE: StringName = &"elder_cairn_drake"
+const ELDER_CAIRN_DRAKE_HP: float = 18500.0
+const ELDER_CAIRN_DRAKE_POSTURE: float = 1200.0
+## The homestead's first foes (§5.1): a Bramble-Mite and an awakened Boulder-Badger.
+const BRAMBLE_MITE_HP: float = 25.0
+const BOULDER_BADGER_HP: float = 45.0
+## The Dual-Readout curve: True Level 1-20 inside the maths, Renown Rank 1-40 (two a level) on every banner.
+const MAX_TRUE_LEVEL: int = 20
+const MAX_RENOWN_RANK: int = 40
+const RENOWN_PER_TRUE_LEVEL: int = 2
+## Seal wards and tier armour together never take more than this off a blow.
+const WARD_CAP: float = 0.80
+## A raid boss's poise must break every 35 to 50 s (04_BALANCE.md); a homestead foe falls to a stick in 12 to 15 s.
+const STAGGER_CADENCE_MIN_SEC: float = 35.0
+const STAGGER_CADENCE_MAX_SEC: float = 50.0
+const HOMESTEAD_FIGHT_MIN_SEC: float = 12.0
+const HOMESTEAD_FIGHT_MAX_SEC: float = 15.0
+## Posture-bearing heavies a raiding hero lands a second (one every eleven, between roars and rolls), and a child's honest stick swings.
+const RAID_POSTURE_STRIKES_PER_SEC: float = 0.09
+const HOMESTEAD_STRIKES_PER_SEC: float = 0.8
+## Each role's default hand, auto-stamped by stage until the Binder has a stamping bench: the weapon,
+## off-hand and mantle seals, then the L primary, L tuck, R primary and R tuck (by ClassLoadoutResource.Role).
+const ROLE_SEAL_HANDS: Dictionary[int, Array] = {
+	ClassLoadoutResource.Role.TANK: [CARD_OLD_ROOT_BASTION, CARD_QUIET_WEIR, CARD_WEST_WIND_PROMISE,
+		CARD_QUIET_WEIR, CARD_WEST_WIND_PROMISE, CARD_OLD_ROOT_BASTION, CARD_EMBER_BOUGH],
+	ClassLoadoutResource.Role.HEALER: [CARD_WEST_WIND_PROMISE, CARD_QUIET_WEIR, CARD_EMBER_BOUGH,
+		CARD_WEST_WIND_PROMISE, CARD_QUIET_WEIR, CARD_EMBER_BOUGH, CARD_OLD_ROOT_BASTION],
+	ClassLoadoutResource.Role.DPS: [CARD_EMBER_BOUGH, CARD_WEST_WIND_PROMISE, CARD_OLD_ROOT_BASTION,
+		CARD_EMBER_BOUGH, CARD_QUIET_WEIR, CARD_WEST_WIND_PROMISE, CARD_OLD_ROOT_BASTION],
+}
+
 # The Secondary Callings (06 §3, 07 GDD §1.3), in column order.
 const STOUT_HEART: StringName = &"stout_heart"
 const SWIFT_FOOT: StringName = &"swift_foot"
@@ -244,10 +313,17 @@ var _weapon_tiers: Array[WeaponVisualTierResource] = []
 var _appearances: Dictionary[StringName, HeroAppearanceResource] = {}
 var _appearance_order: Array[StringName] = []
 var _dyes: Dictionary[StringName, HeroAppearanceResource] = {}
+## The Seal-and-Tuck Grimoire's registries, in registration order.
+var _tiers: Dictionary[StringName, EquipmentTierResource] = {}
+var _tier_order: Array[StringName] = []
+var _archetypes: Dictionary[StringName, WeaponArchetypeResource] = {}
+var _archetype_order: Array[StringName] = []
 
 
 func _init() -> void:
 	_build_signs()
+	_build_material_tiers()
+	_build_weapon_archetypes()
 	_build_weapon_visual_tiers()
 	_build_armor()
 	_build_weapons()
@@ -256,6 +332,7 @@ func _init() -> void:
 	_build_under_cards()
 	_build_action_leaves()
 	_build_place_cards()
+	_build_seal_cards()
 	_build_callings()
 	_build_hero_appearances()
 	_build_encounters()
@@ -285,6 +362,87 @@ func item(id: StringName) -> EquipmentItemResource:
 
 func card(id: StringName) -> ScribeCardResource:
 	return _cards.get(id, null)
+
+
+# --- The Seal-and-Tuck Grimoire (docs/everwood_equipment_grimoire_architecture.md) -------
+
+## A material tier by id (&"TIER_3_FORGE_IRON"), or null.
+func get_tier(tier_id: StringName) -> EquipmentTierResource:
+	return _tiers.get(tier_id, null)
+
+
+## The seven tiers, Tier 1 first.
+func get_all_tiers() -> Array[EquipmentTierResource]:
+	var list: Array[EquipmentTierResource] = []
+	for id: StringName in _tier_order:
+		list.append(_tiers[id])
+	return list
+
+
+func material_tiers() -> Array[EquipmentTierResource]:
+	return get_all_tiers()
+
+
+## The tier forged for a True Level: Lv 1-3 Tier 1, 4-6 Tier 2, 7-10 Tier 3 ... Lv 20 Tier 7.
+func tier_for_true_level(true_level: int) -> EquipmentTierResource:
+	var level: int = clampi(true_level, 1, MAX_TRUE_LEVEL)
+	var reached: EquipmentTierResource = null
+	for tier: EquipmentTierResource in get_all_tiers():
+		if tier.covers_true_level(level):
+			return tier
+		if tier.min_true_level <= level:
+			reached = tier
+	return reached if reached != null else get_tier(TIER_1_HOMESTEAD)
+
+
+## The tier a banner's Renown Rank (1..40) wears.
+func tier_for_renown(renown_rank: int) -> EquipmentTierResource:
+	return tier_for_true_level(compute_true_level_from_renown(renown_rank))
+
+
+## A card by id, as the Grimoire names the call (the same as card()).
+func get_card(card_id: StringName) -> ScribeCardResource:
+	return card(card_id)
+
+
+func get_all_cards() -> Array[ScribeCardResource]:
+	return cards()
+
+
+## The seal cards (pressed onto gear before battle, pulled from the pouch in it), in registration order.
+func seal_cards() -> Array[ScribeCardResource]:
+	var list: Array[ScribeCardResource] = []
+	for listed: ScribeCardResource in cards():
+		if listed.is_seal_card():
+			list.append(listed)
+	return list
+
+
+## A base armament by id (&"WEAPON_GREAT_MALLET"), or null.
+func weapon_archetype(archetype_id: StringName) -> WeaponArchetypeResource:
+	return _archetypes.get(archetype_id, null)
+
+
+## The four armaments, in WeaponArchetype order.
+func weapon_archetypes() -> Array[WeaponArchetypeResource]:
+	var list: Array[WeaponArchetypeResource] = []
+	for id: StringName in _archetype_order:
+		list.append(_archetypes[id])
+	return list
+
+
+## The armament a trail weapon type channels: a Falchion is the Sword & Board, a Broad-Axe the
+## Great-Mallet, a Longbow the Bough-Bow, a Way-Staff the Lantern-Staff.
+func archetype_for_weapon_type(weapon_type: int) -> WeaponArchetypeResource:
+	for listed: WeaponArchetypeResource in weapon_archetypes():
+		if listed.weapon_type == weapon_type:
+			return listed
+	return weapon_archetype(WEAPON_SWORD_BOARD)
+
+
+## The armament for an EquipmentTierResource.WeaponArchetype value.
+func archetype_for_enum(archetype: int) -> WeaponArchetypeResource:
+	return weapon_archetype(WEAPON_ARCHETYPE_IDS[clampi(archetype, 0, WEAPON_ARCHETYPE_IDS.size() - 1)])
 
 
 ## A Secondary Calling by id (&"swift_foot"), or null.
@@ -633,6 +791,143 @@ static func _trail_row(primary_role: int) -> int:
 	return 2
 
 
+# --- The Dual-Readout curve and the Seal-and-Tuck maths (§5.1, §6.4) ----------------
+
+## Maps a banner's Renown Rank (1..40) to the True Level the maths run on (1..20): Rank 40 is Level 20, Rank 1 Level 1.
+static func compute_true_level_from_renown(renown_rank: int) -> int:
+	return clampi(int(ceil(float(renown_rank) * 0.5)), 1, MAX_TRUE_LEVEL)
+
+
+## Maps a True Level (1..20) to the Renown Rank shown for it (2..40).
+static func compute_renown_from_true_level(true_level: int) -> int:
+	return clampi(true_level * RENOWN_PER_TRUE_LEVEL, 1, MAX_RENOWN_RANK)
+
+
+## The progression stage a True Level plays at: 1-5, 6-10, 11-15, 16-20 (§5.2).
+static func compute_progression_stage(true_level: int) -> int:
+	return PlayerLoadoutResource.stage_for_true_level(true_level)
+
+
+## One blow's flat damage, the whole ladder in one function: the tier's light or
+## heavy on the hand's armament, a Weapon Seal's flat bonus, and an active
+## Pocket-Pull's multiplier (1.2x more under an Under-Card Tuck). A Lv 1
+## Orchard-Stick: 2 or 3. A Tier 7 Star-Glass blade under the Ember-Bough's coat: 78 to 108.
+func evaluate_hit_damage(loadout: PlayerLoadoutResource, is_heavy_attack: bool, is_active_invocation: bool,
+		active_card_id: StringName = &"", has_tuck_synergy: bool = false) -> int:
+	var tier: EquipmentTierResource = get_tier(loadout.equipped_tier_id) if loadout != null else null
+	if tier == null:
+		return 2
+	var dmg: float = float(tier.get_weapon_damage(is_heavy_attack, loadout.weapon_archetype as EquipmentTierResource.WeaponArchetype))
+	if loadout.weapon_seal_card_id != &"":
+		var w_seal: ScribeCardResource = get_card(loadout.weapon_seal_card_id)
+		if w_seal != null:
+			dmg += float(w_seal.passive_flat_damage_bonus)
+	if is_active_invocation and active_card_id != &"":
+		var active_card: ScribeCardResource = get_card(active_card_id)
+		if active_card != null:
+			dmg *= active_card.active_damage_mult
+			if has_tuck_synergy:
+				dmg *= ScribeCardResource.TUCK_SYNERGY_DAMAGE_MULT
+	return maxi(1, int(round(dmg)))
+
+
+## What a foe's blow of `incoming_sign` (&"SIGN_STAR_TIDE") does to a hand: the
+## tier's armour mitigation for its weight class plus every stamped seal's ward
+## against that Sign (together never past WARD_CAP), and whether a seal shrugs
+## the stun off. A Forge-Iron buckler stamped with the Quiet Weir takes a
+## 100-damage Star-Tide blow for 46, unstunned.
+func evaluate_incoming_hit(loadout: PlayerLoadoutResource, raw_damage: int, incoming_sign: StringName) -> Dictionary:
+	var tier: EquipmentTierResource = get_tier(loadout.equipped_tier_id) if loadout != null else null
+	var mitigation: float = 0.04
+	if tier != null:
+		mitigation = tier.get_mitigation_for_class(loadout.armor_weight_class as EquipmentTierResource.ArmorWeightClass)
+	var stun_immune: bool = false
+	if loadout != null:
+		for seal_id: StringName in loadout.seal_card_ids():
+			if seal_id == &"":
+				continue
+			var seal_card: ScribeCardResource = get_card(seal_id)
+			if seal_card != null and seal_card.wards_against(incoming_sign):
+				mitigation = clampf(mitigation + seal_card.passive_ward_mitigation, 0.0, WARD_CAP)
+				if seal_card.grants_sign_stun_immunity:
+					stun_immune = true
+	var final_damage: int = maxi(1, int(round(float(raw_damage) * (1.0 - mitigation))))
+	return {"final_damage": final_damage, "mitigation_applied": mitigation, "stun_immune": stun_immune}
+
+
+## The strongest posture-break multiplier among a hand's seals (1.0 with none).
+func posture_break_mult_of(loadout: PlayerLoadoutResource) -> float:
+	var mult: float = 1.0
+	if loadout == null:
+		return mult
+	for seal_id: StringName in loadout.seal_card_ids():
+		var seal_card: ScribeCardResource = get_card(seal_id)
+		if seal_card != null:
+			mult = maxf(mult, seal_card.passive_posture_break_mult)
+	return mult
+
+
+## A party's posture damage a second against a raid boss, by the cadence model: each
+## hero's tier posture, times its seals' posture-break multiplier, at RAID_POSTURE_STRIKES_PER_SEC.
+func evaluate_party_posture_dps(loadouts: Array[PlayerLoadoutResource]) -> float:
+	var total: float = 0.0
+	for hand: PlayerLoadoutResource in loadouts:
+		var tier: EquipmentTierResource = get_tier(hand.equipped_tier_id)
+		if tier != null:
+			total += tier.base_posture_damage * posture_break_mult_of(hand) * RAID_POSTURE_STRIKES_PER_SEC
+	return total
+
+
+## Seconds a party takes to break a posture pool (the Elder Cairn-Drake's 1,200 by default): the stagger cadence.
+func estimate_stagger_seconds(loadouts: Array[PlayerLoadoutResource], posture_pool: float = ELDER_CAIRN_DRAKE_POSTURE) -> float:
+	var dps: float = evaluate_party_posture_dps(loadouts)
+	return INF if dps <= 0.0 else posture_pool / dps
+
+
+## Seconds of honest swings a hand takes to beat `hit_points` (a Bramble-Mite's 25): light and heavy blows in turn.
+func estimate_time_to_beat(loadout: PlayerLoadoutResource, hit_points: float, strikes_per_sec: float = HOMESTEAD_STRIKES_PER_SEC) -> float:
+	var per_blow: float = float(evaluate_hit_damage(loadout, false, false) + evaluate_hit_damage(loadout, true, false)) * 0.5
+	return hit_points / maxf(per_blow * strikes_per_sec, 0.001)
+
+
+## The hand a hero wears until the Binder has a stamping bench: the tier its True
+## Level forged, its armament and its Fellowship's armour weight, and its role's
+## seals and invocations (ROLE_SEAL_HANDS), trimmed to what its stage has opened.
+## Odd seats are Female Youths, even seats Male, until a hero picks. A playtest's
+## `stage_override` (1 to 4) opens the ladder's slots regardless of the level.
+func default_seal_loadout(class_id: StringName, role: int, weapon_type: int, calling_id: StringName, true_level: int,
+		party_slot: int = 0, stage_override: int = 0) -> PlayerLoadoutResource:
+	var hand: PlayerLoadoutResource = PlayerLoadoutResource.new()
+	var level: int = clampi(true_level, 1, MAX_TRUE_LEVEL)
+	var archetype: WeaponArchetypeResource = archetype_for_weapon_type(weapon_type)
+	hand.body_type = posmod(party_slot, 2) as PlayerLoadoutResource.YouthBodyType
+	hand.calling_id = calling_id if calling_id != &"" else class_id
+	hand.weapon_archetype = archetype.archetype if archetype != null else EquipmentTierResource.WeaponArchetype.WEAPON_SWORD_BOARD
+	hand.armor_weight_class = weight_class_for_role(role)
+	hand.equipped_tier_id = tier_for_true_level(level).tier_id
+	var picks: Array = ROLE_SEAL_HANDS.get(role, ROLE_SEAL_HANDS[ClassLoadoutResource.Role.DPS])
+	hand.weapon_seal_card_id = picks[0]
+	hand.offhand_seal_card_id = picks[1]
+	hand.mantle_seal_card_id = picks[2]
+	hand.slot_l_primary_id = picks[3]
+	hand.slot_l_tuck_id = picks[4]
+	hand.slot_r_primary_id = picks[5]
+	hand.slot_r_tuck_id = picks[6]
+	var stage: int = stage_override if stage_override > 0 else compute_progression_stage(level)
+	hand.trim_to_stage(stage, level)
+	return hand
+
+
+## The armour weight a role wears (EquipmentTierResource.ArmorWeightClass): tanks heavy, menders light, the rest medium.
+static func weight_class_for_role(role: int) -> int:
+	match role:
+		ClassLoadoutResource.Role.TANK:
+			return EquipmentTierResource.ArmorWeightClass.ARMOR_HEAVY_SHIELD_SWORN
+		ClassLoadoutResource.Role.HEALER:
+			return EquipmentTierResource.ArmorWeightClass.ARMOR_LIGHT_LANTERN_BEARER
+	return EquipmentTierResource.ArmorWeightClass.ARMOR_MEDIUM_WAYFARER
+
+
 ## A fresh dodge roll; the armor sets how far it carries (DodgeState).
 func dodge_template() -> CombatActionResource:
 	var roll: CombatActionResource = _support(&"dodge_roll", "Dodge Roll", Cmd.DODGE, Fx.DODGE, 0.03, 0.32, 0.22)
@@ -715,6 +1010,20 @@ func register_combo(added: ComboChainResource) -> void:
 
 func register_henchman(id: StringName, kind: int) -> void:
 	_henchmen[id] = kind
+
+
+func register_tier(added: EquipmentTierResource) -> void:
+	assert(added.tier_id != &"", "ArsenalCatalog: a material tier needs an id")
+	if not _tiers.has(added.tier_id):
+		_tier_order.append(added.tier_id)
+	_tiers[added.tier_id] = added
+
+
+func register_weapon_archetype(added: WeaponArchetypeResource) -> void:
+	assert(added.archetype_id != &"", "ArsenalCatalog: an armament needs an id")
+	if not _archetypes.has(added.archetype_id):
+		_archetype_order.append(added.archetype_id)
+	_archetypes[added.archetype_id] = added
 
 
 func register_encounter(added: BossEncounterResource) -> void:
@@ -1616,6 +1925,167 @@ func _place(id: StringName, label: String, scribe_sign: Sign, landmark: StringNa
 	return place
 
 
+# --- The seven material tiers and four armaments (docs/everwood_equipment_grimoire_architecture.md §2-§3) ---
+
+## Each tier's names, bands, flat numbers and shader recipe, straight from the
+## master table (§3.1) and the recipe table (§3.2). Tier 7's light mantle reads
+## "Star-Ink" on screen, by Gate 6's playground rename of the old finish word.
+func _build_material_tiers() -> void:
+	_register_tier(TIER_1_HOMESTEAD, 1, "Orchard-Wood", "Oak-Bark & Boiled-Hide", "Bracken-Pelt Jerkin", "Mended-Linen Smock",
+		&"ISLAND_OAKSHIRE_HOLM", "Oakshire Holm (Homestead Start)", 1, 3, 1, 5, 2, 3, 14.0, 0.04, 0,
+		Color("#8B5A2B"), 0.00, 0.88, 0.15, Color("#D2B48C"), 0.00)
+	_register_tier(TIER_2_BOG_BRONZE, 2, "Bog-Bronze", "Bog-Bronze Rim & Layered-Hide", "Mire-Cured Buckskin", "Orchard-Wool Mantle",
+		&"ISLAND_BARROW_EYOT", "Barrow-Eyot Marshes & Early Oakshire", 4, 6, 6, 10, 5, 7, 20.0, 0.09, 25,
+		Color("#CD7F32"), 0.68, 0.52, 0.30, Color("#F4A460"), 0.00)
+	_register_tier(TIER_3_FORGE_IRON, 3, "Forge-Iron", "Kettle-Link & Iron-Buckler", "Riveted Crag-Coat", "Nettle-Weave Vestment",
+		&"ISLAND_IRON_NESS", "Iron-Ness Foundries (BeaconIron Stall)", 7, 10, 11, 18, 10, 13, 28.0, 0.15, 65,
+		Color("#707B84"), 0.82, 0.42, 0.40, Color("#B0C4DE"), 0.00)
+	_register_tier(TIER_4_RIME_SILVER, 4, "Rime-Silver", "Frost-Folded Forge-Plate", "Hoar-Stag Scale-Coat", "Moth-Silk Habit",
+		&"ISLAND_RIME_FIRTH", "Rime-Firth Peaks (BeaconGale Stall)", 11, 13, 19, 25, 16, 20, 36.0, 0.22, 120,
+		Color("#D8E6F2"), 0.92, 0.24, 0.65, Color("#E0FFFF"), 0.08)
+	_register_tier(TIER_5_SAFFRON_GOLD, 5, "Saffron-Gold", "Gilded Weir-Plate", "Tide-Drake Brigandine", "Gossamer-Spun Shroud",
+		&"ISLAND_CONVERGENCE", "Three Isles Convergence (BeaconTide Stall)", 14, 16, 26, 32, 24, 29, 46.0, 0.30, 190,
+		Color("#F2B732"), 0.95, 0.20, 0.75, Color("#FFFACD"), 0.15)
+	_register_tier(TIER_6_CAIRN_HEART, 6, "Cairn-Heart", "Cairn-Scale Great-Plate", "Elder-Wyrm Hide-Coat", "Cloud-Fleece Raiment",
+		&"ISLAND_THE_CROWN", "The Crown (Caldera Rim Delves)", 17, 19, 33, 37, 34, 40, 58.0, 0.38, 280,
+		Color("#3B444B"), 0.60, 0.32, 0.85, Color("#FF7F50"), 0.28)
+	_register_tier(TIER_7_STAR_HEART, 7, "Star-Glass & Ember-Iron", "Heart-Crag & Star-Clad Plate", "Star-Woven Wyrm-Coat", "Star-Ink Great-Mantle",
+		&"ISLAND_OLD_QUAY_EBB", "Old Quay Market (-6 m Ebb-Tide Raid Artificers)", 20, 20, 38, 40, 46, 54, 72.0, 0.46, 400,
+		Color("#1E243B"), 0.96, 0.14, 1.00, Color("#9370DB"), 0.55)
+
+
+func _register_tier(t_id: StringName, idx: int, w_name: String, h_name: String, m_name: String, l_name: String,
+		island: StringName, source: String, min_lv: int, max_lv: int, min_rnk: int, max_rnk: int,
+		l_dmg: int, h_dmg: int, p_dmg: float, mitig: float, hp_bonus: int,
+		albedo: Color, metal: float, rough: float, rim_s: float, rim_c: Color, emissive: float) -> void:
+	var tier: EquipmentTierResource = EquipmentTierResource.new()
+	tier.tier_id = t_id
+	tier.tier_index = idx
+	tier.weapon_material_name = w_name
+	tier.heavy_armor_name = h_name
+	tier.medium_armor_name = m_name
+	tier.light_armor_name = l_name
+	tier.unlock_island_id = island
+	tier.unlock_source = source
+	tier.min_true_level = min_lv
+	tier.max_true_level = max_lv
+	tier.min_renown_rank = min_rnk
+	tier.max_renown_rank = max_rnk
+	tier.base_light_damage = l_dmg
+	tier.base_heavy_damage = h_dmg
+	tier.base_posture_damage = p_dmg
+	tier.base_damage_mitigation = mitig
+	tier.bonus_max_hp = hp_bonus
+	tier.albedo_tint = albedo
+	tier.metallic = metal
+	tier.roughness = rough
+	tier.rim_strength = rim_s
+	tier.rim_tint = rim_c
+	tier.emissive_pulse_strength = emissive
+	register_tier(tier)
+
+
+## The four base armaments and their Tier 1 homestead arms (§2.2).
+func _build_weapon_archetypes() -> void:
+	const Arch = EquipmentTierResource.WeaponArchetype
+	const Weight = EquipmentTierResource.ArmorWeightClass
+	_archetype(WEAPON_SWORD_BOARD, Arch.WEAPON_SWORD_BOARD, EquipmentItemResource.WeaponType.LIGHT_SWORD, Weight.ARMOR_HEAVY_SHIELD_SWORN,
+		"Shield-Sworn", "Orchard-Stick & Bark-Buckler", "Blade & Buckler", "Light", "Heavy",
+		"A bark-stripped applewood stick paired with a thick slab of knotted oak-bark bound with twine.",
+		"Teaches blocking, PARRY & STRIKE timing as a boulder-beast roars its challenge, and protecting siblings.")
+	_archetype(WEAPON_GREAT_MALLET, Arch.WEAPON_GREAT_MALLET, EquipmentItemResource.WeaponType.HEAVY_AXE, Weight.ARMOR_MEDIUM_WAYFARER,
+		"Wayfarer Melee", "Cooper's Cider-Mallet", "Great-Mallet", "Light", "Heavy",
+		"An oversized two-handed wooden barrel-mallet with a hickory handle and twine-wrapped head.",
+		"Teaches heavy posture-stagger swings and Forward + Heavy gap-closers against stone hides.")
+	_archetype(WEAPON_BOUGH_BOW, Arch.WEAPON_BOUGH_BOW, EquipmentItemResource.WeaponType.BOW, Weight.ARMOR_MEDIUM_WAYFARER,
+		"Wayfarer Ranged", "Bent-Twig Bough & Reed-Shafts", "Bough-Bow", "Quick", "Drawn",
+		"A supple yew-bough strung with waxed linen twine, firing whittled river-reed arrows.",
+		"Teaches spacing, the Glowing Spot's target lock, and safe off-angle posture chipping.")
+	_archetype(WEAPON_LANTERN_STAFF, Arch.WEAPON_LANTERN_STAFF, EquipmentItemResource.WeaponType.STAFF, Weight.ARMOR_LIGHT_LANTERN_BEARER,
+		"Lantern-Bearer", "Rowan-Crook & Tallow-Jar", "Lantern-Crook", "Light", "Mend",
+		"A crooked rowan walking-stick with a warm firefly-and-tallow glass jar swinging from its notch.",
+		"Teaches keeping the Warm-Hearth tether alive and soothing restless creatures back to their lulled cairns.")
+
+
+func _archetype(id: StringName, archetype: EquipmentTierResource.WeaponArchetype, weapon_type: EquipmentItemResource.WeaponType,
+		weight: EquipmentTierResource.ArmorWeightClass, calling_label: String, homestead: String, frame: String, light: String, heavy: String,
+		blurb: String, goal: String) -> void:
+	var added: WeaponArchetypeResource = WeaponArchetypeResource.new()
+	added.archetype_id = id
+	added.archetype = archetype
+	added.weapon_type = weapon_type
+	added.armor_weight_class = weight
+	added.calling_label = calling_label
+	added.homestead_name = homestead
+	added.frame_noun = frame
+	added.light_label = light
+	added.heavy_label = heavy
+	added.homestead_blurb = blurb
+	added.teaching_goal = goal
+	register_weapon_archetype(added)
+
+
+# --- The seal cards (docs/everwood_equipment_grimoire_architecture.md §4, §6.4) -------------------
+
+## Four canonical seals, one a Sign: each may be pressed on any of the three
+## pieces (its ward, flat bonus, posture or stride comes with it) and pulled
+## from the pouch on L, R or L+R. Never in a chest; the Binder's bench will
+## trade them.
+func _build_seal_cards() -> void:
+	const Foil = ScribeCardResource.FoilGrade
+	_seal_card(CARD_QUIET_WEIR, "Seal of the Quiet Weir", Sign.SIGN_STAR_TIDE, Foil.FOIL_GILDED_LEAF, &"SCRIPT_STAR_WARD",
+		Color("#9370DB"), Color("#E6E6FA"), 0.35, true, 2, 1.0, 1.0,
+		ScribeCardResource.MODE_WARD_MANTLE, 1, &"ACTION_SHIELD_CHARGE_RELEASE", 1.45, 45.0, &"TUCK_STAR_NOVA_PULSE",
+		"Pressed on a buckler it wards Star-Tide: a third less of its blows, and no stun. Pulled, the crest erupts and the shield charges.")
+	_seal_card(CARD_EMBER_BOUGH, "Seal of the Ember-Bough", Sign.SIGN_WARM_HEARTH, Foil.FOIL_STAR_INKED_VELLUM, &"SCRIPT_HEARTH_VOW",
+		Color("#FF8C00"), Color("#FFFACD"), 0.30, true, 4, 1.0, 1.0,
+		ScribeCardResource.MODE_WEAPON_COAT, 1, &"ACTION_FLAME_BLADE_COAT", 1.55, 50.0, &"TUCK_EMBER_FLARE_TRAIL",
+		"Pressed on a blade it adds four to every cut and wards Warm-Hearth. Pulled, hearth-ink pours down the weapon and coats it in flame.")
+	_seal_card(CARD_OLD_ROOT_BASTION, "Seal of the Old-Root", Sign.SIGN_IRON_ROOT, Foil.FOIL_PLAIN_VELLUM, &"SCRIPT_ROOT_BIND",
+		Color("#2E8B57"), Color("#98FB98"), 0.35, true, 2, 1.25, 1.0,
+		ScribeCardResource.MODE_WARD_MANTLE, 1, &"ACTION_ROOT_ANCHOR_SLAM", 1.40, 55.0, &"TUCK_ROOT_QUAKE_BIND",
+		"Pressed on a mantle it doubles down on poise: a quarter more posture break, and a ward against Iron-Root. Pulled, roots anchor the hero and slam the ground.")
+	_seal_card(CARD_WEST_WIND_PROMISE, "Seal of the West-Wind", Sign.SIGN_RIME_GALE, Foil.FOIL_GILDED_LEAF, &"SCRIPT_GALE_STRIDE",
+		Color("#00CED1"), Color("#E0FFFF"), 0.30, true, 2, 1.0, 1.15,
+		ScribeCardResource.MODE_LANTERN_TETHER, 1, &"ACTION_GALE_TETHER_HASTE", 1.35, 40.0, &"TUCK_GALE_STRIDE_ECHO",
+		"Pressed on a mantle it quickens a slow hero's stride by 15% and wards Rime-Gale. Pulled, a haste runs down the Soul Tether.")
+
+
+func _seal_card(id: StringName, label: String, scribe_sign: Sign, foil: ScribeCardResource.FoilGrade, script: StringName,
+		ink: Color, ink_edge: Color, ward: float, stun_immune: bool, flat: int, posture_mult: float, stride_mult: float,
+		mode: int, pips: int, action: StringName, dmg_mult: float, posture_bonus: float, tuck: StringName, blurb: String) -> ScribeCardResource:
+	var seal: ScribeCardResource = ScribeCardResource.new()
+	seal.card_id = id
+	seal.display_name = label
+	seal.description = blurb
+	seal.kind = ScribeCardResource.LinkRole.LEAD
+	seal.card_kind = ScribeCardResource.CardKind.EQUIPMENT_SEAL
+	seal.scribe_sign = scribe_sign
+	seal.rarity = ScribeCardResource.CardRarity.COMMON
+	seal.starter = false
+	seal.drop_weight = 0.0
+	seal.foil_grade = foil
+	seal.allowed_seal_slots = ScribeCardResource.SealSlotMask.SEAL_ANY_EQUIPMENT
+	seal.deep_ink_script_id = script
+	seal.ink_primary_color = ink
+	seal.ink_secondary_color = ink_edge
+	seal.passive_ward_sign = ScribeSignResource.id_of(scribe_sign)
+	seal.passive_ward_mitigation = ward
+	seal.grants_sign_stun_immunity = stun_immune
+	seal.passive_flat_damage_bonus = flat
+	seal.passive_posture_break_mult = posture_mult
+	seal.passive_move_speed_mult = stride_mult
+	seal.manifestation_mode = mode as ScribeCardResource.ManifestationMode
+	seal.resonance_pip_cost = pips
+	seal.active_action_id = action
+	seal.active_damage_mult = dmg_mult
+	seal.active_posture_damage_bonus = posture_bonus
+	seal.active_buff_duration_sec = 8.0
+	seal.under_card_tuck_synergy_id = tuck
+	register_card(seal)
+	return seal
+
+
 # --- Encounters: Miyamoto tiers, locks and Glimmer-Spots (14 GDD §3, §8) ------------
 
 ## Every foe's encounter. Tier 0 kin are always open to Iron-Root; Tier 1 kin
@@ -1660,6 +2130,13 @@ func _build_encounters() -> void:
 	_encounter(OLD_HOB, "Old-Hob-of-the-Hill", Tier.TIER_3_FOUR_GATE_BOSS, 60,
 		[Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE], 75, 45,
 		"Old-Hob hums low on his hill of moss:\nmantle, tether and Sign, or the whole trail is lost.", "hum")
+	# The Seal-and-Tuck Grimoire's apex (docs/everwood_equipment_grimoire_architecture.md §5.1):
+	# True Level 20, so its threat plate reads Rank 40; a buckler sealed with Star-Tide shrugs its roars off.
+	var elder: BossEncounterResource = _encounter(ELDER_CAIRN_DRAKE, "The Elder Cairn-Drake", Tier.TIER_3_FOUR_GATE_BOSS, MAX_TRUE_LEVEL,
+		[Sign.SIGN_STAR_TIDE, Sign.SIGN_IRON_ROOT], 120, 75,
+		"When the Elder Drake rears where the ebb-tide runs low,\nseal Star-Tide on your buckler and break him with Root!", "roar")
+	elder.gate_weakness_signs = [Sign.NONE, Sign.SIGN_STAR_TIDE, Sign.SIGN_RIME_GALE, Sign.SIGN_IRON_ROOT]
+	elder.gate_2_henchman_id = HENCHMAN_SCREE_WORM
 
 
 func _encounter(id: StringName, label: String, tier: BossEncounterResource.MiyamotoTier, level: int, counters: Array[int],
