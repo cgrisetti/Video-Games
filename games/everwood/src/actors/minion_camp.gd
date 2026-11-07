@@ -30,6 +30,8 @@ const NEST_COLOR: Color = Color(0.3, 0.33, 0.18)
 
 ## Shown when it's cleared ("Bramble Hush-Crack").
 @export var camp_name: String = "Bramble Hush-Crack"
+## Its minions' level, on their badges (Tier 1 kin by default).
+@export var level: int = 2
 ## WoodlandMinion.Kind of each minion, in spawn order.
 @export var kinds: Array[int] = []
 ## Its WorldStateDB id (10_WORLD_ARCHITECTURE.md §4.2); empty: not remembered.

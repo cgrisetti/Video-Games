@@ -116,6 +116,7 @@ func _build_visual() -> void:
 	_bar.modulate = BAR_COLOR
 	_bar.position = Vector3(0.0, body_height() + 0.35, 0.0)
 	add_child(_bar)
+	EnemyNameplate.attach(self, false)
 
 
 ## A thorny bramble ball on six twig legs, with two ember eyes.

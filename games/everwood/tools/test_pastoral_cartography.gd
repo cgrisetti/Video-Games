@@ -142,6 +142,11 @@ func _check_labels(where: String) -> void:
 	var stations: int = 0
 	for node: Node in labels:
 		var label: Label3D = node as Label3D
+		# An enemy's level badge keeps its own look (13_PLAYTEST §2.14); nothing else may.
+		if label.has_meta(WorldLabelStyle.OWN_STYLE_META):
+			if not label is EnemyNameplate:
+				wrong.append("%s keeps its own style" % label.name)
+			continue
 		if (label.fixed_size or label.visibility_range_end > 30.0 or label.visibility_range_end <= 0.0 or not is_equal_approx(label.pixel_size, WorldLabelStyle.PIXEL_SIZE)
 				or label.font_size != WorldLabelStyle.FONT_SIZE or label.outline_size != WorldLabelStyle.OUTLINE_SIZE
 				or label.visibility_range_fade_mode != GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF or not is_equal_approx(label.visibility_range_begin, 1.8)):
@@ -362,9 +367,9 @@ func _check_atlas_and_trail() -> void:
 	var view: PlayerCamera = level.camera_for_seat(actor.party_slot + 1)
 	var opened: bool = hud.open_atlas()
 	await _frames(2)
-	var atlas: CartographyAtlasPanel = hud.atlas_panel()
+	var atlas: WorldMapPanel = hud.atlas_panel()
 	var hidden: bool = view != null and not view.get_cull_mask_value(WorldLabelStyle.STATION_LABEL_LAYER)
-	check.call(opened and atlas != null and actor.input.menu_open and hidden and atlas.zones().size() == 1 and atlas.map != null,
+	check.call(opened and atlas != null and actor.input.menu_open and hidden and atlas.nodes_of(CartographyBaker.NodeKind.TOWN).size() == 1 and atlas.map != null,
 		"a tap of M opens the Wayfarer's Atlas over P1's view (the controller drives it, the station signs drop out of the view behind it)")
 	var target: Vector2 = Vector2(actor.global_position.x, actor.global_position.z) + Vector2(0.0, -24.0)
 	atlas.pin(target)

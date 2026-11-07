@@ -9,6 +9,8 @@ extends SceneTree
 const CHECKS: GDScript = preload("res://tools/test_equipment_grimoire_suite.gd")
 const CALDERA_CHECKS: GDScript = preload("res://tools/test_caldera_isles.gd")
 const SAVE_PATH: String = "user://equipment_grimoire_checks_progress.cfg"
+## The machine's settings too: the checks never read or write the real settings file.
+const SETTINGS_PATH: String = "user://equipment_grimoire_checks_settings.json"
 ## Fake pads (high indices, so a real pad plugged in can't collide).
 const FAKE_PADS: Array[int] = [6, 7]
 
@@ -24,6 +26,8 @@ func _run() -> void:
 	print("Everwood: the Seal-and-Tuck Grimoire's 3-Stage Verification Suite")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	PartyProgress.current.use_save_file(SAVE_PATH)
+	SaveManager.remove(SETTINGS_PATH)
+	SettingsManager.current.use_settings_file(SETTINGS_PATH)
 	PartyProgress.current.apply_full_endgame_kit_for_testing()
 	LevelBase.solo_iron_woodsman_boot = false
 	CalderaWorldState.current.reset_for_testing()
@@ -36,6 +40,7 @@ func _run() -> void:
 		await physics_frame
 	await CHECKS.new().run(self, _check)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	SaveManager.remove(SETTINGS_PATH)
 	print("%d passed, %d failed" % [_passes, _failures.size()])
 	if _failures.is_empty():
 		print("ALL 3 VERIFICATION GATES PASSED")

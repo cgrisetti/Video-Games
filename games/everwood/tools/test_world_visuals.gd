@@ -352,8 +352,15 @@ func _check_succession(world: EverwoodWorld) -> void:
 	returning.queue_free()
 	_move(world, HOLLOW_CAMP_WALK)
 	await _settle(world, [Vector2i(0, -1)])
+	# Read it as soon as the crack is in a shader slot and its lantern has dimmed: the
+	# party's companions start clearing the camp the moment they arrive.
 	for frame: int in 30:
 		await tree.process_frame
+		var waiting: MinionCamp = _camp(world, LandblockManifest.CAMP_HOLLOWAY)
+		if waiting != null and waiting.hush_crack != null and _crack_slot(waiting.hush_crack.global_position) >= 0:
+			var near: WindLantern = _nearest_lantern(world, waiting.hush_crack.global_position)
+			if near != null and (near.get_node("Pivot/Light") as OmniLight3D).light_energy < 0.5:
+				break
 	var camp: MinionCamp = _camp(world, LandblockManifest.CAMP_HOLLOWAY)
 	if camp == null or camp.hush_crack == null:
 		check.call(false, "the Rush-Light Hush-Crack is streamed in")
@@ -364,7 +371,8 @@ func _check_succession(world: EverwoodWorld) -> void:
 	var dim: float = (lantern.get_node("Pivot/Light") as OmniLight3D).light_energy if lantern != null else -1.0
 	check.call(crack.is_hushed() and is_equal_approx(crack.hush_radius, 22.0) and slot >= 0 and is_equal_approx(director.crack_globals[slot].w, 22.0)
 		and lantern != null and dim < 0.5 and director.succession_state(LandblockManifest.CAMP_HOLLOWAY) == Succession.ZONE_HUSHED,
-		"the Rush-Light Hush-Crack is open: its 22 m blight goes to every world shader, and the Wind-Lantern in it burns dim (%.2f)" % dim)
+		"the Rush-Light Hush-Crack is open: its 22 m blight goes to every world shader, and the Wind-Lantern in it burns dim (%.2f; hushed %s, %.1f m, slot %d, state %d)"
+		% [dim, crack.is_hushed(), crack.hush_radius, slot, director.succession_state(LandblockManifest.CAMP_HOLLOWAY)])
 	for minion: WoodlandMinion in camp.minions:
 		minion.stats.take_damage(minion.stats.health + 100.0)
 	var bloomed: bool = false

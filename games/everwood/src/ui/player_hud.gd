@@ -71,6 +71,8 @@ var minimap: WayfarerMinimapWidget
 ## The place pinned on the Atlas (x, z), and the firefly trail leading there (18 GDD §7.3).
 var pinned_target_xz: Vector2 = Vector2.INF
 var trail_guide: WayfarerTrailGuideFX
+## The way-marker set on the map: {"label", "isle", "local", "via"} ({} for none).
+var waymarker: Dictionary = {}
 
 
 func setup(target_actor: ActorBase) -> void:
@@ -184,6 +186,8 @@ func _ready() -> void:
 		if actor.input != null:
 			actor.input.binder_requested.connect(toggle_binder)
 			actor.input.atlas_requested.connect(toggle_atlas)
+			actor.input.options_requested.connect(toggle_options)
+			actor.input.dev_tools_requested.connect(toggle_dev_tools)
 	add_to_group(GROUP)
 	CombatDirector.current.glimmer_opened.connect(_on_glimmer_opened)
 	CombatDirector.current.bravery_countered.connect(_on_bravery_countered)
@@ -219,6 +223,9 @@ static func for_actor(tree: SceneTree, target: ActorBase) -> PlayerHUD:
 func _process(delta: float) -> void:
 	if not is_instance_valid(actor) or actor.stats == null:
 		return
+	# A way-marker finds its way again on a new island.
+	if not waymarker.is_empty() and waymarker.get("routed_on", &"") != CartographyBaker.active_isle(_level()):
+		_route_waymarker()
 	_rhyme_left = maxf(0.0, _rhyme_left - delta)
 	_rhyme_label.visible = _rhyme_left > 0.0
 	_rhyme_badges.visible = _rhyme_left > 0.0 and _rhyme_badges.get_child_count() > 0
@@ -290,15 +297,115 @@ func open_atlas() -> bool:
 		AudioCues.play(&"refuse")
 		show_banner("NOT MID-FIGHT", "The Atlas unrolls once the fight is over.", Color(1.0, 0.6, 0.45), 1.5)
 		return false
-	var atlas: CartographyAtlasPanel = CartographyAtlasPanel.new()
+	var atlas: WorldMapPanel = WorldMapPanel.new()
 	atlas.setup(actor, _level(), self)
 	_menu = atlas
 	add_child(atlas)
 	return true
 
 
-func atlas_panel() -> CartographyAtlasPanel:
-	return _live_menu() as CartographyAtlasPanel
+func atlas_panel() -> WorldMapPanel:
+	return _live_menu() as WorldMapPanel
+
+
+## The map panel open over this player's view (the same as atlas_panel()), or null.
+func map_panel() -> WorldMapPanel:
+	return atlas_panel()
+
+
+## Esc or Options: opens the Options menu, or closes it; over any other menu it
+## closes that menu instead (the one "back" every player knows, 13_PLAYTEST §2.1).
+func toggle_options() -> void:
+	var open: Control = _live_menu()
+	if open is OptionsMenu:
+		(open as OptionsMenu).close()
+	elif open != null:
+		close_menu()
+	else:
+		open_options()
+
+
+## Opens the Options menu over this player's view (in a fight too: it's the player's pause).
+func open_options() -> bool:
+	if _live_menu() != null or actor == null:
+		return false
+	var options: OptionsMenu = OptionsMenu.new()
+	options.setup(actor)
+	_menu = options
+	add_child(options)
+	return true
+
+
+func options_menu() -> OptionsMenu:
+	return _live_menu() as OptionsMenu
+
+
+## F1, or Share held and D-Pad ↑: the Developer Tools (13_PLAYTEST §2.13), a
+## panel of their own apart from the Binder and the Options menu. Over another
+## menu it closes that one and opens the tools.
+func toggle_dev_tools() -> void:
+	var open: Control = _live_menu()
+	if open is DevAdminPanel:
+		(open as DevAdminPanel).close()
+		return
+	if open != null:
+		close_menu()
+	open_dev_tools()
+
+
+func open_dev_tools() -> bool:
+	if _live_menu() != null or actor == null:
+		return false
+	var tools: DevAdminPanel = DevAdminPanel.new()
+	tools.setup(actor, _level())
+	_menu = tools
+	add_child(tools)
+	return true
+
+
+func dev_tools_panel() -> DevAdminPanel:
+	return _live_menu() as DevAdminPanel
+
+
+## Closes whatever menu is open over this player's view.
+func close_menu() -> void:
+	var open: Control = _live_menu()
+	if open == null:
+		return
+	if open.has_method(&"close"):
+		open.call(&"close")
+	else:
+		open.queue_free()
+		if actor != null and actor.input != null:
+			actor.input.menu_open = false
+
+
+## Sets the way-marker (13_PLAYTEST §2.5): `label` on the map, at `local` in
+## island `isle`'s frame (or the level's, with no island). A firefly trail leads
+## there, by way of the crossing toward that island if it's another one, and
+## finds the way again whenever the party reaches a new island.
+func set_waymarker(label: String, isle: StringName, local: Vector2) -> void:
+	waymarker = {"label": label, "isle": isle, "local": local, "via": ""}
+	_route_waymarker()
+
+
+func has_waymarker() -> bool:
+	return not waymarker.is_empty()
+
+
+func clear_waymarker() -> void:
+	waymarker = {}
+	clear_pin()
+
+
+func _route_waymarker() -> void:
+	var level: LevelBase = _level()
+	if waymarker.is_empty() or level == null:
+		return
+	var route: Dictionary = CartographyBaker.route_to(level, waymarker.get("isle", &""), waymarker["local"])
+	waymarker["via"] = route["via"]
+	waymarker["routed_on"] = CartographyBaker.active_isle(level)
+	set_pin(route["target"])
 
 
 ## Pins a place (x, z): a firefly trail leads this hero there, until they arrive.
@@ -328,6 +435,12 @@ func has_pin() -> bool:
 func _on_trail_arrived() -> void:
 	pinned_target_xz = Vector2.INF
 	trail_guide = null
+	var via: String = String(waymarker.get("via", ""))
+	if via != "":
+		# At the crossing: the trail picks up again on the far shore.
+		show_banner("THE CROSSING", "Take %s on toward %s." % [via, waymarker.get("label", "")], WayfarerMinimapWidget.SAFFRON_GOLD, 2.0)
+		return
+	waymarker = {}
 	show_banner("ARRIVED", "The fireflies settle: you're there.", WayfarerMinimapWidget.SAFFRON_GOLD, 1.5)
 
 
@@ -484,6 +597,13 @@ func _refresh_boss() -> void:
 		title += " (KNOCKED DOWN)"
 	if primer != ScribeSignResource.Sign.NONE:
 		title += "  ·  %s seal" % ArsenalCatalog.current.sign_seal(primer).seal_name
+	# Its level and danger before its name (13_PLAYTEST §2.14), unless the Options menu hides badges.
+	if SettingsManager.badges_shown():
+		var level: int = EnemyNameplate.level_of(boss)
+		title = "%s  %s" % [EnemyNameplate.badge_text(level, "Boss"), title]
+		_boss_label.modulate = EnemyNameplate.danger_color(level, "Boss").lerp(Color.WHITE, 0.35)
+	else:
+		_boss_label.modulate = Color.WHITE
 	_boss_label.text = title
 	_boss_health.max_value = boss.stats.stats.max_health
 	_boss_health.value = boss.stats.health

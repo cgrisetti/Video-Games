@@ -28,6 +28,8 @@ var _overview_cell: Control
 
 
 func _ready() -> void:
+	# A render-scale change in the Options menu reaches every view (SettingsManager).
+	add_to_group(SettingsManager.GRID_GROUP)
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var backdrop: ColorRect = ColorRect.new()
@@ -74,6 +76,12 @@ func viewports() -> Array[SubViewport]:
 	var list: Array[SubViewport] = []
 	list.assign(_viewports.values())
 	return list
+
+
+## Every view's 3D render scale (the Options menu's Render Scale).
+func apply_render_scale(scale: float) -> void:
+	for viewport: SubViewport in _viewports.values():
+		viewport.scaling_3d_scale = scale
 
 
 func add_player_view(actor: ActorBase) -> Control:
@@ -129,6 +137,7 @@ func _make_cell(cell_name: String, camera: Camera3D) -> Control:
 	viewport.world_3d = world
 	viewport.handle_input_locally = false
 	viewport.msaa_3d = Viewport.MSAA_2X
+	viewport.scaling_3d_scale = SettingsManager.current.render_scale if SettingsManager.current != null else 1.0
 	viewport.audio_listener_enable_3d = _cells.is_empty()
 	viewport.add_child(camera)
 	container.add_child(viewport)

@@ -1,23 +1,32 @@
-## The Wayfarer's map of a level (18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md §7.1):
-## drawn in code onto a parchment ImageTexture (no SubViewports, no cameras):
+## The Wayfarer's map of a level (18_NEXT_GEN_PASTORAL_RENDERING_WAYFINDING_AND_CAMERA_GDD.md §7.1,
+## docs/13_PLAYTEST_KAIZEN_UPDATE_PROMPT.md §2.4–2.5): drawn in code onto a
+## parchment ImageTexture (no SubViewports, no cameras):
 ##   parchment  #EFE6D2, a little hill-shaded
 ##   contours   every 2 m of height, #C9B898
 ##   roads      #9E7B56 (the flagged Bale-Ways, the footpaths and trails, the cobbled squares)
-##   water      #4A9BB8 (rivers, canals, the gorge's falls)
-##   buildings  #6E473B footprints (every house, mill, pavilion, shrine and desk)
+##   water      #4A9BB8, deeper water darker, its shore inked
+##   buildings  #6E473B footprints (every house, mill, pavilion, hut, shrine and desk)
 ## 512 pixels along its long side in a window, 256 headless.
 ##
-## A seamless world (Bramble-Bridge's trail, Oakshire Vale) reads its ground
-## from its WorldLayout and its buildings from the footprints its level builder
-## listed (cartography.json beside its landblocks), plus any kit standing in the
-## tree; a walled instance (the hub, the expedition) reads its ground by casting
-## rays down at its colliders, its water from its water surfaces and its paths
-## from the level (LevelBase.map_paths()). The ground is gathered on the main
-## thread; the pixels are painted on a worker thread (request_level_map) or at
-## once (bake_level_map). Each instance's map is baked once and kept.
+## Two scopes (MapScope): the Zone Map (the island or level the party is on)
+## and the World Map (in the Caldera Isles, all five islands in The Sound; on a
+## single-map level the whole map, the Zone Map then a close crop of the place
+## the hero is in).
 ##
-## The live things (heroes, Hush-Cracks, shrines, pins) are drawn over it by
-## the WayfarerMinimapWidget and the CartographyAtlasPanel.
+## The Caldera Isles read their ground straight from each island's builder
+## (tile by tile, with only the pads, ramps and paths near each tile), and
+## their buildings from the colliders standing on the live island. A legacy
+## seamless world (Bramble-Bridge's trail, Oakshire Vale) reads its WorldLayout
+## and the footprints its builder listed (cartography.json); a walled instance
+## (the hub, the expedition) casts rays down at its colliders. The ground is
+## gathered on the main thread; the pixels are painted on a worker thread
+## (request_level_map, handed over by poll()) or at once (bake_level_map). Each
+## map is baked once and kept.
+##
+## Its nodes (map_nodes) are what the map names and a way-marker can be set
+## on: towns, quest-givers, dungeons and raid doors, crossings, shrines, desks,
+## portals, beacons and landmarks. The live things (heroes, Hush-Cracks, the
+## way-marker) are drawn over it by the WayfarerMinimapWidget and the WorldMapPanel.
 class_name CartographyBaker
 extends RefCounted
 
@@ -26,6 +35,8 @@ const CONTOUR: Color = Color("#C9B898")
 const ROAD: Color = Color("#9E7B56")
 const WATER: Color = Color("#4A9BB8")
 const FOOTPRINT: Color = Color("#6E473B")
+## The ink line where land meets water.
+const SHORE_INK: Color = Color("#2F5D72")
 ## A contour line every this many metres of height.
 const CONTOUR_STEP_M: float = 2.0
 ## Pixels along the map's long side.
@@ -35,17 +46,40 @@ const MAP_SIZE_HEADLESS: int = 256
 const RAY_GRID: int = 128
 ## The hill-shade's strength (a share of the parchment's value).
 const HILL_SHADE: float = 0.07
+## The sea's depth at which its colour is darkest.
+const DEEP_WATER_M: float = 24.0
+## An island map is painted in square tiles of this many pixels (each reads only the features near it).
+const TILE_PX: int = 32
+## The World Map reaches this far past the outermost islands.
+const WORLD_MARGIN_M: float = 220.0
+## On a single-map level, the Zone Map shows this many times the reach of the place the hero is in.
+const ZONE_CROP_SCALE: float = 2.6
 ## Where on the texture the world rectangle it shows is kept (Rect2, x and z).
 const META_RECT: StringName = &"world_rect"
-## The group the map's glyphs join (Chime-Shrines and Water-Shrines, Scribe Desks and the Scribery, portals).
+## The group the map's glyphs join (shrines, desks, portals, quest-givers, beacons).
 const GLYPH_GROUP: StringName = &"map_glyphs"
 ## The footprint and crack list a level builder writes beside a world's landblocks.
 const CARTOGRAPHY_FILE: String = "cartography.json"
 ## Kit categories drawn as building footprints, and as road (bridges).
 const BUILDING_CATEGORIES: Array[StringName] = [&"ARCHITECTURE", &"STATION"]
 const ROAD_CATEGORIES: Array[StringName] = [&"BRIDGE"]
+## A collider is a building on the map when it's at least this tall and this wide, and no wider than this.
+const STRUCTURE_MIN_HEIGHT: float = 1.4
+const STRUCTURE_MIN_WIDTH: float = 0.8
+const STRUCTURE_MAX_WIDTH: float = 60.0
 
-enum Glyph { SHRINE, DESK, PORTAL }
+enum Glyph { SHRINE, DESK, PORTAL, QUEST, BEACON }
+enum MapScope { ZONE, WORLD }
+## What a map node is (the legend's order).
+enum NodeKind { TOWN, QUEST, DUNGEON, SHRINE, DESK, PORTAL, CROSSING, BEACON, LANDMARK, ISLE }
+## Each kind's name in the legend (plain words, 08 Gate 6).
+const NODE_KIND_NAMES: Array[String] = ["Town", "Quest", "Dungeon or raid door", "Shrine", "Ink desk", "Portal", "Crossing", "Beacon",
+	"Landmark", "Island"]
+## Place names that make a town, and ones that make a dungeon (the Caldera's places).
+const TOWN_WORDS: Array[String] = ["Market", "Quay", "Staithe", "Hall", "Waypost", "Wick", "Stead", "Bridge"]
+const DUNGEON_WORDS: Array[String] = ["Sanctum", "Raid", "Sea-Door", "Trial", "Abyss", "Cathedral", "Aerie"]
+## The legacy maps' towns (their map zones).
+const LEGACY_TOWNS: Array[String] = ["Oakshire-Wick", "Bramble-Bridge", "Honey-Wick"]
 
 static var _cache: Dictionary[StringName, ImageTexture] = {}
 static var _waiting: Dictionary[StringName, Array] = {}
@@ -61,21 +95,21 @@ static func map_size() -> int:
 	return MAP_SIZE_HEADLESS if DisplayServer.get_name() == "headless" else MAP_SIZE
 
 
-## The level's map, baked now if it isn't yet (then kept for its instance).
-static func bake_level_map(level: LevelBase) -> ImageTexture:
-	var key: StringName = _key(level)
+## The level's map in a scope, baked now if it isn't yet (then kept).
+static func bake_level_map(level: LevelBase, scope: MapScope = MapScope.ZONE) -> ImageTexture:
+	var key: StringName = _key(level, scope)
 	if _cache.has(key):
 		return _cache[key]
-	var source: MapSource = MapSource.gather(level)
+	var source: MapSource = MapSource.gather(level, scope)
 	var made: ImageTexture = _texture(source.paint(map_size()), source.rect)
 	_cache[key] = made
 	return made
 
 
 ## The level's map, painted on a worker thread: `done` gets the ImageTexture on
-## the main thread, from poll() (which the minimap and the Atlas call every frame).
-static func request_level_map(level: LevelBase, done: Callable) -> void:
-	var key: StringName = _key(level)
+## the main thread, from poll() (which the minimap and the map panel call every frame).
+static func request_level_map(level: LevelBase, done: Callable, scope: MapScope = MapScope.ZONE) -> void:
+	var key: StringName = _key(level, scope)
 	if _cache.has(key):
 		done.call(_cache[key])
 		return
@@ -83,7 +117,7 @@ static func request_level_map(level: LevelBase, done: Callable) -> void:
 		_waiting[key].append(done)
 		return
 	_waiting[key] = [done]
-	var source: MapSource = MapSource.gather(level)
+	var source: MapSource = MapSource.gather(level, scope)
 	var size: int = map_size()
 	_rects[key] = source.rect
 	_tasks[key] = WorkerThreadPool.add_task(func() -> void:
@@ -119,9 +153,9 @@ static func _collect(key: StringName, answer: bool) -> void:
 	_rects.erase(key)
 
 
-## The kept map of the level, or null while it's still being painted.
-static func cached_map(level: LevelBase) -> ImageTexture:
-	return _cache.get(_key(level), null)
+## The kept map of the level in a scope, or null while it's still being painted.
+static func cached_map(level: LevelBase, scope: MapScope = MapScope.ZONE) -> ImageTexture:
+	return _cache.get(_key(level, scope), null)
 
 
 ## Forgets every baked map (the tests, and a rebuilt level).
@@ -142,22 +176,266 @@ static func world_to_uv(texture: Texture2D, at: Vector2) -> Vector2:
 	return (at - rect.position) / rect.size
 
 
-## What a map glyph stands for: a shrine, a desk or a portal.
+# --- Frames and views ------------------------------------------------------------------
+
+## Whether the level is the Caldera Isles (its islands each have their own frame).
+static func is_archipelago(level: LevelBase) -> bool:
+	return level is CalderaArchipelagoWorld and (level as CalderaArchipelagoWorld).streamer != null \
+		and (level as CalderaArchipelagoWorld).streamer.builder != null
+
+
+## The island the party is on (Caldera), or &"".
+static func active_isle(level: LevelBase) -> StringName:
+	return (level as CalderaArchipelagoWorld).streamer.active_isle if is_archipelago(level) else &""
+
+
+## A spot in the level's own frame (x, z) in a scope's map frame: the World Map
+## of the Caldera is The Sound's frame (The Crown at the origin); every other map is the level's own.
+static func to_map_frame(level: LevelBase, scope: MapScope, local: Vector2) -> Vector2:
+	if scope == MapScope.WORLD and is_archipelago(level):
+		return local + CalderaAtlas.isle(active_isle(level)).sound_position
+	return local
+
+
+static func from_map_frame(level: LevelBase, scope: MapScope, at: Vector2) -> Vector2:
+	if scope == MapScope.WORLD and is_archipelago(level):
+		return at - CalderaAtlas.isle(active_isle(level)).sound_position
+	return at
+
+
+## The world rectangle a scope's view shows (in its map frame), about a hero at `hero_local`.
+static func view_rect(level: LevelBase, scope: MapScope, texture: Texture2D, hero_local: Vector2) -> Rect2:
+	var whole: Rect2 = world_rect(texture)
+	if is_archipelago(level) or scope == MapScope.WORLD or whole.size.x <= 0.0:
+		return whole
+	# A single-map level's Zone Map: a close crop round the place the hero is in.
+	var zone: WorldMapZoneResource = WorldVisualCatalog.map_zone_at(level.instance_id(), hero_local)
+	var reach: float = zone.world_radius_m * ZONE_CROP_SCALE if zone != null else minf(whole.size.x, whole.size.y) * 0.4
+	reach = minf(reach, minf(whole.size.x, whole.size.y))
+	var middle: Vector2 = zone.world_center_xz if zone != null and zone.reach_share(hero_local) <= 1.4 else hero_local
+	var crop: Rect2 = Rect2(middle - Vector2.ONE * reach * 0.5, Vector2.ONE * reach)
+	crop.position = crop.position.clamp(whole.position, whole.end - crop.size)
+	return crop
+
+
+## The map's title for a scope: where you are, in plain words.
+static func map_title(level: LevelBase, scope: MapScope, hero_local: Vector2) -> String:
+	if is_archipelago(level):
+		var world: CalderaArchipelagoWorld = level as CalderaArchipelagoWorld
+		var isle: IslandGridResource = world.streamer.builder.isle
+		if scope == MapScope.WORLD:
+			return "The Caldera Isles · you are on %s" % isle.display_name
+		var place: String = world.streamer.builder.place_name_at(Vector3(hero_local.x, 0.0, hero_local.y))
+		return "%s · Lv %d–%d · %s" % [isle.display_name, isle.level_min, isle.level_max, place]
+	var zone: WorldMapZoneResource = WorldVisualCatalog.map_zone_at(level.instance_id(), hero_local)
+	if scope == MapScope.WORLD or zone == null:
+		return level.level_title()
+	return "%s · %s" % [level.level_title(), zone.display_name]
+
+
+# --- Map nodes -------------------------------------------------------------------------------
+
+## What the map names in a scope, and what a way-marker can be set on:
+## [{"kind": NodeKind, "label": String, "at": Vector2 (map frame), "isle": StringName,
+##   "local": Vector2 (the spot in its island's or level's own frame), "note": String}].
+static func map_nodes(level: LevelBase, scope: MapScope) -> Array[Dictionary]:
+	var nodes: Array[Dictionary] = []
+	if is_archipelago(level):
+		if scope == MapScope.WORLD:
+			_archipelago_nodes(nodes)
+		else:
+			_island_nodes(level as CalderaArchipelagoWorld, nodes)
+		_quest_nodes(nodes, scope, active_isle(level))
+	else:
+		for zone: WorldMapZoneResource in WorldVisualCatalog.map_zones(level.instance_id()):
+			nodes.append(_node(NodeKind.TOWN if LEGACY_TOWNS.has(zone.display_name) else NodeKind.LANDMARK, zone.display_name,
+				zone.world_center_xz, &"", zone.world_center_xz, zone.cooper_sign_title))
+	# The live glyphs on the ground here (shrines, desks, portals, quest-givers, beacons).
+	if scope == MapScope.ZONE or not is_archipelago(level):
+		for found: Dictionary in glyphs(level.get_tree()):
+			var kind: NodeKind = _glyph_kind(int(found["glyph"]))
+			var at: Vector2 = found["at"]
+			nodes.append(_node(kind, String(found.get("label", "")), to_map_frame(level, scope, at), active_isle(level), at, ""))
+	return nodes
+
+
+static func _node(kind: NodeKind, label: String, at: Vector2, isle: StringName, local: Vector2, note: String) -> Dictionary:
+	return {"kind": kind, "label": label, "at": at, "isle": isle, "local": local, "note": note}
+
+
+static func _glyph_kind(glyph: int) -> NodeKind:
+	match glyph:
+		Glyph.DESK:
+			return NodeKind.DESK
+		Glyph.PORTAL:
+			return NodeKind.PORTAL
+		Glyph.QUEST:
+			return NodeKind.QUEST
+		Glyph.BEACON:
+			return NodeKind.BEACON
+	return NodeKind.SHRINE
+
+
+## What kind of node a Caldera place is, by its name.
+static func place_kind(place_name: String, isle: IslandGridResource) -> NodeKind:
+	for word: String in DUNGEON_WORDS:
+		if place_name.contains(word):
+			return NodeKind.DUNGEON
+	if isle != null and place_name == isle.steading:
+		return NodeKind.TOWN
+	for word: String in TOWN_WORDS:
+		if place_name.contains(word):
+			return NodeKind.TOWN
+	return NodeKind.LANDMARK
+
+
+static func _island_nodes(world: CalderaArchipelagoWorld, nodes: Array[Dictionary]) -> void:
+	var builder: IslandBuilder = world.streamer.builder
+	var isle_id: StringName = world.streamer.active_isle
+	for place: Dictionary in builder.places:
+		var at: Vector3 = place["at"]
+		var spot: Vector2 = Vector2(at.x, at.z)
+		var kind: NodeKind = place_kind(String(place["name"]), builder.isle)
+		# A crossing's place is drawn as its seam, below.
+		if _seam_named(String(place["name"])) != null:
+			continue
+		nodes.append(_node(kind, String(place["name"]), spot, isle_id, spot, ""))
+	for seam: LoadSeamResource in CalderaAtlas.seams_of(isle_id):
+		var anchor: Vector3 = seam.anchor(isle_id)
+		var other: IslandGridResource = CalderaAtlas.isle(seam.other(isle_id))
+		var open: bool = CalderaWorldState.current == null or CalderaWorldState.current.lane_open(seam.gate_flag)
+		nodes.append(_node(NodeKind.CROSSING, "%s → %s" % [seam.display_name, other.display_name], Vector2(anchor.x, anchor.z), isle_id,
+			Vector2(anchor.x, anchor.z), "" if open else "closed for now"))
+
+
+## The Caldera's quests: where its next goals wait, from the world's flags (the
+## Root-Sanctum, then each island's Beacon, then The Crown's three trials, then
+## the Harmonic Bell). The Zone Map shows the ones on this island.
+static func quest_goals() -> Array[Dictionary]:
+	var goals: Array[Dictionary] = []
+	var state: CalderaWorldState = CalderaWorldState.current
+	if state == null:
+		return goals
+	if not state.get_flag(CalderaWorldState.ROOT_SANCTUM_CLEARED):
+		goals.append({"isle": CalderaAtlas.ISLE_OAKSHIRE_HOLM, "place": "The Root-Sanctum", "label": "Quest: clear The Root-Sanctum (Lv 6)"})
+		return goals
+	for isle: IslandGridResource in CalderaAtlas.isles():
+		if isle.beacon_flag != &"" and not state.get_flag(isle.beacon_flag):
+			goals.append({"isle": isle.isle_id, "place": "%s's Beacon" % isle.display_name, "label": "Quest: light %s's Beacon" % isle.display_name})
+	if not goals.is_empty() or not state.can_land_on_crown():
+		return goals
+	var trial_places: Dictionary[StringName, String] = {CalderaWorldState.TRIAL_ANVIL: "Iron Shore", CalderaWorldState.TRIAL_GALE: "Gale Cliffs",
+		CalderaWorldState.TRIAL_TIDE: "Tide Grottos"}
+	for trial: StringName in CalderaWorldState.TRIALS:
+		if not state.trial_complete(trial):
+			goals.append({"isle": CalderaAtlas.ISLE_THE_CROWN, "place": trial_places[trial], "label": "Quest: the trial at %s" % trial_places[trial]})
+	if goals.is_empty() and not state.get_flag(CalderaWorldState.EBB_UNLOCKED):
+		goals.append({"isle": CalderaAtlas.ISLE_THE_CROWN, "place": "The Summit Glade", "label": "Quest: ring the Harmonic Bell together"})
+	return goals
+
+
+static func _quest_nodes(nodes: Array[Dictionary], scope: MapScope, here: StringName) -> void:
+	for goal: Dictionary in quest_goals():
+		var isle_id: StringName = goal["isle"]
+		if scope == MapScope.ZONE and isle_id != here:
+			continue
+		var spot: Dictionary = CalderaAtlas.builder_for(isle_id).place(String(goal["place"]))
+		if spot.is_empty():
+			continue
+		var at: Vector3 = spot["at"]
+		var local: Vector2 = Vector2(at.x, at.z)
+		var shown: Vector2 = local + (CalderaAtlas.isle(isle_id).sound_position if scope == MapScope.WORLD else Vector2.ZERO)
+		nodes.append(_node(NodeKind.QUEST, String(goal["label"]), shown, isle_id, local, CalderaAtlas.isle(isle_id).display_name))
+
+
+static func _seam_named(place_name: String) -> LoadSeamResource:
+	for seam: LoadSeamResource in CalderaAtlas.seams():
+		if seam.display_name == place_name:
+			return seam
+	return null
+
+
+static func _archipelago_nodes(nodes: Array[Dictionary]) -> void:
+	for isle: IslandGridResource in CalderaAtlas.isles():
+		var builder: IslandBuilder = CalderaAtlas.builder_for(isle.isle_id)
+		nodes.append(_node(NodeKind.ISLE, isle.display_name, isle.sound_position, isle.isle_id, Vector2.ZERO,
+			"Lv %d–%d · %s" % [isle.level_min, isle.level_max, isle.compass]))
+		for place: Dictionary in builder.places:
+			var name: String = String(place["name"])
+			var kind: NodeKind = place_kind(name, isle)
+			if kind == NodeKind.LANDMARK or _seam_named(name) != null:
+				continue
+			var at: Vector3 = place["at"]
+			nodes.append(_node(kind, name, isle.sound_position + Vector2(at.x, at.z), isle.isle_id, Vector2(at.x, at.z), isle.display_name))
+	for seam: LoadSeamResource in CalderaAtlas.seams():
+		var a: Vector2 = CalderaAtlas.isle(seam.isle_a).sound_position + Vector2(seam.anchor_a.x, seam.anchor_a.z)
+		var b: Vector2 = CalderaAtlas.isle(seam.isle_b).sound_position + Vector2(seam.anchor_b.x, seam.anchor_b.z)
+		nodes.append(_node(NodeKind.CROSSING, seam.display_name, (a + b) * 0.5, seam.isle_a, Vector2(seam.anchor_a.x, seam.anchor_a.z),
+			"%s to %s" % [CalderaAtlas.isle(seam.isle_a).display_name, CalderaAtlas.isle(seam.isle_b).display_name]))
+
+
+## Where a way-marker on a node leads the hero now, in the level's own frame:
+## {"target": Vector2, "via": String}. A node on another island leads to the
+## crossing that heads there (straight there, else back toward Oakshire Holm).
+static func route_to(level: LevelBase, isle_id: StringName, local: Vector2) -> Dictionary:
+	var here: StringName = active_isle(level)
+	if here == &"" or isle_id == &"" or isle_id == here:
+		return {"target": local, "via": ""}
+	var best: LoadSeamResource = null
+	for seam: LoadSeamResource in CalderaAtlas.seams_of(here):
+		if seam.other(here) == isle_id:
+			best = seam
+			break
+		if best == null and seam.other(here) == CalderaAtlas.ISLE_OAKSHIRE_HOLM:
+			best = seam
+	if best == null:
+		return {"target": local, "via": ""}
+	var anchor: Vector3 = best.anchor(here)
+	return {"target": Vector2(anchor.x, anchor.z), "via": best.display_name}
+
+
+# --- Glyphs and cracks ---------------------------------------------------------------------
+
+## What a map glyph stands for.
 static func glyph_of(node: Node) -> int:
 	if node is ScribeDesk or node is ScriberyStation:
 		return Glyph.DESK
 	if node is RaidPortal or node is PortalApron:
 		return Glyph.PORTAL
+	if node is TownsfolkNPC:
+		return Glyph.QUEST
+	if node is IslandBeacon:
+		return Glyph.BEACON
 	return Glyph.SHRINE
 
 
-## Every glyph in the tree now: [{"at": Vector2, "glyph": Glyph}].
+## A glyph's label: a quest-giver's name and title, otherwise the node's own sign if it has one.
+static func glyph_label(node: Node) -> String:
+	var npc: TownsfolkNPC = node as TownsfolkNPC
+	if npc != null:
+		return "%s, %s" % [npc.npc_name, npc.title] if npc.title != "" else npc.npc_name
+	for property: StringName in [&"title", &"display_name", &"place_name"]:
+		if property in node and node.get(property) is String and String(node.get(property)) != "":
+			return String(node.get(property))
+	match glyph_of(node):
+		Glyph.DESK:
+			return "Ink desk"
+		Glyph.PORTAL:
+			return "Portal"
+		Glyph.BEACON:
+			return "Beacon"
+	return "Shrine"
+
+
+## Every glyph in the tree now: [{"at": Vector2, "glyph": Glyph, "label": String}].
 static func glyphs(tree: SceneTree) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
+	if tree == null:
+		return found
 	for node: Node in tree.get_nodes_in_group(GLYPH_GROUP):
 		var spot: Node3D = node as Node3D
 		if spot != null and spot.is_inside_tree():
-			found.append({"at": Vector2(spot.global_position.x, spot.global_position.z), "glyph": glyph_of(node)})
+			found.append({"at": Vector2(spot.global_position.x, spot.global_position.z), "glyph": glyph_of(node), "label": glyph_label(node)})
 	return found
 
 
@@ -206,13 +484,17 @@ static func _texture(image: Image, rect: Rect2) -> ImageTexture:
 	return made
 
 
-static func _key(level: LevelBase) -> StringName:
+## The cache key: the Caldera's Zone Map per island and its World Map; one map per other level.
+static func _key(level: LevelBase, scope: MapScope) -> StringName:
+	if is_archipelago(level):
+		return StringName("caldera:world" if scope == MapScope.WORLD else "caldera:zone:%s" % active_isle(level))
 	var layout: StringName = WorldGridConfig.layout.layout_id() if _is_streamed(level) else &"walled"
 	return StringName("%s:%s" % [level.instance_id(), layout])
 
 
+## A legacy seamless world (its ground from WorldGridConfig's layout).
 static func _is_streamed(level: LevelBase) -> bool:
-	return level is EverwoodWorld or level is OakshireVale or level is CalderaArchipelagoWorld
+	return level is EverwoodWorld or level is OakshireVale
 
 
 static func _cartography_path(level: LevelBase) -> String:
@@ -226,7 +508,7 @@ static func _read_json(path: String) -> Dictionary:
 	return parsed as Dictionary if parsed is Dictionary else {}
 
 
-## The building footprints (x, z, width, depth, yaw) and road pieces of every kit under `root`.
+## The building footprints (x, z, width, depth, yaw, road) of every kit under `root`.
 static func kit_footprints(root: Node) -> Array[PackedFloat32Array]:
 	var found: Array[PackedFloat32Array] = []
 	if root == null:
@@ -252,13 +534,44 @@ static func footprint_of(placed: WorldKitInstance, where: Transform3D) -> Packed
 		1.0 if kit.category in ROAD_CATEGORIES else 0.0])
 
 
+## The footprints of the buildings standing under `root` as colliders (huts, halls,
+## towers, walls): every StaticBody3D box or cylinder tall enough to be a building.
+static func collider_footprints(root: Node) -> Array[PackedFloat32Array]:
+	var found: Array[PackedFloat32Array] = []
+	if root == null:
+		return found
+	for node: Node in root.find_children("*", "CollisionShape3D", true, false):
+		var shape: CollisionShape3D = node as CollisionShape3D
+		if not shape.is_inside_tree() or not shape.get_parent() is StaticBody3D:
+			continue
+		var where: Transform3D = shape.global_transform
+		var scale: Vector3 = where.basis.get_scale()
+		var box: BoxShape3D = shape.shape as BoxShape3D
+		var cylinder: CylinderShape3D = shape.shape as CylinderShape3D
+		var extent: Vector3 = Vector3.ZERO
+		if box != null:
+			extent = box.size * scale
+		elif cylinder != null:
+			extent = Vector3(cylinder.radius * 2.0 * scale.x, cylinder.height * scale.y, cylinder.radius * 2.0 * scale.z)
+		else:
+			continue
+		if extent.y < STRUCTURE_MIN_HEIGHT or minf(extent.x, extent.z) < STRUCTURE_MIN_WIDTH or maxf(extent.x, extent.z) > STRUCTURE_MAX_WIDTH:
+			continue
+		var x_axis: Vector3 = where.basis.x
+		found.append(PackedFloat32Array([where.origin.x, where.origin.z, extent.x, extent.z, atan2(-x_axis.z, x_axis.x), 0.0]))
+	return found
+
+
 ## What a level's map is drawn from, gathered on the main thread; paint() is pure.
 class MapSource:
 	extends RefCounted
 
 	var rect: Rect2 = Rect2(0.0, 0.0, 64.0, 64.0)
-	## A seamless world's layout (thread-safe), or null for a walled instance.
+	## A legacy seamless world's layout (thread-safe), or null.
 	var layout: WorldLayout
+	## The Caldera's islands in this map's frame: [{"builder": IslandBuilder, "offset": Vector2, "half": float}].
+	var isles: Array[Dictionary] = []
+	var sea_level: float = 0.0
 	## A walled instance's heights on a grid across `rect` (grid_size.x by grid_size.y), NAN where nothing was hit.
 	var heights: PackedFloat32Array = PackedFloat32Array()
 	var grid_size: Vector2i = Vector2i.ZERO
@@ -266,9 +579,14 @@ class MapSource:
 	var water: Array[Rect2] = []
 	var paths: Array[Dictionary] = []
 	var footprints: Array[PackedFloat32Array] = []
+	## The features near the tile being painted (per island), so each sample reads only those.
+	var _near: Dictionary = {}
 
-	static func gather(level: LevelBase) -> MapSource:
+	static func gather(level: LevelBase, scope: MapScope = MapScope.ZONE) -> MapSource:
 		var source: MapSource = MapSource.new()
+		if CartographyBaker.is_archipelago(level):
+			source._gather_archipelago(level as CalderaArchipelagoWorld, scope)
+			return source
 		source.footprints = CartographyBaker.kit_footprints(level)
 		if CartographyBaker._is_streamed(level):
 			source.layout = WorldGridConfig.layout
@@ -279,10 +597,31 @@ class MapSource:
 				if values.size() >= 6:
 					source.footprints.append(PackedFloat32Array(values))
 			return source
+		source.footprints.append_array(CartographyBaker.collider_footprints(level))
 		source.rect = level.map_rect()
 		source.paths = level.map_paths()
 		source._read_walled(level)
 		return source
+
+	## The live island (Zone Map), or all five in The Sound's frame (World Map), and the buildings standing on the live one.
+	func _gather_archipelago(world: CalderaArchipelagoWorld, scope: MapScope) -> void:
+		sea_level = CalderaWorldState.current.sea_level_y if CalderaWorldState.current != null else 0.0
+		if scope == MapScope.ZONE:
+			var builder: IslandBuilder = world.streamer.builder
+			var half: float = builder.isle.grid_size_m() * 0.5
+			isles.append({"builder": builder, "offset": Vector2.ZERO, "half": half})
+			rect = Rect2(-half, -half, half * 2.0, half * 2.0)
+			footprints = CartographyBaker.collider_footprints(world.streamer.structures)
+			return
+		var reach: Rect2 = Rect2()
+		var started: bool = false
+		for isle: IslandGridResource in CalderaAtlas.isles():
+			var half: float = isle.grid_size_m() * 0.5
+			isles.append({"builder": CalderaAtlas.builder_for(isle.isle_id), "offset": isle.sound_position, "half": half})
+			var block: Rect2 = Rect2(isle.sound_position - Vector2.ONE * half, Vector2.ONE * half * 2.0)
+			reach = block if not started else reach.merge(block)
+			started = true
+		rect = reach.grow(CartographyBaker.WORLD_MARGIN_M)
 
 	## Rays straight down at the colliders on a coarse grid, and the water surfaces' extents.
 	func _read_walled(level: LevelBase) -> void:
@@ -311,7 +650,39 @@ class MapSource:
 			var box: AABB = mesh.global_transform * mesh.get_aabb()
 			water.append(Rect2(box.position.x, box.position.z, box.size.x, box.size.z))
 
+	## Readies the features near one tile of the map (an island map reads only these).
+	func _ready_tile(tile: Rect2) -> void:
+		_near.clear()
+		for index: int in isles.size():
+			var entry: Dictionary = isles[index]
+			var local: Rect2 = Rect2(tile.position - (entry["offset"] as Vector2), tile.size)
+			var half: float = entry["half"]
+			if not local.intersects(Rect2(-half, -half, half * 2.0, half * 2.0)):
+				continue
+			_near[index] = (entry["builder"] as IslandBuilder)._features_near(local.grow(8.0))
+
+	## The island holding a spot (its index in `isles`), or -1 for open sea.
+	func _isle_at(x: float, z: float) -> int:
+		var best: int = -1
+		var best_distance: float = INF
+		for index: int in _near:
+			var entry: Dictionary = isles[index]
+			var local: Vector2 = Vector2(x, z) - (entry["offset"] as Vector2)
+			var half: float = entry["half"]
+			if absf(local.x) <= half and absf(local.y) <= half and local.length() < best_distance:
+				best = index
+				best_distance = local.length()
+		return best
+
 	func _height(x: float, z: float) -> float:
+		if not isles.is_empty():
+			var index: int = _isle_at(x, z)
+			if index < 0:
+				return sea_level - DEEP_WATER_M
+			var entry: Dictionary = isles[index]
+			var local: Vector2 = Vector2(x, z) - (entry["offset"] as Vector2)
+			var near: Array = _near[index]
+			return (entry["builder"] as IslandBuilder)._height(local.x, local.y, near[0], near[1])
 		if layout != null:
 			return layout.sample_height(x, z)
 		var gx: float = clampf((x - rect.position.x) / rect.size.x * grid_size.x - 0.5, 0.0, grid_size.x - 1.001)
@@ -332,6 +703,17 @@ class MapSource:
 		return lerpf(lerpf(corners[0], corners[1], fx), lerpf(corners[2], corners[3], fx), fz)
 
 	func _feature(x: float, z: float, h: float) -> int:
+		if not isles.is_empty():
+			if h < sea_level - 0.05:
+				return WorldLayout.MapFeature.WATER
+			var index: int = _isle_at(x, z)
+			if index >= 0:
+				var entry: Dictionary = isles[index]
+				var local: Vector2 = Vector2(x, z) - (entry["offset"] as Vector2)
+				var near: Array = _near[index]
+				if (entry["builder"] as IslandBuilder)._path_weight(local.x, local.y, near[2]) > 0.5:
+					return WorldLayout.MapFeature.ROAD
+			return WorldLayout.MapFeature.GROUND
 		if layout != null:
 			return layout.map_feature(x, z, h)
 		var at: Vector2 = Vector2(x, z)
@@ -352,40 +734,55 @@ class MapSource:
 		var width: int = long_side if aspect >= 1.0 else maxi(8, roundi(long_side * aspect))
 		var height: int = long_side if aspect <= 1.0 else maxi(8, roundi(long_side / aspect))
 		var step: Vector2 = Vector2(rect.size.x / width, rect.size.y / height)
-		var rows: Array[PackedFloat32Array] = []
+		var levels: PackedFloat32Array = PackedFloat32Array()
+		levels.resize(width * height)
 		var features: PackedByteArray = PackedByteArray()
 		features.resize(width * height)
-		for py: int in height:
-			var row: PackedFloat32Array = PackedFloat32Array()
-			row.resize(width)
-			var z: float = rect.position.y + (py + 0.5) * step.y
-			for px: int in width:
-				var x: float = rect.position.x + (px + 0.5) * step.x
-				var h: float = _height(x, z)
-				row[px] = h
-				features[py * width + px] = _feature(x, z, h)
-			rows.append(row)
+		# Tile by tile, so an island map reads only the features near each tile.
+		for tile_y: int in range(0, height, TILE_PX):
+			for tile_x: int in range(0, width, TILE_PX):
+				var tile: Rect2 = Rect2(rect.position + Vector2(tile_x, tile_y) * step, Vector2(TILE_PX, TILE_PX) * step)
+				if not isles.is_empty():
+					_ready_tile(tile)
+				for py: int in range(tile_y, mini(tile_y + TILE_PX, height)):
+					var z: float = rect.position.y + (py + 0.5) * step.y
+					for px: int in range(tile_x, mini(tile_x + TILE_PX, width)):
+						var x: float = rect.position.x + (px + 0.5) * step.x
+						var h: float = _height(x, z)
+						levels[py * width + px] = h
+						features[py * width + px] = _feature(x, z, h)
 		var bytes: PackedByteArray = PackedByteArray()
 		bytes.resize(width * height * 4)
 		for py: int in height:
 			for px: int in width:
-				var h: float = rows[py][px]
-				var right: float = rows[py][mini(px + 1, width - 1)]
-				var below: float = rows[mini(py + 1, height - 1)][px]
+				var index: int = py * width + px
+				var h: float = levels[index]
+				var right: float = levels[py * width + mini(px + 1, width - 1)]
+				var below: float = levels[mini(py + 1, height - 1) * width + px]
+				var feature: int = features[index]
 				var color: Color = PARCHMENT
 				# A soft hill-shade, lit from the north-west.
 				var slope: float = ((right - h) / step.x + (below - h) / step.y) * 0.5
 				color = color.darkened(clampf(slope * 0.6, -1.0, 1.0) * HILL_SHADE) if slope > 0.0 else color.lightened(clampf(-slope * 0.6, 0.0, 1.0) * HILL_SHADE * 0.5)
-				match features[py * width + px]:
+				match feature:
 					WorldLayout.MapFeature.WATER:
-						color = WATER
+						color = WATER.darkened(clampf((sea_level - h) / DEEP_WATER_M, 0.0, 1.0) * 0.32) if not isles.is_empty() else WATER
 					WorldLayout.MapFeature.ROAD:
 						color = ROAD
-				if features[py * width + px] != WorldLayout.MapFeature.WATER:
+				if feature == WorldLayout.MapFeature.WATER:
+					# The shore inked where water meets land.
+					var shore: bool = false
+					for offset: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+						var nx: int = clampi(px + offset.x, 0, width - 1)
+						var ny: int = clampi(py + offset.y, 0, height - 1)
+						shore = shore or features[ny * width + nx] != WorldLayout.MapFeature.WATER
+					if shore:
+						color = SHORE_INK
+				else:
 					var band: int = floori(h / CONTOUR_STEP_M)
 					if band != floori(right / CONTOUR_STEP_M) or band != floori(below / CONTOUR_STEP_M):
-						color = color.lerp(CONTOUR, 0.85) if features[py * width + px] == WorldLayout.MapFeature.GROUND else color.darkened(0.12)
-				var at: int = (py * width + px) * 4
+						color = color.lerp(CONTOUR, 0.85) if feature == WorldLayout.MapFeature.GROUND else color.darkened(0.12)
+				var at: int = index * 4
 				bytes[at] = int(color.r8)
 				bytes[at + 1] = int(color.g8)
 				bytes[at + 2] = int(color.b8)

@@ -161,6 +161,13 @@ const GRIP_HIGH: Dictionary[int, float] = {EquipmentItemResource.WeaponType.HEAV
 const GRIP_LOW: Dictionary[int, float] = {EquipmentItemResource.WeaponType.HEAVY_AXE: 0.2, EquipmentItemResource.WeaponType.STAFF: 0.28}
 ## A weapon stowed on the back: across it diagonally, its edge out.
 const STOW_BASIS: Basis = Basis(Vector3(-0.83, 0.56, 0.0), Vector3(0.56, 0.83, 0.0), Vector3(0.0, 0.0, -1.0))
+## How far behind the chest the back's gear rides: out past the cloak lying flat
+## on the back, so the two never cross (13_PLAYTEST §2.8; it was 0.27 m).
+const BACK_GEAR_DEPTH: float = 0.31
+## The greatshield on the off forearm: turned so its long side runs across the
+## arm, set 11 cm out and 10 cm toward the wrist (13_PLAYTEST §2.7; it ran along
+## the arm, its edge reaching back past the elbow into the shoulder and chest).
+const SHIELD_ON_FOREARM: Transform3D = Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(-0.11, -0.1, 0.04))
 ## The Sign-stone's float and turn.
 const STONE_BOB: float = 0.012
 const STONE_SPIN: float = 2.0
@@ -220,6 +227,8 @@ var _ink_material: StandardMaterial3D
 var _card_peak: float = 0.0
 var _played: Dictionary[int, int] = {}
 var _stowed: bool = false
+## A shield, a quiver or a targe rides on the back.
+var _back_gear: bool = false
 var _grip_slide: float = 0.0
 var _frost: float = 0.0
 var _warmth: float = 0.0
@@ -302,6 +311,7 @@ func rebuild() -> void:
 	_overhead_card = null
 	_applied_tier_id = &""
 	_stowed = false
+	_back_gear = false
 	_choreo = Choreography.NONE
 	var loadout: ClassLoadoutResource = actor.loadout
 	var column: int = Callings.resolve(loadout.class_id, loadout.calling)
@@ -364,11 +374,14 @@ func _build_kit(row: int, loadout: ClassLoadoutResource) -> void:
 			# The banded oak-and-brass Greatshield on the off forearm, or on the back for a two-hander.
 			var shield: Node3D = HeroMeshAtelier.build_greatshield(body_material)
 			if free_off_hand:
-				shield.position = Vector3(-0.075, -0.12, 0.0)
+				# Strapped across the forearm, its long side across the arm, and a little out from it,
+				# so it clears the shoulder, the head and the chest in every pose (13_PLAYTEST §2.7).
+				shield.transform = SHIELD_ON_FOREARM
 				socket(HeroRigBuilder.OFF_HAND_SOCKET).add_child(shield)
 			else:
-				shield.transform = Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(0.0, -0.06, 0.27))
+				shield.transform = Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(0.0, -0.06, BACK_GEAR_DEPTH + 0.04))
 				back.add_child(shield)
+				_back_gear = true
 			_shield = shield
 		2:
 			# The brass Tether-Lantern hanging at the left hip, really glowing.
@@ -377,12 +390,14 @@ func _build_kit(row: int, loadout: ClassLoadoutResource) -> void:
 			socket(HeroRigBuilder.HIP_SATCHEL_SOCKET).add_child(_lantern)
 	if quivered:
 		var quiver: Node3D = HeroMeshAtelier.build_quiver(body_material)
-		quiver.transform = Transform3D(Basis(Vector3.BACK, -0.35), Vector3(0.12, 0.02, 0.21))
+		quiver.transform = Transform3D(Basis(Vector3.BACK, -0.35), Vector3(0.12, 0.02, BACK_GEAR_DEPTH - 0.04))
 		back.add_child(quiver)
+		_back_gear = true
 	if appearance.back_buckler_targe and row != 0:
 		var targe: Node3D = HeroMeshAtelier.build_buckler_targe(body_material)
-		targe.position = Vector3(-0.05 if quivered else 0.0, -0.02, 0.215)
+		targe.position = Vector3(-0.05 if quivered else 0.0, -0.02, BACK_GEAR_DEPTH - 0.03)
 		back.add_child(targe)
+		_back_gear = true
 
 
 ## One of the skeleton's four sockets by name (HeroRigBuilder.MAIN_HAND_SOCKET...).
@@ -426,7 +441,7 @@ func _stow(stowed: bool) -> void:
 	_weapon_mount.get_parent().remove_child(_weapon_mount)
 	socket(HeroRigBuilder.BACK_STOW_SOCKET).add_child(_weapon_mount)
 	var half: float = HeroMeshAtelier.weapon_length(_weapon_item.weapon_type) * 0.5
-	_weapon_mount.transform = Transform3D(STOW_BASIS, -STOW_BASIS.y * half + Vector3(0.0, 0.04, 0.27))
+	_weapon_mount.transform = Transform3D(STOW_BASIS, -STOW_BASIS.y * half * _youth_weapon_scale() + Vector3(0.0, 0.04, BACK_GEAR_DEPTH))
 	_weapon_mount.scale = Vector3.ONE * _youth_weapon_scale()
 	_stowed = true
 
@@ -516,6 +531,8 @@ func _feed_kinematics(delta: float, moved: Vector3, frozen: bool) -> void:
 	var whole_body: bool = animator.clip == &"dodge_roll_evade" or animator.clip == &"hearth_rite_tuck" or animator.clip == &"downed_slump"
 	k.lean_weight = 0.0 if whole_body else 1.0
 	k.grip_weight = animator.grip_weight
+	# Gear strapped on the back holds the cloak's top under it (13_PLAYTEST §2.8).
+	k.back_strapped = _stowed or _back_gear
 	k.draw_weight = animator.draw_weight
 	if WorldAtmosphereDirector.current != null:
 		k.wind = WorldAtmosphereDirector.current.wind

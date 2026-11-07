@@ -90,7 +90,8 @@ func _ready() -> void:
 
 ## The Sign-Flow cast's push toward the shoulder and back.
 func dolly_pulse() -> void:
-	_dolly_left = DOLLY_PULSE_TIME
+	# The Options menu can turn the push off (it still counts).
+	_dolly_left = DOLLY_PULSE_TIME if SettingsManager.pulse_on() else 0.0
 	_dolly_peak = 0.0
 	_pulses += 1
 
@@ -121,6 +122,8 @@ func _process(delta: float) -> void:
 	if actor.sign_flow != null and _listening_to != actor.sign_flow:
 		_listening_to = actor.sign_flow
 		actor.sign_flow.sign_flow_cast.connect(_on_sign_flow_cast)
+	# The field of view follows the Options menu.
+	fov = SettingsManager.fov()
 	_dolly_left = maxf(0.0, _dolly_left - delta)
 	var orbit: float = actor.input.camera_orbit_input if actor.input != null else 0.0
 	var mouse_yaw: float = actor.input.take_mouse_yaw() if actor.input != null else 0.0
@@ -128,13 +131,13 @@ func _process(delta: float) -> void:
 		var tilt: float = actor.input.camera_pitch_input
 		var mouse_pitch: float = actor.input.take_mouse_pitch()
 		if absf(tilt) > 0.0 or absf(mouse_pitch) > 0.0:
-			set_pitch_degrees(pitch_degrees - rad_to_deg(tilt * CAM_PITCH_SPEED * delta) + rad_to_deg(mouse_pitch))
+			set_pitch_degrees(pitch_degrees - rad_to_deg(tilt * CAM_PITCH_SPEED * SettingsManager.camera_speed_scale() * delta) + rad_to_deg(mouse_pitch))
 		# Station signs drop out of this player's view while their modal is open.
 		set_cull_mask_value(WorldLabelStyle.STATION_LABEL_LAYER, not actor.input.menu_open)
 	var soft_lock: bool = actor.input == null or actor.input.soft_lock_camera()
 	_manual_hold = maxf(0.0, _manual_hold - delta)
 	if absf(orbit) > 0.01 or absf(mouse_yaw) > 0.0:
-		yaw -= orbit * ORBIT_SPEED * delta
+		yaw -= orbit * ORBIT_SPEED * SettingsManager.camera_speed_scale() * delta
 		yaw += mouse_yaw
 		_manual_hold = LOCK_RESUME_DELAY
 	elif soft_lock and _manual_hold <= 0.0:

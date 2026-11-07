@@ -174,6 +174,8 @@ func _build_visual() -> void:
 	_bar.pixel_size = 0.006
 	_bar.position = Vector3(0.0, body_height() + 0.35, 0.0)
 	add_child(_bar)
+	# Its level and danger at a glance (13_PLAYTEST §2.14).
+	EnemyNameplate.attach(self, _name_label.visible)
 
 
 # --- AI (the host runs it) -----------------------------------------------------

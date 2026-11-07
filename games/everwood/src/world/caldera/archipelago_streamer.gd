@@ -439,26 +439,48 @@ func _collider(chunk: Vector2i, data: Dictionary, scatter: Dictionary) -> Static
 	return body
 
 
+## A landblock's scatter, one MultiMesh per species: within CalderaKit.ATELIER_RANGE
+## of a camera the sculpted atelier mesh (oak clumps, willows, pines, layered
+## ferns...), past it the one-draw stand-in; small scatter is gone past SMALL_RANGE.
 func _add_scatter(record: LoadedChunk) -> void:
 	for species: Variant in record.scatter:
 		var spots: Array = record.scatter[species] as Array
 		if spots.is_empty():
 			continue
-		var multi: MultiMesh = MultiMesh.new()
-		multi.transform_format = MultiMesh.TRANSFORM_3D
-		multi.mesh = CalderaKit.species_mesh(int(species))
-		multi.instance_count = spots.size()
-		for index: int in spots.size():
-			multi.set_instance_transform(index, spots[index] as Transform3D)
-		var node: MultiMeshInstance3D = MultiMeshInstance3D.new()
-		node.name = "Scatter_%d" % int(species)
-		node.multimesh = multi
+		var kind: int = int(species)
+		var small: bool = CalderaKit.is_small(kind)
+		var atelier: ArrayMesh = CalderaKit.atelier_mesh(kind)
+		if atelier != null:
+			var near: MultiMeshInstance3D = _scatter_node("Atelier_%d" % kind, atelier, spots)
+			near.visibility_range_end = CalderaKit.SMALL_RANGE if small else CalderaKit.ATELIER_RANGE
+			near.visibility_range_end_margin = CalderaKit.ATELIER_MARGIN
+			if small:
+				near.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			record.root.add_child(near)
+			if small:
+				continue
+		var node: MultiMeshInstance3D = _scatter_node("Scatter_%d" % kind, CalderaKit.species_mesh(kind), spots)
 		node.material_override = CalderaKit.vertex_material()
-		var small: bool = int(species) in [IslandBuilder.Species.ROCK, IslandBuilder.Species.REED_CLUMP, IslandBuilder.Species.FERN_TUFT]
-		if small:
-			node.visibility_range_end = 220.0
+		if atelier != null:
+			node.visibility_range_begin = CalderaKit.ATELIER_RANGE
+			node.visibility_range_begin_margin = CalderaKit.ATELIER_MARGIN
+		elif small:
+			node.visibility_range_end = CalderaKit.SMALL_RANGE
 			node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		record.root.add_child(node)
+
+
+func _scatter_node(node_name: String, mesh: ArrayMesh, spots: Array) -> MultiMeshInstance3D:
+	var multi: MultiMesh = MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.mesh = mesh
+	multi.instance_count = spots.size()
+	for index: int in spots.size():
+		multi.set_instance_transform(index, spots[index] as Transform3D)
+	var node: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	node.name = node_name
+	node.multimesh = multi
+	return node
 
 
 func _deactivate() -> void:

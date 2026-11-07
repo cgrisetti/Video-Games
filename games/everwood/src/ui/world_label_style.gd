@@ -7,7 +7,9 @@
 ## drops while its player has a modal open (the Binder, the Scribery, the Atlas).
 ##
 ## LevelBase applies it to every Label3D as it enters the tree (watch()), so a
-## sign built by any script or baked into a scene reads the same.
+## sign built by any script or baked into a scene reads the same. The one
+## exception keeps OWN_STYLE_META: an enemy's level and danger badge
+## (EnemyNameplate, 13_PLAYTEST §2.14), held to the screen so it reads at a glance.
 class_name WorldLabelStyle
 extends RefCounted
 
@@ -23,11 +25,13 @@ const FADE_IN_MARGIN_M: float = 0.4
 const STATION_LABEL_LAYER: int = 12
 ## Set on a label that's styled (so it's styled once).
 const STYLED_META: StringName = &"world_label_styled"
+## Set on a label that keeps its own look (only EnemyNameplate).
+const OWN_STYLE_META: StringName = &"world_label_own_style"
 
 
 ## Styles one label (sizes, outline, its visibility range and its layer).
 static func apply(label: Label3D) -> void:
-	if label == null:
+	if label == null or label.has_meta(OWN_STYLE_META):
 		return
 	label.fixed_size = false
 	label.pixel_size = PIXEL_SIZE
