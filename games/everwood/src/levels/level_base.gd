@@ -426,7 +426,7 @@ func pick_seal_hand(class_id: StringName, companion: bool) -> Dictionary:
 	var saved: Dictionary = PartyProgress.current.seal_hand_for(class_id)
 	if saved.is_empty():
 		return {}
-	var level: int = clampi(PartyProgress.current.trail_level(), 1, ArsenalCatalog.MAX_TRUE_LEVEL)
+	var level: int = clampi(PartyProgress.current.character_level(class_id), 1, ArsenalCatalog.MAX_TRUE_LEVEL)
 	var problem: String = _seal_hand_problem(ClassLoadouts.player_class(class_id).role, PlayerLoadoutResource.stage_for_true_level(level), level, saved)
 	return saved if problem == "" else {}
 
@@ -437,7 +437,7 @@ func pick_seal_hand(class_id: StringName, companion: bool) -> Dictionary:
 func check_seal_hand(seat: PartyMember, hand: Dictionary) -> String:
 	if hand.is_empty():
 		return ""
-	var level: int = clampi(PartyProgress.current.trail_level(), 1, ArsenalCatalog.MAX_TRUE_LEVEL)
+	var level: int = clampi(PartyProgress.current.character_level(seat.class_id), 1, ArsenalCatalog.MAX_TRUE_LEVEL)
 	var stage: int = PlayerLoadoutResource.stage_for_true_level(level)
 	var hero: ActorBase = actors.get(seat.player_id) as ActorBase
 	if hero != null and hero.seal != null:
@@ -631,13 +631,13 @@ func _on_playtest_cycle(step: int, device_id: int) -> void:
 	if toast == "":
 		return
 	_show_notice(toast + (" · playtest: nothing is saved" if PartyProgress.current.playtest else ""))
-	var capped: bool = PartyProgress.current.playtest_level > PartyProgress.LEVEL_XP.size()
+	var capped: bool = PartyProgress.current.playtest_level > PartyProgress.TRAIL_TOP_LEVEL
 	var seat: PartyMember = _local_seat(device_id)
 	var hud: PlayerHUD = huds.get(seat.player_id) as PlayerHUD if seat != null else null
 	if hud != null:
 		var line: String = toast.trim_prefix("Debug Switch: ")
 		if capped:
-			line += " (the trail tops out at Lv %d: its gear)" % PartyProgress.LEVEL_XP.size()
+			line += " (the trail tops out at Lv %d: its gear)" % PartyProgress.TRAIL_TOP_LEVEL
 		hud.show_banner("DEBUG SWITCH", line, PlaytestSwitcher.TOAST_COLOR, PlaytestSwitcher.TOAST_TIME)
 	AudioCues.play(&"equip")
 

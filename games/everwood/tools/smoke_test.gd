@@ -1989,7 +1989,7 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 	_check(tank.loadout.kit.under_ids[2] == ArsenalCatalog.IRON_ROOT_LINK and dps.loadout.kit.under_ids[2] == ArsenalCatalog.STAR_TIDE_LINK
 		and healer.loadout.kit.under_ids[2] == ArsenalCatalog.WARM_HEARTH_LINK, "Level 7: an Under-Card tucks in beneath R")
 	_check(network.member(tank.player_id).calling == Callings.UNSWORN_ID, "below Level 10 the Secondary Callings stay locked")
-	progress.award_xp(PartyProgress.LEVEL_XP.back() - progress.xp)
+	progress.award_xp(PartyProgress.LEVEL_XP[PartyProgress.TRAIL_TOP_LEVEL - 1] - progress.xp)
 	await _seconds(0.1)
 	_check(progress.trail_level() == 10 and tank.loadout.weapon.item_id == ArsenalCatalog.CAIRNSMAN_FALCHION and dps.loadout.weapon.item_id == ArsenalCatalog.GORGE_LONGBOW
 		and Callings.is_valid(tank.loadout.calling) and tank.loadout.display_name != "Shield-Sworn",

@@ -27,6 +27,8 @@ signal progress_changed
 signal card_awarded(copy_key: StringName)
 ## The party reached a new trail level, on every peer (the host then grants its milestone).
 signal trail_level_reached(level: int)
+## A Fellowship's hero reached a new Character Level (22 GDD §2), on every peer.
+signal character_level_reached(class_id: StringName, level: int)
 
 const SAVE_PATH: String = "user://everwood_progress.cfg"
 ## Command line: --save=PATH plays from another save file (tests and demos use
@@ -45,10 +47,17 @@ const UPGRADE_BASE_COST: int = 4
 const XP_PER_MOB: int = 35
 const XP_PER_GATE: int = 80
 const XP_PER_BOSS: int = 200
-## Total XP for each trail level, Level 1 first. One expedition (7 mobs, the
+## Total XP for each level, Level 1 first. One expedition (7 mobs, the
 ## Gorge gate and the Cairnsman: 525 XP) reaches Level 5 at the Gatehouse; the
-## second reaches Level 10 at the Cairnsman.
-const LEVEL_XP: Array[int] = [0, 70, 105, 230, 320, 560, 700, 800, 850, 1050]
+## second reaches Level 10 at the Cairnsman. Levels 11 to 20 (the Caldera's
+## Stages 3 and 4, 22 GDD §2) climb on from there [tuning TBD in 04_BALANCE].
+const LEVEL_XP: Array[int] = [0, 70, 105, 230, 320, 560, 700, 800, 850, 1050,
+	1300, 1600, 1950, 2350, 2800, 3300, 3850, 4450, 5100, 5800]
+## The Bramble-Bridge trail's own top: its milestones stop here, and the older
+## checks' full kit stands the party here (apply_full_endgame_kit_for_testing).
+const TRAIL_TOP_LEVEL: int = 10
+## The top Character Level (the Google Doc's Character Level 1-20).
+const MAX_CHARACTER_LEVEL: int = 20
 
 ## The live autoload node (see NetworkManager.current for why).
 static var current: PartyProgress
@@ -62,6 +71,10 @@ var collection: Dictionary[StringName, int] = {}
 var victories: int = 0
 ## The party's trail XP (trail_level reads the level from it).
 var xp: int = 0
+## Class id -> that Fellowship's own XP (character_level reads the hero's level
+## from it). Each seated hero earns what the party earns, so heroes played apart
+## drift apart: a sibling's fresh Fellowship starts at Level 1 (22 GDD §2).
+var hero_xp: Dictionary[StringName, int] = {}
 ## Tests only (apply_full_endgame_kit_for_testing): new seats wear the classic
 ## full kits. Survives load_save, so a test that reloads its save keeps it.
 var endgame_kits_for_testing: bool = false
@@ -392,11 +405,13 @@ func _request_gild(copy_key: StringName) -> void:
 
 # --- The trail (11 GDD §5) -------------------------------------------------
 
-## The party's trail level, 1 to 10.
+## The party's trail level, 1 to 10: it paces the Bramble-Bridge trail's
+## milestones and the foes' badges. The hero's own hand, tiers and Calling read
+## its Character Level instead (character_level, 1 to 20).
 func trail_level() -> int:
 	if playtest_level > 0:
-		return mini(playtest_level, LEVEL_XP.size())
-	return level_for_xp(xp)
+		return mini(playtest_level, TRAIL_TOP_LEVEL)
+	return mini(level_for_xp(xp), TRAIL_TOP_LEVEL)
 
 
 static func level_for_xp(amount: int) -> int:
@@ -410,12 +425,47 @@ static func level_for_xp(amount: int) -> int:
 ## XP still to earn before the next level (0 at Level 10).
 func xp_to_next_level() -> int:
 	var level: int = trail_level()
-	return 0 if level >= LEVEL_XP.size() else LEVEL_XP[level] - xp
+	return 0 if level >= TRAIL_TOP_LEVEL else LEVEL_XP[level] - xp
 
 
 ## The Secondary Callings open at Level 10; until then every hero is Unsworn.
 func callings_unlocked() -> bool:
 	return trail_level() >= ArsenalCatalog.CALLING_LEVEL
+
+
+## A Fellowship's hero's Character Level, 1 to 20 (22 GDD §2): what opens its
+## hand's slots, the material tiers it may be promoted to, and its Calling. A
+## playtest's chosen level stands in for every hero.
+func character_level(class_id: StringName) -> int:
+	if playtest_level > 0:
+		return clampi(playtest_level, 1, MAX_CHARACTER_LEVEL)
+	return level_for_xp(hero_xp.get(class_id, 0))
+
+
+## XP the hero still needs for its next Character Level (0 at Level 20).
+func character_xp_to_next(class_id: StringName) -> int:
+	var level: int = character_level(class_id)
+	return 0 if level >= MAX_CHARACTER_LEVEL else LEVEL_XP[level] - hero_xp.get(class_id, 0)
+
+
+## Whether a Fellowship's hero may swear a Calling (Level 10).
+func callings_unlocked_for(class_id: StringName) -> bool:
+	return character_level(class_id) >= ArsenalCatalog.CALLING_LEVEL
+
+
+## Steward Threat (the Google Doc's 1-40): Character Level plus the material rank
+## of the weapon the hero wears (+0 at Orchard-Wood to +20 at Star-Glass).
+func steward_threat(class_id: StringName, weapon_rank: int) -> int:
+	return clampi(character_level(class_id) + clampi(weapon_rank, 0, 20), 1, 40)
+
+
+## The Fellowships seated as players right now (companions earn nothing for anyone).
+static func seated_fellowships() -> Array[StringName]:
+	var seated: Array[StringName] = []
+	for member: PartyMember in NetworkManager.current.roster.values():
+		if not member.companion and member.class_id != &"" and not seated.has(member.class_id):
+			seated.append(member.class_id)
+	return seated
 
 
 ## Host only: trail XP for the party (a mob, a gate, a boss). Each level it
@@ -424,13 +474,23 @@ func award_xp(amount: int) -> void:
 	if not NetworkManager.current.is_host() or amount <= 0:
 		return
 	var before: int = trail_level()
+	var heroes_before: Dictionary[StringName, int] = {}
+	var hero_gained: bool = false
+	for class_id: StringName in seated_fellowships():
+		heroes_before[class_id] = character_level(class_id)
+		var hero_total: int = mini(hero_xp.get(class_id, 0) + amount, LEVEL_XP.back())
+		hero_gained = hero_gained or hero_total != hero_xp.get(class_id, 0)
+		hero_xp[class_id] = hero_total
 	var gained: int = mini(xp + amount, LEVEL_XP.back())
-	if gained == xp:
+	if gained == xp and not hero_gained:
 		return
 	xp = gained
 	_commit()
 	for level: int in range(before + 1, trail_level() + 1):
 		trail_level_reached.emit(level)
+	for class_id: StringName in heroes_before:
+		for level: int in range(heroes_before[class_id] + 1, character_level(class_id) + 1):
+			character_level_reached.emit(class_id, level)
 
 
 ## The kit a fresh seat of this class wears at the party's trail level: the
@@ -447,7 +507,9 @@ func trail_kit(class_id: StringName) -> Dictionary:
 ## checks measure what they always measured. Never called by the game.
 func apply_full_endgame_kit_for_testing() -> void:
 	endgame_kits_for_testing = true
-	xp = LEVEL_XP.back()
+	xp = LEVEL_XP[TRAIL_TOP_LEVEL - 1]
+	for class_id: StringName in ClassLoadouts.PLAYER_CLASSES:
+		hero_xp[class_id] = xp
 	_commit()
 
 
@@ -474,6 +536,7 @@ func load_save() -> void:
 	chimes = 0
 	victories = 0
 	xp = 0
+	hero_xp.clear()
 	levels.clear()
 	collection.clear()
 	kits.clear()
@@ -490,6 +553,13 @@ func load_save() -> void:
 		# expedition (Level 5 after one, Level 10 after two), so no gear is lost.
 		var migrated: int = [0, LEVEL_XP[4], LEVEL_XP.back()][mini(victories, 2)]
 		xp = clampi(int(file.get_value("trail", "xp", migrated)), 0, LEVEL_XP.back())
+		# A save from before per-hero levels: every Fellowship played the party's levels together.
+		var saved_heroes: Dictionary = file.get_value("heroes", "xp", {}) as Dictionary
+		if saved_heroes.is_empty():
+			for class_id: StringName in ClassLoadouts.PLAYER_CLASSES:
+				hero_xp[class_id] = xp
+		else:
+			_read_hero_xp(saved_heroes)
 		for id: StringName in UPGRADES:
 			levels[id] = clampi(int(file.get_value("upgrades", String(id), 0)), 0, MAX_UPGRADE_LEVEL)
 		_read_collection(file.get_value("cards", "collection", {}) as Dictionary)
@@ -519,6 +589,7 @@ func save() -> Error:
 	file.set_value("party", "chimes", chimes)
 	file.set_value("party", "victories", victories)
 	file.set_value("trail", "xp", xp)
+	file.set_value("heroes", "xp", _plain_hero_xp())
 	for id: StringName in UPGRADES:
 		file.set_value("upgrades", String(id), level_of(id))
 	file.set_value("cards", "collection", _plain_collection())
@@ -537,6 +608,19 @@ func save() -> Error:
 	file.set_value("glimmer", "seen", _plain_pattern_seen())
 	file.set_value("caldera", "flags", caldera_flags)
 	return file.save(save_path)
+
+
+func _plain_hero_xp() -> Dictionary:
+	var plain: Dictionary = {}
+	for class_id: StringName in hero_xp:
+		plain[String(class_id)] = hero_xp[class_id]
+	return plain
+
+
+func _read_hero_xp(plain: Dictionary) -> void:
+	hero_xp.clear()
+	for class_id: Variant in plain:
+		hero_xp[StringName(str(class_id))] = clampi(int(plain[class_id]), 0, LEVEL_XP.back())
 
 
 func _plain_pattern_seen() -> Dictionary:
@@ -584,7 +668,7 @@ func _snapshot() -> Dictionary:
 	var bought: Dictionary = {}
 	for id: StringName in UPGRADES:
 		bought[String(id)] = level_of(id)
-	return {"chimes": chimes, "levels": bought, "victories": victories, "xp": xp, "collection": _plain_collection(),
+	return {"chimes": chimes, "levels": bought, "victories": victories, "xp": xp, "hero_xp": _plain_hero_xp(), "collection": _plain_collection(),
 		"glimmer_seen": _plain_pattern_seen()}
 
 
@@ -606,6 +690,7 @@ func _receive_progress(data: Dictionary) -> void:
 		levels[id] = clampi(int(bought.get(String(id), 0)), 0, MAX_UPGRADE_LEVEL)
 	victories = maxi(0, int(data.get("victories", 0)))
 	xp = clampi(int(data.get("xp", 0)), 0, LEVEL_XP.back())
+	_read_hero_xp(data.get("hero_xp", {}) as Dictionary)
 	_read_collection(data.get("collection", {}) as Dictionary)
 	_read_pattern_seen(data.get("glimmer_seen", {}) as Dictionary)
 	progress_changed.emit()

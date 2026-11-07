@@ -507,7 +507,7 @@ func _check_playtest_switcher() -> void:
 		"on a pad, holding Share and tapping D-Pad → steps the matrix too, and the chord spends the Share press (no Binder, no Fellowship change)")
 	await _tap_key(KEY_F2)
 	await _frames(3)
-	var capped: bool = progress.playtest_level == 12 or progress.trail_level() <= PartyProgress.LEVEL_XP.size()
+	var capped: bool = progress.playtest_level == 12 or progress.trail_level() <= PartyProgress.TRAIL_TOP_LEVEL
 	check.call(capped and PlaytestSwitcher.MATRIX.size() == 9 and PlaytestSwitcher.toast_text(8) == "Debug Switch: Bell-Keeper Lv 12",
 		"the matrix runs Bridge-Warden, Hedge-Runner and Bell-Keeper at Levels 3, 7 and 12; Level 12 wears the trail's Level 10 gear")
 	progress.end_playtest()

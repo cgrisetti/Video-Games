@@ -342,12 +342,12 @@ func _stage_3_split_screen_and_network_schema_gate() -> void:
 	hero.seal.clear_custom_loadout()
 	await _frames(2)
 	var hand: PlayerLoadoutResource = hero.seal.loadout
-	var expected_tier: EquipmentTierResource = catalog.tier_for_true_level(PartyProgress.current.trail_level())
-	var expected_stage: int = PlayerLoadoutResource.stage_for_true_level(PartyProgress.current.trail_level())
+	var expected_tier: EquipmentTierResource = catalog.tier_for_true_level(PartyProgress.current.character_level(hero.loadout.class_id))
+	var expected_stage: int = PlayerLoadoutResource.stage_for_true_level(PartyProgress.current.character_level(hero.loadout.class_id))
 	check.call(hand != null and hand.equipped_tier_id == expected_tier.tier_id and hero.seal.progression_stage == expected_stage
 		and hand.validate_loadout_for_stage(expected_stage) and hand.seal_count() == PlayerLoadoutResource.seals_open_at_stage(expected_stage)
-		and hand.active_count() == PlayerLoadoutResource.actives_open_at_stage(expected_stage) and hero.seal.true_level == PartyProgress.current.trail_level()
-		and hero.seal.renown_rank() == ArsenalCatalog.compute_renown_from_true_level(PartyProgress.current.trail_level()),
+		and hand.active_count() == PlayerLoadoutResource.actives_open_at_stage(expected_stage) and hero.seal.true_level == PartyProgress.current.character_level(hero.loadout.class_id)
+		and hero.seal.renown_rank() == ArsenalCatalog.compute_renown_from_true_level(PartyProgress.current.character_level(hero.loadout.class_id)),
 		"the hero wears the hand its level earned: %s at Stage %d (Renown %d), %d seals and %d invocations"
 		% [expected_tier.weapon_material_name, expected_stage, hero.seal.renown_rank(), hand.seal_count(), hand.active_count()])
 	# The Wingfeather youth rig (§2.1).

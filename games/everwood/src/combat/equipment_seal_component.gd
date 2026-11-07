@@ -259,7 +259,9 @@ func tier() -> EquipmentTierResource:
 
 
 func _derive_hand() -> void:
-	true_level = clampi(PartyProgress.current.trail_level() if PartyProgress.current != null else 1, 1, ArsenalCatalog.MAX_TRUE_LEVEL)
+	# The hero's own Character Level (22 GDD §2), not the party's trail level.
+	var class_id: StringName = actor.loadout.class_id if actor != null and actor.loadout != null else &""
+	true_level = clampi(PartyProgress.current.character_level(class_id) if PartyProgress.current != null else 1, 1, ArsenalCatalog.MAX_TRUE_LEVEL)
 	progression_stage = debug_stage_override if debug_stage_override > 0 else PlayerLoadoutResource.stage_for_true_level(true_level)
 	if _received_from_owner and loadout != null:
 		apply_visuals()
