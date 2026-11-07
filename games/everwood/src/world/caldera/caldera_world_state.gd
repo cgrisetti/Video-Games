@@ -2,7 +2,7 @@
 ## docs/20_CALDERA_ATLAS_AND_CROWN_BIBLE.md, the Musk Razor locks): eight
 ## booleans and the sea level they move, nothing else.
 ##
-##   root_sanctum_cleared   Oakshire Holm's Lv 6 capstone: the trade lanes go
+##   root_sanctum_cleared   Miller's Oak's Lv 6 capstone: the trade lanes go
 ##                          dark and the West Strait, Eel Spit and Salt Road open
 ##   beacon_iron / _tide / _gale
 ##                          one flag, three effects: its stall at Hearthstead
@@ -138,7 +138,7 @@ func lane_open(gate: StringName) -> bool:
 	return get_flag(gate)
 
 
-## Whether the party has earned a Scribe Sign at a Beacon (Warm-Hearth is Oakshire Holm's own).
+## Whether the party has earned a Scribe Sign at a Beacon (Warm-Hearth is Miller's Oak's own).
 func sign_granted(scribe_sign: int) -> bool:
 	match scribe_sign:
 		ScribeSignResource.Sign.SIGN_IRON_ROOT:

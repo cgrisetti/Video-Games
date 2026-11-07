@@ -365,7 +365,7 @@ static func add_world_tree_silhouette(into: LandblockTerrain.MeshMerge, foot: Ve
 		add_sphere(into, foot + Vector3(lobe.x, lobe.y, lobe.z), lobe.w, LEAF.lerp(DARK_LEAF, 0.3), 0.72, 10)
 
 
-## A windmill silhouette (the far stand-in for Oakshire Holm's).
+## A windmill silhouette (the far stand-in for Miller's Oak's).
 static func add_windmill_silhouette(into: LandblockTerrain.MeshMerge, foot: Vector3) -> void:
 	add_post(into, foot, 3.2, 5.0, 18.0, PALE_STONE, 10)
 	add_cone(into, foot + Vector3(0.0, 18.0, 0.0), 4.2, 5.0, ROOF_RED, 10)

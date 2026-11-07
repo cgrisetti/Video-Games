@@ -1,4 +1,4 @@
-## The Old Quay Market on Oakshire Holm's north-west shore (docs/20 Part I §2,
+## The Old Quay Market on Miller's Oak's north-west shore (docs/20 Part I §2,
 ## the Council's "10% added back"): the market the grandparents remember, on
 ## a stone shelf at -4 m under the Long Flood. The Ebb bares it, and its old
 ## stalls open again with the endgame's Chime and gear merchants, so Oakshire

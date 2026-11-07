@@ -26,6 +26,10 @@ const BANNED_PATTERN: String = "(?i)\\b(runes?|aspects?|constructs?|wharfs?|silt
 const MAP_SENSE: Array[String] = ["bridge", "green", "hollow", "falls", "haven", "wick", "crossing"]
 ## Places that aren't settlements or zones: a boss arena and a ring of the vale's terrain.
 const NOT_SETTLEMENTS: Array[String] = ["The Ring of the Cairnsman", "The Settled Meadow"]
+## Gate 3's named exceptions (08 GDD §1, Creative Director 2026-11-06): kept as
+## named though they flatten a hyphen or carry no Map-Sense noun. A place whose
+## name holds one of these passes Rules 2 and 3.
+const CD_NAME_EXCEPTIONS: Array[String] = ["Doverslap", "Miller's Oak"]
 const VILLAGE: Vector3 = Vector3(768.0, 12.0, 778.0)
 const SpiritState = HobSpectrumComponent.SpiritState
 
@@ -151,7 +155,7 @@ func _check_linter() -> void:
 			places.append(apron.title)
 	var unsound: Array[String] = []
 	for place: String in places:
-		if place == "" or NOT_SETTLEMENTS.has(place):
+		if place == "" or NOT_SETTLEMENTS.has(place) or CD_NAME_EXCEPTIONS.any(func(named: String) -> bool: return place.contains(named)):
 			continue
 		var compound: bool = false
 		for part: String in place.to_lower().replace(" ", "-").split("-"):

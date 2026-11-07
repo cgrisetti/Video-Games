@@ -27,7 +27,7 @@ A weapon defines the hero's `Light` chain, `Heavy` finisher, and whether Sign-Ca
 - **Rowan Way-Staff** (`STAFF`): two staff sweeps and a `12.0m` Sign-bolt (`10.0` stamina), and a grounded Resonant Pulse Heavy (`16.0` damage, `+25%` Sanctuary radius). Delivery: `RANGED_BOLT`.
 - **Yew Longbow** (`BOW`): a `14.0m` stepping snap-shot (`10.0` stamina) and an `18.0m` planted Piercing Draw Heavy (`24.0` damage, `20.0` poise). Delivery: `RANGED_ARROW`.
 
-Each weapon climbs four tiers on the Trail of the Four Signs (Apprentice Timber, Hedgerow Iron, Bramble-Bridge Steel, Dover-Slap Relic; 11 GDD §5.1).
+Each weapon climbs four tiers on the Trail of the Four Signs (Apprentice Timber, Hedgerow Iron, Bramble-Bridge Steel, Doverslap Relic; 11 GDD §5.1).
 
 ---
 

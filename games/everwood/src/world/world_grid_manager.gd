@@ -578,7 +578,7 @@ func _bake_navigation(chunk: Chunk) -> void:
 		ChunkNavBuilder.source_group(chunk.coord)))
 
 
-## Bakes a chunk's navigation again (after the Dover-Slap Gatehouse's portcullis sinks).
+## Bakes a chunk's navigation again (after the Doverslap Gatehouse's portcullis sinks).
 func rebake_navigation(coord: Vector2i) -> void:
 	var chunk: Chunk = _chunks.get(coord) as Chunk
 	if chunk == null or not chunk.has_gameplay or chunk.nav_region == null:

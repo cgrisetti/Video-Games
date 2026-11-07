@@ -68,7 +68,7 @@ const BRAMBLE_FALCHION: StringName = &"weapon_bramble_falchion"
 const MILL_BROADAXE: StringName = &"weapon_mill_broadaxe"
 const SCRIBE_WAYSTAFF: StringName = &"weapon_scribe_waystaff"
 const WEALD_LONGBOW: StringName = &"weapon_weald_longbow"
-# Tier 4: Dover-Slap Relic.
+# Tier 4: Doverslap Relic.
 const CAIRNSMAN_FALCHION: StringName = &"weapon_cairnsman_falchion"
 const DOVERSLAP_BROADAXE: StringName = &"weapon_doverslap_broadaxe"
 const CARILLON_WAYSTAFF: StringName = &"weapon_carillon_waystaff"
@@ -84,7 +84,7 @@ const TIER_WEAPONS: Array[Array] = [
 ## The classic weapon of each WeaponType: the template its tiers scale.
 const CLASSIC_WEAPONS: Array[StringName] = [LIGHT_SWORD, HEAVY_AXE, SCRIBE_STAFF, HUNTER_BOW]
 ## Each tier's name, opening level, damage and poise multiplier and palette (11 GDD §5.1), Tier 1 first.
-const TIER_NAMES: Array[String] = ["Apprentice Timber", "Hedgerow Iron", "Bramble-Bridge Steel", "Dover-Slap Relic"]
+const TIER_NAMES: Array[String] = ["Apprentice Timber", "Hedgerow Iron", "Bramble-Bridge Steel", "Doverslap Relic"]
 const TIER_LEVELS: Array[int] = [1, 2, 5, 10]
 const TIER_MULTIPLIERS: Array[float] = [1.0, 1.2, 1.45, 1.75]
 ## Unvarnished hazel, hammered dark iron, milled steel, gilded Carillon bronze.
@@ -113,7 +113,7 @@ const BARROW_CRAG_HEATHER: StringName = &"barrow_crag_heather"
 ## The youth's own heather-blue cape (not a seat dye: the first seat keeps it).
 const YOUTH_HEATHER: StringName = &"youth_heather"
 const HERITAGE_DYES: Array[StringName] = [TIZZI_WED_PINE, GULL_WICK_SLATE, BARLEY_BRIDGE_RUSSET, BARROW_CRAG_HEATHER]
-## The Dover-Slap relics' glowing Sign-stone.
+## The Doverslap relics' glowing Sign-stone.
 const SIGN_STONE_COLOR: Color = Color(1.0, 0.9, 0.62)
 ## Each WeaponType's Un-Inked Martial Flourishes (11 GDD §4.1): R, then L+R.
 const UNINKED_NAMES: Array[Array] = [
@@ -142,7 +142,7 @@ const MOONFALL_CLEAVE: StringName = &"moonfall_cleave"
 const EMBER_AEGIS: StringName = &"ember_aegis"
 const STARLIT_VOLLEY: StringName = &"starlit_volley"
 const DAWNBREAKER: StringName = &"dawnbreaker"
-# Uncommon cards found on the Dover-Slap-Falls Expedition (the Wayfarer's Chest).
+# Uncommon cards found on the Doverslap Falls Expedition (the Wayfarer's Chest).
 const HOLLOWAY_LUNGE: StringName = &"holloway_lunge"
 const ROOT_SNARE_STEP: StringName = &"root_snare_step"
 const LANTERN_MOTE: StringName = &"lantern_mote"
@@ -487,7 +487,7 @@ func callings() -> Array[CallingResource]:
 
 # --- Heroes' looks (19 GDD §5) ----------------------------------------------
 
-## A weapon tier's look, 1 to 4 (Apprentice Timber to Dover-Slap Relic).
+## A weapon tier's look, 1 to 4 (Apprentice Timber to Doverslap Relic).
 func weapon_visual_tier(tier: int) -> WeaponVisualTierResource:
 	return _weapon_tiers[clampi(tier, 1, _weapon_tiers.size()) - 1]
 
@@ -1407,13 +1407,13 @@ func _build_tier_weapons() -> void:
 		["Turned-Hazel Falchion", "Split-Ash Broad-Axe", "Reed-Light Way-Staff", "Willow-Coppice Longbow"],
 		["Hedgerow Iron Falchion", "Coppice-Forged Broad-Axe", "Copper-Shod Way-Staff", "Horn-Tipped Yew Longbow"],
 		["Bramble-Steel Falchion", "Mill-Forged Broad-Axe", "Scribe-Banded Way-Staff", "Weald-Ranger Yew Longbow"],
-		["Cairnsman's Span-Blade", "Dover-Slap Cleaver-Axe", "Arch-Scribe's Carillon Staff", "Gorge-Wind Greatbow"],
+		["Cairnsman's Span-Blade", "Doverslap Cleaver-Axe", "Arch-Scribe's Carillon Staff", "Gorge-Wind Greatbow"],
 	]
 	var blurbs: PackedStringArray = [
 		"Lathe-turned practice arms bound in hemp cord.",
 		"Hammered hedgerow iron on an oak grip, riveted in brass.",
 		"Bright milled steel from the Bramble-Bridge forge, with a brass bell-guard.",
-		"A Dover-Slap relic of gilded Carillon bronze and star-etched steel, a Sign-stone glowing in its pommel.",
+		"A Doverslap relic of gilded Carillon bronze and star-etched steel, a Sign-stone glowing in its pommel.",
 	]
 	for tier_index: int in TIER_WEAPONS.size():
 		for weapon_type: int in CLASSIC_WEAPONS.size():
@@ -1704,7 +1704,7 @@ func _build_lead_cards() -> void:
 	gale.hit_stop_scale = 2.2
 	gale.resonance_gain = 0.0
 	gale.primer = Sign.SIGN_STAR_TIDE
-	_trail_find(_lead(gale, Slot.ULTIMATE, Sign.SIGN_STAR_TIDE, "Dover-Slap-Falls' gale bursts out around you, stamping the Sign of Star-Tide (3 pips).",
+	_trail_find(_lead(gale, Slot.ULTIMATE, Sign.SIGN_STAR_TIDE, "Doverslap Falls' gale bursts out around you, stamping the Sign of Star-Tide (3 pips).",
 		ScribeCardResource.Delivery.AT_CASTER))
 
 
@@ -2041,10 +2041,10 @@ func _scribery_leaf(leaf: ScribeCardResource) -> ScribeCardResource:
 
 ## The four Place-Cards (14 GDD §4.2), charted at the Reed-Light Scribery.
 func _build_place_cards() -> void:
-	var oaks: ScribeCardResource = _place(ARIUNDLE_MOSS_OAKS, "Moss-Oak-Hollow", Sign.SIGN_IRON_ROOT, &"ariundle_trail_chime_post",
+	var oaks: ScribeCardResource = _place(ARIUNDLE_MOSS_OAKS, "Moss-Oak Hollow", Sign.SIGN_IRON_ROOT, &"ariundle_trail_chime_post",
 		"Root-Bind: mossy oak bark sprouts on the blade; every coated strike lands 15 more poise.")
 	oaks.location_bonus_poise = 15.0
-	var gorge: ScribeCardResource = _place(DOVERSLAP_GORGE, "Dover-Slap-Bridge", Sign.SIGN_RIME_GALE, &"doverslap_gatehouse",
+	var gorge: ScribeCardResource = _place(DOVERSLAP_GORGE, "Doverslap Bridge", Sign.SIGN_RIME_GALE, &"doverslap_gatehouse",
 		"Gorge-Draft: a sweeping river-mist arc reaches 0.8 m further.")
 	gorge.location_bonus_reach_m = 0.8
 	var mill: ScribeCardResource = _place(BRAMBLEBRIDGE_MILL, "Bramble-Bridge Hearth-Mill", Sign.SIGN_WARM_HEARTH, &"bramblebridge_green",
@@ -2075,7 +2075,7 @@ func _place(id: StringName, label: String, scribe_sign: Sign, landmark: StringNa
 ## "Star-Ink" on screen, by Gate 6's playground rename of the old finish word.
 func _build_material_tiers() -> void:
 	_register_tier(TIER_1_HOMESTEAD, 1, "Orchard-Wood", "Oak-Bark & Boiled-Hide", "Bracken-Pelt Jerkin", "Mended-Linen Smock",
-		&"ISLAND_OAKSHIRE_HOLM", "Oakshire Holm (Homestead Start)", 1, 3, 1, 5, 2, 3, 14.0, 0.04, 0,
+		&"ISLAND_OAKSHIRE_HOLM", "Miller's Oak (Homestead Start)", 1, 3, 1, 5, 2, 3, 14.0, 0.04, 0,
 		Color("#8B5A2B"), 0.00, 0.88, 0.15, Color("#D2B48C"), 0.00)
 	_register_tier(TIER_2_BOG_BRONZE, 2, "Bog-Bronze", "Bog-Bronze Rim & Layered-Hide", "Mire-Cured Buckskin", "Orchard-Wool Mantle",
 		&"ISLAND_BARROW_EYOT", "Barrow-Eyot Marshes & Early Oakshire", 4, 6, 6, 10, 5, 7, 20.0, 0.09, 25,
@@ -2254,7 +2254,7 @@ func _build_encounters() -> void:
 	_locked(_encounter(SHINGLE_SCRAY, "Shingle-Scray", Tier.TIER_2_MULTI_LOCK, 7, [Sign.SIGN_RIME_GALE], 210, 150, "", "dive"),
 		Key.ELEMENTAL_INK_KEY)
 	# Tier 3: the milestone bosses' four gates.
-	var cairnsman: BossEncounterResource = _encounter(CAIRNSMAN, "The Cairnsman of Dover-Slap-Falls", Tier.TIER_3_FOUR_GATE_BOSS, 5,
+	var cairnsman: BossEncounterResource = _encounter(CAIRNSMAN, "The Cairnsman of Doverslap Falls", Tier.TIER_3_FOUR_GATE_BOSS, 5,
 		[Sign.SIGN_IRON_ROOT, Sign.SIGN_STAR_TIDE], 180, 120,
 		"When the cairn-core glows and the old stones roar,\nring Iron-Root or Star-Tide and he'll stand no more!", "roar")
 	# Gate 2's core answers Star-Tide, the Tempest's Warm-Hearth, and the Seal-Turn Iron-Root.

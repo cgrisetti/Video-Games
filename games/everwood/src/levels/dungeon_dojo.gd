@@ -1,13 +1,13 @@
-## The Dover-Slap-Falls Expedition (07_EXPEDITION_HUD_AND_ART_GDD.md §3): the raid, three
+## The Doverslap Falls Expedition (07_EXPEDITION_HUD_AND_ART_GDD.md §3): the raid, three
 ## zones end to end (its files and network id keep the old name, Dungeon Dojo):
-##   Zone 1  Moss-Oak-Hollow and Rush-Light-Hollow: two woodland
+##   Zone 1  Moss-Oak Hollow and Rush-Light-Hollow: two woodland
 ##           minion camps (each pays a few Chimes when cleared), the Wayfarer's
 ##           Water-Shrine, Wind-Lanterns, and the Wayfarer's Chest in the
 ##           alcove (Chimes and an Uncommon Scribe Card)
-##   Zone 2  Dover-Slap-Bridge and the Dover-Slap Gatehouse's Co-Op
+##   Zone 2  Doverslap Bridge and the Doverslap Gatehouse's Co-Op
 ##           Threshold (CoopGate): two Maker-Seal Plates, or a Shield-Sworn's
 ##           Shadow Sanctuary and the Bell-Winch, open the portcullis
-##   Zone 3  the Ring of the Cairnsman and its boss, The Cairnsman of Dover-Slap-Falls
+##   Zone 3  the Ring of the Cairnsman and its boss, The Cairnsman of Doverslap Falls
 ## Reaching a zone moves everyone's respawn to its checkpoint. Seating,
 ## hot-join and the split-screen grid come from LevelBase.
 ##
@@ -53,7 +53,7 @@ const PASSING_BANNER_TIME: float = 4.0
 ## A zone starts once anyone in the party is past this line (north is -Z).
 const ZONE_TWO_Z: float = 15.0
 const ZONE_THREE_Z: float = -17.0
-const ZONE_NAMES: Array[String] = ["", "Moss-Oak-Hollow", "Dover-Slap-Bridge", "The Ring of the Cairnsman"]
+const ZONE_NAMES: Array[String] = ["", "Moss-Oak Hollow", "Doverslap Bridge", "The Ring of the Cairnsman"]
 ## Checkpoint pads sit this far apart across the path.
 const CHECKPOINT_SPACING: float = 1.5
 ## The whole expedition, for its navigation bake.
@@ -103,7 +103,7 @@ func map_paths() -> Array[Dictionary]:
 
 
 func level_title() -> String:
-	return "The Dover-Slap-Falls Expedition"
+	return "The Doverslap Falls Expedition"
 
 
 func home_place() -> String:
@@ -115,7 +115,7 @@ func music_profile_at(position: Vector3) -> StringName:
 	return LandblockManifest.ZONE_MUSIC[_zone_at(position.z)]
 
 
-## Zone 1 is the trail's Moss-Oak-Hollow moved to the origin, so its sunken lane blends at the same depth.
+## Zone 1 is the trail's Moss-Oak Hollow moved to the origin, so its sunken lane blends at the same depth.
 func music_world_z(position: Vector3) -> float:
 	return position.z + LandblockManifest.MOSS_OAKS_ORIGIN.z if _zone_at(position.z) == 1 else position.z
 
@@ -139,7 +139,7 @@ func level_hint() -> String:
 			if coop_gate.is_open:
 				return "%s: the gate is open. On to the Ring of the Cairnsman!" % ZONE_NAMES[2]
 			return "%s: stand on both Maker-Seal Plates together, or ring the Bridge-Bell in a Shield-Sworn's Shadow Sanctuary" % ZONE_NAMES[2]
-	return "%s: face the Cairnsman of Dover-Slap-Falls" % ZONE_NAMES[3]
+	return "%s: face the Cairnsman of Doverslap Falls" % ZONE_NAMES[3]
 
 
 ## AI companions fill missing trinity roles in here.
@@ -326,7 +326,7 @@ func _on_wayfarer_chest_opened(opener_id: StringName, chimes: int, card_key: Str
 func _on_gate_opened(method: int) -> void:
 	var how: String = "The Maker-Seal Plates hum together" if method == CoopGate.Method.RUNE_PLATES else "The Bridge-Bell rings out"
 	for hud: PlayerHUD in huds.values():
-		hud.show_banner("THE GATE OPENS", "%s, and the Dover-Slap Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR, PASSING_BANNER_TIME)
+		hud.show_banner("THE GATE OPENS", "%s, and the Doverslap Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR, PASSING_BANNER_TIME)
 	for actor: ActorBase in actors.values():
 		if actor.companion != null:
 			actor.companion.has_assigned_post = false
@@ -375,7 +375,7 @@ func _on_boss_defeated() -> void:
 	var chimes: int = chest_chimes(NetworkManager.current.human_count())
 	var card_key: String = String(ArsenalCatalog.current.roll_card_drop(PartyProgress.current.drop_rng))
 	PartyProgress.current.record_victory()
-	# Entered through Oakshire Holm's Root-Sanctum: the Cairnsman lulled clears it, and the trade lanes go dark (docs/20 Part I §1.4).
+	# Entered through Miller's Oak's Root-Sanctum: the Cairnsman lulled clears it, and the trade lanes go dark (docs/20 Part I §1.4).
 	if InstanceManager.current.home_instance == InstanceManager.CALDERA_ISLES and CalderaWorldState.current != null:
 		CalderaWorldState.current.clear_root_sanctum()
 	_begin_victory(spot, chimes, card_key)

@@ -8,7 +8,7 @@
 ##   - empty hands at spawn (the tool and quiver tucked away), the youth's own
 ##     idle, walk and run picked by speed, feet planting, the tool drawn with
 ##     the reach-back overlay when a fight starts and tucked away again after
-##   - the start: Oakshire Holm's orchard arrival stands Player 1 on the lane
+##   - the start: Miller's Oak's orchard arrival stands Player 1 on the lane
 ##     facing up it toward the Windmill and Hearthstead Market
 ##   - adults stay adults: a companion, or a sworn hero, is never the youth
 extends RefCounted
@@ -124,7 +124,7 @@ func _check_start_spot() -> void:
 	var facing: Vector3 = -builder.arrival_basis(CalderaAtlas.ARRIVE_ORCHARDS).z
 	var lane: Vector2 = OakshireHolmBuilder.ORCHARD_LANE_UP.normalized()
 	check.call(Vector2(spot.x, spot.z).distance_to(OakshireHolmBuilder.ORCHARD_LANE_FOOT) < 0.05 and Vector2(facing.x, facing.z).dot(lane) > 0.999,
-		"a Level 1 start stands Player 1 on Oakshire Holm's orchard lane at %s, facing up it toward the Windmill and Hearthstead Market"
+		"a Level 1 start stands Player 1 on Miller's Oak's orchard lane at %s, facing up it toward the Windmill and Hearthstead Market"
 		% Vector2(spot.x, spot.z))
 	var second: Vector3 = builder.arrival_spot(CalderaAtlas.ARRIVE_ORCHARDS, 1)
 	check.call(absf((second - spot).normalized().dot(Vector3(facing.x, 0.0, facing.z))) < 0.01,

@@ -25,7 +25,7 @@ const EVERWOOD_WORLD: StringName = &"everwood_world"
 const OAKSHIRE_VALE: StringName = &"oakshire_vale"
 ## The Caldera Isles (20_CALDERA_ATLAS_AND_CROWN_BIBLE.md): five island grids in
 ## a drowned caldera, and the game's main scene: every launch arrives on
-## Oakshire Holm (or where --boot-zone= says) unless --instance= names a legacy map.
+## Miller's Oak (or where --boot-zone= says) unless --instance= names a legacy map.
 const CALDERA_ISLES: StringName = &"caldera_isles"
 const FADE_TIME: float = 0.35
 const FADE_LAYER: int = 100

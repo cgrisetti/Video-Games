@@ -7,12 +7,12 @@
 ## the party's roots, the split-screen grid and banner) is built here in code.
 ##
 ## Where the party starts:
-##   --boot-zone=oakshire (the default): the Lee-Shore Orchards on Oakshire Holm
+##   --boot-zone=oakshire (the default): the Lee-Shore Orchards on Miller's Oak
 ##   --boot-zone=north_quay: North Quay, facing The Sound
 ##   --boot-zone=crown: The Crown's South Bay Landing (a playtest: its landing
 ##       counts as open and nothing changed there is saved)
 ##   coming home from the Root-Sanctum's expedition: the Root-Sanctum's door
-## In play, F9 jumps the party between Oakshire Holm and The Crown (a playtest
+## In play, F9 jumps the party between Miller's Oak and The Crown (a playtest
 ## warp, unsaved), and the Crown Landing's Chime-Bell at North Quay glides there
 ## once its lane is open.
 ##
@@ -155,7 +155,7 @@ func level_hint() -> String:
 
 
 func home_place() -> String:
-	return "Oakshire Holm"
+	return "Miller's Oak"
 
 
 func music_profile_at(_position: Vector3) -> StringName:
@@ -466,7 +466,7 @@ func _process(delta: float) -> void:
 		playtest_warp()
 
 
-## F9: between Oakshire Holm's orchards and The Crown's landing (a playtest: unsaved).
+## F9: between Miller's Oak's orchards and The Crown's landing (a playtest: unsaved).
 func playtest_warp() -> void:
 	var state: CalderaWorldState = CalderaWorldState.current
 	state.playtest = true

@@ -13,7 +13,7 @@
 1. **Drowned Caldera with One Breach (NW):** A collapsed volcano flooded by the sea from the north-west (**The Breach**), explaining the cold current, NW gales, and sea-level shift.
 2. **The Crown in the Center:** A resurgent volcanic dome with warm springs in the middle of **The Sound**, visible from every quay from minute one.
 3. **Biomes from Rock & Exposure (Not Latitude):**
-   - **Oakshire Holm (South, Lv 1–6):** Sheltered lee shore on volcanic ash-loam orchards (`SIGN_WARM_HEARTH`).
+   - **Miller's Oak (South, Lv 1–6):** Sheltered lee shore on volcanic ash-loam orchards (`SIGN_WARM_HEARTH`).
    - **Iron-Ness (West, Lv 6–10):** Hydrothermal ironstone cliffs & over-delved mines (`SIGN_IRON_ROOT` · *Shield-Sworn*).
    - **Barrow-Eyot (East, Lv 8–12):** Sunken stretch of caldera rim gone to tidal fen (`SIGN_STAR_TIDE` · *Lantern-Bearers*).
    - **Rime-Firth (North, Lv 10–14):** High basalt rim facing The Breach; snow from altitude and sea-fog (`SIGN_RIME_GALE` · *Wayfarers*).
@@ -23,7 +23,7 @@
 ### 2. Island Progression, Landmarks & Ebb Reveals
 | Island | Level Band | Sign & Calling | Steading / Hub | Landmark Silhouette (from North Quay) | Bared at the Ebb (`-6.0m`) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Oakshire Holm (S)** | Lv 1–6 | `SIGN_WARM_HEARTH` (Hub) | Hearthstead Market & North Quay | **Windmill** | **Old Quay Market** (North shore) |
+| **Miller's Oak (S)** | Lv 1–6 | `SIGN_WARM_HEARTH` (Hub) | Hearthstead Market & North Quay | **Windmill** | **Old Quay Market** (North shore) |
 | **Iron-Ness (W)** | Lv 6–10 | `SIGN_IRON_ROOT` (Shield-Sworn) | Forge-Gorge | **Forge Stacks** | **Raid A: Under-Forge Abyss** (sea-cave) |
 | **Barrow-Eyot (E)** | Lv 8–12 | `SIGN_STAR_TIDE` (Lantern-Bearers) | Lantern Staithe | **Bell-Tower** | **Raid C: Sunken Cathedral** (sea door) |
 | **Rime-Firth (N)** | Lv 10–14 | `SIGN_RIME_GALE` (Wayfarers) | Gale-Hall | **Snow Peak** | **Raid B: Frost-Peak Aerie** (whalers' stair) |
@@ -94,7 +94,7 @@ What the game does today, from the Caldera brief (Phases 1 to 5), and where the 
 
 1. **Paths and names follow the engineering contract.** The brief's `res://scripts/world/CalderaWorldState.gd` style became `src/world/caldera/caldera_world_state.gd`, keeping the brief's class names.
 2. **The legacy maps are quarantined, not deleted.** The landblock streamer they share (`WorldGridManager`, `LandblockTerrain`...) stays in `src/world`; the Caldera doesn't use it. Their smoke checks still run, because the classic combat checks live in the hub and the expedition.
-3. **The Root-Sanctum is the existing expedition.** Its door is a Raid Portal into the Dover-Slap-Falls Expedition. Lulling the Cairnsman there (entered from the Caldera) sets `root_sanctum_cleared`. No new Lv 6 boss was built.
+3. **The Root-Sanctum is the existing expedition.** Its door is a Raid Portal into the Doverslap Falls Expedition. Lulling the Cairnsman there (entered from the Caldera) sets `root_sanctum_cleared`. No new Lv 6 boss was built.
 4. **The Atlas's old-tongue names are kept** (Holm, Ness, Eyot, Firth, Staithe, Quay), following the Council's "old-tongue names that describe the land". The Lens's Rule 2 lists only seven Map-Sense nouns, so these names are checked against Rule 4 (no banned words) and kept out of the Rule 2 and 3 list.
 5. **Foe names linted.** "Forge-Clad Husk Sentinels" became "Forge-Clad Sentinels" (husk reads as undead, as the Lens pass did for the Moss-Shield Spriggan). The stair's "runes" became Sign-seals. Storm-Caller Vaelen is a Breach-wind spirit in a Wayfarer's shape, not a specter. "Siphon-Prelate" is kept as written.
 6. **Level bands are labels.** The trail still ends at Level 10. The Crown's kin are tuned for a Level 10 party, and nothing is gated by level.
@@ -107,4 +107,4 @@ What the game does today, from the Caldera brief (Phases 1 to 5), and where the 
 13. **Not built:** Iron Shore's warm updrafts (the vents are visual only). The North Quay bells don't show three breaking chains.
 14. **Screenshots:** headless Godot doesn't render, so the visual gate used a windowed probe.
 15. **Online:** world changes, seam swaps, skiffs, thresholds and the bell are host-decided with RPCs, but no ENet run has tested them yet.
-16. **`docs/14_EVERWOOD_WORLD_MAP_BIBLE.md`** (untracked, written for C#) gives Oakshire Holm a larger crescent with different coordinates. It has an open-air Root-Sanctum boss, seven booleans and a different stall list. The build follows the brief and the PDFs; that doc is untouched.
+16. **`docs/14_EVERWOOD_WORLD_MAP_BIBLE.md`** (untracked, written for C#) gives Miller's Oak a larger crescent with different coordinates. It has an open-air Root-Sanctum boss, seven booleans and a different stall list. The build follows the brief and the PDFs; that doc is untouched.

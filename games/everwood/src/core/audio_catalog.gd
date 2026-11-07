@@ -10,12 +10,12 @@
 ## bars of each baked arrangement (tools/build_audio_stems.py composes them):
 ##   honey_wick              the Kindle-Fire at Honey-Wick, Chunk (0, 1)  G Ionian, 6/8 sway, 16 bars
 ##   bramble_bridge_square   Bramble-Bridge, Chunk (0, 0)                  G Lydian 3/4 flying waltz, 24 bars
-##   moss_oak_hollow         Moss-Oak-Hollow, Chunk (0, -1), sinking into Rush-Light-Hollow's
+##   moss_oak_hollow         Moss-Oak Hollow, Chunk (0, -1), sinking into Rush-Light-Hollow's
 ##                           E harmonic-minor invention on the sunken lane  E Dorian 3/4 waltz, 16 bars
-##   dover_slap_falls        Dover-Slap-Bridge and the falls, Chunk (0, -2) A Dorian 4/4 march, 16 bars
+##   dover_slap_falls        Doverslap Bridge and the falls, Chunk (0, -2) A Dorian 4/4 march, 16 bars
 ##   ring_of_the_cairnsman   the causeway and the Ring, Chunk (0, -3)      D Dorian 3/4, 16 bars
 ##   cairnsmans_vigil        the Cairnsman's suite                         D Dorian / Lydian 6/8 gallop at 132, 16 bars
-## and oakshire_vale, Oakshire Holm's F Lydian waltz (104 BPM, 16 bars), where every launch begins.
+## and oakshire_vale, Miller's Oak's F Lydian waltz (104 BPM, 16 bars), where every launch begins.
 ## (The audio doc's suite names map on: kindled_bivouac is honey_wick, bramblebridge_square
 ## bramble_bridge_square, ariundle_holloway moss_oak_hollow, doverslap_gorge dover_slap_falls,
 ## cairnsman_sanctum ring_of_the_cairnsman and boss_cairnsman_vigil cairnsmans_vigil.)
@@ -134,14 +134,14 @@ static func _build_zones() -> void:
 	square.silence_interval_range_sec = Vector2(12.0, 20.0)
 	square.sanctuary_cadence_on_arrival = true
 	square.arrangement_bars = 24
-	var hollow: ZoneMusicProfileResource = _zone(&"moss_oak_hollow", "Moss-Oak-Hollow into Rush-Light-Hollow", 64, &"E_DORIAN", 108.0, 3, false,
+	var hollow: ZoneMusicProfileResource = _zone(&"moss_oak_hollow", "Moss-Oak Hollow into Rush-Light-Hollow", 64, &"E_DORIAN", 108.0, 3, false,
 		DORIAN, HARMONIC_MINOR, [0, 3, 6, 0], &"REED")
 	hollow.enable_z_depth_discord_blend = true
 	hollow.discord_blend_z_start = -54.0
 	hollow.discord_blend_z_full = -74.0
 	hollow.silence_interval_range_sec = Vector2(20.0, 35.0)
 	hollow.arrangement_bars = 16
-	var falls: ZoneMusicProfileResource = _zone(&"dover_slap_falls", "Dover-Slap-Falls March", 69, &"A_DORIAN", 108.0, 4, false,
+	var falls: ZoneMusicProfileResource = _zone(&"dover_slap_falls", "Doverslap Falls March", 69, &"A_DORIAN", 108.0, 4, false,
 		DORIAN, AEOLIAN, [0, 6, 3, 0], &"VIOLIN")
 	falls.silence_interval_range_sec = Vector2(15.0, 30.0)
 	falls.arrangement_bars = 16

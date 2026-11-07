@@ -4,7 +4,7 @@
 ##   GOLD_PARTY_SOAK    gold: stack in to split the damage
 ##   BLUE_BEHIND_TANK   blue: a long lane from the boss to its tank, with a
 ##                      shield pillar on the tank: get behind the tank's
-##                      Shadow Sanctuary (the Cairnsman's Dover-Slap Gale-Beam;
+##                      Shadow Sanctuary (the Cairnsman's Doverslap Gale-Beam;
 ##                      each player's HUD says what to do)
 ## Every peer shows the decal; only the boss's owner turns it into damage.
 class_name RaidTelegraphDecal

@@ -497,7 +497,7 @@ func _resolve_zone(level: LevelBase, locals: Array[ActorBase]) -> void:
 				oasis = true
 				break
 	if oasis and not was_oasis:
-		# A two-octave Lydian glissando in the zone's key (E Lydian in Moss-Oak-Hollow).
+		# A two-octave Lydian glissando in the zone's key (E Lydian in Moss-Oak Hollow).
 		var shift: int = key_semitones(profile.root_pitch_midi, BAKED_TONIC)
 		var notes: PackedInt32Array = PackedInt32Array()
 		for step: int in [0, 2, 4, 6, 7, 9, 11]:

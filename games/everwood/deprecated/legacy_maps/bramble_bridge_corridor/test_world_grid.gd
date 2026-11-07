@@ -12,7 +12,7 @@
 ##   3  the 2 ms attach queue spreading work over frames and draining, and no
 ##      orphaned nodes after chunks stream out and back
 ##   4  WorldStateDB: a cleared camp, an opened Wayfarer's Chest, a resting
-##      Water-Shrine and an open Dover-Slap Gatehouse survive their chunks
+##      Water-Shrine and an open Doverslap Gatehouse survive their chunks
 ##      unloading (the party parked in Chunk (0, 2)) and streaming back in,
 ##      and a latecomer's snapshot carries all of it
 ##   5  a navigation path from Bramble-Bridge's square across the seam at
@@ -211,7 +211,7 @@ func _check_world_start() -> void:
 		and grid.get_chunk_state(Vector2i(0, -2)) == WorldGridManager.ChunkState.VISUAL_CLUTTER and grid.get_chunk_state(Vector2i(0, -3)) == WorldGridManager.ChunkState.HORIZON_HLOD,
 		"from Bramble-Bridge's square: the village and the Moss-Oaks fully in, the gorge as clutter, the Ring as horizon")
 	check.call(not grid.is_hlod_visible(Vector2i(0, -1)) and grid.is_hlod_visible(Vector2i(0, -2)) and grid.is_hlod_visible(Vector2i(0, -3)),
-		"the Dover-Slap Gatehouse's and the standing stones' HLOD proxies stand on the horizon; the loaded Moss-Oaks' is hidden")
+		"the Doverslap Gatehouse's and the standing stones' HLOD proxies stand on the horizon; the loaded Moss-Oaks' is hidden")
 	var town: Node3D = grid.gameplay_root(Vector2i(0, 0))
 	check.call(town != null and town.find_child("ForestGate", true, false) != null and town.find_child("GateBlocker", true, false) == null
 		and world.raid_portal != null and world.raid_portal.target_instance == InstanceManager.DUNGEON_DOJO and world.chime_shrine != null and world.scribe_desk != null,
@@ -319,7 +319,7 @@ func _check_world_state_persistence() -> void:
 	var chest: RewardChest = world.wayfarer_chest
 	var shrine: WaterShrine = world.water_shrine
 	var gate: CoopGate = world.coop_gate
-	check.call(camp != null and chest != null and shrine != null and gate != null and camp.minions.size() == 3, "the Bramble Hush-Crack, the Wayfarer's Chest, the Water-Shrine and the Dover-Slap Gatehouse are streamed in")
+	check.call(camp != null and chest != null and shrine != null and gate != null and camp.minions.size() == 3, "the Bramble Hush-Crack, the Wayfarer's Chest, the Water-Shrine and the Doverslap Gatehouse are streamed in")
 	if camp == null or chest == null or shrine == null or gate == null:
 		return
 	var ids: Array[int] = [camp.get_instance_id(), chest.get_instance_id(), shrine.get_instance_id(), gate.get_instance_id()]

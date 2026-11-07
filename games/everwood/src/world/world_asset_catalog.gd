@@ -473,7 +473,7 @@ static func _stone_arch(parts: Parts, options: Dictionary) -> void:
 			_lantern_post_parts(parts, Vector3(side * (width * 0.5 + 0.35), 0.0, end * (foot + 0.35)), side)
 
 
-## The Dover-Slap trestle's dressing (§4.1): granite piers down into the chasm
+## The Doverslap trestle's dressing (§4.1): granite piers down into the chasm
 ## and criss-cross timber trusses under the deck.
 static func _trestle(parts: Parts, options: Dictionary) -> void:
 	# size: the deck's width, the chasm's depth below it and the span's length.

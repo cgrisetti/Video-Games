@@ -162,7 +162,7 @@ func _check_atlas_and_state() -> void:
 	var mid_a: Vector3 = west.midpoint(west.isle_a)
 	var mapped: Vector3 = mid_a + west.remap_offset(west.isle_a)
 	check.call(mapped.distance_to(west.midpoint(west.isle_b)) < 0.01 and is_equal_approx(west.corridor_s(west.isle_b, west.point_at(west.isle_b, 90.0)), 90.0),
-		"a seam's swap is a translation: the corridor's middle in Oakshire Holm's frame lands on its middle in Iron-Ness's, and s carries across")
+		"a seam's swap is a translation: the corridor's middle in Miller's Oak's frame lands on its middle in Iron-Ness's, and s carries across")
 	check.call(CalderaWorldState.FLAGS.size() == 8 and state.bits() == 0 and not state.can_land_on_crown() and not state.cliff_stair_open()
 		and state.sea_level_y == CalderaWorldState.SEA_LEVEL_FLOOD,
 		"eight world-state booleans, all false at first: the Crown landing shut, the stair sealed, the sea at the Long Flood's 0 m")
@@ -215,7 +215,7 @@ func _check_boot() -> void:
 	check.call(level.instance_id() == InstanceManager.CALDERA_ISLES and level.streamer.active_isle == CalderaAtlas.ISLE_OAKSHIRE_HOLM
 		and p1 != null and p1.global_position.distance_to(orchards) < 8.0 and p1.is_on_floor() and legacy.is_empty()
 		and not WorldAtmosphereDirector.current.horizon.visible and hud != null and not hud.minimap.visible,
-		"--boot-zone=oakshire boots the Caldera on Oakshire Holm's Lee-Shore Orchards, standing (P1 %.1f m from the arrival), no legacy streamer, map or horizon ring%s, no minimap"
+		"--boot-zone=oakshire boots the Caldera on Miller's Oak's Lee-Shore Orchards, standing (P1 %.1f m from the arrival), no legacy streamer, map or horizon ring%s, no minimap"
 		% [p1.global_position.distance_to(orchards) if p1 != null else -1.0, "" if legacy.is_empty() else " (found: %s)" % ", ".join(legacy)])
 	check.call(level.region_at(p1.global_position) == "The Lee-Shore Orchards" and level.streamer.impostor_for(CalderaAtlas.ISLE_THE_CROWN) != null
 		and state.bits() == 0 and not state.playtest,
@@ -232,7 +232,7 @@ func _check_boot() -> void:
 	var on_oakshire: bool = level.streamer.active_isle == CalderaAtlas.ISLE_OAKSHIRE_HOLM and _p1().global_position.distance_to(level.streamer.builder.arrivals[CalderaAtlas.ARRIVE_ORCHARDS]) < 8.0
 	level.playtest_warp()
 	await _frames(10)
-	check.call(on_oakshire and level.streamer.active_isle == CalderaAtlas.ISLE_THE_CROWN, "F9's playtest warp jumps the party Crown -> Oakshire Holm -> Crown")
+	check.call(on_oakshire and level.streamer.active_isle == CalderaAtlas.ISLE_THE_CROWN, "F9's playtest warp jumps the party Crown -> Miller's Oak -> Crown")
 	state.reset_for_testing()
 	await _load(CalderaArchipelagoWorld.ZONE_OAKSHIRE)
 
@@ -251,7 +251,7 @@ func _check_streaming_and_seams() -> void:
 	var after: Vector2i = IslandGridResource.chunk_of(level.tether_centroid())
 	var record: ArchipelagoStreamer.LoadedChunk = level.streamer.chunks.get(after + Vector2i(1, 0), null)
 	check.call(window_ok and after != before and record != null and record.body != null and level.streamer.has_ground_at(level.tether_centroid()),
-		"Oakshire Holm streams 144 far stand-ins, a %d-landblock window round the tether centroid and 4 horizon silhouettes; the window follows the party"
+		"Miller's Oak streams 144 far stand-ins, a %d-landblock window round the tether centroid and 4 horizon silhouettes; the window follows the party"
 		% int(counts["near"]))
 	var orphans_before: int = int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
 	# The West Strait is dark until the Root-Sanctum is cleared.
@@ -284,7 +284,7 @@ func _check_streaming_and_seams() -> void:
 		"ashore on Iron-Ness the fog has cleared (%.2f) and its 144 landblocks stand in" % level.seams.mist)
 	_place_on_corridor(west, 56.0)
 	await _frames(12)
-	check.call(level.streamer.active_isle == CalderaAtlas.ISLE_OAKSHIRE_HOLM, "walking back past the middle brings Oakshire Holm back")
+	check.call(level.streamer.active_isle == CalderaAtlas.ISLE_OAKSHIRE_HOLM, "walking back past the middle brings Miller's Oak back")
 	var eel: LoadSeamResource = CalderaAtlas.seam(CalderaAtlas.SEAM_EEL_SPIT)
 	_place_on_corridor(eel, 74.0)
 	await _frames(12)
@@ -564,7 +564,7 @@ func _check_bell_and_ebb() -> void:
 	await _frames(4)
 	var market: OldQuayMarket = _structure("OldQuayMarket") as OldQuayMarket
 	check.call(market != null and market.is_bared() and market.merchants.size() == 2 and is_equal_approx(level.streamer.sea.position.y, -6.0),
-		"on Oakshire Holm the Ebb has bared the Old Quay Market at -4 m, its Chime and gear merchants open again")
+		"on Miller's Oak the Ebb has bared the Old Quay Market at -4 m, its Chime and gear merchants open again")
 	var gates: Array[String] = []
 	for isle_id: StringName in [CalderaAtlas.ISLE_IRON_NESS, CalderaAtlas.ISLE_RIME_FIRTH, CalderaAtlas.ISLE_BARROW_EYOT]:
 		level.travel_to(isle_id, CalderaAtlas.ARRIVE_BEACON)

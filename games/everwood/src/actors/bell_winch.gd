@@ -1,4 +1,4 @@
-## The Bronze Bridge-Bell Winch before the Dover-Slap Gatehouse portcullis
+## The Bronze Bridge-Bell Winch before the Doverslap Gatehouse portcullis
 ## (07_EXPEDITION_HUD_AND_ART_GDD.md §3, Zone 2). The gale out of the gatehouse
 ## blows right across it, so it can only be rung from shelter: stand inside a
 ## Shield-Sworn's Shadow Sanctuary and press light, and the gate opens.

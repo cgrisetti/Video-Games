@@ -1,6 +1,6 @@
 ## Oakshire Vale (12_WORLD_OAKSHIRE_VALE_GDD.md, 13_STARTING_ZONE_ENCOUNTER_DESIGN.md):
 ## the starting zone as one streamed world of 12 x 12 Landblocks, through the
-## same WorldGridManager as Dover-Slap-Falls world (OakshireValeLayout tells it the
+## same WorldGridManager as Doverslap Falls world (OakshireValeLayout tells it the
 ## vale's shape). The party arrives at Wayfarer-Green in the south petal and
 ## walks up over the Bridge-Warden's span into Oakshire-Wick.
 ##

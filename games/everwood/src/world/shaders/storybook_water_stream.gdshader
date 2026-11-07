@@ -1,4 +1,4 @@
-// Canals, willow pools, water-shrines and Dover-Slap-Falls
+// Canals, willow pools, water-shrines and Doverslap Falls
 // (17_WORLD_VISUAL_AND_AESTHETIC_ARCHITECTURE.md §3.4): sunlit aqua (#52B8B2) in
 // the shallows deepening to teal (#1F5E6B) with the water's depth (read from the
 // scene behind it), ripples scrolling along the flow, white foam on the crests

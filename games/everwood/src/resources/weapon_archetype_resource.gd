@@ -1,5 +1,5 @@
 ## One of the four base armaments (docs/everwood_equipment_grimoire_architecture.md
-## Part II §2.2): the permanent frame a hero keeps from Oakshire Holm to the
+## Part II §2.2): the permanent frame a hero keeps from Miller's Oak to the
 ## Old Quay's ebb, promoted through the seven material tiers rather than
 ## replaced. It names the Tier 1 "make-play" arm the homestead starts with, the
 ## trail weapon type it channels through, and the armour weight its Calling

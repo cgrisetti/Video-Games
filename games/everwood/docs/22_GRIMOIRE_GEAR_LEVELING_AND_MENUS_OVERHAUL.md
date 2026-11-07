@@ -3,7 +3,7 @@
 Sources, in order of authority:
 1. **Creative Director rulings, 2026-11-06** (pasted into the session that built
    this phase): the Ink-Well, finishes, unlock levels, the linter renames, the
-   Pommel-Knot, one card per slot, and the rename of Oakshire Holm.
+   Pommel-Knot, one card per slot, and the rename of Oakshire Holm to Miller's Oak.
 2. **The Everwood Menu Wireframes canvas** (claude.ai artifact
    `Xaf8pLmrXYP95zSQe6hy2P`): nine boards (HUD, Options, Binder tabs 1 to 3,
    the Seal Press, the Scribe Desk and Forge, the pre-raid loadout) with the
@@ -32,7 +32,7 @@ they built is thrown away without a reason written below.
 | R5 | **Seven slots, seven different cards.** 3 Seals + L + R + L+R + 1 Tuck, at most one equipped copy of a title. Pressing a card that is already worn elsewhere moves it. | `PlayerLoadoutResource.duplicate_titles()`, the host's check |
 | R6 | **Pommel-Knot.** Two-handed mauls and greataxes seal their pommel; it guards like a buckler. Every weapon has three Seals. | `EquipmentTierResource.offhand_name()` |
 | R7 | **Words** (Gates 3 and 6): Defender / Striker / Mender (never Tank or DPS on screen), Armor Guard (not mitigation), Breath Recovery (not stamina regen), Marks (not AP), the Gold-Ring Flash (no frame counts on screen), Great-Boggart (not Elite), Heart-Crag Bulwark (not Aegis), Deep-Tide Roar (not Abyssal), "hills and woods" (not landblocks). | `tools/test_phase12_kaizen.gd` RETIRED_WORDS |
-| R8 | **Place renames:** Dover-Slap becomes **Doverslap** everywhere (Doverslap Bridge, Doverslap Falls, the Doverslap Gatehouse, the Doverslap Relic tier); Moss-Oak-Hollow becomes **Moss-Oak Hollow**; Oakshire Holm becomes **Miller's Oak**. Ids, file names, node names and save keys keep their old spellings, as every rename before this one did. | display strings and docs |
+| R8 | **Place renames:** the Dover-Slap stem becomes **Doverslap** everywhere (Doverslap Bridge, Doverslap Falls, the Doverslap Gatehouse, the Doverslap Relic tier); Moss-Oak-Hollow becomes **Moss-Oak Hollow**; Oakshire Holm becomes **Miller's Oak**. Ids, file names, node names and save keys keep their old spellings, as every rename before this one did. | display strings and docs |
 
 ### 1.1 Amendments to the bible (Creative Director, 2026-11-06)
 

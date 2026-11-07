@@ -6,7 +6,7 @@
 ## with. A tier is paint, never geometry: one mesh per archetype serves all
 ## seven (Gate 2, the Musk Razor; Gate 5, code-first reuse).
 ##
-##   Tier 1  Orchard-Wood           Lv 1-3    Rank 1-5    Oakshire Holm
+##   Tier 1  Orchard-Wood           Lv 1-3    Rank 1-5    Miller's Oak
 ##   Tier 2  Bog-Bronze             Lv 4-6    Rank 6-10   Barrow-Eyot
 ##   Tier 3  Forge-Iron             Lv 7-10   Rank 11-18  Iron-Ness
 ##   Tier 4  Rime-Silver            Lv 11-13  Rank 19-25  Rime-Firth
@@ -41,7 +41,7 @@ const TIER_COUNT: int = 7
 @export var light_armor_name: String = "Mended-Linen Smock"
 @export var unlock_island_id: StringName = &"ISLAND_OAKSHIRE_HOLM"
 ## Where in the Caldera the tier is earned, as the market stall reads it.
-@export var unlock_source: String = "Oakshire Holm (Homestead Start)"
+@export var unlock_source: String = "Miller's Oak (Homestead Start)"
 @export var min_true_level: int = 1
 @export var max_true_level: int = 3
 @export var min_renown_rank: int = 1

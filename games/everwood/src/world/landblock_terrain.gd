@@ -21,7 +21,7 @@
 ##
 ## It also gives each corridor chunk its HLOD proxy, one merged mesh baked from
 ## its landblock by tools/build_levels.gd (the village rooftops and mill, the
-## Moss-Oak Great Arch and canopy, the Dover-Slap Gatehouse and waterwheel, the
+## Moss-Oak Great Arch and canopy, the Doverslap Gatehouse and waterwheel, the
 ## Cairnsman's standing stones), occluders along the ridges, and the far
 ## landmarks on the crags (far mill-castles and windmills).
 ##
@@ -30,7 +30,7 @@
 ##
 ## The field itself belongs to the world being streamed (WorldGridConfig.layout):
 ## sample_height and the colours ask it. The corridor's own field, nav faces,
-## trail walls, occluders and landmarks below are Dover-Slap-Falls world's
+## trail walls, occluders and landmarks below are Doverslap Falls world's
 ## (DoverslapLayout hands them over).
 class_name LandblockTerrain
 extends RefCounted
@@ -97,7 +97,7 @@ static func sample_height(world_x: float, world_z: float) -> float:
 const TRAIL_TROUGH_HALF: float = 2.6
 
 
-## The Dover-Slap-Falls corridor's ground height at world (x, z).
+## The Doverslap Falls corridor's ground height at world (x, z).
 static func corridor_height(world_x: float, world_z: float) -> float:
 	var height: float = LandblockManifest.base_height(world_z) - FLAT_SINK
 	var dx: float = world_x - LandblockManifest.CORRIDOR_X

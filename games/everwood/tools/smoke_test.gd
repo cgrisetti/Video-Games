@@ -268,8 +268,8 @@ func _check_hub_and_input_map() -> void:
 		"--instance=caldera (or oakshire) is the Caldera Isles; the legacy maps answer to bramblebridge, hub and oakshire_vale; a name it doesn't know leaves the start in the Caldera Isles")
 	_check(InstanceManager.current.instance_id == InstanceManager.HUB_TOWN and InstanceManager.current.is_live(), "Hub Town is the live instance")
 	var hub: HubTown = current_scene as HubTown
-	_check(hub.level_title() == "Bramble-Bridge" and hub.raid_portal.title.contains("Dover-Slap-Falls Expedition"),
-		"the hub is Bramble-Bridge, and its Raid Portal is labelled for the Dover-Slap-Falls Expedition")
+	_check(hub.level_title() == "Bramble-Bridge" and hub.raid_portal.title.contains("Doverslap Falls Expedition"),
+		"the hub is Bramble-Bridge, and its Raid Portal is labelled for the Doverslap Falls Expedition")
 	var actions: Array[StringName] = [InputComponent.ACTION_MOVE_LEFT, InputComponent.ACTION_MOVE_RIGHT,
 		InputComponent.ACTION_MOVE_FORWARD, InputComponent.ACTION_MOVE_BACK, InputComponent.ACTION_CAMERA_LEFT,
 		InputComponent.ACTION_CAMERA_RIGHT, InputComponent.ACTION_JOIN]
@@ -709,10 +709,10 @@ func _check_portal_into_dojo() -> void:
 	_gather_on(hub.raid_portal, hub)
 	await _until_live_in(InstanceManager.DUNGEON_DOJO)
 	_check(_portal_countdowns == 1, "the whole party on the Raid Portal starts its countdown")
-	_check(current_scene is DungeonDojo and InstanceManager.current.instance_id == InstanceManager.DUNGEON_DOJO, "the portal moves the party onto the Dover-Slap-Falls Expedition")
+	_check(current_scene is DungeonDojo and InstanceManager.current.instance_id == InstanceManager.DUNGEON_DOJO, "the portal moves the party onto the Doverslap Falls Expedition")
 	var ring: DungeonDojo = current_scene as DungeonDojo
-	_check(ring.level_title() == "The Dover-Slap-Falls Expedition" and ring.boss.display_name() == "The Cairnsman of Dover-Slap-Falls"
-		and ring.exit_portal.title == "Exit: Bramble-Bridge", "the raid is the Dover-Slap-Falls Expedition, its boss the Cairnsman of Dover-Slap-Falls, its exit to Bramble-Bridge")
+	_check(ring.level_title() == "The Doverslap Falls Expedition" and ring.boss.display_name() == "The Cairnsman of Doverslap Falls"
+		and ring.exit_portal.title == "Exit: Bramble-Bridge", "the raid is the Doverslap Falls Expedition, its boss the Cairnsman of Doverslap Falls, its exit to Bramble-Bridge")
 	_check(root.multiplayer.multiplayer_peer == session and network.is_online(), "the ENet session survives the instance change")
 	dojo = current_scene as DungeonDojo
 	boss = dojo.boss
@@ -726,7 +726,7 @@ func _check_portal_into_dojo() -> void:
 		"Adventurer mode: 550 ms buffer and auto-chaining")
 
 
-# --- The Dover-Slap-Falls Expedition (07 GDD §3) ---------------------------------
+# --- The Doverslap Falls Expedition (07 GDD §3) ---------------------------------
 
 ## Zone 1's ramp, lanterns, camps, shrine and chest; Zone 2's checkpoint, gale
 ## and Co-Op Threshold opened every way (two players on the plates, a tank's
@@ -735,7 +735,7 @@ func _check_doverslap_expedition() -> void:
 	var network: NetworkManager = NetworkManager.current
 	var progress: PartyProgress = PartyProgress.current
 	_check(dojo.zone == 1 and tank.global_position.z > 70.0 and boss.global_position.distance_to(tank.global_position) > 100.0 and not boss.engaged,
-		"the party arrives in Zone 1, Moss-Oak-Hollow, far from the Cairnsman, who waits unwoken")
+		"the party arrives in Zone 1, Moss-Oak Hollow, far from the Cairnsman, who waits unwoken")
 	_check(not (dojo.huds[tank.player_id] as PlayerHUD).boss_bar_visible(), "his health bar stays hidden until the party nears him")
 	var camp_one: MinionCamp = dojo.camps[0]
 	var camp_two: MinionCamp = dojo.camps[1]
@@ -820,7 +820,7 @@ func _check_doverslap_expedition() -> void:
 	healer.place_at(Transform3D(Basis.IDENTITY, Vector3(6.0, 0.0, 11.0)))
 	await _seconds(0.1)
 	_check(dojo.zone == 2 and absf(tank.spawn_transform.origin.z - dojo.checkpoint_transform(2, tank.party_slot).origin.z) < 0.1,
-		"reaching Dover-Slap-Falls moves everyone's respawn to its checkpoint")
+		"reaching Doverslap Falls moves everyone's respawn to its checkpoint")
 	dps.place_at(Transform3D(Basis.IDENTITY, gate.to_global(Vector3(0.0, 0.0, 6.0))))
 	await _seconds(0.1)
 	var start_z: float = dps.global_position.z
@@ -1585,7 +1585,7 @@ func _check_wipe_resets_fight() -> void:
 
 ## Fewer than 3 people: AI companions fill the missing trinity roles, fight by
 ## their Gambit lists, and step aside when people come back.
-## The Cairnsman's Phase 2 (07 GDD §3, Zone 3): at half health Dover-Slap-Falls
+## The Cairnsman's Phase 2 (07 GDD §3, Zone 3): at half health Doverslap Falls
 ## Gale-Beam joins its casts, aimed at the tank. Behind the tank's Shadow
 ## Sanctuary nobody is hurt and everyone earns half a pip; out in the lane it hits
 ## for 40 (before armor) and throws you back.
@@ -1611,8 +1611,8 @@ func _check_gale_beam() -> void:
 		await physics_frame
 		waited += 1.0 / 60.0
 		beam = CombatDirector.current.beam_telegraph()
-	_check(beam != null and beam.follow_target == tank and boss.cast_name == "Dover-Slap Gale-Beam" and is_equal_approx(beam.cast_time, 3.2),
-		"the Dover-Slap Gale-Beam: a blue lane from the boss to the tank with a shield pillar, cast over 3.2 s")
+	_check(beam != null and beam.follow_target == tank and boss.cast_name == "Doverslap Gale-Beam" and is_equal_approx(beam.cast_time, 3.2),
+		"the Doverslap Gale-Beam: a blue lane from the boss to the tank with a shield pillar, cast over 3.2 s")
 	if beam == null:
 		return
 	await physics_frame
@@ -1993,7 +1993,7 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 	await _seconds(0.1)
 	_check(progress.trail_level() == 10 and tank.loadout.weapon.item_id == ArsenalCatalog.CAIRNSMAN_FALCHION and dps.loadout.weapon.item_id == ArsenalCatalog.GORGE_LONGBOW
 		and Callings.is_valid(tank.loadout.calling) and tank.loadout.display_name != "Shield-Sworn",
-		"Level 10: a Dover-Slap relic, and the Secondary Calling opens (%s)" % tank.loadout.display_name)
+		"Level 10: a Doverslap relic, and the Secondary Calling opens (%s)" % tank.loadout.display_name)
 
 	# A card's Sign: the bow swells Sea-Azure, the Ring and badge mark the foe, the tank is prompted to detonate.
 	await _until_idle(dps)
@@ -2109,7 +2109,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	_check(harmony["is_home_ground_harmony"] and is_equal_approx(harmony["coat_duration_sec"], 10.0) and is_equal_approx(harmony["bonus_poise"], 15.0)
 		and harmony["scribe_sign"] == Sign.SIGN_IRON_ROOT and not stranger["is_home_ground_harmony"] and is_equal_approx(stranger["coat_duration_sec"], 8.0)
 		and is_equal_approx(stranger["bonus_reach_m"], 0.8),
-		"Rising Drive framed by Moss-Oak-Hollow is Home-Ground Harmony: a 10.0 s coat (1.25x) and +15 poise; on the Gorge Bridge it's 8.0 s with +0.8 m reach")
+		"Rising Drive framed by Moss-Oak Hollow is Home-Ground Harmony: a 10.0 s coat (1.25x) and +15 poise; on the Gorge Bridge it's 8.0 s with +0.8 m reach")
 
 	# The scaling formulas, at 60 frames a second.
 	var worm: BossEncounterResource = catalog.encounter(ArsenalCatalog.SCREE_WORM)
@@ -2133,7 +2133,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	var hud: PlayerHUD = dojo.huds[tank.player_id]
 	_check(tank.loadout.kit.place_ids[Diorama.SKILL] == ArsenalCatalog.ARIUNDLE_MOSS_OAKS and tank.loadout.kit.guard_leaf_id == ArsenalCatalog.SHADOW_SANCTUARY
 		and flow.socket_synergy(Diorama.SKILL)["is_home_ground_harmony"] and hud.cross_grimoire.diorama.socket_view(Diorama.SKILL)["place"] == ArsenalCatalog.ARIUNDLE_MOSS_OAKS,
-		"the tank's R diamond frames Taunt (Iron-Root) with Moss-Oak-Hollow, shown on the HUD's diamonds; L holds Shadow Sanctuary")
+		"the tank's R diamond frames Taunt (Iron-Root) with Moss-Oak Hollow, shown on the HUD's diamonds; L holds Shadow Sanctuary")
 
 	# 0-pip Hearth-Rite Tuck: hold R out of combat for 120 frames.
 	var issued: Array[int] = []
@@ -2268,7 +2268,7 @@ func test_phase_12_sign_flow_and_grimoire_ux() -> void:
 	var gorge_reach: float = -tank.hitbox.position.z
 	tank.hitbox.deactivate()
 	flow.coat_time_left = 0.01
-	_check(is_equal_approx(gorge_reach, light.reach + 0.8), "a coat framed by Dover-Slap-Bridge reaches 0.8 m further (Gorge-Draft)")
+	_check(is_equal_approx(gorge_reach, light.reach + 0.8), "a coat framed by Doverslap Bridge reaches 0.8 m further (Gorge-Draft)")
 	# The window's length: 18 frames near a Lantern-Bearer, 9 alone in Dread-Chill.
 	healer.place_at(Transform3D(Basis.IDENTITY, tank.global_position + Vector3(2.0, 0.0, 0.0)))
 	var promise: int = flow.flow_window_frames()
@@ -2944,7 +2944,7 @@ func test_phase_12_miyamoto_posture_trinity_and_grimoire_ux() -> void:
 		ScribeCardResource.CardVariant.STANDARD, ScribeCardResource.CardVariant.GILDED_LEAF)
 	_check(harmony["is_home_ground_harmony"] and is_equal_approx(harmony["coat_duration_sec"], 10.0) and is_equal_approx(harmony["bonus_poise"], 15.0)
 		and is_equal_approx(gilded_place["bonus_poise"], 16.5),
-		"Moss-Oak-Hollow behind an Iron-Root Action-Leaf is Home-Ground Harmony: a 10.0 s coat and +15 poise (16.5 from a Gilded Leaf Place-Card)")
+		"Moss-Oak Hollow behind an Iron-Root Action-Leaf is Home-Ground Harmony: a 10.0 s coat and +15 poise (16.5 from a Gilded Leaf Place-Card)")
 	var dps_class: PlayerClassResource = ClassLoadouts.player_class(dps.loadout.class_id, dps.loadout.calling)
 	var plain_kit: EquipmentLoadoutResource = dps.loadout.kit.copy()
 	var gilded_kit: EquipmentLoadoutResource = plain_kit.copy()

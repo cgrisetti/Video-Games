@@ -174,11 +174,11 @@ What the game does today, where it differs from §1–6, and what Pass 2 does ne
 | Bramblebridge / Bramblebridge Green | Bramble-Bridge / Bramble-Bridge Green | `hub_town`, `--instance=bramblebridge`, `bramblebridge_green` |
 | Oakshire Commons / the Kindled Bivouac | Honey-Wick / the Kindle-Fire | — |
 | The Bramble-Reach (the seamless world) | Tizzi-Wed-Green | `everwood_world` |
-| The Ariundle Moss-Oaks | Moss-Oak-Hollow | `loc_ariundle_moss_oaks` |
+| The Ariundle Moss-Oaks | Moss-Oak Hollow | `loc_ariundle_moss_oaks` |
 | The Sunken Holloway | Rush-Light-Hollow | — |
-| The Doverslap Gorge Bridge / the gorge | Dover-Slap-Bridge / Dover-Slap-Falls | `loc_doverslap_gorge`, `DoverslapLayout` |
-| Sinaya Gatehouse | the Dover-Slap Gatehouse | `doverslap_gatehouse` |
-| The Doverslap Expedition / The Cairnsman of Doverslap | The Dover-Slap-Falls Expedition / The Cairnsman of Dover-Slap-Falls | `dungeon_dojo`, `cairnsman` |
+| The Doverslap Gorge Bridge / the gorge | Doverslap Bridge / Doverslap Falls | `loc_doverslap_gorge`, `DoverslapLayout` |
+| Sinaya Gatehouse | the Doverslap Gatehouse | `doverslap_gatehouse` |
+| The Doverslap Expedition / The Cairnsman of Doverslap | The Doverslap Falls Expedition / The Cairnsman of Doverslap Falls | `dungeon_dojo`, `cairnsman` |
 | Bramble Camp / Holloway Camp | Bramble Hush-Crack / Rush-Light Hush-Crack | `MinionCamp`, `camp_bramble` |
 | Bramble-Scuttler / Bog-Imp | Bramble-Hob / Wisp-Boggle | `WoodlandMinion`, `scuttler`, `bog_imp` |
 | Rune-Plates | Maker-Seal Plates | `RunePlate`, `CoopGate.Method.RUNE_PLATES` |

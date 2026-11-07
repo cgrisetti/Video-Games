@@ -1,5 +1,5 @@
 ## The seamless world (10_WORLD_ARCHITECTURE.md): Bramble-Bridge and the
-## Dover-Slap-Falls Expedition as one bounded world of 128 m Landblocks, streamed
+## Doverslap Falls Expedition as one bounded world of 128 m Landblocks, streamed
 ## round every player (WorldGridManager), with no loading screen between town
 ## and the Cairnsman.
 ##
@@ -13,8 +13,8 @@
 ## Scribe Desk and the Chime-Shrine work as in the hub, and the Raid Portal
 ## still warps the party into the instanced expedition (dungeon_dojo), whose
 ## exit brings them back here. Or walk north through the open Forest Gate,
-## under the Moss-Oak Great Arch, into Moss-Oak-Hollow (0, -1), down the
-## Rush-Light-Hollow, over Dover-Slap-Bridge and through the Dover-Slap
+## under the Moss-Oak Great Arch, into Moss-Oak Hollow (0, -1), down the
+## Rush-Light-Hollow, over Doverslap Bridge and through the Doverslap
 ## Gatehouse (0, -2), and up the causeway to the Ring of the Cairnsman (0, -3).
 ## Reaching each zone moves everyone's respawn to its checkpoint; AI
 ## companions fill missing roles once anyone has left the village. Beating the
@@ -95,7 +95,7 @@ func level_hint() -> String:
 		0:
 			if not town_square_reached:
 				return "The Kindle-Fire: stand by the campfire to warm up, then follow the walled lane east and north through Honey-Wick into Bramble-Bridge\n%s" % HubTown.CHANGE_KEYS
-			return "Walk north through the Forest Gate into Moss-Oak-Hollow, or take the Raid Portal to the instanced expedition · Chime-Shrine: %d Chimes · Scribe Desk: armor, weapons, cards and Calling\n%s" % [
+			return "Walk north through the Forest Gate into Moss-Oak Hollow, or take the Raid Portal to the instanced expedition · Chime-Shrine: %d Chimes · Scribe Desk: armor, weapons, cards and Calling\n%s" % [
 				PartyProgress.current.chimes, HubTown.CHANGE_KEYS]
 		1:
 			return "%s: clear the bramble camps, drink at the Water-Shrine, find the Wayfarer's Chest, then down the holloway" % LandblockManifest.ZONE_NAMES[1]
@@ -103,7 +103,7 @@ func level_hint() -> String:
 			if gate_is_open():
 				return "%s: the gate is open. On up the causeway to the Ring of the Cairnsman!" % LandblockManifest.ZONE_NAMES[2]
 			return "%s: stand on both Maker-Seal Plates together, or ring the Bridge-Bell in a Shield-Sworn's Shadow Sanctuary" % LandblockManifest.ZONE_NAMES[2]
-	return "%s: face the Cairnsman of Dover-Slap-Falls" % LandblockManifest.ZONE_NAMES[3]
+	return "%s: face the Cairnsman of Doverslap Falls" % LandblockManifest.ZONE_NAMES[3]
 
 
 ## Companions fill missing roles once anyone has walked out of the village.
@@ -162,7 +162,7 @@ func _on_player_unregistered(player_id: StringName) -> void:
 			enemy.threat.forget(player_id)
 
 
-## Whether the Dover-Slap Gatehouse stands open (from the gate if its chunk is in, else from the record).
+## Whether the Doverslap Gatehouse stands open (from the gate if its chunk is in, else from the record).
 func gate_is_open() -> bool:
 	if coop_gate != null and is_instance_valid(coop_gate):
 		return coop_gate.is_open
@@ -338,7 +338,7 @@ func _on_wayfarer_chest_opened(opener_id: StringName, chimes: int, card_key: Str
 func _on_gate_opened(method: int) -> void:
 	var how: String = "The Maker-Seal Plates hum together" if method == CoopGate.Method.RUNE_PLATES else "The Bridge-Bell rings out"
 	for hud: PlayerHUD in huds.values():
-		hud.show_banner("THE GATE OPENS", "%s, and the Dover-Slap Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR, PASSING_BANNER_TIME)
+		hud.show_banner("THE GATE OPENS", "%s, and the Doverslap Gatehouse's portcullis sinks away." % how, CHECKPOINT_COLOR, PASSING_BANNER_TIME)
 	for actor: ActorBase in actors.values():
 		if actor.companion != null:
 			actor.companion.has_assigned_post = false

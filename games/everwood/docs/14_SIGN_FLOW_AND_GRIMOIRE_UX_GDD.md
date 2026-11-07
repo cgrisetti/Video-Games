@@ -71,8 +71,8 @@ Instead of abstract "Front" and "Under" cards, every active Grimoire socket (`L 
 
 | Location Card ID & Name | Native Sign | Source Landmark | Augmentation on Paired Action Card | Home-Ground Bonus (If Action Card Shares Sign) |
 |---|---|---|---|---|
-| `loc_ariundle_moss_oaks`<br>**Moss-Oak-Hollow** | `SIGN_IRON_ROOT` *(Amber)* | Moss-Oak-Hollow Trail Chime-Post | Adds `Root-Bind`: Weapon-Coat strikes slow enemy movement by `20%` and sprout mossy oak bark on the blade. | `+25%` Coat duration (`10.0s` total) & `+15.0` bonus Poise damage. |
-| `loc_doverslap_gorge`<br>**Dover-Slap-Bridge** | `SIGN_RIME_GALE` *(Sea-Azure)* | Dover-Slap Gatehouse | Adds `Gorge-Draft`: Extends weapon hitbox reach by `+0.8m` with a sweeping river-mist arc. | `+25%` Coat duration & `+15.0` bonus burst damage on *Glacial Rupture*. |
+| `loc_ariundle_moss_oaks`<br>**Moss-Oak Hollow** | `SIGN_IRON_ROOT` *(Amber)* | Moss-Oak Hollow Trail Chime-Post | Adds `Root-Bind`: Weapon-Coat strikes slow enemy movement by `20%` and sprout mossy oak bark on the blade. | `+25%` Coat duration (`10.0s` total) & `+15.0` bonus Poise damage. |
+| `loc_doverslap_gorge`<br>**Doverslap Bridge** | `SIGN_RIME_GALE` *(Sea-Azure)* | Doverslap Gatehouse | Adds `Gorge-Draft`: Extends weapon hitbox reach by `+0.8m` with a sweeping river-mist arc. | `+25%` Coat duration & `+15.0` bonus burst damage on *Glacial Rupture*. |
 | `loc_bramblebridge_mill`<br>**Bramble-Bridge Hearth-Mill** | `SIGN_WARM_HEARTH` *(Saffron-Gold)* | Bramble-Bridge Green | Adds `Mill-Warmth`: Casting pulses a `4.0m` warm ember ring that heals allies for `6.0 HP` and melts `Furrow Iron-Man` rust. | `+25%` Coat duration & `+10.0 HP` bonus to *Dawnburst* party heal. |
 | `loc_barrow_crag_tor`<br>**Barrow-Crag-Crossing** | `SIGN_STAR_TIDE` *(Twilight-Violet)* | Ring of the Cairnsman | Adds `Star-Spark`: Refunds `8.0` Stamina on every Flow-Link cancel and wraps the weapon in violet starlight. | `+25%` Coat duration & `+0.25` extra Resonance Pips on *Astral Chorus*. |
 

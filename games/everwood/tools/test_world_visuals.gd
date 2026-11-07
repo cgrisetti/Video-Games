@@ -406,7 +406,7 @@ func _check_succession(world: EverwoodWorld) -> void:
 	director.set_succession_state(&"moss_oak_hollow", Succession.ZONE_RECLAIMED)
 	director.settle()
 	check.call(weather["biome"] == &"moss_oak_hollow" and foggy and greyed and is_equal_approx(float(director.look_snapshot()["fog_density"]), look.fog_density),
-		"a weathering event thickens Moss-Oak-Hollow's fog and wind, a hushed zone loses colour, and reclaimed it's itself again")
+		"a weathering event thickens Moss-Oak Hollow's fog and wind, a hushed zone loses colour, and reclaimed it's itself again")
 
 
 func _crack_slot(at: Vector3) -> int:

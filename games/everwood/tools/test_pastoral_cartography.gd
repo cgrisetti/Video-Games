@@ -304,7 +304,7 @@ func _check_clutter() -> void:
 		% [int(baked[ChunkClutterBaker.CURBS]["count"]), int(baked[ChunkClutterBaker.VERGES]["count"]), int(baked[ChunkClutterBaker.CORNICES]["count"])])
 	var climbing: Dictionary = LandblockClutter.build_clutter_data(Vector2i(0, -2))
 	check.call(int(climbing[LandblockClutter.Kind.GUIDE_POST]["count"]) > 6 and int(climbing[LandblockClutter.Kind.STEPPING_STONE]["count"]) > 6,
-		"the climb to Dover-Slap-Bridge: stepping-stones up the trail bordered by %d low guide-posts" % int(climbing[LandblockClutter.Kind.GUIDE_POST]["count"]))
+		"the climb to Doverslap Bridge: stepping-stones up the trail bordered by %d low guide-posts" % int(climbing[LandblockClutter.Kind.GUIDE_POST]["count"]))
 
 
 func _check_hub_cartography() -> void:

@@ -8,7 +8,7 @@
 ##
 ## Each card diamond is a diorama. Its outer panoramic frame is the Place-Card,
 ## filled in the place's Sign palette with its landscape in the corners: oak
-## trees for Moss-Oak-Hollow, a bridge arch for Dover-Slap-Falls, a
+## trees for Moss-Oak Hollow, a bridge arch for Doverslap Falls, a
 ## waterwheel for the Bramble-Bridge Hearth-Mill, crags under a star for the
 ## Barrow-Crag-Crossing. Its inner portrait is the Action-Leaf: its Sign's
 ## colour, an icon for its manifestation (a blade for a Weapon-Coat, a shield

@@ -2,7 +2,7 @@
 ## 360-degree painter's horizon from 0.9 to 2.3 km round the party, three
 ## ridgelines deep, hazing toward the sky's horizon colour with distance, with
 ## the Six-Zone Stewardship Atlas on it: (north) the cataract mist of
-## Sunken-Crown-Falls and the Dover-Slap Mill-Castle; (west) the granite tors
+## Sunken-Crown-Falls and the Doverslap Mill-Castle; (west) the granite tors
 ## of Barrow-Crag-Crossing; (east) the golden hills and windmills of
 ## Barley-Bridge-Meadow; (south) the white chalk cliffs and sea-stacks of
 ## Gull-Wick-Haven. One mesh, one draw call, unlit and outside the fog (it
@@ -159,7 +159,7 @@ static func _landmarks(vertices: PackedVector3Array, colors: PackedColorArray, n
 		var narrow: float = deg_to_rad(spread * 0.6)
 		_quad(vertices, colors, normals, _at(a, far, DROP + 60.0), _at(b, far, DROP + 60.0), _at(narrow + 0.012, far, top), _at(narrow - 0.012, far, top),
 			MIST, MIST, MIST, MIST, 0.3, 0.92)
-	# North-west of it, the Dover-Slap Mill-Castle: a keep and two towers on the middle ridge.
+	# North-west of it, the Doverslap Mill-Castle: a keep and two towers on the middle ridge.
 	var mid: float = LAYER_RADII[1] - 15.0
 	for tower: Array in [[-14.0, -12.5, 150.0], [-12.0, -9.0, 120.0], [-8.5, -7.0, 160.0]]:
 		var a: float = deg_to_rad(tower[0])

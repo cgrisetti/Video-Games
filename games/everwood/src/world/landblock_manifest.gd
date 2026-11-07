@@ -1,4 +1,4 @@
-## The Bramble-Bridge-to-Dover-Slap Corridor (10_WORLD_ARCHITECTURE.md §2): which
+## The Bramble-Bridge-to-Doverslap Corridor (10_WORLD_ARCHITECTURE.md §2): which
 ## Landblock holds what, and the shape of the land between them.
 ##
 ##   Chunk (0, 1)   the Kindle-Fire, where the party wakes round a campfire
@@ -8,10 +8,10 @@
 ##   Chunk (0, 0)   Bramble-Bridge: the spawn green, the canal arch, the village
 ##                  square (Armory & Scribe Desk, Chime-Shrine, bakery,
 ##                  watermill) and the Northern Forest Gate, now open
-##   Chunk (0, -1)  Moss-Oak-Hollow (the Moss-Oak Great Arch, the Bramble
+##   Chunk (0, -1)  Moss-Oak Hollow (the Moss-Oak Great Arch, the Bramble
 ##                  Camp, the alcove's Wayfarer's Chest) and Rush-Light-Hollow
 ##                  (Wind-Lanterns, the Water-Shrine, the Rush-Light Hush-Crack)
-##   Chunk (0, -2)  Dover-Slap-Bridge and the Dover-Slap Gatehouse
+##   Chunk (0, -2)  Doverslap Bridge and the Doverslap Gatehouse
 ##   Chunk (0, -3)  the causeway and the Ring of the Cairnsman
 ##   the rest       the crags and oak canopy round the corridor
 ##
@@ -23,7 +23,7 @@ extends RefCounted
 
 enum Zone { BORDER = -1, BRAMBLEBRIDGE, MOSS_OAKS, GORGE, RING, OAKSHIRE_COMMONS }
 
-const ZONE_NAMES: Array[String] = ["Bramble-Bridge", "Moss-Oak-Hollow", "Dover-Slap-Bridge", "The Ring of the Cairnsman",
+const ZONE_NAMES: Array[String] = ["Bramble-Bridge", "Moss-Oak Hollow", "Doverslap Bridge", "The Ring of the Cairnsman",
 	"Honey-Wick"]
 const BORDER_NAME: String = "The Tizzi-Wed-Green crags"
 const LANDBLOCK_FOLDER: String = "res://deprecated/legacy_maps/bramble_bridge_corridor/landblocks/"
@@ -105,7 +105,7 @@ const HOLLOWAY_CUT: Rect2 = Rect2(57.5, -86.0, 13.0, 32.0)
 const HOLLOWAY_RAMPS: Array[float] = [-54.0, -62.0, -78.0, -86.0]
 const HOLLOWAY_LANE_Y: float = -1.8
 const HOLLOWAY_CLEARANCE: float = 0.12
-## Dover-Slap-Falls' chasm (world rect, inset from its rock faces) and its floor.
+## Doverslap Falls' chasm (world rect, inset from its rock faces) and its floor.
 const CHASM_CUT: Rect2 = Rect2(47.7, -161.7, 32.6, 17.4)
 const CHASM_BOTTOM: float = -20.5
 ## The terrain trails players walk between zones: (south z, north z, half width).

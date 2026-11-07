@@ -5,7 +5,7 @@
 ##       own file; the Controls tab's keyboard and pad drawn from the Input
 ##       Map; invert Y; toggle sprint (a click keeps running until you turn
 ##       aside, stop or click again; off, it's held)
-##   K2  the map: Oakshire Holm's Zone Map painted from its island (sea, an
+##   K2  the map: Miller's Oak's Zone Map painted from its island (sea, an
 ##       inked shore, roads and the huts' footprints), its towns, dungeon and
 ##       four crossings named, a legend, the hero's turning arrow; a click on
 ##       a mark, a click on open ground and the pad's keys each set a
@@ -292,8 +292,8 @@ func _check_zone_map() -> void:
 	var inks: Dictionary[String, int] = _inks(panel.map.get_image())
 	var title: String = CartographyBaker.map_title(level, panel.scope, Vector2(hero.global_position.x, hero.global_position.z))
 	check.call(CartographyBaker.world_rect(panel.map) == Rect2(-half, -half, half * 2.0, half * 2.0) and inks["water"] > 200 and inks["shore"] > 50
-		and inks["road"] > 30 and inks["footprint"] > 4 and title.begins_with("Oakshire Holm · Lv 1–6 · "),
-		"K2: the Zone Map is Oakshire Holm itself, painted from its island: the sea and its inked shore, the roads and the huts (%s); the header reads \"%s\""
+		and inks["road"] > 30 and inks["footprint"] > 4 and title.begins_with("Miller's Oak · Lv 1–6 · "),
+		"K2: the Zone Map is Miller's Oak itself, painted from its island: the sea and its inked shore, the roads and the huts (%s); the header reads \"%s\""
 		% [inks, title])
 	var market: Dictionary = _node_named(panel, "Hearthstead Market")
 	var sanctum: Dictionary = _node_named(panel, "The Root-Sanctum")
@@ -656,7 +656,7 @@ func _check_atelier_foliage() -> void:
 	if mismatched > 0:
 		problems.append("%d landblock species without a matching near and far pair" % mismatched)
 	if willows == 0:
-		problems.append("no weeping willows on Oakshire Holm")
+		problems.append("no weeping willows on Miller's Oak")
 	check.call(problems.is_empty() and near_far > 0 and heaviest <= TREE_TRIANGLES and lowest_crown >= CROWN_CLEARANCE,
 		"K4: oak clumps, ash, weeping willows (%d on Oakshire), orchard apples and tiered pines are sculpted (at most %d triangles, crowns from %.1f m up), with layered ferns; %d landblock stands swap to one-draw stand-ins past %.0f m%s"
 		% [willows, heaviest, lowest_crown, near_far, CalderaKit.ATELIER_RANGE, "" if problems.is_empty() else ": " + "; ".join(problems)])

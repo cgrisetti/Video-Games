@@ -5,7 +5,7 @@
 ## Channels the Card"). Items are drawn from greybox parts until `model` holds
 ## real art. Weapons come in four tiers along the Trail of the Four Signs
 ## (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §5.1): apprentice timber at Level 1,
-## hedgerow iron, Bramble-Bridge steel and Dover-Slap relics, each with its own
+## hedgerow iron, Bramble-Bridge steel and Doverslap relics, each with its own
 ## material palette and a damage and poise multiplier.
 class_name EquipmentItemResource
 extends Resource

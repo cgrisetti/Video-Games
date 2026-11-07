@@ -28,7 +28,7 @@
 ## Weapons (build_tiered_weapon) are sculpted for each of the four weapons at
 ## each of the four tiers, grip at the origin and the blade up +Y, with marker
 ## nodes for the animator: HaftGripMarker (the off hand's grip on a two-handed
-## haft), TrailBase / TrailTip, BowStringMid and the Dover-Slap relics' SignStoneCore.
+## haft), TrailBase / TrailTip, BowStringMid and the Doverslap relics' SignStoneCore.
 ##
 ## A model at res://assets/models/heroes/<calling_id>.glb wins over a sculpted
 ## hero, and res://assets/models/<item_id>.glb over a sculpted weapon.
@@ -233,7 +233,7 @@ static func weapon_length(weapon_type: int) -> float:
 	return 0.97
 
 
-## Where a Dover-Slap relic's Sign-stone floats, in the weapon's frame.
+## Where a Doverslap relic's Sign-stone floats, in the weapon's frame.
 static func sign_stone_spot(weapon_type: int) -> Vector3:
 	match weapon_type:
 		EquipmentItemResource.WeaponType.HEAVY_AXE:

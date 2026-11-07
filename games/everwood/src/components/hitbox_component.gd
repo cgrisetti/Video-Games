@@ -31,7 +31,7 @@ func setup(owner_actor: ActorBase, hits_boss: bool) -> void:
 
 func activate(action: CombatActionResource) -> void:
 	_shape.radius = action.hit_radius
-	# A Sign-Flow coat framed by Dover-Slap-Falls reaches further (14 GDD §4.2, Gorge-Draft).
+	# A Sign-Flow coat framed by Doverslap Falls reaches further (14 GDD §4.2, Gorge-Draft).
 	var coat_reach: float = actor.sign_flow.coat_reach_bonus() if actor.sign_flow != null else 0.0
 	position = Vector3(0.0, HIT_HEIGHT, -(action.reach + coat_reach))
 	_already_hit.clear()

@@ -33,7 +33,7 @@ const ARRIVE_QUAY: StringName = &"quay"
 const ARRIVE_SUMMIT: StringName = &"summit_glade"
 
 ## The friction isles' lanes all reopen once the Root-Sanctum is cleared.
-const LANES_DARK_LINE: String = "The lane is dark. Clear the Root-Sanctum in Oakshire Holm (Lv 6) to open it."
+const LANES_DARK_LINE: String = "The lane is dark. Clear the Root-Sanctum in Miller's Oak (Lv 6) to open it."
 const CROWN_SHUT_LINE: String = "The Crown's currents run wild. Light all three Beacons to calm them."
 
 static var _isles: Dictionary[StringName, IslandGridResource] = {}
@@ -119,7 +119,7 @@ static func shown_names() -> Array[String]:
 static func _ensure() -> void:
 	if not _isles.is_empty():
 		return
-	_isle(ISLE_OAKSHIRE_HOLM, "Oakshire Holm", "South", 1, 6, ScribeSignResource.Sign.SIGN_WARM_HEARTH, "", 12, Vector2(0.0, 1600.0),
+	_isle(ISLE_OAKSHIRE_HOLM, "Miller's Oak", "South", 1, 6, ScribeSignResource.Sign.SIGN_WARM_HEARTH, "", 12, Vector2(0.0, 1600.0),
 		"Hearthstead Market", "Windmill", "Old Quay Market", &"", "", WorldVisualCatalog.OAKSHIRE_WICK, &"oakshire_vale",
 		Color(0.96, 0.78, 0.36))
 	_isle(ISLE_IRON_NESS, "Iron-Ness", "West", 6, 10, ScribeSignResource.Sign.SIGN_IRON_ROOT, "Shield-Sworn", 12, Vector2(-1650.0, 350.0),

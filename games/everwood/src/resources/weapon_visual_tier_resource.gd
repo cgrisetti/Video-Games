@@ -6,7 +6,7 @@
 ##   Tier 1 Apprentice Timber     Lv 1   1.00x  turned hazel and hemp cord
 ##   Tier 2 Hedgerow Iron         Lv 2   1.20x  dark forged iron, brass rivets
 ##   Tier 3 Bramble-Bridge Steel  Lv 5   1.45x  milled steel, a brass bell-guard
-##   Tier 4 Dover-Slap Relic      Lv 10  1.75x  gilded bronze round a glowing Sign-stone
+##   Tier 4 Doverslap Relic      Lv 10  1.75x  gilded bronze round a glowing Sign-stone
 class_name WeaponVisualTierResource
 extends Resource
 

@@ -1,4 +1,4 @@
-## One of the twin Maker-Seal Plates on Dover-Slap-Bridge
+## One of the twin Maker-Seal Plates on Doverslap Bridge
 ## (07_EXPEDITION_HUD_AND_ART_GDD.md §3, Zone 2): a stone disc with a ring of
 ## runes that glows when someone stands on it and burns gold as the gate's
 ## count fills. CoopGate reads it; every peer lights it from synced positions.

@@ -870,7 +870,7 @@ size = Vector3(6, 24, 18)
 [node name="BridgeChimePost" type="Node3D" parent="Gorge" unique_id=1727429908]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 9.5)
 script = ExtResource("4_bu88h")
-place = "Dover-Slap-Bridge"
+place = "Doverslap Bridge"
 
 [node name="FallMist" type="CPUParticles3D" parent="Gorge" unique_id=563027125]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, -19.4, -2)
@@ -990,7 +990,7 @@ mesh = SubResource("BoxMesh_4gckh")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.5, -15.4)
 pixel_size = 0.01
 modulate = Color(1, 0.92, 0.75, 1)
-text = "Dover-Slap Gatehouse"
+text = "Doverslap Gatehouse"
 font_size = 52
 outline_size = 10
 

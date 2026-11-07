@@ -1,6 +1,6 @@
 # 04_BALANCE.md — Balance (Phases 5 to 12 and the Mythopoetic Lens)
 
-Every name below is in the words of [15_THE_MYTHOPOETIC_LENS.md](15_THE_MYTHOPOETIC_LENS.md): the Four Scribe Signs, the Cairnsman of Dover-Slap-Falls, card finishes, Chimes, and foes as kin of the First-Quiet. Renames never moved a number. The Callings, the Dover-Slap-Falls Expedition and the Phase 2 Gale-Beam start at "The 3x3 Callings"; the Hob-to-Boggart Spectrum's numbers are in the last table.
+Every name below is in the words of [15_THE_MYTHOPOETIC_LENS.md](15_THE_MYTHOPOETIC_LENS.md): the Four Scribe Signs, the Cairnsman of Doverslap Falls, card finishes, Chimes, and foes as kin of the First-Quiet. Renames never moved a number. The Callings, the Doverslap Falls Expedition and the Phase 2 Gale-Beam start at "The 3x3 Callings"; the Hob-to-Boggart Spectrum's numbers are in the last table.
 
 First-pass numbers, set by arithmetic rather than playtesting. Tune them after the family plays. Every number is a named constant; the "Where" column says which file.
 
@@ -19,7 +19,7 @@ First-pass numbers, set by arithmetic rather than playtesting. Tune them after t
 - Sustained damage per second, counting stamina pauses: Flow DPS about 12 to 16, Shield Tank about 8 to 10, Healer about 5. A 3-player party deals about 25 once you allow for moving and dodging.
 - 2,400 HP ÷ 25 ≈ 96 s. Health scales with the party when the fight starts: **900 + 500 per player** (1,400 solo, 2,400 for three, 3,400 for five).
 
-## Boss: The Cairnsman of Dover-Slap-Falls
+## Boss: The Cairnsman of Doverslap Falls
 
 | Number | Value | Where | Why |
 |---|---|---|---|
@@ -182,7 +182,7 @@ Everyone may use the Falchion and light or medium armor, and a Fellowship always
 
 Why these numbers: every Secondary costs something or gives in two directions, so no column is simply best. The double-down Callings (Bridge-Warden, Hedge-Runner, Lantern-Scribe) get the purest version of their seat, and the cross Callings trade a little of it for new gear (a Weald-Captain tank with a Broad-Axe, a Sign-Seeker archer who earns pips faster).
 
-## The Dover-Slap-Falls Expedition (07 GDD §3)
+## The Doverslap Falls Expedition (07 GDD §3)
 
 | Number | Value | Where | Why |
 |---|---|---|---|
@@ -199,7 +199,7 @@ Why these numbers: every Secondary costs something or gives in two directions, s
 
 In a headless run, one player with two companions seals both Hush-Cracks and reaches the falls in about 40 seconds, and a demo player and a companion open the gate on the plates in under 20.
 
-## Phase 2: the Dover-Slap Gale-Beam (07 GDD §3, Zone 3)
+## Phase 2: the Doverslap Gale-Beam (07 GDD §3, Zone 3)
 
 | Number | Value | Where | Why |
 |---|---|---|---|
@@ -230,7 +230,7 @@ In a headless run, one player with two companions seals both Hush-Cracks and rea
 | 1 Apprentice Timber | Level 1 | 1.0x | hazel `#A67B5B`, hemp cord | 0 |
 | 2 Hedgerow Iron | Level 2 | 1.2x | dark iron `#5A626A`, brass rivets | 0.55 |
 | 3 Bramble-Bridge Steel | Level 5 | 1.45x | milled steel `#C4CED4`, brass bell-guard | 0.80 |
-| 4 Dover-Slap Relic | Level 10 | 1.75x | gilded bronze `#E5C158`, glowing Sign-stone | 0.90 |
+| 4 Doverslap Relic | Level 10 | 1.75x | gilded bronze `#E5C158`, glowing Sign-stone | 0.90 |
 
 Each tier multiplies its classic weapon's numbers above (the classics are Tier 3 looks with 1.0x numbers, open from Level 5). The Bramble-Spun Jerkin, everyone's Level 1 armor, is medium: 15% mitigation, 24 stamina a second, 4.8 m rolls, 220 ms Perfect Guard.
 

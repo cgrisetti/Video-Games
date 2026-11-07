@@ -251,7 +251,7 @@ static func _add_trail_dressing(chunk: Vector2i, placed: Dictionary, rng: Random
 			var scale: float = rng.randf_range(0.8, 1.15)
 			_add(placed, Kind.STEPPING_STONE, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(scale, 1.0, scale * 0.85)), Vector3(x, y + 0.04, stone_z)), rng)
 			z -= STONE_SPACING
-	# Guide-posts both sides of each trail where it climbs (Dover-Slap's approaches).
+	# Guide-posts both sides of each trail where it climbs (Doverslap's approaches).
 	for trail: Vector3 in LandblockManifest.TRAILS:
 		var z: float = minf(trail.x, chunk_south) - GUIDE_POST_SPACING * 0.5
 		while z > maxf(trail.y, origin.z):

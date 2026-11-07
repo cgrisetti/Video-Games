@@ -25,7 +25,7 @@
 ## Keys: F5 host · F6 join · F7 leave · click to steer the camera with the mouse, Esc to let go.
 ## Command line (after --): --players=N --mode=master|adventurer|squire
 ##   --instance=caldera|bramblebridge|hub|oakshire_vale|expedition (or an instance id; without it the game starts in the Caldera Isles)
-##   --boot-zone=oakshire|north_quay|crown (where in the Caldera Isles: Oakshire Holm's orchards, North Quay, or The Crown's landing)
+##   --boot-zone=oakshire|north_quay|crown (where in the Caldera Isles: Miller's Oak's orchards, North Quay, or The Crown's landing)
 ##   --host --join=ADDRESS --demo --screenshot=PATH --screenshot-delay=S --quit-after=S
 ##   --with-companions (AI companions fill the missing trinity roles in raids and the wilds)
 ##   --weapon=ITEM_ID --armor=ITEM_ID (this screen's players start with them)

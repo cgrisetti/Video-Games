@@ -1,6 +1,6 @@
 ## The Gorge Gale-Jet (07_EXPEDITION_HUD_AND_ART_GDD.md §3, Zone 2): every few
-## seconds a gust gathers in the Dover-Slap Gatehouse's throat (the lane down the
-## middle of Dover-Slap-Bridge pales and streams), then blasts down
+## seconds a gust gathers in the Doverslap Gatehouse's throat (the lane down the
+## middle of Doverslap Bridge pales and streams), then blasts down
 ## the bridge, shoving anyone standing in the lane back toward the holloway.
 ## Anyone sheltered by a Shadow Sanctuary (and the Shield-Sworn holding it)
 ## stands firm. It falls quiet when the gate opens.

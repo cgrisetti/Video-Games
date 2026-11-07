@@ -642,7 +642,7 @@ def honey_wick() -> Suite:
 
 
 def moss_oak_hollow() -> Suite:
-    """Moss-Oak-Hollow into Rush-Light-Hollow's sunken lane, Chunk (0, -1): E Dorian over a plucked
+    """Moss-Oak Hollow into Rush-Light-Hollow's sunken lane, Chunk (0, -1): E Dorian over a plucked
     weave, with the Into-the-Unknown invention in E harmonic minor waiting in the discord stem.
     3/4 at 108, 16 bars."""
     s = Suite("moss_oak_hollow", 108.0, "3/4", [
@@ -690,7 +690,7 @@ def moss_oak_hollow() -> Suite:
 
 
 def dover_slap_falls() -> Suite:
-    """Dover-Slap-Falls and the gorge, Chunk (0, -2): Evan Call's expedition march in A Dorian,
+    """Doverslap Falls and the gorge, Chunk (0, -2): Evan Call's expedition march in A Dorian,
     4/4 at 108, 16 bars (the A Lydian fanfare comes with the gate)."""
     s = Suite("dover_slap_falls", 108.0, "4/4", [
         "Am9", "D/A", "Am9", "D/A", "Cmaj7", "G/B", "Am7", "Esus4",
@@ -804,7 +804,7 @@ def cairnsmans_vigil() -> Suite:
 
 
 def oakshire_vale() -> Suite:
-    """Oakshire Holm, where every launch begins: a bright F Lydian waltz, 3/4 at 104, 16 bars,
+    """Miller's Oak, where every launch begins: a bright F Lydian waltz, 3/4 at 104, 16 bars,
     turning home through an F major cadence."""
     s = Suite("oakshire_vale", 104.0, "3/4", [
         "Fmaj7", "G/F", "Fmaj7", "G/F", "Em7", "Am7", "Dm7", "G7",

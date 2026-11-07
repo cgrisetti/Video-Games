@@ -31,7 +31,7 @@ func _run() -> void:
 	SaveManager.remove(SETTINGS_PATH)
 	SettingsManager.current.use_settings_file(SETTINGS_PATH)
 	PartyProgress.current.apply_full_endgame_kit_for_testing()
-	LevelBase.solo_iron_woodsman_boot = false
+	LevelBase.solo_youth_boot = false
 	CalderaWorldState.current.reset_for_testing()
 	change_scene_to_file(CALDERA_CHECKS.CALDERA_SCENE)
 	for index: int in 6:

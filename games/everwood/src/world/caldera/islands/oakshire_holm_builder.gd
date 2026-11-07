@@ -1,4 +1,4 @@
-## Oakshire Holm (docs/20 Part I; docs/atlas_sources/02_master_atlas_caldera_isles.pdf):
+## Miller's Oak (docs/20 Part I; docs/atlas_sources/02_master_atlas_caldera_isles.pdf):
 ## the south isle, Zone 1, Lv 1-6, the hub every trade lane runs through. The
 ## lee shore of the old caldera, on volcanic ash-loam, the richest farm soil in
 ## The Sound:
@@ -151,7 +151,7 @@ func _build_orchards_and_windmill(root: Node3D) -> void:
 	mill.scale = Vector3.ONE * 2.4
 	root.add_child(mill)
 	CalderaKit.solid_cylinder(root, "WindmillBody", ground(WINDMILL_AT.x, WINDMILL_AT.y), 5.2, 18.0)
-	CalderaKit.sign_label(root, "OrchardSign", "The Lee-Shore Orchards\nOakshire Holm · Lv 1-2", ground(320.0, 214.0) + Vector3(0.0, 2.6, 0.0))
+	CalderaKit.sign_label(root, "OrchardSign", "The Lee-Shore Orchards\nMiller's Oak · Lv 1-2", ground(320.0, 214.0) + Vector3(0.0, 2.6, 0.0))
 	for index: int in 3:
 		var at: Vector2 = [Vector2(330.0, 250.0), Vector2(470.0, 170.0), Vector2(260.0, 130.0)][index]
 		var hobs: MobSpawner = MobSpawner.new()

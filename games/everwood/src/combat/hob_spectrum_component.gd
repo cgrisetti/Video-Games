@@ -1,5 +1,5 @@
 ## A spirit of the First-Quiet on the Hob-to-Boggart Spectrum
-## (15_THE_MYTHOPOETIC_LENS.md §6.1), on every foe: the Dover-Slap-Falls trail's
+## (15_THE_MYTHOPOETIC_LENS.md §6.1), on every foe: the Doverslap Falls trail's
 ## woodland kin, Oakshire Vale's six families and the Cairnsman.
 ##
 ## - HOB_BENIGN (STATE_CURIOUS): a hob nobody has wronged. Walking within 6 m

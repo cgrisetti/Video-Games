@@ -37,7 +37,7 @@ Following Stage 1 of the **Evergreen Development Loop** (08\_EVERGREEN\_DEV\_BIB
 | :---- | :---- | :---- | :---- |
 | **GATE 1** *Anti-Parasitic Harmony* | Must directly feed into at least two core pillars: Stamina/Poise, Four Signs, $3\times 3$ Callings, or Chimes/Vellum. | Harmonizes with all four pillars: (1) **The Four Signs** via color-coded **Chime-Post** nursery rhyme ribbons and reactive **Maker-Seal** architecture (SIGN\_IRON\_ROOT ochre stone, SIGN\_WARM\_HEARTH saffron lanterns, SIGN\_RIME\_GALE sea-azure water-shrines, SIGN\_STAR\_TIDE twilight-violet standing stones); (2) **Stamina/Poise & Flow-Link** via visible $5.5m$ **Lantern's Promise** ground warmth and $18m$ **Hearth-Rite Tuck** safe clearings; (3) **The $3\times 3$ Callings** via Shadow Sanctuary wind-sheltered bridge lanes; (4) **Chimes & Stewardship** via visible **Ecological Succession** when Hush-Cracks seal. | **PASS** |
 | **GATE 2** *The Musk Razor* | Strip secondary menus and extra keybinds; execute through the 6-Posture Controller Contract and existing world hooks. | Zero new buttons or UI clutter. Environmental storytelling, **Chime-Post** diagnostics, **Water-Shrine** oases, and **Ecological Succession** transitions trigger automatically from player proximity, **Hearth-Rite Tucks**, **Truce-Sign** parleys (Light), and WorldStateDB deltas. | **PASS** |
-| **GATE 3** *Philological Linter & Single-Origin Antagonist Rule* | Pass the 4 Linter Rules (8-Year-Old Read-Aloud, Map-Sense compounds, hyphenated cadence, zero grimy/textbook words) & Single-Origin Antagonist Rule. | Every settlement and zone uses canonical hyphenated Map-Sense compounds (Oakshire-Wick, Wayfarer-Green, Pippin-Green, Quarry-Wick, Bramble-Hollow, Nine-Stones-Crossing, Honey-Wick, Bramble-Bridge, Moss-Oak-Hollow, Rush-Light-Hollow, Dover-Slap-Bridge, Dover-Slap-Falls, Tizzi-Wed-Green, Gull-Wick-Haven, Barley-Bridge-Meadow, Barrow-Crag-Crossing, Sunken-Crown-Falls). Environmental decay is purely **The First-Quiet** rising through **Hush-Cracks**—zero skulls, gore, or grimdark blight. | **PASS** |
+| **GATE 3** *Philological Linter & Single-Origin Antagonist Rule* | Pass the 4 Linter Rules (8-Year-Old Read-Aloud, Map-Sense compounds, hyphenated cadence, zero grimy/textbook words) & Single-Origin Antagonist Rule. | Every settlement and zone uses canonical hyphenated Map-Sense compounds (Oakshire-Wick, Wayfarer-Green, Pippin-Green, Quarry-Wick, Bramble-Hollow, Nine-Stones-Crossing, Honey-Wick, Bramble-Bridge, Moss-Oak Hollow, Rush-Light-Hollow, Doverslap Bridge, Doverslap Falls, Tizzi-Wed-Green, Gull-Wick-Haven, Barley-Bridge-Meadow, Barrow-Crag-Crossing, Sunken-Crown-Falls). Environmental decay is purely **The First-Quiet** rising through **Hush-Cracks**—zero skulls, gore, or grimdark blight. | **PASS** |
 | **GATE 4** *Schema-First Registry* | Content added as typed Resource data registered in central catalogs; polymorphic resolution. | All biome palettes, terrain splat rules, architectural prop kits, foliage densities, HLOD silhouettes, and succession states live in typed ZoneBiomeResource, WorldPropKitResource, and ZoneSuccessionVisualResource schemas registered in WorldVisualCatalog. | **PASS** |
 | **GATE 5** *Code-First & Multi-Age Safe* | Build deterministically in GDScript; $4.8m$ camera / $3.2m$ obstacle sightlines; support Master, Adventurer, and Squire tiers. | \$100\\%\$ deterministic GDScript generation in tools/build\_oakshire\_vale.gd, tools/build\_levels.gd, and ShapeKit; automatic shader dither-fade on canopies $>3.2m$; all bridges/ramps $\leq 2{5}^{\circ }$ with flush colliders; high-contrast ground values so RaidTelegraphDecal rings remain \$100\\%\$ legible for a 4-year-old Squire. | **PASS** |
 
@@ -51,7 +51,7 @@ In *Everwood*, every human structure is a physical act of **Domestic Stewardship
 * **Scalloped Shingle & Steep Gable Roofs:** Roofs pitch at $3{8}^{\circ }–4{5}^{\circ }$ with stepped masonry gables, overlapping courses of weathered slate-blue, moss-green, or warm clay shingles, dormer windows, and brick chimneys puffing gentle curls of apple-wood smoke.  
 * **Hierarchy of Ways (*Bale-Ways to Sunken Holloways*):** In compliance with 08\_EVERGREEN\_DEV\_BIBLE.md Pillar 4, roads physically tell the story of trade and travel:  
   1. **Flagged Bale-Ways:** $5.0–6.0m$ wide main arteries paved with warm limestone and sandstone flagstones bordered by curb stones and knee-high dry-stone walls ($\leq 0.9m$ high on the LowScenery physics layer so cameras never snag).  
-  2. **Sunken Holloways (*Moss-Oak-Hollow* & *Rush-Light-Hollow*):** Ancient lanes worn $1.5–2.0m$ deep into the earth between mossy banks, overhung by gnarled oak roots and lit by swaying clay-and-brass **Wind-Lanterns**.  
+  2. **Sunken Holloways (*Moss-Oak Hollow* & *Rush-Light-Hollow*):** Ancient lanes worn $1.5–2.0m$ deep into the earth between mossy banks, overhung by gnarled oak roots and lit by swaying clay-and-brass **Wind-Lanterns**.  
   3. **Sheep-Stile Deer-Runs:** Narrow $2.5m$ trodden dirt-and-clover footpaths crossing stone walls via low wooden sheep-stiles ($\leq 2{0}^{\circ }$ ramp colliders) leading to hidden **Wayfarer's Chests** and **Water-Shrines**.
 
 ### **2.2 Visual Philosophy: *The First-Quiet* & Ecological Succession**
@@ -71,10 +71,10 @@ To guarantee that a 4-year-old Squire on a 4-way split-screen television can ins
 | Palette Category | Primary Surface / Element | Canonical Hex & RGB | Shader Roughness / Specular | Visual & Gameplay Role |
 | :---- | :---- | :---- | :---- | :---- |
 | **Tizzi-Wed-Green Turf** | Sunlit meadow grass & clover | \#5B8C4A (91, 140, 74\) | Roughness 0.88, Spec 0.10 | Warm, restful primary ground canvas for Oakshire Vale and Bramble-Bridge. |
-| **Orchard & Autumn Moss** | Dappled bank moss & fern | \#436B3C (67, 107, 60\) | Roughness 0.92, Spec 0.08 | Shaded holloway banks and Moss-Oak-Hollow canopy floor. |
+| **Orchard & Autumn Moss** | Dappled bank moss & fern | \#436B3C (67, 107, 60\) | Roughness 0.92, Spec 0.08 | Shaded holloway banks and Moss-Oak Hollow canopy floor. |
 | **Bale-Way Flagstone** | Warm hewn limestone cobbles | \#C8BFA8 (200, 191, 168\) | Roughness 0.75, Spec 0.20 | High-readability footpath & combat arena floor; contrasts cleanly with all telegraph decals. |
 | **Sunken-Hollow Loam** | Damp peat, earth & root-soil | \#594636 (89, 70, 54\) | Roughness 0.85, Spec 0.15 | Rush-Light-Hollow and sunken trail beds. |
-| **Dover-Slap Granite** | Highland crag & river boulder | \#7A8086 (122, 128, 134\) | Roughness 0.70, Spec 0.25 | Dover-Slap-Bridge piers, Quarry-Wick, and Ring of the Cairnsman. |
+| **Doverslap Granite** | Highland crag & river boulder | \#7A8086 (122, 128, 134\) | Roughness 0.70, Spec 0.25 | Doverslap Bridge piers, Quarry-Wick, and Ring of the Cairnsman. |
 | **Stewardship Timber** | Adze-hewn oak & cedar | \#6E4B2E (110, 75, 46\) | Roughness 0.80, Spec 0.12 | Half-timber framing, bridges, waterwheels, Scribe Desk, and cedar bee-hives. |
 | **Lime-Wash & Brick** | Village gable plaster & brick | \#F2ECE1 / \#B55A3F | Roughness 0.85, Spec 0.10 | Stepped-gable walls, bakery ovens, and gatehouse turrets. |
 | **Sign of Iron-Root** | Amber-Ochre Seal & Accent | \#D9822B (217, 130, 43\) | Emission 1.4x | Poise / *Shatterpoint* architectural inlays & Chime-Post ribbons. |
@@ -123,7 +123,7 @@ Replaces flat vertex-colored terrain meshes in LandblockTerrain (tools/build\_oa
   * Transfers spherical canopy normals across clustered leaf-cards/puffs so tree crowns (Moss-Oak, Weeping Willow, Apple Orchard, Highland Pine) shade as lush, volumetric storybook clouds rather than intersecting flat polygons.  
   * Applies phase-offset sinusoidal vertex wind sway (scaled by GorgeGaleJet or ZONE\_WEATHERING\_EVENT wind vectors) plus a **Hero Brush Displacement** uniform that bends grass and low shrubs away within $1.2m$ of moving players.  
 * **Stylized Stream, Canal, & Waterfall Shader (storybook\_water\_stream.gdshader):**  
-  * Renders clear, inviting water for the **Bramble-Bridge Canal**, **Wayfarer's Water-Shrine**, **Rush-Light-Hollow** willow pools, and **Dover-Slap-Falls**.  
+  * Renders clear, inviting water for the **Bramble-Bridge Canal**, **Wayfarer's Water-Shrine**, **Rush-Light-Hollow** willow pools, and **Doverslap Falls**.  
   * Features depth-based color absorption (shallow sunlit aqua \#52B8B2 $\rightarrow$ deep indigo-teal \#1F5E6B), scrolling cellular surface ripples, directional white-water foam streaks along bridge piers and waterfall crests, and crisp shoreline intersection foam.
 
 ## **4\. Tectonic Architectural & Environmental Kit Upgrade (ShapeKit & WorldAssetCatalog)**
@@ -135,11 +135,11 @@ Rather than assembling buildings from single boxes and cylinders, ShapeKit (src/
 > 1. **kit\_house\_stepped\_gable (Bruges/Visby Artisan House):**  
    * **Tectonic Parts:** Chamfered fieldstone foundation plinth ($0.6m$); timber-framed first story with warm lime-wash plaster and diagonal oak braces; corbeled jetty overhang ($0.25m$); stepped brick gable facades (5 to 7 masonry steps capped with limestone coping stones); $4{2}^{\circ }$ scalloped shingle roof with a pitched dormer window; leaded Mullion window boxes with flower-troughs and warm interior OmniLight3D evening glow (\#FFBA66); and a brick chimney with a rising smoke particle emitter.  
    * **Variants:** Configurable via parameters for **The Smoking Bakery** (adds a domed brick bread-oven alcove with glowing coals and baker's peel rack), **The Reed-Light Scribery** (adds hanging vellum banners in the 4 Sign colors and drying pigment bundles), and **The Oakshire Homestead Hall** (wider L-plan timber hall with a wrap-around porch).  
-> 2. **kit\_watermill\_wheel (Bramble-Bridge & Dover-Slap Vellum Mill):**  
+> 2. **kit\_watermill\_wheel (Bramble-Bridge & Doverslap Vellum Mill):**  
    * **Tectonic Parts:** Dual timber axle-piers, 12-spoke oak wheel ($4.4m$ diameter) with 24 angled wooden bucket-paddles, iron rim-bands, a timber mill-race flume directing foamy water over the top, and a synchronized splash particle ring \+ Ambience3D emitter (area\_mask \= 1).  
 > 3. **kit\_bridge\_stone\_arch & kit\_bridge\_carpathian\_trestle:**  
    * **Bramble-Bridge Stone Canal Arch:** Smooth $\leq 1{3}^{\circ }$ approach ramps and a flat crown backed by a single snag-free convex collider flush with the ground, dressed visually with radiating limestone arch voussoirs, a carved central **Maker-Seal Keystone**, low $0.75m$ stone parapets (LowScenery layer), and corner **Wind-Lantern** posts.  
-   * **Dover-Slap Timber-and-Stone Trestle (Dover-Slap-Bridge):** Soaring granite chasm piers supporting heavy criss-cross Carpathian timber trusses, cantilevered **Maker-Seal Plate** bays on either side, and the twin-turreted **Dover-Slap Gatehouse** with an iron-shod oak portcullis, carved shingled spires, and the **Bronze Bridge-Bell Winch**.
+   * **Doverslap Timber-and-Stone Trestle (Doverslap Bridge):** Soaring granite chasm piers supporting heavy criss-cross Carpathian timber trusses, cantilevered **Maker-Seal Plate** bays on either side, and the twin-turreted **Doverslap Gatehouse** with an iron-shod oak portcullis, carved shingled spires, and the **Bronze Bridge-Bell Winch**.
 
 ### **4.2 Stewardship Stations & Miyazaki Mundane Magic Props**
 
@@ -190,16 +190,16 @@ tools/build\_levels.gd upgrades both the seamless 5-chunk corridor (everwood\_wo
 > 2. **Chunk $(0,0)$ — Bramble-Bridge (South Bank Green & North Village Square):**  
    * **South Bank & Canal:** Paved with bevel-edged limestone cobbles leading to the **Bramble-Bridge Stone Arch** ($\leq 1{3}^{\circ }$ flush collider) spanning a lively, foam-streaked canal (storybook\_water\_stream.gdshader) with stone quay walls, moored wooden skiffs, and the turning $4.4m$ **Watermill Wheel**.  
    * **North Village Square:** Framed by 5 multi-part kit\_house\_stepped\_gable buildings (Bruges/Visby brick and half-timber), cobblestone flower planters, the **Smoking Bakery** with glowing brick oven, the **Armory & Scribe Desk Pavilion**, the 5-bell **Chime-Shrine Pagoda**, drying pigment racks in the Four Sign hues, and the carved timber **Northern Forest Gate** with a diagnostic **Chime-Post**.  
-> 3. **Chunk $(0,-1)$ & Dojo Zone 1 — Moss-Oak-Hollow into Rush-Light-Hollow:**  
+> 3. **Chunk $(0,-1)$ & Dojo Zone 1 — Moss-Oak Hollow into Rush-Light-Hollow:**  
    * **The Moss-Oak Great Arch:** Massive buttressed oak trunks arching $6.0m$ overhead (with automatic camera dither-fade above $3.2m$) casting dappled canopy light-shafts onto the trail.  
    * **The Bramble Hush-Crack & Deer-Run Alcove:** Visualizes the first **Hush-Crack** with localized ZONE\_HUSHED slate desaturation that blooms into wildflowers (ZONE\_RECLAIMED) when the 3 *Bramble-Hobs* are un-boggarted into hedge-wrens. The forked deer-run behind dry-stone walls leads over a sheep-stile to a brass-bound **Wayfarer's Chest**.  
    * **The Sunken-Hollow Descent (Rush-Light-Hollow Edge):** As the lane descends between $1.8m$ mossy earthen banks and gnarled root-ribs (z \= \-54 to \-74 on the grid), swaying clay **Wind-Lanterns** and the **Wayfarer's Water-Shrine** create warm Saffron-Gold and Sea-Azure light oases against the harmonic-minor twilight mist before the second Hush-Crack.  
-> 4. **Chunk $(0,-2)$ & Dojo Zone 2 — Dover-Slap-Bridge & Dover-Slap Gatehouse:**  
-   * **The Roaring Cataract (Dover-Slap-Falls):** Multi-tiered granite cliff face down which a wide white-water curtain plunges (storybook\_water\_stream.gdshader), kicking up volumetric mist plumes and rainbow spray.  
+> 4. **Chunk $(0,-2)$ & Dojo Zone 2 — Doverslap Bridge & Doverslap Gatehouse:**  
+   * **The Roaring Cataract (Doverslap Falls):** Multi-tiered granite cliff face down which a wide white-water curtain plunges (storybook\_water\_stream.gdshader), kicking up volumetric mist plumes and rainbow spray.  
    * **The Trestle & Vellum Mill:** Heavy Carpathian timber-and-stone trestle bridge flanked by the giant spinning paper-mill waterwheel pounding linen into Scribe vellum.  
    * **Co-Op Threshold Visuals:** The twin **Maker-Seal Plates** feature recessed brass-and-stone geometric inlays that fill with glowing amber/azure light as players stand on them (CoopGate), while the **Gorge Gale-Jet** renders crisp, translucent wind-ribbons down the center lane that visibly part around a Shield-Sworn Tank's Shadow Sanctuary cone on the way to the **Bronze Bridge-Bell Winch**.  
 > 5. **Chunk $(0,-3)$ & Dojo Zone 3 — The Ring of the Cairnsman:**  
-   * Climbing to $+18m$ elevation, the stone causeway opens into a circular sanctum paved with weathered concentric flagstones (kept \$100\\%\$ clear of clutter $>0.15m$ and mid-value \#8A8E91 so CRIMSON\_DODGE\_OUT, GOLD\_PARTY\_SOAK, and the Phase 2 BLUE\_BEHIND\_TANK **Dover-Slap Gale-Beam** telegraphs pop with maximum contrast).  
+   * Climbing to $+18m$ elevation, the stone causeway opens into a circular sanctum paved with weathered concentric flagstones (kept \$100\\%\$ clear of clutter $>0.15m$ and mid-value \#8A8E91 so CRIMSON\_DODGE\_OUT, GOLD\_PARTY\_SOAK, and the Phase 2 BLUE\_BEHIND\_TANK **Doverslap Gale-Beam** telegraphs pop with maximum contrast).  
    * Ringed by 12 monolithic mossy standing stones carved with spiral **Maker-Seals**, wind-bent highland pines, heather banks, and an unobstructed cliffside vista overlooking the waterfall gorge below.
 
 ## **6\. Draw Distance, 4-Ring HLOD & Vista Architecture, Lighting, & World Effects**
@@ -213,17 +213,17 @@ To make *Everwood* feel like a vast, interconnected world from any hill or bridg
 | **Ring 0: Active Gameplay** *($\leq 1$ Chunk / $0–128m$)* | Load $\leq 1$, Unload $>2$ | Full tectonic kits, colliders, interactive stations, HobSpectrumComponent AI ($60Hz$ $\leq 35m$, $10Hz$ $\leq 90m$), and 3D Ambience3D emitters. | \$100\\%\$ deterministic physics and combat hitboxes. |
 | **Ring 1: Botanical & Prop Clutter** *($\leq 2$ Chunks / $128–256m$)* | Load $\leq 2$, Unload $>3$ | Hero trees and GPU MultiMeshInstance3D batches (mm\_grass\_clumps, mm\_wildflowers\_ferns, mm\_pebbles\_fungi) with distance scale-down fade at $220m$. | Single draw call per MultiMeshInstance3D batch per chunk; zero CPU tick cost. |
 | **Ring 2: Merged Chunk HLOD** *($\leq 3–4$ Chunks / $256–512m$)* | Load $\leq 3$, Unload $>4$ | Single baked ArrayMesh per chunk (\<chunk\>\_hlod.res) combining decimated terrain, merged stepped-gable rooflines, and simplified tree-crown silhouettes. | Keeps distant villages and woods visible across all of Oakshire Vale in $1$ draw call per distant chunk. |
-| **Ring 3: The Panoramic Atlas Horizon Skirt** *($512m\rightarrow 2,500m$)* | Persistent lightweight horizon ring (HorizonVistaRing) | A 360-degree painter's horizon mesh (camera.far \= 3000.0) featuring the silhouette landmarks of the **Six-Zone Stewardship Atlas**: (North) the towering cataract mist of **Sunken-Crown-Falls** & the **Dover-Slap Mill-Castle**; (West) the granite tors of **Barrow-Crag-Crossing**; (East) the golden rolling hills & windmills of **Barley-Bridge-Meadow**; (South) the white chalk cliffs & sea-stacks of **Gull-Wick-Haven**. | Gives players an inspiring sense of scale and direction without ever loading distant zone instances into memory. |
+| **Ring 3: The Panoramic Atlas Horizon Skirt** *($512m\rightarrow 2,500m$)* | Persistent lightweight horizon ring (HorizonVistaRing) | A 360-degree painter's horizon mesh (camera.far \= 3000.0) featuring the silhouette landmarks of the **Six-Zone Stewardship Atlas**: (North) the towering cataract mist of **Sunken-Crown-Falls** & the **Doverslap Mill-Castle**; (West) the granite tors of **Barrow-Crag-Crossing**; (East) the golden rolling hills & windmills of **Barley-Bridge-Meadow**; (South) the white chalk cliffs & sea-stacks of **Gull-Wick-Haven**. | Gives players an inspiring sense of scale and direction without ever loading distant zone instances into memory. |
 
 ### **6.2 Dynamic Atmosphere, Sky, & World Particle Effects (WorldAtmosphereDirector)**
 
 > 1. **Sunlit Filmic Environment & Modal Fog Shifts (src/world/world\_atmosphere\_director.gd):**  
    * Configures WorldEnvironment with TONE\_MAPPER\_FILMIC, a procedural ProceduralSkyMaterial (warm cerulean zenith \#3B78B8, sunlit golden-cream horizon \#F5E2C4), directional sun light (shadow\_blur \= 1.4), and subtle screen-space ambient occlusion / glow that makes **Four-Sign** seals and **Wind-Lanterns** sing.  
-   * Smoothly interpolates fog\_light\_color, fog\_density, and ambient sky contribution as the party crosses zone thresholds—shifting from breezy golden-green meadow air in Bramble-Bridge and Oakshire-Wick (G\_LYDIAN) to cool emerald-slate canopy mist in Rush-Light-Hollow (E\_HARMONIC\_MINOR) and crisp highland spray on Dover-Slap-Bridge (A\_DORIAN).  
+   * Smoothly interpolates fog\_light\_color, fog\_density, and ambient sky contribution as the party crosses zone thresholds—shifting from breezy golden-green meadow air in Bramble-Bridge and Oakshire-Wick (G\_LYDIAN) to cool emerald-slate canopy mist in Rush-Light-Hollow (E\_HARMONIC\_MINOR) and crisp highland spray on Doverslap Bridge (A\_DORIAN).  
 > 2. **Ambient Mundane-Magic Particle Layers:**  
    * **Meadow Pollen & Dandelion Drift:** Gentle upward-floating sunlit motes across Oakshire Vale, Honey-Wick, and Bramble-Bridge.  
    * **Canopy Dappled Light-Shafts:** Translucent additive sunbeam planes angled parallel to the directional sun under the Moss-Oak Great Arch and orchard groves.  
-   * **Waterfall Plume & Creek Mist:** Continuous billowing mist emitters at the base of Dover-Slap-Falls and the Bramble-Bridge watermill wheel.  
+   * **Waterfall Plume & Creek Mist:** Continuous billowing mist emitters at the base of Doverslap Falls and the Bramble-Bridge watermill wheel.  
    * **Un-Boggarting & Reclamation Persistence:** Sealing a Hush-Crack replaces its dark hush-mote emitter with a permanent warm path-light and orbiting fireflies/butterflies synced via WorldStateDB.
 
 ## **7\. Schema-First GDScript Specifications & Headless CI Verification Gates**
@@ -303,7 +303,7 @@ Every world, shader, and landblock update must pass four automated verification 
    * Simulate sealing a MinionCamp (**Hush-Crack**) and assert that WorldStateDB transitions the camp's visual state from ZONE\_HUSHED (hush radius $>0.0m$) to ZONE\_RECLAIMED (hush radius $0.0m$, spawning the mossy **Lulled Cairn** and lighting nearby **Wind-Lanterns**).  
 > 4. **Philological Linter & Screenshot Audit (tools/test\_mythopoetic\_lens.gd & \--screenshot):**  
    * Run tools/test\_mythopoetic\_lens.gd across all registered ZoneBiomeResource and WorldPropKitResource display strings to verify \$100\\%\$ compliance with the Four Linter Rules.  
-   * Capture \--screenshot verification frames at **Oakshire-Wick**, **Bramble-Bridge Square**, **Moss-Oak-Hollow / Rush-Light-Hollow**, **Dover-Slap-Bridge**, and **The Ring of the Cairnsman** for Stage 4 Multimodal Split-Screen Squint Audit.
+   * Capture \--screenshot verification frames at **Oakshire-Wick**, **Bramble-Bridge Square**, **Moss-Oak Hollow / Rush-Light-Hollow**, **Doverslap Bridge**, and **The Ring of the Cairnsman** for Stage 4 Multimodal Split-Screen Squint Audit.
 
 ## 8. Build Notes (Phase 17)
 
@@ -312,7 +312,7 @@ What the game does today, where it differs from §1–7, and what's still to com
 **In the code now**
 - **Schemas** (`src/resources/`): `ZoneBiomeResource` (§7.1 A, with the sightline constants, plus each biome's wildflower and grass colours), `WorldPropKitResource` (§7.1 B) and `ZoneSuccessionVisualResource` (the three states of §2.2).
 - **`WorldVisualCatalog`** (`src/world/world_visual_catalog.gd`) registers them by id:
-  - 17 biomes: the six atlas zones, Oakshire Vale's village and five petals, and the trail's Honey-Wick, Bramble-Bridge, Moss-Oak-Hollow, Dover-Slap-Falls and the Ring of the Cairnsman. Each has the §2.3 ground palette, its sun, sky and fog, and its clutter counts.
+  - 17 biomes: the six atlas zones, Oakshire Vale's village and five petals, and the trail's Honey-Wick, Bramble-Bridge, Moss-Oak Hollow, Doverslap Falls and the Ring of the Cairnsman. Each has the §2.3 ground palette, its sun, sky and fog, and its clutter counts.
   - 21 kits: the 13 of §4, plus the knee-high dry-stone wall, bee-hive, pumpkin patch, standing stone, Wind-Lantern post, windmill, pulley-crane and ashlar stack.
   - Which biome each place wears (`biome_for_place()`, `biome_for_music()`).
   - The shared world materials, one per look so scenes stay small and draw calls batch: `craft()`, `painted()`, `glowing()`, `double_sided()`, `terrain()`, `foliage()` and `water()`. `craft_for_color()` reads a colour's hue and value to pick its craft (limestone, brick, lime-wash, timber, granite, loam or turf).
@@ -348,7 +348,7 @@ What the game does today, where it differs from §1–7, and what's still to com
   - Bramble-Hollow: willow pools, hanging Wind-Lanterns and a Water-Shrine.
   - Nine-Stones-Crossing: nine standing stones with Star-Tide spirals, the Threshold Bell-Frame, a flagged causeway and heather on the ridge.
   - Hush-Cracks under Bramble-Hollow's briars, the outlaws' camp and the barrow wights.
-- **The trail** (`tools/build_levels.gd`, §5.2): every surface crafted; kit houses with the bakery and the scribery; the canal, skiffs and the arch's voussoirs, keystone and lantern posts; the mill race; flower planters; Chime-Posts at the Forest Gate, both Hush-Crack trailheads, Dover-Slap-Bridge and the commons; the Great Arch fading with light-shafts; the trestle's piers and trusses; shingled turret spires; and the Ring's #8A8E91 flagstones, twelve standing stones, corner pines and heather. Colliders and positions are unchanged.
+- **The trail** (`tools/build_levels.gd`, §5.2): every surface crafted; kit houses with the bakery and the scribery; the canal, skiffs and the arch's voussoirs, keystone and lantern posts; the mill race; flower planters; Chime-Posts at the Forest Gate, both Hush-Crack trailheads, Doverslap Bridge and the commons; the Great Arch fading with light-shafts; the trestle's piers and trusses; shingled turret spires; and the Ring's #8A8E91 flagstones, twelve standing stones, corner pines and heather. Colliders and positions are unchanged.
 - **Checks.** `tools/test_world_visuals.gd` (run by the smoke test) checks the catalog, the atelier, the shaders, the crafted ground and clutter, low walls on LowScenery, ramps at 25° or less, sightline fades above 3.2 m, the 3 km cameras, the horizon ring, the HLODs, a crack sealed into a cairn (bloom, WorldStateDB, lanterns), weathering, the kit queue, the Ring's clear floor, and in Oakshire Vale each part's biome and look, every landmark, the cracks and the furrows. The Lens linter now reads every biome, kit and succession name.
 
 **Deliberate differences from the spec**
@@ -359,7 +359,7 @@ What the game does today, where it differs from §1–7, and what's still to com
 - **The atelier takes about 0.5 s on worker threads at 256 px, not 60 ms.** Nothing waits on it.
 - **Kits build at runtime** from `WorldKitInstance` nodes, so the level files hold ids, not meshes (`landblock_0_1.tscn` went from 180 KB to 60 KB).
 - **The streaming budget is the grid's 2 ms queue plus the kit queue's 1.5 ms slice.** No single step is promised under 2 ms; the checks assert the slicing.
-- **No `--screenshot` flag.** Windowed probes captured Oakshire-Wick, Bramble-Bridge square, Moss-Oak-Hollow (hushed, blooming, reclaimed), Dover-Slap-Bridge, the Ring and the horizon for the squint audit.
+- **No `--screenshot` flag.** Windowed probes captured Oakshire-Wick, Bramble-Bridge square, Moss-Oak Hollow (hushed, blooming, reclaimed), Doverslap Bridge, the Ring and the horizon for the squint audit.
 
 **Still to come**
 - Curated kit models and textures dropped into `assets/`, and per-zone weathering events wired to the calendar.

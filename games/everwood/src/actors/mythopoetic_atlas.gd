@@ -29,9 +29,9 @@ const PLACE_ZONES: Dictionary[String, StringName] = {
 	"The Settled Meadow": TIZZI_WED_GREEN,
 	"Honey-Wick": TIZZI_WED_GREEN,
 	"Bramble-Bridge": TIZZI_WED_GREEN,
-	"Moss-Oak-Hollow": TIZZI_WED_GREEN,
+	"Moss-Oak Hollow": TIZZI_WED_GREEN,
 	"Rush-Light-Hollow": RUSH_LIGHT_HOLLOW,
-	"Dover-Slap-Bridge": GULL_WICK_HAVEN,
+	"Doverslap Bridge": GULL_WICK_HAVEN,
 	"The Ring of the Cairnsman": BARROW_CRAG_CROSSING,
 }
 

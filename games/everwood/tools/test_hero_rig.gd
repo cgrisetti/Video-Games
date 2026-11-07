@@ -132,7 +132,7 @@ func _check_registries() -> void:
 	var trims_ok: bool = tiers.size() == 4 and tiers[0].trim_color.to_html(false) == "c8b594" and tiers[1].trim_color.to_html(false) == "b88b3a" \
 		and tiers[2].trim_color.to_html(false) == "d4a84e" and tiers[3].has_sign_stone() and not tiers[2].has_sign_stone()
 	check.call(tiers_ok and trims_ok,
-		"four WeaponVisualTierResources, Apprentice Timber to Dover-Slap Relic: Level 1/2/5/10, 1.0/1.2/1.45/1.75x, metal 0/0.55/0.8/0.9, rough 0.78/0.52/0.32/0.22, Sign-stone 0/0.2/0.5/1.8, the brief's blades and trims, copied onto every tier's weapons")
+		"four WeaponVisualTierResources, Apprentice Timber to Doverslap Relic: Level 1/2/5/10, 1.0/1.2/1.45/1.75x, metal 0/0.55/0.8/0.9, rough 0.78/0.52/0.32/0.22, Sign-stone 0/0.2/0.5/1.8, the brief's blades and trims, copied onto every tier's weapons")
 	var looks: Array[HeroAppearanceResource] = catalog.hero_appearances()
 	var every_calling: bool = looks.size() == 9
 	for calling: CallingResource in catalog.callings():
@@ -268,7 +268,7 @@ func _check_arsenal_sculpts() -> void:
 		summary.append(str(counts))
 	check.call(counts_ok, "all four weapons are sculpted anew at each of the four tiers (vertices by tier: %s)" % ", ".join(summary))
 	check.call(markers_ok,
-		"every sculpted weapon carries its trail markers and the tier's metal in the hero shader; two-handers a HaftGripMarker, the bow its BowStringMid, and every Dover-Slap relic a SignStoneCore")
+		"every sculpted weapon carries its trail markers and the tier's metal in the hero shader; two-handers a HaftGripMarker, the bow its BowStringMid, and every Doverslap relic a SignStoneCore")
 
 
 func _check_shader_and_library() -> void:

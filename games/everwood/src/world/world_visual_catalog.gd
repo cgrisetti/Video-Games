@@ -79,9 +79,9 @@ const PLACE_BIOMES: Dictionary[String, StringName] = {
 	"Nine-Stones-Crossing": NINE_STONES_CROSSING,
 	"Honey-Wick": HONEY_WICK,
 	"Bramble-Bridge": BRAMBLE_BRIDGE,
-	"Moss-Oak-Hollow": MOSS_OAK_HOLLOW,
+	"Moss-Oak Hollow": MOSS_OAK_HOLLOW,
 	"Rush-Light-Hollow": RUSH_LIGHT_HOLLOW,
-	"Dover-Slap-Bridge": DOVER_SLAP_FALLS,
+	"Doverslap Bridge": DOVER_SLAP_FALLS,
 	"The Ring of the Cairnsman": RING_OF_THE_CAIRNSMAN,
 }
 ## The biome under each place's score (ZoneMusicProfileResource ids, 16 GDD §4).
@@ -93,7 +93,7 @@ const MUSIC_BIOMES: Dictionary[StringName, StringName] = {
 	&"ring_of_the_cairnsman": RING_OF_THE_CAIRNSMAN,
 	&"oakshire_vale": OAKSHIRE_WICK,
 }
-## Moss-Oak-Hollow's sunken lane wears Rush-Light-Hollow's look past this trail z (16 GDD's discord blend runs -54 to -74).
+## Moss-Oak Hollow's sunken lane wears Rush-Light-Hollow's look past this trail z (16 GDD's discord blend runs -54 to -74).
 const SUNKEN_LANE_Z: float = -62.0
 
 ## The kits (§4), in catalog order.
@@ -470,10 +470,10 @@ static func _build_biomes() -> void:
 	_biome(BRAMBLE_BRIDGE, "Bramble-Bridge", Sign.SIGN_WARM_HEARTH, TURF, FLAGSTONE, LOAM, GRANITE,
 		Color(1.0, 0.95, 0.86), 1.15, SKY_TOP, SKY_HORIZON, Color(0.9, 0.9, 0.8), 0.0013,
 		Vector3i(900, 220, 100), [KIT_TREE_MOSS_OAK, KIT_TREE_ORCHARD_APPLE], meadow_flowers, Color(0.42, 0.6, 0.32))
-	_biome(MOSS_OAK_HOLLOW, "Moss-Oak-Hollow", Sign.SIGN_IRON_ROOT, MOSS, Color(0.66, 0.62, 0.52), LOAM, Color(0.46, 0.48, 0.47),
+	_biome(MOSS_OAK_HOLLOW, "Moss-Oak Hollow", Sign.SIGN_IRON_ROOT, MOSS, Color(0.66, 0.62, 0.52), LOAM, Color(0.46, 0.48, 0.47),
 		Color(0.96, 0.95, 0.84), 0.98, Color(0.3, 0.5, 0.62), Color(0.84, 0.86, 0.74), Color(0.68, 0.78, 0.64), 0.005,
 		Vector3i(900, 300, 140), [KIT_TREE_MOSS_OAK], [Color(0.55, 0.6, 0.92), Color(0.96, 0.95, 0.9), Color(0.5, 0.7, 0.38)], Color(0.36, 0.54, 0.3))
-	_biome(DOVER_SLAP_FALLS, "Dover-Slap-Falls", Sign.SIGN_RIME_GALE, Color(0.42, 0.52, 0.38), Color(0.72, 0.7, 0.64), Color(0.44, 0.38, 0.32), GRANITE,
+	_biome(DOVER_SLAP_FALLS, "Doverslap Falls", Sign.SIGN_RIME_GALE, Color(0.42, 0.52, 0.38), Color(0.72, 0.7, 0.64), Color(0.44, 0.38, 0.32), GRANITE,
 		Color(0.96, 0.97, 1.0), 1.15, Color(0.28, 0.5, 0.76), Color(0.88, 0.9, 0.9), Color(0.84, 0.9, 0.94), 0.0035,
 		Vector3i(600, 200, 160), [KIT_TREE_HIGHLAND_PINE], heather, Color(0.42, 0.56, 0.38))
 	_biome(RING_OF_THE_CAIRNSMAN, "The Ring of the Cairnsman", Sign.SIGN_STAR_TIDE, Color(0.44, 0.5, 0.38), ARENA_FLOOR, Color(0.42, 0.36, 0.3), GRANITE,
@@ -523,7 +523,7 @@ static func _build_kits() -> void:
 	_kit(KIT_HOUSE_STEPPED_GABLE, "Stepped-Gable House", &"ARCHITECTURE", Vector3(8.0, 9.0, 6.0), false, true)
 	_kit(KIT_WATERMILL_WHEEL, "Ink-Mill Watermill Wheel", &"ARCHITECTURE", Vector3(2.2, 5.0, 5.0), false, true)
 	_kit(KIT_BRIDGE_STONE_ARCH, "Bramble-Bridge Stone Arch", &"BRIDGE", Vector3(5.0, 2.4, 12.0), false, false)
-	_kit(KIT_BRIDGE_CARPATHIAN_TRESTLE, "Dover-Slap Timber Trestle", &"BRIDGE", Vector3(8.0, 24.0, 30.0), false, false)
+	_kit(KIT_BRIDGE_CARPATHIAN_TRESTLE, "Doverslap Timber Trestle", &"BRIDGE", Vector3(8.0, 24.0, 30.0), false, false)
 	_kit(KIT_SCRIBE_DESK_PAVILION, "Scribe-Desk Pavilion", &"STATION", Vector3(5.0, 3.6, 4.0), false, true)
 	_kit(KIT_CHIME_SHRINE_PAGODA, "Chime-Shrine Pagoda", &"STATION", Vector3(3.4, 4.6, 3.4), false, true)
 	_kit(KIT_CHIME_POST_DIAGNOSTIC, "Nursery-Rhyme Chime-Post", &"STATION", Vector3(1.6, 2.6, 0.6), false, false)
@@ -606,15 +606,15 @@ static func _build_map_zones() -> void:
 	_map_zone(NINE_STONES_CROSSING, "Nine-Stones-Crossing", VALE, Vector2(305.7, 805.1), 175.0, PackedStringArray(["oakshire_wick", "pippin_green"]))
 	_map_zone(HONEY_WICK, "Honey-Wick", WORLD, Vector2(64.0, 192.0), 64.0, PackedStringArray(["bramble_bridge"]))
 	_map_zone(BRAMBLE_BRIDGE, "Bramble-Bridge", WORLD, Vector2(64.0, 64.0), 64.0, PackedStringArray(["honey_wick", "moss_oak_hollow"]))
-	_map_zone(MOSS_OAK_HOLLOW, "Moss-Oak-Hollow", WORLD, Vector2(64.0, -30.0), 40.0, PackedStringArray(["bramble_bridge", "rush_light_hollow"]))
+	_map_zone(MOSS_OAK_HOLLOW, "Moss-Oak Hollow", WORLD, Vector2(64.0, -30.0), 40.0, PackedStringArray(["bramble_bridge", "rush_light_hollow"]))
 	_map_zone(RUSH_LIGHT_HOLLOW, "Rush-Light-Hollow", WORLD, Vector2(64.0, -92.0), 32.0, PackedStringArray(["moss_oak_hollow", "dover_slap_bridge"]))
-	_map_zone(&"dover_slap_bridge", "Dover-Slap-Bridge", WORLD, Vector2(64.0, -168.0), 52.0, PackedStringArray(["rush_light_hollow", "ring_of_the_cairnsman"]))
+	_map_zone(&"dover_slap_bridge", "Doverslap Bridge", WORLD, Vector2(64.0, -168.0), 52.0, PackedStringArray(["rush_light_hollow", "ring_of_the_cairnsman"]))
 	_map_zone(RING_OF_THE_CAIRNSMAN, "The Ring of the Cairnsman", WORLD, Vector2(64.0, -262.0), 48.0, PackedStringArray(["dover_slap_bridge"]))
 	# The classic instances: the walled hub, and the expedition with its three zones end to end.
 	_map_zone(&"hub_bramble_bridge", "Bramble-Bridge", &"hub_town", Vector2(0.0, 0.0), 70.0, PackedStringArray())
-	_map_zone(&"expedition_moss_oak_hollow", "Moss-Oak-Hollow", &"dungeon_dojo", Vector2(0.0, 52.0), 40.0,
+	_map_zone(&"expedition_moss_oak_hollow", "Moss-Oak Hollow", &"dungeon_dojo", Vector2(0.0, 52.0), 40.0,
 		PackedStringArray(["expedition_dover_slap_bridge"]))
-	_map_zone(&"expedition_dover_slap_bridge", "Dover-Slap-Bridge", &"dungeon_dojo", Vector2(0.0, -5.0), 20.0,
+	_map_zone(&"expedition_dover_slap_bridge", "Doverslap Bridge", &"dungeon_dojo", Vector2(0.0, -5.0), 20.0,
 		PackedStringArray(["expedition_moss_oak_hollow", "expedition_ring_of_the_cairnsman"]))
 	_map_zone(&"expedition_ring_of_the_cairnsman", "The Ring of the Cairnsman", &"dungeon_dojo", Vector2(0.0, -52.0), 26.0,
 		PackedStringArray(["expedition_dover_slap_bridge"]))
@@ -634,7 +634,7 @@ static func _map_zone(id: StringName, label: String, instance: StringName, cente
 	made.world_radius_m = radius
 	made.connects_to_zone_ids = leads_to
 	var look: ZoneBiomeResource = biome(biome_for_place(label)) if biome_for_place(label) != &"" else _biomes.get(id, null)
-	if look == null and label == "Dover-Slap-Bridge":
+	if look == null and label == "Doverslap Bridge":
 		look = _biomes.get(DOVER_SLAP_FALLS, null)
 	if look != null:
 		made.cooper_sign_title = look.cooper_sign_title

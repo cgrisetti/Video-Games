@@ -25,7 +25,7 @@ Every feature in the Caldera Isles had to earn its place **twice**: once as rigo
        `| (West Strait - Seam 1)  | (Crown Landing - Seam 4)| (Eel Spit - Seam 2)`  
        `+--------------------+    |    +--------------------+`  
                             `|    |    |`  
-                         `[ S: OAKSHIRE HOLM ]`  
+                         `[ S: MILLER'S OAK ]`  
                         `(Lv 1-6 | Warm Hearth)`  
                      `Hearthstead Hub & North Quay`  
                      `(+ Old Quay Market at -6m Ebb)`
@@ -34,14 +34,14 @@ Every feature in the Caldera Isles had to earn its place **twice**: once as rigo
 
 | Legacy Concept / File (Deprecated) | Status | Evolved Replacement in Master Atlas V1 | Asset & Code Reuse Strategy |
 | :---- | :---- | :---- | :---- |
-| **Landlocked Oakshire Vale** (Wayfarer's Rest, Bramble-Wood, Whispering Fen) | **Deprecated Layout** | **Oakshire Holm (Zone 1, South Isle)**: A coastal volcanic ash-loam crescent framing the southern rim of the Sound. | Reuse OakshireTerrainGenerator.cs height/splat math, reshaped into a south-sloping lee-shore island with northern harbor cliffs and a submerged Old Quay shelf. |
+| **Landlocked Oakshire Vale** (Wayfarer's Rest, Bramble-Wood, Whispering Fen) | **Deprecated Layout** | **Miller's Oak (Zone 1, South Isle)**: A coastal volcanic ash-loam crescent framing the southern rim of the Sound. | Reuse OakshireTerrainGenerator.cs height/splat math, reshaped into a south-sloping lee-shore island with northern harbor cliffs and a submerged Old Quay shelf. |
 | **Wayfarer's Rest Village** | **Renamed & Refocused** | **Hearthstead Market & North Quay**: Hearthstead sits in the sheltered central-east orchard basin; North Quay sits on the northern caldera shore. | Reuse all Timber-Frame Village Kits, Tavern/Smithy props, and NPC schedules; bind the 3 empty market stalls to the 3 Friction Isle Beacon booleans. |
-| **Bramble-Hollow / Deep-Root Burrows** | **Consolidated** | **Root-Sanctum (SW Oakshire Holm)**: The single Zone 1 Capstone Grove/Barrow (Lv 5-6). | Reuse Elder Stone Kit, corrupted root meshes, and the Lv 6 boss encounter to trigger the breaking of the trade lanes. |
+| **Bramble-Hollow / Deep-Root Burrows** | **Consolidated** | **Root-Sanctum (SW Miller's Oak)**: The single Zone 1 Capstone Grove/Barrow (Lv 5-6). | Reuse Elder Stone Kit, corrupted root meshes, and the Lv 6 boss encounter to trigger the breaking of the trade lanes. |
 | **Root-Ways (3 Underground Fast-Travel Tunnels)** | **Deleted (Musk Razor)** | **3 Spokes from North Quay**: Walkable *West Strait*, walkable *Eel Spit*, and the *Salt Road* Skiff Bell. | Saves 3 entire tunnel map files and 6 load seams. |
 | **4 Viaducts & 4 Tethers to the Center** | **Deleted (Musk Razor)** | **1 Crown Landing (South Bay of The Crown)**: Unlocked only when all 3 Friction Isle Beacons are lit. | Cuts 7 transition triggers down to 1 canonical skiff seam (Seam 4). |
-| **Perimeter Inter-Island Ferries** (*Ore Ferry*, *Cod Run*, *4-Bell Chime Ring*) | **Deleted (Musk Razor)** | **Hub-and-Spoke Return Loop**: All lanes route through Oakshire Holm. No direct Iron-to-Barrow lane. | Forces the party to return home between islands, sell loot, and witness Hearthstead Market physically upgrade. |
+| **Perimeter Inter-Island Ferries** (*Ore Ferry*, *Cod Run*, *4-Bell Chime Ring*) | **Deleted (Musk Razor)** | **Hub-and-Spoke Return Loop**: All lanes route through Miller's Oak. No direct Iron-to-Barrow lane. | Forces the party to return home between islands, sell loot, and witness Hearthstead Market physically upgrade. |
 | **3 Interior Gate Dungeons on The Crown** | **Deleted (Musk Razor)** | **3 Open-Air Shore Trials** (*Trial of the Anvil*, *Trial of the Gale*, *Trial of the Tide*). | Saves 3 instanced dungeon scenes; reuses existing island environmental hazards on the Crown's outer shores. |
-| **Concord Harbor (2nd Town on The Crown)** | **Deleted (Musk Razor)** | **Lantern-Bearers' Waypost**: A single campfire, anvil, and quartermaster at the Crown's South Bay Landing. | Preserves the sacred mystery of the final island and prevents splitting town traffic away from Oakshire Holm. |
+| **Concord Harbor (2nd Town on The Crown)** | **Deleted (Musk Razor)** | **Lantern-Bearers' Waypost**: A single campfire, anvil, and quartermaster at the Crown's South Bay Landing. | Preserves the sacred mystery of the final island and prevents splitting town traffic away from Miller's Oak. |
 | **11–12 Streaming Load Seams** | **Deleted (Musk Razor)** | **Exactly 4 Load Seams** driven by **1 Seam Scene with 2 Visual Skins** (*Causeway Walk* & *Lantern-Skiff*). | Reuses ZoneStreamer.cs and OriginShifter.cs with deterministic memory unloading between the 5 island grids. |
 
 ## **2\. MACRO-ARCHIPELAGO ARCHITECTURE: THE CALDERA ISLES**
@@ -53,7 +53,7 @@ The entire archipelago is a single **collapsed volcanic caldera** approximately 
 > 1. **The North-West Breach & Rime-Firth (North Isle, Lv 10–14):** The sea broke the caldera rim in the north-west. Freezing pelagic currents and gale-force sea-fog pour through the Breach and slam directly into **Rime-Firth's** high basalt cliffs (+120\\text{m} elevation). High altitude plus freezing breach-fog creates perpetual snow, rime-ice, and wind-scoured crags.  
 > 2. **Iron-Ness (West Isle, Lv 6–10):** Situated along the active western magma fracture, hydrothermal plumes pushed ironstone and sulfur-rich ore up through the rock. Its rust-red crags and geothermal vents fuel the great blast-forges of *Forge-Gorge*.  
 > 3. **Barrow-Eyot (East Isle, Lv 8–12):** Here, the eastern caldera rim subsided below the high-water table, turning the ancient burial lowlands into a drowned, mist-shrouded tidal fen of peat channels, willow-marshes, and half-sunken stone towers (*sunken rim / tidal fen*).  
-> 4. **Oakshire Holm (South Isle, Lv 1–6):** Sheltered in the calm southern lee of the caldera, protected from the NW Breach gales by Iron-Ness and The Crown, Oakshire Holm sits atop deep, weathered **volcanic ash-loam**—the most fertile orchard and grain soil in the world.  
+> 4. **Miller's Oak (South Isle, Lv 1–6):** Sheltered in the calm southern lee of the caldera, protected from the NW Breach gales by Iron-Ness and The Crown, Miller's Oak sits atop deep, weathered **volcanic ash-loam**—the most fertile orchard and grain soil in the world.  
 > 5. **The Crown / The Heart-Crag (Center Isle, Lv 15–20):** As calderas do in nature, magma pressure beneath the flooded basin pushed up a **resurgent dome** in the exact center of the Sound. Internal geothermal heat feeds warm freshwater springs at its \+65\\text{m} summit glade, explaining why the colossal **World-Tree** thrives there and nowhere else.
 
 ### **2.2 The 9 Non-Negotiable Macro Laws**
@@ -64,7 +64,7 @@ Every system and quest in Everwood must obey these nine structural rules establi
 > 2. **The Crown as a Dome in the Middle, Seen from Every Quay (Le Guin):** The endgame is a visible promise from Minute 1\. Every harbor in the Sound looks directly at the resurgent dome and the World-Tree.  
 > 3. **Biomes from Rock and Exposure, Not Latitude (Tolkien \+ Hobb):** Four distinct biomes emerge naturally from one geological rule-set (hydrothermal ironstone, high breach-facing basalt, subsided tidal fen, sheltered volcanic ash-loam).  
 > 4. **Trade Lanes that Break at Level 6 (Hobb):** Gives a 9-year-old player an immediate, concrete motivation to leave home (*"The smith has no iron; the lamps have no oil"*). Oakshire grows all the food, while the three Friction Isles produce the iron, lantern-oil, and highland timber—neither side can survive alone.  
-> 5. **Oakshire is the Hub Every Lane Runs Through (Hobb):** Every route radiates from and returns to Oakshire Holm. There is no perimeter ferry between Iron-Ness and Barrow-Eyot (rival guilds and nothing to trade). The party returns home after every expedition, sells loot, and sees Hearthstead change.  
+> 5. **Oakshire is the Hub Every Lane Runs Through (Hobb):** Every route radiates from and returns to Miller's Oak. There is no perimeter ferry between Iron-Ness and Barrow-Eyot (rival guilds and nothing to trade). The party returns home after every expedition, sells loot, and sees Hearthstead change.  
 > 6. **Sheltered Inner Shores, Wild Outer Shores (Le Guin):** One universal level-design law governs every peripheral island: **Quays, Beacons, and Steadings face the calm inner Sound**; **Elites, Cliffs, and Sealed Raid Gates (A, B, C) face the violent Open Sea**. Players never need a compass to know whether they are walking toward safety or danger.  
 > 7. **One Beacon per Friction Isle — One Flag, Three Effects (All Three):** Lighting an island's Beacon sets **one boolean flag** that simultaneously:  
    * Reopens that island's trade lane (spawning a permanent, functional vendor stall in **Hearthstead Market** that the whole co-op party uses with zero free-riding).  
@@ -77,7 +77,7 @@ Every system and quest in Everwood must obey these nine structural rules establi
 
 | Grid ID | Island Name | Compass | Level Band | Calling & Sign | Horizon Landmark (Visible from North Quay) | Beacon Unlocks (Hearthstead Stall) | Bared at the \-6\\text{m} Ebb-Tide |
 | :---- | :---- | :---- | :---- | :---- | :---- | :---- | :---- |
-| **Grid 1** | **Oakshire Holm** | South (S) | \\text{Lv } 1\\text{--}6 | **Warm Hearth** *(Hearth-Wardens)* | **The Great Windmill** (SE Orchard Ridge) | *Starting Larder & Bakery* (Active at \\text{Lv } 1\) | **Old Quay Market** (North Shore Endgame Bazaar) |
+| **Grid 1** | **Miller's Oak** | South (S) | \\text{Lv } 1\\text{--}6 | **Warm Hearth** *(Hearth-Wardens)* | **The Great Windmill** (SE Orchard Ridge) | *Starting Larder & Bakery* (Active at \\text{Lv } 1\) | **Old Quay Market** (North Shore Endgame Bazaar) |
 | **Grid 2** | **Iron-Ness** | West (W) | \\text{Lv } 6\\text{--}10 | **Iron-Root** *(Shield-Sworn)* | **The Twin Forge Stacks** (Forge-Gorge) | **Heavy Smithy & Armor Stall** (*Iron Current* calmed) | **Raid A: Under-Forge Abyss** (Over-delved mine sea-cave) |
 | **Grid 3** | **Barrow-Eyot** | East (E) | \\text{Lv } 8\\text{--}12 | **Star-Tide** *(Lantern-Bearers)* | **The Sunken Bell-Tower** (Cathedral Fen) | **Lantern-Oil & Alchemy Stall** (*Tide Current* calmed) | **Raid C: Sunken Cathedral** (Sea-door of the bell-tower) |
 | **Grid 4** | **Rime-Firth** | North (N) | \\text{Lv } 10\\text{--}14 | **Rime-Gale** *(Wayfarers)* | **The White Horn Snow Peak** (+120\\text{m} Rim) | **Highland Fletcher & Pelts Stall** (*Gale Current* calmed) | **Raid B: Frost-Peak Aerie** (The Whalers' Stair sea-cliff) |
@@ -85,27 +85,27 @@ Every system and quest in Everwood must obey these nine structural rules establi
 
 ### **2.4 The Co-Op Game-Theory Loop & "Scaling Floor" Math**
 
-> * **Phase 1 — Grow Up in Oakshire (\\text{Lv } 1\\text{--}6):** Players awaken on the Lee Shore of Oakshire Holm, learn the core combat loop and the first Sign (*Warm Hearth*), rally at Hearthstead Market, and clear the **Root-Sanctum** (Lv 6). Upon emerging, the **Star-Tide surge** severs all three trade lanes; the beacons on the horizon go dark, and Hearthstead's smith, chandler, and fletcher run out of raw materials.  
+> * **Phase 1 — Grow Up in Oakshire (\\text{Lv } 1\\text{--}6):** Players awaken on the Lee Shore of Miller's Oak, learn the core combat loop and the first Sign (*Warm Hearth*), rally at Hearthstead Market, and clear the **Root-Sanctum** (Lv 6). Upon emerging, the **Star-Tide surge** severs all three trade lanes; the beacons on the horizon go dark, and Hearthstead's smith, chandler, and fletcher run out of raw materials.  
 > * **Phase 2 — The Friction Isles in Any Order (\\text{Lv } 6\\text{--}14):** Players can walk across the **West Strait** causeway to *Iron-Ness* (Lv 6-10), walk the **Eel Spit** shingle bar to *Barrow-Eyot* (Lv 8-12), or ring the **Salt Road** skiff bell at North Quay to sail to *Rime-Firth* (Lv 10-14).  
   * **Nudged, Never Forced:** Material needs naturally suggest the order \\text{Iron-Ness} \\rightarrow \\text{Barrow-Eyot} \\rightarrow \\text{Rime-Firth}.  
   * **The Scaling Floor Rule:** To allow genuine free-choice without one-shotting bold parties who sail north early, each island enforces a **Scaling Floor** with **Flat Level-Delta Compression**: \\text{EffectiveEnemyLevel} \= \\max\\left(\\text{ZoneMinLevel}, \\min(\\text{ZoneMaxLevel}, \\text{PartyAvgLevel})\\right) Crucially, combat damage formulas **never** multiply enemy damage based on level delta—higher-level enemies in Rime-Firth simply possess their base \\text{Lv } 10 health and poise pools, meaning a skilled \\text{Lv } 6 co-op party using coordinated **Four-Sign Detonations** and **Shatterpoint breaks** can triumph if they dare.  
 > * **Phase 3 — The Crown & The Harmonic Bell (\\text{Lv } 15\\text{--}20):** With all 3 Beacons lit, the party sails from North Quay to the **Crown Landing**, conquers the three open-air shore trials in any order (watching a massive bough of the World-Tree blossom in that Sign's color after each trial), ascends the single **Cliff Stair**, and pulls the **Harmonic Bell** together.  
 > * **Phase 4 — The \-6\\text{m} Ebb-Tide Boomerang (\\text{Lv } 20 Raids):** A 10-second cross-archipelago camera sequence shows the sea dropping 6\\text{ meters} across all five islands. **Old Quay Market** emerges on Oakshire's north shore, **Sealed Raids A, B, and C** are bared on the outer coasts of the three Friction Isles, and the **Sea-Door** on the eastern shore of The Crown opens into the bleeding **Sap Galleries** for the 7-Man **True Raid: The Heart**.
 
-## **3\. ZONE 1 DEEP-DIVE: OAKSHIRE HOLM (STARTING ZONE & PERMANENT HUB)**
+## **3\. ZONE 1 DEEP-DIVE: MILLER'S OAK (STARTING ZONE & PERMANENT HUB)**
 
 **Grid Footprint:** 12 \\times 12 Chunks (128\\text{m} \\times 128\\text{m} per chunk \= 1,536\\text{m} \\times 1,536\\text{m} total world area) **Local Coordinate Space:** X \\in \[-768\\text{m}, \+768\\text{m}\], Z \\in \[-768\\text{m}, \+768\\text{m}\] (where \-Z is North toward the Sound and \+Z is South toward the Open Sea) **Level Band:** \\text{Lv } 1\\text{--}6 (Onboarding) \+ \\text{Lv } 6\\text{--}20 (Central Hub & \-6\\text{m} Ebb-Tide Endgame Bazaar) **Native Calling Sign:** **Warm Hearth** (Fire / Vitality / Restoration)
 
 ### **3.1 Topographical & Ecological Profile**
 
-Oakshire Holm is a crescent-shaped southern rim segment of the volcanic caldera.
+Miller's Oak is a crescent-shaped southern rim segment of the volcanic caldera.
 
 > * **The Inner (Northern) Shore (Z \\in \[-768\\text{m}, \-384\\text{m}\]):** Faces the calm waters of **The Sound**. Features sheltered stone harbors (**North Quay**), gentle shingle shelving where the drowned **Old Quay Market** rests just beneath the \+0\\text{m} Star-Tide waterline, and two natural land-pinch spits hooking northwest (**West Strait**) and northeast (**Eel Spit**).  
 > * **The Central Ash-Loam Basin (Z \\in \[-384\\text{m}, \+256\\text{m}\]):** A warm, fertile bowl of dark volcanic soil irrigated by run-off streams from the southern rim. Home to **Hearthstead Market** in the central-east meadow and ancient oak-and-apple orchards across the eastern terrace.  
 > * **The Southern Lee Shore & Windmill Ridge (Z \\in \[+256\\text{m}, \+768\\text{m}\]):** Gentle, sun-drenched terraced hills rising to \+45\\text{m} along the southeastern ridge (crowned by the **Great Windmill**) before dropping to protective basalt sea-bluffs along the southern Open Sea margin.  
 > * **The South-Western Root-Ridge (X \\in \[-640\\text{m}, \-128\\text{m}\], Z \\in \[+128\\text{m}, \+512\\text{m}\]):** An uplifted, tangled spur of ancient caldera rock choked with petrified elder-roots leading into the **Root-Sanctum**.
 
-### **3.2 Oakshire Holm 12 \\times 12 Chunk Map & Coordinate Directory**
+### **3.2 Miller's Oak 12 \\times 12 Chunk Map & Coordinate Directory**
 
       `W (-768m)                                                   E (+768m)`  
 `N     +-------------------------------------------------------------------+`  
@@ -196,7 +196,7 @@ Each Friction Isle occupies a standardized 12 \\times 12 chunk grid (1,536\\text
 > * **Geological Profile:** Hydrothermal ironstone cliffs, steaming sulfur fissures, rust-red scree slopes, and terraced slag-works along the western caldera rim.  
 > * **Core Gameplay Pillar Taught:** **Posture & Shatterpoint Mastery.** Enemies wear heavy slag-iron plating that deflects standard attacks until broken by coordinated Heavy/Stagger strikes and *Iron-Root* tremors.  
 > * **Key Locations:**  
-  1. **West Strait Landing (SE Inner Shore):** Walkable arrival apron from Oakshire Holm (Seam 1).  
+  1. **West Strait Landing (SE Inner Shore):** Walkable arrival apron from Miller's Oak (Seam 1).  
   2. **Forge-Gorge (Central Canyon & Steading):** Built inside a natural basalt chasm where geothermal vents heat the great blast-furnaces. Topped by the **Twin Forge Stacks** landmark.  
   3. **Iron-Point Beacon (East Inner Shore Cliff):** Overlooks the rusty **Iron Current** swirling on the western flank of The Crown. Lighting it sets BeaconIron \= true (reopens Hearthstead Smithy Stall, calms the western current, awards the *Iron-Root* Sign).  
   4. **Raid Gate A — The Under-Forge Abyss (SW Outer Sea-Cliffs):** An over-delved deep-iron mine whose lower haulage shaft breached the Open Sea. Flooded during \\text{Lv } 6\\text{--}19; when the sea drops \-6\\text{m} at the Ebb, a massive iron blast-door is exposed on the dry basalt shelf below the surf.
@@ -207,7 +207,7 @@ Each Friction Isle occupies a standardized 12 \\times 12 chunk grid (1,536\\text
 > * **Geological Profile:** A sunken stretch of the eastern caldera rim where the land subsided into a brackish tidal fen of weeping willows, peat hags, bioluminescent reed-beds, and half-drowned elder barrows.  
 > * **Core Gameplay Pillar Taught:** **Darkness & Cleansing Mastery.** Thick Star-Tide miasma blankets the low fen channels, stacking *Drowned Gloom* unless players maintain overlapping Lantern radii, ignite brazier chains, and time their *Star-Tide* cleanse bursts.  
 > * **Key Locations:**  
-  1. **Eel Spit Landing (SW Inner Shore):** Walkable shingle arrival apron from Oakshire Holm (Seam 2).  
+  1. **Eel Spit Landing (SW Inner Shore):** Walkable shingle arrival apron from Miller's Oak (Seam 2).  
   2. **Lantern Staithe (South-Central Stilt Steading):** A timber boardwalk village suspended on tarred pilings above the fen channels, lit by strings of amber and star-glass lamps.  
   3. **The Sunken Bell-Tower (Central Fen Landmark):** The upper half of a colossal drowned abbey rising out of the central lagoon, visible from North Quay.  
   4. **Eyot Headland Beacon (West Inner Shore):** Overlooks the dark purple **Tide Current** off the eastern shore of The Crown. Lighting it sets BeaconTide \= true (reopens Hearthstead Chandler Stall, calms the eastern current, awards the *Star-Tide* Sign).  
@@ -267,7 +267,7 @@ Each Friction Isle occupies a standardized 12 \\times 12 chunk grid (1,536\\text
 > 7. **The Tree Answers Each Trial (Visible from Home):** Completing a Shore Trial sets its boolean (TrialAnvil, TrialGale, TrialTide) and triggers a shader state on one of the World-Tree's three colossal boughs—blossoming in **Ember-Gold** (West), **Rime-Silver** (North), or **Star-Cyan** (East). Because the horizon impostor in Oakshire reads these exact 3 booleans, a player standing on North Quay can look across the Sound and see which trials have been conquered.  
 > 8. **The Harmonic Bell is Rung Together (Game-Theory Climax):** Hanging beneath the boughs of the World-Tree at the \+65\\text{m} **Summit Glade**, the great bronze **Harmonic Bell** has braided bell-ropes for every active party member. All present players must interact and pull within a 2.5\\text{s} harmonic window—a pure coordination climax that no solo carry can rush and no teammate is left out of.  
 > 9. **Up to Ring, Down to Break:** Ringing the bell triggers the **10-Second Cross-Island Ebb Cinematic**, dropping the sea by \-6\\text{m} across all 5 islands. On The Crown itself, this bares the **Sea-Door** at the base of the eastern Tide Grottos—allowing the party to descend beneath the dome through the bleeding **Sap Galleries** into **The Heart (True Raid)**.  
-> 10. **No Town on The Crown:** Only the **Lantern-Bearers' Waypost** (a campfire, repair anvil, and single supply chest) sits above the South Bay Landing. No NPC town dilutes the silence, awe, or Oakshire Holm's role as the true home hub.
+> 10. **No Town on The Crown:** Only the **Lantern-Bearers' Waypost** (a campfire, repair anvil, and single supply chest) sits above the South Bay Landing. No NPC town dilutes the silence, awe, or Miller's Oak's role as the true home hub.
 
 ### **5.3 The 7 Canonical Areas of The Crown**
 
@@ -313,8 +313,8 @@ To guarantee zero out-of-memory spikes on a 16\\text{ GB} shared-VRAM machine ru
 
 | Seam ID | Route | Skin Mode | Trigger Type | Condition to Traverse |
 | :---- | :---- | :---- | :---- | :---- |
-| **Seam 1** | **Oakshire Holm \\leftrightarrow Iron-Ness** (*West Strait*) | Skin A: Causeway Walk (Basalt bridge & rolling sea-mist) | Walk-in Party Volume at Chunk \[0,0\] | RootSanctumCleared \== true |
-| **Seam 2** | **Oakshire Holm \\leftrightarrow Barrow-Eyot** (*Eel Spit*) | Skin A: Causeway Walk (Shingle spit & lantern-posts) | Walk-in Party Volume at Chunk \[11,0\] | RootSanctumCleared \== true |
+| **Seam 1** | **Miller's Oak \\leftrightarrow Iron-Ness** (*West Strait*) | Skin A: Causeway Walk (Basalt bridge & rolling sea-mist) | Walk-in Party Volume at Chunk \[0,0\] | RootSanctumCleared \== true |
+| **Seam 2** | **Miller's Oak \\leftrightarrow Barrow-Eyot** (*Eel Spit*) | Skin A: Causeway Walk (Shingle spit & lantern-posts) | Walk-in Party Volume at Chunk \[11,0\] | RootSanctumCleared \== true |
 | **Seam 3** | **North Quay \\leftrightarrow Rime-Firth** (*Salt Road*) | Skin B: Lantern-Skiff (6s boat glide across the Sound) | Interactive Skiff Bell on East Pier | RootSanctumCleared \== true |
 | **Seam 4** | **North Quay \\leftrightarrow The Crown** (*Crown Landing*) | Skin B: Lantern-Skiff (6s boat glide to South Bay) | Interactive Skiff Bell on Center Pier | IsCrownLandingUnlocked \== true |
 

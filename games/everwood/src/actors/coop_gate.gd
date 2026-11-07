@@ -1,4 +1,4 @@
-## The Co-Op Threshold at the Dover-Slap Gatehouse (07_EXPEDITION_HUD_AND_ART_GDD.md
+## The Co-Op Threshold at the Doverslap Gatehouse (07_EXPEDITION_HUD_AND_ART_GDD.md
 ## §3, Zone 2). A timber portcullis seals the way to the Ring of the Cairnsman
 ## while the Gorge Gale-Jet sweeps the bridge in front of it. Two ways open it:
 ##   Maker-Seal Plates  stand on the twin plates on the bridge's side bays together

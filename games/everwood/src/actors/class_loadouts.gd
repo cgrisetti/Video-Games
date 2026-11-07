@@ -10,7 +10,7 @@ const SHIELD_TANK: StringName = &"shield_tank"
 const SOUL_TETHER_HEALER: StringName = &"soul_tether_healer"
 const DIRECTIONAL_FLOW_DPS: StringName = &"directional_flow_dps"
 const RAID_BOSS_DUMMY: StringName = &"raid_boss_dummy"
-## Moss-Oak-Hollow's woodland kin (WoodlandMinion), by WoodlandMinion.Kind.
+## Moss-Oak Hollow's woodland kin (WoodlandMinion), by WoodlandMinion.Kind.
 const MINION_CLASSES: Array[StringName] = [&"bramble_scuttler", &"bog_imp"]
 const PLAYER_CLASSES: Array[StringName] = [SHIELD_TANK, SOUL_TETHER_HEALER, DIRECTIONAL_FLOW_DPS]
 ## The boot (21_WINGFEATHER_YOUTH_HERO.md §4): Player 1 starts alone as the

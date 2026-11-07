@@ -12,7 +12,7 @@ Unsworn.
 
 | # | Direction | Source line |
 |---|---|---|
-| 1 | Players begin on **Oakshire Holm (Character Levels 1–5)** as selectable male or female **14-year-old youths**. | §2 ¶1 |
+| 1 | Players begin on **Miller's Oak (Character Levels 1–5)** as selectable male or female **14-year-old youths**. | §2 ¶1 |
 | 2 | Proportion and spirit of *The Wingfeather Saga*'s Igiby children (Janner, Tink, Leeli): earnest, hand-crafted. | §2 ¶1 |
 | 3 | **"Truth of Materials"** (Garrett Taylor): CG puppet rigs with hand-painted storybook textures that carry weight and real peril. No rubbery, inflated cartoon distortion; tactile, hand-worked surfaces (split grain, rawhide stitching, axe-hewn facets). | §2 ¶1 |
 | 4 | A **5.5-head-tall heroic storybook proportion**, readable from the locked **4.8 m camera** in 4-way split-screen. | §2 ¶2 |
@@ -105,7 +105,7 @@ so Level 1 combat is unchanged. The youth starts calm (empty hands at spawn).
 - Look: any player hero whose Calling is Unsworn (the trail before Level 10)
   is a youth; swearing a Calling at Level 10 brings the adult hero. Companions
   are always sworn, so they stay adult.
-- Place: Oakshire Holm, the Lee-Shore Orchards (the doc's Tier 1 source,
+- Place: Miller's Oak, the Lee-Shore Orchards (the doc's Tier 1 source,
   "Cider-Mill & Orchard-Green Homestead"), at the foot of the orchard lane,
   facing up the lane toward the Windmill and Hearthstead Market.
 - A fresh Level 1 run: `-- --save=user://fresh_youth.cfg` (the family save
@@ -158,7 +158,7 @@ so Level 1 combat is unchanged. The youth starts calm (empty hands at spawn).
   `PartyProgress.iron_woodsman_kit()`, `ClassLoadouts.SOLO_BOOT_CALLING /
   _ARMOR / _WEAPON_TYPE` and `--kit=saved` are gone.
 - The start: `IslandBuilder.add_arrival` takes a facing (`arrival_yaws`,
-  `arrival_basis`); seats spread across the facing; Oakshire Holm's orchard
+  `arrival_basis`); seats spread across the facing; Miller's Oak's orchard
   arrival stands Player 1 at (354, 222) on the lane, facing up it
   (`OakshireHolmBuilder.ORCHARD_LANE_FOOT / _UP / ORCHARD_ARRIVAL`).
   `CalderaArchipelagoWorld` uses the facing for the spawn markers and
@@ -189,7 +189,7 @@ so Level 1 combat is unchanged. The youth starts calm (empty hands at spawn).
    game yet (the Equipment & Grimoire branch adds the tier data, not these
    models), so the Wayfarer youth draws the existing Tier 1 Willow-Coppice
    Longbow. Damage stays on `04_BALANCE.md`'s numbers, not the doc's 2.4.
-4. *Youth until sworn.* The doc puts youths on Oakshire Holm (Levels 1–5) and
+4. *Youth until sworn.* The doc puts youths on Miller's Oak (Levels 1–5) and
    says nothing of when they grow up. Here every player stays a youth while
    Unsworn and becomes the grown Calling hero when sworn at Level 10.
 5. *The start spot.* The doc names "Cider-Mill & Orchard-Green Homestead

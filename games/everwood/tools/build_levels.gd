@@ -8,12 +8,12 @@
 ##   no jump needed) and turning a watermill; the village square in the north
 ##   with the Armory & Scribe Desk, the Chime-Shrine, a bakery and pigment
 ##   racks among stepped-gable houses; and the Raid Portal at the forest gate.
-## - The Dover-Slap-Falls Expedition (dungeon_dojo.tscn, 07 GDD §3): Zone 1, the
-##   Moss-Oak-Hollow (a walled clearing, a bramble camp, a side alcove with
+## - The Doverslap Falls Expedition (dungeon_dojo.tscn, 07 GDD §3): Zone 1, the
+##   Moss-Oak Hollow (a walled clearing, a bramble camp, a side alcove with
 ##   the Wayfarer's Chest) and Rush-Light-Hollow (a lane between earthen banks
 ##   under root arches and Wind-Lanterns, the Water-Shrine, the imp camp);
-##   Zone 2, Dover-Slap-Bridge with its waterfall and paper-mill wheel,
-##   and the Dover-Slap Gatehouse with its Co-Op Threshold; Zone 3, a causeway into
+##   Zone 2, Doverslap Bridge with its waterfall and paper-mill wheel,
+##   and the Doverslap Gatehouse with its Co-Op Threshold; Zone 3, a causeway into
 ##   the Ring of the Cairnsman, six pillars round the boss.
 ## - The seamless world (everwood_world.tscn, 10_WORLD_ARCHITECTURE.md): the
 ##   same village and zones as Landblocks, one scene per chunk in
@@ -75,9 +75,9 @@ const SPAWN_PAD_COLORS: Array[Color] = [
 const STONE_COLOR: Color = Color(0.58, 0.56, 0.53)
 const WALL_COLOR: Color = Color(0.48, 0.47, 0.46)
 
-# The Dover-Slap-Falls Expedition (dungeon_dojo.tscn, 07_EXPEDITION_HUD_AND_ART_GDD.md
-# §3). North is -Z: you arrive among Moss-Oak-Hollow in the south, go
-# down Rush-Light-Hollow, over Dover-Slap-Bridge, through the Dover-Slap
+# The Doverslap Falls Expedition (dungeon_dojo.tscn, 07_EXPEDITION_HUD_AND_ART_GDD.md
+# §3). North is -Z: you arrive among Moss-Oak Hollow in the south, go
+# down Rush-Light-Hollow, over Doverslap Bridge, through the Doverslap
 # Gatehouse and along a causeway into the Ring of the Cairnsman in the north.
 const EARTH_COLOR: Color = Color(0.42, 0.33, 0.24)
 const TRAIL_COLOR: Color = Color(0.52, 0.43, 0.3)
@@ -89,7 +89,7 @@ const MUSHROOM_COLOR: Color = Color(0.55, 0.9, 0.75)
 const DRYSTONE_HEIGHT: float = 1.2
 const RAIL_HEIGHT: float = 1.1
 const EXIT_PORTAL_COLOR: Color = Color(0.95, 0.8, 0.4)
-# Zone 1: Moss-Oak-Hollow clearing (x and z bounds).
+# Zone 1: Moss-Oak Hollow clearing (x and z bounds).
 const OAKS_MIN: Vector2 = Vector2(-24.0, 46.0)
 const OAKS_MAX: Vector2 = Vector2(24.0, 90.0)
 const EXPEDITION_SPAWN_Z: float = 82.0
@@ -132,7 +132,7 @@ const WIND_LANTERN_SPOTS: Array[Vector3] = [Vector3(-1.7, 3.3, 41.0), Vector3(1.
 const WATER_SHRINE_POSITION: Vector3 = Vector3(2.7, -1.8, 35.5)
 const CAMP_TWO_POSITION: Vector3 = Vector3(-0.5, -1.8, 26.0)
 const CAMP_TWO_KINDS: Array[int] = [1, 1, 0, 1]
-# Zone 2: Dover-Slap-Bridge and the Dover-Slap Gatehouse.
+# Zone 2: Doverslap Bridge and the Doverslap Gatehouse.
 const CLIFF_HALF_WIDTH: float = 16.0
 const SOUTH_CLIFF_Z: Vector2 = Vector2(6.0, 14.0)
 const NORTH_CLIFF_Z: Vector2 = Vector2(-24.0, -12.0)
@@ -180,7 +180,7 @@ const RAID_PORTAL_COLOR: Color = Color(0.55, 0.5, 1.0)
 const GATE_WIDTH: float = 6.0
 const GATE_HEIGHT: float = 5.0
 const GATE_COLOR: Color = Color(0.42, 0.29, 0.18)
-## Oaks of Moss-Oak-Hollow beyond the north wall, seen through the gate.
+## Oaks of Moss-Oak Hollow beyond the north wall, seen through the gate.
 const GATE_TREES: Array[Vector3] = [Vector3(-2.0, 0.0, -34.0), Vector3(3.5, 0.0, -36.5), Vector3(-6.5, 0.0, -38.0), Vector3(8.0, 0.0, -33.5),
 	Vector3(0.5, 0.0, -41.0), Vector3(-11.0, 0.0, -34.5)]
 const HOUSE_SIZE: Vector3 = Vector3(6.0, 3.6, 5.0)
@@ -268,7 +268,7 @@ const COBBLE_COLOR: Color = Color(0.6, 0.58, 0.54)
 ## The village square's flower planters (hub frame).
 const PLANTER_SPOTS: Array[Vector3] = [Vector3(-4.5, 0.0, -6.0), Vector3(4.5, 0.0, -6.0), Vector3(-4.5, 0.0, -22.0), Vector3(4.5, 0.0, -22.0)]
 ## Chime-Posts (17 GDD §4.2): at the Forest Gate (hub frame), Rush-Light-Hollow's
-## trailhead and the bramble camp's (expedition frame), and Dover-Slap-Bridge's south approach.
+## trailhead and the bramble camp's (expedition frame), and Doverslap Bridge's south approach.
 const GATE_POST: Vector3 = Vector3(4.6, 0.0, -27.0)
 const HOLLOW_POST: Vector3 = Vector3(5.6, 0.0, 48.5)
 const CAMP_POST: Vector3 = Vector3(13.0, 0.0, 69.0)
@@ -379,7 +379,7 @@ func _build_town(root: Node3D, world_mode: bool) -> void:
 	town.add_child(_fountain())
 	for index: int in PLANTER_SPOTS.size():
 		town.add_child(_planter("Planter%d" % (index + 1), PLANTER_SPOTS[index], index))
-	town.add_child(_chime_post("GateChimePost", GATE_POST, "Moss-Oak-Hollow"))
+	town.add_child(_chime_post("GateChimePost", GATE_POST, "Moss-Oak Hollow"))
 	for index: int in LANTERN_SPOTS.size():
 		town.add_child(_lantern("Lantern%d" % (index + 1), LANTERN_SPOTS[index]))
 	_add_canal(town)
@@ -387,7 +387,7 @@ func _build_town(root: Node3D, world_mode: bool) -> void:
 	_add_watermill(town)
 	_add_pigment_rack(town)
 	_add_market_row(town)
-	var portal: Node3D = _portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Dover-Slap-Falls Expedition", RAID_PORTAL_COLOR,
+	var portal: Node3D = _portal("RaidPortal", InstanceManager.DUNGEON_DOJO, "Raid: The Doverslap Falls Expedition", RAID_PORTAL_COLOR,
 		WORLD_RAID_PORTAL_POSITION if world_mode else RAID_PORTAL_POSITION)
 	root.add_child(_entity(portal) if world_mode else portal)
 	var shrine: Node3D = Node3D.new()
@@ -435,7 +435,7 @@ func _add_hub_walls(parent: Node3D, world_mode: bool) -> void:
 			Vector3(side * (GATE_WIDTH * 0.5 + side_length * 0.5), WALL_HEIGHT * 0.5, -half_depth), stone)))
 
 
-## The timber gate out to Moss-Oak-Hollow, behind the Raid Portal: you
+## The timber gate out to Moss-Oak Hollow, behind the Raid Portal: you
 ## see the oaks through it, but the way out is the portal. In the seamless
 ## world it stands open and the trail runs on into the Moss-Oaks' Landblock.
 func _add_forest_gate(parent: Node3D, world_mode: bool) -> void:
@@ -475,7 +475,7 @@ func _add_forest_gate(parent: Node3D, world_mode: bool) -> void:
 		gate.add_child(blocker)
 	var sign_label: Label3D = Label3D.new()
 	sign_label.name = "GateSign"
-	sign_label.text = "To Moss-Oak-Hollow"
+	sign_label.text = "To Moss-Oak Hollow"
 	sign_label.font_size = 40
 	sign_label.outline_size = 10
 	sign_label.pixel_size = 0.01
@@ -783,7 +783,7 @@ func _lantern(lantern_name: String, where: Vector3) -> Node3D:
 	return WorldKitInstance.make(lantern_name, WorldVisualCatalog.KIT_WIND_LANTERN_POST, where, float(absi(hash(lantern_name)) % 4) * PI * 0.5)
 
 
-# --- The Dover-Slap-Falls Expedition ---------------------------------------------
+# --- The Doverslap Falls Expedition ---------------------------------------------
 
 func _build_dojo() -> Node3D:
 	var root: Node3D = Node3D.new()
@@ -839,7 +839,7 @@ func _add_zone_one_entities(root: Node3D, world_mode: bool) -> void:
 	root.add_child(lanterns)
 	for index: int in WIND_LANTERN_SPOTS.size():
 		lanterns.add_child(_scripted("WindLantern%d" % (index + 1), LANTERN_SCRIPT, WIND_LANTERN_SPOTS[index], {}))
-	root.add_child(_chime_post("CampChimePost", CAMP_POST, "Moss-Oak-Hollow"))
+	root.add_child(_chime_post("CampChimePost", CAMP_POST, "Moss-Oak Hollow"))
 	root.add_child(_chime_post("HollowChimePost", HOLLOW_POST, "Rush-Light-Hollow"))
 	var chest_spot: Marker3D = Marker3D.new()
 	chest_spot.name = "WayfarerChestSpot"
@@ -1001,8 +1001,8 @@ func _guide_post(post_name: String, at: Vector3) -> StaticBody3D:
 
 
 ## Zone 2: the cliff edges, the timber-and-stone trestle bridge over the
-## Dover-Slap-Falls (with side bays for the Maker-Seal Plates), the waterfall and the
-## paper-mill wheel, and the Dover-Slap Gatehouse's towers around the CoopGate.
+## Doverslap Falls (with side bays for the Maker-Seal Plates), the waterfall and the
+## paper-mill wheel, and the Doverslap Gatehouse's towers around the CoopGate.
 func _build_gorge(parent: Node3D) -> void:
 	var gorge: Node3D = _node3d("Gorge")
 	parent.add_child(gorge)
@@ -1052,12 +1052,12 @@ func _build_gorge(parent: Node3D) -> void:
 	gorge.add_child(ShapeKit.box("FaceNorth", Vector3(w * 2.0, GORGE_DEPTH, 0.6), Vector3(0.0, -GORGE_DEPTH * 0.5, NORTH_CLIFF_Z.y + 0.3), cliff))
 	for side: float in [-1.0, 1.0]:
 		gorge.add_child(ShapeKit.box("Face%s" % ("West" if side < 0.0 else "East"), Vector3(0.6, GORGE_DEPTH + 8.0, span), Vector3(side * (w + 0.3), -GORGE_DEPTH * 0.5 + 4.0, middle_z), cliff))
-	# The Dover-Slap-Falls: a roaring fall of water down the east side, misting at its foot.
+	# The Doverslap Falls: a roaring fall of water down the east side, misting at its foot.
 	gorge.add_child(ShapeKit.no_shadow(ShapeKit.box("Waterfall", WATERFALL_SIZE, WATERFALL_POSITION, WorldVisualCatalog.water(&"falls", Vector2(0.0, 1.6)))))
 	# The trestle's granite piers and criss-cross timber trusses (17 GDD §4.1).
 	gorge.add_child(WorldKitInstance.make("TrestleDressing", WorldVisualCatalog.KIT_BRIDGE_CARPATHIAN_TRESTLE, Vector3(0.0, 0.0, middle_z), 0.0,
 		{&"size": Vector3(GORGE_BRIDGE_HALF_WIDTH * 2.0, GORGE_DEPTH, span)}))
-	gorge.add_child(_chime_post("BridgeChimePost", BRIDGE_POST, "Dover-Slap-Bridge"))
+	gorge.add_child(_chime_post("BridgeChimePost", BRIDGE_POST, "Doverslap Bridge"))
 	gorge.add_child(_mist("FallMist", WATERFALL_POSITION + Vector3(0.0, -WATERFALL_SIZE.y * 0.4, 1.0), Vector3(3.0, 1.0, 2.0)))
 	gorge.add_child(_mist("FallSpray", WATERFALL_POSITION + Vector3(-1.0, WATERFALL_SIZE.y * 0.45, 0.8), Vector3(2.5, 0.5, 1.0)))
 	var wheel: Node3D = Node3D.new()
@@ -1071,7 +1071,7 @@ func _build_gorge(parent: Node3D) -> void:
 		{&"size": Vector3(4.0, 4.2, 5.0), &"tint": MILL_COLOR, &"accent": ROOF_TINTS[1]}))
 	gorge.add_child(WorldKitInstance.make("MillRace", WorldVisualCatalog.KIT_WATERMILL_WHEEL, MILLWHEEL_POSITION, PI * 0.5,
 		{&"height": WatermillWheel.RADIUS * MILLWHEEL_SCALE}))
-	# The Dover-Slap Gatehouse: two stone towers with carved timber turrets, walls out to the cliff sides.
+	# The Doverslap Gatehouse: two stone towers with carved timber turrets, walls out to the cliff sides.
 	var half_gate: float = CoopGate.PORTCULLIS_WIDTH * 0.5
 	for side: float in [-1.0, 1.0]:
 		var label: String = "West" if side < 0.0 else "East"
@@ -1090,7 +1090,7 @@ func _build_gorge(parent: Node3D) -> void:
 	gorge.add_child(ShapeKit.box("GateLintel", Vector3(CoopGate.PORTCULLIS_WIDTH + 0.6, 0.6, 0.9), Vector3(0.0, CoopGate.PORTCULLIS_HEIGHT + 0.5, GATE_POSITION.z), timber))
 	var gate_sign: Label3D = Label3D.new()
 	gate_sign.name = "GateSign"
-	gate_sign.text = "Dover-Slap Gatehouse"
+	gate_sign.text = "Doverslap Gatehouse"
 	gate_sign.font_size = 52
 	gate_sign.outline_size = 10
 	gate_sign.pixel_size = 0.01

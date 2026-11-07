@@ -7,13 +7,13 @@
 ##     2  the catalog: seven zone profiles, the Four Signs' chords, nine Callings,
 ##        the Cairnsman's suite; every zone's four baked acoustic stems (looping
 ##        Ogg Vorbis, its arrangement's length) in its _sync.tres; and the
-##        fallback: ProceduralChamberSynth playing Moss-Oak-Hollow's score, and a
+##        fallback: ProceduralChamberSynth playing Moss-Oak Hollow's score, and a
 ##        profile with no score, on its physical models
 ##     3  walking the trail picks each chunk's score: Honey-Wick, Bramble-Bridge
 ##        (both on acoustic stems with the folk base and lead at 0 dB, and the
-##        Sanctuary Cadence on arrival), Moss-Oak-Hollow blending into
+##        Sanctuary Cadence on arrival), Moss-Oak Hollow blending into
 ##        Rush-Light-Hollow's discord as the lane sinks (dropped 12 dB under an
-##        E Lydian harp glissando by the water-shrine), Dover-Slap-Falls and the
+##        E Lydian harp glissando by the water-shrine), Doverslap Falls and the
 ##        Ring; the majority of local players wins, a tie going up the trail
 ##     4  the stations' ambience: every emitter on Ambience3D with area_mask = 1
 ##        (the carillon and the gate's plates acoustic), and the campfire's
@@ -116,7 +116,7 @@ func _check_catalog() -> void:
 		fallback_ok = fallback_ok and absf(pcm.size() / 2.0 / ProceduralChamberSynth.MIX_RATE - hollow.loop_sec()) < 0.01 and _loudest(pcm) > 12000
 	for pcm: PackedByteArray in generated:
 		fallback_ok = fallback_ok and absf(pcm.size() / 2.0 / ProceduralChamberSynth.MIX_RATE - bare.loop_sec()) < 0.01 and _loudest(pcm) > 12000
-	check.call(fallback_ok, "the fallback plays Moss-Oak-Hollow's baked score (%d notes) on Karplus-Strong strings, formant reeds, musette reeds and bowed strings, and builds a waltz for a profile with no score" % [
+	check.call(fallback_ok, "the fallback plays Moss-Oak Hollow's baked score (%d notes) on Karplus-Strong strings, formant reeds, musette reeds and bowed strings, and builds a waltz for a profile with no score" % [
 		(snap["score"]["stems"][0] as Array).size() + (snap["score"]["stems"][1] as Array).size() + (snap["score"]["stems"][2] as Array).size() + (snap["score"]["stems"][3] as Array).size()])
 	var chords: Array[String] = []
 	for sign_id: int in [ScribeSignResource.Sign.SIGN_IRON_ROOT, ScribeSignResource.Sign.SIGN_RIME_GALE, ScribeSignResource.Sign.SIGN_WARM_HEARTH,
@@ -160,7 +160,7 @@ func _check_trail(world: EverwoodWorld) -> void:
 		heard_ok.append(absf(director.get_stem_target_db(1) - expected.x) < 0.1 and absf(director.get_stem_target_db(2) - expected.y) < 0.1)
 	check.call(director.get_active_profile_id() == &"moss_oak_hollow" and is_zero_approx(depths[0]) and is_equal_approx(depths[1], 0.2) and is_equal_approx(depths[2], 1.0)
 		and not heard_ok.has(false) and director.get_stem_target_db(2) > -0.1 and director.get_stem_target_db(1) <= -79.0,
-		"down Moss-Oak-Hollow's sunken lane the lead stem hands over to Rush-Light-Hollow's discord on an equal-power curve (depth %.1f, %.1f, %.1f), under the sleeping Hush-Crack's pre-warm (S = %.2f)" % [
+		"down Moss-Oak Hollow's sunken lane the lead stem hands over to Rush-Light-Hollow's discord on an equal-power curve (depth %.1f, %.1f, %.1f), under the sleeping Hush-Crack's pre-warm (S = %.2f)" % [
 			depths[0], depths[1], depths[2], director.proximity])
 	var oasis: Node3D = null
 	for node: Node in tree.get_nodes_in_group(AudioDirector.OASIS_GROUP):
@@ -182,7 +182,7 @@ func _check_trail(world: EverwoodWorld) -> void:
 	_move(people, Vector3(64.0, 6.0, -280.0))
 	director.evaluate_now()
 	check.call(falls == &"dover_slap_falls" and director.get_active_profile_id() == &"ring_of_the_cairnsman",
-		"Dover-Slap-Falls plays its A Dorian march, and the Ring of the Cairnsman its wind-swept D Dorian")
+		"Doverslap Falls plays its A Dorian march, and the Ring of the Cairnsman its wind-swept D Dorian")
 	if people.size() >= 2:
 		people[0].place_at(Transform3D(Basis.IDENTITY, LandblockManifest.TOWN_SQUARE_SPAWN))
 		for index: int in range(1, people.size()):

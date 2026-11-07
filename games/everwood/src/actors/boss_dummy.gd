@@ -1,4 +1,4 @@
-## The Cairnsman of Dover-Slap-Falls (06_WORLD_AND_CALLINGS.md §1): the first raid boss,
+## The Cairnsman of Doverslap Falls (06_WORLD_AND_CALLINGS.md §1): the first raid boss,
 ## an ancient sentinel of stacked river-boulders, heather and weathered bridge
 ## timbers bound with brass bell-ropes: a river-cairn of the First-Quiet that
 ## turned boggart when the bridge was built across his falls
@@ -10,7 +10,7 @@
 ##     Crimson Bloom     (CRIMSON_DODGE_OUT) a red puddle under every player: get out
 ##     Golden Communion  (GOLD_PARTY_SOAK)   a gold circle on one player: stack in to share it
 ## - Phase 2, at half health or less (07 GDD §3, Zone 3), every other cast is the
-##     Dover-Slap Gale-Beam (BLUE_BEHIND_TANK) a 3.2 s lane from the boss to its
+##     Doverslap Gale-Beam (BLUE_BEHIND_TANK) a 3.2 s lane from the boss to its
 ##                       tank: anyone in the tank's Shadow Sanctuary cone (and
 ##                       the tank holding it) takes nothing and earns ½ a pip;
 ##                       anyone else in the lane takes 40 and is knocked back
@@ -32,7 +32,7 @@ signal cast_started(cast_name: String, duration: float)
 ## Health reached zero (on the host, which simulates the boss).
 signal defeated
 
-const DISPLAY_NAME: String = "The Cairnsman of Dover-Slap-Falls"
+const DISPLAY_NAME: String = "The Cairnsman of Doverslap Falls"
 ## Health scales with the party when a fight starts: base + per player.
 const HEALTH_BASE: float = 900.0
 const HEALTH_PER_PLAYER: float = 500.0
@@ -65,7 +65,7 @@ const SOAK_FAIL_DAMAGE: float = 30.0
 const PHASE_TWO_HEALTH: float = 0.5
 ## Seconds from entering Phase 2 to its first Gale-Beam.
 const PHASE_TWO_FIRST_BEAM: float = 1.5
-const BEAM_NAME: String = "Dover-Slap Gale-Beam"
+const BEAM_NAME: String = "Doverslap Gale-Beam"
 const BEAM_CAST_TIME: float = 3.2
 const BEAM_LENGTH: float = 22.0
 const BEAM_WIDTH: float = 4.5

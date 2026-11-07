@@ -1,4 +1,4 @@
-## A woodland kin of the First-Quiet on the Dover-Slap-Falls trail
+## A woodland kin of the First-Quiet on the Doverslap Falls trail
 ## (07_EXPEDITION_HUD_AND_ART_GDD.md §3, Zone 1; 15_THE_MYTHOPOETIC_LENS.md): a
 ## Bramble-Hob, a thorny bramble ball on twig legs, or a Wisp-Boggle, a hunched
 ## moss-grey sprite with lantern eyes. They slumber round their Hush-Crack

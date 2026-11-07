@@ -18,7 +18,7 @@
 ## like a player. Reach comes from the loadout, so a bot plays any kit.
 ## Woken minion camps are fought the same way (the guard and taunt gambits
 ## stay for the boss). Outside a fight the level can send a companion to a
-## spot (a Maker-Seal Plate on Dover-Slap-Bridge), and a companion left far
+## spot (a Maker-Seal Plate on Doverslap Bridge), and a companion left far
 ## behind on the trail skips ahead to the party. Going anywhere further than a
 ## few steps, it follows the navigation map round walls, banks and ledges
 ## (NavSteering; per-chunk meshes in the seamless world, one for the Dojo).
