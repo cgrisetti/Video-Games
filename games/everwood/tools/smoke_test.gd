@@ -459,12 +459,12 @@ func _check_callings() -> void:
 	var empty_binder: Dictionary[StringName, int] = {}
 	var axe_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
 	axe_kit.weapon_id = ArsenalCatalog.HEAVY_AXE
-	_check(LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK, Callings.Secondary.STOUT_HEART), axe_kit, 1, empty_binder).contains("needs a Swift Foot (+DPS) Calling")
+	_check(LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK, Callings.Secondary.STOUT_HEART), axe_kit, 1, empty_binder).contains("needs a Swift Foot (+Striker) Calling")
 		and LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.SHIELD_TANK, Callings.Secondary.SWIFT_FOOT), axe_kit, 1, empty_binder) == "",
 		"a Bridge-Warden can't carry the Greataxe (it needs a Swift Foot); a Weald-Captain can")
 	var plate_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.DIRECTIONAL_FLOW_DPS)
 	plate_kit.armor_id = ArsenalCatalog.IRONWOOD_PLATE
-	_check(LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.DIRECTIONAL_FLOW_DPS), plate_kit, 1, empty_binder).contains("needs a Stout Heart (+Tank)")
+	_check(LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.DIRECTIONAL_FLOW_DPS), plate_kit, 1, empty_binder).contains("needs a Stout Heart (+Defender)")
 		and LoadoutComposer.kit_problem(ClassLoadouts.player_class(ClassLoadouts.DIRECTIONAL_FLOW_DPS, Callings.Secondary.STOUT_HEART), plate_kit, 1, empty_binder) == "",
 		"the heavy ring-coat waits for a Stout Heart: a Hedge-Runner can't wear it, an Iron-Woodsman can")
 	var staff_kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
@@ -3240,7 +3240,7 @@ func _check_chime_shrine() -> void:
 	await _tap_key(KEY_S)
 	await _tap_key(KEY_J)
 	_check(progress.level_of(PartyProgress.STAMINA_REGEN) == 1 and is_equal_approx(keyboard.stats.stats.stamina_regen_per_sec, regen * 1.1),
-		"S then J buys Stamina Regen (+10% stamina per second)")
+		"S then J buys Breath Recovery (+10% stamina per second)")
 	await _tap_key(KEY_W)
 	await _tap_key(KEY_J)
 	_check(progress.level_of(PartyProgress.MAX_HEALTH) == 2 and progress.chimes == chimes - 16, "Max Health level 2 costs 8 Chimes")
@@ -3295,7 +3295,7 @@ func _check_scribe_desk() -> void:
 	_check(menu != null and keyboard.input.menu_open and not keyboard.action_queue.is_busy(), "J at the desk opens it (instead of swinging)")
 	var weapon_before: StringName = keyboard.loadout.weapon.item_id
 	await _tap_key(KEY_D)
-	_check(keyboard.loadout.weapon.item_id == weapon_before and menu.problem().contains("needs a Swift Foot (+DPS) Calling"),
+	_check(keyboard.loadout.weapon.item_id == weapon_before and menu.problem().contains("needs a Swift Foot (+Striker) Calling"),
 		"a Bridge-Warden can't take up the Greataxe: the desk says it needs a Swift Foot Calling")
 	await _tap_key(KEY_W)
 	await _tap_key(KEY_W)
@@ -3316,33 +3316,35 @@ func _check_scribe_desk() -> void:
 	await _tap_key(KEY_A)
 	_check(keyboard.loadout.armor.item_id == ArsenalCatalog.RANGER_LEATHER and is_equal_approx(keyboard.loadout.stats.perfect_guard_window, 0.2),
 		"A on the Armor row trades Iron-Wood Ring-Coat for Hedgerow Wool-Mantle (and its 200 ms window)")
+	# The Forge (22 GDD §2): down past the weapon frame to Promote weapon & offhand, then right.
 	await _tap_key(KEY_S)
 	await _tap_key(KEY_S)
-	for press: int in 6:
-		if keyboard.loadout.kit.lead_copy_key(0) == _dropped_card:
-			break
-		await _tap_key(KEY_D)
-	_check(keyboard.loadout.kit.lead_copy_key(0) == _dropped_card and keyboard.loadout.card_action(0).card_id == ScribeCardResource.copy_card_id(_dropped_card),
-		"the chest's %s goes into the Forward slot" % ArsenalCatalog.current.copy_name(_dropped_card))
-	for press: int in 4:
-		await _tap_key(KEY_S)
+	var forge: PartyProgress = PartyProgress.current
+	var tank_id: StringName = keyboard.loadout.class_id
+	var tier_before: int = forge.promoted_tier(tank_id, PartyProgress.PIECE_WEAPON)
+	var why_not: String = forge.promotion_problem(tank_id, PartyProgress.PIECE_WEAPON)
 	await _tap_key(KEY_D)
-	_check(menu.problem().begins_with("Needs 9 Grimoire Memory") and keyboard.loadout.kit.under_ids[0] == &"",
-		"an Under-Card under that Rare card needs more memory than Lv 2 holds: refused, nothing changes")
-	for press: int in 4:
-		await _tap_key(KEY_W)
-	for press: int in 6:
-		if keyboard.loadout.kit.lead_copy_key(0) == ArsenalCatalog.SHIELD_CHARGE:
-			break
-		await _tap_key(KEY_D)
-	var surged: CombatActionResource = keyboard.loadout.card_action(0)
-	_check(keyboard.loadout.kit.under_ids[0] == ArsenalCatalog.IRON_ROOT_LINK
-		and is_equal_approx(surged.damage, 20.0 * LoadoutComposer.UNDER_POTENCY_MULTIPLIER * _secondary(ArsenalCatalog.SWIFT_FOOT).strike_damage_multiplier),
-		"back on the Basic Shield Charge the link fits: Iron-Root Link surges it by 20% (and the Swift Foot's 15% on top)")
-	for press: int in 5:
-		await _tap_key(KEY_S)
-	await _tap_key(KEY_D)
-	_check(menu.problem().contains("opens at Grimoire Lv 3") and keyboard.loadout.kit.under_ids[1] == &"", "link 2 stays locked until Grimoire Lv 3")
+	await _seconds(0.05)
+	var tier_after: int = forge.promoted_tier(tank_id, PartyProgress.PIECE_WEAPON)
+	var worn_tier: EquipmentTierResource = keyboard.seal.tier() if keyboard.seal != null else null
+	_check(menu.selected == ScribeDeskMenu.ROW_PROMOTE_WEAPON and ((why_not == "" and tier_after == tier_before + 1 and worn_tier != null
+		and worn_tier.tier_index == tier_after) or (why_not != "" and tier_after == tier_before and menu.problem() == why_not)),
+		"the desk's Promote row climbs the weapon one material tier at the Forge when the level allows it (%s), and says why when it doesn't"
+		% ("Tier %d → %d" % [tier_before, tier_after] if why_not == "" else why_not))
+	# Draft a card: three rubbings for a Plain Ink copy of a card the binder lacks.
+	await _tap_key(KEY_S)
+	await _tap_key(KEY_S)
+	var rubbings_were: int = forge.rubbings
+	forge.rubbings = PartyProgress.DRAFT_RUBBINGS
+	var drafted: StringName = menu.draft_choice()
+	await _tap_key(KEY_J)
+	await _seconds(0.05)
+	var got_it: bool = drafted != &"" and forge.copies_of(drafted) == 1 and forge.rubbings == 0
+	if drafted != &"":
+		forge.collection.erase(drafted)
+	forge.rubbings = rubbings_were
+	_check(menu.selected == ScribeDeskMenu.ROW_DRAFT and got_it,
+		"light on Draft a card spends three rubbings on a Plain Ink %s the binder lacked" % (ArsenalCatalog.current.card(drafted).display_name if drafted != &"" else "card"))
 	await _tap_key(KEY_SPACE)
 	_check(hud.scribe_desk_menu() == null and not keyboard.input.menu_open, "Space closes the desk")
 	var saved: EquipmentLoadoutResource = EquipmentLoadoutResource.from_dict(PartyProgress.current.kit_for(ClassLoadouts.SHIELD_TANK))

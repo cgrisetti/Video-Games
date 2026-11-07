@@ -1,7 +1,16 @@
 ## The Armory & Scribe Desk menu, drawn over one player's split-screen cell and
-## driven by that player's own controller (05_ARSENAL_AND_CARDS_GDD.md §2–3):
+## driven by that player's own controller (05_ARSENAL_AND_CARDS_GDD.md §2–3, and
+## the Desk & Forge wireframe of 22_GRIMOIRE_GEAR_LEVELING_AND_MENUS_OVERHAUL.md):
 ## up / down picks a row, left / right (or light) changes it, dodge closes.
-##   Fellowship · Calling · Armor · Weapon · the four lead cards · the four under-card links
+##   Fellowship · Calling · Armor · Weapon · Promote weapon & offhand · Promote
+##   armour · Draft a card
+## Who you are and what your gear is made of. The cards moved to the Binder (tab
+## 2) and the Seals to the Seal Press (tab 4). Promote climbs the Fellowship's
+## material ladder one tier at the Forge once its Character Level opens the next
+## tier (PartyProgress.request_promotion); the Seals and their Marks come across.
+## Draft spends three creature rubbings on a Plain Ink copy of a card the party
+## has none of (PartyProgress.request_draft). There's no trade row: the family
+## shares one binder, so a card one player finds is everyone's already.
 ## The Fellowship (your class) and Calling (07 GDD §1.3) change at once; a new
 ## Fellowship is a new character, and the desk reopens for it. The rest edits
 ## a draft of your kit. Whenever the draft follows the rules (gear your Calling
@@ -17,21 +26,22 @@ const WIDTH: float = 560.0
 const TITLE_SIZE: int = 22
 const FONT_SIZE: int = 15
 const SMALL_FONT_SIZE: int = 12
-const SELECTED_COLOR: Color = Color(0.85, 0.75, 1.0)
-const LOCKED_COLOR: Color = Color(0.6, 0.6, 0.66)
-const PROBLEM_COLOR: Color = Color(1.0, 0.55, 0.45)
-const GOOD_COLOR: Color = Color(0.6, 1.0, 0.65)
-const PANEL_COLOR: Color = Color(0.07, 0.06, 0.1, 0.93)
-const BORDER_COLOR: Color = Color(0.72, 0.55, 1.0)
+## The living storybook atelier look (AtelierTheme, 22 GDD §3).
+const SELECTED_COLOR: Color = AtelierTheme.GOLD
+const LOCKED_COLOR: Color = AtelierTheme.INK_DIM
+const PROBLEM_COLOR: Color = AtelierTheme.BAD
+const GOOD_COLOR: Color = AtelierTheme.GOOD
+const BORDER_COLOR: Color = AtelierTheme.GILT
 const NOTE_TIME: float = 2.5
 const ROW_FELLOWSHIP: int = 0
 const ROW_CALLING: int = 1
 const ROW_ARMOR: int = 2
 const ROW_WEAPON: int = 3
-const ROW_FIRST_LEAD: int = 4
-const ROW_FIRST_LINK: int = 8
-const ROW_CLOSE: int = 12
-const ROW_COUNT: int = 13
+const ROW_PROMOTE_WEAPON: int = 4
+const ROW_PROMOTE_ARMOR: int = 5
+const ROW_DRAFT: int = 6
+const ROW_CLOSE: int = 7
+const ROW_COUNT: int = 8
 
 var actor: ActorBase
 var selected: int = ROW_WEAPON
@@ -48,6 +58,8 @@ var _detail: Label
 var _note: Label
 var _hint: Label
 var _note_left: float = 0.0
+## The card the Draft row would draft (an index into draft_options()).
+var _draft_pick: int = 0
 
 
 ## `start_row` reopens the desk where it was (after a Fellowship change); -1 starts on the Weapon row.
@@ -67,20 +79,14 @@ func _ready() -> void:
 	grow_vertical = Control.GROW_DIRECTION_BOTH
 	custom_minimum_size = Vector2(WIDTH, 0.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = PANEL_COLOR
-	style.border_color = BORDER_COLOR
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
-	style.set_content_margin_all(12.0)
-	add_theme_stylebox_override(&"panel", style)
+	add_theme_stylebox_override(&"panel", AtelierTheme.page_style())
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override(&"separation", 2)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(column)
 	var title: Label = _label(TITLE_SIZE)
-	title.text = "ARMORY & SCRIBE DESK"
-	title.modulate = BORDER_COLOR.lightened(0.3)
+	title.text = "THE ARMORY & SCRIBE DESK"
+	title.modulate = BORDER_COLOR.lightened(0.2)
 	column.add_child(title)
 	_header = _label(SMALL_FONT_SIZE)
 	column.add_child(_header)
@@ -95,7 +101,7 @@ func _ready() -> void:
 	_note = _label(FONT_SIZE)
 	column.add_child(_note)
 	_hint = _label(SMALL_FONT_SIZE)
-	_hint.modulate = Color(0.8, 0.82, 0.9)
+	_hint.modulate = AtelierTheme.INK_MUTED
 	column.add_child(_hint)
 	if actor != null:
 		_sync_from_actor()
@@ -144,12 +150,67 @@ func move_cursor(step: int) -> void:
 	_refresh()
 
 
-## Light changes the row (forward through its options), or closes on Close.
+## Light changes the row (forward through its options), drafts on the Draft row, or closes on Close.
 func accept() -> void:
 	if selected == ROW_CLOSE:
 		close()
+	elif selected == ROW_DRAFT:
+		draft_card()
 	else:
 		cycle(1)
+
+
+# --- The Forge and the rubbings -------------------------------------------------
+
+## Promotes a piece (PartyProgress.PIECE_WEAPON or PIECE_ARMOR) one material tier through the host,
+## or says why it can't. Returns whether the host was asked.
+func promote(piece: StringName) -> bool:
+	var progress: PartyProgress = PartyProgress.current
+	var class_id: StringName = actor.loadout.class_id
+	_problem = progress.promotion_problem(class_id, piece)
+	if _problem != "":
+		AudioCues.play(&"refuse")
+		_refresh()
+		return false
+	var reached: EquipmentTierResource = ArsenalCatalog.current.tier_at(progress.promoted_tier(class_id, piece) + 1)
+	progress.request_promotion(class_id, piece)
+	AudioCues.play(&"equip")
+	_show_note("Promoted to %s at the Forge" % reached.weapon_material_name, true)
+	_refresh()
+	return true
+
+
+## The cards three rubbings could draft: every lead card the party has no copy of.
+func draft_options() -> Array[StringName]:
+	var choices: Array[StringName] = []
+	for card: ScribeCardResource in ArsenalCatalog.current.cards():
+		if card.is_lead() and PartyProgress.current.best_finish(card.card_id) < 0:
+			choices.append(card.card_id)
+	return choices
+
+
+## The card the Draft row shows now, or &"".
+func draft_choice() -> StringName:
+	var choices: Array[StringName] = draft_options()
+	return choices[clampi(_draft_pick, 0, choices.size() - 1)] if not choices.is_empty() else &""
+
+
+## Spends three rubbings on a Plain Ink copy of the Draft row's card. Returns whether the host was asked.
+func draft_card() -> bool:
+	var progress: PartyProgress = PartyProgress.current
+	var card_id: StringName = draft_choice()
+	if card_id == &"" or not progress.can_draft(card_id):
+		_problem = "Needs %d rubbings (you have %d)" % [PartyProgress.DRAFT_RUBBINGS, progress.rubbings] if card_id != &"" \
+			else "The binder already holds every card"
+		AudioCues.play(&"refuse")
+		_refresh()
+		return false
+	progress.request_draft(card_id)
+	_problem = ""
+	AudioCues.play(&"card_chime")
+	_show_note("Drafted a Plain Ink %s" % ArsenalCatalog.current.card(card_id).display_name, true)
+	_refresh()
+	return true
 
 
 func close() -> void:
@@ -195,6 +256,17 @@ func cycle(step: int) -> void:
 	if selected == ROW_CALLING:
 		_cycle_calling(step)
 		return
+	if selected == ROW_PROMOTE_WEAPON or selected == ROW_PROMOTE_ARMOR:
+		if step > 0:
+			promote(PartyProgress.PIECE_WEAPON if selected == ROW_PROMOTE_WEAPON else PartyProgress.PIECE_ARMOR)
+		return
+	if selected == ROW_DRAFT:
+		var choices: Array[StringName] = draft_options()
+		if not choices.is_empty():
+			_draft_pick = wrapi(_draft_pick + step, 0, choices.size())
+			AudioCues.play(&"menu_move")
+		_refresh()
+		return
 	var options: Array[StringName] = options_for(selected)
 	if options.is_empty():
 		return
@@ -231,9 +303,7 @@ func _cycle_calling(step: int) -> void:
 	NetworkManager.current.update_local_calling(actor.device_id, Callings.id_of(next))
 
 
-## What a row can be set to: item ids (those the trail has opened), lead-card
-## copy keys (starter cards plus every copy in the binder that fits the slot;
-## R and L+R can also be left un-inked, ""), or under-card ids ("" = empty).
+## What a row can be set to: item ids (those the trail has opened).
 func options_for(row: int) -> Array[StringName]:
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
 	var options: Array[StringName] = []
@@ -246,22 +316,6 @@ func options_for(row: int) -> Array[StringName]:
 		for item: EquipmentItemResource in catalog.weapons():
 			if item.required_level <= trail_level:
 				options.append(item.item_id)
-	elif _is_lead_row(row):
-		var slot: int = row - ROW_FIRST_LEAD
-		if LoadoutComposer.can_stay_uninked(slot):
-			options.append(&"")
-		for card: ScribeCardResource in catalog.lead_cards(slot):
-			if not LoadoutComposer.fits_slot(_player_class, card, slot):
-				continue
-			for variant: int in ScribeCardResource.CardVariant.size():
-				var key: StringName = ScribeCardResource.copy_key(card.card_id, variant as ScribeCardResource.CardVariant)
-				if LoadoutComposer.owns(key, 1, PartyProgress.current.collection):
-					options.append(key)
-	elif _is_link_row(row):
-		options.append(&"")
-		for card: ScribeCardResource in catalog.under_cards():
-			if LoadoutComposer.owns(card.card_id, 1, PartyProgress.current.collection):
-				options.append(card.card_id)
 	return options
 
 
@@ -270,11 +324,6 @@ func _current_option(row: int) -> StringName:
 		return draft.armor_id
 	if row == ROW_WEAPON:
 		return draft.weapon_id
-	if _is_lead_row(row):
-		var slot: int = row - ROW_FIRST_LEAD
-		return draft.lead_copy_key(slot) if draft.lead_ids[slot] != &"" else &""
-	if _is_link_row(row):
-		return draft.under_ids[row - ROW_FIRST_LINK]
 	return &""
 
 
@@ -283,12 +332,6 @@ func _set_option(row: int, option: StringName) -> void:
 		draft.armor_id = option
 	elif row == ROW_WEAPON:
 		draft.weapon_id = option
-	elif _is_lead_row(row):
-		var slot: int = row - ROW_FIRST_LEAD
-		draft.lead_ids[slot] = ScribeCardResource.copy_card_id(option) if option != &"" else &""
-		draft.lead_variants[slot] = ScribeCardResource.copy_variant(option) if option != &"" else ScribeCardResource.CardVariant.STANDARD
-	elif _is_link_row(row):
-		draft.under_ids[row - ROW_FIRST_LINK] = option
 
 
 func _on_kit_refused(device_id: int, reason: String) -> void:
@@ -306,15 +349,17 @@ func _refresh() -> void:
 	if draft == null:
 		return
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
-	var level: int = PartyProgress.current.grimoire_level()
-	_header.text = "Grimoire Lv %d  ·  Memory %d / %d  ·  Under-Card links open: %d of %d" % [level, LoadoutComposer.memory_used(draft),
-		LoadoutComposer.memory_capacity(level, _player_class.bonus_memory), LoadoutComposer.under_slots(level), EquipmentLoadoutResource.SLOT_COUNT]
+	var progress: PartyProgress = PartyProgress.current
+	var level: int = progress.character_level(actor.loadout.class_id)
+	var tier: EquipmentTierResource = actor.seal.tier() if actor.seal != null else null
+	var rank: int = tier.gear_threat_rank if tier != null else 0
+	_header.text = "Lv %d  ·  Steward Threat %d  ·  %d rubbings  ·  %d Chimes  ·  Cards in the Binder, Seals in the Seal Press" % [level,
+		progress.steward_threat(actor.loadout.class_id, rank), progress.rubbings, progress.chimes]
 	for row: int in ROW_COUNT:
 		var label: Label = _rows[row]
 		var cursor: String = "▶ " if row == selected else "   "
 		label.text = cursor + _row_text(row, level)
-		var locked: bool = _is_link_row(row) and not LoadoutComposer.under_link_open(row - ROW_FIRST_LINK, level, PartyProgress.current.trail_level())
-		label.modulate = SELECTED_COLOR if row == selected else (LOCKED_COLOR if locked else Color.WHITE)
+		label.modulate = SELECTED_COLOR if row == selected else (LOCKED_COLOR if _row_shut(row) else AtelierTheme.INK)
 	if _problem != "":
 		_detail.text = _problem
 		_detail.add_theme_color_override(&"font_color", PROBLEM_COLOR)
@@ -340,22 +385,42 @@ func _row_text(row: int, level: int) -> String:
 	if row == ROW_ARMOR:
 		return "Armor:  %s%s" % [_item_name(draft.armor_id), _lock_note(draft.armor_id)]
 	if row == ROW_WEAPON:
-		return "Weapon:  %s%s" % [_item_name(draft.weapon_id), _lock_note(draft.weapon_id)]
-	if _is_lead_row(row):
-		var slot: int = row - ROW_FIRST_LEAD
-		if draft.lead_ids[slot] == &"":
-			return "%s card:  un-inked (%s)" % [ScribeCardResource.SLOT_NAMES[slot], _flourish_name(slot)]
-		return "%s card:  %s" % [ScribeCardResource.SLOT_NAMES[slot], catalog.copy_name(draft.lead_copy_key(slot))]
-	if _is_link_row(row):
-		var link: int = row - ROW_FIRST_LINK
-		var trail_level: int = PartyProgress.current.trail_level()
-		if trail_level < ArsenalCatalog.UNDER_TUCK_LEVEL:
-			return "Link %d:  locked (Level %d)" % [link + 1, ArsenalCatalog.UNDER_TUCK_LEVEL]
-		if not LoadoutComposer.under_link_open(link, level, trail_level):
-			return "Link %d:  locked (Grimoire Lv %d)" % [link + 1, link + 2]
-		var under: ScribeCardResource = catalog.card(draft.under_ids[link])
-		return "Link %d:  %s" % [link + 1, under.display_name if under != null else "empty"]
+		return "Weapon frame:  %s%s" % [_item_name(draft.weapon_id), _lock_note(draft.weapon_id)]
+	if row == ROW_PROMOTE_WEAPON or row == ROW_PROMOTE_ARMOR:
+		return _promote_row_text(row)
+	if row == ROW_DRAFT:
+		var card_id: StringName = draft_choice()
+		if card_id == &"":
+			return "Draft a card:  the binder holds every card"
+		return "Draft a card:  %d rubbings → Plain Ink %s  (you have %d)" % [PartyProgress.DRAFT_RUBBINGS, catalog.card(card_id).display_name,
+			PartyProgress.current.rubbings]
 	return "Close"
+
+
+## "Promote weapon & offhand:  Forge-Iron → Barrow-Steel", or why not yet.
+func _promote_row_text(row: int) -> String:
+	var progress: PartyProgress = PartyProgress.current
+	var piece: StringName = PartyProgress.PIECE_WEAPON if row == ROW_PROMOTE_WEAPON else PartyProgress.PIECE_ARMOR
+	var heading: String = "Promote weapon & offhand" if row == ROW_PROMOTE_WEAPON else "Promote armour"
+	var now: int = progress.promoted_tier(actor.loadout.class_id, piece)
+	var from: EquipmentTierResource = ArsenalCatalog.current.tier_at(now)
+	if now >= EquipmentTierResource.TIER_COUNT:
+		return "%s:  %s, the top of the ladder" % [heading, from.weapon_material_name]
+	var to: EquipmentTierResource = ArsenalCatalog.current.tier_at(now + 1)
+	var problem: String = progress.promotion_problem(actor.loadout.class_id, piece)
+	return "%s:  %s → %s%s" % [heading, from.weapon_material_name, to.weapon_material_name, ("  ·  " + problem) if problem != "" else ""]
+
+
+## Whether a row can't be used yet (drawn dim): a promotion the level hasn't opened, or nothing to draft.
+func _row_shut(row: int) -> bool:
+	if row == ROW_PROMOTE_WEAPON:
+		return PartyProgress.current.promotion_problem(actor.loadout.class_id, PartyProgress.PIECE_WEAPON) != ""
+	if row == ROW_PROMOTE_ARMOR:
+		return PartyProgress.current.promotion_problem(actor.loadout.class_id, PartyProgress.PIECE_ARMOR) != ""
+	if row == ROW_DRAFT:
+		var card_id: StringName = draft_choice()
+		return card_id == &"" or not PartyProgress.current.can_draft(card_id)
+	return false
 
 
 func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
@@ -369,32 +434,39 @@ func _detail_text(row: int, catalog: ArsenalCatalog) -> String:
 			Callings.summary(_player_class.calling)]
 	if row == ROW_ARMOR:
 		var armor: EquipmentItemResource = catalog.item(draft.armor_id)
-		return "%d%% mitigation · %.1f stamina/s · %.1f m roll · %d ms Perfect Guard. %s" % [roundi(armor.mitigation * 100.0),
+		return "%d%% Armor Guard · %.1f Breath Recovery a second · %.1f m roll · %d ms Perfect Guard. %s" % [roundi(armor.mitigation * 100.0),
 			armor.stamina_regen_per_sec, armor.roll_distance, roundi(armor.perfect_guard_window * 1000.0), armor.description]
 	if row == ROW_WEAPON:
-		return catalog.item(draft.weapon_id).description
-	if _is_lead_row(row):
-		var slot: int = row - ROW_FIRST_LEAD
-		var lead: ScribeCardResource = catalog.card(draft.lead_ids[slot])
-		if lead == null:
-			return "No card slotted: the weapon itself swings %s, a raw physical flourish with no seal. Slot a card to imbue it with a Sign." % _flourish_name(slot)
-		var seal: ScribeSignResource = catalog.sign_seal(lead.scribe_sign)
-		return "%s · %s · %s · memory %d. %s" % [seal.display_name, lead.rarity_name(),
-			ScribeCardResource.VARIANT_NAMES[draft.lead_variants[slot]], lead.memory_cost(), lead.description]
-	if _is_link_row(row):
-		var under: ScribeCardResource = catalog.card(draft.under_ids[row - ROW_FIRST_LINK])
-		if under == null:
-			return "Slide an Under-Card beneath this slot's lead card to change it with one verb."
-		return "Memory %d. %s" % [under.memory_cost(), under.description]
+		return "%s A frame keeps its tier when you change it." % catalog.item(draft.weapon_id).description.strip_edges()
+	if row == ROW_PROMOTE_WEAPON or row == ROW_PROMOTE_ARMOR:
+		return _promote_detail(row)
+	if row == ROW_DRAFT:
+		return "For a card the creatures keep not dropping: calm foes leave rubbings, and %d draft a Plain Ink copy of a card the party has none of. ←/→ picks the card, light drafts it." % PartyProgress.DRAFT_RUBBINGS
 	return "Back to Bramble-Bridge."
 
 
-## The weapon's Un-Inked Martial Flourish for R or L+R.
-func _flourish_name(slot: int) -> String:
-	var weapon: EquipmentItemResource = ArsenalCatalog.current.item(draft.weapon_id)
-	if weapon == null:
-		return "a flourish"
-	return weapon.uninked_ult_name if slot == ScribeCardResource.GrimoireSlot.ULTIMATE else weapon.uninked_r_skill_name
+## What a promotion changes: the next tier's numbers against the worn tier's, and what it takes.
+func _promote_detail(row: int) -> String:
+	var progress: PartyProgress = PartyProgress.current
+	var class_id: StringName = actor.loadout.class_id
+	var weapon_row: bool = row == ROW_PROMOTE_WEAPON
+	var now: int = progress.promoted_tier(class_id, PartyProgress.PIECE_WEAPON if weapon_row else PartyProgress.PIECE_ARMOR)
+	if now >= EquipmentTierResource.TIER_COUNT or actor.seal == null or actor.seal.loadout == null:
+		return "Star-Glass and Heart-Crag: nothing finer to forge."
+	var from: EquipmentTierResource = ArsenalCatalog.current.tier_at(now)
+	var to: EquipmentTierResource = ArsenalCatalog.current.tier_at(now + 1)
+	var hand: PlayerLoadoutResource = actor.seal.loadout
+	var tail: String = " Your Seals and their Ink-Binding Marks come across: nothing to farm twice. Opens at Lv %d. Cost %d Chimes." % [to.min_true_level,
+		PartyProgress.PROMOTE_CHIME_COST[now + 1]]
+	if weapon_row:
+		var arch: EquipmentTierResource.WeaponArchetype = hand.weapon_archetype as EquipmentTierResource.WeaponArchetype
+		return "The same frame, re-forged in %s (%s): it never breaks. Light %.1f → %.1f · Heavy %.1f → %.1f · Stagger ×%.2f → ×%.2f · Steward Threat %d → %d.%s" % [
+			to.weapon_material_name, to.weapon_name(arch), from.get_weapon_damage(false, arch), to.get_weapon_damage(false, arch),
+			from.get_weapon_damage(true, arch), to.get_weapon_damage(true, arch), from.posture_multiplier, to.posture_multiplier,
+			progress.steward_threat(class_id, from.gear_threat_rank), progress.steward_threat(class_id, to.gear_threat_rank), tail]
+	var weight: EquipmentTierResource.ArmorWeightClass = hand.armor_weight_class as EquipmentTierResource.ArmorWeightClass
+	return "%s → %s, the weight set by your Fellowship. Armor Guard %d%% → %d%%.%s" % [from.get_armor_display_name(weight),
+		to.get_armor_display_name(weight), from.armor_guard_percent(weight), to.armor_guard_percent(weight), tail]
 
 
 ## "  (needs Swift Foot)" when the Calling can't use an item, else "".
@@ -410,13 +482,6 @@ func _item_name(id: StringName) -> String:
 	var item: EquipmentItemResource = ArsenalCatalog.current.item(id)
 	return item.display_name if item != null else String(id)
 
-
-func _is_lead_row(row: int) -> bool:
-	return row >= ROW_FIRST_LEAD and row < ROW_FIRST_LINK
-
-
-func _is_link_row(row: int) -> bool:
-	return row >= ROW_FIRST_LINK and row < ROW_CLOSE
 
 
 func _show_note(text: String, good: bool) -> void:

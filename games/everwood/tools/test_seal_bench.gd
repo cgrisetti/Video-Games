@@ -6,7 +6,7 @@
 ##     and a level that opens a slot fills a chosen hand's empty slot with the
 ##     Fellowship's starting seal
 ##   - the Reed-Light Scribery's Seal Cards counter sells a seal once for Chimes
-##   - the Binder's "4. Seals & Pocket Cards" tab lists the seven slots beside the
+##   - the Binder's "4. Seal Press" tab lists the three Seals beside the
 ##     live preview, a pressed seal shows on the hero at once and in
 ##     EquipmentSealComponent.loadout, rides the seat and is saved per Fellowship
 ##   - a locked slot and a card the party can't use are refused with a reason
@@ -16,7 +16,7 @@
 extends RefCounted
 
 const Hand = PlayerLoadoutResource.HandSlot
-## A controller id no test pad or real pad uses, for the fresh seat.
+## Where the fresh seat's controller id starts looking (the first free one from here is used).
 const FRESH_SEAT_DEVICE: int = 9
 
 var tree: SceneTree
@@ -192,8 +192,8 @@ func _check_bench(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:
 	var open_rows: int = 0
 	var locked_rows: int = 0
 	var starter_marked: bool = true
-	var rows_ok: bool = binder._seal_rows.size() == PlayerLoadoutResource.HAND_SLOT_COUNT
-	for slot: int in mini(binder._seal_rows.size(), PlayerLoadoutResource.HAND_SLOT_COUNT):
+	var rows_ok: bool = binder._seal_rows.size() == GrimoireBinderPanel.SEAL_ROWS.size()
+	for slot: int in mini(binder._seal_rows.size(), GrimoireBinderPanel.SEAL_ROWS.size()):
 		var text: String = binder._seal_rows[slot].text
 		rows_ok = rows_ok and binder._seal_rows[slot].visible and text.contains(PlayerLoadoutResource.HAND_SLOT_NAMES[slot] + ":")
 		if binder.seal_slot_open(slot):
@@ -209,7 +209,7 @@ func _check_bench(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:
 	check.call(binder.tab == GrimoireBinderPanel.Tab.SEALS and binder.preview_live() and rows_ok and starter_marked
 		and open_rows == PlayerLoadoutResource.seals_open_at_stage(stage) + PlayerLoadoutResource.actives_open_at_stage(stage)
 		and binder.tooltip_text_now().contains(GrimoireBinderPanel.TAB_TOOLTIPS[GrimoireBinderPanel.Tab.SEALS]),
-		"\"4. Seals & Pocket Cards\" lists the seven slots beside the lit preview: %d open at Stage %d (the starting seals marked), %d locked by shape with when they open"
+		"\"4. Seal Press\" lists the three Seals beside the lit preview: %d open at Stage %d (the starting seals marked), %d locked by shape with when they open"
 		% [open_rows, stage, locked_rows])
 	# Down to the off-hand, then right: its next card, on the hero at once.
 	hero.input.menu_input.emit(InputComponent.MENU_UP)
@@ -239,7 +239,7 @@ func _check_bench(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:
 		"the host took the hand: it rides the seat in the roster as Strings and ints and is saved for the %s" % Callings.fellowship_member(seat.class_id))
 	# A locked slot refuses, and the tooltip box says when it opens.
 	var locked_slot: int = -1
-	for slot: int in PlayerLoadoutResource.HAND_SLOT_COUNT:
+	for slot: int in GrimoireBinderPanel.SEAL_ROWS:
 		if not binder.seal_slot_open(slot):
 			locked_slot = slot
 			break
@@ -257,7 +257,8 @@ func _check_bench(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:
 			and hero.seal.loadout.to_network_dict() == before and hero.seal.loadout.card_in_slot(locked_slot) == &"",
 			"the locked %s slot refuses → and a press (\"%s\"); the tooltip box says why: %s" % [PlayerLoadoutResource.HAND_SLOT_NAMES[locked_slot], keyed_refusal, tip.get_slice("\n", 0)])
 	else:
-		check.call(PlayerLoadoutResource.stage_for_true_level(hero.seal.true_level) == PlayerLoadoutResource.STAGE_APEX, "every slot is open only at Stage 4")
+		check.call(GrimoireRules.all_open() or GrimoireRules.seal_open(GrimoireRules.SEAL_OPEN_LEVELS.size() - 1, hero.seal.true_level),
+			"every Seal is open: the mantle Seal at Lv %d, or the classic full kits" % GrimoireRules.SEAL_OPEN_LEVELS[2])
 	# A card the party can't use refuses too.
 	var unusable: StringName = _unusable_card(role, Hand.WEAPON_SEAL)
 	if unusable != &"" and binder.seal_slot_open(Hand.WEAPON_SEAL):
@@ -310,20 +311,27 @@ func _check_save_round_trip(hero: ActorBase, seat: PartyMember) -> void:
 	var fresh_ok: bool = true
 	var fresh_label: String = "no room for a fresh seat"
 	if room:
-		network.request_local_player(FRESH_SEAT_DEVICE, seat.class_id, InputComponent.AssistMode.ADVENTURER)
+		# The first controller id nobody holds (the full smoke test's fake pads sit on high ids too).
+		var fresh_device: int = FRESH_SEAT_DEVICE
+		while network.roster.has(PartyMember.make_player_id(network.local_peer_id(), fresh_device)):
+			fresh_device += 1
+		var fresh_id: StringName = PartyMember.make_player_id(network.local_peer_id(), fresh_device)
+		network.request_local_player(fresh_device, seat.class_id, InputComponent.AssistMode.ADVENTURER)
 		await _frames(3)
-		var fresh_id: StringName = PartyMember.make_player_id(network.local_peer_id(), FRESH_SEAT_DEVICE)
 		var fresh_seat: PartyMember = network.member(fresh_id)
 		var fresh: ActorBase = level.actors.get(fresh_id) as ActorBase
 		fresh_ok = fresh_seat != null and fresh_seat.seal_hand == chosen and fresh != null and fresh.seal != null \
 			and fresh.seal.loadout.offhand_seal_card_id == ArsenalCatalog.CARD_WEST_WIND_PROMISE \
 			and fresh.visuals.seal_state().get("offhand_seal", &"") == ArsenalCatalog.CARD_WEST_WIND_PROMISE
 		fresh_label = "a fresh %s seated now wears it" % Callings.fellowship_member(seat.class_id)
-		network.drop_local_player(FRESH_SEAT_DEVICE)
+		network.drop_local_player(fresh_device)
 		await _frames(3)
-	check.call(not chosen.is_empty() and loaded == chosen and picked == chosen and companion_pick.is_empty() and fresh_ok
-		and hero.seal.loadout.offhand_seal_card_id == ArsenalCatalog.CARD_WEST_WIND_PROMISE and room,
-		"the hand survives a save and a load (the West-Wind off-hand), the next seat of the Fellowship is handed it, companions keep the default, and %s" % fresh_label)
+	var parts: Array[bool] = [not chosen.is_empty(), loaded == chosen, picked == chosen, companion_pick.is_empty(), fresh_ok,
+		hero.seal.loadout.offhand_seal_card_id == ArsenalCatalog.CARD_WEST_WIND_PROMISE, room]
+	var all_ok: bool = not parts.has(false)
+	check.call(all_ok,
+		"the hand survives a save and a load (the West-Wind off-hand), the next seat of the Fellowship is handed it, companions keep the default, and %s%s"
+		% [fresh_label, "" if all_ok else " [parts %s; chosen %s; loaded %s; picked %s; worn off-hand %s]" % [parts, chosen, loaded, picked, hero.seal.loadout.offhand_seal_card_id]])
 
 
 func _check_playtest_saves_nothing(hero: ActorBase, hud: PlayerHUD, seat: PartyMember) -> void:

@@ -268,13 +268,18 @@ func _derive_hand() -> void:
 		loadout_changed.emit(loadout)
 		return
 	var catalog: ArsenalCatalog = ArsenalCatalog.current
+	var compiled: ClassLoadoutResource = actor.loadout
+	var weapon_type: int = compiled.weapon.weapon_type if compiled.weapon != null else EquipmentItemResource.WeaponType.LIGHT_SWORD
+	var calling: CallingResource = Callings.calling(compiled.class_id, compiled.calling)
+	var calling_id: StringName = calling.calling_id if calling != null else compiled.class_id
 	if _custom_hand and loadout != null:
 		loadout.trim_to_stage(progression_stage, true_level)
+		# Its cards stay; its tiers follow the Forge (22 GDD §2: a promotion reaches a chosen hand too).
+		var forged: PlayerLoadoutResource = catalog.default_seal_loadout(compiled.class_id, actor.role(), weapon_type, calling_id, true_level,
+			actor.party_slot, debug_stage_override, true)
+		loadout.equipped_tier_id = forged.equipped_tier_id
+		loadout.armor_tier_id = forged.armor_tier_id
 	else:
-		var compiled: ClassLoadoutResource = actor.loadout
-		var weapon_type: int = compiled.weapon.weapon_type if compiled.weapon != null else EquipmentItemResource.WeaponType.LIGHT_SWORD
-		var calling: CallingResource = Callings.calling(compiled.class_id, compiled.calling)
-		var calling_id: StringName = calling.calling_id if calling != null else compiled.class_id
 		var kept_body: int = loadout.body_type if loadout != null else -1
 		loadout = catalog.default_seal_loadout(compiled.class_id, actor.role(), weapon_type, calling_id, true_level, actor.party_slot,
 			debug_stage_override, true)

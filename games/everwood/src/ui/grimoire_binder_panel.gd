@@ -5,8 +5,12 @@
 ##
 ##   [1. Gear & Weapon]           the hero turning slowly in a lit preview
 ##                                window (the live hero, not a copy), with
-##                                their weapon and its tier, off-hand, armour
-##                                and Calling; change them at the Scribe Desk
+##                                their weapon and its material tier, offhand,
+##                                armour and Calling (change them at the Scribe
+##                                Desk), Steward Threat as a sum (Character Lv
+##                                + the material's rank), what the kit adds up
+##                                to, and the three Seals with their
+##                                Ink-Binding Marks (22 GDD §2, the Gear wireframe)
 ##   [2. Quick Magic-Ink Cards]   the spread it opens on: the HUD's diamonds
 ##                                grow to 2.2x between two pages, Ink Cards
 ##                                (what you do) on the left and Place-Cards
@@ -15,18 +19,21 @@
 ##                                the Ink Card Collection
 ##   [3. Combo Moves]             the directional forms the party knows, with
 ##                                their buttons, and the ones still to learn
-##   [4. Seals & Pocket Cards]    the stamping bench beside the same live
-##                                preview: the three seals pressed on the
-##                                weapon, off-hand and mantle, and the four
-##                                pocket cards (L, its tuck, R, its tuck);
-##                                up / down picks a slot, left / right (or
-##                                light) changes its card among none, the
-##                                Fellowship's starting seal and every seal
-##                                card the party owns; the hero wears it at
-##                                once and the host keeps it for the
-##                                Fellowship (EquipmentSealComponent.choose_hand).
-##                                A slot the ladder hasn't opened is locked and
-##                                says when it opens
+##   [4. Seal Press]              the press beside the same live preview
+##                                (22 GDD R4, the Seals wireframe): the three
+##                                Seals on the weapon, offhand and mantle, each
+##                                saying what it does on that piece (the
+##                                Contextual Slot Rule) and its Marks; up / down
+##                                picks a Seal, left / right (or light) changes
+##                                its card among none, the Fellowship's starting
+##                                seal and every seal card the party owns; the
+##                                hero wears it at once and the host keeps it
+##                                for the Fellowship (EquipmentSealComponent.choose_hand).
+##                                Seals change at a rest point: a Hearth-Brazier
+##                                or the Scribe Desk. A Seal the hero's level
+##                                hasn't opened is locked and says when it opens.
+##                                (The pocket cards left for the Cross: L, R and
+##                                L+R are the socket cards on tab 2.)
 ##
 ## A tooltip box under the tabs says what the tab is for and what the
 ## highlighted row does, in plain words, for a pad as much as the mouse (rows
@@ -53,13 +60,13 @@ signal closed
 
 enum Column { LEAVES, DIAMONDS, PLACES }
 enum Tab { GEAR, CARDS, COMBOS, SEALS, ATLAS }
-const TAB_NAMES: Array[String] = ["1. Gear & Weapon", "2. Quick Magic-Ink Cards", "3. Combo Moves", "4. Seals & Pocket Cards", "Atlas Map"]
+const TAB_NAMES: Array[String] = ["1. Gear & Weapon", "2. Quick Magic-Ink Cards", "3. Combo Moves", "4. Seal Press", "Atlas Map"]
 ## What each tab is for, in the tooltip box and as the tab's mouse tooltip.
 const TAB_TOOLTIPS: Array[String] = [
-	"Your hero, your weapon and what you wear. Change them at the Scribe Desk in town.",
+	"Your hero, your weapon and what you wear. Seals change in the Seal Press at a Hearth-Brazier or the Scribe Desk; weapon and armour at the Scribe Desk.",
 	"Slot Ink Cards into your diamonds: L guards, R is your skill, L+R your big move. A Place-Card framing a card makes it stronger.",
 	"Button patterns your hero has learned. Play one in a row and its last move hits harder.",
-	"Press seal cards onto your weapon, off-hand and mantle, and choose the cards you pull from your pocket after a hit. Your hero wears them at once.",
+	"Press a Seal onto your weapon, offhand and mantle. One card does what its piece is for: hits on the weapon, wards on the offhand, footing on the mantle. Change them at a Hearth-Brazier or the Scribe Desk.",
 	"The Wayfarer's Atlas: where you are, and where to go next.",
 ]
 ## A Place-Card's "when": it rides with the diamond's Ink Card.
@@ -70,6 +77,15 @@ enum GearRow { WEAPON, OFF_HAND, ARMOR, CALLING }
 const SEAL_PRESSED: String = "◆"
 const SEAL_EMPTY: String = "◇"
 const SEAL_LOCKED: String = "▢"
+## The Seal Press's rows: the three Seals (PlayerLoadoutResource.HandSlot's first three).
+const SEAL_ROWS: Array[int] = [PlayerLoadoutResource.HandSlot.WEAPON_SEAL, PlayerLoadoutResource.HandSlot.OFFHAND_SEAL,
+	PlayerLoadoutResource.HandSlot.MANTLE_SEAL]
+## How near a Hearth-Brazier or the Scribe Desk the Seal Press opens (metres).
+const PRESS_REACH: float = 7.0
+const PRESS_SHUT: String = "Seals change at a Hearth-Brazier or the Scribe Desk"
+## The groups the rest points join (HearthCampfire, ScribeDesk).
+const BRAZIER_GROUP: StringName = &"hearth_braziers"
+const DESK_GROUP: StringName = &"scribe_desks"
 ## What each slot of the hand does (PlayerLoadoutResource.HandSlot order); %s is the trigger's key.
 const SEAL_SLOT_TIPS: Array[String] = [
 	"Your weapon's seal: its bonus rides every hit you land.",
@@ -89,14 +105,13 @@ const TOOLTIP_FONT_SIZE: int = 14
 ## The panel is laid out for a cell this big and scales with the player's cell.
 const REFERENCE_SIZE: Vector2 = Vector2(1600.0, 900.0)
 const MIN_FIT: float = 0.45
-const BACKDROP: Color = Color(0.03, 0.03, 0.05, 0.72)
-const PAGE_COLOR: Color = Color(0.13, 0.1, 0.08, 0.94)
-const PAGE_EDGE: Color = Color(0.85, 0.7, 0.42)
-const TOOLTIP_COLOR: Color = Color(0.2, 0.16, 0.1, 0.94)
-const SELECTED_COLOR: Color = Color(1.0, 0.88, 0.5)
-const ROW_COLOR: Color = Color(0.95, 0.92, 0.85)
-const DIM_COLOR: Color = Color(0.6, 0.58, 0.55)
-const PROBLEM_COLOR: Color = Color(1.0, 0.55, 0.45)
+## The living storybook atelier look (AtelierTheme, 22 GDD §3).
+const BACKDROP: Color = AtelierTheme.BACKDROP
+const PAGE_EDGE: Color = AtelierTheme.GILT
+const SELECTED_COLOR: Color = AtelierTheme.GOLD
+const ROW_COLOR: Color = AtelierTheme.INK
+const DIM_COLOR: Color = AtelierTheme.INK_DIM
+const PROBLEM_COLOR: Color = AtelierTheme.BAD
 const HARMONY_COLOR: Color = Color(1.0, 0.85, 0.35)
 const NOTE_TIME: float = 2.5
 ## The middle column's rows, top to bottom: the three diamonds as they sit in the cross, then the Collection.
@@ -237,14 +252,8 @@ func _build_tooltip() -> PanelContainer:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.custom_minimum_size = Vector2(PAGE_WIDTH * 2.6, 0.0)
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = TOOLTIP_COLOR
-	style.border_color = PAGE_EDGE.darkened(0.2)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
-	style.set_content_margin_all(8.0)
-	panel.add_theme_stylebox_override(&"panel", style)
-	_tooltip = _label(TOOLTIP_FONT_SIZE, ROW_COLOR)
+	panel.add_theme_stylebox_override(&"panel", AtelierTheme.tooltip_style())
+	_tooltip = _label(TOOLTIP_FONT_SIZE, AtelierTheme.INK_MUTED)
 	_tooltip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tooltip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tooltip.custom_minimum_size = Vector2(PAGE_WIDTH * 2.6 - 16.0, 0.0)
@@ -277,18 +286,19 @@ func _build_gear_page() -> Control:
 	return row
 
 
-## Tab 4: the stamping bench, a row per slot of the hand: the three seals on the gear, then the four pocket cards.
+## Tab 4: the Seal Press, a row per Seal: weapon, offhand and mantle.
 func _build_seal_bench() -> Control:
-	var page: VBoxContainer = _page("Seals & Pocket Cards")
+	var page: VBoxContainer = _page("Seal Press")
 	var panel: Control = page.get_parent() as Control
 	panel.name = "SealBench"
 	panel.custom_minimum_size = Vector2(PAGE_WIDTH * 1.45, 0.0)
-	for slot: int in PlayerLoadoutResource.HAND_SLOT_COUNT:
-		if slot == PlayerLoadoutResource.HandSlot.WEAPON_SEAL or slot == PlayerLoadoutResource.HandSlot.L_PRIMARY:
-			var heading: Label = _label(SMALL_FONT_SIZE, PAGE_EDGE.lightened(0.15))
-			heading.text = "Seals on your gear" if slot == PlayerLoadoutResource.HandSlot.WEAPON_SEAL else "Pocket cards: pull one after a hit"
-			page.add_child(heading)
+	var heading: Label = _label(SMALL_FONT_SIZE, PAGE_EDGE.lightened(0.15))
+	heading.text = "One card does what its piece is for"
+	page.add_child(heading)
+	for slot: int in SEAL_ROWS:
 		var line: Label = _label(FONT_SIZE, ROW_COLOR)
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		line.custom_minimum_size = Vector2(PAGE_WIDTH * 1.4, 0.0)
 		line.mouse_filter = Control.MOUSE_FILTER_STOP
 		line.gui_input.connect(_on_seal_clicked.bind(slot))
 		page.add_child(line)
@@ -305,7 +315,7 @@ func _build_preview() -> Control:
 	frame.name = "Preview"
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = PAGE_COLOR
+	style.bg_color = AtelierTheme.PAGE
 	style.border_color = PAGE_EDGE
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(8)
@@ -510,14 +520,18 @@ func _on_menu_input(action: StringName) -> void:
 			if action == InputComponent.MENU_UP or action == InputComponent.MENU_DOWN:
 				gear_row = wrapi(gear_row + (-1 if action == InputComponent.MENU_UP else 1), 0, GearRow.size())
 			elif action == InputComponent.MENU_ACCEPT:
-				_show_note("Change your gear at the Scribe Desk in town.")
+				# At a rest point light opens the Seal Press (the Gear wireframe); the gear itself changes at the Scribe Desk.
+				if seal_press_open():
+					show_tab(Tab.SEALS)
+					return
+				_show_note("Change your gear at the Scribe Desk in town. %s." % PRESS_SHUT)
 		Tab.COMBOS:
 			if action == InputComponent.MENU_UP or action == InputComponent.MENU_DOWN:
 				combo_row = wrapi(combo_row + (-1 if action == InputComponent.MENU_UP else 1), 0, maxi(1, _combo_rows.size()))
 		Tab.SEALS:
 			match action:
 				InputComponent.MENU_UP, InputComponent.MENU_DOWN:
-					seal_row = wrapi(seal_row + (-1 if action == InputComponent.MENU_UP else 1), 0, PlayerLoadoutResource.HAND_SLOT_COUNT)
+					seal_row = wrapi(seal_row + (-1 if action == InputComponent.MENU_UP else 1), 0, SEAL_ROWS.size())
 				InputComponent.MENU_LEFT:
 					step_seal(-1)
 				InputComponent.MENU_RIGHT, InputComponent.MENU_ACCEPT:
@@ -779,15 +793,17 @@ func _refresh() -> void:
 		Tab.GEAR:
 			_title.text = "GRIMOIRE BINDER  ·  %s  ·  %d Chimes" % [actor.loadout.display_name, chimes]
 			_refresh_gear()
-			_hint.text = "%s  ·  ↑/↓ look over your gear  ·  dodge or Tab closes" % tabs
+			_hint.text = "%s  ·  ↑/↓ look over your gear  ·  %s  ·  dodge or Tab closes" % [tabs,
+				"light opens the Seal Press" if seal_press_open() else "look only away from a Hearth-Brazier"]
 		Tab.COMBOS:
 			_title.text = "GRIMOIRE BINDER  ·  Combo Moves  ·  %d Chimes" % chimes
 			_refresh_combos()
 			_hint.text = "%s  ·  ↑/↓ choose a move  ·  dodge or Tab closes" % tabs
 		Tab.SEALS:
-			_title.text = "GRIMOIRE BINDER  ·  Seals & Pocket Cards  ·  %d Chimes" % chimes
+			_title.text = "GRIMOIRE BINDER  ·  Seal Press  ·  %d Chimes" % chimes
 			_refresh_seals()
-			_hint.text = "%s  ·  ↑/↓ choose a slot  ·  ←/→ or light change its card  ·  dodge or Tab closes" % tabs
+			_hint.text = ("%s  ·  ↑/↓ choose a Seal  ·  ←/→ or light change it  ·  dodge or Tab closes" if seal_press_open()
+				else "%s  ·  look only: " + PRESS_SHUT + "  ·  dodge or Tab closes") % tabs
 		_:
 			_refresh_cards(chimes, tabs)
 	_tooltip.text = tooltip_text_now()
@@ -827,7 +843,7 @@ func _refresh_gear() -> void:
 	var loadout: ClassLoadoutResource = actor.loadout
 	var weapon: EquipmentItemResource = loadout.weapon
 	var texts: Array[String] = [
-		"Weapon:  %s" % (("%s  (Tier %s)" % [weapon.display_name, CrossGrimoireDiamondWidget.TIER_NUMERALS[clampi(weapon.equipment_tier, 0, 4)]]) if weapon != null else "Hands"),
+		"Weapon:  %s" % _weapon_line(weapon),
 		"Off-hand:  %s" % off_hand_name(loadout),
 		"Armour:  %s" % (loadout.armor.display_name if loadout.armor != null else "None"),
 		"Calling:  %s" % loadout.display_name,
@@ -838,8 +854,45 @@ func _refresh_gear() -> void:
 		row.modulate = SELECTED_COLOR if index == gear_row else ROW_COLOR
 		row.tooltip_text = gear_tooltip(index)
 	if loadout.stats != null:
-		_gear_stats.text = "Health %d  ·  Stamina %d  ·  Perfect guard %.2f s" % [roundi(actor.stats.stats.max_health), roundi(actor.stats.stats.max_stamina),
-			loadout.stats.perfect_guard_window]
+		_gear_stats.text = gear_summary()
+
+
+## The weapon row: the material's own name, the frame, and its tier of seven ("Barrow-Steel Long-Blade  ·  Falchion  (Tier IV of VII)").
+func _weapon_line(weapon: EquipmentItemResource) -> String:
+	if weapon == null:
+		return "Hands"
+	var tier: EquipmentTierResource = actor.seal.tier() if actor.seal != null else null
+	if tier == null:
+		return "%s  (Tier %s)" % [weapon.display_name, CrossGrimoireDiamondWidget.TIER_NUMERALS[clampi(weapon.equipment_tier, 0, 4)]]
+	var arch: EquipmentTierResource.WeaponArchetype = actor.seal.loadout.weapon_archetype as EquipmentTierResource.WeaponArchetype
+	return "%s  ·  %s  (Tier %s of VII)" % [tier.weapon_name(arch), weapon.display_name, CrossGrimoireDiamondWidget.TIER_NUMERALS[tier.tier_index]]
+
+
+## Under the gear rows: Steward Threat as a sum, what the kit adds up to, and each Seal with its Marks.
+func gear_summary() -> String:
+	var lines: PackedStringArray = PackedStringArray()
+	var level: int = PartyProgress.current.character_level(actor.loadout.class_id)
+	var tier: EquipmentTierResource = actor.seal.tier() if actor.seal != null else null
+	var stats: CharacterStatsResource = actor.stats.stats
+	if tier != null:
+		var arch: EquipmentTierResource.WeaponArchetype = actor.seal.loadout.weapon_archetype as EquipmentTierResource.WeaponArchetype
+		var weight: EquipmentTierResource.ArmorWeightClass = actor.seal.loadout.armor_weight_class as EquipmentTierResource.ArmorWeightClass
+		var armour_tier: EquipmentTierResource = ArsenalCatalog.current.get_tier(actor.seal.loadout.armor_tier_id)
+		if armour_tier == null:
+			armour_tier = tier
+		lines.append("Lv %d + %s %+d = Steward Threat %d  ·  Stage %d" % [level, tier.weapon_material_name, tier.gear_threat_rank,
+			PartyProgress.current.steward_threat(actor.loadout.class_id, tier.gear_threat_rank), actor.seal.progression_stage])
+		lines.append("Armor Guard %d%%  ·  Light / Heavy %.1f / %.1f  ·  Stagger ×%.2f" % [armour_tier.armor_guard_percent(weight),
+			tier.get_weapon_damage(false, arch), tier.get_weapon_damage(true, arch), tier.posture_multiplier])
+	lines.append("Health %d  ·  Breath Recovery %.1f / s  ·  Roll %.1f m  ·  Perfect Guard %d ms" % [roundi(stats.max_health),
+		stats.stamina_regen_per_sec, stats.roll_distance, roundi(stats.perfect_guard_window * 1000.0)])
+	if actor.seal != null and actor.seal.loadout != null:
+		for slot: int in SEAL_ROWS:
+			var card_id: StringName = actor.seal.loadout.card_in_slot(slot)
+			var listed: ScribeCardResource = ArsenalCatalog.current.get_card(card_id)
+			if listed != null:
+				lines.append("%s:  %s  ·  %s" % [PlayerLoadoutResource.HAND_SLOT_NAMES[slot], listed.display_name, seal_marks_text(card_id)])
+	return "\n".join(lines)
 
 
 func _refresh_combos() -> void:
@@ -883,6 +936,14 @@ func gear_tooltip(row: int) -> String:
 			var weapon: EquipmentItemResource = loadout.weapon
 			if weapon == null:
 				return "No weapon: your fists."
+			var tier: EquipmentTierResource = actor.seal.tier() if actor.seal != null else null
+			if tier != null:
+				var arch: EquipmentTierResource.WeaponArchetype = actor.seal.loadout.weapon_archetype as EquipmentTierResource.WeaponArchetype
+				var next: int = PartyProgress.current.next_promotion(loadout.class_id, PartyProgress.PIECE_WEAPON)
+				var ahead: String = "Promote it to %s at the Scribe Desk." % ArsenalCatalog.current.tier_at(next).weapon_name(arch) if next > 0 \
+					else PartyProgress.current.promotion_problem(loadout.class_id, PartyProgress.PIECE_WEAPON) + "."
+				return "%s: Tier %d of 7. Light %.1f, Heavy %.1f, stagger ×%.2f. %s" % [tier.weapon_name(arch), tier.tier_index,
+					tier.get_weapon_damage(false, arch), tier.get_weapon_damage(true, arch), tier.posture_multiplier, ahead]
 			var told: String = weapon.description.strip_edges()
 			return told if told != "" else "Tier %d of the trail's four. Higher tiers hit harder." % weapon.equipment_tier
 		GearRow.OFF_HAND:
@@ -906,11 +967,14 @@ func gear_tooltip(row: int) -> String:
 	return ""
 
 
-## The stamping bench's rows: each slot, its card (or none), and the shape that says which.
+## The Seal Press's rows: each Seal, its card (or none), the shape that says which, and what it does on that piece.
 func _refresh_seals() -> void:
 	for slot: int in _seal_rows.size():
 		var line: Label = _seal_rows[slot]
 		line.text = ("> " if slot == seal_row else "  ") + seal_row_text(slot)
+		var effect: String = seal_effect_text(slot)
+		if effect != "":
+			line.text += "\n      " + effect
 		line.modulate = SELECTED_COLOR if slot == seal_row else (ROW_COLOR if seal_slot_open(slot) else DIM_COLOR)
 		line.tooltip_text = seal_tooltip(slot)
 	if actor.seal == null or actor.seal.loadout == null:
@@ -918,8 +982,48 @@ func _refresh_seals() -> void:
 		return
 	var hand: PlayerLoadoutResource = actor.seal.loadout
 	var tier: EquipmentTierResource = actor.seal.tier()
-	_seal_stats.text = "Stage %d · Lv %d · %s gear  ·  %d seals, %d pocket cards" % [actor.seal.progression_stage, actor.seal.true_level,
-		tier.weapon_material_name if tier != null else "Orchard-Wood", hand.seal_count(), hand.active_count()]
+	_seal_stats.text = "Stage %d · Lv %d · %s gear  ·  %d of 3 Seals pressed%s" % [actor.seal.progression_stage, actor.seal.true_level,
+		tier.weapon_material_name if tier != null else "Orchard-Wood", hand.seal_count(), "" if seal_press_open() else "  ·  " + PRESS_SHUT]
+
+
+## What the Seal in a slot does on that piece (the Contextual Slot Rule), or "".
+func seal_effect_text(slot: int) -> String:
+	if not seal_slot_open(slot) or actor.seal.loadout == null:
+		return ""
+	var listed: ScribeCardResource = ArsenalCatalog.current.get_card(actor.seal.loadout.card_in_slot(slot))
+	if listed == null:
+		return ""
+	var flag: int = int(actor.seal.loadout.seal_slots()[slot][0])
+	return String(listed.slot_passive(flag).get("text", "")).strip_edges()
+
+
+## A Seal's finish and its Ink-Binding Marks: "Plain Ink · 62 / 100 Marks", "Gilded Leaf · Ready to Press", "Star-Ink".
+func seal_marks_text(card_id: StringName) -> String:
+	var progress: PartyProgress = PartyProgress.current
+	var finish: int = maxi(progress.best_finish(card_id), 0)
+	var key: StringName = ScribeCardResource.copy_key(card_id, finish as ScribeCardResource.CardVariant)
+	var named: String = ScribeCardResource.VARIANT_NAMES[finish]
+	var needed: int = PartyProgress.marks_needed(key)
+	if needed <= 0:
+		return named
+	if progress.ready_to_press(key):
+		return "%s · Ready to Press" % named
+	return "%s · %d / %d Marks" % [named, progress.marks_of(key), needed]
+
+
+## Whether the Seal Press takes changes here: at a Hearth-Brazier or the Scribe Desk (22 GDD §2),
+## anywhere in the classic full kits the older checks stand in.
+func seal_press_open() -> bool:
+	if GrimoireRules.all_open():
+		return true
+	if not is_instance_valid(actor) or not actor.is_inside_tree():
+		return false
+	for group: StringName in [BRAZIER_GROUP, DESK_GROUP]:
+		for rest: Node in actor.get_tree().get_nodes_in_group(group):
+			var spot: Node3D = rest as Node3D
+			if spot != null and spot.global_position.distance_to(actor.global_position) <= PRESS_REACH:
+				return true
+	return false
 
 
 ## One slot's row: "Off-Hand:  ◆ Seal of the Quiet Weir  [Star-Tide]", "Mantle:  ▢ locked · opens at Stage 3 (Lv 11)".
@@ -933,8 +1037,8 @@ func seal_row_text(slot: int) -> String:
 		return "%s:  %s none" % [slot_name, SEAL_EMPTY]
 	var lent: bool = card_id == ArsenalCatalog.starting_seal_for_slot(actor.role(), slot) \
 		and not ArsenalCatalog.owns_any_finish(card_id, PartyProgress.current.collection)
-	return "%s:  %s %s  [%s]%s" % [slot_name, SEAL_PRESSED, listed.display_name, ArsenalCatalog.current.sign_seal(listed.scribe_sign).display_name,
-		"  (starter)" if lent else ""]
+	return "%s:  %s %s  [%s]%s  ·  %s" % [slot_name, SEAL_PRESSED, listed.display_name, ArsenalCatalog.current.sign_seal(listed.scribe_sign).display_name,
+		"  (starter)" if lent else "", seal_marks_text(card_id)]
 
 
 ## What a slot of the hand does, and what is in it; a locked slot says when it opens.
@@ -943,7 +1047,7 @@ func seal_tooltip(slot: int) -> String:
 		return ""
 	var slot_name: String = PlayerLoadoutResource.HAND_SLOT_NAMES[slot]
 	if not seal_slot_open(slot):
-		return "Locked: the %s slot %s. Your party is Lv %d." % [slot_name, PlayerLoadoutResource.slot_opens_text(slot), actor.seal.true_level]
+		return "Locked: the %s slot %s. Your hero is Lv %d." % [slot_name, PlayerLoadoutResource.slot_opens_text(slot), actor.seal.true_level]
 	var tip: String = SEAL_SLOT_TIPS[slot]
 	if not PlayerLoadoutResource.is_seal_slot(slot):
 		var on_l: bool = slot == PlayerLoadoutResource.HandSlot.L_PRIMARY or slot == PlayerLoadoutResource.HandSlot.L_TUCK
@@ -974,6 +1078,10 @@ func step_seal(step: int) -> bool:
 		return false
 	if not seal_slot_open(seal_row):
 		_show_note("The %s slot %s" % [PlayerLoadoutResource.HAND_SLOT_NAMES[seal_row], PlayerLoadoutResource.slot_opens_text(seal_row)])
+		AudioCues.play(&"refuse")
+		return false
+	if not seal_press_open():
+		_show_note(PRESS_SHUT)
 		AudioCues.play(&"refuse")
 		return false
 	var options: Array[StringName] = seal_options(seal_row)
@@ -1088,10 +1196,23 @@ func fit_line(copy_key: StringName, page_column: int) -> String:
 		draft.set_socket_leaf(selected_socket(), ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
 	else:
 		draft.set_socket_place(selected_socket(), ScribeCardResource.copy_card_id(copy_key), ScribeCardResource.copy_variant(copy_key))
+	# The hero's own level (22 GDD R4): a socket it hasn't opened says when; the hand's rules (one Tuck, seven
+	# different cards) speak through the composer; a fit says what the card costs from the Ink-Well (R1).
+	var level: int = progress.character_level(actor.loadout.class_id)
+	var socket: int = selected_socket()
+	if not GrimoireRules.socket_open(socket, level):
+		return "Not yet (you're Lv %d): %s." % [level, GrimoireRules.socket_opens_text(socket)]
 	var problem: String = LoadoutComposer.kit_problem(_player_class(), draft, progress.grimoire_level(), progress.collection, progress.trail_level())
 	if problem != "":
-		return "Not yet (you're Level %d, Grimoire Lv %d): %s." % [progress.trail_level(), progress.grimoire_level(), problem]
-	return "Ready: it fits your binder at Level %d (Grimoire Lv %d)." % [progress.trail_level(), progress.grimoire_level()]
+		return "Not yet (you're Lv %d): %s." % [level, problem]
+	if page_column == Column.LEAVES:
+		var listed: ScribeCardResource = ArsenalCatalog.current.card(ScribeCardResource.copy_card_id(copy_key))
+		var tucked: bool = socket != GrimoireRules.SOCKET_L and draft.under_ids[ScribeCardResource.GrimoireSlot.SIGNATURE
+			if socket == GrimoireRules.SOCKET_R else ScribeCardResource.GrimoireSlot.ULTIMATE] != &""
+		var cost: int = GrimoireRules.ink_cost(socket, listed, tucked)
+		return "Ready: it fits your hand at Lv %d and costs %d Ink-Drop%s in %s." % [level, cost, "" if cost == 1 else "s",
+			GrimoireRules.SOCKET_NAMES[socket]]
+	return "Ready: it frames this card at Lv %d." % level
 
 
 ## What an option does, in a sentence: its name, how it shows itself and its Ink-Sign, then the card's own words or its effect.
@@ -1261,11 +1382,7 @@ func _page(heading: String) -> VBoxContainer:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(PAGE_WIDTH, 0.0)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = PAGE_COLOR
-	style.border_color = PAGE_EDGE
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
+	var style: StyleBoxFlat = AtelierTheme.page_style()
 	style.set_content_margin_all(12.0)
 	panel.add_theme_stylebox_override(&"panel", style)
 	var column_box: VBoxContainer = VBoxContainer.new()

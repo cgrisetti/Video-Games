@@ -30,14 +30,14 @@ const FONT_SIZE: int = 15
 const SMALL_FONT_SIZE: int = 12
 const REFERENCE_SIZE: Vector2 = Vector2(1600.0, 900.0)
 const MIN_FIT: float = 0.45
-const BACKDROP: Color = Color(0.03, 0.04, 0.06, 0.72)
-const PANEL_COLOR: Color = Color(0.08, 0.09, 0.13, 0.94)
-const EDGE_COLOR: Color = Color(0.55, 0.78, 1.0)
-const SELECTED_COLOR: Color = Color(1.0, 0.88, 0.5)
-const ROW_COLOR: Color = Color(0.95, 0.94, 0.9)
-const DIM_COLOR: Color = Color(0.6, 0.6, 0.64)
-const GOOD_COLOR: Color = Color(0.6, 1.0, 0.65)
-const PROBLEM_COLOR: Color = Color(1.0, 0.55, 0.45)
+## The living storybook atelier look (AtelierTheme, 22 GDD §3), one book with the Binder and the Desk.
+const BACKDROP: Color = AtelierTheme.BACKDROP
+const EDGE_COLOR: Color = AtelierTheme.GILT
+const SELECTED_COLOR: Color = AtelierTheme.GOLD
+const ROW_COLOR: Color = AtelierTheme.INK
+const DIM_COLOR: Color = AtelierTheme.INK_DIM
+const GOOD_COLOR: Color = AtelierTheme.GOOD
+const PROBLEM_COLOR: Color = AtelierTheme.BAD
 const NOTE_TIME: float = 2.5
 
 const Socket = ScribeCardResource.DioramaSocket
@@ -97,11 +97,7 @@ func _ready() -> void:
 	panel.custom_minimum_size = Vector2(LIST_WIDTH, 0.0)
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = PANEL_COLOR
-	style.border_color = EDGE_COLOR
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
+	var style: StyleBoxFlat = AtelierTheme.page_style()
 	style.set_content_margin_all(12.0)
 	panel.add_theme_stylebox_override(&"panel", style)
 	_root.add_child(panel)

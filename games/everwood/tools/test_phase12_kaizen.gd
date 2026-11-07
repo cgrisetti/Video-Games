@@ -334,13 +334,13 @@ func _check_binder_tabs() -> void:
 		check.call(false, "the Grimoire Binder opens on the green")
 		return
 	var Tab: Dictionary = GrimoireBinderPanel.Tab
-	var names_ok: bool = "|".join(GrimoireBinderPanel.TAB_NAMES) == "1. Gear & Weapon|2. Quick Magic-Ink Cards|3. Combo Moves|4. Seals & Pocket Cards|Atlas Map"
+	var names_ok: bool = "|".join(GrimoireBinderPanel.TAB_NAMES) == "1. Gear & Weapon|2. Quick Magic-Ink Cards|3. Combo Moves|4. Seal Press|Atlas Map"
 	var tips: int = 0
 	for index: int in GrimoireBinderPanel.TAB_TOOLTIPS.size():
 		tips += 1 if GrimoireBinderPanel.TAB_TOOLTIPS[index].length() > 30 else 0
 	var on_cards: bool = binder.tab == Tab.CARDS and binder.tooltip_text_now().contains(GrimoireBinderPanel.TAB_TOOLTIPS[Tab.CARDS])
 	check.call(names_ok and tips == 5 and on_cards and not binder.preview_live(),
-		"the Binder has the tabs 1. Gear & Weapon, 2. Quick Magic-Ink Cards, 3. Combo Moves, 4. Seals & Pocket Cards and the Atlas Map, each with a tooltip, and opens on the cards")
+		"the Binder has the tabs 1. Gear & Weapon, 2. Quick Magic-Ink Cards, 3. Combo Moves, 4. Seal Press and the Atlas Map, each with a tooltip, and opens on the cards")
 	await _tap_key(KEY_E)
 	await _frames(2)
 	var forms: Array[ComboChainResource] = ArsenalCatalog.current.combos()
@@ -359,7 +359,7 @@ func _check_binder_tabs() -> void:
 	await _tap_key(KEY_Q)
 	await _frames(3)
 	check.call(on_bench and on_atlas and binder.tab == Tab.GEAR and binder.atlas == null,
-		"E again opens Seals & Pocket Cards (the hero in the preview) and then the Atlas Map; Q steps back through the tabs to Gear & Weapon")
+		"E again opens the Seal Press (the hero in the preview) and then the Atlas Map; Q steps back through the tabs to Gear & Weapon")
 	var lit: bool = true
 	for node: Node in hero.find_children("*", "MeshInstance3D", true, false):
 		lit = lit and (node as MeshInstance3D).get_layer_mask_value(GrimoireBinderPanel.PREVIEW_LAYER)
@@ -398,7 +398,11 @@ func _check_binder_tabs() -> void:
 ## Words Gate 6 retired from the screen (ids, class names, node names and save keys keep theirs).
 const RETIRED_WORDS: Array[String] = ["Vellum", "VELLUM", "Folio", "FOLIO", "Weapon-Coat", "WEAPON-COAT", "Ward-Mantle", "WARD-MANTLE",
 	"Bravery Counter", "BRAVERY COUNTER", "Bravery-Counter", "Hearth-Rite Tuck", "HEARTH-RITE TUCK", "Four-Sign", "Four Signs", "Sign-Coat",
-	"Ink-Wheel", "Mantle & Tuck", "Glimmer-Spot", "GLIMMER-SPOT", "Action-Leaves", "Action-Leaf"]
+	"Ink-Wheel", "Mantle & Tuck", "Glimmer-Spot", "GLIMMER-SPOT", "Action-Leaves", "Action-Leaf",
+	# R7 (22 GDD): Defender / Striker, Armor Guard, Breath Recovery, Marks, no frame counts,
+	# Great-Boggart, Bulwark, Deep-Tide, hills and woods.
+	"+Tank", "+DPS", "the Tank", "the DPS", "mitigation", "Mitigation", "Stamina Regen", "stamina regen", " AP ", "18-frame",
+	"Elite", "ELITE", "Aegis", "AEGIS", "Abyssal", "ABYSSAL", "landblocks", "Landblocks"]
 ## A line that names the old words on purpose (to read old saves back) is let through.
 const LINTER_ALLOWED: Array[String] = ["OLD_VARIANT_NAMES"]
 

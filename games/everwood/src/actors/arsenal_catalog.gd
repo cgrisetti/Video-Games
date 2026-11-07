@@ -1678,7 +1678,7 @@ func _build_lead_cards() -> void:
 	moonfall.primer = Sign.SIGN_STAR_TIDE
 	moonfall.hit_stop_scale = 1.6
 	_boss_drop(_lead(moonfall, Slot.FORWARD, Sign.SIGN_STAR_TIDE, "A falling crescent that stamps the Sign of Star-Tide."), ScribeCardResource.CardRarity.RARE)
-	var aegis: CombatActionResource = _support(EMBER_AEGIS, "Aegis of Embers", Cmd.BACK_HEAVY, Fx.SHADOW_SANCTUARY, 0.3, 0.1, 0.45)
+	var aegis: CombatActionResource = _support(EMBER_AEGIS, "Bulwark of Embers", Cmd.BACK_HEAVY, Fx.SHADOW_SANCTUARY, 0.3, 0.1, 0.45)
 	aegis.stamina_cost = 22.0
 	aegis.effect_radius = 8.5
 	aegis.effect_duration = 7.0
@@ -1775,13 +1775,13 @@ func _boss_drop(lead: ScribeCardResource, rarity: ScribeCardResource.CardRarity)
 ## Fellowships. The names are the Creative Director's (06 §3, chosen
 ## 2026-11-01); a rename is one line here.
 func _build_callings() -> void:
-	var stout: SecondaryCallingResource = _secondary(STOUT_HEART, "Stout Heart", "+Tank", Color(0.769, 0.584, 0.251))
+	var stout: SecondaryCallingResource = _secondary(STOUT_HEART, "Stout Heart", "+Defender", Color(0.769, 0.584, 0.251))
 	stout.health_bonus = 20.0
 	stout.stamina_regen_bonus = -2.0
 	stout.poise_damage_multiplier = 1.25
 	stout.perfect_guard_bonus = 0.03
 	stout.unlocked_armor_weights = [EquipmentItemResource.ArmorWeight.HEAVY]
-	var swift: SecondaryCallingResource = _secondary(SWIFT_FOOT, "Swift Foot", "+DPS", Color(0.231, 0.549, 0.322))
+	var swift: SecondaryCallingResource = _secondary(SWIFT_FOOT, "Swift Foot", "+Striker", Color(0.231, 0.549, 0.322))
 	swift.stamina_regen_bonus = 3.0
 	swift.strike_damage_multiplier = 1.15
 	swift.unlocked_weapon_types = [EquipmentItemResource.WeaponType.BOW, EquipmentItemResource.WeaponType.HEAVY_AXE]
