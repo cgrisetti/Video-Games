@@ -15,13 +15,15 @@ render_mode cull_back, specular_disabled;
 
 #define STORYBOOK_CLOUD_POS v_world_pos
 #include "res://src/world/shaders/storybook_world_common.gdshaderinc"
+#include "res://src/actors/storybook_brush.gdshaderinc"
 
 uniform vec4 albedo : source_color = vec4(1.0);
 uniform float detail_strength = 0.85;
 uniform float normal_strength = 0.5;
-// The ground's value is held between these, in linear light (about 35% to 68% on screen).
-uniform float min_value = 0.09;
-uniform float max_value = 0.42;
+// The ground's value is held between these, in linear light (about 33% to 58% on screen):
+// a rich mid-ground under the meadow, still light enough for telegraph rings (docs/24 §4).
+uniform float min_value = 0.08;
+uniform float max_value = 0.3;
 
 varying vec3 v_world_pos;
 varying vec3 v_world_normal;
@@ -45,6 +47,7 @@ void fragment() {
 	color *= clamp(value, min_value, max_value) / max(value, 0.001);
 	vec3 emission = vec3(0.0);
 	apply_succession(v_world_pos, color, emission, 1.0);
+	v_brush = sb_brush(v_world_pos * 0.6);
 	ALBEDO = color;
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;

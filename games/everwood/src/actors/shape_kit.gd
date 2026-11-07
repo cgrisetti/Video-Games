@@ -166,7 +166,7 @@ static func make_gnarled_trunk_mesh(height: float, base_radius: float, top_radiu
 ## cluster shades as one soft cloud) and coloured from `dark` below to `light`
 ## on top; `fronds` hanging willow or moss fronds trail from its lower rim.
 static func make_leaf_cloud_crown(center: Vector3, radius: float, lobes: int, seed_val: int, dark: Color, light: Color, fronds: int = 0,
-		frond_length: float = 1.6) -> ArrayMesh:
+		frond_length: float = 1.6, min_lobes: int = 11) -> ArrayMesh:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = seed_val * 104729 + 3
 	var ico: Array = _icosphere(1)
@@ -174,7 +174,7 @@ static func make_leaf_cloud_crown(center: Vector3, radius: float, lobes: int, se
 	var faces: PackedInt32Array = ico[1]
 	var tool: SurfaceTool = SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var count: int = clampi(lobes, 11, 18)
+	var count: int = clampi(lobes, min_lobes, 18)
 	var base_index: int = 0
 	for lobe: int in count:
 		var tier: float = float(lobe) / float(count)

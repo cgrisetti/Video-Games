@@ -11,6 +11,11 @@ const VERTEX_COLOR_SHADER: Shader = preload("res://src/actors/storybook_cel_vert
 const SCENERY_RIM: float = 0.18
 const ACTOR_RIM: float = 0.7
 const WARM_RIM: Color = Color(1.0, 0.92, 0.78)
+## How weathered a cel colour is (docs/24 §2): scenery and props, then creatures and figures.
+const SCENERY_WEAR: float = 0.9
+const ACTOR_WEAR: float = 0.45
+## Moss on scenery's upward faces.
+const SCENERY_MOSS: float = 0.22
 
 
 ## A cel material in `color`, with a rim of `rim_color` at `rim_strength`.
@@ -20,6 +25,10 @@ static func make(color: Color, rim_strength: float = SCENERY_RIM, rim_color: Col
 	material.set_shader_parameter(&"albedo", color)
 	material.set_shader_parameter(&"rim_color", rim_color)
 	material.set_shader_parameter(&"rim_strength", rim_strength)
+	# Lived in (docs/24 §2): scenery weathers and gathers a little moss on its tops; heroes and foes stay cleaner.
+	var scenery: bool = rim_strength <= SCENERY_RIM + 0.001
+	material.set_shader_parameter(&"wear", SCENERY_WEAR if scenery else ACTOR_WEAR)
+	material.set_shader_parameter(&"moss_amount", SCENERY_MOSS if scenery else 0.0)
 	return material
 
 

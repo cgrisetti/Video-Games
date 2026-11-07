@@ -94,8 +94,8 @@ func _init() -> void:
 	var sun: DirectionalLight3D = DirectionalLight3D.new()
 	sun.name = "Sun"
 	sun.transform = Transform3D(Basis.from_euler(Vector3(deg_to_rad(-48.0), deg_to_rad(35.0), 0.0)), Vector3.ZERO)
-	sun.light_color = Color(1.0, 0.93, 0.8)
-	sun.light_energy = 0.95
+	sun.light_color = Color(1.0, 0.9, 0.74)
+	sun.light_energy = 1.15
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 90.0
 	add_child(sun)
@@ -141,12 +141,17 @@ static func _make_environment() -> Environment:
 	var made: Environment = Environment.new()
 	made.background_mode = Environment.BG_SKY
 	made.sky = sky
-	made.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	# The shadows are filled by the sky itself (docs/24 §2): cool from above, warmer near the
+	# ground, never one flat grey. Bloom is a touch, not a haze over everything.
+	made.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	made.ambient_light_color = Color(0.62, 0.64, 0.7)
-	made.ambient_light_energy = 0.45
+	made.ambient_light_sky_contribution = 0.7
+	made.ambient_light_energy = 0.52
 	made.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	made.tonemap_exposure = 0.92
 	made.glow_enabled = true
-	made.glow_intensity = 0.6
+	made.glow_intensity = 0.22
+	made.glow_bloom = 0.0
 	made.fog_enabled = true
 	made.fog_light_color = Color(0.86, 0.88, 0.86)
 	made.fog_density = 0.0012

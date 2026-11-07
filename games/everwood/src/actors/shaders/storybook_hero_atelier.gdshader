@@ -27,6 +27,20 @@
 shader_type spatial;
 render_mode cull_back;
 
+// The painter's hand (docs/24_PAINTED_WORLD_PASS.md §2): the shade's edge wanders along brush strokes.
+#include "res://src/actors/storybook_brush.gdshaderinc"
+
+// The Fellowship rim's emissive line (it was 0.55 of rim_strength) and its sun backlight.
+const float HERO_RIM_LINE = 0.18;
+const float HERO_RIM_BACKLIGHT = 1.2;
+// The painted ramp (as storybook_cel_light.gdshaderinc): the half-light's offset and share, the strokes' wander.
+const float HERO_HALF_OFFSET = 0.32;
+const float HERO_HALF_SHARE = 0.55;
+const float HERO_BRUSH_WANDER = 0.12;
+// Cloth's velvet fuzz, kept to a whisper so shirts never glow (it was full fuzz_strength).
+const float HERO_FUZZ_SHARE = 0.35;
+
+
 // The biome's turf (WorldAtmosphereDirector sets it; a = 1 once it has).
 global uniform vec4 ground_turf;
 
@@ -311,15 +325,20 @@ void fragment() {
 	frost *= 0.55 + 0.45 * hash13(floor(vec3(UV * 40.0, rest_y * 30.0)));
 	albedo = mix(albedo, frost_color.rgb, clamp(frost, 0.0, 1.0) * 0.75);
 	ALBEDO = albedo;
-	ROUGHNESS = rough;
+	// Matte, like painted cloth and skin (docs/24 §2): only metal reflects the sky; the rest
+	// keeps its own sheens (fuzz, scatter, burnish) in light() and never goes plastic.
+	ROUGHNESS = metal > 0.0 ? rough : max(rough, 0.85);
 	METALLIC = metal;
+	SPECULAR = metal > 0.0 ? 0.5 : 0.0;
+	v_brush = sb_brush((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz * 1.8);
 	v_mat = mat;
 	// The cel ramp's anti-aliasing width, handed to light().
 	v_aa = clamp(length(fwidth(NORMAL)) * 0.6, 0.006, 0.08);
 	// The Fellowship rim, the Lantern's Promise and the Sign spark.
 	float facing = max(0.0, dot(VIEW, NORMAL));
 	float rim = smoothstep(0.62, 0.88, 1.0 - facing);
-	vec3 emission = rim_color.rgb * rim * rim_strength * 0.55;
+	// The Fellowship rim stays as a thin line for split-screen readability (Gate 5); the rest of it is a backlight in light().
+	vec3 emission = rim_color.rgb * rim * rim_strength * HERO_RIM_LINE;
 	emission += promise_color.rgb * lantern_promise_warmth * (rim * 1.6 + 0.06);
 	emission += active_sign_color.rgb * sign_emission_strength * COLOR.a * value_3_emission_mult;
 	emission += metal_steel_color.rgb * glint * 0.35;
@@ -341,16 +360,20 @@ void fragment() {
 }
 
 void light() {
-	float ndl = dot(NORMAL, LIGHT);
-	float lit = smoothstep(band_edge - v_aa, band_edge + v_aa, ndl);
+	float ndl = dot(NORMAL, LIGHT) + v_brush * HERO_BRUSH_WANDER;
+	float half_light = smoothstep(band_edge - HERO_HALF_OFFSET - v_aa * 2.0, band_edge - HERO_HALF_OFFSET + v_aa * 2.0, ndl);
+	float lit = mix(half_light * HERO_HALF_SHARE, 1.0, smoothstep(band_edge - v_aa, band_edge + v_aa, ndl));
 	if (LIGHT_IS_DIRECTIONAL) {
+		// A warm backlight on the silhouette in the Fellowship's colour, only with the sun behind.
+		float edge_on = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
+		DIFFUSE_LIGHT += rim_color.rgb * edge_on * smoothstep(-0.1, 0.7, dot(LIGHT, -VIEW)) * rim_strength * HERO_RIM_BACKLIGHT * ATTENUATION * LIGHT_COLOR / PI;
 		vec3 bounce = ground_turf.a > 0.5 ? ground_turf.rgb : biome_turf_bounce;
 		vec3 shade = shade_color.rgb + bounce * turf_bounce_strength;
 		DIFFUSE_LIGHT += mix(shade, vec3(1.0), lit * ATTENUATION) * LIGHT_COLOR / PI * (1.0 - METALLIC * 0.3);
 		float reflect_dot = dot(reflect(-LIGHT, NORMAL), VIEW);
 		// Cloth: a velvet fuzz of fibres along the light-facing edge.
 		if (v_mat.x > 0.5) {
-			float fuzz = pow(1.0 - max(0.0, dot(NORMAL, VIEW)), 2.2) * fuzz_strength;
+			float fuzz = pow(1.0 - max(0.0, dot(NORMAL, VIEW)), 2.2) * fuzz_strength * HERO_FUZZ_SHARE;
 			DIFFUSE_LIGHT += fuzz_color.rgb * fuzz * clamp(ndl + 0.35, 0.0, 1.0) * ATTENUATION * LIGHT_COLOR;
 		}
 		// Skin: light wraps warmly through the terminator (nose, ears, cheeks).

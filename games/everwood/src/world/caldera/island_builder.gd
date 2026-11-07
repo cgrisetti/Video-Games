@@ -29,6 +29,14 @@ const COLLISION_SIDE: int = 129
 const SKIRT_DEPTH: float = 6.0
 ## Scatter candidates a landblock rolls (each island keeps the share it wants).
 const SCATTER_TRIES: int = 260
+## The meadow (docs/24_PAINTED_WORLD_PASS.md §4): grass tufts in natural clumps
+## and wildflowers in little drifts over every near landblock's open ground,
+## in cells MEADOW_CELLS a side so only the ones near a camera are drawn.
+const MEADOW_CELLS: int = 4
+const MEADOW_CLUMPS: int = 1150
+const MEADOW_FLOWER_CLUMPS: int = 340
+## Which flower each drift is (CalderaKit.Flower), by share.
+const MEADOW_FLOWER_SHARES: Array[float] = [0.34, 0.28, 0.12, 0.1, 0.16]
 
 ## Organic coasts (docs/13 K4): in the coastal band (plain shore distance
 ## COAST_BAND_FROM to 1 and a little beyond) the plain ellipse's shore is pushed
@@ -679,6 +687,8 @@ func build_chunk_data(chunk: Vector2i, quads: int, with_collision: bool, with_sc
 		data["collision_heights"] = _collision_heights(heights, apron, quads)
 	if with_scatter:
 		data["scatter"] = _scatter(chunk, origin, pads, ramps, paths)
+	if with_collision:
+		data["meadow"] = _meadow(chunk, origin, pads, ramps, paths)
 	return data
 
 
@@ -701,6 +711,94 @@ func _collision_heights(heights: PackedFloat32Array, apron: int, quads: int) -> 
 			var d: float = heights[(z0 + 2) * apron + x0 + 2]
 			collision[row * COLLISION_SIDE + column] = lerpf(lerpf(a, b, tx), lerpf(c, d, tx), tz)
 	return collision
+
+
+## How lush the meadow is at a spot, 0 (none) to 1: open, gently sloping
+## ground above the shore. An island can grow less of it (a crag, a beach).
+func _meadow_lushness(_x: float, _z: float, height: float, up: float) -> float:
+	if height < 1.4 or up < 0.8:
+		return 0.0
+	return smoothstep(0.8, 0.92, up)
+
+
+## A near landblock's meadow, cell by cell: [{"grass": Array of Transform3D,
+## "colors": Array of Color (the ground's own colour at each tuft's root),
+## "flowers": Array of [kind, Array of Transform3D]}]. Pure: a worker thread builds it.
+func _meadow(chunk: Vector2i, origin: Vector2, pads: PackedFloat32Array, ramps: PackedFloat32Array, paths: PackedFloat32Array) -> Array:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash("meadow:%s:%d:%d" % [isle.isle_id, chunk.x, chunk.y])
+	var size: float = IslandGridResource.CHUNK_SIZE
+	var cell_size: float = size / float(MEADOW_CELLS)
+	var cells: Array = []
+	for index: int in MEADOW_CELLS * MEADOW_CELLS:
+		var flowers: Array = []
+		for kind: int in MEADOW_FLOWER_SHARES.size():
+			flowers.append([])
+		cells.append({"grass": [], "colors": [], "flowers": flowers})
+	# Grass in clumps, thicker where the meadow runs lush (a slow field of patches).
+	for clump: int in MEADOW_CLUMPS:
+		var cx: float = origin.x + rng.randf() * size
+		var cz: float = origin.y + rng.randf() * size
+		var patch: float = 0.5 + 0.5 * _detail.get_noise_2d(cx * 0.9, cz * 0.9)
+		var tufts: int = rng.randi_range(3, 5) + int(patch * 6.0)
+		var reach: float = rng.randf_range(0.5, 1.3)
+		for tuft: int in tufts:
+			var x: float = cx + rng.randf_range(-reach, reach)
+			var z: float = cz + rng.randf_range(-reach, reach)
+			var yaw: float = rng.randf() * TAU
+			var grow: float = rng.randf_range(0.75, 1.15) + patch * 0.45
+			if not Rect2(origin, Vector2(size, size)).has_point(Vector2(x, z)):
+				continue
+			var placed: Dictionary = _meadow_spot(x, z, pads, ramps, paths)
+			if placed.is_empty() or rng.randf() > float(placed["lush"]):
+				continue
+			var cell: Dictionary = cells[_meadow_cell(x - origin.x, z - origin.y, cell_size)]
+			(cell["grass"] as Array).append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(grow, grow * rng.randf_range(0.85, 1.25), grow)),
+				Vector3(x, float(placed["h"]) - 0.03, z)))
+			# An Array, not a PackedColorArray: a packed array read out of a Dictionary is a copy.
+			(cell["colors"] as Array).append(placed["color"])
+	# Wildflowers in little drifts of one kind.
+	for drift: int in MEADOW_FLOWER_CLUMPS:
+		var cx: float = origin.x + rng.randf() * size
+		var cz: float = origin.y + rng.randf() * size
+		var pick: float = rng.randf()
+		var kind: int = 0
+		while kind < MEADOW_FLOWER_SHARES.size() - 1 and pick > MEADOW_FLOWER_SHARES[kind]:
+			pick -= MEADOW_FLOWER_SHARES[kind]
+			kind += 1
+		for bloom: int in rng.randi_range(3, 9):
+			var x: float = cx + rng.randf_range(-0.9, 0.9)
+			var z: float = cz + rng.randf_range(-0.9, 0.9)
+			if not Rect2(origin, Vector2(size, size)).has_point(Vector2(x, z)):
+				continue
+			var placed: Dictionary = _meadow_spot(x, z, pads, ramps, paths)
+			if placed.is_empty() or float(placed["lush"]) < 0.5:
+				continue
+			var grow: float = rng.randf_range(0.8, 1.25)
+			var cell: Dictionary = cells[_meadow_cell(x - origin.x, z - origin.y, cell_size)]
+			((cell["flowers"] as Array)[kind] as Array).append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * grow),
+				Vector3(x, float(placed["h"]) - 0.02, z)))
+	return cells
+
+
+## Whether the meadow grows at (x, z) and how: {"h", "lush", "color"}, or {} off it (a path, a cliff, the shore).
+func _meadow_spot(x: float, z: float, pads: PackedFloat32Array, ramps: PackedFloat32Array, paths: PackedFloat32Array) -> Dictionary:
+	if _path_weight(x, z, paths) > 0.05:
+		return {}
+	var h: float = _height(x, z, pads, ramps)
+	var dx: float = _height(x + 0.6, z, pads, ramps) - _height(x - 0.6, z, pads, ramps)
+	var dz: float = _height(x, z + 0.6, pads, ramps) - _height(x, z - 0.6, pads, ramps)
+	var up: float = Vector3(-dx / 1.2, 1.0, -dz / 1.2).normalized().y
+	var lush: float = _meadow_lushness(x, z, h, up)
+	if lush <= 0.0:
+		return {}
+	return {"h": h, "lush": lush, "color": _paint(x, z, h, up, paths)}
+
+
+static func _meadow_cell(local_x: float, local_z: float, cell_size: float) -> int:
+	var column: int = clampi(int(local_x / cell_size), 0, MEADOW_CELLS - 1)
+	var row: int = clampi(int(local_z / cell_size), 0, MEADOW_CELLS - 1)
+	return row * MEADOW_CELLS + column
 
 
 func _scatter(chunk: Vector2i, origin: Vector2, pads: PackedFloat32Array, ramps: PackedFloat32Array, paths: PackedFloat32Array) -> Dictionary:
