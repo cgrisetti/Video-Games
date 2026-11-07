@@ -134,6 +134,8 @@ const CALDERA_CHECKS: GDScript = preload("res://tools/test_caldera_isles.gd")
 const KAIZEN_CHECKS: GDScript = preload("res://tools/test_phase12_kaizen.gd")
 ## Phase 12.5's playtest-feedback checks (tools/test_playtest_feedback.gd), last: options, the map, arms, foliage, coasts, badges.
 const PLAYTEST_CHECKS: GDScript = preload("res://tools/test_playtest_feedback.gd")
+## The title screen, New Game and Continue (tools/test_title_screen.gd), last.
+const TITLE_CHECKS: GDScript = preload("res://tools/test_title_screen.gd")
 const TEST_SETTINGS_PATH: String = "user://smoke_test_settings.json"
 var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
@@ -233,6 +235,8 @@ func _run() -> void:
 	# The Phase 12 Combat Kaizen refinement (K1 to K5) on Hearthstead Market's green.
 	await KAIZEN_CHECKS.new().run(self, _check)
 	await PLAYTEST_CHECKS.new().run(self, _check)
+	# The title screen and its tales (docs/22), last of all, in a scratch tales folder.
+	await TITLE_CHECKS.new().run(self, _check, TEST_SAVE_PATH)
 	_remove_file(TEST_SAVE_PATH)
 	SaveManager.remove(TEST_SETTINGS_PATH)
 
@@ -248,9 +252,10 @@ func _run() -> void:
 
 func _check_hub_and_input_map() -> void:
 	_check(current_scene is HubTown, "the smoke test starts in Bramble-Bridge (Hub Town)")
-	_check(ProjectSettings.get_setting("application/run/main_scene") == InstanceManager.scene_path(InstanceManager.CALDERA_ISLES)
+	_check(ProjectSettings.get_setting("application/run/main_scene") == "res://scenes/title/title_screen.tscn"
+		and TitleScreen.GAME_INSTANCE == InstanceManager.CALDERA_ISLES
 		and InstanceManager.scene_path(InstanceManager.HUB_TOWN) == HUB_SCENE and HUB_SCENE.begins_with("res://deprecated/legacy_maps/"),
-		"the game starts in the Caldera Isles; legacy Hub Town is still an instance of its own in deprecated/legacy_maps/ (the tests start there)")
+		"the game opens on the title screen and its tales start in the Caldera Isles; legacy Hub Town is still an instance of its own in deprecated/legacy_maps/ (the tests start there)")
 	_check(InstanceManager.instance_for_name("bramblebridge") == InstanceManager.EVERWOOD_WORLD and InstanceManager.instance_for_name("Hub") == InstanceManager.HUB_TOWN
 		and InstanceManager.instance_for_name("hub_town") == InstanceManager.HUB_TOWN and InstanceManager.instance_for_name("oakshire_vale") == InstanceManager.OAKSHIRE_VALE
 		and InstanceManager.instance_for_name("caldera") == InstanceManager.CALDERA_ISLES and InstanceManager.instance_for_name("oakshire") == InstanceManager.CALDERA_ISLES

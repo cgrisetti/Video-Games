@@ -84,6 +84,11 @@ var drop_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var trail_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## Where progress is saved (the smoke test points this at its own file).
 var save_path: String = SAVE_PATH
+## The tale's hero, named on the title screen's New Game (docs/22; "" for a save from before names).
+var hero_name: String = ""
+## When this tale was begun and last saved (Unix seconds; 0 when unknown).
+var created_unix: int = 0
+var last_played_unix: int = 0
 
 ## True on a client while it shows the host's progress instead of its own.
 var _showing_host: bool = false
@@ -438,6 +443,19 @@ func award_chimes(amount: int) -> void:
 
 # --- Saving ---------------------------------------------------------------
 
+## Begins a new tale (the title screen's New Game): a fresh Level 1 party in a
+## new save file at `path`, its hero named `hero`, written at once.
+func begin_new_tale(path: String, hero: String) -> Error:
+	end_playtest()
+	endgame_kits_for_testing = false
+	use_save_file(path)
+	hero_name = hero
+	created_unix = int(Time.get_unix_time_from_system())
+	var error: Error = save()
+	progress_changed.emit()
+	return error
+
+
 ## Switches to another save file and loads it.
 func use_save_file(path: String) -> void:
 	save_path = path
@@ -455,8 +473,14 @@ func load_save() -> void:
 	callings.clear()
 	pattern_seen.clear()
 	caldera_flags = 0
+	hero_name = ""
+	created_unix = 0
+	last_played_unix = 0
 	var file: ConfigFile = ConfigFile.new()
 	if file.load(save_path) == OK:
+		hero_name = str(file.get_value("hero", "name", ""))
+		created_unix = maxi(0, int(file.get_value("hero", "created", 0)))
+		last_played_unix = maxi(0, int(file.get_value("hero", "last_played", 0)))
 		# Saves from before the Chimes were called Dojo Shards keep their pouch.
 		chimes = maxi(0, int(file.get_value("party", "chimes", file.get_value("party", "shards", 0))))
 		victories = maxi(0, int(file.get_value("party", "victories", 0)))
@@ -485,6 +509,12 @@ func save() -> Error:
 	if playtest:
 		return OK
 	var file: ConfigFile = ConfigFile.new()
+	last_played_unix = int(Time.get_unix_time_from_system())
+	if hero_name != "":
+		file.set_value("hero", "name", hero_name)
+	if created_unix > 0:
+		file.set_value("hero", "created", created_unix)
+	file.set_value("hero", "last_played", last_played_unix)
 	file.set_value("party", "chimes", chimes)
 	file.set_value("party", "victories", victories)
 	file.set_value("trail", "xp", xp)
