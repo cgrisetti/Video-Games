@@ -57,7 +57,10 @@ func _define() -> void:
 	# Roads: orchards to the market to the quay, and out to the sanctum and both aprons.
 	var west: Vector3 = CalderaAtlas.seam(CalderaAtlas.SEAM_WEST_STRAIT).anchor(CalderaAtlas.ISLE_OAKSHIRE_HOLM)
 	var east: Vector3 = CalderaAtlas.seam(CalderaAtlas.SEAM_EEL_SPIT).anchor(CalderaAtlas.ISLE_OAKSHIRE_HOLM)
-	add_path(PackedVector2Array([Vector2(360.0, 230.0), Vector2(300.0, 150.0), Vector2(220.0, 60.0), MARKET_AT]), 2.2)
+	# The orchard lane's first 50 m run straight up the orchard from the Level 1 start, the way the youth faces;
+	# past it, the lane is laid over the ground to the market like every other road (docs/26).
+	add_path(PackedVector2Array([Vector2(360.0, 230.0), Vector2(330.0, 190.0)]), 2.2, false)
+	add_path(PackedVector2Array([Vector2(330.0, 190.0), Vector2(300.0, 150.0), Vector2(220.0, 60.0), MARKET_AT]), 2.2)
 	add_path(PackedVector2Array([MARKET_AT, Vector2(110.0, -120.0), Vector2(60.0, -240.0), Vector2(40.0, -330.0)]), 2.4)
 	add_path(PackedVector2Array([MARKET_AT, Vector2(-40.0, 40.0), Vector2(-200.0, 90.0), Vector2(-320.0, 128.0)]), 2.0)
 	add_path(PackedVector2Array([Vector2(-40.0, 40.0), Vector2(-260.0, -40.0), Vector2(-480.0, -70.0), Vector2(west.x, west.z + 12.0)]), 1.8)
@@ -309,5 +312,6 @@ func _build_lantern_poles(root: Node3D) -> void:
 	var stops: Array[Vector2] = [Vector2(300.0, 150.0), Vector2(220.0, 60.0), Vector2(110.0, -120.0), Vector2(60.0, -240.0), Vector2(-40.0, 40.0),
 		Vector2(-200.0, 90.0), Vector2(-260.0, -40.0), Vector2(-480.0, -70.0), Vector2(480.0, -20.0), Vector2(-140.0, -150.0)]
 	for index: int in stops.size():
-		var spot: Vector3 = ground(stops[index].x + 3.5, stops[index].y)
+		# Beside the laid road nearest each old stop (the roads wander now, docs/26).
+		var spot: Vector3 = roadside(stops[index], 1.0 if index % 2 == 0 else -1.0, 1.4)
 		root.add_child(WorldKitInstance.make("LanternPole%d" % index, WorldVisualCatalog.KIT_WIND_LANTERN_POST, spot, float(index)))

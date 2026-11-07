@@ -6,8 +6,14 @@
 ## two kinds of feature pressed into it: ramps (a road, a stair, a gully,
 ## blended to a straight grade between two points) and pads (a flat place at
 ## a set height: a quay, a market green, a trial's arena, a cove the Ebb bares).
-## Paths are only painted. Everything that samples the field is pure and safe
-## on a worker thread; the build_* methods make nodes on the main thread.
+## Paths don't shape the field. Each road is laid over it once, when the island
+## is built (docs/26): every leg between two control points is routed across a
+## 5 m grid by AStarGrid2D, steering round slopes and water and wandering a
+## little on open ground, then straightened, rounded and resampled. The ground
+## shader draws the laid roads per pixel from road_textures() (smooth edges,
+## cobbles laid along the road, earthen footpaths); the scatter, meadow, map and
+## coast read the same roads as segments. Everything that samples the field is
+## pure and safe on a worker thread; the build_* methods make nodes on the main thread.
 ##
 ## Each island lives in its own frame: its grid centred on the origin, north
 ## at -Z, the sea at y = CalderaWorldState.sea_level_y.
@@ -68,6 +74,38 @@ const INLET_HEAD_BED: float = -0.8
 ## The banks ease back to the land over this share of the half width (at least INLET_BANK_MIN metres).
 const INLET_BANK_SHARE: float = 1.6
 const INLET_BANK_MIN: float = 12.0
+## Laying roads (docs/26): the routing grid's cell; legs shorter than this stay straight.
+const ROUTE_CELL: float = 5.0
+const ROUTE_MIN_LEG: float = 24.0
+## A cell's cost is 1, plus ROUTE_SLOPE_COST per (tenth of grade past ROUTE_EASY_GRADE)
+## squared, plus up to ROUTE_WANDER from a slow noise (the gentle wander of a road
+## over open ground); near a road already laid it costs ROUTE_TRUNK of that, so roads share trunks.
+const ROUTE_SLOPE_COST: float = 3.0
+const ROUTE_EASY_GRADE: float = 0.1
+const ROUTE_WANDER: float = 0.6
+const ROUTE_TRUNK: float = 0.55
+const ROUTE_TRUNK_REACH: float = 6.0
+## Cells steeper than this grade, or deeper than ROUTE_DEEP, are never crossed; ground lower
+## than ROUTE_DRY (the beach, a fen's shallows) costs ROUTE_WET, so a road fords only where it must.
+const ROUTE_STEEP: float = 0.55
+const ROUTE_DRY: float = 0.5
+const ROUTE_DEEP: float = -0.8
+const ROUTE_WET: float = 40.0
+## The routed line is straightened to within this many metres, then rounded.
+const ROUTE_SIMPLIFY: float = 3.0
+const ROUTE_ROUNDING: int = 3
+## Then relaxed this many times (each point eased toward its neighbours), so no bend is a hairpin.
+const ROUTE_RELAX: int = 48
+## A drawn road's points lie this far apart; the segments the scatter, meadow and map read, this far.
+const ROAD_STEP: float = 3.0
+const PATH_STEP: float = 6.0
+const COARSE_STEP: float = 24.0
+## Roads this narrow or narrower are earthen footpaths; wider ones are cobbled.
+const DIRT_HALF_WIDTH: float = 1.7
+## The shader's road lookup: cells this wide, each listing the road segments within reach.
+const ROAD_CELL: float = 16.0
+const ROAD_REACH: float = 3.5
+const ROAD_MAX_PER_CELL: int = 48
 ## Inlet mouths stand at least this far apart, and this far from any path.
 const INLET_SPACING: float = 260.0
 const INLET_PATH_CLEARANCE: float = 45.0
@@ -94,6 +132,15 @@ var _pads: PackedFloat32Array = PackedFloat32Array()
 var _ramps: PackedFloat32Array = PackedFloat32Array()
 ## Painted paths, 5 floats a segment: from x, z, to x, z, half width.
 var _paths: PackedFloat32Array = PackedFloat32Array()
+## Roads as asked for ({"points", "half_width", "route"}), laid over the ground after _define().
+var _road_plans: Array[Dictionary] = []
+## The laid roads, as drawn: [{"points": PackedVector2Array (ROAD_STEP apart), "half_width": float}].
+var laid_roads: Array[Dictionary] = []
+var _road_textures: Dictionary = {}
+## The laid roads as long segments (COARSE_STEP apart) for the coast's keep grid and the inlets, which only need them roughly.
+var _coarse_paths: PackedFloat32Array = PackedFloat32Array()
+## Heights on the routing lattice (every ROUTE_CELL metres), shared by every leg while the roads are laid.
+var _route_heights: Dictionary[Vector2i, float] = {}
 ## River inlets, 8 floats a segment: from x, z, to x, z, half width at each end, bed height at each end.
 var _inlets: PackedFloat32Array = PackedFloat32Array()
 ## The coast's angular lobes, 3 floats each: harmonic, amplitude, phase.
@@ -115,7 +162,9 @@ func _init(grid: IslandGridResource) -> void:
 	_detail.frequency = 0.02
 	_detail.fractal_octaves = 2
 	_define()
+	_lay_roads()
 	_prepare_coast()
+	_relay_wet_roads()
 	for id: StringName in arrivals.keys():
 		var at: Vector3 = arrivals[id]
 		arrivals[id] = Vector3(at.x, height_at(at.x, at.z), at.z)
@@ -173,9 +222,12 @@ func add_ramp(from: Vector3, to: Vector3, half_width: float, blend: float = 4.0)
 	_ramps.append_array(PackedFloat32Array([from.x, from.y, from.z, to.x, to.y, to.z, half_width, blend]))
 
 
-func add_path(points: PackedVector2Array, half_width: float = 1.6) -> void:
-	for index: int in points.size() - 1:
-		_paths.append_array(PackedFloat32Array([points[index].x, points[index].y, points[index + 1].x, points[index + 1].y, half_width]))
+## Asks for a road through `points`. With `route` each leg is laid over the
+## ground by the best way (a road that must keep to a ramp, or a curve already
+## drawn smooth like The Crown's Ring Path, passes false and is only rounded).
+func add_path(points: PackedVector2Array, half_width: float = 1.6, route: bool = true) -> void:
+	if points.size() >= 2:
+		_road_plans.append({"points": points, "half_width": half_width, "route": route})
 
 
 func add_place(place_name: String, at: Vector3, radius: float) -> void:
@@ -285,12 +337,10 @@ func _height(x: float, z: float, pads: PackedFloat32Array, ramps: PackedFloat32A
 	return h
 
 
-func _paint(x: float, z: float, height: float, up: float, paths: PackedFloat32Array) -> Color:
-	var color: Color = _ground_color(x, z, height, up)
-	var on: float = _path_weight(x, z, paths)
-	if on > 0.0 and height > 0.4 and up > 0.8:
-		color = color.lerp(PATH_COLOR.lerp(color, 0.15 * _detail.get_noise_2d(x * 3.0, z * 3.0)), on)
-	return color
+## A vertex's colour: the ground alone. Roads aren't painted into the vertices any
+## more (their edges followed the 2 m triangles); the ground shader draws them.
+func _paint(x: float, z: float, height: float, up: float, _paths_near: PackedFloat32Array) -> Color:
+	return _ground_color(x, z, height, up)
 
 
 func _path_weight(x: float, z: float, paths: PackedFloat32Array) -> float:
@@ -338,6 +388,388 @@ func _features_near(rect: Rect2) -> Array[PackedFloat32Array]:
 			paths.append_array(_paths.slice(index, index + 5))
 		index += 5
 	return [pads, ramps, paths]
+
+
+# --- Laying the roads (docs/26) --------------------------------------------------------
+
+## Lays every road asked for over the ground, in the order asked, into
+## laid_roads (drawn) and _paths (the segments the rest of the island reads).
+func _lay_roads() -> void:
+	laid_roads.clear()
+	_paths = PackedFloat32Array()
+	_road_textures = {}
+	_route_heights.clear()
+	for plan: Dictionary in _road_plans:
+		laid_roads.append({"points": _lay_road(plan), "half_width": float(plan["half_width"])})
+		_append_segments(laid_roads[laid_roads.size() - 1])
+	_route_heights.clear()
+	_coarse_paths = PackedFloat32Array()
+	for road: Dictionary in laid_roads:
+		var rough: PackedVector2Array = _resample(road["points"], COARSE_STEP)
+		for index: int in rough.size() - 1:
+			_coarse_paths.append_array(PackedFloat32Array([rough[index].x, rough[index].y, rough[index + 1].x, rough[index + 1].y, float(road["half_width"]) + 1.0]))
+
+
+func _lay_road(plan: Dictionary) -> PackedVector2Array:
+	var points: PackedVector2Array = plan["points"]
+	var laid: PackedVector2Array = PackedVector2Array([points[0]])
+	if bool(plan["route"]):
+		for index: int in points.size() - 1:
+			laid.append_array(_route_leg(points[index], points[index + 1]).slice(1))
+		var routed: PackedVector2Array = _resample(_round_line(laid, ROUTE_ROUNDING), ROAD_STEP)
+		laid = _keep_dry(laid, _relax_line(routed, ROUTE_RELAX))
+	else:
+		laid = _round_line(points, 2)
+	return _resample(laid, ROAD_STEP)
+
+
+func _append_segments(road: Dictionary) -> void:
+	var coarse: PackedVector2Array = _resample(road["points"], PATH_STEP)
+	var half: float = float(road["half_width"])
+	for index: int in coarse.size() - 1:
+		_paths.append_array(PackedFloat32Array([coarse[index].x, coarse[index].y, coarse[index + 1].x, coarse[index + 1].y, half]))
+
+
+## Once the coast is shaped (its bays and pools can only be known after the
+## roads are laid, since it keeps clear of them), a routed road that now runs
+## through water away from its ends is laid again over the final ground.
+func _relay_wet_roads() -> void:
+	var changed: bool = false
+	for index: int in laid_roads.size():
+		var plan: Dictionary = _road_plans[index]
+		if not bool(plan["route"]):
+			continue
+		var points: PackedVector2Array = laid_roads[index]["points"]
+		var wet: bool = false
+		for at: Vector2 in points:
+			if at.distance_to(points[0]) > 40.0 and at.distance_to(points[points.size() - 1]) > 40.0 and height_at(at.x, at.y) < 0.0:
+				wet = true
+				break
+		if wet:
+			_route_heights.clear()
+			laid_roads[index] = {"points": _lay_road(plan), "half_width": float(plan["half_width"])}
+			changed = true
+	_route_heights.clear()
+	if changed:
+		_paths = PackedFloat32Array()
+		_road_textures = {}
+		for road: Dictionary in laid_roads:
+			_append_segments(road)
+
+
+## The best way from `a` to `b` over the ground: round the steep and the wet, a
+## little wander on open ground, and along roads already laid where they help.
+func _route_leg(a: Vector2, b: Vector2) -> PackedVector2Array:
+	var length: float = a.distance_to(b)
+	if length < ROUTE_MIN_LEG or _leg_on_ramp(a, b):
+		return PackedVector2Array([a, b])
+	var margin: float = clampf(length * 0.3, 24.0, 80.0)
+	var grown: Rect2 = Rect2(a, Vector2.ZERO).expand(b).grow(margin)
+	# The box sits on the island-wide lattice, so legs that overlap share their heights.
+	var corner: Vector2i = Vector2i(int(floor(grown.position.x / ROUTE_CELL)), int(floor(grown.position.y / ROUTE_CELL)))
+	var box: Rect2 = Rect2(Vector2(corner) * ROUTE_CELL, grown.size)
+	var cols: int = int(ceil(box.size.x / ROUTE_CELL)) + 2
+	var rows: int = int(ceil(box.size.y / ROUTE_CELL)) + 2
+	var heights: PackedFloat32Array = PackedFloat32Array()
+	heights.resize(cols * rows)
+	for row: int in rows:
+		for col: int in cols:
+			var key: Vector2i = corner + Vector2i(col, row)
+			if not _route_heights.has(key):
+				_route_heights[key] = height_at(key.x * ROUTE_CELL, key.y * ROUTE_CELL)
+			heights[row * cols + col] = _route_heights[key]
+	var trunk: PackedByteArray = _trunk_cells(box, cols, rows)
+	var start: Vector2i = _route_cell(a, box, cols, rows)
+	var goal: Vector2i = _route_cell(b, box, cols, rows)
+	var grid: AStarGrid2D = AStarGrid2D.new()
+	grid.region = Rect2i(0, 0, cols, rows)
+	grid.cell_size = Vector2.ONE
+	grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	grid.default_compute_heuristic = AStarGrid2D.HEURISTIC_EUCLIDEAN
+	grid.default_estimate_heuristic = AStarGrid2D.HEURISTIC_EUCLIDEAN
+	grid.update()
+	for row: int in rows:
+		for col: int in cols:
+			var index: int = row * cols + col
+			var h: float = heights[index]
+			var dx: float = heights[row * cols + mini(col + 1, cols - 1)] - heights[row * cols + maxi(col - 1, 0)]
+			var dz: float = heights[mini(row + 1, rows - 1) * cols + col] - heights[maxi(row - 1, 0) * cols + col]
+			var grade: float = Vector2(dx, dz).length() / (2.0 * ROUTE_CELL)
+			var cell: Vector2i = Vector2i(col, row)
+			var at_end: bool = cell.distance_to(start) < 3.0 or cell.distance_to(goal) < 3.0
+			if not at_end and (h < ROUTE_DEEP or grade > ROUTE_STEEP):
+				grid.set_point_solid(cell)
+				continue
+			var x: float = box.position.x + col * ROUTE_CELL
+			var z: float = box.position.y + row * ROUTE_CELL
+			var steep: float = maxf(0.0, grade - ROUTE_EASY_GRADE) / 0.1
+			var weight: float = 1.0 + ROUTE_SLOPE_COST * steep * steep + ROUTE_WANDER * (0.5 + 0.5 * _noise.get_noise_2d(x * 2.2, z * 2.2))
+			if h < ROUTE_DRY and not at_end:
+				weight += ROUTE_WET
+			if trunk[index] == 1:
+				weight *= ROUTE_TRUNK
+			grid.set_point_weight_scale(cell, weight)
+	# Water narrower than a cell can slip between two dry cell centres: walk the line,
+	# close the cells round any wet spot and route again (twice at most).
+	var points: PackedVector2Array = PackedVector2Array([a, b])
+	for attempt: int in 3:
+		var cells: Array[Vector2i] = grid.get_id_path(start, goal)
+		if cells.size() < 2:
+			return PackedVector2Array([a, b]) if attempt == 0 else points
+		points = PackedVector2Array([a])
+		for index: int in range(1, cells.size() - 1):
+			points.append(box.position + Vector2(cells[index]) * ROUTE_CELL)
+		points.append(b)
+		var closed: int = 0
+		for index: int in points.size() - 1:
+			var span: float = points[index].distance_to(points[index + 1])
+			for step: int in int(span / 2.0):
+				var at: Vector2 = points[index].lerp(points[index + 1], (float(step) + 0.5) * 2.0 / span)
+				if at.distance_to(a) < 15.0 or at.distance_to(b) < 15.0 or height_at(at.x, at.y) >= ROUTE_DEEP:
+					continue
+				var cell: Vector2i = _route_cell(at, box, cols, rows)
+				for dz: int in range(-1, 2):
+					for dx: int in range(-1, 2):
+						var near: Vector2i = cell + Vector2i(dx, dz)
+						if grid.is_in_boundsv(near) and near != start and near != goal and not grid.is_point_solid(near):
+							grid.set_point_solid(near)
+							closed += 1
+		if closed == 0:
+			break
+	return simplify_line(points, ROUTE_SIMPLIFY)
+
+
+func _route_cell(at: Vector2, box: Rect2, cols: int, rows: int) -> Vector2i:
+	return Vector2i(clampi(roundi((at.x - box.position.x) / ROUTE_CELL), 0, cols - 1), clampi(roundi((at.y - box.position.y) / ROUTE_CELL), 0, rows - 1))
+
+
+## The routing grid's cells within ROUTE_TRUNK_REACH of a road already laid.
+func _trunk_cells(box: Rect2, cols: int, rows: int) -> PackedByteArray:
+	var trunk: PackedByteArray = PackedByteArray()
+	trunk.resize(cols * rows)
+	var index: int = 0
+	while index < _paths.size():
+		var a: Vector2 = Vector2(_paths[index], _paths[index + 1])
+		var b: Vector2 = Vector2(_paths[index + 2], _paths[index + 3])
+		index += 5
+		var reach: Rect2 = Rect2(a, Vector2.ZERO).expand(b).grow(ROUTE_TRUNK_REACH)
+		if not reach.intersects(box):
+			continue
+		var c0: int = maxi(0, int(floor((reach.position.x - box.position.x) / ROUTE_CELL)))
+		var c1: int = mini(cols - 1, int(ceil((reach.end.x - box.position.x) / ROUTE_CELL)))
+		var r0: int = maxi(0, int(floor((reach.position.y - box.position.y) / ROUTE_CELL)))
+		var r1: int = mini(rows - 1, int(ceil((reach.end.y - box.position.y) / ROUTE_CELL)))
+		for row: int in range(r0, r1 + 1):
+			for col: int in range(c0, c1 + 1):
+				var at: Vector2 = box.position + Vector2(col, row) * ROUTE_CELL
+				if at.distance_to(Geometry2D.get_closest_point_to_segment(at, a, b)) <= ROUTE_TRUNK_REACH:
+					trunk[row * cols + col] = 1
+	return trunk
+
+
+## Whether a leg mostly runs along a ramp (a built road's grade): such a leg keeps to it.
+func _leg_on_ramp(a: Vector2, b: Vector2) -> bool:
+	var on: int = 0
+	for step: int in 5:
+		var at: Vector2 = a.lerp(b, (float(step) + 0.5) / 5.0)
+		var index: int = 0
+		while index < _ramps.size():
+			var from: Vector2 = Vector2(_ramps[index], _ramps[index + 2])
+			var to: Vector2 = Vector2(_ramps[index + 3], _ramps[index + 5])
+			if at.distance_to(Geometry2D.get_closest_point_to_segment(at, from, to)) <= _ramps[index + 6] + 1.0:
+				on += 1
+				break
+			index += 8
+	return on >= 3
+
+
+## A line straightened to within `tolerance` metres (Ramer-Douglas-Peucker), its ends kept.
+static func simplify_line(points: PackedVector2Array, tolerance: float) -> PackedVector2Array:
+	if points.size() < 3:
+		return points
+	var keep: PackedByteArray = PackedByteArray()
+	keep.resize(points.size())
+	keep[0] = 1
+	keep[points.size() - 1] = 1
+	var spans: Array[Vector2i] = [Vector2i(0, points.size() - 1)]
+	while not spans.is_empty():
+		var span: Vector2i = spans.pop_back()
+		var worst: float = -1.0
+		var at: int = -1
+		for index: int in range(span.x + 1, span.y):
+			var off: float = points[index].distance_to(Geometry2D.get_closest_point_to_segment(points[index], points[span.x], points[span.y]))
+			if off > worst:
+				worst = off
+				at = index
+		if at >= 0 and worst > tolerance:
+			keep[at] = 1
+			spans.append(Vector2i(span.x, at))
+			spans.append(Vector2i(at, span.y))
+	var out: PackedVector2Array = PackedVector2Array()
+	for index: int in points.size():
+		if keep[index] == 1:
+			out.append(points[index])
+	return out
+
+
+## A line with its corners cut `iterations` times (Chaikin), its ends kept.
+static func _round_line(points: PackedVector2Array, iterations: int) -> PackedVector2Array:
+	var line: PackedVector2Array = points
+	for _pass: int in iterations:
+		if line.size() < 3:
+			return line
+		var out: PackedVector2Array = PackedVector2Array([line[0]])
+		for index: int in line.size() - 1:
+			out.append(line[index].lerp(line[index + 1], 0.25))
+			out.append(line[index].lerp(line[index + 1], 0.75))
+		out.append(line[line.size() - 1])
+		line = out
+	return line
+
+
+## A line eased `passes` times, each point halfway toward its neighbours' middle, its ends kept.
+static func _relax_line(points: PackedVector2Array, passes: int) -> PackedVector2Array:
+	var line: PackedVector2Array = points
+	for _pass: int in passes:
+		var out: PackedVector2Array = line.duplicate()
+		for index: int in range(1, line.size() - 1):
+			out[index] = line[index] * 0.5 + (line[index - 1] + line[index + 1]) * 0.25
+		line = out
+	return line
+
+
+## A smoothed line, eased back onto the routed one (`raw`, which keeps to dry
+## ground) wherever rounding or relaxing cut a corner into water (a fen pool, an
+## inlet): the points round each wet one blend back over eight steps either side.
+func _keep_dry(raw: PackedVector2Array, smooth: PackedVector2Array) -> PackedVector2Array:
+	var back: PackedFloat32Array = PackedFloat32Array()
+	back.resize(smooth.size())
+	var reach: int = 8
+	for index: int in smooth.size():
+		if height_at(smooth[index].x, smooth[index].y) >= ROUTE_DRY:
+			continue
+		for near: int in range(maxi(0, index - reach), mini(smooth.size(), index + reach + 1)):
+			back[near] = maxf(back[near], 1.0 - float(absi(near - index)) / float(reach + 1))
+	var out: PackedVector2Array = smooth.duplicate()
+	for index: int in out.size():
+		if back[index] > 0.0:
+			var on_raw: Vector2 = smooth[index]
+			var best: float = INF
+			for step: int in raw.size() - 1:
+				var at: Vector2 = Geometry2D.get_closest_point_to_segment(smooth[index], raw[step], raw[step + 1])
+				if at.distance_to(smooth[index]) < best:
+					best = at.distance_to(smooth[index])
+					on_raw = at
+			out[index] = smooth[index].lerp(on_raw, smoothstep(0.0, 1.0, back[index]))
+	return out
+
+
+## Points every `step` metres along a line, its ends kept.
+static func _resample(points: PackedVector2Array, step: float) -> PackedVector2Array:
+	if points.size() < 2:
+		return points
+	var out: PackedVector2Array = PackedVector2Array([points[0]])
+	var carried: float = 0.0
+	for index: int in points.size() - 1:
+		var a: Vector2 = points[index]
+		var b: Vector2 = points[index + 1]
+		var length: float = a.distance_to(b)
+		var along: float = step - carried
+		while along < length:
+			out.append(a.lerp(b, along / length))
+			along += step
+		carried = length - (along - step)
+	if out[out.size() - 1].distance_to(points[points.size() - 1]) > 0.5:
+		out.append(points[points.size() - 1])
+	else:
+		out[out.size() - 1] = points[points.size() - 1]
+	return out
+
+
+## The nearest point on a laid road to `near`: {"at": Vector2, "along": Vector2 (unit), "half_width": float}, empty if there are none.
+func nearest_road(near: Vector2) -> Dictionary:
+	var best: Dictionary = {}
+	var best_d: float = INF
+	for road: Dictionary in laid_roads:
+		var points: PackedVector2Array = road["points"]
+		for index: int in points.size() - 1:
+			var at: Vector2 = Geometry2D.get_closest_point_to_segment(near, points[index], points[index + 1])
+			var d: float = near.distance_to(at)
+			if d < best_d:
+				best_d = d
+				best = {"at": at, "along": (points[index + 1] - points[index]).normalized(), "half_width": float(road["half_width"])}
+	return best
+
+
+## A spot on the ground beside the laid road nearest `near`: `side` (+1 or -1) of it, `gap` metres past its edge.
+func roadside(near: Vector2, side: float = 1.0, gap: float = 1.6) -> Vector3:
+	var road: Dictionary = nearest_road(near)
+	if road.is_empty():
+		return ground(near.x, near.y)
+	var along: Vector2 = road["along"]
+	var spot: Vector2 = Vector2(road["at"]) + Vector2(-along.y, along.x) * side * (float(road["half_width"]) + gap)
+	return ground(spot.x, spot.y)
+
+
+## The laid roads for the ground shader (docs/26), built once: the segments
+## (two RGBA float texels each: a.xz b.xz, then half width, distance along the
+## road at a, kind 0 cobbled / 1 earthen), a grid of ROAD_CELL cells over the
+## island (each its offset and count in the index list) and the index list.
+## {"segs", "cells", "index": ImageTexture, "grid": Vector4 (origin x, z, cell, 1), "dims": Vector2i}.
+func road_textures() -> Dictionary:
+	if not _road_textures.is_empty():
+		return _road_textures
+	var segs: PackedFloat32Array = PackedFloat32Array()
+	for road: Dictionary in laid_roads:
+		var points: PackedVector2Array = road["points"]
+		var half: float = float(road["half_width"])
+		var kind: float = 1.0 if half <= DIRT_HALF_WIDTH else 0.0
+		var along: float = 0.0
+		for index: int in points.size() - 1:
+			segs.append_array(PackedFloat32Array([points[index].x, points[index].y, points[index + 1].x, points[index + 1].y, half, along, kind, 0.0]))
+			along += points[index].distance_to(points[index + 1])
+	@warning_ignore("integer_division")
+	var count: int = segs.size() / 8
+	var half_side: float = isle.grid_size_m() * 0.5 + ROAD_CELL
+	var origin: Vector2 = Vector2(-half_side, -half_side)
+	var dims: int = int(ceil(half_side * 2.0 / ROAD_CELL))
+	var lists: Array[PackedInt32Array] = []
+	lists.resize(dims * dims)
+	for index: int in count:
+		var a: Vector2 = Vector2(segs[index * 8], segs[index * 8 + 1])
+		var b: Vector2 = Vector2(segs[index * 8 + 2], segs[index * 8 + 3])
+		var reach: Rect2 = Rect2(a, Vector2.ZERO).expand(b).grow(segs[index * 8 + 4] + ROAD_REACH)
+		var c0: int = clampi(int(floor((reach.position.x - origin.x) / ROAD_CELL)), 0, dims - 1)
+		var c1: int = clampi(int(floor((reach.end.x - origin.x) / ROAD_CELL)), 0, dims - 1)
+		var r0: int = clampi(int(floor((reach.position.y - origin.y) / ROAD_CELL)), 0, dims - 1)
+		var r1: int = clampi(int(floor((reach.end.y - origin.y) / ROAD_CELL)), 0, dims - 1)
+		for row: int in range(r0, r1 + 1):
+			for col: int in range(c0, c1 + 1):
+				if lists[row * dims + col].size() < ROAD_MAX_PER_CELL:
+					lists[row * dims + col].append(index)
+	var seg_image: Image = Image.create_empty(512, maxi(1, int(ceil(float(count) / 256.0))), false, Image.FORMAT_RGBAF)
+	for index: int in count:
+		@warning_ignore("integer_division")
+		var y: int = index / 256
+		var x: int = (index % 256) * 2
+		seg_image.set_pixel(x, y, Color(segs[index * 8], segs[index * 8 + 1], segs[index * 8 + 2], segs[index * 8 + 3]))
+		seg_image.set_pixel(x + 1, y, Color(segs[index * 8 + 4], segs[index * 8 + 5], segs[index * 8 + 6], 0.0))
+	var listed: PackedFloat32Array = PackedFloat32Array()
+	var cell_image: Image = Image.create_empty(dims, dims, false, Image.FORMAT_RGF)
+	for row: int in dims:
+		for col: int in dims:
+			var list: PackedInt32Array = lists[row * dims + col]
+			cell_image.set_pixel(col, row, Color(float(listed.size()), float(list.size()), 0.0))
+			for each: int in list:
+				listed.append(float(each))
+	var index_image: Image = Image.create_empty(1024, maxi(1, int(ceil(float(listed.size()) / 1024.0))), false, Image.FORMAT_RF)
+	for index: int in listed.size():
+		@warning_ignore("integer_division")
+		index_image.set_pixel(index % 1024, index / 1024, Color(listed[index], 0.0, 0.0))
+	_road_textures = {"segs": ImageTexture.create_from_image(seg_image), "cells": ImageTexture.create_from_image(cell_image),
+		"index": ImageTexture.create_from_image(index_image), "grid": Vector4(origin.x, origin.y, ROAD_CELL, 1.0), "dims": Vector2i(dims, dims),
+		"segments": count}
+	return _road_textures
 
 
 # --- Shared shapes for the islands ---------------------------------------------------
@@ -440,8 +872,8 @@ func _coast_keepers() -> PackedFloat32Array:
 		keepers.append_array(PackedFloat32Array([_ramps[index], _ramps[index + 2], _ramps[index + 3], _ramps[index + 5], _ramps[index + 6] + _ramps[index + 7]]))
 		index += 8
 	index = 0
-	while index < _paths.size():
-		keepers.append_array(PackedFloat32Array([_paths[index], _paths[index + 1], _paths[index + 2], _paths[index + 3], _paths[index + 4]]))
+	while index < _coarse_paths.size():
+		keepers.append_array(_coarse_paths.slice(index, index + 5))
 		index += 5
 	for at: Vector3 in arrivals.values():
 		keepers.append_array(PackedFloat32Array([at.x, at.z, at.x, at.z, 20.0]))
@@ -556,10 +988,10 @@ func _add_inlet(mouth: Vector2, head: Vector2, rng: RandomNumberGenerator) -> vo
 func _path_distance(at: Vector2) -> float:
 	var best: float = INF
 	var index: int = 0
-	while index < _paths.size():
-		var a: Vector2 = Vector2(_paths[index], _paths[index + 1])
-		var b: Vector2 = Vector2(_paths[index + 2], _paths[index + 3])
-		best = minf(best, at.distance_to(Geometry2D.get_closest_point_to_segment(at, a, b)) - _paths[index + 4])
+	while index < _coarse_paths.size():
+		var a: Vector2 = Vector2(_coarse_paths[index], _coarse_paths[index + 1])
+		var b: Vector2 = Vector2(_coarse_paths[index + 2], _coarse_paths[index + 3])
+		best = minf(best, at.distance_to(Geometry2D.get_closest_point_to_segment(at, a, b)) - _coarse_paths[index + 4])
 		index += 5
 	return best
 

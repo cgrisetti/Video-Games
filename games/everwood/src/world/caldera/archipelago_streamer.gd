@@ -153,6 +153,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	_wait_for_jobs()
+	_apply_roads(null)
 
 
 func _process(_delta: float) -> void:
@@ -172,6 +173,7 @@ func activate_island(isle_id: StringName, focus: Array[Vector3]) -> void:
 	_deactivate()
 	active_isle = isle_id
 	builder = CalderaAtlas.builder_for(isle_id)
+	_apply_roads(builder)
 	WorldGridConfig.layout = CalderaLayout.new(builder)
 	structures = Node3D.new()
 	structures.name = "Island_%s" % String(isle_id).trim_prefix("isle_")
@@ -555,6 +557,21 @@ func _deactivate() -> void:
 		structures = null
 	builder = null
 	active_isle = &""
+
+
+## Hands the live island's laid roads to the ground shader (docs/26), or none
+## (null: the shared terrain material draws vertex-painted roads again elsewhere).
+static func _apply_roads(live: IslandBuilder) -> void:
+	var terrain: ShaderMaterial = WorldVisualCatalog.terrain()
+	if live == null:
+		terrain.set_shader_parameter(&"road_grid", Vector4.ZERO)
+		return
+	var data: Dictionary = live.road_textures()
+	terrain.set_shader_parameter(&"road_segs", data["segs"])
+	terrain.set_shader_parameter(&"road_cells", data["cells"])
+	terrain.set_shader_parameter(&"road_index", data["index"])
+	terrain.set_shader_parameter(&"road_dims", data["dims"])
+	terrain.set_shader_parameter(&"road_grid", data["grid"])
 
 
 # --- The Sound: sea and horizon -----------------------------------------------------------

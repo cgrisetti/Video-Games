@@ -243,7 +243,10 @@ func _check_landmarks() -> void:
 # --- 5: the kin --------------------------------------------------------------------------------
 
 func _check_kin() -> void:
-	var roads: Array[PackedVector2Array] = crown.roads()
+	# The roads as laid over the ground (docs/26): the first eight are the roads, the rest the shore tracks.
+	var roads: Array[PackedVector2Array] = []
+	for index: int in mini(crown.roads().size(), crown.laid_roads.size()):
+		roads.append(crown.laid_roads[index]["points"] as PackedVector2Array)
 	var per_zone: Dictionary[int, int] = {}
 	var rares: Dictionary[int, int] = {}
 	var problems: PackedStringArray = PackedStringArray()
