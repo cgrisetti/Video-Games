@@ -153,6 +153,8 @@ const SEAL_BENCH_CHECKS: GDScript = preload("res://tools/test_seal_bench.gd")
 const INK_WELL_CHECKS: GDScript = preload("res://tools/test_ink_well.gd")
 ## The Ink Card Deck: the eight cards, their twists, finds on the isles and the card bench (25 GDD §7).
 const INK_DECK_CHECKS: GDScript = preload("res://tools/test_ink_deck.gd")
+## The start-up check that Godot knows every named script (tools/test_script_registry.gd).
+const SCRIPT_REGISTRY_CHECKS: GDScript = preload("res://tools/test_script_registry.gd")
 var _hero_rig: RefCounted = HERO_RIG_CHECKS.new()
 
 
@@ -162,6 +164,8 @@ func _initialize() -> void:
 
 func _run() -> void:
 	print("Everwood smoke test")
+	# First of all, and before any save is touched: Godot's list of named scripts is whole.
+	SCRIPT_REGISTRY_CHECKS.new().run(self, _check)
 	_remove_file(TEST_SAVE_PATH)
 	PartyProgress.current.use_save_file(TEST_SAVE_PATH)
 	# The machine's settings too: the smoke test never touches the real settings file.
