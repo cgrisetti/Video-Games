@@ -181,6 +181,16 @@ var camera_pitch_input: float = 0.0
 var invert_pitch: bool = false
 ## A menu is open on this player's screen: buttons go to menu_input instead.
 var menu_open: bool = false
+## A film holds this player still (the opening prologue or its recap, docs/31): no moving, no
+## camera, no buttons and no menus. What's held is still read (is_held), so the film can see a
+## skip hold. Letting go spends whatever is still down, so the skip's own press never opens a menu.
+var cinematic_hold: bool = false:
+	set(value):
+		if cinematic_hold and not value:
+			for action: StringName in _held:
+				if _held[action]:
+					_spent[action] = true
+		cinematic_hold = value
 
 var _held: Dictionary[StringName, bool] = {}
 var _was_held: Dictionary[StringName, bool] = {}
@@ -382,6 +392,8 @@ func label(action: StringName) -> String:
 ## L held as a posture (Active Guard), once it's clear it isn't half of an ult
 ## chord, or the Squire auto-guard holding it up for you.
 func is_guard_held() -> bool:
+	if cinematic_hold:
+		return false
 	if _auto_guard:
 		return true
 	if _scripted:
@@ -391,6 +403,11 @@ func is_guard_held() -> bool:
 
 func is_auto_guarding() -> bool:
 	return _auto_guard
+
+
+## Whether a button is down on this player's device right now (a film reads its skip hold here).
+func is_held(action: StringName) -> bool:
+	return _held.get(action, false)
 
 
 ## Camera yaw from mouse movement since the last call (keyboard player only).
@@ -469,7 +486,7 @@ func fire_buffered_counter() -> void:
 # --- Polling --------------------------------------------------------------
 
 func _input(event: InputEvent) -> void:
-	if device_id != KEYBOARD_DEVICE or _scripted:
+	if device_id != KEYBOARD_DEVICE or _scripted or cinematic_hold:
 		return
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	if motion != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -489,6 +506,9 @@ func poll(dt: float) -> void:
 		for action: StringName in _held:
 			if _held[action]:
 				_spent[action] = true
+	if cinematic_hold:
+		_hold_still()
+		return
 	if _scripted:
 		move_input = _scripted_move
 		camera_orbit_input = 0.0
@@ -571,6 +591,19 @@ func poll(dt: float) -> void:
 
 	while not _scripted_commands.is_empty():
 		_issue(_scripted_commands.pop_front())
+
+
+## A film holds this player (docs/31): nothing moves, turns, presses or opens; the buttons are only read.
+func _hold_still() -> void:
+	move_input = Vector2.ZERO
+	camera_orbit_input = 0.0
+	camera_pitch_input = 0.0
+	sprint_held = false
+	sprint_pressed = false
+	_mouse_yaw = 0.0
+	_mouse_pitch = 0.0
+	_scripted_commands.clear()
+	_hold_time.clear()
 
 
 ## Takes in what's held as a menu opens, so only fresh presses drive it.

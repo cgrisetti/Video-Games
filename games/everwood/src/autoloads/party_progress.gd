@@ -142,6 +142,12 @@ var trail_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var save_path: String = SAVE_PATH
 ## The tale's hero, named on the title screen's New Game (docs/22; "" for a save from before names).
 var hero_name: String = ""
+## The opening film (docs/31), per character: each Fellowship's hero in this tale who has seen
+## it (class id -> true). Saved as [heroes] prologue_seen. A tale written before the film has no
+## such key and counts every hero as having seen it; a new tale starts with it empty.
+var prologue_seen: Dictionary[StringName, bool] = {}
+## Whether this tale keeps that ledger (false: an older tale, or no save file at all).
+var prologue_ledger: bool = false
 ## Whether the tale's hero is the boy or the girl youth (docs/26 §7; HeroAppearanceResource.YOUTH_BOY / _GIRL).
 var hero_style: StringName = HeroAppearanceResource.YOUTH_BOY
 ## When this tale was begun and last saved (Unix seconds; 0 when unknown).
@@ -780,6 +786,9 @@ func begin_new_tale(path: String, hero: String, style: StringName = HeroAppearan
 	hero_name = hero
 	hero_style = style
 	created_unix = int(Time.get_unix_time_from_system())
+	# A new character: no hero of this tale has seen the opening film yet (docs/31).
+	prologue_ledger = true
+	prologue_seen.clear()
 	var error: Error = save()
 	progress_changed.emit()
 	return error
@@ -817,8 +826,11 @@ func load_save() -> void:
 	hero_style = HeroAppearanceResource.YOUTH_BOY
 	created_unix = 0
 	last_played_unix = 0
+	prologue_seen.clear()
+	prologue_ledger = false
 	var file: ConfigFile = ConfigFile.new()
 	if file.load(save_path) == OK:
+		_read_prologue_seen(file)
 		hero_name = str(file.get_value("hero", "name", ""))
 		hero_style = HeroAppearanceResource.YOUTH_GIRL if str(file.get_value("hero", "style", "boy")) == "girl" else HeroAppearanceResource.YOUTH_BOY
 		created_unix = maxi(0, int(file.get_value("hero", "created", 0)))
@@ -895,6 +907,45 @@ static func xp_on_spine(old_xp: int) -> int:
 	return LEVEL_XP[level - 1] + int(floor(share * float(LEVEL_XP[level] - LEVEL_XP[level - 1])))
 
 
+# --- The opening film (docs/31) ------------------------------------------------------------
+
+## Whether `class_id`'s hero in this tale has seen the opening film (always, in a tale from before it).
+func has_seen_prologue(class_id: StringName) -> bool:
+	return not prologue_ledger or prologue_seen.get(class_id, false)
+
+
+## The film finished or was skipped: these heroes have seen it, saved at once (host only; a
+## playtest saves nothing). Quitting mid-film never gets here, so the film plays again next time.
+func mark_prologue_seen(class_ids: Array[StringName]) -> void:
+	if not prologue_ledger or (NetworkManager.current != null and not NetworkManager.current.is_host()):
+		return
+	var changed: bool = false
+	for class_id: StringName in class_ids:
+		if class_id != &"" and not prologue_seen.get(class_id, false):
+			prologue_seen[class_id] = true
+			changed = true
+	if changed:
+		_commit()
+
+
+func _read_prologue_seen(file: ConfigFile) -> void:
+	prologue_ledger = file.has_section_key("heroes", "prologue_seen")
+	var saved: Variant = file.get_value("heroes", "prologue_seen", {})
+	if not saved is Dictionary:
+		return
+	var seen: Dictionary = saved as Dictionary
+	for class_id: Variant in seen:
+		if bool(seen[class_id]):
+			prologue_seen[StringName(str(class_id))] = true
+
+
+func _plain_prologue_seen() -> Dictionary:
+	var plain: Dictionary = {}
+	for class_id: StringName in prologue_seen:
+		plain[String(class_id)] = prologue_seen[class_id]
+	return plain
+
+
 # --- Quests (QuestManager keeps the rules; the ledger lives here, saved and shared) -----
 
 func has_unlock(unlock_id: StringName) -> bool:
@@ -947,6 +998,8 @@ func save() -> Error:
 	file.set_value("trail", "curve", CURVE_TAG)
 	file.set_value("heroes", "xp", _plain_hero_xp())
 	file.set_value("heroes", "tiers", _plain_promoted_tiers())
+	if prologue_ledger:
+		file.set_value("heroes", "prologue_seen", _plain_prologue_seen())
 	for id: StringName in UPGRADES:
 		file.set_value("upgrades", String(id), level_of(id))
 	file.set_value("cards", "collection", _plain_collection())

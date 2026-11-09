@@ -10,6 +10,9 @@
 // First-Quiet's blight (ashen slate-indigo, a hoar-rime rim, the Frozen Wind),
 // the Lantern's Promise halos that push it back, and rolling cloud shadows.
 
+// HUSH_TINT and the grey drain itself, shared with the opening film (docs/31).
+#include "res://src/world/shaders/hush_drain.gdshaderinc"
+
 global uniform sampler2DArray atelier_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 global uniform sampler2DArray atelier_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 global uniform sampler2DArray atelier_roughness : filter_linear_mipmap, repeat_enable;
@@ -50,7 +53,6 @@ global uniform vec4 ground_turf;
 global uniform vec4 ground_road;
 global uniform vec4 ground_verge;
 
-const vec3 HUSH_TINT = vec3(0.431, 0.471, 0.502);
 const vec3 BLOOM_GOLD = vec3(0.95, 0.78, 0.32);
 const vec3 BLOOM_EMERALD = vec3(0.35, 0.72, 0.38);
 // Above the hero's feet, sightline-faded parts start fading at this height (the 3.2 m contract)...
@@ -188,7 +190,7 @@ void apply_succession(vec3 world_pos, inout vec3 albedo, inout vec3 emission, fl
 	vec4 cracks[4] = vec4[4](hush_crack_0, hush_crack_1, hush_crack_2, hush_crack_3);
 	vec4 blooms[4] = vec4[4](bloom_0, bloom_1, bloom_2, bloom_3);
 	float warmth = lantern_warmth(world_pos);
-	float ashen_share = blight_ashen.a > 0.0 ? blight_ashen.a : 0.85;
+	float ashen_share = blight_ashen.a > 0.0 ? blight_ashen.a : HUSH_DRAIN_SHARE;
 	vec3 ashen = blight_ashen.a > 0.0 ? blight_ashen.rgb : HUSH_TINT;
 	vec3 rime = blight_rime.a > 0.0 ? blight_rime.rgb : vec3(0.72, 0.82, 0.88);
 	float rime_width = blight_rime.a > 0.0 ? blight_rime.a : 2.5;
@@ -199,8 +201,7 @@ void apply_succession(vec3 world_pos, inout vec3 albedo, inout vec3 emission, fl
 			float hush = inside * strength * (1.0 - warmth);
 			float grey = luminance(albedo);
 			// 85% of the warm colour drains, toward the ashen slate-indigo at the grey's own value.
-			vec3 drained = ashen * (grey / max(luminance(ashen), 0.001));
-			albedo = mix(albedo, drained, hush * ashen_share);
+			albedo = hush_drain(albedo, ashen, hush * ashen_share);
 			// The hoar-rime rim: crystalline veins in a band just inside the hush's edge.
 			float band = 1.0 - smoothstep(0.0, rime_width * 0.5, abs(d - (cracks[i].w - rime_width * 0.5)));
 			float veins = smoothstep(0.62, 0.78, world_noise(world_pos.xz * 2.2 + vec2(d * 0.7, 0.0)))

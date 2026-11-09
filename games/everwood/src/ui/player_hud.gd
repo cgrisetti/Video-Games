@@ -379,6 +379,16 @@ func quest_complete_card() -> QuestCompleteCard:
 	return _quest_card if is_instance_valid(_quest_card) and not _quest_card.is_queued_for_deletion() else null
 
 
+## A film has let this player go (docs/31): the banners that waited for it come up.
+func film_released() -> void:
+	if quest_complete_card() == null and not _held_by_film():
+		_show_waiting_banner()
+
+
+func _held_by_film() -> bool:
+	return is_instance_valid(actor) and actor.input != null and actor.input.cinematic_hold
+
+
 ## The card has gone: the banners that waited for it come up one after another.
 func _show_waiting_banner() -> void:
 	_quest_card = null
@@ -704,7 +714,8 @@ func prompt_text() -> String:
 ## A big centred message for the whole party, like VICTORY! It stays up until
 ## another replaces it, or for `seconds` (real time) when that's above zero.
 func show_banner(title: String, subtitle: String, color: Color, seconds: float = 0.0) -> void:
-	if quest_complete_card() != null:
+	# A banner that arrives while a film holds this player (docs/31) waits for the film's end too.
+	if quest_complete_card() != null or _held_by_film():
 		_waiting_banners.append([title, subtitle, color, seconds])
 		return
 	_banner_title.text = title
