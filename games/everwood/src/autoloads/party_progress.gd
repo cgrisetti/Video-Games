@@ -45,21 +45,33 @@ const MAX_UPGRADE_LEVEL: int = 5
 const UPGRADE_BASE_COST: int = 4
 ## Rubbings that draft a missing Plain Ink card at the Scribe Desk (25 GDD R3).
 const DRAFT_RUBBINGS: int = 3
-## XP the trail pays the party (11 GDD §5.2).
+## XP a calmed foe, a co-op gate and a boss pay the party (11 GDD §5.2). Calms
+## during a quest count toward that quest's own XP (QuestManager tops the party
+## up to the quest's cumulative XP when it is handed in), so the quests carry
+## the curve and the calms only colour it in [tuning in 04_BALANCE].
 const XP_PER_MOB: int = 35
 const XP_PER_GATE: int = 80
 const XP_PER_BOSS: int = 200
-## Total XP for each level, Level 1 first. One expedition (7 mobs, the
-## Gorge gate and the Cairnsman: 525 XP) reaches Level 5 at the Gatehouse; the
-## second reaches Level 10 at the Cairnsman. Levels 11 to 20 (the Caldera's
-## Stages 3 and 4, 25 GDD §2) climb on from there [tuning TBD in 04_BALANCE].
-const LEVEL_XP: Array[int] = [0, 70, 105, 230, 320, 560, 700, 800, 850, 1050,
+## Total XP for each level, Level 1 first: the Narrative & Design Bible's
+## Bounded Vertical Spine (§2, §5's Master Quest Ledger; the Creative
+## Director's call of 2026-11-09). Act I's five quests climb Embershore from
+## Level 1 to 6 (400 / 900 / 1,600 / 2,500 / 3,800), Act II's spokes to 13
+## (24,800), and Act III's Three Shore Trials reach Level 14 (27,650).
+const LEVEL_XP: Array[int] = [0, 400, 900, 1600, 2500, 3800, 5400, 7400, 9800, 12600,
+	16000, 20000, 24800, 27650]
+## The Bible's XP ceiling: Q14, the Naming of the Shadow, caps the spine here (Level 14 stays).
+const XP_CEILING: int = 30500
+## The curve before 2026-11-09 (Level 1 to 20). A save written on it carries no [trail] curve
+## tag, and load_save moves its heroes onto the spine at the level they had reached (capped at 14).
+const OLD_LEVEL_XP: Array[int] = [0, 70, 105, 230, 320, 560, 700, 800, 850, 1050,
 	1300, 1600, 1950, 2350, 2800, 3300, 3850, 4450, 5100, 5800]
+## The save's [trail] curve tag for XP counted on LEVEL_XP.
+const CURVE_TAG: String = "bible14"
 ## The Bramble-Bridge trail's own top: its milestones stop here, and the older
 ## checks' full kit stands the party here (apply_full_endgame_kit_for_testing).
 const TRAIL_TOP_LEVEL: int = 10
-## The top Character Level (the Google Doc's Character Level 1-20).
-const MAX_CHARACTER_LEVEL: int = 20
+## The top Character Level (the Bible's 14-level spine; it was 20 before 2026-11-09).
+const MAX_CHARACTER_LEVEL: int = 14
 ## The two pieces the Forge promotes: the weapon with its offhand, and the armour.
 const PIECE_WEAPON: StringName = &"weapon"
 const PIECE_ARMOR: StringName = &"armor"
@@ -108,6 +120,15 @@ var rubbings: int = 0
 var caldera_flags: int = 0
 ## Reveal id -> the hero classes (as strings) that have seen it (docs/27 §7: the Doverslap reveal plays once per player per save).
 var reveals_seen: Dictionary[StringName, PackedStringArray] = {}
+## The quest ledger (QuestManager, docs/29): quest id -> {"state": QuestManager.QuestState,
+## "step": the step under way, "count": its progress}. Plain Strings and ints, saved and shared.
+var quest_log: Dictionary = {}
+## What the quests have opened (QuestManager unlock ids: "Card_CalmingSeal", "DualActiveSealSlot" ...).
+var unlocks: PackedStringArray = PackedStringArray()
+## Quest items the party carries, by id ("Item_LivingCiderResin" -> 9, "Relic_BronzeCarillonTongue" -> 1).
+var items: Dictionary = {}
+## Every Stag Hunt the party has played (QuestManager.record_stag_hunt): the branch it took and its payoffs.
+var stag_hunts: Array[Dictionary] = []
 ## The playtest switcher (PlaytestSwitcher, K2) is in use: nothing more is saved this session.
 var playtest: bool = false
 ## While playtesting, the trail level and Grimoire level the switcher chose (0: the party's own).
@@ -572,7 +593,7 @@ func _request_gild(copy_key: StringName, pressed_by: String = "") -> void:
 
 ## The party's trail level, 1 to 10: it paces the Bramble-Bridge trail's
 ## milestones and the foes' badges. The hero's own hand, tiers and Calling read
-## its Character Level instead (character_level, 1 to 20).
+## its Character Level instead (character_level, 1 to 14).
 func trail_level() -> int:
 	if playtest_level > 0:
 		return mini(playtest_level, TRAIL_TOP_LEVEL)
@@ -598,7 +619,7 @@ func callings_unlocked() -> bool:
 	return trail_level() >= ArsenalCatalog.CALLING_LEVEL
 
 
-## A Fellowship's hero's Character Level, 1 to 20 (25 GDD §2): what opens its
+## A Fellowship's hero's Character Level, 1 to 14 (25 GDD §2, on the Bible's spine): what opens its
 ## hand's slots, the material tiers it may be promoted to, and its Calling. A
 ## playtest's chosen level stands in for every hero.
 func character_level(class_id: StringName) -> int:
@@ -607,7 +628,7 @@ func character_level(class_id: StringName) -> int:
 	return level_for_xp(hero_xp.get(class_id, 0))
 
 
-## XP the hero still needs for its next Character Level (0 at Level 20).
+## XP the hero still needs for its next Character Level (0 at Level 14).
 func character_xp_to_next(class_id: StringName) -> int:
 	var level: int = character_level(class_id)
 	return 0 if level >= MAX_CHARACTER_LEVEL else LEVEL_XP[level] - hero_xp.get(class_id, 0)
@@ -676,7 +697,8 @@ func _request_promote(class_id: String, piece: String) -> void:
 
 
 ## Steward Threat (the Google Doc's 1-40): Character Level plus the material rank
-## of the weapon the hero wears (+0 at Orchard-Wood to +20 at Star-Glass).
+## of the weapon the hero wears (+0 at Orchard-Wood to +20 at Star-Glass). On the
+## Bible's 14-level spine the top hero reads 34.
 func steward_threat(class_id: StringName, weapon_rank: int) -> int:
 	return clampi(character_level(class_id) + clampi(weapon_rank, 0, 20), 1, 40)
 
@@ -700,10 +722,10 @@ func award_xp(amount: int) -> void:
 	var hero_gained: bool = false
 	for class_id: StringName in seated_fellowships():
 		heroes_before[class_id] = character_level(class_id)
-		var hero_total: int = mini(hero_xp.get(class_id, 0) + amount, LEVEL_XP.back())
+		var hero_total: int = mini(hero_xp.get(class_id, 0) + amount, XP_CEILING)
 		hero_gained = hero_gained or hero_total != hero_xp.get(class_id, 0)
 		hero_xp[class_id] = hero_total
-	var gained: int = mini(xp + amount, LEVEL_XP.back())
+	var gained: int = mini(xp + amount, XP_CEILING)
 	if gained == xp and not hero_gained:
 		return
 	xp = gained
@@ -787,6 +809,10 @@ func load_save() -> void:
 	pattern_seen.clear()
 	caldera_flags = 0
 	reveals_seen.clear()
+	quest_log = {}
+	unlocks = PackedStringArray()
+	items = {}
+	stag_hunts.clear()
 	hero_name = ""
 	hero_style = HeroAppearanceResource.YOUTH_BOY
 	created_unix = 0
@@ -802,8 +828,12 @@ func load_save() -> void:
 		victories = maxi(0, int(file.get_value("party", "victories", 0)))
 		# A save from before the trail: each Cairnsman win stands for an
 		# expedition (Level 5 after one, Level 10 after two), so no gear is lost.
-		var migrated: int = [0, LEVEL_XP[4], LEVEL_XP.back()][mini(victories, 2)]
-		xp = clampi(int(file.get_value("trail", "xp", migrated)), 0, LEVEL_XP.back())
+		var migrated: int = [0, LEVEL_XP[4], LEVEL_XP[9]][mini(victories, 2)]
+		# XP counted on the old 20-level curve moves onto the spine at the level it had reached.
+		var old_curve: bool = file.has_section_key("trail", "xp") and str(file.get_value("trail", "curve", "")) != CURVE_TAG
+		xp = clampi(int(file.get_value("trail", "xp", migrated)), 0, XP_CEILING)
+		if old_curve:
+			xp = xp_on_spine(xp)
 		# A save from before per-hero levels: every Fellowship played the party's levels together.
 		var saved_heroes: Dictionary = file.get_value("heroes", "xp", {}) as Dictionary
 		if saved_heroes.is_empty():
@@ -811,6 +841,9 @@ func load_save() -> void:
 				hero_xp[class_id] = xp
 		else:
 			_read_hero_xp(saved_heroes)
+			if old_curve:
+				for class_id: StringName in hero_xp:
+					hero_xp[class_id] = xp_on_spine(hero_xp[class_id])
 		# A save from before the Forge: every piece stands at the tier its hero's level reached.
 		var saved_tiers: Dictionary = file.get_value("heroes", "tiers", {}) as Dictionary
 		_read_promoted_tiers(saved_tiers)
@@ -842,7 +875,58 @@ func load_save() -> void:
 		var saved_reveals: Dictionary = file.get_value("caldera", "reveals", {}) as Dictionary
 		for reveal_id: Variant in saved_reveals:
 			reveals_seen[StringName(str(reveal_id))] = PackedStringArray(saved_reveals[reveal_id])
+		_read_quests(file.get_value("quests", "log", {}) as Dictionary, file.get_value("quests", "unlocks", PackedStringArray()),
+			file.get_value("quests", "items", {}) as Dictionary, file.get_value("quests", "stag_hunts", []) as Array)
 	progress_changed.emit()
+
+
+## XP counted on the old 20-level curve, moved onto the spine: the same level (at most 14), with
+## the same share of the way to the next one.
+static func xp_on_spine(old_xp: int) -> int:
+	var level: int = 1
+	for index: int in OLD_LEVEL_XP.size():
+		if old_xp >= OLD_LEVEL_XP[index]:
+			level = index + 1
+	if level >= MAX_CHARACTER_LEVEL:
+		return LEVEL_XP[MAX_CHARACTER_LEVEL - 1]
+	var share: float = 0.0
+	if level < OLD_LEVEL_XP.size():
+		share = float(old_xp - OLD_LEVEL_XP[level - 1]) / float(maxi(1, OLD_LEVEL_XP[level] - OLD_LEVEL_XP[level - 1]))
+	return LEVEL_XP[level - 1] + int(floor(share * float(LEVEL_XP[level] - LEVEL_XP[level - 1])))
+
+
+# --- Quests (QuestManager keeps the rules; the ledger lives here, saved and shared) -----
+
+func has_unlock(unlock_id: StringName) -> bool:
+	return unlocks.has(String(unlock_id))
+
+
+func item_count(item_id: StringName) -> int:
+	return int(items.get(String(item_id), 0))
+
+
+## Host only (QuestManager): saves the ledger and shares it with the other peers.
+func commit_quests() -> void:
+	if NetworkManager.current.is_host():
+		_commit()
+
+
+func _read_quests(ledger: Dictionary, opened: Variant, carried: Dictionary, hunts: Array) -> void:
+	quest_log = {}
+	for quest_id: Variant in ledger:
+		var entry: Variant = ledger[quest_id]
+		if entry is Dictionary:
+			var plain: Dictionary = entry as Dictionary
+			quest_log[String(quest_id)] = {"state": int(plain.get("state", 0)), "step": maxi(0, int(plain.get("step", 0))),
+				"count": maxi(0, int(plain.get("count", 0)))}
+	unlocks = PackedStringArray(opened) if opened is PackedStringArray or opened is Array else PackedStringArray()
+	items = {}
+	for item_id: Variant in carried:
+		items[String(item_id)] = maxi(0, int(carried[item_id]))
+	stag_hunts.clear()
+	for hunt: Variant in hunts:
+		if hunt is Dictionary:
+			stag_hunts.append((hunt as Dictionary).duplicate())
 
 
 func save() -> Error:
@@ -860,6 +944,7 @@ func save() -> Error:
 	file.set_value("party", "chimes", chimes)
 	file.set_value("party", "victories", victories)
 	file.set_value("trail", "xp", xp)
+	file.set_value("trail", "curve", CURVE_TAG)
 	file.set_value("heroes", "xp", _plain_hero_xp())
 	file.set_value("heroes", "tiers", _plain_promoted_tiers())
 	for id: StringName in UPGRADES:
@@ -886,6 +971,10 @@ func save() -> Error:
 	for reveal_id: StringName in reveals_seen:
 		plain_reveals[String(reveal_id)] = Array(reveals_seen[reveal_id])
 	file.set_value("caldera", "reveals", plain_reveals)
+	file.set_value("quests", "log", quest_log)
+	file.set_value("quests", "unlocks", unlocks)
+	file.set_value("quests", "items", items)
+	file.set_value("quests", "stag_hunts", stag_hunts)
 	return file.save(save_path)
 
 
@@ -941,7 +1030,7 @@ func _read_promoted_tiers(plain: Dictionary) -> void:
 func _read_hero_xp(plain: Dictionary) -> void:
 	hero_xp.clear()
 	for class_id: Variant in plain:
-		hero_xp[StringName(str(class_id))] = clampi(int(plain[class_id]), 0, LEVEL_XP.back())
+		hero_xp[StringName(str(class_id))] = clampi(int(plain[class_id]), 0, XP_CEILING)
 
 
 func _plain_pattern_seen() -> Dictionary:
@@ -991,7 +1080,7 @@ func _snapshot() -> Dictionary:
 		bought[String(id)] = level_of(id)
 	return {"chimes": chimes, "levels": bought, "victories": victories, "xp": xp, "hero_xp": _plain_hero_xp(), "tiers": _plain_promoted_tiers(), "marks": _plain_marks(), "maker_seals": _plain_maker_seals(),
 		"rubbings": rubbings, "collection": _plain_collection(),
-		"glimmer_seen": _plain_pattern_seen()}
+		"glimmer_seen": _plain_pattern_seen(), "quest_log": quest_log, "unlocks": unlocks, "items": items, "stag_hunts": stag_hunts}
 
 
 # --- Network --------------------------------------------------------------
@@ -1011,8 +1100,10 @@ func _receive_progress(data: Dictionary) -> void:
 	for id: StringName in UPGRADES:
 		levels[id] = clampi(int(bought.get(String(id), 0)), 0, MAX_UPGRADE_LEVEL)
 	victories = maxi(0, int(data.get("victories", 0)))
-	xp = clampi(int(data.get("xp", 0)), 0, LEVEL_XP.back())
+	xp = clampi(int(data.get("xp", 0)), 0, XP_CEILING)
 	_read_hero_xp(data.get("hero_xp", {}) as Dictionary)
+	_read_quests(data.get("quest_log", {}) as Dictionary, data.get("unlocks", PackedStringArray()), data.get("items", {}) as Dictionary,
+		data.get("stag_hunts", []) as Array)
 	_read_promoted_tiers(data.get("tiers", {}) as Dictionary)
 	_read_marks(data.get("marks", {}) as Dictionary, data.get("maker_seals", {}) as Dictionary)
 	rubbings = maxi(0, int(data.get("rubbings", 0)))

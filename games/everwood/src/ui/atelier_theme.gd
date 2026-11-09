@@ -90,7 +90,7 @@ static func tooltip_style() -> StyleBoxFlat:
 	return style
 
 
-## A small rounded chip ("NEW", "Lv 17", a Sign's name) in a colour.
+## A small rounded chip ("NEW", "Lv 13", a Sign's name) in a colour.
 static func chip_style(edge: Color, fill: Color = ROW) -> StyleBoxFlat:
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = fill

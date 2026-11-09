@@ -4,7 +4,10 @@
 ##
 ##   R4  every slot opens at a Character Level: the weapon Seal at 3, the R card
 ##       at 4, the offhand Seal and the L card at 6, the mantle Seal and the
-##       Tuck at 11, the L+R Grand card at 17. The socket is drawn from Lv 1.
+##       Tuck at 10, the L+R Grand card at 13. The socket is drawn from Lv 1.
+##       (On the Bible's 14-level spine, 2026-11-09: the last two moved from 11
+##       and 17 to the starts of Stages 3 and 4. Lv 4 is Act I's "Dual
+##       Active/Seal Slot": the first level a hero carries a Seal and an Active.)
 ##   R5  seven slots, seven different cards.
 ##   R1  the Ink-Well (InkWell rules, below): what a card costs and how deep the
 ##       well is at each stage.
@@ -20,11 +23,11 @@ const SOCKET_L: int = 0
 const SOCKET_R: int = 1
 const SOCKET_LR: int = 2
 ## The level each socket's card opens at, in socket order (L, R, L+R).
-const SOCKET_OPEN_LEVELS: Array[int] = [6, 4, 17]
+const SOCKET_OPEN_LEVELS: Array[int] = [6, 4, 13]
 ## The level each Seal opens at: weapon, offhand, mantle.
-const SEAL_OPEN_LEVELS: Array[int] = [3, 6, 11]
+const SEAL_OPEN_LEVELS: Array[int] = [3, 6, 10]
 ## The one Tuck opens here.
-const TUCK_OPEN_LEVEL: int = 11
+const TUCK_OPEN_LEVEL: int = 10
 const SOCKET_NAMES: Array[String] = ["L", "R", "L+R"]
 const SEAL_NAMES: Array[String] = ["weapon", "offhand", "mantle"]
 

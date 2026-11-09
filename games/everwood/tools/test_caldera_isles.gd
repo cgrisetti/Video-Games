@@ -44,6 +44,7 @@ const CROWN_ZONES: GDScript = preload("res://tools/test_crown_zones.gd")
 const LAID_ROADS: GDScript = preload("res://tools/test_laid_roads.gd")
 ## Embershore's acceptance checks (docs/27 §12).
 const EMBERSHORE: GDScript = preload("res://tools/test_embershore.gd")
+const ACT_ONE: GDScript = preload("res://tools/test_act_one.gd")
 
 var tree: SceneTree
 var check: Callable
@@ -60,6 +61,7 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	await _check_boot()
 	LAID_ROADS.new().run(level, check)
 	await EMBERSHORE.new().run(level, check, tree)
+	await ACT_ONE.new().run(level, check, tree)
 	await _check_streaming_and_seams()
 	await _check_beacons()
 	_check_crown_areas()
@@ -230,7 +232,7 @@ func _check_boot() -> void:
 	check.call(level.instance_id() == InstanceManager.CALDERA_ISLES and level.streamer.active_isle == CalderaAtlas.ISLE_EMBERSHORE
 		and p1 != null and p1.global_position.distance_to(green) < 8.0 and p1.is_on_floor() and legacy.is_empty()
 		and not WorldAtmosphereDirector.current.horizon.visible and hud != null and not hud.minimap.visible,
-		"--boot-zone=embershore boots the Caldera at Bramblebridge's green on Embershore, standing (P1 %.1f m from the arrival), no legacy streamer, map or horizon ring%s, no minimap"
+		"--boot-zone=embershore boots the Caldera at Lee-Shore Orchards' gate over the bridge from Bramblebridge on Embershore, standing (P1 %.1f m from the arrival), no legacy streamer, map or horizon ring%s, no minimap"
 		% [p1.global_position.distance_to(green) if p1 != null else -1.0, "" if legacy.is_empty() else " (found: %s)" % ", ".join(legacy)])
 	check.call(level.region_at(p1.global_position) == "Bramblebridge" and level.streamer.impostor_for(CalderaAtlas.ISLE_THE_CROWN) != null
 		and state.bits() == 0 and not state.playtest,

@@ -266,6 +266,12 @@ func _on_hit_resolved(event: CombatEvent, _outcome: int) -> void:
 		_set_seal(false, true)
 
 
+## Host: turns the Maker-Seal upright (a Stag Hunt's Deep-Ink finisher, docs/29 §5), on every peer.
+func turn_seal_upright() -> void:
+	if has_maker_seal and not is_maker_seal_upright:
+		_set_seal(true, false)
+
+
 ## Host: turns or opens the seal and tells the other peers.
 func _set_seal(upright: bool, exposed: bool) -> void:
 	_apply_seal(upright, exposed)

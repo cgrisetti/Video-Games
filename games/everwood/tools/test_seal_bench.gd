@@ -145,12 +145,12 @@ func _check_ladder() -> void:
 			for slot: int in PlayerLoadoutResource.HAND_SLOT_COUNT:
 				agrees = agrees and (full.card_in_slot(slot) != &"") == PlayerLoadoutResource.slot_open(slot, stage, true_level)
 	var levels_ok: bool = PlayerLoadoutResource.slot_open_level(Hand.WEAPON_SEAL) == 3 and PlayerLoadoutResource.slot_open_level(Hand.OFFHAND_SEAL) == 6 \
-		and PlayerLoadoutResource.slot_open_level(Hand.MANTLE_SEAL) == 11 and PlayerLoadoutResource.slot_open_level(Hand.L_PRIMARY) > ArsenalCatalog.MAX_TRUE_LEVEL \
+		and PlayerLoadoutResource.slot_open_level(Hand.MANTLE_SEAL) == 10 and PlayerLoadoutResource.slot_open_level(Hand.L_PRIMARY) > ArsenalCatalog.MAX_TRUE_LEVEL \
 		and PlayerLoadoutResource.slot_open_level(Hand.R_TUCK) > ArsenalCatalog.MAX_TRUE_LEVEL \
-		and PlayerLoadoutResource.slot_opens_text(Hand.MANTLE_SEAL) == "opens at Lv 11" and PlayerLoadoutResource.slot_opens_text(Hand.OFFHAND_SEAL) == "opens at Lv 6" \
+		and PlayerLoadoutResource.slot_opens_text(Hand.MANTLE_SEAL) == "opens at Lv 10" and PlayerLoadoutResource.slot_opens_text(Hand.OFFHAND_SEAL) == "opens at Lv 6" \
 		and PlayerLoadoutResource.slot_opens_text(Hand.L_PRIMARY) == "is in the Cross now"
 	check.call(agrees and levels_ok,
-		"the bench's slot gates match trim_to_stage at all 4 stages and 20 levels: the weapon Seal at Lv 3, the offhand's at 6, the mantle's at 11; the old pocket slots never open (their cards live in the Cross)")
+		"the bench's slot gates match trim_to_stage at all 4 stages and 14 levels: the weapon Seal at Lv 3, the offhand's at 6, the mantle's at 10; the old pocket slots never open (their cards live in the Cross)")
 	var role: int = ClassLoadoutResource.Role.TANK
 	var chosen: PlayerLoadoutResource = PlayerLoadoutResource.new()
 	chosen.offhand_seal_card_id = ArsenalCatalog.CARD_WEST_WIND_PROMISE

@@ -1,23 +1,23 @@
 ## The Crown, the Heart-Crag (docs/20 Part II; docs/atlas_sources/
 ## 04_master_crown_heart_crag.pdf), redesigned as four shore zones round Miller's
-## Oak (docs/23_THE_CROWN_ZONE_REDESIGN.md). Zone 5, Lv 15-20, no new seams, no
+## Oak (docs/23_THE_CROWN_ZONE_REDESIGN.md). Zone 5, Lv 13-14 (Act III on the Bible's 14-level spine; it was Lv 15-20), no new seams, no
 ## town. A resurgent volcanic dome about 900 m across in its 1,024 m grid:
 ##
-##   South Bay (121° to 247°, Lv 15): the summit stream's gully, the one gentle
+##   South Bay (121° to 247°, Lv 13): the summit stream's gully, the one gentle
 ##     beach and the Landing; the Lantern-Bearers' Waypost (+10 m) and its
 ##     lantern-mast; the One Cliff Stair beside the stream's fall. No kin: the
 ##     hub and its road are safe.
-##   Iron Shore (247° to 328°, Lv 15-18): ironstone shelves stepping down to the
+##   Iron Shore (247° to 328°, Lv 13): ironstone shelves stepping down to the
 ##     sea, steam vents, Old King's Town and its Kiln, the Trial of the Anvil.
-##   Gale Cliffs (328° to 15°, Lv 15-18): the high, bare north face open to The
+##   Gale Cliffs (328° to 15°, Lv 13): the high, bare north face open to The
 ##     Breach, the Breach Point headland and its Sanctum Arch, the Trial of the
 ##     Gale.
-##   Tide Grottos (15° to 121°, Lv 15-18): a low, eroded shelf of reeds and
+##   Tide Grottos (15° to 121°, Lv 13): a low, eroded shelf of reeds and
 ##     willows with sea stacks offshore, the Weeping Arch, the sap sluices, the Trial of the Tide deep
 ##     in the grottos, and the Sea-Door's cove.
-##   The World-Tree (inside the +32 m cliff band, Lv 18-19): the dome's meadow and
+##   The World-Tree (inside the +32 m cliff band, Lv 14): the dome's meadow and
 ##     the +65 m Summit Glade, the oak and the Harmonic Bell.
-##   The Sap Galleries (under the island, Lv 20): the Sea-Door down to the Heart.
+##   The Sap Galleries (under the island, Lv 14 and the endgame): the Sea-Door down to the Heart.
 ##
 ## Bearings run clockwise from north (-Z) round the island's middle. Where two
 ## shores meet is a warm spring on the Ring Path (SW, NW, SE) or the Sanctum
@@ -29,7 +29,7 @@ enum Zone { SOUTH_BAY, IRON_SHORE, GALE_CLIFFS, TIDE_GROTTOS, MILLERS_OAK, SAP_G
 
 ## What each zone is called on screen, its level band and the music it plays (AudioCatalog profile ids).
 const ZONE_NAMES: Array[String] = ["South Bay", "Iron Shore", "Gale Cliffs", "Tide Grottos", "World-Tree", "The Sap Galleries"]
-const ZONE_LEVELS: Array[String] = ["Lv 15", "Lv 15-18", "Lv 15-18", "Lv 15-18", "Lv 18-19", "Lv 20"]
+const ZONE_LEVELS: Array[String] = ["Lv 13", "Lv 13", "Lv 13", "Lv 13", "Lv 14", "Lv 14"]
 const ZONE_MUSIC: Array[StringName] = [&"crown_south_bay", &"crown_iron_shore", &"crown_gale_cliffs", &"crown_tide_grottos",
 	&"crown_millers_oak", &"crown_tide_grottos"]
 ## Where the shores meet (bearings from the island's middle): the South-East Spring,
@@ -625,7 +625,7 @@ func _build_landing(root: Node3D) -> void:
 	moored.position = head + Vector3(4.6, -1.5, -2.0)
 	moored.rotation.y = PI
 	root.add_child(moored)
-	CalderaKit.sign_label(root, "LandingSign", "South Bay Landing\nThe Crown · Lv 15-20 · take any shore, in any order", ground(-6.0, 344.0) + Vector3(0.0, 2.6, 0.0))
+	CalderaKit.sign_label(root, "LandingSign", "South Bay Landing\nThe Crown · Lv 13-14 · take any shore, in any order", ground(-6.0, 344.0) + Vector3(0.0, 2.6, 0.0))
 	# The crossroads at the head of the beach: the Ring Path runs east and west, the gully road climbs north.
 	CalderaKit.sign_label(root, "CrossroadsSign", "← Iron Shore · the Ring Path · Tide Grottos →\n↑ the Waypost and the One Cliff Stair",
 		ground(-8.0, 330.0) + Vector3(0.0, 2.4, 0.0))
@@ -840,7 +840,7 @@ func _build_iron_shore(root: Node3D) -> void:
 		var vent: Vector3 = ground(vent2.x, vent2.y)
 		CalderaKit.plume(root, "SteamVent%d" % index, vent + Vector3(0.0, 0.3, 0.0), Color(0.95, 0.94, 0.92, 0.6), 3.6, 0.8, 22)
 		CalderaKit.glow_sphere(root, "VentGlow%d" % index, vent + Vector3(0.0, 0.05, 0.0), 0.7, Color(1.0, 0.5, 0.2), 1.4)
-	CalderaKit.sign_label(root, "IronShoreSign", "Old King's Town\nIron Shore · Lv 15-18", kiln + Vector3(0.0, 7.0, 7.0))
+	CalderaKit.sign_label(root, "IronShoreSign", "Old King's Town\nIron Shore · Lv 13", kiln + Vector3(0.0, 7.0, 7.0))
 
 
 func _build_gale_cliffs(root: Node3D) -> void:
@@ -892,7 +892,7 @@ func _build_gale_cliffs(root: Node3D) -> void:
 			atan2(breach.x, breach.z))
 	for index: int in 3:
 		CalderaKit.plume(root, "SeaSpray%d" % index, ground(-60.0 + index * 46.0, -432.0) + Vector3(0.0, 1.0, 0.0), Color(0.92, 0.96, 1.0, 0.5), 2.6, 2.0, 14)
-	CalderaKit.sign_label(root, "GaleCliffsSign", "The Breach Point\nGale Cliffs · open to The Breach · Lv 15-18", point + Vector3(0.0, 3.0, 12.0))
+	CalderaKit.sign_label(root, "GaleCliffsSign", "The Breach Point\nGale Cliffs · open to The Breach · Lv 13", point + Vector3(0.0, 3.0, 12.0))
 
 
 func _build_tide_grottos(root: Node3D) -> void:
@@ -964,7 +964,7 @@ func _build_tide_grottos(root: Node3D) -> void:
 	for side: float in [-1.0, 1.0]:
 		var pier: Vector3 = arch_foot + Vector3(out.x, 0.0, out.y) * side * 6.6
 		CalderaKit.solid_box(root, "WeepingPier%d" % int(side + 1.0), pier + Vector3(0.0, 7.0, 0.0), Vector3(1.2, 14.0, 1.6), arch_yaw)
-	CalderaKit.sign_label(root, "TideGrottosSign", "The Weeping Arch\nTide Grottos · where the old kingdom drained the sap · Lv 15-18", weep + Vector3(0.0, 3.0, 0.0))
+	CalderaKit.sign_label(root, "TideGrottosSign", "The Weeping Arch\nTide Grottos · where the old kingdom drained the sap · Lv 13", weep + Vector3(0.0, 3.0, 0.0))
 
 
 func _build_cliff_band(root: Node3D) -> void:
@@ -1135,7 +1135,7 @@ func _build_sea_door_and_galleries(root: Node3D) -> void:
 		CalderaKit.glow(CalderaKit.TIDE_VIOLET, 2.4)), Vector3(0.0, 0.0, PI * 0.5)))
 	portal.add_child(ring)
 	portal.add_child(ShapeKit.no_shadow(ShapeKit.cylinder("Platform", 2.6, 2.6, 0.06, Vector3(0.0, 0.03, 0.0), CalderaKit.glow(CalderaKit.TIDE_VIOLET.darkened(0.5), 0.8))))
-	CalderaKit.sign_label(galleries, "HeartSign", "The Heart of Everwood\nthe True Raid (Lv 20) waits here: its raid is the next milestone", HEART_AT + Vector3(-8.0, 4.4, 0.0))
+	CalderaKit.sign_label(galleries, "HeartSign", "The Heart of Everwood\nthe True Raid (Lv 14) waits here: its raid is the next milestone", HEART_AT + Vector3(-8.0, 4.4, 0.0))
 	var outward: PartyThreshold = PartyThreshold.new()
 	outward.name = "GalleryExit"
 	outward.radius = 3.0

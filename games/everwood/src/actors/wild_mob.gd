@@ -55,6 +55,10 @@ var variant: MobVariantResource
 var spawner: MobSpawner
 ## In a fight right now.
 var engaged: bool = false
+## Act I's calming rule (docs/29 §5), for kin with `calm_rule`.
+var calming: CalmingComponent
+## A Stag Hunt's Amber Chime (docs/29 §5): its health dots glow amber while blades are held.
+var amber: bool = false
 
 var _attack_cooldown: float = 0.0
 var _fade_left: float = -1.0
@@ -140,6 +144,10 @@ func _build_components() -> void:
 	threat.name = "ThreatComponent"
 	add_child(threat)
 	_rng.seed = hash(String(player_id))
+	if variant.calm_rule:
+		calming = CalmingComponent.new()
+		calming.setup(self)
+		add_child(calming)
 
 
 func _build_visual() -> void:
@@ -189,6 +197,12 @@ func _gather_intent(delta: float) -> void:
 		return
 	var home: Vector3 = _anchor if variant.patrols else spawn_transform.origin
 	_update_engagement(home)
+	if not engaged and variant.targets_trees:
+		# A Grey-Bark Weevil goes for the nearest cider-bough before any hero (Q02).
+		var tree: OrchardTree = OrchardTree.nearest(global_position, spawner.leash + 8.0)
+		if tree != null:
+			_gnaw(tree, delta)
+			return
 	if not engaged:
 		_idle(delta, home)
 		return
@@ -219,6 +233,16 @@ func _gather_intent(delta: float) -> void:
 	if distance <= reach + 0.2 and _attack_cooldown <= 0.0 and facing_vector().dot(to_target.normalized()) >= FACING_DOT:
 		_attack_cooldown = variant.cooldown
 		action_queue.request(CombatActionResource.Command.LIGHT)
+
+
+## Walks to an orchard tree and gnaws its bark (the tree counts its gnawers, OrchardTree).
+func _gnaw(tree: OrchardTree, delta: float) -> void:
+	var to_tree: Vector3 = tree.global_position - global_position
+	to_tree.y = 0.0
+	if to_tree.length() > tree.trunk_radius + body_radius() + OrchardTree.GNAW_REACH * 0.6:
+		move_intent = _nav.direction(self, tree.global_position, delta) * 0.8
+	else:
+		turn_toward(to_tree, loadout.stats.turn_speed * delta)
 
 
 ## Hostile ones turn on a player in their aggro radius; any turns on a player
@@ -328,6 +352,8 @@ func _update_pose(delta: float) -> void:
 		var lit: int = ceili(ratio * BAR_DOTS)
 		_bar.text = "●".repeat(lit) + "○".repeat(BAR_DOTS - lit)
 		_bar.modulate = NEUTRAL_BAR_COLOR if variant.aggro_radius <= 0.0 and not is_engaged() else BAR_COLOR
+		if amber:
+			_bar.modulate = StagHuntEncounter.AMBER
 	var stride: float = sin(Time.get_ticks_msec() * 0.02) * 0.4 if Vector2(velocity.x, velocity.z).length() > 0.3 else 0.0
 	for index: int in _legs.size():
 		_legs[index].rotation.x = stride * (1.0 if index % 2 == 0 else -1.0)

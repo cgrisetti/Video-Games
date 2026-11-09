@@ -716,7 +716,7 @@ func _on_trail_level_reached(level: int) -> void:
 
 
 ## A Fellowship's hero reached a Character Level (25 GDD §2): its heroes re-equip in place on
-## every peer, so a socket the level just opened (R at 4, L at 6, the Tuck at 11, L+R at 17)
+## every peer, so a socket the level just opened (R at 4, L at 6, the Tuck at 10, L+R at 13)
 ## works on the very next press, and its seals grow the same way.
 func _on_character_level_reached(class_id: StringName, level: int) -> void:
 	for seat: PartyMember in NetworkManager.current.ordered_members():

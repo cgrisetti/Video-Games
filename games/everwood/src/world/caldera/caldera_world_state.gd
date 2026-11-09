@@ -20,6 +20,11 @@
 ##   downs_gate_open        Embershore's Downs Gate, opened from the Hearthstead
 ##                          side, stays open
 ##
+## Act I's timed Ebb-Tide (docs/28 §6.1, docs/29 §4; the Bible's "GlobalTidalClock"): before
+## the Harmonic Bell's permanent ebb, ringing North Quay's tide-bell opens a window: the
+## sea falls 0 to -6 m over EBB_WINDOW_FALL, stays out EBB_WINDOW_OUT, then floods back
+## over EBB_WINDOW_FLOOD. It is never saved; the permanent ebb (ebb_unlocked) wins.
+##
 ## can_land_on_crown() and cliff_stair_open() are derived, never stored. The host
 ## decides every change and tells the other peers; the flags ride in the party's
 ## save (PartyProgress.caldera_flags). Playtest warps (--boot-zone, F9) set
@@ -31,6 +36,11 @@ signal flag_changed(flag: StringName, value: bool)
 signal sea_level_changed(sea_y: float)
 signal ebb_started
 signal ebb_finished
+## The timed Ebb-Tide window moved on (Tide), on every peer.
+signal tide_changed(tide: int)
+
+## The tide's phases in a timed window.
+enum Tide { HIGH, EBBING, EBB, FLOODING }
 
 const ROOT_SANCTUM_CLEARED: StringName = &"root_sanctum_cleared"
 const BEACON_IRON: StringName = &"beacon_iron"
@@ -58,6 +68,11 @@ const SEA_LEVEL_FLOOD: float = 0.0
 const SEA_LEVEL_EBB: float = -6.0
 ## The Ebb cinematic's length: the sea falls over exactly this long.
 const EBB_SECONDS: float = 10.0
+## Act I's timed window (docs/28 §6.1): the fall, the time out, the flood.
+const EBB_WINDOW_FALL: float = 20.0
+const EBB_WINDOW_OUT: float = 240.0
+const EBB_WINDOW_FLOOD: float = 30.0
+const TIDE_NAMES: Array[String] = ["HIGH WATER", "EBBING", "EBB-TIDE", "FLOODING"]
 
 ## The live autoload node (reach it as CalderaWorldState.current from scripts
 ## compiled before autoloads, like the other autoloads).
@@ -82,6 +97,9 @@ var playtest_crown_landing: bool = false
 var playtest: bool = false
 
 var _ebb_elapsed: float = -1.0
+## Seconds into a timed Ebb-Tide window (-1: none).
+var _window_elapsed: float = -1.0
+var _tide: Tide = Tide.HIGH
 ## The bits last read from or written to the save.
 var _saved_bits: int = -1
 
@@ -103,6 +121,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_tick_window(delta)
 	if _ebb_elapsed < 0.0:
 		return
 	_ebb_elapsed += delta
@@ -179,7 +198,112 @@ func trial_complete(trial: StringName) -> bool:
 
 
 func target_sea_level() -> float:
-	return SEA_LEVEL_EBB if ebb_unlocked else SEA_LEVEL_FLOOD
+	if ebb_unlocked:
+		return SEA_LEVEL_EBB
+	return window_sea_level() if _window_elapsed >= 0.0 else SEA_LEVEL_FLOOD
+
+
+# --- Act I's timed Ebb-Tide (the Tidal Horologium reads these) ----------------------------
+
+## Host: rings the tide out (North Quay's tide-bell). False while a window runs or the sea
+## is already out for good.
+func start_ebb_window() -> bool:
+	if not _may_decide() or ebb_unlocked or _window_elapsed >= 0.0:
+		return false
+	_window_elapsed = 0.0
+	_broadcast_window()
+	_tick_window(0.0)
+	return true
+
+
+func tide() -> Tide:
+	if ebb_unlocked:
+		return Tide.EBB
+	return _tide
+
+
+## Whether the timed window has the sea out (the Old Quay's shelf is dry).
+func ebb_window_open() -> bool:
+	return tide() == Tide.EBB
+
+
+## Seconds until the tide's next turn in the window (0 at high water).
+func tide_seconds_left() -> float:
+	if _window_elapsed < 0.0 or ebb_unlocked:
+		return 0.0
+	var marks: Array[float] = [EBB_WINDOW_FALL, EBB_WINDOW_FALL + EBB_WINDOW_OUT, EBB_WINDOW_FALL + EBB_WINDOW_OUT + EBB_WINDOW_FLOOD]
+	for mark: float in marks:
+		if _window_elapsed < mark:
+			return mark - _window_elapsed
+	return 0.0
+
+
+## The Tidal Horologium's line: "EBB-TIDE · the flood in 3:12".
+func tide_dial_text() -> String:
+	if ebb_unlocked:
+		return "EBB-TIDE · the Long Flood is over"
+	var left: int = ceili(tide_seconds_left())
+	var clock: String = "%d:%02d" % [floori(left / 60.0), left % 60]
+	match tide():
+		Tide.EBBING:
+			return "EBBING · the shelf bares in %s" % clock
+		Tide.EBB:
+			return "EBB-TIDE · the flood in %s" % clock
+		Tide.FLOODING:
+			return "FLOODING · high water in %s" % clock
+	return "HIGH WATER · ring the tide-bell at North Quay"
+
+
+## Where the sea stands this far into a window.
+func window_sea_level() -> float:
+	var t: float = _window_elapsed
+	if t < EBB_WINDOW_FALL:
+		return lerpf(SEA_LEVEL_FLOOD, SEA_LEVEL_EBB, smoothstep(0.0, 1.0, t / EBB_WINDOW_FALL))
+	t -= EBB_WINDOW_FALL
+	if t < EBB_WINDOW_OUT:
+		return SEA_LEVEL_EBB
+	t -= EBB_WINDOW_OUT
+	return lerpf(SEA_LEVEL_EBB, SEA_LEVEL_FLOOD, smoothstep(0.0, 1.0, clampf(t / EBB_WINDOW_FLOOD, 0.0, 1.0)))
+
+
+## Tests: jumps a running window forward.
+func advance_window_for_testing(seconds: float) -> void:
+	if _window_elapsed >= 0.0:
+		_tick_window(seconds)
+
+
+func _tick_window(delta: float) -> void:
+	if _window_elapsed < 0.0 or ebb_unlocked:
+		return
+	_window_elapsed += delta
+	var total: float = EBB_WINDOW_FALL + EBB_WINDOW_OUT + EBB_WINDOW_FLOOD
+	var next: Tide = Tide.EBBING
+	if _window_elapsed >= total:
+		next = Tide.HIGH
+	elif _window_elapsed >= EBB_WINDOW_FALL + EBB_WINDOW_OUT:
+		next = Tide.FLOODING
+	elif _window_elapsed >= EBB_WINDOW_FALL:
+		next = Tide.EBB
+	if _ebb_elapsed < 0.0:
+		_set_sea(window_sea_level() if next != Tide.HIGH else SEA_LEVEL_FLOOD)
+	if next == Tide.HIGH:
+		_window_elapsed = -1.0
+	if next != _tide:
+		_tide = next
+		tide_changed.emit(next)
+
+
+func _broadcast_window() -> void:
+	if NetworkManager.current == null or not NetworkManager.current.is_online():
+		return
+	for peer_id: int in multiplayer.get_peers():
+		_receive_window.rpc_id(peer_id, _window_elapsed)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _receive_window(elapsed: float) -> void:
+	_window_elapsed = elapsed
+	_tick_window(0.0)
 
 
 ## Whether the sea is still falling.
@@ -234,6 +358,8 @@ func settle_sea() -> void:
 func reset_for_testing() -> void:
 	playtest = false
 	playtest_crown_landing = false
+	_window_elapsed = -1.0
+	_tide = Tide.HIGH
 	for flag: StringName in FLAGS:
 		_apply(flag, false, false)
 	settle_sea()
@@ -292,6 +418,8 @@ func _receive_bits(packed: int, ebb_falling: bool) -> void:
 func _on_peer_connected(peer_id: int) -> void:
 	if multiplayer.is_server():
 		_receive_bits.rpc_id(peer_id, bits(), false)
+		if _window_elapsed >= 0.0:
+			_receive_window.rpc_id(peer_id, _window_elapsed)
 
 
 ## A save was (re)loaded (use_save_file, a fresh boot): take its flags, unless a host decides for us.

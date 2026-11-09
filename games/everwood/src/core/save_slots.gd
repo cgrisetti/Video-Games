@@ -89,10 +89,14 @@ static func summary(path: String) -> Dictionary:
 	var last_played: int = int(file.get_value("hero", "last_played", 0))
 	if last_played <= 0:
 		last_played = int(FileAccess.get_modified_time(path))
+	# A tale saved on the old 20-level curve reads at the level it had reached (PartyProgress.load_save moves it the same way).
+	var xp: int = int(file.get_value("trail", "xp", 0))
+	if str(file.get_value("trail", "curve", "")) != PartyProgress.CURVE_TAG:
+		xp = PartyProgress.xp_on_spine(xp)
 	return {
 		"path": path,
 		"name": str(file.get_value("hero", "name", "")),
-		"level": PartyProgress.level_for_xp(int(file.get_value("trail", "xp", 0))),
+		"level": PartyProgress.level_for_xp(xp),
 		"chimes": maxi(0, int(file.get_value("party", "chimes", 0))),
 		"last_played": last_played,
 		"family": false,

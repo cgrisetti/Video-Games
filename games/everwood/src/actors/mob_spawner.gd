@@ -27,6 +27,9 @@ const PACK_SPREAD: float = 2.6
 @export var patrol: PackedVector3Array = PackedVector3Array()
 ## Whether the pack's spot is a Hush-Crack.
 @export var has_hush_crack: bool = false
+## Grow the pack at the spawner's own height, not on the land's surface (a cave under it:
+## Act I's Root-Sanctum, the Old Quay's shelf).
+@export var own_floor: bool = false
 
 var mobs: Array[WildMob] = []
 ## One of the pack is fighting.
@@ -73,7 +76,7 @@ func _spawn(index: int) -> void:
 	var angle: float = TAU * float(index) / maxf(1.0, variant_ids.size())
 	var spread: float = 0.0 if variant_ids.size() == 1 else PACK_SPREAD
 	var spot: Vector3 = global_position + Vector3(cos(angle), 0.0, sin(angle)) * spread
-	spot.y = WorldGridConfig.layout.sample_height(spot.x, spot.z) + 0.05
+	spot.y = (global_position.y if own_floor else WorldGridConfig.layout.sample_height(spot.x, spot.z)) + 0.05
 	add_child(mob)
 	mob.spawn_at(Transform3D(Basis(Vector3.UP, angle + PI), spot))
 	mobs[index] = mob

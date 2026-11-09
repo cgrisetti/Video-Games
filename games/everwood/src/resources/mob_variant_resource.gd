@@ -7,7 +7,8 @@ extends Resource
 
 ## The six starting-zone families: five kin of the First-Quiet, and the wildlife
 ## (sheep, foxes and the roaming Crag-Back Cairn-Drake).
-enum Family { CURIOUS_WEALD_WIGHTS, PADFOOT_BOGGARTS, FURROW_IRON_MEN, BRAMBLE_HOBS, CRAG_SPRIGGANS, WILDLIFE, CROWN_TRIAL_KIN, CROWN_SHORE_KIN }
+enum Family { CURIOUS_WEALD_WIGHTS, PADFOOT_BOGGARTS, FURROW_IRON_MEN, BRAMBLE_HOBS, CRAG_SPRIGGANS, WILDLIFE, CROWN_TRIAL_KIN, CROWN_SHORE_KIN,
+	EMBERSHORE_ACT_ONE }
 ## How it's ranked: a common mob, a rare, an elite, or the roaming mini-boss.
 enum Rank { COMMON, RARE, ELITE, BOSS }
 ## Which code-built body it wears (WildMob).
@@ -73,6 +74,18 @@ enum Body { BOAR, SCUTTLER, WOLF, TOAD, HUMANOID, VINE, SHAMBLER, HULK, WIGHT, B
 @export var roars: bool = false
 ## Wears a chest Maker-Seal that starts upside-down (a Furrow Iron-Man).
 @export var has_maker_seal: bool = false
+
+@export_group("Act I")
+## The Act I calming rule (docs/29 §5): worn down (health under a quarter, or its posture
+## broken) it wavers, and a hero's Calming Seal calms it (Ink-Drops, XP, a quest's count);
+## burnt to nothing instead, it only scatters (a few Chimes, no drops) and re-forms later.
+@export var calm_rule: bool = false
+## Chimes a scatter pays (the brief's "raw scrap").
+@export var scatter_chimes: int = 2
+## A Grey-Bark Weevil: it goes for the orchard's trees before the heroes.
+@export var targets_trees: bool = false
+## A Tide-Wight's cold breath: a struck hero's stamina comes back this much slower for a while (0 = none).
+@export var stamina_slow: float = 0.0
 
 @export_group("Look")
 @export var body: Body = Body.BOAR

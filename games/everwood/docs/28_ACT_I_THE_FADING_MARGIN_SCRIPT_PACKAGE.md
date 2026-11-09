@@ -3,6 +3,7 @@
 > **Asked for (2026-11-08):** the complete Act I production design and narrative script package for Quests Q01 to Q05, plus a 12-card Act I compendium, from the Creative Director's pasted brief and the Google Doc *Everwood Narrative & Design Bible* (id `1QyJqg9plie4SDhuepEH3ZLWFSIwZAXAACCtlwtEVJog`, §4 Act I).
 > **Scope:** writing only. No code, scene or save changed. Everything here is fitted to the game as it stands on `main` (369525a): the starting isle is **Embershore** (docs/27), cards spend **Ink-Drops** (docs/25), and every foe is a spirit of the First-Quiet that is calmed, never slain (docs/08 Gate 3, docs/15).
 > **Numbered 28:** 27 is the newest doc.
+> **Built (2026-11-09):** [docs/29](29_ACT_I_BUILD.md) builds this script on Embershore (`Z1_EMB`), after the Creative Director chose the Bible's 14-level curve (Level 2 at 400 XP to Level 6 at 3,800, cap 14), Act I fitted to today's Embershore with the Level 1 spawn moved into Lee-Shore Orchards, and the Lens names Ash-Grig, Tide-Wight and Sap-Boggart. Three things play differently from this script: a calm, a Deep-Ink or Naming pour, a shrine pour and a bell are **light** pressed near the foe or spot, not a held R (R's hold only waits out of combat); Hearth-Ward is the Hearth-Brazier's; and the Taproot Hall's Root-Lurkers are the third chamber, with the Stag after it (the brief's three chambers come before the boss). §9's calls 1, 2, 3, 7 and 15 are settled; docs/29 §10 lists what's left.
 
 ---
 
