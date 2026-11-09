@@ -20,12 +20,27 @@
 class_name IslandBuilder
 extends RefCounted
 
-## What the scatter grows (one MultiMesh per species per landblock).
+## What the scatter grows (one MultiMesh per species per landblock). The worked land's
+## kinds (docs/32) follow the first fourteen: the valley's other trees, the runs a field
+## boundary is laid in (a hedge, a dry-stone wall, a rail fence, a wattle hurdle, each a
+## piece a few metres long set end to end along the line), and what a field is left with.
 enum Species { ORCHARD_TREE, OAK_TREE, PINE_TREE, SNOW_PINE, REED_CLUMP, ROCK, BOULDER, BASALT_SPIRE, FERN_TUFT, ASH_TREE, WILLOW_TREE,
-	GORSE_BUSH, HEATHER_CLUMP, ROWAN_TREE }
-const SPECIES_COUNT: int = 14
+	GORSE_BUSH, HEATHER_CLUMP, ROWAN_TREE,
+	BEECH_TREE, ELM_TREE, CHESTNUT_TREE, BIRCH_TREE, POPLAR_TREE, HAWTHORN_TREE, ALDER_TREE, POLLARD_WILLOW, PLUM_TREE, PEAR_TREE, YEW_TREE,
+	HOLLY_TREE,
+	HEDGE_RUN, HEDGE_BLOOM, WALL_RUN, WALL_TUMBLE, FENCE_RUN, HURDLE_RUN, FIELD_GATE, STILE,
+	HAYCOCK, STOOK, CROP_ROW, BEAN_ROW, BRAMBLE_BUSH, TROUGH, SCARECROW, FIELD_OAK, FIELD_ASH, SCOTS_PINE }
+const SPECIES_COUNT: int = 44
 ## Trunk and stone radii that block the way inside the loaded window (0: walk through).
-const SOLID_RADIUS: Array[float] = [0.3, 0.55, 0.35, 0.35, 0.0, 0.0, 0.9, 0.8, 0.0, 0.4, 0.6, 0.0, 0.0, 0.3]
+const SOLID_RADIUS: Array[float] = [0.3, 0.55, 0.35, 0.35, 0.0, 0.0, 0.9, 0.8, 0.0, 0.4, 0.6, 0.0, 0.0, 0.3,
+	0.5, 0.45, 0.55, 0.2, 0.3, 0.2, 0.3, 0.5, 0.2, 0.22, 0.5,
+	0.2,
+	0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+	0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.15, 0.55, 0.35, 0.3]
+## The runs that block the way as a low box along their length (width, height, depth in metres, on the
+## low-scenery layer: a hero hops them, a camera sees over them); a hedge is leaves and lets everyone through.
+const SOLID_BOX: Dictionary[int, Vector3] = {Species.WALL_RUN: Vector3(3.2, 0.8, 0.6), Species.FENCE_RUN: Vector3(3.2, 0.8, 0.16),
+	Species.HURDLE_RUN: Vector3(2.4, 0.8, 0.14), Species.TROUGH: Vector3(1.8, 0.5, 0.6)}
 
 ## Landblock mesh resolutions: the loaded window (2 m) and the whole-island stand-in (8 m).
 const NEAR_QUADS: int = 64
@@ -220,6 +235,35 @@ func _ground_color(_x: float, _z: float, height: float, up: float) -> Color:
 
 
 ## What grows at a spot (a Species, or -1). `roll` is a fair 0..1 die.
+## The way a field is worked at a spot, for the ground shader's furrows and rows (docs/32 §4):
+## x and y are the row's direction scaled by how strongly it shows (0: none), z the rows'
+## spacing in metres and w their tone (-1 a darker furrow, +1 a green row of crop).
+func ground_tilth(_x: float, _z: float) -> Vector4:
+	return Vector4.ZERO
+
+
+## Whether this island's ground carries tilth (its landblock meshes then carry it in their UVs).
+func has_tilth() -> bool:
+	return false
+
+
+## How the meadow grows at a spot besides its lushness: x the tufts' height, y the share of the
+## usual wildflowers, z how ripe (0 green-tipped grass, 1 straw to the tip: standing grain).
+func _meadow_style(_x: float, _z: float) -> Vector3:
+	return Vector3(1.0, 1.0, 0.0)
+
+
+## The corridor's stage a spot is in (its sky, fog and music): the named place, unless the island
+## keeps smaller places inside its stages (a steading in a valley).
+func stage_name_at(at: Vector3) -> String:
+	return place_name_at(at)
+
+
+## Whether folk live at a named place (the mosaics' Peace and Mellow lean on it).
+func is_settled_place(_place_name: String) -> bool:
+	return false
+
+
 func _scatter_species(_x: float, _z: float, _height: float, _up: float, _roll: float) -> int:
 	return -1
 
@@ -1106,6 +1150,13 @@ func build_chunk_data(chunk: Vector2i, quads: int, with_collision: bool, with_sc
 	vertices.resize(side * side + side * 4)
 	normals.resize(side * side + side * 4)
 	colors.resize(side * side + side * 4)
+	# The tilth (docs/32 §4): the rows' direction and strength in UV, their spacing and tone in UV2.
+	var tilled: bool = has_tilth()
+	var rows: PackedVector2Array = PackedVector2Array()
+	var tones: PackedVector2Array = PackedVector2Array()
+	if tilled:
+		rows.resize(side * side + side * 4)
+		tones.resize(side * side + side * 4)
 	for row: int in side:
 		for column: int in side:
 			var at: int = (row + 1) * apron + column + 1
@@ -1122,6 +1173,10 @@ func build_chunk_data(chunk: Vector2i, quads: int, with_collision: bool, with_sc
 			var rise: float = maxf(maxf(heights[at + 1], heights[at - 1]), maxf(heights[at + apron], heights[at - apron])) - h
 			painted.a = 1.0 - LandblockTerrain.cliff_toe(rise, step, normal.y)
 			colors[index] = painted
+			if tilled:
+				var tilth: Vector4 = ground_tilth(x, z)
+				rows[index] = Vector2(tilth.x, tilth.y)
+				tones[index] = Vector2(tilth.z, tilth.w)
 	var indices: PackedInt32Array = PackedInt32Array()
 	for row: int in quads:
 		for column: int in quads:
@@ -1142,6 +1197,9 @@ func build_chunk_data(chunk: Vector2i, quads: int, with_collision: bool, with_sc
 			vertices[cursor] = vertices[top] - Vector3(0.0, SKIRT_DEPTH, 0.0)
 			normals[cursor] = normals[top]
 			colors[cursor] = colors[top].darkened(0.2)
+			if tilled:
+				rows[cursor] = rows[top]
+				tones[cursor] = tones[top]
 			cursor += 1
 		for i: int in quads:
 			var a: int = edges[edge][i]
@@ -1150,6 +1208,9 @@ func build_chunk_data(chunk: Vector2i, quads: int, with_collision: bool, with_sc
 			var d: int = start + i + 1
 			indices.append_array(PackedInt32Array([a, c, b, b, c, d, a, b, c, b, d, c]))
 	var data: Dictionary = {"vertices": vertices, "normals": normals, "colors": colors, "indices": indices}
+	if tilled:
+		data["rows"] = rows
+		data["tones"] = tones
 	if with_collision:
 		data["collision_heights"] = _collision_heights(heights, apron, quads)
 	if with_scatter:
@@ -1220,10 +1281,16 @@ func _meadow(chunk: Vector2i, origin: Vector2, pads: PackedFloat32Array, ramps: 
 			if placed.is_empty() or rng.randf() > float(placed["lush"]):
 				continue
 			var cell: Dictionary = cells[_meadow_cell(x - origin.x, z - origin.y, cell_size)]
-			(cell["grass"] as Array).append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(grow, grow * rng.randf_range(0.85, 1.25), grow)),
+			var style: Vector3 = placed["style"]
+			# Standing grain is sown thick: a ripe tuft spreads half again as wide as a meadow's.
+			var spread: float = grow * (1.0 + 0.5 * style.z)
+			(cell["grass"] as Array).append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(spread, grow * rng.randf_range(0.85, 1.25) * style.x, spread)),
 				Vector3(x, float(placed["h"]) - 0.03, z)))
 			# An Array, not a PackedColorArray: a packed array read out of a Dictionary is a copy.
-			(cell["colors"] as Array).append(placed["color"])
+			# The colour's alpha tells the blade how green its tip ripens (0: straw to the tip, standing grain).
+			var root: Color = placed["color"]
+			root.a = 1.0 - style.z
+			(cell["colors"] as Array).append(root)
 	# Wildflowers in little drifts of one kind.
 	for drift: int in MEADOW_FLOWER_CLUMPS:
 		var cx: float = origin.x + rng.randf() * size
@@ -1239,7 +1306,7 @@ func _meadow(chunk: Vector2i, origin: Vector2, pads: PackedFloat32Array, ramps: 
 			if not Rect2(origin, Vector2(size, size)).has_point(Vector2(x, z)):
 				continue
 			var placed: Dictionary = _meadow_spot(x, z, pads, ramps, paths)
-			if placed.is_empty() or float(placed["lush"]) < 0.5:
+			if placed.is_empty() or float(placed["lush"]) < 0.5 or rng.randf() > (placed["style"] as Vector3).y:
 				continue
 			var grow: float = rng.randf_range(0.8, 1.25)
 			var cell: Dictionary = cells[_meadow_cell(x - origin.x, z - origin.y, cell_size)]
@@ -1259,7 +1326,7 @@ func _meadow_spot(x: float, z: float, pads: PackedFloat32Array, ramps: PackedFlo
 	var lush: float = _meadow_lushness(x, z, h, up)
 	if lush <= 0.0:
 		return {}
-	return {"h": h, "lush": lush, "color": _paint(x, z, h, up, paths)}
+	return {"h": h, "lush": lush, "color": _paint(x, z, h, up, paths), "style": _meadow_style(x, z)}
 
 
 static func _meadow_cell(local_x: float, local_z: float, cell_size: float) -> int:

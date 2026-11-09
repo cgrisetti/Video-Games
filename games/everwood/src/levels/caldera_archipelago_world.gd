@@ -225,7 +225,7 @@ func music_mood_context(position: Vector3, context: MusicMoodEngine.Context) -> 
 		return
 	var builder: IslandBuilder = streamer.builder
 	var place: String = builder.place_name_at(position)
-	context.settled = 1.0 if SETTLED_PLACES.has(place) else 0.0
+	context.settled = 1.0 if SETTLED_PLACES.has(place) or builder.is_settled_place(place) else 0.0
 	var half: Vector2 = builder.isle.half_size()
 	var reach: float = Vector2(position.x / maxf(half.x, 1.0), position.z / maxf(half.y, 1.0)).length()
 	context.wild = 1.0 if WILD_PLACES.has(place) else smoothstep(EDGE_FROM, EDGE_TO, reach)
@@ -252,7 +252,7 @@ func visual_biome_at(position: Vector3) -> StringName:
 			CrownHeartCragBuilder.Zone.TIDE_GROTTOS, CrownHeartCragBuilder.Zone.SAP_GALLERIES:
 				return WorldVisualCatalog.NINE_STONES_CROSSING
 	if streamer.builder is EmbershoreBuilder:
-		return EMBERSHORE_BIOMES.get(streamer.builder.place_name_at(position), streamer.builder.isle.visual_biome)
+		return EMBERSHORE_BIOMES.get(streamer.builder.stage_name_at(position), streamer.builder.isle.visual_biome)
 	return streamer.builder.isle.visual_biome
 
 

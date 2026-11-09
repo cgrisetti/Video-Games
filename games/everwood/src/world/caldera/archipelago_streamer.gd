@@ -484,6 +484,10 @@ func _ground_mesh(node_name: String, data: Dictionary) -> MeshInstance3D:
 	arrays[Mesh.ARRAY_NORMAL] = data["normals"]
 	arrays[Mesh.ARRAY_COLOR] = data["colors"]
 	arrays[Mesh.ARRAY_INDEX] = data["indices"]
+	# The worked land's tilth (docs/32 §4): the rows' direction in UV, their spacing and tone in UV2.
+	if data.has("rows"):
+		arrays[Mesh.ARRAY_TEX_UV] = data["rows"]
+		arrays[Mesh.ARRAY_TEX_UV2] = data["tones"]
 	var mesh: ArrayMesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	mesh.surface_set_material(0, WorldVisualCatalog.terrain())
@@ -521,8 +525,26 @@ func _add_solids(record: LoadedChunk) -> void:
 	solids.name = "Solids"
 	solids.collision_layer = ActorBase.LAYER_WORLD
 	solids.collision_mask = 0
+	# Walls, fences and hurdles: a low box along each run, on the low-scenery layer (heroes hop them, cameras see over).
+	var low: StaticBody3D = StaticBody3D.new()
+	low.name = "LowSolids"
+	low.collision_layer = ActorBase.LAYER_LOW_SCENERY
+	low.collision_mask = 0
 	for species: Variant in record.scatter:
-		var radius: float = IslandBuilder.SOLID_RADIUS[int(species)]
+		var kind: int = int(species)
+		if IslandBuilder.SOLID_BOX.has(kind):
+			var size: Vector3 = IslandBuilder.SOLID_BOX[kind]
+			for where: Transform3D in record.scatter[species] as Array:
+				var scale: Vector3 = where.basis.get_scale()
+				var run: CollisionShape3D = CollisionShape3D.new()
+				var box: BoxShape3D = BoxShape3D.new()
+				box.size = Vector3(size.x * scale.x, size.y * scale.y, size.z * scale.z)
+				run.shape = box
+				var turn: Basis = where.basis.orthonormalized()
+				run.transform = Transform3D(turn, where.origin + turn.y * box.size.y * 0.5)
+				low.add_child(run)
+			continue
+		var radius: float = IslandBuilder.SOLID_RADIUS[kind]
 		if radius <= 0.0:
 			continue
 		for where: Transform3D in record.scatter[species] as Array:
@@ -537,6 +559,10 @@ func _add_solids(record: LoadedChunk) -> void:
 		record.body.add_child(solids)
 	else:
 		solids.free()
+	if low.get_child_count() > 0:
+		record.body.add_child(low)
+	else:
+		low.free()
 
 
 ## A landblock's scatter, one MultiMesh per species: within CalderaKit.ATELIER_RANGE
@@ -546,17 +572,115 @@ func _add_solids(record: LoadedChunk) -> void:
 ## is grouped into DENSE_CELL m cells that each hand over at DENSE_ATELIER_RANGE
 ## instead, so only the cells round a camera draw sculpted (docs/27 §8).
 func _add_scatter(record: LoadedChunk) -> void:
+	# The worked land's trees and runs (docs/32 §9): sculpted while a camera is near the landblock, and past that
+	# every kind's stand-ins merged into one mesh for the trees and one for the runs, a draw each. Every node of
+	# the landblock measures its distance from the landblock's own box, so they all hand over together.
+	var box: AABB = AABB()
+	var far_trees: LandblockTerrain.MeshMerge = null
+	var far_runs: LandblockTerrain.MeshMerge = null
+	# While its trees are sculpted, a landblock's shadows are thrown by their stand-ins (WorkedLandKit.SHADOW_PROXY).
+	var tree_shadows: LandblockTerrain.MeshMerge = null
+	# The kinds with no sculpted mesh (a Scots pine) are their far shape at every distance.
+	var plain_trees: LandblockTerrain.MeshMerge = null
 	for species: Variant in record.scatter:
 		var spots: Array = record.scatter[species] as Array
 		if spots.is_empty():
 			continue
 		var kind: int = int(species)
-		if CalderaKit.atelier_mesh(kind) != null and not CalderaKit.is_small(kind) and spots.size() >= CalderaKit.DENSE_STAND:
+		if WorkedLandKit.MERGED_FAR.has(kind):
+			if box.size == Vector3.ZERO:
+				box = _landblock_box(record)
+			if CalderaKit.atelier_mesh(kind) == null:
+				if plain_trees == null:
+					plain_trees = CalderaKit.merge()
+				_merge_stand_ins(plain_trees, kind, spots)
+				continue
+			var near: MultiMeshInstance3D = _scatter_node("Atelier_%d" % kind, CalderaKit.atelier_mesh(kind), spots)
+			near.visibility_range_end = CalderaKit.handover(kind)
+			near.visibility_range_end_margin = CalderaKit.ATELIER_MARGIN
+			near.custom_aabb = box
+			if not CalderaKit.casts_shadow(kind) or CalderaKit.is_tree(kind):
+				near.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			record.root.add_child(near)
+			if CalderaKit.is_tree(kind):
+				if far_trees == null:
+					far_trees = CalderaKit.merge()
+					tree_shadows = CalderaKit.merge()
+				_merge_stand_ins(far_trees, kind, spots)
+				_merge_stand_ins(tree_shadows, kind, spots, Basis.from_scale(WorkedLandKit.SHADOW_PROXY))
+			else:
+				if far_runs == null:
+					far_runs = CalderaKit.merge()
+				_merge_stand_ins(far_runs, kind, spots)
+			continue
+		if CalderaKit.atelier_mesh(kind) != null and not CalderaKit.is_small(kind) and CalderaKit.is_tree(kind) and spots.size() >= CalderaKit.DENSE_STAND:
 			var cells: Dictionary[Vector2i, Array] = _stand_cells(spots)
 			for cell: Vector2i in cells:
 				_add_stand(record, kind, cells[cell], "%d_%d_%d" % [kind, cell.x, cell.y], CalderaKit.DENSE_ATELIER_RANGE)
 		else:
-			_add_stand(record, kind, spots, str(kind), CalderaKit.ATELIER_RANGE)
+			_add_stand(record, kind, spots, str(kind), CalderaKit.handover(kind))
+	if far_trees != null:
+		record.root.add_child(_far_node("FarTrees", far_trees, WorkedLandKit.TREE_HANDOVER, box, true))
+		var shadows: MeshInstance3D = _far_node("NearTreeShadows", tree_shadows, 0.0, box, true)
+		shadows.visibility_range_begin_margin = 0.0
+		shadows.visibility_range_end = WorkedLandKit.TREE_HANDOVER
+		shadows.visibility_range_end_margin = CalderaKit.ATELIER_MARGIN
+		shadows.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		record.root.add_child(shadows)
+	if far_runs != null:
+		var runs: MeshInstance3D = _far_node("FarRuns", far_runs, WorkedLandKit.RUN_HANDOVER, box, false)
+		runs.visibility_range_end = WorkedLandKit.RUN_REACH
+		runs.visibility_range_end_margin = 24.0
+		record.root.add_child(runs)
+	if plain_trees != null:
+		var plain: MeshInstance3D = _far_node("PlainTrees", plain_trees, 0.0, box, true)
+		plain.visibility_range_begin_margin = 0.0
+		record.root.add_child(plain)
+
+
+## A landblock's box: its 128 m square, from under its lowest scatter to over its tallest tree.
+func _landblock_box(record: LoadedChunk) -> AABB:
+	var size: float = IslandGridResource.CHUNK_SIZE
+	var low: float = INF
+	var high: float = -INF
+	for species: Variant in record.scatter:
+		for where: Transform3D in record.scatter[species] as Array:
+			low = minf(low, where.origin.y)
+			high = maxf(high, where.origin.y)
+	if low == INF:
+		low = 0.0
+		high = 0.0
+	return AABB(Vector3(record.chunk.x * size, low - 4.0, record.chunk.y * size), Vector3(size, high - low + 24.0, size))
+
+
+## Adds a kind's stand-in at every spot to a landblock's far mesh (its own vertex colours kept).
+static func _merge_stand_ins(into: LandblockTerrain.MeshMerge, kind: int, spots: Array, shrink: Basis = Basis.IDENTITY) -> void:
+	var stand_in: ArrayMesh = CalderaKit.species_mesh(kind)
+	if stand_in.get_surface_count() == 0:
+		return
+	var arrays: Array = stand_in.surface_get_arrays(0)
+	var points: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var directions: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var shades: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+	for spot: Variant in spots:
+		var where: Transform3D = spot as Transform3D
+		where.basis = where.basis * shrink
+		into.vertices.append_array(where * points)
+		into.normals.append_array(Transform3D(where.basis.orthonormalized(), Vector3.ZERO) * directions)
+		into.colors.append_array(shades)
+
+
+func _far_node(node_name: String, merged: LandblockTerrain.MeshMerge, handover: float, box: AABB, shadows: bool) -> MeshInstance3D:
+	var node: MeshInstance3D = MeshInstance3D.new()
+	node.name = node_name
+	node.mesh = merged.commit()
+	node.material_override = CalderaKit.vertex_material()
+	node.visibility_range_begin = handover
+	node.visibility_range_begin_margin = CalderaKit.ATELIER_MARGIN
+	node.custom_aabb = box
+	if not shadows:
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return node
 
 
 ## One stand of a species at `spots`: its sculpted atelier MultiMesh (when the species has one)
@@ -564,11 +688,12 @@ func _add_scatter(record: LoadedChunk) -> void:
 func _add_stand(record: LoadedChunk, kind: int, spots: Array, suffix: String, handover: float) -> void:
 	var small: bool = CalderaKit.is_small(kind)
 	var atelier: ArrayMesh = CalderaKit.atelier_mesh(kind)
+	var reach: float = CalderaKit.species_reach(kind)
 	if atelier != null:
 		var near: MultiMeshInstance3D = _scatter_node("Atelier_" + suffix, atelier, spots)
-		near.visibility_range_end = CalderaKit.SMALL_RANGE if small else handover
+		near.visibility_range_end = (reach if reach > 0.0 else CalderaKit.SMALL_RANGE) if small else handover
 		near.visibility_range_end_margin = CalderaKit.ATELIER_MARGIN
-		if small:
+		if small or not CalderaKit.casts_shadow(kind):
 			near.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		record.root.add_child(near)
 		if small:
@@ -578,9 +703,15 @@ func _add_stand(record: LoadedChunk, kind: int, spots: Array, suffix: String, ha
 	if atelier != null:
 		node.visibility_range_begin = handover
 		node.visibility_range_begin_margin = CalderaKit.ATELIER_MARGIN
+		# A stand-in is small on screen by the time it shows: only the trees' still throw shadows.
+		if not CalderaKit.is_tree(kind) or not CalderaKit.casts_shadow(kind):
+			node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	elif small:
 		node.visibility_range_end = CalderaKit.SMALL_RANGE
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if reach > 0.0 and not small:
+		node.visibility_range_end = reach
+		node.visibility_range_end_margin = CalderaKit.ATELIER_MARGIN
 	record.root.add_child(node)
 
 

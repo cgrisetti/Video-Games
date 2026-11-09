@@ -86,7 +86,11 @@ void vertex() {
 	v_color = COLOR.rgb;
 	if (grass_blades) {
 		// The bottom 40% wears the ground's colour (UV.y above 0.6), ripening to the tip's.
-		v_color = mix(tip_color.rgb, pow(COLOR.rgb, vec3(2.2)), smoothstep(0.2, 0.6, UV.y));
+		// A tuft told to ripen (its colour's alpha under 1: standing grain, docs/32 §4) keeps its own colour to
+		// the tip, a little paler, instead of the meadow's green.
+		vec3 own = pow(COLOR.rgb, vec3(2.2));
+		vec3 tip = mix(own * vec3(1.32, 1.24, 1.02), tip_color.rgb, COLOR.a);
+		v_color = mix(tip, own, smoothstep(0.2, 0.6, UV.y));
 	}
 }
 
