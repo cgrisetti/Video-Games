@@ -2,7 +2,8 @@
 ## the First-Quiet (15_THE_MYTHOPOETIC_LENS.md), played from its MobVariantResource
 ## (Bestiary): a bristle-hob, a hedgerow-hob, a padfoot, a puddle-bucca, an
 ## Iron-Man, a bramble-lasher, a spore-puff lob, a bog-hulk, a spriggan or the
-## Crag-Back Cairn-Drake, each built in code from simple shapes in the storybook look.
+## Crag-Back Cairn-Drake, each a sculpted, skinned and animated KinFigure in the
+## storybook look (docs/30_KIN_DESIGN_LANGUAGE.md), or a dropped-in model.
 ##
 ## It keeps to its MobSpawner. An awake one turns on any player within its
 ## aggro radius; a curious hob (HobSpectrumComponent) only fights back once
@@ -59,11 +60,14 @@ var engaged: bool = false
 var calming: CalmingComponent
 ## A Stag Hunt's Amber Chime (docs/29 §5): its health dots glow amber while blades are held.
 var amber: bool = false
+## Its sculpted, animated body (KinFigure); null when a dropped-in model stands in.
+var figure: KinFigure
+## Host: a Grey-Bark Weevil at its tree's bark this tick (its figure plays the gnaw).
+var gnawing: bool = false
 
 var _attack_cooldown: float = 0.0
 var _fade_left: float = -1.0
 var _bar: Label3D
-var _legs: Array[Node3D] = []
 var _nav: NavSteering = NavSteering.new()
 var _wander_target: Vector3 = Vector3.ZERO
 var _wander_left: float = 0.0
@@ -72,6 +76,12 @@ var _patrol_index: int = 0
 var _anchor: Vector3 = Vector3.ZERO
 var _stomp_left: float = 0.0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+## How fast it was seen to move (on every peer, from where it went), for its gait.
+var _seen_speed: float = 0.0
+var _last_seen: Vector3 = Vector3.INF
+## A calmed kin plays its calm before it fades and walks off (KinFigure.CALM_SHOW_TIME).
+var _calm_hold: float = -1.0
+var _last_flash: float = 0.0
 
 
 func body_radius() -> float:
@@ -159,8 +169,11 @@ func _build_visual() -> void:
 	if dropped != null:
 		visual.add_child(dropped)
 	else:
-		_build_creature()
-		_register_attack_limbs()
+		figure = KinFigure.new()
+		figure.build(variant)
+		visual.add_child(figure)
+		_body_material = figure.material
+	_register_attack_limbs()
 	_name_label = Label3D.new()
 	_name_label.name = "NameLabel"
 	_name_label.visible = variant.rank != MobVariantResource.Rank.COMMON
@@ -190,6 +203,7 @@ func _build_visual() -> void:
 
 func _gather_intent(delta: float) -> void:
 	move_intent = Vector3.ZERO
+	gnawing = false
 	wants_guard = false
 	threat.tick(delta)
 	_attack_cooldown = maxf(0.0, _attack_cooldown - delta)
@@ -243,6 +257,7 @@ func _gnaw(tree: OrchardTree, delta: float) -> void:
 		move_intent = _nav.direction(self, tree.global_position, delta) * 0.8
 	else:
 		turn_toward(to_tree, loadout.stats.turn_speed * delta)
+		gnawing = true
 
 
 ## Hostile ones turn on a player in their aggro radius; any turns on a player
@@ -354,9 +369,16 @@ func _update_pose(delta: float) -> void:
 		_bar.modulate = NEUTRAL_BAR_COLOR if variant.aggro_radius <= 0.0 and not is_engaged() else BAR_COLOR
 		if amber:
 			_bar.modulate = StagHuntEncounter.AMBER
-	var stride: float = sin(Time.get_ticks_msec() * 0.02) * 0.4 if Vector2(velocity.x, velocity.z).length() > 0.3 else 0.0
-	for index: int in _legs.size():
-		_legs[index].rotation.x = stride * (1.0 if index % 2 == 0 else -1.0)
+	_watch_speed(delta)
+	if figure != null:
+		if _flash_left > _last_flash + 0.01:
+			figure.flinch()
+		_last_flash = _flash_left
+		if spectrum != null and spectrum.is_steward():
+			figure.restore()
+		elif stats.is_downed and not figure.is_calming():
+			figure.scatter()
+		figure.update_for(self, delta, is_hit_stopped())
 	if stats.is_downed:
 		if _fade_left < 0.0:
 			_fade_left = FADE_TIME
@@ -364,14 +386,54 @@ func _update_pose(delta: float) -> void:
 			hurtbox.collision_layer = 0
 			_name_label.visible = false
 		if spectrum != null and spectrum.is_steward():
-			# A steward Iron-Man stands bowed, friendly, until his time is up.
-			visual.rotation.x = STEWARD_BOW
+			# A steward Iron-Man stands bowed, friendly, until his time is up (his figure bows; a dropped model leans).
+			visual.rotation.x = 0.0 if figure != null else STEWARD_BOW
 			return
+		if figure != null and figure.is_calming():
+			# Calmed: it shakes itself off first, then walks away into the hedge as it fades.
+			if _calm_hold < 0.0:
+				_calm_hold = KinFigure.CALM_SHOW_TIME
+				_fade_left = FADE_TIME
+			if _calm_hold > 0.0:
+				_calm_hold = maxf(0.0, _calm_hold - delta)
+				return
+			figure.walking_off = true
+			visual.position.z -= delta * KinFigure.WALK_OFF_SPEED
 		_fade_left = maxf(0.0, _fade_left - delta)
 		visual.scale = Vector3.ONE * maxf(0.05, _fade_left / FADE_TIME)
 		visual.position.y = -0.4 * (1.0 - _fade_left / FADE_TIME)
 		if _fade_left <= 0.0:
 			visual.visible = false
+
+
+## How fast it's seen to go, from where it went (so another peer's copy walks too).
+func _watch_speed(delta: float) -> void:
+	if _last_seen != Vector3.INF and delta > 0.0:
+		var moved: Vector3 = global_position - _last_seen
+		moved.y = 0.0
+		var seen: float = moved.length() / delta
+		_seen_speed = lerpf(_seen_speed, seen if seen < 30.0 else 0.0, 1.0 - exp(-12.0 * delta))
+	_last_seen = global_position
+
+
+## How fast it's going across the ground (as seen on this peer).
+func remote_speed() -> float:
+	return _seen_speed
+
+
+## The calm's burst reached this peer (CalmingComponent): its figure washes its grey away.
+func on_calm_burst() -> void:
+	if figure != null:
+		figure.begin_calm()
+
+
+## The clip its figure is playing (for checks).
+func kin_clip() -> StringName:
+	return figure.current_clip() if figure != null else &""
+
+
+func _poses_itself() -> bool:
+	return figure != null
 
 
 ## Whether its fall has finished fading (its spawner may clear it away).
@@ -382,137 +444,19 @@ func has_faded() -> bool:
 # --- Bodies ----------------------------------------------------------------------
 
 ## A blow that carries a Sign lights the part that strikes with (14 GDD §8): a Tank reads which Ward-Mantle soaks it.
+## A figure names its striking limbs (KinLooks); a dropped-in model's parts are found by name.
 func _register_attack_limbs() -> void:
 	if variant.blow_sign == ScribeSignResource.Sign.NONE:
 		return
+	if figure != null:
+		for strike: Array in figure.strike_limbs():
+			register_aura_limb(strike[0], maxf(0.12, float(strike[1]) * AURA_SCALE))
+		return
 	var parts: Array = ATTACK_LIMBS.get(variant.body, [])
-	for child: Node in visual.get_children():
+	for child: Node in visual.find_children("*", "MeshInstance3D", true, false):
 		var shape: MeshInstance3D = child as MeshInstance3D
-		if shape == null:
-			continue
 		for part: String in parts:
 			if String(shape.name).contains(part):
 				var extent: Vector3 = shape.get_aabb().size
 				register_aura_limb(shape, maxf(0.12, maxf(extent.x, maxf(extent.y, extent.z)) * AURA_SCALE))
 				break
-
-func _build_creature() -> void:
-	var r: float = variant.radius
-	var h: float = variant.height
-	var accent: Material = _flat_material(variant.accent_color)
-	match variant.body:
-		MobVariantResource.Body.BOAR:
-			visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Body", r, Vector3(0.0, h * 0.55, 0.1), _body_material), Vector3(1.0, 0.85, 1.5)))
-			visual.add_child(ShapeKit.sphere("Head", r * 0.6, Vector3(0.0, h * 0.55, -r * 1.25), _body_material))
-			visual.add_child(ShapeKit.cylinder("Snout", r * 0.25, r * 0.3, r * 0.4, Vector3(0.0, h * 0.5, -r * 1.75), accent, 8))
-			for side: float in [-1.0, 1.0]:
-				visual.add_child(ShapeKit.tilted(ShapeKit.cone("Tusk", r * 0.08, r * 0.5, Vector3(side * r * 0.28, h * 0.42, -r * 1.7), accent), Vector3(-1.2, 0.0, side * 0.4)))
-			visual.add_child(ShapeKit.box("Bristles", Vector3(r * 0.25, r * 0.3, r * 1.8), Vector3(0.0, h * 0.55 + r * 0.8, 0.1), accent))
-			_add_legs(4, r * 0.55, r * 0.7, h * 0.45, accent)
-			_add_eyes(Vector3(r * 0.25, h * 0.66, -r * 1.65), r * 0.1)
-		MobVariantResource.Body.SCUTTLER:
-			visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Body", r, Vector3(0.0, h * 0.55, 0.0), _body_material), Vector3(1.0, 0.7, 1.2)))
-			for index: int in 8:
-				var angle: float = TAU * index / 8.0
-				visual.add_child(ShapeKit.tilted(ShapeKit.cone("Thorn%d" % index, r * 0.12, r * 0.55, Vector3(cos(angle) * r * 0.8, h * 0.7, sin(angle) * r * 0.9), accent),
-					Vector3(sin(angle) * 0.8, 0.0, -cos(angle) * 0.8)))
-			visual.add_child(ShapeKit.tilted(ShapeKit.cone("Tail", r * 0.18, r * 1.4, Vector3(0.0, h * 0.75, r * 1.3), accent), Vector3(1.0, 0.0, 0.0)))
-			_add_legs(6, r * 0.6, r * 0.6, h * 0.45, accent)
-			_add_eyes(Vector3(r * 0.25, h * 0.66, -r * 0.95), r * 0.13)
-		MobVariantResource.Body.WOLF:
-			visual.add_child(ShapeKit.tilted(ShapeKit.capsule("Body", r * 0.55, r * 2.4, Vector3(0.0, h * 0.62, 0.0), _body_material), Vector3(PI * 0.5, 0.0, 0.0)))
-			visual.add_child(ShapeKit.sphere("Head", r * 0.45, Vector3(0.0, h * 0.82, -r * 1.35), _body_material))
-			visual.add_child(ShapeKit.tilted(ShapeKit.cone("Muzzle", r * 0.22, r * 0.55, Vector3(0.0, h * 0.76, -r * 1.75), accent), Vector3(-PI * 0.5, 0.0, 0.0)))
-			for side: float in [-1.0, 1.0]:
-				visual.add_child(ShapeKit.cone("Ear", r * 0.12, r * 0.35, Vector3(side * r * 0.25, h * 1.02, -r * 1.3), accent))
-			visual.add_child(ShapeKit.tilted(ShapeKit.cone("Tail", r * 0.16, r * 1.1, Vector3(0.0, h * 0.7, r * 1.5), accent), Vector3(1.2, 0.0, 0.0)))
-			_add_legs(4, r * 0.4, r * 0.8, h * 0.5, accent)
-			_add_eyes(Vector3(r * 0.18, h * 0.88, -r * 1.7), r * 0.08)
-		MobVariantResource.Body.TOAD:
-			visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Body", r, Vector3(0.0, h * 0.45, 0.0), _body_material), Vector3(1.25, 0.7, 1.1)))
-			visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Belly", r * 0.8, Vector3(0.0, h * 0.35, -r * 0.2), accent), Vector3(1.2, 0.6, 1.0)))
-			visual.add_child(ShapeKit.box("Jaw", Vector3(r * 1.4, r * 0.18, r * 0.4), Vector3(0.0, h * 0.38, -r * 0.95), accent))
-			for side: float in [-1.0, 1.0]:
-				visual.add_child(ShapeKit.sphere("EyeBump", r * 0.28, Vector3(side * r * 0.5, h * 0.82, -r * 0.6), _body_material))
-				visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Haunch", r * 0.42, Vector3(side * r * 0.9, h * 0.3, r * 0.4), _body_material), Vector3(1.0, 0.8, 1.4)))
-			_add_eyes(Vector3(r * 0.5, h * 0.9, -r * 0.78), r * 0.12)
-		MobVariantResource.Body.HUMANOID:
-			_build_biped(r, h, accent, false)
-		MobVariantResource.Body.WIGHT:
-			_build_biped(r, h, accent, true)
-		MobVariantResource.Body.VINE:
-			var thorn: Material = _flat_material(variant.accent_color.darkened(0.2))
-			for index: int in 5:
-				var lean: Vector3 = Vector3(sin(index * 1.3) * 0.25, 0.0, cos(index * 1.7) * 0.25)
-				var stalk: MeshInstance3D = ShapeKit.cylinder("Stalk%d" % index, r * 0.12, r * 0.3, h * (0.7 + 0.08 * index), Vector3(lean.x, h * 0.4, lean.z), _body_material, 6)
-				stalk.rotation = Vector3(lean.z * 1.4, 0.0, -lean.x * 1.4)
-				visual.add_child(stalk)
-			visual.add_child(ShapeKit.sphere("Bloom", r * 0.55, Vector3(0.0, h * 0.95, 0.0), accent))
-			visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Roots", r * 1.2, Vector3(0.0, 0.1, 0.0), thorn), Vector3(1.0, 0.25, 1.0)))
-			_add_eyes(Vector3(r * 0.2, h * 0.98, -r * 0.48), r * 0.1)
-		MobVariantResource.Body.SHAMBLER:
-			visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Body", r, Vector3(0.0, h * 0.5, 0.0), _body_material), Vector3(1.0, 1.15, 0.95)))
-			for index: int in 6:
-				var angle: float = TAU * index / 6.0
-				visual.add_child(ShapeKit.sphere("Puff%d" % index, r * 0.32, Vector3(cos(angle) * r * 0.75, h * 0.85, sin(angle) * r * 0.7), accent))
-			visual.add_child(ShapeKit.sphere("Cap", r * 0.6, Vector3(0.0, h * 1.0, 0.0), accent))
-			_add_legs(2, r * 0.4, r * 0.5, h * 0.35, _body_material)
-			_add_eyes(Vector3(r * 0.25, h * 0.62, -r * 0.92), r * 0.1)
-		MobVariantResource.Body.HULK:
-			visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Body", r, Vector3(0.0, h * 0.55, 0.0), _body_material), Vector3(1.1, 1.1, 0.9)))
-			visual.add_child(ShapeKit.sphere("Head", r * 0.45, Vector3(0.0, h * 0.95, -r * 0.35), _body_material))
-			for side: float in [-1.0, 1.0]:
-				var arm: MeshInstance3D = ShapeKit.capsule("Arm", r * 0.28, h * 0.7, Vector3(side * r * 1.05, h * 0.45, -r * 0.1), accent)
-				arm.rotation.z = side * 0.25
-				visual.add_child(arm)
-				visual.add_child(ShapeKit.sphere("Fist", r * 0.32, Vector3(side * r * 1.15, h * 0.12, -r * 0.15), accent))
-			for index: int in 7:
-				var angle: float = TAU * index / 7.0
-				visual.add_child(ShapeKit.box("Moss%d" % index, Vector3(r * 0.4, r * 0.15, r * 0.4), Vector3(cos(angle) * r * 0.7, h * 0.8, sin(angle) * r * 0.6), accent))
-			_add_legs(2, r * 0.45, r * 0.6, h * 0.35, accent)
-			_add_eyes(Vector3(r * 0.16, h * 1.0, -r * 0.75), r * 0.08)
-		_:
-			# The Crag-Back Cairn-Drake: a great grey shell of stacked crag on four columns, moss on its back.
-			visual.add_child(ShapeKit.stretched(ShapeKit.sphere("Shell", r, Vector3(0.0, h * 0.62, 0.0), _body_material), Vector3(1.15, 0.8, 1.45)))
-			for index: int in 6:
-				var along: float = float(index) / 5.0 - 0.5
-				visual.add_child(ShapeKit.box("Crag%d" % index, Vector3(r * 0.55, r * 0.5, r * 0.45), Vector3(sin(index * 2.1) * r * 0.35, h * 0.95 + r * 0.15, along * r * 2.2), accent))
-			visual.add_child(ShapeKit.sphere("Head", r * 0.45, Vector3(0.0, h * 0.55, -r * 1.55), _body_material))
-			visual.add_child(ShapeKit.torus("Bell", r * 0.18, r * 0.28, Vector3(0.0, h * 0.32, -r * 1.65), _flat_material(Color(0.82, 0.64, 0.3))))
-			_add_legs(4, r * 0.7, r * 0.9, h * 0.55, _body_material)
-			_add_eyes(Vector3(r * 0.2, h * 0.62, -r * 1.95), r * 0.09)
-
-
-## An outlaw (a hood and a sling or cudgel) or a wight (a tarnished helm, a shield and a pale glow).
-func _build_biped(r: float, h: float, accent: Material, wight: bool) -> void:
-	visual.add_child(ShapeKit.cylinder("Torso", r * 0.75, r * 0.95, h * 0.42, Vector3(0.0, h * 0.58, 0.0), _body_material, 10))
-	visual.add_child(ShapeKit.sphere("Head", r * 0.48, Vector3(0.0, h * 0.88, 0.0), _flat_material(variant.main_color.lightened(0.25) if wight else Color(0.9, 0.76, 0.62))))
-	if wight:
-		visual.add_child(ShapeKit.cylinder("Helm", r * 0.5, r * 0.55, r * 0.4, Vector3(0.0, h * 0.95, 0.0), accent, 10))
-		visual.add_child(ShapeKit.box("Shield", Vector3(r * 0.15, h * 0.4, r * 1.1), Vector3(-r * 1.0, h * 0.52, -r * 0.2), accent))
-	else:
-		visual.add_child(ShapeKit.tilted(ShapeKit.cone("Hood", r * 0.55, r * 0.8, Vector3(0.0, h * 0.98, 0.05), accent), Vector3(-0.2, 0.0, 0.0)))
-	visual.add_child(ShapeKit.box("Weapon", Vector3(r * 0.16, r * 0.16, h * 0.45), Vector3(r * 0.95, h * 0.55, -r * 0.6), accent))
-	_add_legs(2, r * 0.4, r * 0.3, h * 0.4, _body_material)
-	_add_eyes(Vector3(r * 0.18, h * 0.9, -r * 0.42), r * 0.08)
-
-
-func _add_legs(count: int, spread: float, along: float, length: float, material: Material) -> void:
-	for index: int in count:
-		@warning_ignore("integer_division")
-		var pair: int = index / 2
-		var side: float = -1.0 if index % 2 == 0 else 1.0
-		var rows: int = maxi(1, ceili(count / 2.0))
-		var z: float = (float(pair) / maxf(1.0, rows - 1.0) - 0.5) * along * 2.0 if rows > 1 else 0.0
-		var leg: Node3D = Node3D.new()
-		leg.name = "Leg%d" % index
-		leg.position = Vector3(side * spread, length, z)
-		leg.add_child(ShapeKit.cylinder("Bone", length * 0.14, length * 0.12, length, Vector3(0.0, -length * 0.5, 0.0), material, 6))
-		visual.add_child(leg)
-		_legs.append(leg)
-
-
-func _add_eyes(right_eye: Vector3, size: float) -> void:
-	var glow: StandardMaterial3D = StorybookMaterial.glowing(variant.eye_color, 2.0)
-	for side: float in [-1.0, 1.0]:
-		visual.add_child(ShapeKit.sphere("Eye", size, Vector3(right_eye.x * side, right_eye.y, right_eye.z), glow))

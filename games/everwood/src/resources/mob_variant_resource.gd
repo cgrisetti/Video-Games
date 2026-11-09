@@ -89,6 +89,11 @@ enum Body { BOAR, SCUTTLER, WOLF, TOAD, HUMANOID, VINE, SHAMBLER, HULK, WIGHT, B
 
 @export_group("Look")
 @export var body: Body = Body.BOAR
+## Its sculpted look (KinLooks: &"hound", &"weevil", &"iron_man" ...); empty wears its body's.
+@export var kin_look: StringName = &""
+## Act I's Un-Inked (docs/28 §3.5, docs/30 §5): it walks washed to paper grey with blank
+## paper eyes, and a calm floods its colours back (main/accent/eye are its true colours).
+@export var un_inked: bool = false
 @export var radius: float = 0.55
 @export var height: float = 0.9
 @export var main_color: Color = Color(0.5, 0.4, 0.3)

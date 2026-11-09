@@ -42,6 +42,11 @@ var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	# Its kin's looks are sculpted and their clips baked now, not in the frame they first step out (docs/30 §10).
+	for id: StringName in variant_ids:
+		var chosen: MobVariantResource = Bestiary.variant(id)
+		if chosen != null:
+			KinFigure.warm(chosen)
 	if has_hush_crack:
 		hush_crack = HushCrackLandmark.new()
 		hush_crack.name = "HushCrack"
