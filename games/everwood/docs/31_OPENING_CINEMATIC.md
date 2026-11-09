@@ -137,7 +137,7 @@ Small hooks in existing code: `InputComponent.cinematic_hold` and `is_held()` (a
 
 ### 12.3 Calls for the Creative Director
 
-1. **The spawn and its framing.** §7's Homestead Meadows (+128, +448) and gate (+300, +430) are in the World Map Bible's frame, which predates Embershore v2 (docs/27). Today's build already has all three things the spec asks for: the Lv 1 spawn at the orchard's south gate (`ActOnePlaces.SPAWN_AT` (-584, 182), facing into the orchard), `POI_OrchardGate` (-586, 192), and Master Alf-Wright at the gate for Q01 (`ActOneDirector`, (-579, 188)). So no placeholders were added and the spawn wasn't moved (you chose on 2026-11-09 to fit Act I to today's isle). The catch: the hero stands just inside the gate facing the orchard, so the gate and Alf-Wright are behind the camera, not in the right third. Turning the spawn to face the gate would put the World-Tree behind instead. Your call: turn the spawn, move Alf for the film, or keep it.
+1. **The spawn and its framing (decided).** §7's Homestead Meadows (+128, +448) and gate (+300, +430) are in the World Map Bible's frame, which predates Embershore v2 (docs/27). Today's build already has all three things the spec asks for: the Lv 1 spawn at the orchard's south gate (`ActOnePlaces.SPAWN_AT` (-584, 182)), `POI_OrchardGate` (-586, 192), and Master Alf-Wright at the gate for Q01 (`ActOneDirector`, (-579, 188)). So no placeholders were added and the spawn stays where Act I put it. It used to face into the orchard, which left the gate and Alf behind the camera. On 2026-11-09 you chose to turn it to the gate. `EmbershoreBuilder.START_FACING` (and `ActOnePlaces.SPAWN_FACING`) is now (0.766, 0.643), south-east, picked from 1080p renders at 190–250°. In the hero's camera at the hand-off, Alf stands 0.67 of the way across (the right third's edge) and the gate spot, the foot of the stone bridge with no model of its own, sits at the right side. The grey-edged hounds of Q01 are ahead, and the World-Tree is behind, as expected: no heading here puts the gate, Alf and the World-Tree in one frame. Moving Alf a few metres west for the film would put him fully in the right third.
 2. **Alf-Wright's lantern wave** isn't built: his NPC has no wave clip, and the NPC is out of scope here.
 3. **The dive's start frame.** "rig_local (x right, y up, z back)" is read as the rig's level heading (y is world-up), so the dive starts 30 m up and 18 m behind. Read in the pitched camera's own axes, it would start about 35 m up and only 5 m back.
 
@@ -148,7 +148,7 @@ Small hooks in existing code: `InputComponent.cinematic_hold` and `is_held()` (a
 
 ### 12.5 Not done, and why
 
-- Alf-Wright's wave (§12.3 item 2) and the framing goal (§12.3 item 1).
+- Alf-Wright's wave (§12.3 item 2). The framing goal holds only in part (§12.3 item 1).
 - The 60 fps target on the target machine isn't measured here (headless checks can't). The pages are two textured quads; the 3D under them costs what normal play costs, and only the lead's view renders while it's spotlit.
 - The .srt is read with `FileAccess`. It isn't a Godot resource, so an exported build would need `*.srt` in the export filter (there's no export preset yet).
 - The handoff folder itself stays untracked; a `.gdignore` in it keeps Godot from importing it twice.
@@ -168,7 +168,7 @@ Small hooks in existing code: `InputComponent.cinematic_hold` and `is_held()` (a
 
 From `games/everwood`, once after pulling (new classes, plates and fonts): `godot --headless --path . --import`.
 
-- **One player:** `godot --path . --resolution 1920x1080`, then New Game, a name, Begin. Watch all six shots in order with captions on time, no load screen, and no camera pop at 0:29–0:30. Walk to the orchard gate behind you: the ribbon comes down. New Game again, then hold Esc for 1.5 s to see the skip.
+- **One player:** `godot --path . --resolution 1920x1080`, then New Game, a name, Begin. Watch all six shots in order with captions on time, no load screen, and no camera pop at 0:29–0:30. Walk to Alf-Wright at the orchard gate, ahead and to your right: the ribbon comes down. New Game again, then hold Esc for 1.5 s to see the skip.
 - **Two-seat couch:** plug in a pad before choosing New Game. One full-screen film plays, and the screen splits at 0:30. Holding Start on the pad shows "Host can skip" and does nothing else; holding Esc on the keyboard skips.
 - **Late drop-in:** after the film, press Start on another pad. Its Fellowship hasn't seen the film in this tale, so it gets the recap in its own cell while you keep playing. Hold its Start for 1.5 s to skip.
 - Each New Game writes a tale to `user://saves/` (on a Mac, `~/Library/Application Support/Godot/app_userdata/Everwood/saves/`).

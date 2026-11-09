@@ -50,9 +50,12 @@ const HEARTHSTEAD_COBBLES: float = 95.0
 ## The Moss-Oaks' sessile oaks: the generator's canopy radius over the oak stand-in's, as a scale.
 const OAK_STAND_IN_RADIUS: float = 2.9
 ## The Level 1 start (the Bible's Lee-Shore Orchards, docs/29 §4): the lane at the orchard's south
-## gate, just over the stone bridge from the green, the party facing into the orchard.
+## gate, just over the stone bridge from the green. The party faces south-east, to the orchard gate
+## and Master Alf-Wright waiting there (the Creative Director, 2026-11-09; docs/31 §12.3): in the
+## hero's camera Alf stands at the right third's edge and the gate (the bridge's foot) at the right
+## side, where the opening film hands over. The World-Tree is behind them.
 const START_AT: Vector2 = Vector2(-584.0, 182.0)
-const START_FACING: Vector2 = Vector2(-0.529, -0.849)
+const START_FACING: Vector2 = Vector2(0.766, 0.643)
 ## Bramblebridge's green and its chime-post (the checkpoint; the Feast green in Act I).
 const GREEN_AT: Vector2 = Vector2(-593.92, 257.71)
 ## North Quay: the timber pier's root at the foot of Hearthstead's bluff and its head 30 m out in the bay (deck 1.6 m).

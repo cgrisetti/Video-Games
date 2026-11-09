@@ -94,7 +94,7 @@ Open `project.godot` in Godot 4.7 and press F5, or from this folder:
 godot --path .
 ```
 
-Either way you arrive on Embershore, at Bramblebridge's green by its chime-post, facing the stone bridge ([docs/27](docs/27_EMBERSHORE_MASTER_V2.md)). To start at North Quay or on The Crown (a playtest) instead:
+Either way you arrive on Embershore, at Lee-Shore Orchards' south gate over the stone bridge from Bramblebridge's green, facing the gate where Master Alf-Wright waits ([docs/29](docs/29_ACT_I_BUILD.md), [docs/31](docs/31_OPENING_CINEMATIC.md)). To start at North Quay or on The Crown (a playtest) instead:
 
 ```bash
 godot --path . -- --boot-zone=north_quay
@@ -124,7 +124,7 @@ The game opens on the **title screen** ([docs/22](docs/22_TITLE_SCREEN_AND_TALES
 
 A **New Game** opens with **the opening film** ([docs/31](docs/31_OPENING_CINEMATIC.md)): thirty seconds of storybook pages over the loading world (the ring of isles, the World-Tree and its gold, the old kings' wound, the grey tide of the Un-Inking, Embershore's last glow), narrated in captions, that dissolve into the live orchards and dive straight into your own camera behind the hero, with no cut, load screen or camera pop; control comes back at 0:30. Everyone on the couch watches it once, full screen, before the screen splits. Only the host can skip it, by holding Esc / Start for a second and a half; anyone else pressing it sees "Host can skip". It plays once per hero: a tale remembers who has seen it, and a new hero who drops in later sees a short six-page recap in their own view while everyone else plays on.
 
-Once a tale starts, the keyboard player joins at once as the **Level 1 youth**: a 14-year-old Wayfarer, Unsworn, standing on Bramblebridge's green on Embershore and facing the stone bridge over the Bramble, alone: no AI companions unless you start with `-- --with-companions`. The youth wears the kit the trail has earned (at Level 1 the Willow-Coppice Longbow and the Bramble-Spun Jerkin, 100 health) and walks the lanes empty-handed: the bow comes out of its tuck the moment a fight starts and goes away again 4 s after. New Game gives a true Level 1 start in its own save file without touching any other tale. Each pad joins with **Start**. Later players fill out the trinity automatically; switch with Tab / Select. The Cross-Grimoire HUD shows each move's keys on your own screen.
+Once a tale starts, the keyboard player joins at once as the **Level 1 youth**: a 14-year-old Wayfarer, Unsworn, standing at Lee-Shore Orchards' south gate on Embershore and facing the gate and Master Alf-Wright, alone: no AI companions unless you start with `-- --with-companions`. The youth wears the kit the trail has earned (at Level 1 the Willow-Coppice Longbow and the Bramble-Spun Jerkin, 100 health) and walks the lanes empty-handed: the bow comes out of its tuck the moment a fight starts and goes away again 4 s after. New Game gives a true Level 1 start in its own save file without touching any other tale. Each pad joins with **Start**. Later players fill out the trinity automatically; switch with Tab / Select. The Cross-Grimoire HUD shows each move's keys on your own screen.
 
 | | Keyboard | Pad |
 |---|---|---|
