@@ -41,6 +41,8 @@ const FOG_SCALE: float = 0.28
 const FOG_OUT_OF_REACH: float = -200.0
 ## Below the horizon the sky is the sea's colour.
 const SEA_SKY_GROUND: Color = Color(0.36, 0.52, 0.56)
+## The far isles' haze is the sky's horizon colour, this far toward its blue (docs/33 §3.4).
+const FAR_HAZE_COOL: float = 0.25
 ## Feet this far under the water for this long, and the tide carries you back to the last dry ground
 ## (docs/27 §2: rivers wade at 0.4 to 0.8 m; deeper water is a wall).
 const DEEP_WATER: float = 0.9
@@ -238,7 +240,8 @@ func music_mood_context(position: Vector3, context: MusicMoodEngine.Context) -> 
 	context.height = clampf((position.y - CalderaWorldState.current.sea_level_y - HEIGHT_FROM) / HEIGHT_SPAN, 0.0, 1.0)
 
 
-## Each island wears its biome's sky and fog; The Crown's shores take on the isles they face.
+## Each island wears its biome's sky and fog; The Crown's shores take on the isles they face (docs/20 Part II
+## §1.4: each shore takes the rock and current of its facing isle, so it wears that isle's light too, docs/33 §3.4).
 func visual_biome_at(position: Vector3) -> StringName:
 	if streamer == null or streamer.builder == null:
 		return WorldVisualCatalog.OAKSHIRE_WICK
@@ -246,11 +249,11 @@ func visual_biome_at(position: Vector3) -> StringName:
 	if crown != null:
 		match crown.zone_at(position):
 			CrownHeartCragBuilder.Zone.IRON_SHORE:
-				return WorldVisualCatalog.QUARRY_WICK
+				return CalderaAtlas.isle(CalderaAtlas.ISLE_IRON_NESS).visual_biome
 			CrownHeartCragBuilder.Zone.GALE_CLIFFS:
-				return WorldVisualCatalog.GULL_WICK_HAVEN
+				return CalderaAtlas.isle(CalderaAtlas.ISLE_RIME_FIRTH).visual_biome
 			CrownHeartCragBuilder.Zone.TIDE_GROTTOS, CrownHeartCragBuilder.Zone.SAP_GALLERIES:
-				return WorldVisualCatalog.NINE_STONES_CROSSING
+				return CalderaAtlas.isle(CalderaAtlas.ISLE_BARROW_EYOT).visual_biome
 	if streamer.builder is EmbershoreBuilder:
 		return EMBERSHORE_BIOMES.get(streamer.builder.stage_name_at(position), streamer.builder.isle.visual_biome)
 	return streamer.builder.isle.visual_biome
@@ -274,6 +277,13 @@ func fog_density_scale() -> float:
 
 func sky_ground_color() -> Color:
 	return SEA_SKY_GROUND
+
+
+## The far isles fade into the sky behind them, leaning a little to the sky's blue (docs/33 §3.4): distance
+## reads as layers of air, and each isle's own light carries out to the silhouettes it sees.
+func tint_far_scenery(sky_horizon: Color, sky_top: Color) -> void:
+	if streamer != null:
+		streamer.set_far_haze(sky_horizon.lerp(sky_top, FAR_HAZE_COOL))
 
 
 ## The low fog lies on the sea, wherever the sea stands (it falls with the Ebb), and lifts away underground.

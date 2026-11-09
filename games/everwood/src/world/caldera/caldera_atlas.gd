@@ -128,15 +128,16 @@ static func _ensure() -> void:
 	_isle(ISLE_EMBERSHORE, "Embershore", "South", 1, 6, ScribeSignResource.Sign.SIGN_WARM_HEARTH, "", 16, Vector2(0.0, 1850.0),
 		"Hearthstead", "Windmill", "The Old Quay", &"", "", WorldVisualCatalog.OAKSHIRE_WICK, &"millers_holm",
 		Color(0.96, 0.78, 0.36), 8)
+	# The three Friction Isles each wear their own light (docs/33 §3.3-3.4); their music is still borrowed (docs/20 Part III §2.9).
 	_isle(ISLE_IRON_NESS, "Iron-Ness", "West", 6, 10, ScribeSignResource.Sign.SIGN_IRON_ROOT, "Shield-Sworn", 12, Vector2(-1650.0, 350.0),
 		"Forge-Gorge", "Forge Stacks", "Raid Gate A: the Under-Forge Abyss", CalderaWorldState.BEACON_IRON, "Iron Current",
-		WorldVisualCatalog.QUARRY_WICK, &"dover_slap_falls", Color(0.86, 0.52, 0.26))
+		WorldVisualCatalog.IRON_NESS, &"dover_slap_falls", Color(0.86, 0.52, 0.26))
 	_isle(ISLE_BARROW_EYOT, "Barrow-Eyot", "East", 8, 12, ScribeSignResource.Sign.SIGN_STAR_TIDE, "Lantern-Bearers", 12, Vector2(1650.0, 550.0),
 		"Lantern Staithe", "Bell-Tower", "Raid Gate C: the Sunken Cathedral", CalderaWorldState.BEACON_TIDE, "Tide Current",
-		WorldVisualCatalog.NINE_STONES_CROSSING, &"moss_oak_hollow", Color(0.62, 0.48, 0.86))
+		WorldVisualCatalog.BARROW_EYOT, &"moss_oak_hollow", Color(0.62, 0.48, 0.86))
 	_isle(ISLE_RIME_FIRTH, "Rime-Firth", "North", 10, 14, ScribeSignResource.Sign.SIGN_RIME_GALE, "Wayfarers", 12, Vector2(100.0, -1600.0),
 		"Gale-Hall", "Snow Peak", "Raid Gate B: the Frost-Peak Aerie", CalderaWorldState.BEACON_GALE, "Gale Current",
-		WorldVisualCatalog.GULL_WICK_HAVEN, &"dover_slap_falls", Color(0.48, 0.72, 0.92))
+		WorldVisualCatalog.RIME_FIRTH, &"dover_slap_falls", Color(0.48, 0.72, 0.92))
 	# The Crown plays its Audio Mosaic all over the isle (docs/16 §7, Clay's choice of 2026-11-06); a profile
 	# that isn't a mosaic here brings back its five shore suites (docs/23 §7, CrownHeartCragBuilder.music_at).
 	_isle(ISLE_THE_CROWN, "The Crown", "Centre", 13, 14, ScribeSignResource.Sign.NONE, "", 8, Vector2.ZERO,

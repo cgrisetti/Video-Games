@@ -352,6 +352,7 @@ func _ease_look(delta: float) -> void:
 			_sky_horizon.lerp(below if below.a > 0.0 else look.turf_albedo, 0.45 if below.a <= 0.0 else 0.7),
 			below if below.a > 0.0 else look.turf_albedo.darkened(0.35))
 	horizon.set_tint(_sky_horizon, _fog_color)
+	_level.tint_far_scenery(_sky_horizon, _sky_top)
 	_mote_material.albedo_color = _mote_color
 	_mote_material.emission = Color(_mote_color.r, _mote_color.g, _mote_color.b)
 

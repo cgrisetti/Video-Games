@@ -197,6 +197,12 @@ func fog_density_scale() -> float:
 	return 1.0
 
 
+## The sky's horizon and top colours as the Atmosphere eases them, for far scenery that fades by hand
+## (the Caldera's island silhouettes). Nothing here by default.
+func tint_far_scenery(_sky_horizon: Color, _sky_top: Color) -> void:
+	pass
+
+
 ## Whether AI companions fill missing roles here (raids yes, Hub Town no),
 ## once companion backfill is on (auto_backfill_companions).
 func wants_companions() -> bool:

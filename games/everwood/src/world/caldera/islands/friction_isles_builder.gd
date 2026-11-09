@@ -45,6 +45,45 @@ const PEAK_RADIUS: float = 170.0
 ## Rime-Firth's inner quay (the Salt Road's skiff docks at its head).
 const RIME_PIER_ROOT: Vector3 = Vector3(60.0, 1.6, 412.0)
 const RIME_PIER_HEAD_Z: float = 462.0
+## Each isle's colour field (docs/33 §3.3): one mass of colour that grows from its rock and leans to its Sign, so the
+## isle reads from across The Sound before a name is shown. The field is its plants (bracken, heather, cotton-grass),
+## so it lives in two places. Underfoot the ground stays turf (green on top, as the ground shader reads turf, so it
+## keeps its texture and value) with a lean toward the field, and the meadow's tips and flowers carry the colour.
+## From afar (far_color, the silhouette the other isles see) the plants are one mass: the field itself.
+## Iron-Ness (Iron-Root amber): rust bracken over an olive ironstone heath, rustier the higher it climbs.
+const IRON_HEATH: Color = Color(0.46, 0.52, 0.28)
+const IRON_BRONZE: Color = Color(0.55, 0.56, 0.27)
+## The ironstone soil where the turf thins on high ground (loam, as Embershore's ash-loam shows through).
+const IRON_SOIL: Color = Color(0.46, 0.33, 0.22)
+const IRON_SOIL_SHARE: float = 0.3
+const IRON_BRACKEN: Color = Color(0.53, 0.39, 0.23)
+const IRON_FAR_HEATH: Color = Color(0.45, 0.46, 0.29)
+## Barrow-Eyot (Star-Tide violet): heather and sea-lavender on the barrows, tawny reed-beds by the water, fen between.
+const BARROW_FEN: Color = Color(0.4, 0.49, 0.36)
+const BARROW_SAGE: Color = Color(0.46, 0.5, 0.4)
+const BARROW_REED_TURF: Color = Color(0.52, 0.55, 0.33)
+const BARROW_FAR_FEN: Color = Color(0.42, 0.46, 0.36)
+const BARROW_HEATHER: Color = Color(0.5, 0.4, 0.52)
+const BARROW_REED: Color = Color(0.6, 0.52, 0.36)
+## The reed-beds stand below this height (metres over the sea), the heather above.
+const BARROW_REED_LINE: float = 2.2
+## Rime-Firth (Rime-Gale azure, carried by its cold light): pale cotton-grass over a grey-green moor, snow above.
+const RIME_MOOR: Color = Color(0.43, 0.53, 0.42)
+const RIME_PALE: Color = Color(0.53, 0.61, 0.48)
+const RIME_FAR_MOOR: Color = Color(0.46, 0.52, 0.48)
+const RIME_COTTON: Color = Color(0.66, 0.66, 0.58)
+## Each isle's meadow (x tufts' height, y share of wildflowers, z ripeness) and wildflower drifts by share
+## (daisy, buttercup, poppy, cornflower, cow parsley): gorse-gold and ember-red on Iron-Ness, sea-lavender blue on
+## Barrow-Eyot, cotton-white on Rime-Firth.
+const IRON_MEADOW: Vector3 = Vector3(1.15, 0.6, 0.55)
+const BARROW_REED_MEADOW: Vector3 = Vector3(1.6, 0.3, 0.45)
+const BARROW_HEATHER_MEADOW: Vector3 = Vector3(0.8, 1.0, 0.15)
+const RIME_MEADOW: Vector3 = Vector3(0.7, 0.8, 0.7)
+const IRON_FLOWERS: Array[float] = [0.18, 0.5, 0.14, 0.0, 0.18]
+const BARROW_FLOWERS: Array[float] = [0.12, 0.04, 0.0, 0.64, 0.2]
+const RIME_FLOWERS: Array[float] = [0.46, 0.04, 0.0, 0.14, 0.36]
+## The Beacon's tower on the far silhouette (its height to the brazier, in metres before the silhouette's lift).
+const FAR_BEACON_TOWER: float = 7.6
 
 var shape: Dictionary = {}
 var inner: Vector2 = Vector2.ZERO
@@ -181,15 +220,79 @@ func _ground_color(x: float, z: float, height: float, up: float) -> Color:
 	var patch: float = 0.5 + 0.5 * detail(x * 0.7, z * 0.7)
 	match isle.isle_id:
 		CalderaAtlas.ISLE_IRON_NESS:
-			return shore_or(height, up, Color(0.42, 0.52, 0.3).lerp(Color(0.48, 0.54, 0.32), patch), CalderaKit.IRONSTONE)
+			var turf: Color = IRON_HEATH.lerp(IRON_BRONZE, _bracken(patch, height))
+			var thin: float = smoothstep(0.65, 0.9, detail(x * 0.25 + 40.0, z * 0.25)) * smoothstep(8.0, 24.0, height)
+			return shore_or(height, up, turf.lerp(IRON_SOIL, thin * IRON_SOIL_SHARE), CalderaKit.IRONSTONE)
 		CalderaAtlas.ISLE_BARROW_EYOT:
-			var fen: Color = Color(0.38, 0.5, 0.3).lerp(Color(0.44, 0.52, 0.34), patch)
 			if height < 0.4 and height > -2.5:
 				return Color(0.3, 0.34, 0.26)
+			var reeds: float = _reeds(height)
+			var fen: Color = BARROW_FEN.lerp(BARROW_SAGE, _heather(patch) * (1.0 - reeds)).lerp(BARROW_REED_TURF, reeds)
 			return shore_or(height, up, fen, Color(0.42, 0.4, 0.36))
-	var heath: Color = Color(0.42, 0.52, 0.36).lerp(Color(0.5, 0.44, 0.5), patch * 0.3)
+	var moor: Color = RIME_MOOR.lerp(RIME_PALE, _cotton(patch))
 	var snow: float = smoothstep(62.0, 90.0, height + 8.0 * detail(x * 2.0, z * 2.0))
-	return shore_or(height, up, heath, CalderaKit.BASALT.lightened(0.15)).lerp(CalderaKit.SNOW, snow)
+	return shore_or(height, up, moor, CalderaKit.BASALT.lightened(0.15)).lerp(CalderaKit.SNOW, snow)
+
+
+## The isle as the other isles see it: its plants as one mass of colour, the field itself (docs/33 §3.3).
+func far_color(x: float, z: float, height: float, up: float) -> Color:
+	var patch: float = 0.5 + 0.5 * detail(x * 0.7, z * 0.7)
+	match isle.isle_id:
+		CalderaAtlas.ISLE_IRON_NESS:
+			return shore_or(height, up, IRON_FAR_HEATH.lerp(IRON_BRACKEN, _bracken(patch, height)), CalderaKit.IRONSTONE)
+		CalderaAtlas.ISLE_BARROW_EYOT:
+			if height < 0.4 and height > -2.5:
+				return Color(0.3, 0.34, 0.26)
+			var reeds: float = _reeds(height)
+			var fen: Color = BARROW_FAR_FEN.lerp(BARROW_HEATHER, _heather(patch) * (1.0 - reeds)).lerp(BARROW_REED, reeds)
+			return shore_or(height, up, fen, Color(0.42, 0.4, 0.36))
+	var moor: Color = RIME_FAR_MOOR.lerp(RIME_COTTON, _cotton(patch))
+	var snow: float = smoothstep(62.0, 90.0, height + 8.0 * detail(x * 2.0, z * 2.0))
+	return shore_or(height, up, moor, CalderaKit.BASALT.lightened(0.15)).lerp(CalderaKit.SNOW, snow)
+
+
+## How much of Iron-Ness's ground is bracken: patches of it, more the higher it climbs.
+static func _bracken(patch: float, height: float) -> float:
+	return smoothstep(0.35, 0.75, patch + 0.35 * smoothstep(4.0, 24.0, height))
+
+
+## How much of Barrow-Eyot's ground by the water is reed-bed, and of its barrows heather.
+static func _reeds(height: float) -> float:
+	return 1.0 - smoothstep(BARROW_REED_LINE - 1.0, BARROW_REED_LINE, height)
+
+
+static func _heather(patch: float) -> float:
+	return smoothstep(0.15, 0.45, patch)
+
+
+## How much of Rime-Firth's moor is cotton-grass.
+static func _cotton(patch: float) -> float:
+	return smoothstep(0.4, 0.7, patch)
+
+
+## Bracken stands tall and bronze on Iron-Ness, reeds by Barrow-Eyot's water and short heather on its barrows,
+## and Rime-Firth's moor is cropped short by the gales and pale to the tip (docs/33 §3.3).
+func _meadow_style(x: float, z: float) -> Vector3:
+	match isle.isle_id:
+		CalderaAtlas.ISLE_IRON_NESS:
+			return IRON_MEADOW
+		CalderaAtlas.ISLE_BARROW_EYOT:
+			return BARROW_REED_MEADOW if height_at(x, z) < BARROW_REED_LINE else BARROW_HEATHER_MEADOW
+	return RIME_MEADOW
+
+
+func meadow_flower_shares() -> Array[float]:
+	match isle.isle_id:
+		CalderaAtlas.ISLE_IRON_NESS:
+			return IRON_FLOWERS
+		CalderaAtlas.ISLE_BARROW_EYOT:
+			return BARROW_FLOWERS
+	return RIME_FLOWERS
+
+
+func beacon_spot() -> Vector3:
+	var spot: Vector2 = SHAPES[isle.isle_id]["beacon"]
+	return ground(spot.x, spot.y)
 
 
 func _scatter_species(x: float, z: float, height: float, up: float, roll: float) -> int:
@@ -222,6 +325,8 @@ func _scatter_species(x: float, z: float, height: float, up: float, roll: float)
 
 func landmark_silhouette(into: LandblockTerrain.MeshMerge) -> void:
 	var at: Vector2 = SHAPES[isle.isle_id]["landmark"]
+	# The Beacon's tower, so its fire (FarBeacon) stands on something when it's lit.
+	CalderaKit.add_post(into, beacon_spot(), 2.0, 2.8, FAR_BEACON_TOWER, CalderaKit.PALE_STONE, 6)
 	match isle.isle_id:
 		CalderaAtlas.ISLE_IRON_NESS:
 			CalderaKit.add_forge_stacks(into, ground(at.x, at.y))

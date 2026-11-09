@@ -46,6 +46,8 @@ const LAID_ROADS: GDScript = preload("res://tools/test_laid_roads.gd")
 const EMBERSHORE: GDScript = preload("res://tools/test_embershore.gd")
 ## Embershore's worked land: its steadings, fields, boundaries, trees, homes and stock (docs/32).
 const WORKED_LAND: GDScript = preload("res://tools/test_worked_land.gd")
+## The Caldera's sense of place (docs/33): each isle's light and colour field, the far haze, the far Beacons.
+const SENSE_OF_PLACE: GDScript = preload("res://tools/test_sense_of_place.gd")
 const ACT_ONE: GDScript = preload("res://tools/test_act_one.gd")
 ## The kin overhaul (docs/30): the foes of Levels 1 to 5 as sculpted, animated figures.
 const KIN_ATELIER: GDScript = preload("res://tools/test_kin_atelier.gd")
@@ -66,10 +68,13 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	LAID_ROADS.new().run(level, check)
 	await EMBERSHORE.new().run(level, check, tree)
 	await WORKED_LAND.new().run(level, check, tree)
+	var place_checks: RefCounted = SENSE_OF_PLACE.new()
+	await place_checks.run(level, check, tree)
 	await ACT_ONE.new().run(level, check, tree)
 	await KIN_ATELIER.new().run(level, check, tree)
 	await _check_streaming_and_seams()
 	await _check_beacons()
+	await place_checks.run_lit(level, check, tree)
 	_check_crown_areas()
 	await CROWN_ZONES.new().run(level, check)
 	await _check_trials_and_stair()

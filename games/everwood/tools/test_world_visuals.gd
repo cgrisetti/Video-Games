@@ -29,7 +29,7 @@ extends RefCounted
 const Succession = ZoneSuccessionVisualResource.SuccessionState
 const BIOME_IDS: Array[StringName] = [&"tizzi_wed_green", &"gull_wick_haven", &"barley_bridge_meadow", &"rush_light_hollow", &"barrow_crag_crossing",
 	&"sunken_crown_falls", &"oakshire_wick", &"wayfarer_green", &"pippin_green", &"quarry_wick", &"bramble_hollow", &"nine_stones_crossing", &"honey_wick",
-	&"bramble_bridge", &"moss_oak_hollow", &"dover_slap_falls", &"ring_of_the_cairnsman"]
+	&"bramble_bridge", &"moss_oak_hollow", &"dover_slap_falls", &"ring_of_the_cairnsman", &"iron_ness", &"barrow_eyot", &"rime_firth"]
 const REQUIRED_KITS: Array[StringName] = [&"kit_house_stepped_gable", &"kit_watermill_wheel", &"kit_bridge_stone_arch", &"kit_bridge_carpathian_trestle",
 	&"kit_scribe_desk_pavilion", &"kit_chime_shrine_pagoda", &"kit_chime_post_diagnostic", &"kit_water_shrine_oasis", &"kit_hush_crack_and_cairn",
 	&"kit_tree_moss_oak", &"kit_tree_orchard_apple", &"kit_tree_weeping_willow", &"kit_tree_highland_pine"]
@@ -92,7 +92,7 @@ func _check_catalog() -> void:
 		for ground: Color in [look.turf_albedo, look.road_albedo, look.hollow_albedo, look.crag_albedo]:
 			if ground.get_luminance() < 0.2 or ground.get_luminance() > 0.8 or ground.s > 0.7:
 				muddy.append("%s %s" % [look.biome_id, ground.to_html(false)])
-	check.call(ids == BIOME_IDS and muddy.is_empty(), "the catalog holds the seventeen biomes (six atlas zones, Oakshire Vale's six parts, the trail's five), every ground colour mid-value and never neon%s"
+	check.call(ids == BIOME_IDS and muddy.is_empty(), "the catalog holds the twenty biomes (six atlas zones, Oakshire Vale's six parts, the trail's five, the Caldera's three Friction Isles), every ground colour mid-value and never neon%s"
 		% ("" if muddy.is_empty() else " (%s)" % ", ".join(muddy)))
 	var looks: ZoneBiomeResource = WorldVisualCatalog.biome(&"tizzi_wed_green")
 	check.call(looks.turf_albedo.to_html(false) == "5b8c4a" and looks.road_albedo.to_html(false) == "c8bfa8" and looks.hollow_albedo.to_html(false) == "594636"

@@ -153,9 +153,14 @@ func _check_linter() -> void:
 	if vale != null:
 		for apron: PortalApron in vale.aprons:
 			places.append(apron.title)
+	# The Caldera's old-tongue isle names (Iron-Ness, Barrow-Eyot, Rime-Firth...) answer to Rule 4 only (docs/20 Part III §2.4);
+	# a biome named for its isle (docs/33 §3.4) is that name.
+	var old_tongue: Array[String] = []
+	for isle: IslandGridResource in CalderaAtlas.isles():
+		old_tongue.append(isle.display_name)
 	var unsound: Array[String] = []
 	for place: String in places:
-		if place == "" or NOT_SETTLEMENTS.has(place) or CD_NAME_EXCEPTIONS.any(func(named: String) -> bool: return place.contains(named)):
+		if place == "" or NOT_SETTLEMENTS.has(place) or old_tongue.has(place) or CD_NAME_EXCEPTIONS.any(func(named: String) -> bool: return place.contains(named)):
 			continue
 		var compound: bool = false
 		for part: String in place.to_lower().replace(" ", "-").split("-"):
