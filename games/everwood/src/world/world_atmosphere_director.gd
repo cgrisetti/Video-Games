@@ -35,6 +35,8 @@ extends Node
 
 signal biome_changed(biome_id: StringName)
 signal succession_changed(id: StringName, state: int)
+## A Reclamation Bloom began sweeping out from `at` (the birds burst into song there, docs/33 §10).
+signal bloomed(at: Vector3)
 signal atelier_finished
 
 const Succession = ZoneSuccessionVisualResource.SuccessionState
@@ -503,6 +505,7 @@ func bloom_at(at: Vector3) -> void:
 	if _blooms.size() >= MAX_BLOOMS:
 		_blooms.remove_at(0)
 	_blooms.append(Vector4(at.x, at.y, at.z, _clock))
+	bloomed.emit(at)
 
 
 func _publish_blooms() -> void:
@@ -536,6 +539,16 @@ func _warm_lanterns() -> void:
 					and lantern.global_position.distance_to(crack.global_position) <= crack.hush_radius:
 				warmth = WorldVisualCatalog.succession(Succession.ZONE_HUSHED).lantern_warmth_multiplier
 		lantern.call(&"set_warmth", warmth)
+
+
+## Whether a spot lies in the hush: within an open (ZONE_HUSHED) Hush-Crack's reach, where the First-Quiet drains
+## the colour and the wind, and the birds fall silent (docs/17 §2.2).
+func hush_at(at: Vector3) -> bool:
+	for crack: HushCrackLandmark in _cracks:
+		if is_instance_valid(crack) and crack.is_inside_tree() and crack.state == Succession.ZONE_HUSHED \
+				and at.distance_to(crack.global_position) <= crack.hush_radius:
+			return true
+	return false
 
 
 func _party_in_hush() -> bool:

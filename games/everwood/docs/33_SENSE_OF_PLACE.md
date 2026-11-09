@@ -220,10 +220,10 @@ Also changed:
 
 ## 8. Calls for the Creative Director
 
-1. **The three fields and their light.** The hues are constants at the top of `friction_isles_builder.gd`, and each isle's light is one `_biome` line in `world_visual_catalog.gd`. Say if any isle should lean further or less.
-2. **Lower the sun for autumn light.** The Caldera's sun stands 48° up, a midday sun. At 34-38° shadows lengthen and the land warms, which is most of what Tsushima's golden hour does. It's one number (`CalderaArchipelagoWorld._init`), and the direction stays SSE so docs/32's steadings still face it. It isn't done, because it changes every isle and the opening film's last shot, and needs eyes on it.
-3. **Birdsong and the stock's sounds.** The hush would silence the birds, and the fields would have sheep and hens. Both need recorded or synthesised sound, which is an asset choice.
-4. **A view of home.** A second reveal could sit on Mill-Downs at Level 5, looking back over the worked valley before the party leaves the isle. It would be a different subject from Doverslap's (home, not the promise). Not built; say if it's wanted.
+1. **The three fields and their light** (still open). The hues are constants at the top of `friction_isles_builder.gd`, and each isle's light is one `_biome` line in `world_visual_catalog.gd`. Say if any isle should lean further or less.
+2. **Lower the sun for autumn light.** Built (2026-11-09): see §10.
+3. **Birdsong and the stock's sounds.** Built (2026-11-09), generated from the audio architecture: see §10.
+4. **A view of home.** Built (2026-11-09): the Mill-Downs reveal, see §10.
 
 ## 9. Gaps
 
@@ -233,3 +233,63 @@ Also changed:
 - **The Friction Isles are still sketches** (docs/20 Part III): an arrival, a steading, a Beacon, camps and a landmark each. Their colour fields lie over the ground they have; their master briefs come next.
 - **Their music is still borrowed.**
 - **No README update yet** for the new tool and doc.
+
+## 10. The Creative Director's calls, built (2026-11-09)
+
+> **Asked for:** "Yes, lower the Sun for autumn. Use our audio architecture, the living pastoral storybook atelier reference, and the design goal to generate the animal sounds. Generate a 2nd camera reveal on Mill-Downs."
+
+### 10.1 The autumn sun
+
+The Caldera's sun stands 36° up (it was 48°, a midday sun): an autumn afternoon, in keeping with docs/32's week of the Great Autumn Feast. Its bearing hasn't moved: it still stands south-south-east, so docs/32's steadings still face it. Shadows lie longer and the land rakes warmer; the windmill on Mill-Downs throws its sails across the road. It's one pair of constants, `CalderaArchipelagoWorld.SUN_HIGH_DEGREES` and `SUN_BEARING_DEGREES`. The pictures in `docs/images/sense_of_place/` were all taken under it.
+
+### 10.2 The farm's and the hedges' voices
+
+**How they're made.** `PastoralVoices` follows docs/16's Tier 2, which makes the chamber ensemble in code: no voice is a bare oscillator, and each is an excitation through resonators.
+- **Ewe and lamb:** a throat's harmonics through a mouth's formant resonators, opening from a closed "m" to an open "eh". The bleat's quaver is about 7.5 Hz (a lamb's 9 Hz) in pitch and loudness.
+- **Cow:** a low throat through a mouth that opens from "m" through "oo" to "aa" and closes again, the pitch lifting then sinking, with breath.
+- **Hen:** short "buk"s, and in every other take a rising "ba-GAWK".
+- **Goose:** a nasal, slightly rough honk, in pairs ("ha-honk").
+- **Blackbird:** a fluting phrase, a flue gliding between notes, with the score's own 25 ms grace-note flicks (docs/16 §2, the Shore axis).
+- **Wren:** a run of falling chirps and a trill.
+
+**The Living Storybook Atelier** (docs/16 §2) sets their manner: the voices are the score's neighbours, not a field recording.
+- Each voice's resting pitch is a note of the Chime-Shrine's G pentatonic (G A B D E), and the birds sing from it, so a bleat or a blackbird under the score never clashes. That's the same idea as the Four Signs' stingers, which are pitched to the zone's tonic (docs/16 §5).
+- They are soft and rounded, with gentle attacks and a warm low-pass at 4.2 kHz.
+- Each take is seeded by its voice and number, so a flock always sounds the same.
+
+There are three takes of each of the seven voices. Rendering all 21 takes on a worker thread takes about 0.3 s, when the first beast or bird would sing.
+
+**Where they play.** All on the Ambience3D bus, through 3D players set as `AudioDirector.attach_ambience` sets its emitters:
+- **The stock** (`GrazingStock`). While a flock is awake (a hero within its sight), one beast calls every so often: a ewe every 7-16 s, a cow every 14-30 s, a hen every 3-8 s, a goose every 9-20 s. A lamb calls with a lamb's voice and a calf a third higher. A beast a hero startles calls at once. A goose doesn't give way: it holds its ground and honks at a hero who comes within 5 m.
+- **The birds** (`Birdsong`, one in the Caldera level). Every 2.5-7 s a blackbird or a wren sings from a perch on dry land 14 to 38 m from Player 1. The high moor and the ironstone heath have fewer: Rime-Firth's gap is 2.2 times as long, Iron-Ness's 1.8.
+- **The First-Quiet silences them** (docs/17 §2.2). By an open Hush-Crack no bird sings, so a kin camp goes quiet as you near it (`WorldAtmosphereDirector.hush_at`). When the crack is calmed, its Reclamation Bloom sets four birds singing round it, one after another (the director's new `bloomed` signal).
+
+Split-screen hears the world from Player 1's view, as all of Everwood's 3D sound does (only the first view has an audio listener), so the birds sing round Player 1.
+
+**Checked by spectrogram.** `tools/test_sense_of_place.gd` holds them to numbers (§10.4). The voices were also drawn as spectrograms: the ewe's harmonics waver with the quaver, the cow's mouth opens and closes, and the birds' notes glide and trill.
+
+### 10.3 The Mill-Downs reveal
+
+The Doverslap reveal became `VistaReveal`, a reveal with its own id, reach, length and banner. Embershore now has two, each a different subject:
+- **Doverslap** (Level 4): the promise, north over The Sound.
+- **Mill-Downs** (Level 5): home. Where the Downs road passes the windmill, the first time each hero comes by, their camera eases up and back for 5 s. It looks south-west over the worked valley they have walked (walled fields, haycocks, the Moss-Oaks under the Elder Oak, Bramblebridge beyond) with the windmill as the frame on the left. The banner reads "EMBERSHORE: Home: every field and steading you walked through, the Moss-Oaks under the Elder Oak, Bramblebridge beyond".
+
+Like Doverslap's, it plays once per hero per save (`reveals_seen`, id `mill_downs`), never mid-fight, and in each viewport on its own. It looks at a point 900 m out on the Elder Oak's bearing, because the camera looks 8% of the way to its point. So its look runs out over the valley, as Doverslap's runs out over The Sound. Picture: `docs/images/sense_of_place/mill_downs_reveal.jpg`.
+
+This keeps §3.6's razor: one reveal per subject, and no two showing the same view.
+
+### 10.4 Checks
+
+`tools/test_sense_of_place.gd` gained five checks (13 in all):
+- **The sun:** it stands 36° up, still south-south-east.
+- **The voices:** all 21 takes sound, never clip, rest on the G pentatonic and render the same every time, and the ewe's bleat quavers at about 7.5 a second.
+- **The calls:** a ewe a hero walks up to gives way and bleats, and a goose honks at them.
+- **The birds:** they sing round the party, fall silent by an open Hush-Crack, and burst into song when it's calmed.
+- **The Mill-Downs reveal:** it stands by the windmill, looks toward the Elder Oak, and plays once per hero.
+
+`tools/test_embershore.gd` reads the Doverslap reveal as a `VistaReveal`.
+
+### 10.5 Gaps
+
+- **Nobody has listened to the voices yet.** They're checked by numbers and spectrograms; the first windowed playtest is the real test.
+- **Recorded takes could stand in later.** `AudioDirector` prefers a baked recording for a station's loop (`ambience_<kind>.ogg`); the voices don't look for one yet.

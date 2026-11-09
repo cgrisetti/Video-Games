@@ -15,6 +15,11 @@ const BRAMBLE_WIDTH: float = 4.4
 const BRAMBLE_DECK: float = 0.6
 ## The quay stair: two flights hung on the bluff's face from Hearthstead down to North Quay's pier.
 const STAIR_WIDTH: float = 2.4
+## The Mill-Downs reveal (docs/33 §3.6): how near the Downs road's closest point to the windmill a hero comes, and
+## how long the look back lasts (a little longer than Doverslap's: there's more to take in).
+const MILL_DOWNS_REVEAL_RADIUS: float = 10.0
+const MILL_DOWNS_REVEAL_SECONDS: float = 5.0
+const MILL_DOWNS_LOOK_REACH: float = 900.0
 const GRAIN: Color = Color(0.8, 0.68, 0.32)
 const STUBBLE: Color = Color(0.56, 0.47, 0.26)
 ## The green baulk left unploughed between two strips of the Mill-Downs' open field (docs/32 §4).
@@ -145,12 +150,15 @@ static func _build_doverslap(root: Node3D, builder: EmbershoreBuilder) -> void:
 	if south != Vector3.ZERO and north != Vector3.ZERO:
 		_stone_bridge(root, builder, "DoverslapBridge", south, north, DOVERSLAP_WIDTH, DOVERSLAP_DECK, 3, "dover")
 		CalderaKit.sign_label(root, "DoverslapSign", "Doverslap Gorge Bridge\nthree arches over the Dover; the Sound opens to the north", south + Vector3(4.2, 3.0, -4.0))
-		var reveal: DoverslapReveal = DoverslapReveal.new()
+		var reveal: VistaReveal = VistaReveal.new()
 		reveal.name = "DoverslapReveal"
+		reveal.reveal_id = VistaReveal.DOVERSLAP
 		var middle: Vector3 = (south + north) * 0.5
 		reveal.position = middle
 		var crown: Vector3 = CalderaAtlas.offset_between(builder.isle.isle_id, CalderaAtlas.ISLE_THE_CROWN)
 		reveal.look_at_point = crown + Vector3(0.0, 60.0, 0.0)
+		reveal.banner_title = "THE SOUND"
+		reveal.banner_line = "The World-Tree on The Crown; Rime-Firth west of it, Barrow-Eyot east"
 		root.add_child(reveal)
 	var gatehouse: Vector3 = builder.landmark(&"doverslap_gatehouse")
 	var gate_road: PackedVector3Array = builder.road_points("gate")
@@ -268,6 +276,34 @@ static func _build_quay_stair(root: Node3D, builder: EmbershoreBuilder) -> void:
 
 # --- Mill-Downs -----------------------------------------------------------------------------------
 
+## The Mill-Downs reveal (docs/33 §3.6, the Creative Director's call of 2026-11-09): where the Downs road passes the
+## windmill, the first time each hero comes by, their camera looks back south-west over the worked valley they have
+## walked (the fields and steadings, the Moss-Oaks under the Elder Oak, Bramblebridge beyond) before they leave the isle.
+static func _build_mill_downs_reveal(root: Node3D, builder: EmbershoreBuilder, windmill_foot: Vector3) -> void:
+	var downs: PackedVector3Array = builder.road_points("downs")
+	var oak: Vector3 = builder.landmark(&"elder_oak")
+	if downs.is_empty() or oak == Vector3.ZERO:
+		return
+	var nearest: Vector3 = downs[0]
+	for point: Vector3 in downs:
+		if Vector2(point.x - windmill_foot.x, point.z - windmill_foot.z).length() < Vector2(nearest.x - windmill_foot.x, nearest.z - windmill_foot.z).length():
+			nearest = point
+	var reveal: VistaReveal = VistaReveal.new()
+	reveal.name = "MillDownsReveal"
+	reveal.reveal_id = VistaReveal.MILL_DOWNS
+	reveal.position = builder.ground(nearest.x, nearest.z)
+	reveal.radius = MILL_DOWNS_REVEAL_RADIUS
+	reveal.seconds = MILL_DOWNS_REVEAL_SECONDS
+	# The camera looks 8% of the way to its point (PlayerCamera.reveal), so the point lies far out on the Elder
+	# Oak's bearing: the look then runs out over the valley, as Doverslap's runs out over The Sound.
+	var bearing: Vector3 = Vector3(oak.x - nearest.x, 0.0, oak.z - nearest.z).normalized()
+	reveal.look_at_point = reveal.position + bearing * MILL_DOWNS_LOOK_REACH
+	reveal.banner_title = "EMBERSHORE"
+	reveal.banner_line = "Home: every field and steading you walked through, the Moss-Oaks under the Elder Oak, Bramblebridge beyond"
+	reveal.banner_color = Color(1.0, 0.88, 0.62)
+	root.add_child(reveal)
+
+
 static func _build_mill_downs(root: Node3D, builder: EmbershoreBuilder) -> void:
 	var mill: Vector3 = builder.landmark(&"mill_downs_windmill")
 	if mill != Vector3.ZERO:
@@ -277,6 +313,7 @@ static func _build_mill_downs(root: Node3D, builder: EmbershoreBuilder) -> void:
 		root.add_child(windmill)
 		CalderaKit.solid_cylinder(root, "WindmillBody", foot, 5.2, 18.0)
 		CalderaKit.sign_label(root, "WindmillSign", "The Mill-Downs Windmill\nseen from every isle of the Sound", foot + Vector3(0.0, 4.0, 7.0))
+		_build_mill_downs_reveal(root, builder, foot)
 	var gate_at: Vector3 = builder.landmark(&"downs_gate")
 	var downs: PackedVector3Array = builder.road_points("downs")
 	if gate_at != Vector3.ZERO and downs.size() >= 2:

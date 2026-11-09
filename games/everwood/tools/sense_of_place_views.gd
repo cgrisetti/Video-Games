@@ -3,7 +3,8 @@
 ##   godot --path . -s res://tools/sense_of_place_views.gd -- --out=/tmp/views
 ## From North Quay it looks out over The Sound (as a hero sees it, then close on each Friction Isle) with every
 ## Beacon cold, lights the three (a playtest change, never saved) and looks again. Then it lands on each Friction
-## Isle by its Beacon and looks inland over its colour field. Pictures go to docs/images/sense_of_place/. It uses
+## Isle by its Beacon and looks inland over its colour field, comes home to Bramblebridge's green under the
+## autumn sun, and walks a hero into the Mill-Downs reveal. Pictures go to docs/images/sense_of_place/. It uses
 ## a scratch save, never yours, and quits when done.
 extends SceneTree
 
@@ -19,6 +20,8 @@ const QUAY_EYE_UP: float = 14.0
 const WIDE_FOV: float = 62.0
 const CLOSE_FOV: float = 16.0
 const ISLES: Array[StringName] = [CalderaAtlas.ISLE_IRON_NESS, CalderaAtlas.ISLE_BARROW_EYOT, CalderaAtlas.ISLE_RIME_FIRTH]
+## The Mill-Downs reveal is at its height this long after the hero steps in.
+const MILL_DOWNS_PEAK_SECONDS: float = 2.5
 
 var _level: CalderaArchipelagoWorld
 var _viewport: SubViewport
@@ -72,6 +75,7 @@ func _run() -> void:
 	await _from_the_quay(out_dir, "lit")
 	for isle_id: StringName in ISLES:
 		await _on_the_isle(isle_id, out_dir)
+	await _autumn_and_home(out_dir)
 	state.reset_for_testing()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	quit(0)
@@ -106,6 +110,35 @@ func _on_the_isle(isle_id: StringName, out_dir: String) -> void:
 	var eye: Vector3 = spot - inland * 14.0 + Vector3(0.0, 9.0, 0.0)
 	eye.y = maxf(eye.y, builder.height_at(eye.x, eye.z) + 3.0)
 	await _shoot(out_dir, "on_%s" % String(isle_id).trim_prefix("isle_"), eye, spot + inland * 120.0 + Vector3(0.0, 4.0, 0.0), WIDE_FOV)
+
+
+## Bramblebridge's green under the autumn sun, then the Mill-Downs reveal through the hero's own camera at its height.
+func _autumn_and_home(out_dir: String) -> void:
+	_level.travel_to(CalderaAtlas.ISLE_EMBERSHORE, CalderaAtlas.ARRIVE_START)
+	await _frames(30)
+	var green: Vector3 = Vector3(-594.0, 0.0, 256.0)
+	green.y = _level.streamer.height_at(green.x, green.z)
+	var away: Vector3 = Vector3(sin(deg_to_rad(150.0)), 0.0, -cos(deg_to_rad(150.0))) * 26.0
+	await _shoot(out_dir, "autumn_bramblebridge", green + away + Vector3(0.0, 7.0, 0.0), green + Vector3(0.0, 2.0, 0.0), 52.0)
+	var reveal: VistaReveal = _level.streamer.structures.find_child("MillDownsReveal", true, false) as VistaReveal
+	var hero: ActorBase = _level.party_in_order()[0]
+	if reveal == null or hero == null:
+		push_error("no Mill-Downs reveal")
+		return
+	PartyProgress.current.reveals_seen.clear()
+	_level.streamer.load_now([reveal.global_position])
+	await _frames(20)
+	hero.place_at(Transform3D(Basis.IDENTITY, reveal.global_position + Vector3(0.0, 0.4, 0.0)))
+	if WorldAtmosphereDirector.current != null:
+		WorldAtmosphereDirector.current.settle()
+	# Half-way through its five seconds the reveal is at its height.
+	await _frames(int(MILL_DOWNS_PEAK_SECONDS * 60.0))
+	var view: SubViewport = _level.grid.viewport_for(hero.player_id)
+	if view == null:
+		push_error("no view for the hero")
+		return
+	view.get_texture().get_image().save_jpg(out_dir + "mill_downs_reveal.jpg", 0.9)
+	print("  saved mill_downs_reveal.jpg")
 
 
 func _shoot(out_dir: String, picture: String, eye: Vector3, target: Vector3, fov: float) -> void:

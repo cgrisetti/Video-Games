@@ -253,7 +253,7 @@ func _check_wheel_and_gate() -> void:
 # --- 8: the reveal -----------------------------------------------------------------------------------
 
 func _check_reveal() -> void:
-	var reveal: DoverslapReveal = _structure("DoverslapReveal") as DoverslapReveal
+	var reveal: VistaReveal = _structure("DoverslapReveal") as VistaReveal
 	var party: Array[ActorBase] = _party()
 	if reveal == null or party.size() < 2:
 		check.call(false, "the Doverslap reveal stands on the bridge, and a party of two or more walks it")
@@ -269,7 +269,7 @@ func _check_reveal() -> void:
 	p1.place_at(Transform3D(Basis.IDENTITY, reveal.global_position + Vector3(0.0, 0.4, 0.0)))
 	await _frames(3)
 	var who: StringName = p1.loadout.class_id
-	var played: bool = reveal.shown == shown_before + 1 and camera != null and camera.is_revealing() and PartyProgress.current.has_seen_reveal(DoverslapReveal.REVEAL_ID, who)
+	var played: bool = reveal.shown == shown_before + 1 and camera != null and camera.is_revealing() and PartyProgress.current.has_seen_reveal(VistaReveal.DOVERSLAP, who)
 	# Away and back: not again.
 	p1.place_at(Transform3D(Basis.IDENTITY, reveal.global_position + Vector3(0.0, 0.4, 20.0)))
 	await _frames(2)

@@ -43,6 +43,9 @@ const FOG_OUT_OF_REACH: float = -200.0
 const SEA_SKY_GROUND: Color = Color(0.36, 0.52, 0.56)
 ## The far isles' haze is the sky's horizon colour, this far toward its blue (docs/33 §3.4).
 const FAR_HAZE_COOL: float = 0.25
+## The Caldera's sun: how high it stands (an autumn afternoon; it was 48, a midday sun) and its turn about the up axis.
+const SUN_HIGH_DEGREES: float = 36.0
+const SUN_BEARING_DEGREES: float = 35.0
 ## Feet this far under the water for this long, and the tide carries you back to the last dry ground
 ## (docs/27 §2: rivers wade at 0.4 to 0.8 m; deeper water is a wall).
 const DEEP_WATER: float = 0.9
@@ -90,6 +93,7 @@ static var _boot_zone_read: bool = false
 
 var streamer: ArchipelagoStreamer
 var seams: SeamTransitionController
+var birdsong: Birdsong
 var ebb_cinematic: EbbCinematic
 ## The opening film's director (docs/31): a new hero's first arrival at the Lv 1 spawn plays the
 ## prologue over the loading world; a new hero who drops in later sees its recap in their own view.
@@ -113,7 +117,9 @@ func _init() -> void:
 	add_child(environment)
 	var sun: DirectionalLight3D = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.transform = Transform3D(Basis.from_euler(Vector3(deg_to_rad(-48.0), deg_to_rad(35.0), 0.0)), Vector3.ZERO)
+	# An autumn afternoon (docs/33 §8, Creative Director 2026-11-09): the sun SUN_HIGH_DEGREES up, still south-south-east
+	# so docs/32's steadings still face it; longer shadows and a warmer rake across the land than a midday sun.
+	sun.transform = Transform3D(Basis.from_euler(Vector3(deg_to_rad(-SUN_HIGH_DEGREES), deg_to_rad(SUN_BEARING_DEGREES), 0.0)), Vector3.ZERO)
 	sun.light_color = Color(1.0, 0.9, 0.74)
 	sun.light_energy = 1.15
 	sun.shadow_enabled = true
@@ -313,6 +319,10 @@ func _setup_level() -> void:
 	seams.name = "Seams"
 	seams.level = self
 	add_child(seams)
+	# The birds round the party, silent in the hush (docs/33 §10).
+	birdsong = Birdsong.new()
+	birdsong.level = self
+	add_child(birdsong)
 	var state: CalderaWorldState = CalderaWorldState.current
 	state.flag_changed.connect(_on_world_flag_changed)
 	state.ebb_started.connect(_on_ebb_started)
