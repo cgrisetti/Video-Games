@@ -114,7 +114,7 @@ static func compose(player_class: PlayerClassResource, requested: EquipmentLoado
 	return loadout
 
 
-## A Fellowship's hero's Character Level (Lv 20 where there's no party, in tools).
+## A Fellowship's hero's Character Level (Lv 14 where there's no party, in tools).
 static func hero_level(class_id: StringName) -> int:
 	return PartyProgress.current.character_level(class_id) if PartyProgress.current != null else PartyProgress.MAX_CHARACTER_LEVEL
 

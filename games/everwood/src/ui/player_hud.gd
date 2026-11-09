@@ -21,6 +21,12 @@ const MARGIN: float = 14.0
 const BOSS_BAR_WIDTH: float = 0.56
 const FONT_SIZE: int = 17
 const SMALL_FONT_SIZE: int = 13
+## Act I's quest tracker and the Tidal Horologium (docs/29 §7).
+const QUEST_FONT_SIZE: int = 15
+const QUEST_TRACKER_COLOR: Color = Color(1.0, 0.9, 0.62)
+const TIDE_DIAL_COLOR: Color = Color(0.7, 0.88, 1.0)
+## The tide dial shows within this of North Quay (docs/28 §6.5: 300 m of the quays).
+const TIDE_DIAL_REACH: float = 300.0
 const HEALTH_COLOR: Color = Color(0.85, 0.22, 0.24)
 const POISE_COLOR: Color = Color(0.95, 0.65, 0.25)
 const CAST_COLOR: Color = Color(0.75, 0.55, 1.0)
@@ -59,6 +65,9 @@ var _banner: VBoxContainer
 var _banner_title: Label
 var _banner_subtitle: Label
 var _prompt_label: Label
+## Act I (docs/29 §7): the quest under way and its step, and the Tidal Horologium once Q04 opens it.
+var _quest_label: Label
+var _tide_label: Label
 ## The menu open over this view (the Chime-Shrine's or the Scribe Desk's).
 var _menu: Control
 var _flow_flash_left: float = 0.0
@@ -183,6 +192,31 @@ func _ready() -> void:
 	_prompt_label.modulate = Color(0.75, 0.9, 1.0)
 	_prompt_label.visible = false
 	add_child(_prompt_label)
+	_quest_label = _label(QUEST_FONT_SIZE)
+	_quest_label.name = "QuestTracker"
+	_quest_label.anchor_left = 1.0
+	_quest_label.anchor_right = 1.0
+	_quest_label.anchor_top = 0.3
+	_quest_label.anchor_bottom = 0.3
+	_quest_label.offset_right = -MARGIN
+	_quest_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_quest_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_quest_label.modulate = QUEST_TRACKER_COLOR
+	_quest_label.visible = false
+	add_child(_quest_label)
+	_tide_label = _label(QUEST_FONT_SIZE)
+	_tide_label.name = "TidalHorologium"
+	_tide_label.anchor_left = 1.0
+	_tide_label.anchor_right = 1.0
+	_tide_label.anchor_top = 0.3
+	_tide_label.anchor_bottom = 0.3
+	_tide_label.offset_right = -MARGIN
+	_tide_label.offset_top = QUEST_FONT_SIZE * 3.4
+	_tide_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_tide_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_tide_label.modulate = TIDE_DIAL_COLOR
+	_tide_label.visible = false
+	add_child(_tide_label)
 	if actor != null:
 		actor.action_queue.flow_cancelled.connect(_on_flow_cancelled)
 		actor.action_queue.flow_link_pulsed.connect(_on_flow_link_pulsed)
@@ -255,6 +289,34 @@ func _process(delta: float) -> void:
 	_refresh_boss()
 	_place_banner()
 	_refresh_player()
+	_refresh_quest()
+
+
+## The quest tracker (the step under way) and, on Embershore near the quays once Q04 has
+## opened it, the Tidal Horologium's tide line.
+func _refresh_quest() -> void:
+	var quests: QuestManager = QuestManager.current
+	var line: String = quests.tracker_line() if quests != null else ""
+	_quest_label.visible = line != "" and _live_menu() == null
+	if _quest_label.visible:
+		_quest_label.text = line
+	var dial: bool = quests != null and (quests.has_unlock(ActOneQuests.UNLOCK_TIDAL_HOROLOGIUM) or quests.active_quest_id() == ActOneQuests.Q04)
+	dial = dial and CalderaWorldState.current != null and _level() is CalderaArchipelagoWorld \
+		and CartographyBaker.active_isle(_level()) == CalderaAtlas.ISLE_EMBERSHORE \
+		and Vector2(actor.global_position.x - ActOnePlaces.centre(ActOnePlaces.NORTH_QUAY).x, actor.global_position.z - ActOnePlaces.centre(ActOnePlaces.NORTH_QUAY).z).length() <= TIDE_DIAL_REACH
+	_tide_label.visible = dial and _live_menu() == null
+	if _tide_label.visible:
+		_tide_label.text = "⌛ " + CalderaWorldState.current.tide_dial_text()
+
+
+## The quest tracker's text, or "" when it's hidden.
+func quest_text() -> String:
+	return _quest_label.text if _quest_label.visible else ""
+
+
+## The Tidal Horologium's text, or "" when it's hidden.
+func tide_text() -> String:
+	return _tide_label.text if _tide_label.visible else ""
 
 
 ## Opens the Chime-Shrine's upgrade menu over this player's view.

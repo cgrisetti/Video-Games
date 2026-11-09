@@ -18,6 +18,11 @@
 ## Moss-Oaks, the Sunken Holloway over the rim shoulder, the Doverslap Gorge
 ## Bridge, the Coast Road past Seal Cove and Sunward Cove, then Hearthstead and
 ## North Quay; the Root-Sanctum waits under the Elder Oak's roots.
+##
+## Act I (docs/28, docs/29) lives here too: ActOneDirector builds the quests'
+## cast, packs, groves, the bridge's Stag Hunt, the quays and the Root-Sanctum
+## carved under the Elder Oak, and the Level 1 spawn is in Lee-Shore Orchards
+## (the orchard north of the stone bridge, at its south gate on the lane).
 class_name EmbershoreBuilder
 extends IslandBuilder
 
@@ -44,9 +49,12 @@ const HEARTHSTEAD_AT: Vector2 = Vector2(39.0, -195.0)
 const HEARTHSTEAD_COBBLES: float = 95.0
 ## The Moss-Oaks' sessile oaks: the generator's canopy radius over the oak stand-in's, as a scale.
 const OAK_STAND_IN_RADIUS: float = 2.9
-## The Level 1 start: the chime-post on Bramblebridge's green, the party facing the stone bridge.
-const START_AT: Vector2 = Vector2(-593.92, 257.71)
-const START_FACING: Vector2 = Vector2(0.11, -0.99)
+## The Level 1 start (the Bible's Lee-Shore Orchards, docs/29 §4): the lane at the orchard's south
+## gate, just over the stone bridge from the green, the party facing into the orchard.
+const START_AT: Vector2 = Vector2(-584.0, 182.0)
+const START_FACING: Vector2 = Vector2(-0.529, -0.849)
+## Bramblebridge's green and its chime-post (the checkpoint; the Feast green in Act I).
+const GREEN_AT: Vector2 = Vector2(-593.92, 257.71)
 ## North Quay: the timber pier's root at the foot of Hearthstead's bluff and its head 30 m out in the bay (deck 1.6 m).
 ## The party arrives on the pier head's crosspiece, where the two skiff lanes berth.
 const PIER_ROOT: Vector3 = Vector3(37.55, 1.6, -237.23)
@@ -185,7 +193,7 @@ func _define() -> void:
 	# The corridor's stages and the places along it (docs/27 §7, §9).
 	add_place("Bramblebridge", Vector3(BRAMBLEBRIDGE_AT.x, 12.0, BRAMBLEBRIDGE_AT.y), 150.0)
 	add_place("Bramblemouth", Vector3(-960.0, 1.0, 150.0), 70.0)
-	add_place("The Heirloom Orchards", Vector3(-690.0, 14.0, 0.0), 80.0)
+	add_place("Lee-Shore Orchards", Vector3(-650.0, 14.0, 80.0), 110.0)
 	add_place("The Ariundle Moss-Oaks", Vector3(-89.0, 12.0, 222.0), 330.0)
 	add_place("The Elder Oak", landmark(&"elder_oak"), 34.0)
 	add_place("The Root-Sanctum", landmark(&"root_sanctum_entrance"), 40.0)
@@ -401,9 +409,9 @@ func landmark_silhouette(into: LandblockTerrain.MeshMerge) -> void:
 ##   Lv 5   Mill-Downs: Crag-Spriggans at the Downs Gate
 ##   Lv 6   under the Elder Oak: the Root-Sanctum's briar guard
 const ENCOUNTERS: Array[Dictionary] = [
-	{"name": "OrchardHobs1", "road": "lane", "at": 0.12, "side": 1.0, "place": "The Heirloom Orchards", "pack": [&"cider_thief_bristleboar", &"cider_thief_bristleboar"]},
-	{"name": "OrchardHobs2", "road": "lane", "at": 0.24, "side": -1.0, "place": "The Heirloom Orchards", "pack": [&"thorn_tail_scuttler", &"cider_thief_bristleboar"]},
-	{"name": "OrchardHobs3", "road": "lane", "at": 0.36, "side": 1.0, "place": "The Heirloom Orchards", "pack": [&"cider_thief_bristleboar", &"thorn_tail_scuttler", &"old_tusk_crag"]},
+	{"name": "OrchardHobs1", "road": "lane", "at": 0.12, "side": 1.0, "place": "Lee-Shore Orchards", "pack": [&"cider_thief_bristleboar", &"cider_thief_bristleboar"]},
+	{"name": "OrchardHobs2", "road": "lane", "at": 0.24, "side": -1.0, "place": "Lee-Shore Orchards", "pack": [&"thorn_tail_scuttler", &"cider_thief_bristleboar"]},
+	{"name": "OrchardHobs3", "road": "lane", "at": 0.36, "side": 1.0, "place": "Lee-Shore Orchards", "pack": [&"cider_thief_bristleboar", &"thorn_tail_scuttler", &"old_tusk_crag"]},
 	{"name": "MossPadfoots1", "road": "lane", "at": 0.58, "side": -1.0, "place": "The Ariundle Moss-Oaks", "pack": [&"grey_pelt_prowler", &"grey_pelt_prowler"]},
 	{"name": "MossPadfoots2", "road": "lane", "at": 0.74, "side": 1.0, "place": "The Ariundle Moss-Oaks", "pack": [&"river_snapper_toad", &"grey_pelt_prowler"]},
 	{"name": "MossPadfoots3", "road": "hollow", "at": 0.1, "side": -1.0, "place": "The Ariundle Moss-Oaks", "pack": [&"grey_pelt_prowler", &"river_snapper_toad", &"alpha_frost_fang"]},
@@ -458,6 +466,7 @@ func build_structures(root: Node3D) -> void:
 	_build_north_quay(root)
 	_build_old_quay(root)
 	_build_root_sanctum(root)
+	ActOneDirector.new().build(root, self)
 	for seam_id: StringName in [CalderaAtlas.SEAM_WEST_STRAIT, CalderaAtlas.SEAM_EEL_SPIT]:
 		CalderaCauseway.build(root, CalderaAtlas.seam(seam_id), isle.isle_id)
 
@@ -467,9 +476,10 @@ func _build_start(root: Node3D) -> void:
 	post.name = "StartChimePost"
 	post.place = "Bramble-Bridge"
 	post.checkpoint = true
-	post.position = ground(START_AT.x + 3.0, START_AT.y + 1.0)
+	post.position = ground(GREEN_AT.x + 3.0, GREEN_AT.y + 1.0)
 	root.add_child(post)
-	CalderaKit.sign_label(root, "StartSign", "Bramblebridge\nEmbershore · Lv 1-2 · the stone bridge lies north", ground(START_AT.x, START_AT.y - 6.0) + Vector3(0.0, 2.6, 0.0))
+	CalderaKit.sign_label(root, "StartSign", "Bramblebridge\nEmbershore · Lv 1-2 · the stone bridge lies north", ground(GREEN_AT.x, GREEN_AT.y - 6.0) + Vector3(0.0, 2.6, 0.0))
+	CalderaKit.sign_label(root, "OrchardSign", "Lee-Shore Orchards\nEmbershore · Lv 1 · Master Alf-Wright waits at the gate", ground(START_AT.x + 4.0, START_AT.y + 4.0) + Vector3(0.0, 2.6, 0.0))
 
 
 ## A village's cottages where the generator set them (docs/27 §7: twelve each), each facing its
@@ -558,14 +568,11 @@ func _build_old_quay(root: Node3D) -> void:
 	root.add_child(market)
 
 
+## The Root-Sanctum's door among the Elder Oak's roots. Act I's Q05 (docs/29 §4) carves the
+## Sanctum itself under the oak (RootSanctum, built by ActOneDirector): the party walks into
+## the door's ring together. The old Cairnsman expedition stays reachable as --instance=expedition.
 func _build_root_sanctum(root: Node3D) -> void:
 	var at: Vector3 = landmark(&"root_sanctum_entrance")
 	at = ground(at.x, at.z)
-	var portal: RaidPortal = RaidPortal.new()
-	portal.name = "RootSanctumPortal"
-	portal.target_instance = InstanceManager.DUNGEON_DOJO
-	portal.title = "The Root-Sanctum (Lv 6): under the Elder Oak's roots"
-	portal.portal_color = Color(0.62, 0.86, 0.5)
-	portal.position = at
-	root.add_child(portal)
-	CalderaKit.sign_label(root, "SanctumSign", "The Root-Sanctum · Lv 6\nclear it, and the trade lanes go dark; the way out is the mill weir", at + Vector3(0.0, 4.2, 0.0))
+	CalderaKit.sign_label(root, "SanctumSign", "The Root-Sanctum · Lv 5-6\nthe seal-stone is cracked: gather in the ring to go down; the way out is the mill weir",
+		at + Vector3(0.0, 4.2, 0.0))

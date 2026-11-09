@@ -7,8 +7,9 @@
 ## the party's roots, the split-screen grid and banner) is built here in code.
 ##
 ## Where the party starts:
-##   --boot-zone=embershore (the default; "oakshire" still works): Bramblebridge's
-##       green on Embershore, the chime-post where the party spawns (docs/27)
+##   --boot-zone=embershore (the default; "oakshire" still works): Lee-Shore
+##       Orchards' south gate on Embershore, over the stone bridge from
+##       Bramblebridge's green and its chime-post (docs/27, docs/29 §4)
 ##   --boot-zone=north_quay: North Quay, facing The Sound
 ##   --boot-zone=crown: The Crown's South Bay Landing (a playtest: its landing
 ##       counts as open and nothing changed there is saved)
@@ -54,13 +55,13 @@ const FALL_OUT_HEIGHT: float = -40.0
 ## A falling hero with no ground streamed in under them gets it at once.
 const CATCH_FALL_SPEED: float = -4.0
 ## The Audio Mosaics' places (music_mood_context): where folk live, and the wild ones.
-const SETTLED_PLACES: Array[String] = ["Bramblebridge", "The Heirloom Orchards", "Hearthstead", "North Quay", "The Old Quay", "Mill-Downs",
+const SETTLED_PLACES: Array[String] = ["Bramblebridge", "Lee-Shore Orchards", "Hearthstead", "North Quay", "The Old Quay", "Mill-Downs",
 	"The Doverslap Gatehouse", "South Bay Landing", "The Lantern-Bearers' Waypost", "Old King's Town"]
 const WILD_PLACES: Array[String] = ["The Root-Sanctum", "The West Strait", "Eel Spit", "The South Cliffs", "The First-Quiet Crags", "Doverslap Gorge",
 	"Bramblemouth", "The Breach Point", "The Weeping Arch", "The Trial of the Anvil", "The Trial of the Gale", "The Trial of the Tide", "The Sea-Door",
 	"The Sap Galleries"]
 ## Embershore's light arc (docs/27 §10): each stage of the corridor wears a biome's sky and fog.
-const EMBERSHORE_BIOMES: Dictionary[String, StringName] = {"Bramblebridge": WorldVisualCatalog.OAKSHIRE_WICK, "The Heirloom Orchards": WorldVisualCatalog.OAKSHIRE_WICK,
+const EMBERSHORE_BIOMES: Dictionary[String, StringName] = {"Bramblebridge": WorldVisualCatalog.OAKSHIRE_WICK, "Lee-Shore Orchards": WorldVisualCatalog.OAKSHIRE_WICK,
 	"Bramblemouth": WorldVisualCatalog.OAKSHIRE_WICK, "The Ariundle Moss-Oaks": WorldVisualCatalog.MOSS_OAK_HOLLOW, "The Elder Oak": WorldVisualCatalog.MOSS_OAK_HOLLOW,
 	"The Root-Sanctum": WorldVisualCatalog.MOSS_OAK_HOLLOW, "The Bramble Spring": WorldVisualCatalog.MOSS_OAK_HOLLOW, "The Dover Spring": WorldVisualCatalog.MOSS_OAK_HOLLOW,
 	"The Sunken Holloway": WorldVisualCatalog.RUSH_LIGHT_HOLLOW, "The Rim Shoulder": WorldVisualCatalog.DOVER_SLAP_FALLS,

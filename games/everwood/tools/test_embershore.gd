@@ -174,7 +174,7 @@ func _check_structures() -> void:
 	if sleepers != 6:
 		problems.append("%d sleepers" % sleepers)
 	for node_name: String in ["IronStall", "LanternStall", "ProvisionsStall", "BramblebridgeDeck", "DoverslapBridgeDeck", "Gatehouse", "DoverslapReveal", "Windmill",
-			"DownsGate", "NorthQuayPier", "QuayStair", "SaltRoadBell", "CrownLandingBell", "OldQuayMarket", "RootSanctumPortal", "ElderOak", "SanctumArch",
+			"DownsGate", "NorthQuayPier", "QuayStair", "SaltRoadBell", "CrownLandingBell", "OldQuayMarket", "SanctumDoor", "ElderOak", "SanctumArch",
 			"Watermill", "MillWheel", "WrightsYard", "ColdSmithy", "ScribeTable", "Pavilion0", "DeepHush", "GrainStrips", "StartChimePost"]:
 		if _structure(node_name) == null:
 			problems.append("no %s" % node_name)

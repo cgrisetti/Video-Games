@@ -186,6 +186,8 @@ var _name_label: Label3D
 var _hit_stop_left: float = 0.0
 ## A deck card's slow (apply_slow): how much of the pace it takes and when it ends (CombatDirector.game_time()).
 var _slow_fraction: float = 0.0
+## A world-wide stride boon for the heroes (Act I's World Buff sets 1.1 for 15 minutes; 1.0 otherwise).
+static var world_boon_speed: float = 1.0
 var _slow_until: float = 0.0
 var _flash_left: float = 0.0
 var _flow_glow_left: float = 0.0
@@ -693,6 +695,9 @@ func _can_regen_stamina() -> bool:
 func locomotion_speed() -> float:
 	# A stride seal on the mantle (the West-Wind's 15%) quickens the hero.
 	var stride: float = seal.move_speed_mult() if seal != null else 1.0
+	# Act I's World Buff (the Iron-Man calmed on the bridge, docs/29 §5): heroes walk a little quicker.
+	if input != null or is_companion:
+		stride *= world_boon_speed
 	return loadout.stats.move_speed * stride * (SPRINT_SPEED_SCALE if sprinting else 1.0)
 
 

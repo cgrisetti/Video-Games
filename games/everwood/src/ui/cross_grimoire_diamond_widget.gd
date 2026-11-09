@@ -161,7 +161,7 @@ func socket_cost(socket: int) -> int:
 	return roundi(ScribeCardResource.SOCKET_PIP_COSTS[socket])
 
 
-## The level the shown hero has reached (Lv 20 with nobody to follow, so nothing reads locked).
+## The level the shown hero has reached (Lv 14 with nobody to follow, so nothing reads locked).
 func hero_level() -> int:
 	if is_instance_valid(follow) and follow.loadout != null and PartyProgress.current != null:
 		return PartyProgress.current.character_level(follow.loadout.class_id)
@@ -170,6 +170,8 @@ func hero_level() -> int:
 
 ## Whether a socket is still padlocked at the hero's level (25 GDD R4).
 func socket_locked(socket: int) -> bool:
+	if is_instance_valid(follow) and CardFog.is_fogged(follow.player_id, socket):
+		return true
 	return not GrimoireRules.socket_open(socket, hero_level())
 
 

@@ -26,6 +26,7 @@ Score="*res://src/core/audio_director.gd"
 Atmosphere="*res://src/world/world_atmosphere_director.gd"
 Progress="*res://src/autoloads/party_progress.gd"
 Caldera="*res://src/world/caldera/caldera_world_state.gd"
+Quests="*res://src/quests/quest_manager.gd"
 Settings="*res://src/autoloads/settings_manager.gd"
 
 [debug]

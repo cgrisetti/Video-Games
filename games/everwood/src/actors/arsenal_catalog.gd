@@ -26,9 +26,9 @@
 ## And the Seal-and-Tuck Grimoire (docs/everwood_equipment_grimoire_architecture.md
 ## Part II): the seven material tiers (EquipmentTierResource) a frame is
 ## promoted through, the four base armaments (WeaponArchetypeResource), the
-## seal cards pressed onto gear and pulled from the pouch, the Rank 40 Elder
-## Cairn-Drake, the Dual-Readout level maths (True Level 1-20 inside, Renown
-## Rank 1-40 on the banners), evaluate_hit_damage and evaluate_incoming_hit,
+## seal cards pressed onto gear and pulled from the pouch, the apex Elder
+## Cairn-Drake, the Dual-Readout level maths (True Level 1-14 inside, Renown
+## Rank 1-28 on the banners, on the Bible's 14-level spine), evaluate_hit_damage and evaluate_incoming_hit,
 ## and the default hand a hero wears by stage (default_seal_loadout).
 class_name ArsenalCatalog
 extends Node
@@ -254,16 +254,17 @@ const CARD_EMBER_BOUGH: StringName = &"CARD_EMBER_BOUGH"
 const CARD_OLD_ROOT_BASTION: StringName = &"CARD_OLD_ROOT_BASTION"
 const CARD_WEST_WIND_PROMISE: StringName = &"CARD_WEST_WIND_PROMISE"
 const SEAL_CARD_IDS: Array[StringName] = [CARD_QUIET_WEIR, CARD_EMBER_BOUGH, CARD_OLD_ROOT_BASTION, CARD_WEST_WIND_PROMISE]
-## The Rank 40 apex threat (§5.1): True Level 20, 18,500 health, 1,200 posture.
+## The apex threat (§5.1): the top True Level (14 on the Bible's spine, Rank 28), 18,500 health, 1,200 posture.
 const ELDER_CAIRN_DRAKE: StringName = &"elder_cairn_drake"
 const ELDER_CAIRN_DRAKE_HP: float = 18500.0
 const ELDER_CAIRN_DRAKE_POSTURE: float = 1200.0
 ## The homestead's first foes (§5.1): a Bramble-Mite and an awakened Boulder-Badger.
 const BRAMBLE_MITE_HP: float = 25.0
 const BOULDER_BADGER_HP: float = 45.0
-## The Dual-Readout curve: True Level 1-20 inside the maths, Renown Rank 1-40 (two a level) on every banner.
-const MAX_TRUE_LEVEL: int = 20
-const MAX_RENOWN_RANK: int = 40
+## The Dual-Readout curve: True Level 1-14 inside the maths (the Character Level, on the Bible's
+## 14-level spine since 2026-11-09; it was 1-20), Renown Rank 1-28 (two a level) on every banner.
+const MAX_TRUE_LEVEL: int = 14
+const MAX_RENOWN_RANK: int = 28
 const RENOWN_PER_TRUE_LEVEL: int = 2
 ## Seal wards and tier armour together never take more than this off a blow.
 const WARD_CAP: float = 0.80
@@ -417,7 +418,7 @@ func material_tiers() -> Array[EquipmentTierResource]:
 	return get_all_tiers()
 
 
-## The tier forged for a True Level: Lv 1-3 Tier 1, 4-6 Tier 2, 7-10 Tier 3 ... Lv 20 Tier 7.
+## The tier forged for a True Level: Lv 1-3 Tier 1, 4-5 Tier 2, 6-7 Tier 3 ... Lv 14 Tier 7.
 func tier_for_true_level(true_level: int) -> EquipmentTierResource:
 	var level: int = clampi(true_level, 1, MAX_TRUE_LEVEL)
 	var reached: EquipmentTierResource = null
@@ -429,7 +430,7 @@ func tier_for_true_level(true_level: int) -> EquipmentTierResource:
 	return reached if reached != null else get_tier(TIER_1_HOMESTEAD)
 
 
-## The tier a banner's Renown Rank (1..40) wears.
+## The tier a banner's Renown Rank (1..28) wears.
 func tier_for_renown(renown_rank: int) -> EquipmentTierResource:
 	return tier_for_true_level(compute_true_level_from_renown(renown_rank))
 
@@ -827,17 +828,17 @@ static func _trail_row(primary_role: int) -> int:
 
 # --- The Dual-Readout curve and the Seal-and-Tuck maths (§5.1, §6.4) ----------------
 
-## Maps a banner's Renown Rank (1..40) to the True Level the maths run on (1..20): Rank 40 is Level 20, Rank 1 Level 1.
+## Maps a banner's Renown Rank (1..28) to the True Level the maths run on (1..14): Rank 28 is Level 14, Rank 1 Level 1.
 static func compute_true_level_from_renown(renown_rank: int) -> int:
 	return clampi(int(ceil(float(renown_rank) * 0.5)), 1, MAX_TRUE_LEVEL)
 
 
-## Maps a True Level (1..20) to the Renown Rank shown for it (2..40).
+## Maps a True Level (1..14) to the Renown Rank shown for it (2..28).
 static func compute_renown_from_true_level(true_level: int) -> int:
 	return clampi(true_level * RENOWN_PER_TRUE_LEVEL, 1, MAX_RENOWN_RANK)
 
 
-## The progression stage a True Level plays at: 1-5, 6-10, 11-15, 16-20 (§5.2).
+## The progression stage a True Level plays at: 1-5, 6-9, 10-12, 13-14 (§5.2, on the 14-level spine).
 static func compute_progression_stage(true_level: int) -> int:
 	return PlayerLoadoutResource.stage_for_true_level(true_level)
 
@@ -2269,37 +2270,37 @@ func _place(id: StringName, label: String, scribe_sign: Sign, landmark: StringNa
 ## shield the Heart-Crag Bulwark (the Creative Director's ruling for "Aegis").
 func _build_material_tiers() -> void:
 	_register_tier(TIER_1_HOMESTEAD, 1, "Orchard-Wood", "Oak-Bark & Boiled-Hide", "Bracken-Pelt Jerkin", "Mended-Linen Smock",
-		&"ISLAND_OAKSHIRE_HOLM", "Embershore (homestead chests)", 1, 4, 1, 7, 0, 2.4, 3.5, 1.00, 14.0, [0.08, 0.05, 0.03], 0,
+		&"ISLAND_OAKSHIRE_HOLM", "Embershore (homestead chests)", 1, 3, 1, 6, 0, 2.4, 3.5, 1.00, 14.0, [0.08, 0.05, 0.03], 0,
 		["Orchard-Wood Stick & Bark-Buckler", "Cooper's Split-Rail Mallet", "Bent-Twig Bow & Reed-Shafts", "Rowan Walking-Stick & Tallow-Jar"],
 		["Bark-Buckler", "Oak-Knot Pommel", "Reed-Shaft Quiver", "Tallow-Jar"],
 		Color("#7A5438"), 0.00, 0.88, 0.18, Color("#D2B48C"), 1.40, 0.00)
 	_register_tier(TIER_2_BOG_BRONZE, 2, "Bog-Bronze", "Kettle-Link Coat", "Boiled-Buckskin Coat", "Orchard-Wool Mantle",
-		&"ISLAND_BARROW_EYOT", "the Embershore Barrows and the Hearthstead stall", 5, 7, 8, 13, 3, 5.5, 8.0, 1.20, 20.0, [0.16, 0.12, 0.08], 25,
+		&"ISLAND_BARROW_EYOT", "the Embershore Barrows and the Hearthstead stall", 4, 5, 7, 10, 3, 5.5, 8.0, 1.20, 20.0, [0.16, 0.12, 0.08], 25,
 		["Bog-Bronze Short-Blade & Bossed-Buckler", "Peat-Cutter's Bronze Broad-Axe", "Ash-Bough Bow & Goose-Fletch", "Hazel-Crook & Brass-Lantern"],
 		["Bossed-Buckler", "Bog-Bronze Pommel-Knot", "Goose-Fletch Quiver", "Brass-Lantern"],
 		Color("#9E6B3B"), 0.72, 0.46, 0.25, Color("#F4A460"), 1.15, 0.00)
 	_register_tier(TIER_3_FORGE_IRON, 3, "Forge-Iron", "Forge-Plate Harness", "Briar-Studded Brigandine", "Nettle-Weave Mantle",
-		&"ISLAND_IRON_NESS", "Iron-Ness (Cinder-Hollow smelters)", 8, 10, 14, 19, 6, 9.5, 13.8, 1.45, 28.0, [0.24, 0.18, 0.13], 65,
+		&"ISLAND_IRON_NESS", "Iron-Ness (Cinder-Hollow smelters)", 6, 7, 11, 14, 6, 9.5, 13.8, 1.45, 28.0, [0.24, 0.18, 0.13], 65,
 		["Forge-Iron Broad-Sword & Rim-Shield", "Iron-Ness Felling Greataxe", "Yew-Stave Longbow & Bodkin-Quiver", "Iron-Shod Staff & Beacon-Glass"],
 		["Rim-Shield", "Forge-Iron Pommel-Knot", "Bodkin-Quiver", "Beacon-Glass"],
 		Color("#5E666E"), 0.85, 0.38, 0.30, Color("#B0C4DE"), 1.00, 0.00)
 	_register_tier(TIER_4_BARROW_STEEL, 4, "Barrow-Steel", "Barrow-Mail & Pauldrons", "Firth-Seal Coat", "Moth-Silk Mantle",
-		&"ISLAND_BARROW_EYOT", "Barrow-Eyot (standing-stone vaults)", 11, 13, 20, 25, 10, 14.5, 21.0, 1.75, 36.0, [0.32, 0.24, 0.18], 120,
+		&"ISLAND_BARROW_EYOT", "Barrow-Eyot (standing-stone vaults)", 8, 9, 15, 18, 10, 14.5, 21.0, 1.75, 36.0, [0.32, 0.24, 0.18], 120,
 		["Barrow-Steel Long-Blade & Heater-Shield", "Cairn-Cleaver Greataxe", "Horn-Backed Recurve & Broad-Head", "Cairn-Ash Staff & Hearth-Vessel"],
 		["Heater-Shield", "Barrow-Steel Pommel-Knot", "Broad-Head Quiver", "Hearth-Vessel"],
 		Color("#8A99AD"), 0.90, 0.28, 0.38, Color("#C9D6E3"), 0.85, 0.04)
 	_register_tier(TIER_5_RIME_SILVER, 5, "Rime-Silver", "Rime-Clad Plate", "Frost-Stag Pelt-Coat", "Gossamer-Spun Mantle",
-		&"ISLAND_RIME_FIRTH", "Rime-Firth (Gale-Haven looms)", 14, 16, 26, 31, 13, 20.5, 29.7, 2.10, 46.0, [0.40, 0.30, 0.23], 190,
+		&"ISLAND_RIME_FIRTH", "Rime-Firth (Gale-Haven looms)", 10, 11, 19, 22, 13, 20.5, 29.7, 2.10, 46.0, [0.40, 0.30, 0.23], 190,
 		["Rime-Silver Knight-Blade & Kite-Buckler", "Firth-Frost Bearded Greataxe", "Frost-Whale Baleen Bow", "Silver-Bough Crook & Rime-Lantern"],
 		["Kite-Buckler", "Rime-Silver Pommel-Knot", "Frost-Fletch Quiver", "Rime-Lantern"],
 		Color("#C9E2F2"), 0.94, 0.20, 0.52, Color("#E0FFFF"), 0.70, 0.08)
 	_register_tier(TIER_6_SAFFRON_GOLD, 6, "Saffron-Gold", "Cairn-Scale Great-Plate", "Wyrm-Hide Coat", "Sun-Loomed Mantle",
-		&"ISLAND_THE_CROWN", "The Crown (Sun-Crossing guilds)", 17, 19, 32, 37, 16, 27.5, 39.9, 2.50, 58.0, [0.46, 0.35, 0.27], 280,
+		&"ISLAND_THE_CROWN", "The Crown (Sun-Crossing guilds)", 12, 13, 23, 26, 16, 27.5, 39.9, 2.50, 58.0, [0.46, 0.35, 0.27], 280,
 		["Saffron-Gold Sun-Blade & Crest-Shield", "Gilded-Crag Great-Halberd", "Golden-Yew Greatbow", "Saffron-Gilded Staff & Sun-Censer"],
 		["Crest-Shield", "Saffron-Gold Pommel-Knot", "Golden-Fletch Quiver", "Sun-Censer"],
 		Color("#E5B546"), 0.96, 0.16, 0.65, Color("#FFFACD"), 0.65, 0.15)
 	_register_tier(TIER_7_STAR_GLASS, 7, "Star-Glass & Heart-Crag", "Heart-Crag & Ember-Clad Plate", "Gale-Drake Scale-Coat", "Star-Ink Great-Mantle",
-		&"ISLAND_OLD_QUAY_EBB", "the Old Quay Market (Ebb-Tide raid artificers)", 20, 20, 38, 40, 20, 36.0, 52.2, 3.00, 72.0, [0.52, 0.40, 0.32], 400,
+		&"ISLAND_OLD_QUAY_EBB", "the Old Quay Market (Ebb-Tide raid artificers)", 14, 14, 27, 28, 20, 36.0, 52.2, 3.00, 72.0, [0.52, 0.40, 0.32], 400,
 		["Star-Glass Steward-Blade & Heart-Crag Bulwark", "World-Root Sundering Greataxe", "Star-Chord Wind-Bow", "First-Tree Bough & Star-Tide Lantern"],
 		["Heart-Crag Bulwark", "Heart-Crag Pommel-Stone", "Star-Chord Quiver", "Star-Tide Lantern"],
 		Color("#3D355E"), 0.98, 0.12, 0.85, Color("#9370DB"), 0.50, 0.55)
@@ -2516,7 +2517,7 @@ func _build_encounters() -> void:
 		[Sign.SIGN_IRON_ROOT, Sign.SIGN_RIME_GALE, Sign.SIGN_WARM_HEARTH, Sign.SIGN_STAR_TIDE], 75, 45,
 		"Old-Hob hums low on his hill of moss:\nmantle, tether and Sign, or the whole trail is lost.", "hum")
 	# The Seal-and-Tuck Grimoire's apex (docs/everwood_equipment_grimoire_architecture.md §5.1):
-	# True Level 20, so its threat plate reads Rank 40; a buckler sealed with Star-Tide shrugs its roars off.
+	# The top True Level (14), so its threat plate reads Rank 28; a buckler sealed with Star-Tide shrugs its roars off.
 	var elder: BossEncounterResource = _encounter(ELDER_CAIRN_DRAKE, "The Elder Cairn-Drake", Tier.TIER_3_FOUR_GATE_BOSS, MAX_TRUE_LEVEL,
 		[Sign.SIGN_STAR_TIDE, Sign.SIGN_IRON_ROOT], 120, 75,
 		"When the Elder Drake rears where the ebb-tide runs low,\nseal Star-Tide on your buckler and break him with Root!", "roar")

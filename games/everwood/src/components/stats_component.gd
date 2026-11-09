@@ -27,6 +27,11 @@ var is_downed: bool = false
 var guarding: bool = false
 var guard_started_at: float = 0.0
 var last_damage_taken: float = 0.0
+## Act I's Stag Hunts (docs/29 §5): while locked, blows land (sparks, posture) but take no
+## health (the Lantern-Bearer's Amber Chime, "Hold Blades!"); and health never falls below
+## the floor (the Taproot Stag while a chain still holds it). 0 means no floor.
+var health_locked: bool = false
+var health_floor: float = 0.0
 
 var _regen_delay_left: float = 0.0
 var _poise_regen_delay_left: float = 0.0
@@ -198,9 +203,13 @@ func mitigate_strike(raw_damage: float, poise_damage: float, from_front: bool, u
 # --- Health and poise -----------------------------------------------------
 
 func take_damage(amount: float) -> float:
-	if is_downed or amount <= 0.0:
+	if is_downed or amount <= 0.0 or health_locked:
+		last_damage_taken = 0.0
 		return 0.0
-	var dealt: float = minf(amount, health)
+	var dealt: float = minf(amount, maxf(0.0, health - health_floor) if health_floor > 0.0 else health)
+	if dealt <= 0.0:
+		last_damage_taken = 0.0
+		return 0.0
 	health -= dealt
 	last_damage_taken = dealt
 	health_changed.emit(health, stats.max_health)
@@ -210,6 +219,15 @@ func take_damage(amount: float) -> float:
 		guarding = false
 		downed.emit()
 	return dealt
+
+
+## Downs it at once, whatever its lock or floor (a calm, a Stag Hunt's finisher).
+func knock_out() -> void:
+	if is_downed:
+		return
+	health_locked = false
+	health_floor = 0.0
+	take_damage(maxf(health, 0.001))
 
 
 func heal(amount: float) -> float:

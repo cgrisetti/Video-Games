@@ -331,10 +331,13 @@ func gate_command(command: int) -> int:
 
 
 ## Whether a trigger's socket is open at the hero's Character Level (25 GDD R4: R at 4, L at
-## 6, L+R at 17), and inside a playtest's forced stage.
+## 6, L+R at 13), and inside a playtest's forced stage.
 func is_trigger_slot_unlocked(trigger_slot: int) -> bool:
 	var socket: int = SOCKET_TRIGGERS.find(trigger_slot)
 	if debug_stage_override > 0 and not PlayerLoadoutResource.trigger_open_at_stage(trigger_slot, progression_stage):
+		return false
+	# Forging Fog (Act I's Taproot Stag) greys a socket over until Hearth-Ward clears it.
+	if actor != null and CardFog.is_fogged(actor.player_id, socket):
 		return false
 	return socket >= 0 and GrimoireRules.socket_open(socket, true_level)
 

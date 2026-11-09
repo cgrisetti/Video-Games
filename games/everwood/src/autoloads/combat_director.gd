@@ -59,6 +59,9 @@ signal poise_reflected(defender: ActorBase, attacker: ActorBase, poise: float)
 ## Phase B impact freeze (02_COMBAT_GDD.md §2); each action scales it.
 ## Heroes within this many metres of a calmed foe catch its Ink-Drops (25 GDD R2).
 const INK_REFILL_RADIUS: float = 25.0
+## A Tide-Wight's cold breath (Act I's Q04): how long the chill lasts and the breath it takes.
+const TIDE_CHILL_SECONDS: float = 2.5
+const TIDE_CHILL_STAMINA: float = 20.0
 const BASE_HIT_STOP: float = 0.06
 ## Sakurai hit-stop by kind of blow (11_COMBAT_ONBOARDING_AND_FEEL_GDD.md §4.2,
 ## Layer 1): a Light, a Heavy or Un-Inked Flourish, an inked card, a Sign
@@ -178,6 +181,12 @@ func unregister_actor(actor: ActorBase) -> void:
 ## Calming it also pours Ink-Drops back into the wells of the heroes near it (25 GDD R2):
 ## +1 for a plain foe, +2 for a Rare, +3 for a Great-Boggart (an Elite or a boss).
 func _on_enemy_down(enemy: ActorBase) -> void:
+	# Act I's calming rule (docs/29 §5): beaten without a calm, an Act I kin only scatters.
+	var calming: CalmingComponent = CalmingComponent.of(enemy) if is_instance_valid(enemy) else null
+	if calming != null and not calming.was_calmed:
+		if NetworkManager.current.is_host():
+			calming.on_scattered()
+		return
 	PartyProgress.current.award_xp(enemy.trail_xp())
 	if NetworkManager.current.is_host() and is_instance_valid(enemy):
 		var rank: String = EnemyNameplate.rank_of(enemy)
@@ -554,6 +563,12 @@ func _apply_strike(target: ActorBase, event: CombatEvent, from_remote: bool) -> 
 	var outcome: int = target.receive_strike(event)
 	if outcome == StatsComponent.StrikeOutcome.HIT and event.stun_seconds > 0.0 and not target.stats.is_downed:
 		target.stagger(event.stun_seconds)
+	# A Tide-Wight's cold breath (Act I): a struck hero's breath and stride go slow for a while.
+	var wight: WildMob = striker as WildMob
+	if wight != null and wight.variant.stamina_slow > 0.0 and not target.is_boss() \
+			and (outcome == StatsComponent.StrikeOutcome.HIT or outcome == StatsComponent.StrikeOutcome.GUARDED):
+		target.apply_slow(wight.variant.stamina_slow, TIDE_CHILL_SECONDS)
+		target.stats.drain_stamina(TIDE_CHILL_STAMINA, TIDE_CHILL_SECONDS)
 	# A deck card's frost or root (CardTwists) holds unless the blow was dodged.
 	if event.slow_seconds > 0.0 and outcome != StatsComponent.StrikeOutcome.EVADED:
 		target.apply_slow(event.slow_fraction, event.slow_seconds)

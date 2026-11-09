@@ -10,7 +10,7 @@
 ##            (the mallet's 3 and 4, the bough's 2 and 3, the crook's 2 and a
 ##            3 mend), the Quiet Weir on a Forge-Iron buckler (46 of a 100
 ##            Star-Tide blow, unstunned; 81 of Iron-Root), Renown 40 <-> True
-##            Level 20, the shader floats of all seven tiers, the four stages
+##            Level 14, the shader floats of all seven tiers, the four stages
 ##            and the hands they open, a Tier 7 blade's 78 to 108 under the
 ##            Ember-Bough, a Tier 7 party's 35-50 s cadence on the Elder
 ##            Cairn-Drake's 1,200 posture and a stick's 12-15 s on a Bramble-Mite
@@ -140,11 +140,11 @@ func _stage_1_philological_linter_gate() -> void:
 			and tier.max_renown_rank <= ArsenalCatalog.MAX_RENOWN_RANK
 	check.call(ids_ok, "exactly seven material tiers, TIER_1_HOMESTEAD to TIER_7_STAR_GLASS, numbered 1 to 7")
 	check.call(names_ok, "the Google Doc's ladder stands on the seven tiers: its 28 material and armour names (Tier 7's mantle reads Star-Ink, by Gate 6), four arms and four offhands a tier (the maul's Pommel-Knot), Light 2.4 to 36.0, ranks +0 to +20, Armor Guard 8/5/3% to 52/40/32%")
-	check.call(bands_ok and tiers[0].true_level_band() == Vector2i(1, 4) and tiers[3].true_level_band() == Vector2i(11, 13)
-		and tiers[6].true_level_band() == Vector2i(20, 20) and tiers[6].renown_rank_band() == Vector2i(38, 40)
+	check.call(bands_ok and tiers[0].true_level_band() == Vector2i(1, 3) and tiers[3].true_level_band() == Vector2i(8, 9)
+		and tiers[6].true_level_band() == Vector2i(14, 14) and tiers[6].renown_rank_band() == Vector2i(27, 28)
 		and tiers[6].weapon_name(Arch.WEAPON_SWORD_BOARD) == "Star-Glass Steward-Blade & Heart-Crag Bulwark"
 		and tiers[0].offhand_name(Arch.WEAPON_GREAT_MALLET) == "Oak-Knot Pommel",
-		"every tier's level and Threat bands run Lv 1-4 / Threat 1-7 up to Lv 20 / Threat 38-40; Tier 7's shield is the Heart-Crag Bulwark, the Orchard maul seals its Oak-Knot Pommel")
+		"every tier's level and Threat bands run Lv 1-3 / Threat 1-6 up to Lv 14 / Threat 27-28 (the Bible's 14-level spine); Tier 7's shield is the Heart-Crag Bulwark, the Orchard maul seals its Oak-Knot Pommel")
 	var arms: Array[WeaponArchetypeResource] = catalog.weapon_archetypes()
 	var arms_ok: bool = arms.size() == 4
 	for index: int in mini(arms.size(), 4):
@@ -198,8 +198,8 @@ func _stage_1_philological_linter_gate() -> void:
 		"Gate 3: none of %d tier, armament and seal names says construct, rune, aspect, wharf, silt, lamellar, hauberk, rubric, platinum or the like%s"
 		% [shown.size(), "" if offenders.is_empty() else " (found: %s)" % "; ".join(offenders)])
 	check.call(elder != null and elder.encounter_level == ArsenalCatalog.MAX_TRUE_LEVEL and elder.is_four_gate_boss()
-		and ArsenalCatalog.compute_renown_from_true_level(elder.encounter_level) == 40 and elder.is_countered_by(ScribeSignResource.Sign.SIGN_STAR_TIDE),
-		"the Elder Cairn-Drake is registered at True Level 20, so its plate reads Rank 40, a four-gate boss Star-Tide counters")
+		and ArsenalCatalog.compute_renown_from_true_level(elder.encounter_level) == 28 and elder.is_countered_by(ScribeSignResource.Sign.SIGN_STAR_TIDE),
+		"the Elder Cairn-Drake is registered at True Level 14, so its plate reads Rank 28, a four-gate boss Star-Tide counters")
 
 
 # --- Stage 2: the maths and progression gate --------------------------------------------------
@@ -239,12 +239,12 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 		"the seal component reckons the same blow, a 30% Star-Tide ward on the buckler with its stun immunity")
 	controller.free()
 	# The Dual-Readout curve (§5.1).
-	check.call(ArsenalCatalog.compute_true_level_from_renown(40) == 20 and ArsenalCatalog.compute_true_level_from_renown(1) == 1
-		and ArsenalCatalog.compute_true_level_from_renown(7) == 4 and ArsenalCatalog.compute_true_level_from_renown(39) == 20
-		and ArsenalCatalog.compute_renown_from_true_level(20) == 40 and ArsenalCatalog.compute_renown_from_true_level(1) == 2
-		and catalog.tier_for_renown(40).tier_id == ArsenalCatalog.TIER_7_STAR_GLASS and catalog.tier_for_true_level(10).tier_id == ArsenalCatalog.TIER_3_FORGE_IRON
-		and catalog.tier_for_true_level(5).tier_id == ArsenalCatalog.TIER_2_BOG_BRONZE and catalog.tier_for_true_level(4).tier_id == ArsenalCatalog.TIER_1_HOMESTEAD and catalog.tier_for_true_level(1).tier_id == ArsenalCatalog.TIER_1_HOMESTEAD,
-		"Renown Rank 40 is True Level 20 (and Rank 1 Level 1, 7 Level 4, 39 Level 20); Level 20 reads Rank 40; Lv 4 still wears Orchard-Wood, Lv 5 Bog-Bronze, Lv 10 Forge-Iron, Rank 40 Star-Glass")
+	check.call(ArsenalCatalog.compute_true_level_from_renown(28) == 14 and ArsenalCatalog.compute_true_level_from_renown(1) == 1
+		and ArsenalCatalog.compute_true_level_from_renown(7) == 4 and ArsenalCatalog.compute_true_level_from_renown(27) == 14
+		and ArsenalCatalog.compute_renown_from_true_level(14) == 28 and ArsenalCatalog.compute_renown_from_true_level(1) == 2
+		and catalog.tier_for_renown(28).tier_id == ArsenalCatalog.TIER_7_STAR_GLASS and catalog.tier_for_true_level(10).tier_id == ArsenalCatalog.TIER_5_RIME_SILVER
+		and catalog.tier_for_true_level(4).tier_id == ArsenalCatalog.TIER_2_BOG_BRONZE and catalog.tier_for_true_level(3).tier_id == ArsenalCatalog.TIER_1_HOMESTEAD and catalog.tier_for_true_level(1).tier_id == ArsenalCatalog.TIER_1_HOMESTEAD,
+		"Renown Rank 28 is True Level 14 (and Rank 1 Level 1, 7 Level 4, 27 Level 14); Level 14 reads Rank 28; Lv 3 still wears Orchard-Wood, Lv 4 Bog-Bronze, Lv 10 Rime-Silver, Rank 28 Star-Glass")
 	# The recipe table (§3.2), float for float.
 	var recipes_ok: bool = true
 	var tiers: Array[EquipmentTierResource] = catalog.get_all_tiers()
@@ -258,11 +258,11 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	check.call(recipes_ok, "the seven tiers' shader recipes match the table: albedo, metallic, roughness, rim strength, rim tint and emissive pulse")
 	# The Graduated APM ladder (§5.2).
 	check.call(PlayerLoadoutResource.stage_for_true_level(1) == 1 and PlayerLoadoutResource.stage_for_true_level(5) == 1
-		and PlayerLoadoutResource.stage_for_true_level(6) == 2 and PlayerLoadoutResource.stage_for_true_level(10) == 2
-		and PlayerLoadoutResource.stage_for_true_level(11) == 3 and PlayerLoadoutResource.stage_for_true_level(16) == 3
-		and PlayerLoadoutResource.stage_for_true_level(17) == 4 and PlayerLoadoutResource.stage_for_true_level(20) == 4
-		and ArsenalCatalog.compute_progression_stage(ArsenalCatalog.compute_true_level_from_renown(40)) == 4,
-		"the four stages sit on the Google Doc's Lv 1-5, 6-10, 11-16 and 17-20")
+		and PlayerLoadoutResource.stage_for_true_level(6) == 2 and PlayerLoadoutResource.stage_for_true_level(9) == 2
+		and PlayerLoadoutResource.stage_for_true_level(10) == 3 and PlayerLoadoutResource.stage_for_true_level(12) == 3
+		and PlayerLoadoutResource.stage_for_true_level(13) == 4 and PlayerLoadoutResource.stage_for_true_level(14) == 4
+		and ArsenalCatalog.compute_progression_stage(ArsenalCatalog.compute_true_level_from_renown(28)) == 4,
+		"the four stages sit on the 14-level spine: Lv 1-5, 6-9, 10-12 and 13-14")
 	var raid: PlayerLoadoutResource = _raid_hand()
 	var mid: PlayerLoadoutResource = _hand(ArsenalCatalog.TIER_3_FORGE_IRON)
 	mid.weapon_seal_card_id = ArsenalCatalog.CARD_EMBER_BOUGH
@@ -277,8 +277,8 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	check.call(PlayerLoadoutResource.MAX_CARDS == 7 and not raid.validate_loadout_for_stage(4) and not mid.validate_loadout_for_stage(4)
 		and seals_only.validate_loadout_for_stage(2) and not seals_only.validate_loadout_for_stage(1)
 		and not twice.validate_loadout_for_stage(4) and GrimoireRules.duplicate_title(twice.seal_card_ids()) == twice.weapon_seal_card_id
-		and GrimoireRules.slots_open(1) == 0 and GrimoireRules.slots_open(12) == 6 and GrimoireRules.slots_open(17) == 7,
-		"the hand keeps Seals only (the L, R and L+R cards and the Tuck live in the Cross): two Seals fit Stage 2, not Stage 1; a hand with old pocket cards is refused; no seal twice; 0 of 7 slots at Lv 1, 6 at Lv 12, all 7 at Lv 17")
+		and GrimoireRules.slots_open(1) == 0 and GrimoireRules.slots_open(12) == 6 and GrimoireRules.slots_open(13) == 7,
+		"the hand keeps Seals only (the L, R and L+R cards and the Tuck live in the Cross): two Seals fit Stage 2, not Stage 1; a hand with old pocket cards is refused; no seal twice; 0 of 7 slots at Lv 1, 6 at Lv 12, all 7 at Lv 13")
 	var tank: StringName = ClassLoadouts.SHIELD_TANK
 	var sword: int = EquipmentItemResource.WeaponType.LIGHT_SWORD
 	var at_1: PlayerLoadoutResource = catalog.default_seal_loadout(tank, ClassLoadoutResource.Role.TANK, sword, &"bridge_warden", 1, 0)
@@ -293,7 +293,7 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 		and at_20.seal_count() == 3 and at_20.equipped_tier_id == ArsenalCatalog.TIER_7_STAR_GLASS
 		and at_1.active_count() + at_6.active_count() + at_11.active_count() + at_20.active_count() == 0
 		and at_1.validate_loadout_for_stage(1) and at_6.validate_loadout_for_stage(2) and at_11.validate_loadout_for_stage(3) and at_20.validate_loadout_for_stage(4),
-		"a Shield-Sworn's Seals grow with its level: none at Lv 1, Old-Hob's Root-Bind on the weapon at 3, the Star-Bell on the buckler at 6, the Feather on the mantle at 11")
+		"a Shield-Sworn's Seals grow with its level: none at Lv 1, Old-Hob's Root-Bind on the weapon at 3, the Star-Bell on the buckler at 6, the Feather on the mantle at 10")
 	check.call(at_1.body_type == PlayerLoadoutResource.YouthBodyType.BODY_MALE_YOUTH and at_3.body_type == PlayerLoadoutResource.YouthBodyType.BODY_FEMALE_YOUTH
 		and at_1.armor_weight_class == EquipmentTierResource.ArmorWeightClass.ARMOR_HEAVY_SHIELD_SWORN and at_1.weapon_archetype == Arch.WEAPON_SWORD_BOARD
 		and catalog.default_seal_loadout(ClassLoadouts.SOUL_TETHER_HEALER, ClassLoadoutResource.Role.HEALER, EquipmentItemResource.WeaponType.STAFF, &"bell_keeper", 10, 0).armor_weight_class
@@ -325,7 +325,7 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 	var plain_cadence: float = catalog.estimate_stagger_seconds(plain_party)
 	check.call(sealed_cadence >= ArsenalCatalog.STAGGER_CADENCE_MIN_SEC and sealed_cadence <= ArsenalCatalog.STAGGER_CADENCE_MAX_SEC
 		and plain_cadence >= ArsenalCatalog.STAGGER_CADENCE_MIN_SEC and plain_cadence <= ArsenalCatalog.STAGGER_CADENCE_MAX_SEC and sealed_cadence < plain_cadence,
-		"a Tier 7 party breaks the Rank 40 Elder Cairn-Drake's 1,200 posture every %.1f s sealed and %.1f s bare (35 to 50)" % [sealed_cadence, plain_cadence])
+		"a Tier 7 party breaks the Rank 28 Elder Cairn-Drake's 1,200 posture every %.1f s sealed and %.1f s bare (35 to 50)" % [sealed_cadence, plain_cadence])
 	# The posture gate, by stage, on a bare component (the hero's is checked live).
 	var gate: EquipmentSealComponent = EquipmentSealComponent.new()
 	EquipmentSealComponent.graduated_apm_enabled = true
@@ -341,16 +341,16 @@ func _stage_2_math_and_stagger_cadence_gate() -> void:
 		and GrimoireRules.socket_open_at(GrimoireRules.SOCKET_L, 6) and not GrimoireRules.socket_open_at(GrimoireRules.SOCKET_L, 5)
 	gate.progression_stage = 3
 	var stage_3: bool = gate.is_directional_attack_unlocked(EquipmentSealComponent.DirectionalAttack.SIDE_LIGHT_FLANK) \
-		and GrimoireRules.TUCK_OPEN_LEVEL == 11 and not GrimoireRules.socket_open_at(GrimoireRules.SOCKET_LR, 16)
+		and GrimoireRules.TUCK_OPEN_LEVEL == 10 and not GrimoireRules.socket_open_at(GrimoireRules.SOCKET_LR, 12)
 	gate.progression_stage = 4
-	var stage_4: bool = GrimoireRules.socket_open_at(GrimoireRules.SOCKET_LR, 17)
+	var stage_4: bool = GrimoireRules.socket_open_at(GrimoireRules.SOCKET_LR, 13)
 	EquipmentSealComponent.graduated_apm_enabled = false
 	gate.progression_stage = 1
 	var gate_off: bool = gate.is_directional_attack_unlocked(EquipmentSealComponent.DirectionalAttack.SIDE_LIGHT_FLANK) \
 		and gate.gate_command(CombatActionResource.Command.FORWARD_HEAVY) == CombatActionResource.Command.FORWARD_HEAVY
 	gate.free()
 	check.call(stage_1 and stage_2 and stage_3 and stage_4 and gate_off,
-		"the Graduated APM gate: Forward and Back heavies fall back to the plain heavy until Stage 2, the flank waits for 3; the sockets open by level (R at 4, L at 6, the Tuck at 11, L+R at 17); off, every posture is open")
+		"the Graduated APM gate: Forward and Back heavies fall back to the plain heavy until Stage 2, the flank waits for 3; the sockets open by level (R at 4, L at 6, the Tuck at 10, L+R at 13); off, every posture is open")
 
 
 # --- Stage 3: the split-screen and network gate ----------------------------------------------

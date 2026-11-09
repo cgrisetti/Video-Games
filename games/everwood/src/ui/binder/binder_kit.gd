@@ -67,7 +67,7 @@ static func kicker(words: String, color: Color = AtelierTheme.GILT) -> Label:
 	return text(words.to_upper(), KICKER_SIZE, color)
 
 
-## A small rounded chip ("in use", "Lv 17", "fits") in a colour.
+## A small rounded chip ("in use", "Lv 13", "fits") in a colour.
 static func chip(words: String, edge: Color, ink: Color = Color(0, 0, 0, 0)) -> PanelContainer:
 	var box: PanelContainer = panel(AtelierTheme.chip_style(edge))
 	box.add_child(text(words, AtelierTheme.SMALL_SIZE, ink if ink.a > 0.0 else edge))

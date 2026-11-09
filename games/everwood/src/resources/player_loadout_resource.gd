@@ -34,15 +34,16 @@ const STAGE_FIRST_FRICTION: int = 2
 const STAGE_CONVERGENCE: int = 3
 const STAGE_APEX: int = 4
 const STAGE_NAMES: Array[String] = ["", "Homestead Onboarding", "First Friction Isle", "Three Isles Convergence", "Apex & Endgame Raids"]
-## The Google Doc's bands: Stage 3 runs to Lv 16, Stage 4 is Lv 17 to 20.
-const STAGE_MAX_LEVELS: Array[int] = [0, 5, 10, 16, 20]
+## The Google Doc's four bands cut onto the Bible's 14-level spine (2026-11-09): Stage 1 is
+## Lv 1-5, Stage 2 Lv 6-9, Stage 3 Lv 10-12 and Stage 4 Lv 13-14 (it was 1-5, 6-10, 11-16, 17-20).
+const STAGE_MAX_LEVELS: Array[int] = [0, 5, 9, 12, 14]
 ## How many seal slots each stage opens (index = stage): the weapon's (Lv 3), the offhand's
-## (Lv 6), the mantle's (Lv 11). The hand's four pocket slots never open any more: the L, R
+## (Lv 6), the mantle's (Lv 10). The hand's four pocket slots never open any more: the L, R
 ## and L+R cards and the Tuck live in the kit's sockets (25 GDD R4, R5).
 const SEALS_OPEN: Array[int] = [0, 1, 2, 3, 3]
 const ACTIVES_OPEN: Array[int] = [0, 0, 0, 0, 0]
 ## The level each slot opens at, in HandSlot order (the four pocket slots: never).
-const SLOT_OPEN_LEVELS: Array[int] = [3, 6, 11, 99, 99, 99, 99]
+const SLOT_OPEN_LEVELS: Array[int] = [3, 6, 10, 99, 99, 99, 99]
 const BODY_TYPE_NAMES: Array[String] = ["Male Youth", "Female Youth"]
 const TRIGGER_NAMES: Array[String] = ["L", "R", "L+R"]
 const HAND_SLOT_COUNT: int = 7
@@ -211,7 +212,7 @@ static func slot_open(slot: int, stage: int, true_level: int) -> bool:
 	return true_level >= opens and stage >= stage_for_true_level(opens)
 
 
-## The Character Level that opens a slot: Lv 3 the weapon Seal, 6 the offhand's, 11 the mantle's.
+## The Character Level that opens a slot: Lv 3 the weapon Seal, 6 the offhand's, 10 the mantle's.
 static func slot_open_level(slot: int) -> int:
 	return SLOT_OPEN_LEVELS[clampi(slot, 0, HAND_SLOT_COUNT - 1)]
 
@@ -248,7 +249,7 @@ func tuck_for_trigger(trigger_slot: int) -> StringName:
 
 # --- The Graduated APM ladder (§5.2) ------------------------------------------------
 
-## The progression stage a True Level plays at: 1-5, 6-10, 11-15, 16-20.
+## The progression stage a True Level plays at: 1-5, 6-9, 10-12, 13-14.
 static func stage_for_true_level(true_level: int) -> int:
 	var level: int = clampi(true_level, 1, STAGE_MAX_LEVELS[STAGE_APEX])
 	for stage: int in range(STAGE_HOMESTEAD, STAGE_APEX + 1):

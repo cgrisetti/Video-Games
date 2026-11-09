@@ -56,10 +56,10 @@ func _check_rules() -> void:
 		and GrimoireRules.well_depth(4, false) == 10 and GrimoireRules.well_depth(1, true) == 5 and GrimoireRules.well_depth(2, true) == 7
 		and GrimoireRules.well_depth(3, true) == 10 and GrimoireRules.well_depth(4, true) == 12,
 		"the Ink-Well holds 4, 6, 8 and 10 drops at Stages 1 to 4, and 5, 7, 10 and 12 with Wise Hand")
-	check.call(GrimoireRules.SEAL_OPEN_LEVELS == [3, 6, 11] and GrimoireRules.SOCKET_OPEN_LEVELS == [6, 4, 17] and GrimoireRules.TUCK_OPEN_LEVEL == 11
+	check.call(GrimoireRules.SEAL_OPEN_LEVELS == [3, 6, 10] and GrimoireRules.SOCKET_OPEN_LEVELS == [6, 4, 13] and GrimoireRules.TUCK_OPEN_LEVEL == 10
 		and GrimoireRules.slots_open(2) == 0 and GrimoireRules.slots_open(3) == 1 and GrimoireRules.slots_open(4) == 2
-		and GrimoireRules.slots_open(6) == 4 and GrimoireRules.slots_open(11) == 6 and GrimoireRules.slots_open(17) == 7,
-		"the slots open by Character Level: nothing at 1 and 2, the weapon Seal at 3, R at 4, the offhand Seal and L at 6 (4 of 7), the mantle Seal and the Tuck at 11 (6), L+R at 17 (all 7)")
+		and GrimoireRules.slots_open(6) == 4 and GrimoireRules.slots_open(10) == 6 and GrimoireRules.slots_open(13) == 7,
+		"the slots open by Character Level on the 14-level spine: nothing at 1 and 2, the weapon Seal at 3, R at 4, the offhand Seal and L at 6 (4 of 7), the mantle Seal and the Tuck at 10 (6), L+R at 13 (all 7)")
 	var kit: EquipmentLoadoutResource = ClassLoadouts.starter_kit(ClassLoadouts.SHIELD_TANK)
 	kit.guard_leaf_id = ArsenalCatalog.TAUNT
 	kit.lead_ids[ScribeCardResource.GrimoireSlot.SIGNATURE] = ArsenalCatalog.TAUNT

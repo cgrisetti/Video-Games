@@ -25,9 +25,10 @@ const SEAM_SALT_ROAD: StringName = &"seam_salt_road"
 const SEAM_CROWN_LANDING: StringName = &"seam_crown_landing"
 const SEAMS: Array[StringName] = [SEAM_WEST_STRAIT, SEAM_EEL_SPIT, SEAM_SALT_ROAD, SEAM_CROWN_LANDING]
 
-## Arrival points every builder may name.
+## Arrival points every builder may name. The start's id is from before the Level 1 spawn
+## moved into Lee-Shore Orchards (docs/29 §4); kept so saves and tools still find it.
 const ARRIVE_START: StringName = &"bramblebridge_green"
-## The start's old name (the Lee-Shore Orchards), the same arrival.
+## The start's other name (the Lee-Shore Orchards), the same arrival.
 const ARRIVE_ORCHARDS: StringName = ARRIVE_START
 const ARRIVE_NORTH_QUAY: StringName = &"north_quay"
 const ARRIVE_ROOT_SANCTUM: StringName = &"root_sanctum"
@@ -138,7 +139,7 @@ static func _ensure() -> void:
 		WorldVisualCatalog.GULL_WICK_HAVEN, &"dover_slap_falls", Color(0.48, 0.72, 0.92))
 	# The Crown plays its Audio Mosaic all over the isle (docs/16 §7, Clay's choice of 2026-11-06); a profile
 	# that isn't a mosaic here brings back its five shore suites (docs/23 §7, CrownHeartCragBuilder.music_at).
-	_isle(ISLE_THE_CROWN, "The Crown", "Centre", 15, 20, ScribeSignResource.Sign.NONE, "", 8, Vector2.ZERO,
+	_isle(ISLE_THE_CROWN, "The Crown", "Centre", 13, 14, ScribeSignResource.Sign.NONE, "", 8, Vector2.ZERO,
 		"Lantern-Bearers' Waypost", "World-Tree", "The Sea-Door to the Heart", &"", "",
 		WorldVisualCatalog.SUNKEN_CROWN_FALLS, &"crown_island", Color(0.98, 0.84, 0.42))
 	# Embershore's ends and directions come from its generator (docs/27 §1: causeways and skiffs), in its own frame.

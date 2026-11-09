@@ -1851,9 +1851,10 @@ func _check_phase_11_combat_onboarding_and_flanking() -> void:
 		and catalog.get_milestone_grant_for_level(7, tank_role)["under_card_id"] == ArsenalCatalog.IRON_ROOT_LINK
 		and catalog.get_milestone_grant_for_level(10, tank_role)["unlocks_secondary_calling"] and catalog.get_milestone_grant_for_level(4, tank_role).is_empty(),
 		"milestones: Tier 2 at Level 2, an R card at 3, Tier 3 and an L+R card at 5, an Under-Card at 7, Tier 4 and the Callings at 10")
-	_check(PartyProgress.level_for_xp(PartyProgress.XP_PER_MOB * 7 + PartyProgress.XP_PER_GATE) == 5
-		and PartyProgress.level_for_xp((PartyProgress.XP_PER_MOB * 7 + PartyProgress.XP_PER_GATE + PartyProgress.XP_PER_BOSS) * 2) == 10,
-		"one expedition (7 mobs at 35 XP and the gate at 80) reaches Level 5 at the Gatehouse; a second, with the Cairnsman at 200, reaches Level 10")
+	_check(PartyProgress.level_for_xp(400) == 2 and PartyProgress.level_for_xp(3799) == 5 and PartyProgress.level_for_xp(3800) == 6
+		and PartyProgress.level_for_xp(24800) == 13 and PartyProgress.level_for_xp(PartyProgress.XP_CEILING) == PartyProgress.MAX_CHARACTER_LEVEL
+		and PartyProgress.MAX_CHARACTER_LEVEL == 14 and PartyProgress.LEVEL_XP.size() == 14,
+		"the Bible's 14-level spine: Level 2 at 400 XP, Level 6 at 3,800 (Act I), Level 13 at 24,800, Level 14 the cap (30,500 XP)")
 
 	# Back to Level 1: the party in timber, Unsworn, with an un-inked R and L+R.
 	var callings_before: Dictionary[StringName, StringName] = {}

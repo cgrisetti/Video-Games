@@ -24,7 +24,7 @@
 ## that Warm-Hearth melts, the Spriggans' shields that Iron-Root cracks), and
 ## the Crag-Back locks at every gate. Each hostile family's blow carries a Sign
 ## (its limb glows through the wind-up), which a Tank's Ward-Mantle can soak.
-##   7 The Crown's Trial-Kin (docs/20 Part II, Lv 15-18): the three open-air
+##   7 The Crown's Trial-Kin (docs/20 Part II, Lv 13-14 on the 14-level spine): the three open-air
 ##     trials' guards and capstones. The Trial of the Anvil's Forge-Clad
 ##     Sentinels and the Anvil-Warden Colossus (poise 180, shrugging off nine
 ##     tenths of every blow until its poise breaks, then taking it all); the
@@ -33,7 +33,7 @@
 ##     leaves a wide window); the Trial of the Tide's Tarnished Scribe-Wights
 ##     and the Siphon-Prelate. Kin of the First-Quiet like the rest: bowed into
 ##     stewards, released as sea-swallows or lulled into cairns.
-##   8 The Crown's Shore-Kin (docs/23 §5, Lv 15-17): the kin of the three
+##   8 The Crown's Shore-Kin (docs/23 §5, Lv 13-14 on the 14-level spine): the kin of the three
 ##     shores outside the trials, each teaching its trial's lesson in small.
 ##     Iron Shore's Clinker Iron-Men shrug off chip blows until their poise
 ##     breaks, and Cinder-Scuttlers swarm; the Gale Cliffs' Gust-Padfoots dash
@@ -41,11 +41,16 @@
 ##     Sap-Sodden Buccas wallow and rooted Blight-Lashers whip from the
 ##     sluices. One named rare walks each shore's track: Old Bellows by the
 ##     vents, the Grey Squall on the cliff-top, Mother Sluice on the shelf by the sea.
+##   9 Embershore's Act I Kin (docs/28, docs/29 §5, Lv 1-6): the quests' foes, each
+##     on the Act I calming rule (worn down it wavers and a Calming Seal calms it;
+##     burnt to nothing it scatters and re-forms). Bramble-Hounds, Grey-Bark Weevils,
+##     Ash-Grigs, Barnacle Scuttlers, Tide-Wights, Sap-Boggarts, Root-Lurkers, and the
+##     two Stag Hunts' guardians: the Furrow Iron-Man and the Blighted Taproot Stag.
 class_name Bestiary
 extends RefCounted
 
 const FAMILY_NAMES: Array[String] = ["Curious Weald-Wights", "Padfoot Boggarts", "Furrow Iron-Men", "Bramble-Hobs", "Crag-Spriggans",
-	"Ambient Wildlife", "The Crown's Trial-Kin"]
+	"Ambient Wildlife", "The Crown's Trial-Kin", "The Crown's Shore-Kin", "Embershore's Act I Kin"]
 ## The Crown's Trial-Kin, by id (docs/20 Part II areas 3 to 5).
 const FORGE_CLAD_SENTINEL: StringName = &"forge_clad_sentinel"
 const ANVIL_WARDEN_COLOSSUS: StringName = &"anvil_warden_colossus"
@@ -63,6 +68,23 @@ const GREY_SQUALL: StringName = &"grey_squall"
 const SAP_SODDEN_BUCCA: StringName = &"sap_sodden_bucca"
 const BLIGHT_LASHER: StringName = &"blight_lasher"
 const MOTHER_SLUICE: StringName = &"mother_sluice"
+## Act I's kin on Embershore (docs/28, docs/29 §5), by the engineering brief's ids. Three
+## carry Lens names on screen (the Creative Director's call, 2026-11-09): the Ash-Gremlin is an
+## Ash-Grig, the Tide-Wraith a Tide-Wight and the Sap-Elemental a Sap-Boggart (Gate 3).
+const BRAMBLE_HOUND: StringName = &"bramble_hound"
+const GREY_BARK_WEEVIL: StringName = &"grey_bark_weevil"
+const GREY_BARK_WEEVIL_GREAT: StringName = &"grey_bark_weevil_great"
+const ASH_GREMLIN: StringName = &"ash_gremlin"
+const BARNACLE_SCUTTLER: StringName = &"barnacle_scuttler"
+const TIDE_WRAITH: StringName = &"tide_wraith"
+const SAP_ELEMENTAL: StringName = &"sap_elemental"
+const SAP_ELEMENTAL_GREAT: StringName = &"sap_elemental_great"
+const ROOT_LURKER: StringName = &"root_lurker"
+## Act I's two Stag Hunts: the Furrow Iron-Man on the stone bridge (and the Rusted Iron-Man a
+## scatter leaves behind) and the Blighted Taproot Stag in the Root-Sanctum.
+const FURROW_IRON_MAN_GUARDIAN: StringName = &"furrow_iron_man_guardian"
+const RUSTED_IRON_MAN: StringName = &"rusted_iron_man"
+const TAPROOT_STAG: StringName = &"blighted_taproot_stag"
 ## The starting zone's creatures (families 1 to 6); the Crown's kin come after them.
 const STARTING_ZONE_COUNT: int = 16
 ## Ambient critters (AmbientFlock), by kind.
@@ -312,11 +334,12 @@ static func _ensure() -> void:
 		kin.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
 	_add_crown_trial_kin()
 	_add_crown_shore_kin()
+	_add_act_one_kin()
 
 
-## Family 7: the guards and capstones of The Crown's three trials (Lv 15-18).
+## Family 7: the guards and capstones of The Crown's three trials (Lv 13-14).
 static func _add_crown_trial_kin() -> void:
-	var sentinel: MobVariantResource = _make(FORGE_CLAD_SENTINEL, "Forge-Clad Sentinel", Family.CROWN_TRIAL_KIN, 16, Body.HUMANOID, 900.0, 90.0, 28.0)
+	var sentinel: MobVariantResource = _make(FORGE_CLAD_SENTINEL, "Forge-Clad Sentinel", Family.CROWN_TRIAL_KIN, 13, Body.HUMANOID, 900.0, 90.0, 28.0)
 	_hostile(sentinel, 12.0, 1.0, 1.2)
 	sentinel.mitigation = 0.35
 	sentinel.radius = 0.6
@@ -326,7 +349,7 @@ static func _add_crown_trial_kin() -> void:
 	sentinel.main_color = Color(0.42, 0.3, 0.24)
 	sentinel.accent_color = Color(0.95, 0.52, 0.18)
 	sentinel.eye_color = Color(1.0, 0.62, 0.2)
-	var colossus: MobVariantResource = _make(ANVIL_WARDEN_COLOSSUS, "The Anvil-Warden Colossus", Family.CROWN_TRIAL_KIN, 18, Body.HULK, 5200.0, 180.0, 42.0)
+	var colossus: MobVariantResource = _make(ANVIL_WARDEN_COLOSSUS, "The Anvil-Warden Colossus", Family.CROWN_TRIAL_KIN, 14, Body.HULK, 5200.0, 180.0, 42.0)
 	_hostile(colossus, 14.0, 1.4, 1.6)
 	colossus.rank = Rank.BOSS
 	# Its molten-iron carapace: nine tenths of every blow glance off until its poise breaks; then it takes it all.
@@ -342,13 +365,13 @@ static func _add_crown_trial_kin() -> void:
 	colossus.main_color = Color(0.3, 0.24, 0.22)
 	colossus.accent_color = Color(1.0, 0.5, 0.14)
 	colossus.eye_color = Color(1.0, 0.72, 0.3)
-	var harrier: MobVariantResource = _make(RIME_WING_HARRIER, "Rime-Wing Harrier", Family.CROWN_TRIAL_KIN, 16, Body.WOLF, 700.0, 50.0, 22.0)
+	var harrier: MobVariantResource = _make(RIME_WING_HARRIER, "Rime-Wing Harrier", Family.CROWN_TRIAL_KIN, 13, Body.WOLF, 700.0, 50.0, 22.0)
 	_hostile(harrier, 16.0, 0.7, 6.0)
 	harrier.move_speed = 6.0
 	harrier.main_color = Color(0.84, 0.9, 0.96)
 	harrier.accent_color = Color(0.4, 0.62, 0.86)
 	harrier.eye_color = Color(0.5, 0.86, 1.0)
-	var vaelen: MobVariantResource = _make(STORM_CALLER_VAELEN, "Storm-Caller Vaelen", Family.CROWN_TRIAL_KIN, 18, Body.WIGHT, 4600.0, 120.0, 36.0)
+	var vaelen: MobVariantResource = _make(STORM_CALLER_VAELEN, "Storm-Caller Vaelen", Family.CROWN_TRIAL_KIN, 14, Body.WIGHT, 4600.0, 120.0, 36.0)
 	_hostile(vaelen, 18.0, 0.9, 9.0)
 	vaelen.rank = Rank.BOSS
 	vaelen.move_speed = 6.2
@@ -361,7 +384,7 @@ static func _add_crown_trial_kin() -> void:
 	vaelen.main_color = Color(0.7, 0.8, 0.9)
 	vaelen.accent_color = Color(0.3, 0.52, 0.8)
 	vaelen.eye_color = Color(0.7, 0.95, 1.0)
-	var wight: MobVariantResource = _make(TARNISHED_SCRIBE_WIGHT, "Tarnished Scribe-Wight", Family.CROWN_TRIAL_KIN, 16, Body.WIGHT, 650.0, 45.0, 20.0)
+	var wight: MobVariantResource = _make(TARNISHED_SCRIBE_WIGHT, "Tarnished Scribe-Wight", Family.CROWN_TRIAL_KIN, 13, Body.WIGHT, 650.0, 45.0, 20.0)
 	_hostile(wight, 15.0, 1.0, 0.0)
 	wight.mitigation = 0.25
 	wight.ranged = true
@@ -370,7 +393,7 @@ static func _add_crown_trial_kin() -> void:
 	wight.main_color = Color(0.4, 0.34, 0.48)
 	wight.accent_color = Color(0.62, 0.4, 0.92)
 	wight.eye_color = Color(0.78, 0.55, 1.0)
-	var prelate: MobVariantResource = _make(SIPHON_PRELATE, "The Siphon-Prelate", Family.CROWN_TRIAL_KIN, 18, Body.HULK, 5000.0, 140.0, 38.0)
+	var prelate: MobVariantResource = _make(SIPHON_PRELATE, "The Siphon-Prelate", Family.CROWN_TRIAL_KIN, 14, Body.HULK, 5000.0, 140.0, 38.0)
 	_hostile(prelate, 14.0, 1.2, 1.4)
 	prelate.rank = Rank.BOSS
 	prelate.mitigation = 0.3
@@ -396,12 +419,12 @@ static func _add_crown_trial_kin() -> void:
 		kin.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
 
 
-## Family 8: the kin of The Crown's three shores outside the trials (Lv 15-17),
+## Family 8: the kin of The Crown's three shores outside the trials (Lv 13-14),
 ## tuned between the outer isles' elites and the trials' guards, each one the
 ## trial's lesson in small (docs/23 §5).
 static func _add_crown_shore_kin() -> void:
 	# Iron Shore: posture. Their clinker shells glance blows until the poise breaks.
-	var clinker: MobVariantResource = _make(CLINKER_IRON_MAN, "Clinker Iron-Man", Family.CROWN_SHORE_KIN, 15, Body.HUMANOID, 420.0, 80.0, 20.0)
+	var clinker: MobVariantResource = _make(CLINKER_IRON_MAN, "Clinker Iron-Man", Family.CROWN_SHORE_KIN, 13, Body.HUMANOID, 420.0, 80.0, 20.0)
 	_hostile(clinker, 11.0, 1.0, 1.2)
 	clinker.mitigation = 0.55
 	clinker.knockdown_damage_taken = 3.0
@@ -410,12 +433,12 @@ static func _add_crown_shore_kin() -> void:
 	clinker.main_color = Color(0.36, 0.28, 0.24)
 	clinker.accent_color = Color(0.9, 0.48, 0.18)
 	clinker.eye_color = Color(1.0, 0.6, 0.2)
-	var scuttler: MobVariantResource = _make(CINDER_SCUTTLER, "Cinder-Scuttler Hob", Family.CROWN_SHORE_KIN, 15, Body.SCUTTLER, 200.0, 30.0, 14.0)
+	var scuttler: MobVariantResource = _make(CINDER_SCUTTLER, "Cinder-Scuttler Hob", Family.CROWN_SHORE_KIN, 13, Body.SCUTTLER, 200.0, 30.0, 14.0)
 	_hostile(scuttler, 10.0, 0.7, 3.0)
 	scuttler.move_speed = 5.0
 	scuttler.main_color = Color(0.24, 0.2, 0.2)
 	scuttler.accent_color = Color(1.0, 0.46, 0.16)
-	var bellows: MobVariantResource = _make(OLD_BELLOWS, "Old Bellows", Family.CROWN_SHORE_KIN, 17, Body.HULK, 2400.0, 140.0, 32.0)
+	var bellows: MobVariantResource = _make(OLD_BELLOWS, "Old Bellows", Family.CROWN_SHORE_KIN, 14, Body.HULK, 2400.0, 140.0, 32.0)
 	_hostile(bellows, 12.0, 1.3, 1.4)
 	bellows.rank = Rank.RARE
 	# A rare walks its shore's track (its spawner's patrol) when it isn't fighting.
@@ -432,19 +455,19 @@ static func _add_crown_shore_kin() -> void:
 	bellows.accent_color = Color(1.0, 0.56, 0.2)
 	bellows.eye_color = Color(1.0, 0.76, 0.32)
 	# Gale Cliffs: mobility. Long straight dashes to step aside from, darting hobs.
-	var gust: MobVariantResource = _make(GUST_PADFOOT, "Gust-Padfoot", Family.CROWN_SHORE_KIN, 15, Body.WOLF, 340.0, 40.0, 18.0)
+	var gust: MobVariantResource = _make(GUST_PADFOOT, "Gust-Padfoot", Family.CROWN_SHORE_KIN, 13, Body.WOLF, 340.0, 40.0, 18.0)
 	_hostile(gust, 13.0, 0.75, 7.0)
 	gust.move_speed = 5.6
 	gust.recovery = 0.9
 	gust.main_color = Color(0.78, 0.84, 0.9)
 	gust.accent_color = Color(0.4, 0.58, 0.8)
 	gust.eye_color = Color(0.6, 0.9, 1.0)
-	var scree: MobVariantResource = _make(SCREE_HOB, "Scree-Hob", Family.CROWN_SHORE_KIN, 15, Body.SCUTTLER, 190.0, 28.0, 12.0)
+	var scree: MobVariantResource = _make(SCREE_HOB, "Scree-Hob", Family.CROWN_SHORE_KIN, 13, Body.SCUTTLER, 190.0, 28.0, 12.0)
 	_hostile(scree, 11.0, 0.7, 3.4)
 	scree.move_speed = 5.2
 	scree.main_color = Color(0.56, 0.58, 0.6)
 	scree.accent_color = Color(0.36, 0.5, 0.66)
-	var squall: MobVariantResource = _make(GREY_SQUALL, "The Grey Squall", Family.CROWN_SHORE_KIN, 17, Body.WOLF, 1800.0, 90.0, 28.0)
+	var squall: MobVariantResource = _make(GREY_SQUALL, "The Grey Squall", Family.CROWN_SHORE_KIN, 14, Body.WOLF, 1800.0, 90.0, 28.0)
 	_hostile(squall, 14.0, 0.8, 10.0)
 	squall.rank = Rank.RARE
 	# A rare walks its shore's track (its spawner's patrol) when it isn't fighting.
@@ -459,13 +482,13 @@ static func _add_crown_shore_kin() -> void:
 	squall.accent_color = Color(0.3, 0.46, 0.72)
 	squall.eye_color = Color(0.7, 0.95, 1.0)
 	# Tide Grottos: darkness and cleansing. Wallowers in the pools, lashers rooted at the sluices.
-	var bucca: MobVariantResource = _make(SAP_SODDEN_BUCCA, "Sap-Sodden Bucca", Family.CROWN_SHORE_KIN, 15, Body.TOAD, 380.0, 40.0, 18.0)
+	var bucca: MobVariantResource = _make(SAP_SODDEN_BUCCA, "Sap-Sodden Bucca", Family.CROWN_SHORE_KIN, 13, Body.TOAD, 380.0, 40.0, 18.0)
 	_hostile(bucca, 11.0, 0.8, 3.0)
 	bucca.move_speed = 3.0
 	bucca.main_color = Color(0.3, 0.28, 0.38)
 	bucca.accent_color = Color(0.62, 0.38, 0.9)
 	bucca.eye_color = Color(0.8, 0.6, 1.0)
-	var lasher: MobVariantResource = _make(BLIGHT_LASHER, "Blight-Lasher Hob", Family.CROWN_SHORE_KIN, 15, Body.VINE, 340.0, 70.0, 18.0)
+	var lasher: MobVariantResource = _make(BLIGHT_LASHER, "Blight-Lasher Hob", Family.CROWN_SHORE_KIN, 13, Body.VINE, 340.0, 70.0, 18.0)
 	_hostile(lasher, 7.0, 0.9, 0.0)
 	_bark(lasher)
 	lasher.rooted = true
@@ -473,7 +496,7 @@ static func _add_crown_shore_kin() -> void:
 	lasher.hit_radius = 1.4
 	lasher.main_color = Color(0.26, 0.3, 0.26)
 	lasher.accent_color = Color(0.56, 0.3, 0.86)
-	var sluice: MobVariantResource = _make(MOTHER_SLUICE, "Mother Sluice", Family.CROWN_SHORE_KIN, 17, Body.SHAMBLER, 2200.0, 120.0, 26.0)
+	var sluice: MobVariantResource = _make(MOTHER_SLUICE, "Mother Sluice", Family.CROWN_SHORE_KIN, 14, Body.SHAMBLER, 2200.0, 120.0, 26.0)
 	_hostile(sluice, 12.0, 1.1, 0.0)
 	sluice.rank = Rank.RARE
 	# A rare walks its shore's track (its spawner's patrol) when it isn't fighting.
@@ -499,6 +522,133 @@ static func _add_crown_shore_kin() -> void:
 		kin.blow_sign = ScribeSignResource.Sign.SIGN_RIME_GALE
 	for kin: MobVariantResource in [bucca, lasher, sluice]:
 		kin.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
+
+
+## Family 9: Act I's kin on Embershore (docs/28; Lv 1-6). Every one keeps the Act I calming
+## rule: worn down it wavers, a Calming Seal calms it; burnt to nothing it only scatters.
+static func _add_act_one_kin() -> void:
+	# Q01 · the Lee-Shore Orchards' Un-Inked Bramble-Hounds: quick, a low posture to learn on.
+	var hound: MobVariantResource = _make(BRAMBLE_HOUND, "Un-Inked Bramble-Hound", Family.EMBERSHORE_ACT_ONE, 1, Body.WOLF, 90.0, 18.0, 7.0)
+	_hostile(hound, 9.0, 0.6, 3.0)
+	hound.move_speed = 4.8
+	hound.main_color = Color(0.62, 0.62, 0.6)
+	hound.accent_color = Color(0.86, 0.5, 0.62)
+	hound.eye_color = Color(0.95, 0.9, 0.7)
+	# Q02 · Grey-Bark Weevils go for the cider-boughs first; one Great-Boggart guards the Seed grove.
+	var weevil: MobVariantResource = _make(GREY_BARK_WEEVIL, "Grey-Bark Weevil", Family.EMBERSHORE_ACT_ONE, 2, Body.SCUTTLER, 60.0, 10.0, 5.0)
+	_hostile(weevil, 6.0, 0.7, 1.5)
+	weevil.move_speed = 3.4
+	weevil.targets_trees = true
+	weevil.radius = 0.4
+	weevil.height = 0.6
+	weevil.main_color = Color(0.5, 0.48, 0.44)
+	weevil.accent_color = Color(0.7, 0.62, 0.4)
+	var great_weevil: MobVariantResource = _make(GREY_BARK_WEEVIL_GREAT, "Grey-Bark Weevil", Family.EMBERSHORE_ACT_ONE, 3, Body.SCUTTLER, 420.0, 70.0, 14.0)
+	_hostile(great_weevil, 8.0, 1.1, 1.0)
+	great_weevil.rank = Rank.ELITE
+	great_weevil.targets_trees = true
+	great_weevil.move_speed = 2.4
+	great_weevil.radius = 1.0
+	great_weevil.height = 1.3
+	great_weevil.main_color = weevil.main_color.darkened(0.15)
+	great_weevil.accent_color = weevil.accent_color
+	# Q03 · Ash-Grigs (the brief's Ash-Gremlins): small cinder-throwers raiding Hob's granary.
+	var grig: MobVariantResource = _make(ASH_GREMLIN, "Ash-Grig", Family.EMBERSHORE_ACT_ONE, 3, Body.HUMANOID, 120.0, 18.0, 9.0)
+	_hostile(grig, 12.0, 0.9, 0.0)
+	grig.ranged = true
+	grig.projectile_look = ArsenalCatalog.SCRIBE_STAFF
+	grig.projectile_range = 12.0
+	grig.radius = 0.35
+	grig.height = 1.1
+	grig.main_color = Color(0.36, 0.33, 0.32)
+	grig.accent_color = Color(1.0, 0.5, 0.2)
+	grig.eye_color = Color(1.0, 0.62, 0.3)
+	grig.blow_sign = ScribeSignResource.Sign.SIGN_WARM_HEARTH
+	# Q04 · the Old Quay's tide-kin: Barnacle Scuttlers that guard their fronts, Tide-Wights (the brief's Tide-Wraiths).
+	var barnacle: MobVariantResource = _make(BARNACLE_SCUTTLER, "Barnacle Scuttler", Family.EMBERSHORE_ACT_ONE, 4, Body.SCUTTLER, 200.0, 35.0, 12.0)
+	_hostile(barnacle, 10.0, 0.8, 2.0)
+	barnacle.move_speed = 4.2
+	barnacle.main_color = Color(0.46, 0.5, 0.52)
+	barnacle.accent_color = Color(0.86, 0.84, 0.74)
+	barnacle.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
+	var wight: MobVariantResource = _make(TIDE_WRAITH, "Tide-Wight", Family.EMBERSHORE_ACT_ONE, 5, Body.WIGHT, 260.0, 40.0, 13.0)
+	_hostile(wight, 12.0, 1.0, 1.0)
+	wight.stamina_slow = 0.4
+	wight.main_color = Color(0.72, 0.8, 0.84)
+	wight.accent_color = Color(0.44, 0.6, 0.72)
+	wight.eye_color = Color(0.7, 0.92, 1.0)
+	wight.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
+	# Q05 · the Root-Sanctum's kin: Sap-Boggarts (the brief's Sap-Elementals) and Root-Lurkers in the walls.
+	var sap: MobVariantResource = _make(SAP_ELEMENTAL, "Sap-Boggart", Family.EMBERSHORE_ACT_ONE, 5, Body.SHAMBLER, 320.0, 60.0, 14.0)
+	_hostile(sap, 9.0, 1.1, 0.0)
+	sap.move_speed = 2.2
+	sap.main_color = Color(0.56, 0.54, 0.5)
+	sap.accent_color = Color(0.96, 0.72, 0.3)
+	var great_sap: MobVariantResource = _make(SAP_ELEMENTAL_GREAT, "Sap-Boggart", Family.EMBERSHORE_ACT_ONE, 6, Body.SHAMBLER, 700.0, 110.0, 20.0)
+	_hostile(great_sap, 10.0, 1.2, 0.0)
+	great_sap.rank = Rank.ELITE
+	great_sap.move_speed = 2.0
+	great_sap.radius = 1.0
+	great_sap.height = 2.2
+	great_sap.main_color = sap.main_color.darkened(0.1)
+	great_sap.accent_color = sap.accent_color
+	var lurker: MobVariantResource = _make(ROOT_LURKER, "Root-Lurker", Family.EMBERSHORE_ACT_ONE, 5, Body.VINE, 220.0, 45.0, 13.0)
+	_hostile(lurker, 7.0, 0.8, 0.0)
+	lurker.rooted = true
+	lurker.main_color = Color(0.4, 0.34, 0.28)
+	lurker.accent_color = Color(0.7, 0.86, 0.5)
+	lurker.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
+	# The Stag Hunts' guardians (StagHuntEncounter scales their health and posture by the heroes present).
+	var guardian: MobVariantResource = _make(FURROW_IRON_MAN_GUARDIAN, "The Furrow Iron-Man", Family.EMBERSHORE_ACT_ONE, 4, Body.HUMANOID, 1600.0, 160.0, 18.0)
+	_hostile(guardian, 10.0, 1.2, 1.0)
+	guardian.rank = Rank.BOSS
+	guardian.has_maker_seal = true
+	guardian.radius = 0.9
+	guardian.height = 3.2
+	guardian.reach = 2.6
+	guardian.hit_radius = 2.0
+	guardian.move_speed = 2.4
+	guardian.stomps = true
+	guardian.main_color = Color(0.4, 0.36, 0.33)
+	guardian.accent_color = Color(0.86, 0.62, 0.3)
+	guardian.eye_color = Color(1.0, 0.72, 0.36)
+	guardian.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
+	var rusted: MobVariantResource = _make(RUSTED_IRON_MAN, "The Rusted Iron-Man", Family.EMBERSHORE_ACT_ONE, 5, Body.HUMANOID, 1600.0, 320.0, 25.2)
+	_hostile(rusted, 12.0, 1.1, 1.2)
+	rusted.rank = Rank.BOSS
+	rusted.has_maker_seal = true
+	rusted.radius = 0.9
+	rusted.height = 3.2
+	rusted.reach = 2.6
+	rusted.hit_radius = 2.0
+	rusted.move_speed = 2.6
+	rusted.stomps = true
+	rusted.main_color = Color(0.52, 0.3, 0.2)
+	rusted.accent_color = Color(0.9, 0.42, 0.2)
+	rusted.eye_color = Color(1.0, 0.4, 0.24)
+	rusted.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
+	var stag: MobVariantResource = _make(TAPROOT_STAG, "The Blighted Taproot Stag", Family.EMBERSHORE_ACT_ONE, 6, Body.BEHEMOTH, 4200.0, 220.0, 22.0)
+	_hostile(stag, 30.0, 1.2, 2.5)
+	stag.rank = Rank.BOSS
+	stag.radius = 1.8
+	stag.height = 3.6
+	stag.reach = 3.2
+	stag.hit_radius = 2.6
+	stag.move_speed = 2.0
+	stag.stomps = true
+	stag.main_color = Color(0.6, 0.6, 0.58)
+	stag.accent_color = Color(0.56, 0.74, 0.42)
+	stag.eye_color = Color(0.96, 0.86, 0.5)
+	for kin: MobVariantResource in [hound, weevil, great_weevil, grig, barnacle, wight, sap, great_sap, lurker, guardian, rusted, stag]:
+		kin.calm_rule = true
+		_spirit(kin, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_UNBOGGART_RELEASE, Form.HEDGE_WREN)
+	for kin: MobVariantResource in [great_weevil, great_sap]:
+		kin.scatter_chimes = 6
+	for kin: MobVariantResource in [guardian, rusted]:
+		# Calmed with its seal upright, an Iron-Man bows and walks the lane as a steward (docs/15).
+		kin.resolution = Resolution.STATE_STEWARD_HELPER
+		kin.scatter_chimes = 25
+	stag.scatter_chimes = 0
 
 
 static func _make(id: StringName, label: String, family: Family, level: int, body: Body, health: float, poise: float, damage: float) -> MobVariantResource:
