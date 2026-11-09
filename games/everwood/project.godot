@@ -17,6 +17,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
 
+ScriptRegistryCheck="*res://src/autoloads/script_registry_check.gd"
 Arsenal="*res://src/actors/arsenal_catalog.gd"
 Network="*res://src/autoloads/network_manager.gd"
 Instance="*res://src/autoloads/instance_manager.gd"
