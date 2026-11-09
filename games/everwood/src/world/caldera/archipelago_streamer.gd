@@ -117,7 +117,7 @@ class ImpostorJob:
 				var z: float = -half.y + row * step
 				var h: float = builder.height_at(x, z)
 				vertices[row * side + column] = Vector3(x, h, z)
-				colors[row * side + column] = builder.surface_color(x, z, h, 1.0 if h > 1.5 else 0.9)
+				colors[row * side + column] = builder.far_color(x, z, h, 1.0 if h > 1.5 else 0.9)
 		var normals: PackedVector3Array = PackedVector3Array()
 		normals.resize(side * rows)
 		for row: int in rows:
@@ -158,6 +158,9 @@ var impostors: Node3D
 ## Landblocks whose window ground was built (for tests and the telemetry line).
 var near_builds: int = 0
 var far_builds: int = 0
+
+## The colour the far isles fade into (set_far_haze).
+var far_haze: Color = Color(0.72, 0.78, 0.84)
 
 var _terrain: Node3D
 var _jobs: Array[ChunkJob] = []
@@ -302,6 +305,13 @@ func set_mist(amount: float) -> void:
 
 func mist() -> float:
 	return _mist
+
+
+## The colour the far isles fade into with distance (the level sets it from the sky as the Atmosphere eases it).
+func set_far_haze(color: Color) -> void:
+	far_haze = color
+	if impostor_material != null:
+		impostor_material.set_shader_parameter(&"horizon_color", color)
 
 
 # --- Window --------------------------------------------------------------------------
@@ -837,6 +847,7 @@ func _build_sea() -> void:
 	add_child(sea)
 	impostor_material = ShaderMaterial.new()
 	impostor_material.shader = IMPOSTOR_SHADER
+	impostor_material.set_shader_parameter(&"horizon_color", far_haze)
 	_on_sea_level_changed(CalderaWorldState.current.sea_level_y if CalderaWorldState.current != null else 0.0)
 
 
@@ -904,6 +915,15 @@ func _build_impostors() -> void:
 		node.scale = Vector3(1.0, IMPOSTOR_LIFT, 1.0)
 		node.set_meta(&"isle_id", isle_id)
 		impostors.add_child(node)
+		var beacon_at: Vector3 = CalderaAtlas.builder_for(isle_id).beacon_spot()
+		if beacon_at.is_finite():
+			# A lit Beacon burns on its isle's far silhouette, seen from every quay (docs/14 §6.4, docs/33 §3.1).
+			var far_beacon: FarBeacon = FarBeacon.new()
+			far_beacon.isle_id = isle_id
+			far_beacon.position = Vector3(beacon_at.x, beacon_at.y + FarBeacon.FIRE_ABOVE_GROUND, beacon_at.z)
+			# The silhouette is lifted IMPOSTOR_LIFT; the fire is not stretched with it.
+			far_beacon.scale = Vector3(1.0, 1.0 / IMPOSTOR_LIFT, 1.0)
+			node.add_child(far_beacon)
 		if isle_id == CalderaAtlas.ISLE_THE_CROWN:
 			# The World-Tree answers each trial even from the far quays: its boughs share the live tree's materials.
 			var far_tree: Node3D = WorldTree.make_far_crown()

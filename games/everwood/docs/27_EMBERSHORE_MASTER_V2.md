@@ -67,7 +67,7 @@ A `.gdignore` keeps Godot from importing the folder; `EmbershoreBuilder` reads t
 | **The First-Quiet** | six sleepers on the south-east crags (curled megaliths), the Deep-Hush beyond |
 | **Causeways** | the West Strait (from the west tip, 1.86 m) and the Eel Spit (shingle, 4.77 m), gated by `root_sanctum_cleared` |
 
-**The Doverslap reveal** (`DoverslapReveal`, `PlayerCamera.reveal`): the first time each hero steps within 6 m of the bridge's middle, their own camera eases up and back for 4 s (the field of view widening 14°) to look over the Sound at The Crown's World-Tree, Rime-Firth west of it and Barrow-Eyot east, then eases home; a banner names them. Once per hero (by class) per save (`PartyProgress.reveals_seen`, `[caldera] reveals`), never mid-fight, each split-screen viewport its own.
+**The Doverslap reveal** (`VistaReveal`, `PlayerCamera.reveal`): the first time each hero steps within 6 m of the bridge's middle, their own camera eases up and back for 4 s (the field of view widening 14°) to look over the Sound at The Crown's World-Tree, Rime-Firth west of it and Barrow-Eyot east, then eases home; a banner names them. Once per hero (by class) per save (`PartyProgress.reveals_seen`, `[caldera] reveals`), never mid-fight, each split-screen viewport its own.
 
 **Chime-posts** (four: Bramblebridge, the Moss-Oaks, Doverslap, Hearthstead) are checkpoints (`ChimePost.checkpoint`: ringing one makes it where that hero gets back up) and card-loadout stations: in the Caldera, the Grimoire Binder opens anywhere to read, but `_equip` and `press_seal` are refused more than 14 m from a checkpoint post ("Cards and gear change at a chime-post: ring one first").
 

@@ -67,6 +67,10 @@ const BRAMBLE_BRIDGE: StringName = &"bramble_bridge"
 const MOSS_OAK_HOLLOW: StringName = &"moss_oak_hollow"
 const DOVER_SLAP_FALLS: StringName = &"dover_slap_falls"
 const RING_OF_THE_CAIRNSMAN: StringName = &"ring_of_the_cairnsman"
+## The Caldera's three Friction Isles, each in its own light (docs/33 §3.3-3.4): their rock, their exposure, their Sign.
+const IRON_NESS: StringName = &"iron_ness"
+const BARROW_EYOT: StringName = &"barrow_eyot"
+const RIME_FIRTH: StringName = &"rime_firth"
 
 ## The biome each place we've built wears (the places of MythopoeticAtlas.PLACE_ZONES).
 const PLACE_BIOMES: Dictionary[String, StringName] = {
@@ -485,6 +489,22 @@ static func _build_biomes() -> void:
 	_biome(RING_OF_THE_CAIRNSMAN, "The Ring of the Cairnsman", Sign.SIGN_STAR_TIDE, Color(0.44, 0.5, 0.38), ARENA_FLOOR, Color(0.42, 0.36, 0.3), GRANITE,
 		Color(0.98, 0.96, 0.94), 1.18, Color(0.3, 0.48, 0.74), Color(0.9, 0.86, 0.86), Color(0.82, 0.84, 0.88), 0.0025,
 		Vector3i(300, 160, 80), [KIT_TREE_HIGHLAND_PINE], heather, Color(0.44, 0.54, 0.36))
+	# The Caldera's Friction Isles (docs/33 §3.3-3.4). Each once borrowed a Vale petal's sky; now each wears the light of
+	# its own rock and exposure (docs/20 Part I §1.3), leaning to its Sign, so a party knows the isle by its air alone.
+	# Iron-Ness, the west: hydrothermal ironstone, forge smoke and steam, so a warm amber haze over rust bracken.
+	_biome(IRON_NESS, "Iron-Ness", Sign.SIGN_IRON_ROOT, Color(0.5, 0.42, 0.28), Color(0.7, 0.6, 0.48), Color(0.48, 0.34, 0.24), Color(0.52, 0.4, 0.34),
+		Color(1.0, 0.86, 0.68), 1.2, Color(0.34, 0.5, 0.72), Color(0.96, 0.84, 0.68), Color(0.9, 0.8, 0.66), 0.0024,
+		Vector3i(600, 200, 150), [KIT_TREE_HIGHLAND_PINE], [Color(0.98, 0.8, 0.2), Color(0.95, 0.66, 0.3), Color(0.96, 0.95, 0.88)], Color(0.5, 0.48, 0.3))
+	# Barrow-Eyot, the east: a sunken stretch of the rim gone to tidal fen, where the Star-Tide bleeds violet into the sea;
+	# a soft lilac light through fen mist over heather and sea-lavender.
+	_biome(BARROW_EYOT, "Barrow-Eyot", Sign.SIGN_STAR_TIDE, Color(0.44, 0.46, 0.36), Color(0.68, 0.64, 0.58), Color(0.36, 0.32, 0.3), Color(0.5, 0.48, 0.5),
+		Color(0.98, 0.9, 0.92), 1.05, Color(0.32, 0.4, 0.68), Color(0.9, 0.82, 0.88), Color(0.8, 0.76, 0.86), 0.0042,
+		Vector3i(800, 260, 120), [KIT_TREE_WEEPING_WILLOW], heather, Color(0.42, 0.5, 0.34))
+	# Rime-Firth, the north: the high basalt rim facing The Breach, snow from altitude and sea-fret from the gales;
+	# a crisp cold azure morning over pale cotton-grass.
+	_biome(RIME_FIRTH, "Rime-Firth", Sign.SIGN_RIME_GALE, Color(0.5, 0.54, 0.48), Color(0.72, 0.72, 0.7), Color(0.38, 0.38, 0.36), Color(0.36, 0.38, 0.42),
+		Color(0.9, 0.95, 1.0), 1.28, Color(0.2, 0.46, 0.8), Color(0.84, 0.92, 0.97), Color(0.86, 0.91, 0.95), 0.0034,
+		Vector3i(500, 220, 140), [KIT_TREE_HIGHLAND_PINE], [Color(0.97, 0.97, 0.95), Color(0.62, 0.74, 0.92), Color(0.93, 0.92, 0.84)], Color(0.5, 0.56, 0.46))
 
 
 static func _biome(id: StringName, label: String, sign: int, turf: Color, road: Color, hollow: Color, crag: Color,

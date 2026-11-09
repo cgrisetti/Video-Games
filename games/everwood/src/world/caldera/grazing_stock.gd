@@ -34,6 +34,18 @@ const NECK: Array[Vector3] = [Vector3(0.0, 0.72, 0.4), Vector3(0.0, 1.12, 0.82),
 const AWAKE_RANGE: Array[float] = [70.0, 80.0, 40.0, 50.0]
 const SLEEP_CHECK: float = 0.7
 const STOPS: int = 5
+## Their voices (PastoralVoices, docs/33 §10), by kind: seconds between calls while the flock is awake, how far a call
+## carries (metres), how loud, and how high its head is when it calls. A beast startled by a hero calls at once
+## (a ewe bleats, a hen clucks); a goose holds its ground and honks at any hero within GOOSE_GUARD.
+const CALL_GAP: Array[Vector2] = [Vector2(7.0, 16.0), Vector2(14.0, 30.0), Vector2(3.0, 8.0), Vector2(9.0, 20.0)]
+const CALL_REACH: Array[float] = [55.0, 70.0, 30.0, 45.0]
+const CALL_DB: Array[float] = [-12.0, -10.0, -16.0, -12.0]
+const CALL_HEIGHT: Array[float] = [0.8, 1.3, 0.35, 0.55]
+const STARTLE_COOLDOWN: float = 2.5
+const GOOSE_GUARD: float = 5.0
+## A lamb or a calf is this small or smaller; a calf calls this much higher than its mother.
+const YOUNG_SIZE: float = 0.7
+const CALF_PITCH: float = 1.35
 
 var kind: Kind = Kind.SHEEP
 var count: int = 6
@@ -52,6 +64,17 @@ var _yaw: PackedFloat32Array = PackedFloat32Array()
 var _spots: PackedVector3Array = PackedVector3Array()
 var _nap: float = 0.0
 var _owed: float = 0.0
+## The flock's calls so far, and the last one's voice and take (the checks).
+var calls: int = 0
+var last_voice: int = -1
+var last_take: int = -1
+var _voice: AudioStreamPlayer3D
+var _call_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _call_left: float = 0.0
+var _since_call: float = 99.0
+## Which beasts a hero startled this tick, and last tick (a beast calls when it's newly startled).
+var _startled_now: PackedByteArray = PackedByteArray()
+var _startled_before: PackedByteArray = PackedByteArray()
 
 static var _meshes: Dictionary[int, ArrayMesh] = {}
 ## Where the party stands, looked up once a physics frame for every flock on the island.
@@ -95,6 +118,10 @@ func _ready() -> void:
 		_shy.append(Vector3.ZERO)
 		_spots.append(Vector3.ZERO)
 		_yaw.append(rng.randf() * TAU)
+	_startled_now.resize(count)
+	_startled_before.resize(count)
+	_call_rng.seed = stock_seed * 104729 + int(kind)
+	_call_left = _call_rng.randf_range(0.0, CALL_GAP[kind].y)
 	_place(0.0, true)
 
 
@@ -138,6 +165,7 @@ func _physics_process(delta: float) -> void:
 		_owed = 0.0
 		return
 	_place(_owed, false, heroes)
+	_call_now(_owed, heroes)
 	_owed = 0.0
 
 
@@ -159,8 +187,60 @@ func _heroes_near() -> Array[Vector3]:
 	return near
 
 
+## The flock's voice while it's awake: a call every so often from one beast, at once when a hero startles one,
+## and a goose's honk at a hero who comes too near.
+func _call_now(delta: float, heroes: Array[Vector3]) -> void:
+	_call_left -= delta
+	_since_call += delta
+	var caller: int = -1
+	if _since_call >= STARTLE_COOLDOWN:
+		for index: int in count:
+			if _startled_now[index] == 1 and _startled_before[index] == 0:
+				caller = index
+				break
+	if caller < 0 and kind == Kind.GEESE and _since_call >= STARTLE_COOLDOWN * 2.0:
+		for index: int in count:
+			for hero: Vector3 in heroes:
+				if Vector2(_spots[index].x - hero.x, _spots[index].z - hero.z).length() < GOOSE_GUARD:
+					caller = index
+	if caller < 0 and _call_left <= 0.0:
+		caller = _call_rng.randi() % maxi(count, 1)
+	_startled_before = _startled_now.duplicate()
+	if caller >= 0:
+		call_out(caller)
+
+
+## One beast calls (its kind's voice, a lamb's or a calf's if it's young), from where it stands.
+func call_out(index: int) -> void:
+	var young: bool = _size[index] <= YOUNG_SIZE
+	var voice: PastoralVoices.Voice = [PastoralVoices.Voice.SHEEP, PastoralVoices.Voice.CATTLE, PastoralVoices.Voice.HENS,
+		PastoralVoices.Voice.GEESE][kind]
+	if kind == Kind.SHEEP and young:
+		voice = PastoralVoices.Voice.LAMB
+	var take: int = _call_rng.randi() % PastoralVoices.TAKES
+	var sound: AudioStreamWAV = PastoralVoices.stream(voice, take)
+	if sound == null:
+		# The voices are still being made: try again in a moment.
+		_call_left = 0.5
+		return
+	_call_left = _call_rng.randf_range(CALL_GAP[kind].x, CALL_GAP[kind].y)
+	_since_call = 0.0
+	calls += 1
+	last_voice = voice
+	last_take = take
+	if _voice == null:
+		_voice = PastoralVoices.player("Voice", CALL_REACH[kind], CALL_DB[kind])
+		add_child(_voice)
+	_voice.position = _spots[index] - global_position + Vector3(0.0, CALL_HEIGHT[kind] * _size[index], 0.0)
+	_voice.stream = sound
+	_voice.pitch_scale = CALF_PITCH if kind == Kind.CATTLE and young else 1.0
+	if not PastoralVoices.silent():
+		_voice.play()
+
+
 func _place(delta: float, at_once: bool, heroes: Array[Vector3] = []) -> void:
 	var now: float = CombatDirector.game_time() + stock_seed * 3.7
+	_startled_now.fill(0)
 	var speed: float = SPEED[kind]
 	var pause: float = PAUSE[kind]
 	var home: Vector3 = global_position
@@ -184,6 +264,7 @@ func _place(delta: float, at_once: bool, heroes: Array[Vector3] = []) -> void:
 			if shy > 0.0 and gap < shy:
 				push += (away / maxf(gap, 0.05)) * (shy - gap) * 1.6
 				startled = true
+				_startled_now[index] = 1
 		var shy_now: Vector3 = _shy[index]
 		var target: Vector3 = (shy_now + push).limit_length(shy * 2.2) if startled else Vector3.ZERO
 		shy_now = target if at_once else shy_now.lerp(target, clampf(delta * (5.0 if startled else 0.6), 0.0, 1.0))

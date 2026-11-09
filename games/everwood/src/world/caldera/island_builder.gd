@@ -253,6 +253,23 @@ func _meadow_style(_x: float, _z: float) -> Vector3:
 	return Vector3(1.0, 1.0, 0.0)
 
 
+## Which wildflower each drift is, by share (CalderaKit.Flower order; they sum to 1). An isle with a colour
+## field of its own leans its drifts to it (docs/33 §3.3).
+func meadow_flower_shares() -> Array[float]:
+	return MEADOW_FLOWER_SHARES
+
+
+## The island's colour as the other isles see it (its far silhouette): its ground's, unless its plants read
+## as one mass of colour from afar (docs/33 §3.3).
+func far_color(x: float, z: float, height: float, up: float) -> Color:
+	return surface_color(x, z, height, up)
+
+
+## Where the island's Beacon stands (its ground, in the island's frame), or Vector3.INF for an isle with none.
+func beacon_spot() -> Vector3:
+	return Vector3.INF
+
+
 ## The corridor's stage a spot is in (its sky, fog and music): the named place, unless the island
 ## keeps smaller places inside its stages (a steading in a valley).
 func stage_name_at(at: Vector3) -> String:
@@ -1292,13 +1309,14 @@ func _meadow(chunk: Vector2i, origin: Vector2, pads: PackedFloat32Array, ramps: 
 			root.a = 1.0 - style.z
 			(cell["colors"] as Array).append(root)
 	# Wildflowers in little drifts of one kind.
+	var shares: Array[float] = meadow_flower_shares()
 	for drift: int in MEADOW_FLOWER_CLUMPS:
 		var cx: float = origin.x + rng.randf() * size
 		var cz: float = origin.y + rng.randf() * size
 		var pick: float = rng.randf()
 		var kind: int = 0
-		while kind < MEADOW_FLOWER_SHARES.size() - 1 and pick > MEADOW_FLOWER_SHARES[kind]:
-			pick -= MEADOW_FLOWER_SHARES[kind]
+		while kind < shares.size() - 1 and pick > shares[kind]:
+			pick -= shares[kind]
 			kind += 1
 		for bloom: int in rng.randi_range(3, 9):
 			var x: float = cx + rng.randf_range(-0.9, 0.9)
