@@ -40,6 +40,14 @@ const ATELIER_RANGE: float = 200.0
 const ATELIER_MARGIN: float = 14.0
 ## Small scatter (stones, reeds, ferns) is gone past this distance.
 const SMALL_RANGE: float = 220.0
+## A landblock with this many trees of one species (or more) is a dense stand (the
+## Ariundle Moss-Oaks' 1,308 sessile oaks, docs/27 §8): its trees are grouped into
+## DENSE_CELL m cells, each sculpted only within DENSE_ATELIER_RANGE of a camera and
+## a stand-in past it, so four cameras in the wood draw a few cells of sculpted oaks
+## instead of every oak within ATELIER_RANGE. A sparser stand keeps the full range.
+const DENSE_STAND: int = 32
+const DENSE_ATELIER_RANGE: float = 96.0
+const DENSE_CELL: float = 32.0
 
 static var _vertex_material: ShaderMaterial
 static var _species: Dictionary[int, ArrayMesh] = {}
@@ -732,8 +740,26 @@ static func atelier_mesh(species: int) -> ArrayMesh:
 			_layered_fern(parts, Vector3.ZERO, 1.0, 1)
 		_:
 			made = false
-	_atelier[species] = parts.commit() if made else null
+	_atelier[species] = _with_lods(parts.commit()) if made else null
 	return _atelier[species]
+
+
+## Where a stand of `count` trees of one species hands its sculpted meshes over to its stand-ins.
+static func atelier_range(count: int) -> float:
+	return DENSE_ATELIER_RANGE if count >= DENSE_STAND else ATELIER_RANGE
+
+
+## The same mesh with the engine's own levels of detail on every surface (the same
+## vertices, fewer triangles), picked per MultiMesh by how big it draws on screen:
+## the cell of trees a camera stands in keeps every triangle, the cells further off
+## shed most of theirs, and the materials, colours and sway stay the same.
+static func _with_lods(mesh: ArrayMesh) -> ArrayMesh:
+	var importer: ImporterMesh = ImporterMesh.new()
+	for surface: int in mesh.get_surface_count():
+		importer.add_surface(mesh.surface_get_primitive_type(surface), mesh.surface_get_arrays(surface), [], {}, mesh.surface_get_material(surface),
+			mesh.surface_get_name(surface))
+	importer.generate_lods(25.0, 60.0, [])
+	return importer.get_mesh()
 
 
 ## Whether a scatter species shows an atelier mesh near a camera.
