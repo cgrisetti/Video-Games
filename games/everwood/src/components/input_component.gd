@@ -48,6 +48,8 @@ signal atlas_requested
 signal options_requested
 ## F1, or Share held and D-Pad ↑: the Developer Tools open (or close).
 signal dev_tools_requested
+## The quest book (B; on a pad, hold Share and tap D-Pad ↓): open it, or close it again.
+signal quest_book_requested
 ## Up / down / accept / back for an open menu (MENU_* below).
 signal menu_input(action: StringName)
 
@@ -83,6 +85,8 @@ const ACTION_JOIN: StringName = &"player_join"
 const ACTION_OPTIONS: StringName = &"player_options"
 ## The Developer Tools (13_PLAYTEST §2.13), apart from the player's menus: F1; on a pad, hold Share and tap D-Pad ↑.
 const ACTION_DEV_TOOLS: StringName = &"player_dev_tools"
+## The quest book: B on the keyboard; on a pad it's Share held and D-Pad ↓ (no button to spare).
+const ACTION_QUEST_BOOK: StringName = &"player_quest_book"
 ## Camera pitch and mouse-look (18 GDD §6).
 const ACTION_CAMERA_PITCH_UP: StringName = &"cam_pitch_up"
 const ACTION_CAMERA_PITCH_DOWN: StringName = &"cam_pitch_down"
@@ -97,7 +101,7 @@ const BUTTON_ACTIONS: Array[StringName] = [
 	ACTION_LIGHT, ACTION_HEAVY, ACTION_DODGE, ACTION_TRIGGER_L, ACTION_TRIGGER_R, ACTION_ULT,
 	ACTION_TETHER_UP, ACTION_TETHER_RIGHT, ACTION_TETHER_DOWN, ACTION_TETHER_LEFT,
 	ACTION_CHANGE_CLASS, ACTION_CHANGE_MODE, ACTION_CHANGE_CALLING, ACTION_JUMP, ACTION_SPRINT, ACTION_PLAYTEST_CYCLE, ACTION_OPTIONS,
-	ACTION_DEV_TOOLS,
+	ACTION_DEV_TOOLS, ACTION_QUEST_BOOK,
 ]
 
 const MENU_UP: StringName = &"up"
@@ -527,6 +531,11 @@ func poll(dt: float) -> void:
 	if share_held and _pressed(ACTION_TETHER_UP):
 		dev_tools_requested.emit()
 		_share_chorded = true
+	if _pressed(ACTION_QUEST_BOOK):
+		quest_book_requested.emit()
+	if share_held and _pressed(ACTION_TETHER_DOWN):
+		quest_book_requested.emit()
+		_share_chorded = true
 	if not share_held and not _was_held.get(ACTION_CHANGE_CLASS, false):
 		_share_chorded = false
 	if _tapped(ACTION_OPTIONS):
@@ -618,6 +627,8 @@ func _poll_menu() -> void:
 		options_requested.emit()
 	if _pressed(ACTION_DEV_TOOLS):
 		dev_tools_requested.emit()
+	if _pressed(ACTION_QUEST_BOOK):
+		quest_book_requested.emit()
 	# Esc / Options' hold time counts in a menu too, so a long hold (leaving the party) isn't a tap.
 	if not _held.get(ACTION_OPTIONS, false):
 		_hold_time[ACTION_OPTIONS] = 0.0

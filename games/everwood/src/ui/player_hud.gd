@@ -21,9 +21,10 @@ const MARGIN: float = 14.0
 const BOSS_BAR_WIDTH: float = 0.56
 const FONT_SIZE: int = 17
 const SMALL_FONT_SIZE: int = 13
-## Act I's quest tracker and the Tidal Horologium (docs/29 §7).
+## Act I's Tidal Horologium (docs/29 §7); the quest tracker is its own page (QuestTracker).
 const QUEST_FONT_SIZE: int = 15
-const QUEST_TRACKER_COLOR: Color = Color(1.0, 0.9, 0.62)
+## The tide dial's line, as a share of the view's height (under the quest tracker).
+const TIDE_DIAL_TOP: float = 0.64
 const TIDE_DIAL_COLOR: Color = Color(0.7, 0.88, 1.0)
 ## The tide dial shows within this of North Quay (docs/28 §6.5: 300 m of the quays).
 const TIDE_DIAL_REACH: float = 300.0
@@ -47,6 +48,8 @@ const BANNER_FADE_TIME: float = 0.3
 ## A new trail level's banner, in the Wayfarer Pennant's Saffron-Gold.
 const MILESTONE_COLOR: Color = Color(0.98, 0.72, 0.18)
 const MILESTONE_BANNER_TIME: float = 3.0
+## How long a banner that waited for the quest-complete card stays up.
+const BANNER_AFTER_CARD_TIME: float = 4.5
 
 var actor: ActorBase
 ## The bottom-centre cross of move slots and gauges.
@@ -65,9 +68,12 @@ var _banner: VBoxContainer
 var _banner_title: Label
 var _banner_subtitle: Label
 var _prompt_label: Label
-## Act I (docs/29 §7): the quest under way and its step, and the Tidal Horologium once Q04 opens it.
-var _quest_label: Label
+## Act I (docs/29 §7): the quest tracker (QuestTracker, right of the view), and the Tidal Horologium once Q04 opens it.
+var quest_tracker: QuestTracker
 var _tide_label: Label
+## The "QUEST COMPLETE!" card while it's up, and the banners waiting for it to go.
+var _quest_card: QuestCompleteCard
+var _waiting_banners: Array[Array] = []
 ## The menu open over this view (the Chime-Shrine's or the Scribe Desk's).
 var _menu: Control
 var _flow_flash_left: float = 0.0
@@ -192,26 +198,17 @@ func _ready() -> void:
 	_prompt_label.modulate = Color(0.75, 0.9, 1.0)
 	_prompt_label.visible = false
 	add_child(_prompt_label)
-	_quest_label = _label(QUEST_FONT_SIZE)
-	_quest_label.name = "QuestTracker"
-	_quest_label.anchor_left = 1.0
-	_quest_label.anchor_right = 1.0
-	_quest_label.anchor_top = 0.3
-	_quest_label.anchor_bottom = 0.3
-	_quest_label.offset_right = -MARGIN
-	_quest_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_quest_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_quest_label.modulate = QUEST_TRACKER_COLOR
-	_quest_label.visible = false
-	add_child(_quest_label)
+	quest_tracker = QuestTracker.new()
+	quest_tracker.setup(actor, self)
+	quest_tracker.quest_finished.connect(show_quest_complete)
+	add_child(quest_tracker)
 	_tide_label = _label(QUEST_FONT_SIZE)
 	_tide_label.name = "TidalHorologium"
 	_tide_label.anchor_left = 1.0
 	_tide_label.anchor_right = 1.0
-	_tide_label.anchor_top = 0.3
-	_tide_label.anchor_bottom = 0.3
+	_tide_label.anchor_top = TIDE_DIAL_TOP
+	_tide_label.anchor_bottom = TIDE_DIAL_TOP
 	_tide_label.offset_right = -MARGIN
-	_tide_label.offset_top = QUEST_FONT_SIZE * 3.4
 	_tide_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_tide_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_tide_label.modulate = TIDE_DIAL_COLOR
@@ -225,6 +222,7 @@ func _ready() -> void:
 			actor.input.atlas_requested.connect(toggle_atlas)
 			actor.input.options_requested.connect(toggle_options)
 			actor.input.dev_tools_requested.connect(toggle_dev_tools)
+			actor.input.quest_book_requested.connect(toggle_quest_book)
 	add_to_group(GROUP)
 	CombatDirector.current.glimmer_opened.connect(_on_glimmer_opened)
 	CombatDirector.current.bravery_countered.connect(_on_bravery_countered)
@@ -296,10 +294,10 @@ func _process(delta: float) -> void:
 ## opened it, the Tidal Horologium's tide line.
 func _refresh_quest() -> void:
 	var quests: QuestManager = QuestManager.current
-	var line: String = quests.tracker_line() if quests != null else ""
-	_quest_label.visible = line != "" and _live_menu() == null
-	if _quest_label.visible:
-		_quest_label.text = line
+	# The tracker stays up beside a talk (the talk is usually about the quest); other menus cover it.
+	quest_tracker.visible = quests != null and quests.active_quest_id() != &"" and (_live_menu() == null or _live_menu() is TalkBox)
+	# The diamonds step aside under the talk box and the quest book (they sit over play, not in a full-screen book).
+	cross_grimoire.visible = not (_live_menu() is TalkBox or _live_menu() is QuestBook)
 	var dial: bool = quests != null and (quests.has_unlock(ActOneQuests.UNLOCK_TIDAL_HOROLOGIUM) or quests.active_quest_id() == ActOneQuests.Q04)
 	dial = dial and CalderaWorldState.current != null and _level() is CalderaArchipelagoWorld \
 		and CartographyBaker.active_isle(_level()) == CalderaAtlas.ISLE_EMBERSHORE \
@@ -311,7 +309,86 @@ func _refresh_quest() -> void:
 
 ## The quest tracker's text, or "" when it's hidden.
 func quest_text() -> String:
-	return _quest_label.text if _quest_label.visible else ""
+	return "\n".join(quest_tracker.lines()) if quest_tracker.visible else ""
+
+
+# --- Talking and quests (TalkBox, QuestBook, QuestCompleteCard) --------------------------------
+
+## Opens the talk box with a townsperson along the bottom of this hero's view (never mid-fight).
+func open_talk(npc: EverwoodNPC) -> bool:
+	if _live_menu() != null or actor == null or npc == null:
+		return false
+	if actor.sign_flow != null and actor.sign_flow.is_in_combat:
+		AudioCues.play(&"refuse")
+		show_banner("NOT MID-FIGHT", "Calm things down first, then talk.", Color(1.0, 0.6, 0.45), 1.5)
+		return false
+	var talk: TalkBox = TalkBox.new()
+	talk.setup(actor, npc, self)
+	_menu = talk
+	add_child(talk)
+	return true
+
+
+func talk_box() -> TalkBox:
+	return _live_menu() as TalkBox
+
+
+## B (or Share and D-Pad ↓): the quest book opens out of combat and closes again.
+func toggle_quest_book() -> void:
+	if quest_book() != null:
+		quest_book().close()
+	else:
+		open_quest_book()
+
+
+## Opens the quest book down the left of this hero's view. Returns whether it opened.
+func open_quest_book() -> bool:
+	if _live_menu() != null or actor == null:
+		return false
+	if actor.sign_flow != null and actor.sign_flow.is_in_combat:
+		AudioCues.play(&"refuse")
+		show_banner("NOT MID-FIGHT", "The quest book opens once the fight is over.", Color(1.0, 0.6, 0.45), 1.5)
+		return false
+	var book: QuestBook = QuestBook.new()
+	book.setup(actor, self)
+	_menu = book
+	add_child(book)
+	AudioCues.play(&"menu_move", 0.8)
+	return true
+
+
+func quest_book() -> QuestBook:
+	return _live_menu() as QuestBook
+
+
+## The "QUEST COMPLETE!" card for a quest just finished. A banner already up waits under it
+## (a level's banner is dropped: the card says the level itself).
+func show_quest_complete(quest_id: StringName) -> void:
+	if is_instance_valid(_quest_card):
+		_quest_card.dismiss()
+	if _banner.visible and not _banner_title.text.begins_with("LEVEL "):
+		_waiting_banners.push_front([_banner_title.text, _banner_subtitle.text, _banner_title.modulate, BANNER_AFTER_CARD_TIME])
+	_banner.visible = false
+	_quest_card = QuestCompleteCard.new()
+	_quest_card.setup(quest_id)
+	_quest_card.finished.connect(_show_waiting_banner)
+	add_child(_quest_card)
+
+
+func quest_complete_card() -> QuestCompleteCard:
+	return _quest_card if is_instance_valid(_quest_card) and not _quest_card.is_queued_for_deletion() else null
+
+
+## The card has gone: the banners that waited for it come up one after another.
+func _show_waiting_banner() -> void:
+	_quest_card = null
+	if _waiting_banners.is_empty() or not is_inside_tree():
+		return
+	var next: Array = _waiting_banners.pop_front()
+	var seconds: float = float(next[3]) if float(next[3]) > 0.0 else BANNER_AFTER_CARD_TIME
+	show_banner(String(next[0]), String(next[1]), next[2] as Color, seconds)
+	if not _waiting_banners.is_empty():
+		get_tree().create_timer(seconds, true, false, true).timeout.connect(_show_waiting_banner)
 
 
 ## The Tidal Horologium's text, or "" when it's hidden.
@@ -627,6 +704,9 @@ func prompt_text() -> String:
 ## A big centred message for the whole party, like VICTORY! It stays up until
 ## another replaces it, or for `seconds` (real time) when that's above zero.
 func show_banner(title: String, subtitle: String, color: Color, seconds: float = 0.0) -> void:
+	if quest_complete_card() != null:
+		_waiting_banners.append([title, subtitle, color, seconds])
+		return
 	_banner_title.text = title
 	_banner_title.modulate = color
 	_banner_subtitle.text = subtitle

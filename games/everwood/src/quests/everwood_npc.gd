@@ -1,8 +1,8 @@
 ## One of Act I's named townsfolk (docs/28 §2.1; docs/29 §6): Master Alf-Wright,
 ## Reeve Nokes, Dame Tenar-Moss and Miller Hob. A TownsfolkNPC who speaks:
-## each press of light shows their next line on that hero's screen (a banner
-## with their name), and the last line tells the QuestManager they were spoken
-## to. What they say comes from the director (`dialogue`), from the quest
+## light opens the talk box on that hero's screen (TalkBox), which stays up
+## until they say goodbye, and hearing the last line tells the QuestManager
+## they were spoken to. What they say comes from the director (`dialogue`), from the quest
 ## under way, so the same person says new things as the story moves.
 ##
 ## Forged and Restored (Hobb's "Forging"): a Forged townsperson stands grey,
@@ -17,7 +17,6 @@ signal restored(npc: EverwoodNPC)
 
 enum NpcState { RESTORED, FORGED }
 
-const LINE_TIME: float = 7.0
 const NAME_GOLD: Color = Color(1.0, 0.88, 0.56)
 const FORGED_GREY: Color = Color(0.66, 0.66, 0.64)
 ## How grey a Forged townsperson's colours go (0 = untouched, 1 = all grey).
@@ -88,35 +87,68 @@ func interact(actor: ActorBase) -> void:
 		if services_open() and role == Role.VENDOR:
 			wares_requested.emit(actor, self)
 		return
+	# The talk box on this hero's screen (TalkBox): it stays up until they say goodbye.
+	var hud: PlayerHUD = PlayerHUD.for_actor(get_tree(), actor) if is_inside_tree() else null
+	if hud != null:
+		var open: TalkBox = hud.talk_box()
+		if open != null and open.npc == self:
+			open.next_line()
+		else:
+			hud.open_talk(self)
+		return
+	# No screen for this hero (a scripted run): the lines are heard one press at a time.
 	var index: int = _line_index.get(actor.player_id, 0)
 	if index >= lines.size():
 		index = 0
-	show_line(actor, lines[index])
 	index += 1
 	_line_index[actor.player_id] = index
 	if index >= lines.size():
 		_line_index[actor.player_id] = 0
-		spoken_to.emit(actor, self)
-		if QuestManager.current != null:
-			QuestManager.current.report(QuestStepResource.Kind.TALK_TO, npc_id)
+		heard_all(actor)
 
 
 func current_lines() -> PackedStringArray:
 	return dialogue.call() if dialogue.is_valid() else PackedStringArray()
 
 
-## Shows one line on that hero's screen: "SPEAKER: words" puts the speaker in the title.
-func show_line(actor: ActorBase, line: String) -> void:
-	var speaker: String = npc_name
-	var words: String = line
+## The hero has heard everything this townsperson had to say: that counts as speaking to them.
+func heard_all(actor: ActorBase) -> void:
+	spoken_to.emit(actor, self)
+	if QuestManager.current != null:
+		QuestManager.current.report(QuestStepResource.Kind.TALK_TO, npc_id)
+
+
+## A line split into who says it and what they say: "NOKES: Chop them!" is Nokes speaking;
+## a plain line is `speaker`'s own.
+static func parse_line(line: String, speaker: String) -> PackedStringArray:
 	var colon: int = line.find(": ")
 	if colon > 0 and colon < 24 and line.substr(0, colon) == line.substr(0, colon).to_upper():
-		speaker = line.substr(0, colon).capitalize()
-		words = line.substr(colon + 2)
-	var level: LevelBase = get_tree().current_scene as LevelBase if is_inside_tree() else null
-	var hud: PlayerHUD = level.huds.get(actor.player_id) as PlayerHUD if level != null else null
-	if hud != null:
-		hud.show_banner(speaker.to_upper(), words, FORGED_GREY if is_forged() else NAME_GOLD, LINE_TIME)
+		return PackedStringArray([_title_case(line.substr(0, colon)), line.substr(colon + 2)])
+	return PackedStringArray([speaker, line])
+
+
+## "TENAR-MOSS" reads "Tenar-Moss".
+static func _title_case(shout: String) -> String:
+	var out: String = ""
+	var start: bool = true
+	for index: int in shout.length():
+		var letter: String = shout[index]
+		out += letter.to_upper() if start else letter.to_lower()
+		start = letter == "-" or letter == " " or letter == "'"
+	return out
+
+
+## The townsperson standing with this one whose name holds `speaker` ("Tenar-Moss" finds
+## Dame Tenar-Moss), so a two-hander shows the right face; null for this one or none.
+func talk_partner(speaker: String) -> EverwoodNPC:
+	if speaker == npc_name or get_parent() == null:
+		return null
+	var wanted: String = speaker.to_lower()
+	for node: Node in get_parent().get_children():
+		var other: EverwoodNPC = node as EverwoodNPC
+		if other != null and other != self and other.npc_name.to_lower().contains(wanted):
+			return other
+	return null
 
 
 ## Host: the colour floods back (Hob's hearth, docs/28 §5.6), on every peer.

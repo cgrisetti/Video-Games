@@ -324,9 +324,26 @@ func _exit_tree() -> void:
 		current = null
 
 
+## The seed the director's own choices start from (a walk's opening seed, a silence's length).
+const RNG_SEED: int = 16
+
+
+## Checks: forgets the fights before (the exhale, its breath and the Mellow relief phrases after
+## it) and starts the director's choices over from `value`, so a check of the score hears the same
+## plain walk whatever ran before it in the same session.
+func reset_for_testing(value: int = RNG_SEED) -> void:
+	_rng.seed = value
+	_relief_phrases = 0
+	_post_fight_return = false
+	_exhale_left = 0.0
+	_breath_left = 0.0
+	if state != AcousticState.EXPLORATION:
+		_set_state(AcousticState.EXPLORATION)
+
+
 func _ready() -> void:
 	_silent = DisplayServer.get_name() == "headless"
-	_rng.seed = 16
+	_rng.seed = RNG_SEED
 	_build_buses()
 	for index: int in 2:
 		var deck: AudioStreamPlayer = AudioStreamPlayer.new()

@@ -23,6 +23,7 @@
 extends RefCounted
 
 const Kind = QuestStepResource.Kind
+const QUEST_UI: GDScript = preload("res://tools/test_quest_ui.gd")
 
 var check: Callable
 var level: CalderaArchipelagoWorld
@@ -61,6 +62,8 @@ func run(live_level: CalderaArchipelagoWorld, checker: Callable, scene_tree: Sce
 		progress.hero_xp[class_id] = 0
 	quests.reset_for_testing()
 	quests.start_act_one()
+	# The quest screens first (they reset the ledger and start Act I afresh when done).
+	await QUEST_UI.new().run(level, check, tree, director, _p1())
 	await _check_q01()
 	await _check_q02()
 	await _check_q03()
@@ -544,10 +547,15 @@ func _tidy() -> void:
 	await _frames(20)
 
 
+## Hears a townsperson out: the first press opens the talk box, each one after reads the next
+## line, and the box is closed again afterwards (TalkBox stays up until goodbye).
 func _talk(npc: EverwoodNPC, actor: ActorBase) -> void:
 	var lines: int = npc.current_lines().size()
 	for index: int in lines:
 		npc.interact(actor)
+	var hud: PlayerHUD = PlayerHUD.for_actor(tree, actor)
+	if hud != null and hud.talk_box() != null:
+		hud.talk_box().close()
 
 
 func _party() -> Array[ActorBase]:

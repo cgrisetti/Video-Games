@@ -322,6 +322,9 @@ static func _moods_named(profile: ZoneMusicProfileResource, history: PackedInt32
 func _check_caldera() -> void:
 	CalderaArchipelagoWorld.use_boot_zone(CalderaArchipelagoWorld.ZONE_EMBERSHORE)
 	InstanceManager.current.previous_instance = &""
+	# A plain walk: forget the earlier checks' fights (a boss's Mellow relief phrases) and start the
+	# director's own sequence over, so this check hears the same walk whatever ran before it.
+	director.reset_for_testing()
 	tree.change_scene_to_file(CALDERA_SCENE)
 	await _frames(12)
 	level = tree.current_scene as CalderaArchipelagoWorld
