@@ -26,7 +26,7 @@ const RAIL_HEIGHT = 0.55;
 
 const TERRAIN_SIZE = 90; // The ground reaches past the hedges, out to the painted hills.
 const TERRAIN_SEGMENTS = 270;
-const GRASS = new THREE.Color(0x55aa55);
+const GRASS = new THREE.Color(0x6fa04a); // A soft, warm meadow green.
 const BANK = new THREE.Color(0x8c7f6d);
 const BED = new THREE.Color(0x6d6457);
 

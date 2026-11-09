@@ -5,6 +5,7 @@ A playground for building small 3D browser games together by prompting Claude. T
 ## Stack
 
 - [Three.js](https://threejs.org/docs/) for 3D, plain JavaScript (ES modules, no TypeScript, no framework).
+- Lanternwood is drawn in a hand-painted storybook style (think Kiki's Delivery Service, Over the Garden Wall, Brambly Hedge). `painterly.js` paints every `MeshStandardMaterial` automatically (soft light steps, violet shadows, brushwork) and lays a painted finish over the picture with the [postprocessing](https://pmndrs.github.io/postprocessing/public/docs/) library. `foliage.js` has the leaf clumps for treetops and hedges and the wind-blown grass; `atmosphere.js` the drifting leaves and motes of light. New things look painted for free; give leafy shapes leaf cards (see `scenery.js`) so they don't look like smooth balls.
 - [Vite](https://vite.dev/) dev server. `npm install` once, then `npm run dev` and open http://localhost:5173.
 - No build or deploy step yet. If someone wants to share a game online, ask before adding one.
 

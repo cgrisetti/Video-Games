@@ -1,6 +1,7 @@
 import { ignoreHeldJump, isUsingController, controlSettings, setControlSetting } from './input.js';
 import { musicSettings, setMusicVolume, setMusicMuted, setMusicStyle, setMusicPaused } from './music.js';
 import { soundSettings, setSoundVolume, playPop } from './sounds.js';
+import { graphicsSettings, setPainted } from './painterly.js';
 
 // The menu: a start screen when the page opens, and the pause menu during play, with pages for
 // Settings and How to play. What's in it depends on where you are: in a game like Berry Rush you
@@ -29,6 +30,7 @@ const musicToggle = document.getElementById('music-toggle');
 const volumeSlider = document.getElementById('music-volume');
 const volumeValue = document.getElementById('music-volume-value');
 const styleChoice = document.getElementById('music-style');
+const paintedToggle = document.getElementById('painted-toggle');
 const invertX = document.getElementById('invert-x');
 const invertY = document.getElementById('invert-y');
 const soundSlider = document.getElementById('sound-volume');
@@ -141,6 +143,8 @@ function adjust(step) {
     playPop(1); // A sample, so you can hear how loud the effects are now.
   } else if (row === musicToggle) {
     setMusicMuted(!musicSettings.muted);
+  } else if (row === paintedToggle) {
+    setPainted(!graphicsSettings.painted);
   } else if (row === invertX || row === invertY) {
     const name = row === invertX ? 'invertX' : 'invertY';
     setControlSetting(name, !controlSettings[name]);
@@ -162,7 +166,7 @@ function showSettings() {
   soundSlider.value = Math.round(soundSettings.volume * 100);
   soundValue.textContent = `${soundSlider.value}%`;
   styleChoice.querySelector('.value').textContent = STYLES.find(([style]) => style === musicSettings.style)?.[1] ?? 'Forest';
-  for (const [button, on] of [[invertX, controlSettings.invertX], [invertY, controlSettings.invertY]]) {
+  for (const [button, on] of [[paintedToggle, graphicsSettings.painted], [invertX, controlSettings.invertX], [invertY, controlSettings.invertY]]) {
     button.querySelector('.value').textContent = on ? 'On' : 'Off';
     button.setAttribute('aria-checked', String(on));
   }
@@ -229,7 +233,7 @@ menu.addEventListener('click', (event) => {
     actions.returnToWoods();
   }
   if (action === 'quit') location.href = '../../';
-  if ([musicToggle, styleChoice, invertX, invertY].includes(button)) {
+  if ([musicToggle, styleChoice, paintedToggle, invertX, invertY].includes(button)) {
     choose(button); // (A tap doesn't point at the row first, the way a mouse does.)
     adjust(1);
   }
