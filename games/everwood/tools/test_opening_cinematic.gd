@@ -180,8 +180,12 @@ func _check_new_character() -> void:
 	# The rig's spawn pose: where it comes to rest over the hero standing at the spawn.
 	var spawn_pose: Transform3D = await _settled_pose(rig)
 	var shown: FilmMoment = _moment(director.film, 2.0)
-	check.call(shown.caption == film.all_captions()[0].text and shown.page,
-		"at 2 s the first caption shows on the page: \"%s\"" % shown.caption)
+	await _frames(1)
+	var ribbon_box: Rect2 = director.film.caption_rect()
+	var screen: Vector2 = director.film.area()
+	check.call(shown.caption == film.all_captions()[0].text and shown.page and ribbon_box.size.y > 0.0 and ribbon_box.size.y < screen.y * 0.2
+		and ribbon_box.position.y > screen.y * 0.7,
+		"at 2 s the first caption shows on the page in its ribbon at the foot of the screen (%d px tall): \"%s\"" % [roundi(ribbon_box.size.y), shown.caption])
 	shown = _moment(director.film, 16.0)
 	check.call(shown.caption == film.caption_at(16.0).text and shown.page and director.film.cues_fired.size() == _cues_up_to(16.0),
 		"at 16 s the fourth caption shows and every cue up to then is posted, in order")

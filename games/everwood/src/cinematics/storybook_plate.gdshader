@@ -30,9 +30,9 @@ uniform float glow = 0.0;
 uniform vec4 tint_color : source_color = vec4(0.549, 0.322, 0.851, 1.0);
 uniform vec2 tint_origin = vec2(0.5);
 uniform float tint_radius = 0.0;
-// water_rise: the sea's surface on the plate, and how far below it the sea still is.
+// water_rise: the sea's surface on the plate, and how far above it the sea has climbed now.
 uniform float sea_line = 0.555;
-uniform float sea_drop = 0.0;
+uniform float sea_rise = 0.0;
 // grey_drain_sweep: everything right of this x (plate fraction) is grey; above 1.5, none.
 uniform vec4 hush_color : source_color = vec4(0.431, 0.471, 0.502, 1.0);
 uniform float hush_edge = 2.0;
@@ -118,24 +118,27 @@ vec3 sails(vec2 p, vec3 base) {
 	return is_sail(from, sail) ? sail : under;
 }
 
-// water_rise: below the surface the sea is drawn `sea_drop` lower; the gap above it continues
-// the row just over the surface (the arches' legs run down into it).
-vec2 sea(vec2 p) {
-	if (sea_drop <= 0.0 || p.y < sea_line) {
-		return p;
+// water_rise: the sea climbs `sea_rise` up the page from its own surface, over the arches:
+// the water under the new line takes the colour of the sea just below the old one, with a
+// line of foam on top.
+vec3 sea_over(vec2 p, vec3 c) {
+	float top = sea_line - sea_rise;
+	if (sea_rise <= 0.0 || p.y < top - 0.006 || p.y > sea_line + 0.01) {
+		return c;
 	}
-	if (p.y < sea_line + sea_drop) {
-		return vec2(p.x, sea_line - 0.004);
-	}
-	return vec2(p.x, p.y - sea_drop);
+	// A soft sample of the sea under the old surface, so its ripples and marks don't streak upward.
+	vec3 water = (sample_plate(vec2(p.x, sea_line + 0.03)) + sample_plate(vec2(p.x, sea_line + 0.05)) + sample_plate(vec2(p.x, sea_line + 0.07))
+		+ sample_plate(vec2(p.x - 0.006, sea_line + 0.05)) + sample_plate(vec2(p.x + 0.006, sea_line + 0.05))) * 0.2;
+	float under = smoothstep(top - 0.003, top + 0.003, p.y);
+	float foam = 1.0 - smoothstep(0.0, 0.005, abs(p.y - top));
+	return mix(mix(c, mix(c, water, 0.65), under), vec3(0.93, 0.96, 0.95), foam * 0.8);
 }
 
 void fragment() {
 	vec2 p = framing(UV);
 	p.y -= lift;
 	bool off_page = p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0;
-	vec2 q = sea(p);
-	vec3 c = sails(q, sample_plate(q));
+	vec3 c = sea_over(p, sails(p, sample_plate(p)));
 	if (glow > 0.0) {
 		// The gold breathes brightest where the page is already gold (the sap's veins).
 		float gold = 1.0 - smoothstep(0.12, 0.45, distance(c, glow_color.rgb));

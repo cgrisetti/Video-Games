@@ -81,7 +81,7 @@ func page_index() -> int:
 
 
 func caption_text() -> String:
-	return (_caption.get_node(^"Words") as Label).text if _caption.visible else ""
+	return PrologueKit.caption_words(_caption)
 
 
 func set_skip_progress(progress: float) -> void:

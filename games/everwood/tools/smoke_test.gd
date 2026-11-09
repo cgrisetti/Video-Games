@@ -142,6 +142,8 @@ const KAIZEN_CHECKS: GDScript = preload("res://tools/test_phase12_kaizen.gd")
 const PLAYTEST_CHECKS: GDScript = preload("res://tools/test_playtest_feedback.gd")
 ## The title screen, New Game and Continue (tools/test_title_screen.gd), last.
 const TITLE_CHECKS: GDScript = preload("res://tools/test_title_screen.gd")
+## The opening film (tools/test_opening_cinematic.gd, docs/31), just before the title screen's.
+const OPENING_CINEMATIC_CHECKS: GDScript = preload("res://tools/test_opening_cinematic.gd")
 const TEST_SETTINGS_PATH: String = "user://smoke_test_settings.json"
 ## The Seal-and-Tuck Grimoire's 3-Stage Verification Suite (tools/test_equipment_grimoire_suite.gd): the linter, the maths, the split-screen and the network.
 const EQUIPMENT_GRIMOIRE_CHECKS: GDScript = preload("res://tools/test_equipment_grimoire_suite.gd")
@@ -261,6 +263,8 @@ func _run() -> void:
 	await INK_WELL_CHECKS.new().run(self, _check)
 	# The Ink Card Deck, after the Ink-Well.
 	await INK_DECK_CHECKS.new().run(self, _check)
+	# The opening film (docs/31) on scratch tales: the timeline, the seen flag, a new hero's film, skip and the late recap.
+	await OPENING_CINEMATIC_CHECKS.new().run(self, _check, TEST_SAVE_PATH)
 	# The title screen and its tales (docs/22), last of all, in a scratch tales folder.
 	await TITLE_CHECKS.new().run(self, _check, TEST_SAVE_PATH)
 	_remove_file(TEST_SAVE_PATH)

@@ -169,7 +169,12 @@ func consider(seat: PartyMember) -> void:
 	if seen:
 		seen_this_session[seat.player_id] = true
 		return
-	if seen_this_session.has(seat.player_id) or recaps.has(seat.player_id) or remote_recaps.has(seat.player_id):
+	if recaps.has(seat.player_id) or remote_recaps.has(seat.player_id):
+		return
+	if seen_this_session.has(seat.player_id):
+		# The same player back in another Fellowship: they've seen it, and so has this hero now.
+		var classes: Array[StringName] = [seat.class_id]
+		PartyProgress.current.mark_prologue_seen(classes)
 		return
 	start_recap(seat)
 

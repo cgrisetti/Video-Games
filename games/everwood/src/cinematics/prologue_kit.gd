@@ -35,6 +35,8 @@ const CAPTION_MAX_WIDTH_FRAC: float = 0.9
 const CAPTION_PAD_X_AT_1080P: float = 34.0
 const CAPTION_PAD_Y_AT_1080P: float = 12.0
 const CAPTION_CORNER_AT_1080P: int = 10
+## Where a caption ribbon keeps its words unbroken (its label holds them wrapped).
+const WORDS_META: StringName = &"caption_words"
 
 static var _warned: Dictionary[StringName, bool] = {}
 
@@ -86,7 +88,7 @@ static func _clear_effects(material: ShaderMaterial) -> void:
 	material.set_shader_parameter(&"blank", 0.0)
 	material.set_shader_parameter(&"glow", 0.0)
 	material.set_shader_parameter(&"tint_radius", 0.0)
-	material.set_shader_parameter(&"sea_drop", 0.0)
+	material.set_shader_parameter(&"sea_rise", 0.0)
 	material.set_shader_parameter(&"hush_edge", 2.0)
 	material.set_shader_parameter(&"mist_edge", -1.0)
 	material.set_shader_parameter(&"sail_pivot", Vector2(-10.0, -10.0))
@@ -115,7 +117,7 @@ static func _apply(material: ShaderMaterial, effect: CinematicEffectResource, sh
 				material.set_shader_parameter(&"tint_color", effect.color)
 		CinematicEffectResource.WATER_RISE:
 			material.set_shader_parameter(&"sea_line", SEA_LINE_FRAC)
-			material.set_shader_parameter(&"sea_drop", effect.rise_frac * (1.0 - progress))
+			material.set_shader_parameter(&"sea_rise", effect.rise_frac * progress)
 		CinematicEffectResource.GREY_DRAIN_SWEEP:
 			if started:
 				# The grey sweeps right to left: its edge runs from the page's right side to end_edge_x_frac.
@@ -153,7 +155,8 @@ static func make_caption(film: CinematicFilmResource) -> PanelContainer:
 	label.name = "Words"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# The ribbon wraps its own words (wrap_words): a Label's autowrap measures before it has a width.
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_override(&"font", CinematicCatalog.font(film.caption_font))
 	label.add_theme_color_override(&"font_color", film.caption_color)
@@ -179,15 +182,35 @@ static func show_caption(panel: PanelContainer, film: CinematicFilmResource, tex
 	back.set_corner_radius_all(maxi(2, roundi(CAPTION_CORNER_AT_1080P * ui_scale)))
 	label.add_theme_font_size_override(&"font_size", font_size)
 	var font: Font = label.get_theme_font(&"font")
-	var line: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size).x
-	var width: float = minf(line + 4.0, area.x * CAPTION_MAX_WIDTH_FRAC - pad.x * 2.0)
-	if label.text != text or not is_equal_approx(label.custom_minimum_size.x, width):
-		label.text = text
-		label.custom_minimum_size = Vector2(width, 0.0)
-		panel.reset_size()
+	var wrapped: String = wrap_words(font, text, font_size, area.x * CAPTION_MAX_WIDTH_FRAC - pad.x * 2.0)
+	if label.text != wrapped:
+		label.text = wrapped
+	panel.set_meta(WORDS_META, text)
+	panel.reset_size()
 	panel.position = Vector2((area.x - panel.size.x) * 0.5, area.y * (1.0 - CAPTION_BOTTOM_FRAC) - panel.size.y)
 	panel.modulate = Color(1.0, 1.0, 1.0, alpha)
 	panel.visible = true
+
+
+## The words on a caption ribbon now, as the timeline wrote them ("" when it's hidden).
+static func caption_words(panel: PanelContainer) -> String:
+	return str(panel.get_meta(WORDS_META, "")) if panel.visible else ""
+
+
+## `text` broken into lines no wider than `width` at `font_size` (a word wider than that keeps its own line).
+static func wrap_words(font: Font, text: String, font_size: int, width: float) -> String:
+	var lines: PackedStringArray = PackedStringArray()
+	var line: String = ""
+	for word: String in text.split(" ", false):
+		var longer: String = word if line == "" else line + " " + word
+		if line != "" and font.get_string_size(longer, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size).x > width:
+			lines.append(line)
+			line = word
+		else:
+			line = longer
+	if line != "":
+		lines.append(line)
+	return "\n".join(lines)
 
 
 ## A caption's fade at `at_s` inside its window (0 outside it).

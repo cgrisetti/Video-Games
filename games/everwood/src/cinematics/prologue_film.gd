@@ -173,7 +173,17 @@ func skip_line() -> String:
 
 ## The caption on screen now ("" when none).
 func caption_text() -> String:
-	return (_caption.get_node(^"Words") as Label).text if _caption.visible else ""
+	return PrologueKit.caption_words(_caption)
+
+
+## Where the caption ribbon sits on screen now (empty when hidden).
+func caption_rect() -> Rect2:
+	return _caption.get_rect() if _caption.visible else Rect2()
+
+
+## The screen area the film draws in.
+func area() -> Vector2:
+	return _area()
 
 
 ## Whether the title card shows now, and the share of it inked on.
