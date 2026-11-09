@@ -280,9 +280,12 @@ func _check_unboggarting() -> void:
 	iron_man.stats.take_damage(iron_man.stats.health + 1.0)
 	sleeper.stats.take_damage(sleeper.stats.health + 1.0)
 	await _frames(90)
+	# His sculpted figure bows (KinFigure's bow clip, his colour restored); a dropped-in model would lean instead.
+	var bowed: bool = is_equal_approx(iron_man.visual.rotation.x, WildMob.STEWARD_BOW) if iron_man.figure == null \
+		else iron_man.figure.story == &"restored" and iron_man.figure.seal != null and absf(iron_man.figure.seal.rotation.z) > 3.0
 	check.call(spirit.state == SpiritState.STATE_STEWARD_HELPER and spirit.is_steward() and iron_man.visual.visible and not iron_man.has_faded()
-		and is_equal_approx(iron_man.visual.rotation.x, WildMob.STEWARD_BOW) and not iron_man.is_targetable(),
-		"beaten with his seal upright, the Iron-Man bows as a steward for 600 s (STATE_STEWARD_HELPER): his body stays, friendly")
+		and bowed and not iron_man.is_targetable(),
+		"beaten with his seal upright, the Iron-Man bows as a steward for 600 s (STATE_STEWARD_HELPER): his body stays, friendly, his seal plate turned")
 	check.call(sleeper.spectrum.state == SpiritState.STATE_UNBOGGART_RELEASE and not sleeper.visual.visible and _fx_under(sleeper.spawner, "UnboggartRelease") == null,
 		"one beaten with his seal still upside-down just sinks back into the furrow to sleep")
 	spriggan.stats.take_damage(spriggan.stats.health + 1.0)

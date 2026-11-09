@@ -1188,6 +1188,17 @@ func _update_pose(delta: float) -> void:
 	if visuals != null and visuals.has_rig():
 		_update_rig_pose(delta)
 		return
+	if _poses_itself():
+		# A sculpted kin animates its own body (KinFigure): only its blow's aura and its glow here.
+		if not _aura_shells.is_empty():
+			_update_attack_aura()
+		if _flash_left > 0.0:
+			_set_glow(Color(1.0, 1.0, 1.0) * 0.9)
+		elif _flow_glow_left > 0.0:
+			_set_glow(FLOW_GLOW_COLOR * (_flow_glow_left / FLOW_GLOW_TIME) * 1.4)
+		else:
+			_set_glow(Color.BLACK)
+		return
 	var state: StringName = state_machine.current_name() if is_multiplayer_authority() else net_sync.remote_state
 	var lean: float = 0.0
 	var tilt: float = 0.0
@@ -1231,6 +1242,12 @@ func _update_pose(delta: float) -> void:
 		var moved: Vector3 = (global_position - _last_pose_position) / maxf(delta, 0.0001)
 		visuals.update_rig(delta, moved if moved.length() < 30.0 else Vector3.ZERO)
 	_last_pose_position = global_position
+
+
+## Whether this actor's body poses itself from its own animator (a kin's KinFigure),
+## so the greybox lean, tilt and squash leave it alone.
+func _poses_itself() -> bool:
+	return false
 
 
 ## A sculpted hero poses itself (HeroCombatAnimator and StorybookKinematicsModifier3D):

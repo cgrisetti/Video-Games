@@ -323,6 +323,11 @@ static func _ensure() -> void:
 	for kin: MobVariantResource in [husk, acolyte, knell]:
 		kin.encounter_id = ArsenalCatalog.SPRIGGAN_KIN
 	behemoth.encounter_id = ArsenalCatalog.CRAG_BACK_DRAKE
+	# Their sculpted looks (docs/30 §7): the rest wear their body's (KinLooks.BODY_LOOKS).
+	_look(KinLooks.IRON_MAN, [cutthroat])
+	_look(KinLooks.IRON_FLINGER, [slinger])
+	_look(KinLooks.IRON_GIANT, [foreman])
+	_look(KinLooks.SPRIGGAN, [husk, acolyte, knell])
 	lasher.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
 	hulk.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
 	puff.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
@@ -499,6 +504,7 @@ static func _add_crown_shore_kin() -> void:
 	var sluice: MobVariantResource = _make(MOTHER_SLUICE, "Mother Sluice", Family.CROWN_SHORE_KIN, 14, Body.SHAMBLER, 2200.0, 120.0, 26.0)
 	_hostile(sluice, 12.0, 1.1, 0.0)
 	sluice.rank = Rank.RARE
+	sluice.kin_look = KinLooks.SAP_BOGGART
 	# A rare walks its shore's track (its spawner's patrol) when it isn't fighting.
 	sluice.patrols = true
 	sluice.mitigation = 0.35
@@ -531,9 +537,10 @@ static func _add_act_one_kin() -> void:
 	var hound: MobVariantResource = _make(BRAMBLE_HOUND, "Un-Inked Bramble-Hound", Family.EMBERSHORE_ACT_ONE, 1, Body.WOLF, 90.0, 18.0, 7.0)
 	_hostile(hound, 9.0, 0.6, 3.0)
 	hound.move_speed = 4.8
-	hound.main_color = Color(0.62, 0.62, 0.6)
-	hound.accent_color = Color(0.86, 0.5, 0.62)
-	hound.eye_color = Color(0.95, 0.9, 0.7)
+	# Its true colours under the grey (docs/30 §7.1): a fawn-russet hedge-hound, a cream bib, hazel eyes.
+	hound.main_color = Color(0.64, 0.45, 0.31)
+	hound.accent_color = Color(0.9, 0.82, 0.66)
+	hound.eye_color = Color(0.62, 0.42, 0.2)
 	# Q02 · Grey-Bark Weevils go for the cider-boughs first; one Great-Boggart guards the Seed grove.
 	var weevil: MobVariantResource = _make(GREY_BARK_WEEVIL, "Grey-Bark Weevil", Family.EMBERSHORE_ACT_ONE, 2, Body.SCUTTLER, 60.0, 10.0, 5.0)
 	_hostile(weevil, 6.0, 0.7, 1.5)
@@ -541,8 +548,9 @@ static func _add_act_one_kin() -> void:
 	weevil.targets_trees = true
 	weevil.radius = 0.4
 	weevil.height = 0.6
-	weevil.main_color = Color(0.5, 0.48, 0.44)
-	weevil.accent_color = Color(0.7, 0.62, 0.4)
+	weevil.main_color = Color(0.5, 0.4, 0.3)
+	weevil.accent_color = Color(0.66, 0.5, 0.3)
+	weevil.eye_color = Color(0.18, 0.14, 0.12)
 	var great_weevil: MobVariantResource = _make(GREY_BARK_WEEVIL_GREAT, "Grey-Bark Weevil", Family.EMBERSHORE_ACT_ONE, 3, Body.SCUTTLER, 420.0, 70.0, 14.0)
 	_hostile(great_weevil, 8.0, 1.1, 1.0)
 	great_weevil.rank = Rank.ELITE
@@ -552,6 +560,7 @@ static func _add_act_one_kin() -> void:
 	great_weevil.height = 1.3
 	great_weevil.main_color = weevil.main_color.darkened(0.15)
 	great_weevil.accent_color = weevil.accent_color
+	great_weevil.eye_color = weevil.eye_color
 	# Q03 · Ash-Grigs (the brief's Ash-Gremlins): small cinder-throwers raiding Hob's granary.
 	var grig: MobVariantResource = _make(ASH_GREMLIN, "Ash-Grig", Family.EMBERSHORE_ACT_ONE, 3, Body.HUMANOID, 120.0, 18.0, 9.0)
 	_hostile(grig, 12.0, 0.9, 0.0)
@@ -560,30 +569,32 @@ static func _add_act_one_kin() -> void:
 	grig.projectile_range = 12.0
 	grig.radius = 0.35
 	grig.height = 1.1
-	grig.main_color = Color(0.36, 0.33, 0.32)
+	grig.main_color = Color(0.3, 0.27, 0.27)
 	grig.accent_color = Color(1.0, 0.5, 0.2)
-	grig.eye_color = Color(1.0, 0.62, 0.3)
+	grig.eye_color = Color(1.0, 0.7, 0.32)
 	grig.blow_sign = ScribeSignResource.Sign.SIGN_WARM_HEARTH
 	# Q04 · the Old Quay's tide-kin: Barnacle Scuttlers that guard their fronts, Tide-Wights (the brief's Tide-Wraiths).
 	var barnacle: MobVariantResource = _make(BARNACLE_SCUTTLER, "Barnacle Scuttler", Family.EMBERSHORE_ACT_ONE, 4, Body.SCUTTLER, 200.0, 35.0, 12.0)
 	_hostile(barnacle, 10.0, 0.8, 2.0)
 	barnacle.move_speed = 4.2
-	barnacle.main_color = Color(0.46, 0.5, 0.52)
-	barnacle.accent_color = Color(0.86, 0.84, 0.74)
+	barnacle.main_color = Color(0.36, 0.44, 0.48)
+	barnacle.accent_color = Color(0.62, 0.36, 0.28)
+	barnacle.eye_color = Color(0.14, 0.12, 0.12)
 	barnacle.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
 	var wight: MobVariantResource = _make(TIDE_WRAITH, "Tide-Wight", Family.EMBERSHORE_ACT_ONE, 5, Body.WIGHT, 260.0, 40.0, 13.0)
 	_hostile(wight, 12.0, 1.0, 1.0)
 	wight.stamina_slow = 0.4
-	wight.main_color = Color(0.72, 0.8, 0.84)
-	wight.accent_color = Color(0.44, 0.6, 0.72)
-	wight.eye_color = Color(0.7, 0.92, 1.0)
+	wight.main_color = Color(0.74, 0.84, 0.88)
+	wight.accent_color = Color(0.12, 0.2, 0.24)
+	wight.eye_color = Color(0.62, 0.92, 1.0)
 	wight.blow_sign = ScribeSignResource.Sign.SIGN_STAR_TIDE
 	# Q05 · the Root-Sanctum's kin: Sap-Boggarts (the brief's Sap-Elementals) and Root-Lurkers in the walls.
 	var sap: MobVariantResource = _make(SAP_ELEMENTAL, "Sap-Boggart", Family.EMBERSHORE_ACT_ONE, 5, Body.SHAMBLER, 320.0, 60.0, 14.0)
 	_hostile(sap, 9.0, 1.1, 0.0)
 	sap.move_speed = 2.2
-	sap.main_color = Color(0.56, 0.54, 0.5)
-	sap.accent_color = Color(0.96, 0.72, 0.3)
+	sap.main_color = Color(0.62, 0.46, 0.28)
+	sap.accent_color = Color(1.0, 0.7, 0.28)
+	sap.eye_color = Color(1.0, 0.76, 0.34)
 	var great_sap: MobVariantResource = _make(SAP_ELEMENTAL_GREAT, "Sap-Boggart", Family.EMBERSHORE_ACT_ONE, 6, Body.SHAMBLER, 700.0, 110.0, 20.0)
 	_hostile(great_sap, 10.0, 1.2, 0.0)
 	great_sap.rank = Rank.ELITE
@@ -592,11 +603,13 @@ static func _add_act_one_kin() -> void:
 	great_sap.height = 2.2
 	great_sap.main_color = sap.main_color.darkened(0.1)
 	great_sap.accent_color = sap.accent_color
+	great_sap.eye_color = sap.eye_color
 	var lurker: MobVariantResource = _make(ROOT_LURKER, "Root-Lurker", Family.EMBERSHORE_ACT_ONE, 5, Body.VINE, 220.0, 45.0, 13.0)
 	_hostile(lurker, 7.0, 0.8, 0.0)
 	lurker.rooted = true
-	lurker.main_color = Color(0.4, 0.34, 0.28)
+	lurker.main_color = Color(0.44, 0.34, 0.26)
 	lurker.accent_color = Color(0.7, 0.86, 0.5)
+	lurker.eye_color = Color(0.72, 0.96, 0.5)
 	lurker.blow_sign = ScribeSignResource.Sign.SIGN_IRON_ROOT
 	# The Stag Hunts' guardians (StagHuntEncounter scales their health and posture by the heroes present).
 	var guardian: MobVariantResource = _make(FURROW_IRON_MAN_GUARDIAN, "The Furrow Iron-Man", Family.EMBERSHORE_ACT_ONE, 4, Body.HUMANOID, 1600.0, 160.0, 18.0)
@@ -636,11 +649,13 @@ static func _add_act_one_kin() -> void:
 	stag.hit_radius = 2.6
 	stag.move_speed = 2.0
 	stag.stomps = true
-	stag.main_color = Color(0.6, 0.6, 0.58)
-	stag.accent_color = Color(0.56, 0.74, 0.42)
+	stag.main_color = Color(0.56, 0.4, 0.28)
+	stag.accent_color = Color(0.5, 0.66, 0.34)
 	stag.eye_color = Color(0.96, 0.86, 0.5)
 	for kin: MobVariantResource in [hound, weevil, great_weevil, grig, barnacle, wight, sap, great_sap, lurker, guardian, rusted, stag]:
 		kin.calm_rule = true
+		# Act I's kin walk Un-Inked: washed paper-grey until a calm floods their colours back (docs/30 §5).
+		kin.un_inked = true
 		_spirit(kin, Equilibrium.BOGGART_AWOKEN, Resolution.STATE_UNBOGGART_RELEASE, Form.HEDGE_WREN)
 	for kin: MobVariantResource in [great_weevil, great_sap]:
 		kin.scatter_chimes = 6
@@ -649,6 +664,21 @@ static func _add_act_one_kin() -> void:
 		kin.resolution = Resolution.STATE_STEWARD_HELPER
 		kin.scatter_chimes = 25
 	stag.scatter_chimes = 0
+	_look(KinLooks.HOUND, [hound])
+	_look(KinLooks.WEEVIL, [weevil, great_weevil])
+	_look(KinLooks.ASH_GRIG, [grig])
+	_look(KinLooks.BARNACLE, [barnacle])
+	_look(KinLooks.TIDE_WIGHT, [wight])
+	_look(KinLooks.SAP_BOGGART, [sap, great_sap])
+	_look(KinLooks.ROOT_LURKER, [lurker])
+	_look(KinLooks.IRON_MAN, [guardian, rusted])
+	_look(KinLooks.TAPROOT_STAG, [stag])
+
+
+## Dresses `kin` in a sculpted look (KinLooks).
+static func _look(look: StringName, kin: Array) -> void:
+	for made: Variant in kin:
+		(made as MobVariantResource).kin_look = look
 
 
 static func _make(id: StringName, label: String, family: Family, level: int, body: Body, health: float, poise: float, damage: float) -> MobVariantResource:

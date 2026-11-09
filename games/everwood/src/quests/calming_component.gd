@@ -140,6 +140,8 @@ func _let_go() -> void:
 func _show_burst() -> void:
 	if mob == null or not mob.is_inside_tree():
 		return
+	# Its grey cracks and washes off, its dog-roses open, and it shakes itself (docs/30 §5).
+	mob.on_calm_burst()
 	var holder: Node = mob.get_parent()
 	if holder != null:
 		RecoveryBurst.bloom(holder, mob.global_position, BURST_RADIUS)

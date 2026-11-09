@@ -45,6 +45,8 @@ const LAID_ROADS: GDScript = preload("res://tools/test_laid_roads.gd")
 ## Embershore's acceptance checks (docs/27 §12).
 const EMBERSHORE: GDScript = preload("res://tools/test_embershore.gd")
 const ACT_ONE: GDScript = preload("res://tools/test_act_one.gd")
+## The kin overhaul (docs/30): the foes of Levels 1 to 5 as sculpted, animated figures.
+const KIN_ATELIER: GDScript = preload("res://tools/test_kin_atelier.gd")
 
 var tree: SceneTree
 var check: Callable
@@ -62,6 +64,7 @@ func run(scene_tree: SceneTree, checker: Callable) -> void:
 	LAID_ROADS.new().run(level, check)
 	await EMBERSHORE.new().run(level, check, tree)
 	await ACT_ONE.new().run(level, check, tree)
+	await KIN_ATELIER.new().run(level, check, tree)
 	await _check_streaming_and_seams()
 	await _check_beacons()
 	_check_crown_areas()
