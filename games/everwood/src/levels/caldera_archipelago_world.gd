@@ -89,6 +89,9 @@ static var _boot_zone_read: bool = false
 var streamer: ArchipelagoStreamer
 var seams: SeamTransitionController
 var ebb_cinematic: EbbCinematic
+## The opening film's director (docs/31): a new hero's first arrival at the Lv 1 spawn plays the
+## prologue over the loading world; a new hero who drops in later sees its recap in their own view.
+var prologue: PrologueDirector
 ## The last world banner shown (tests).
 var last_world_banner: String = ""
 var tide_returns: int = 0
@@ -222,7 +225,7 @@ func music_mood_context(position: Vector3, context: MusicMoodEngine.Context) -> 
 		return
 	var builder: IslandBuilder = streamer.builder
 	var place: String = builder.place_name_at(position)
-	context.settled = 1.0 if SETTLED_PLACES.has(place) else 0.0
+	context.settled = 1.0 if SETTLED_PLACES.has(place) or builder.is_settled_place(place) else 0.0
 	var half: Vector2 = builder.isle.half_size()
 	var reach: float = Vector2(position.x / maxf(half.x, 1.0), position.z / maxf(half.y, 1.0)).length()
 	context.wild = 1.0 if WILD_PLACES.has(place) else smoothstep(EDGE_FROM, EDGE_TO, reach)
@@ -249,7 +252,7 @@ func visual_biome_at(position: Vector3) -> StringName:
 			CrownHeartCragBuilder.Zone.TIDE_GROTTOS, CrownHeartCragBuilder.Zone.SAP_GALLERIES:
 				return WorldVisualCatalog.NINE_STONES_CROSSING
 	if streamer.builder is EmbershoreBuilder:
-		return EMBERSHORE_BIOMES.get(streamer.builder.place_name_at(position), streamer.builder.isle.visual_biome)
+		return EMBERSHORE_BIOMES.get(streamer.builder.stage_name_at(position), streamer.builder.isle.visual_biome)
 	return streamer.builder.isle.visual_biome
 
 
@@ -309,6 +312,9 @@ func _setup_level() -> void:
 	var focus: Array[Vector3] = [builder.arrival_spot(start[1])]
 	streamer.activate_island(start[0], focus)
 	_place_spawn_points(start[1])
+	prologue = PrologueDirector.new()
+	prologue.setup(self, start[0] == CalderaAtlas.ISLE_EMBERSHORE and start[1] == CalderaAtlas.ARRIVE_START, settle_streaming)
+	add_child(prologue)
 	# F4: the telemetry badge, here the live score (16 GDD §7.4).
 	_badge = WorldTelemetryBadge.new()
 	get_node(^"Screens").add_child(_badge)
@@ -418,6 +424,17 @@ func party_in_order() -> Array[ActorBase]:
 			list.append(actor)
 	list.sort_custom(func(a: ActorBase, b: ActorBase) -> bool: return a.party_slot < b.party_slot)
 	return list
+
+
+## Finishes whatever the streamer still has on its way, now (the opening film calls this under
+## its last still page, so the dive into the live world meets no hole). Returns how many jobs waited.
+func settle_streaming() -> int:
+	if streamer == null or streamer.builder == null:
+		return 0
+	var pending: int = int(streamer.counts()["pending"])
+	if pending > 0:
+		streamer.load_now(streamer.focus_points)
+	return pending
 
 
 ## Whether this peer decides world changes (the host, or a party playing offline).
@@ -551,7 +568,7 @@ func _rpc_threshold(path: NodePath) -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
-	if _key_pressed(KEY_F9) and may_decide():
+	if _key_pressed(KEY_F9) and may_decide() and not cinematic_playing:
 		playtest_warp()
 	if _key_pressed(KEY_F4):
 		set_telemetry_visible(not is_telemetry_visible())

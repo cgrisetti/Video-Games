@@ -1,0 +1,491 @@
+{
+  "id": "opening_cinematic_prologue",
+  "version": 1,
+  "duration_s": 30.0,
+  "resolution_ref": [
+    1920,
+    1080
+  ],
+  "narrator": "Master Alf-Wright",
+  "caption_style": {
+    "font": "IM FELL English Italic",
+    "size_px_at_1080p": 44,
+    "color": "#2B2420",
+    "ribbon_color": "#F4EFE6",
+    "ribbon_opacity": 0.92,
+    "position": "bottom_center",
+    "always_on": true
+  },
+  "palette": {
+    "parchment": "#F4EFE6",
+    "ink": "#2B2420",
+    "warm_hearth_gold": "#F2B749",
+    "iron_root_ochre": "#D9822B",
+    "rime_gale_azure": "#38A3D1",
+    "star_tide_violet": "#8C52D9",
+    "hush_grey": "#6E7880",
+    "sound_teal": "#52B8B2"
+  },
+  "shots": [
+    {
+      "index": 1,
+      "id": "ring",
+      "title": "The Ring",
+      "start_s": 0.0,
+      "end_s": 5.0,
+      "layer": "storybook_2d",
+      "plate": "art/storyboards/shot01_ring.png",
+      "camera": {
+        "type": "pan_zoom",
+        "from": {
+          "scale": 1.0,
+          "center": [
+            0.5,
+            0.5
+          ]
+        },
+        "to": {
+          "scale": 1.12,
+          "center": [
+            0.5,
+            0.48
+          ]
+        },
+        "ease": "in_out_sine"
+      },
+      "effects": [
+        {
+          "type": "fade_from_parchment",
+          "start_s": 0.0,
+          "end_s": 1.2
+        }
+      ],
+      "transition_out": {
+        "type": "crossfade",
+        "duration_s": 0.4
+      },
+      "captions": [
+        {
+          "start_s": 0.4,
+          "end_s": 4.7,
+          "text": "Long ago, a ring of islands rose from fire and sea."
+        }
+      ],
+      "cues": [
+        {
+          "id": "mus_bassoon_harp_pickup",
+          "t_s": 0.0
+        },
+        {
+          "id": "sfx_quill_scratch",
+          "t_s": 0.2
+        },
+        {
+          "id": "sfx_page_settle",
+          "t_s": 3.8
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "id": "world_tree",
+      "title": "The World-Tree",
+      "start_s": 5.0,
+      "end_s": 10.0,
+      "layer": "storybook_2d",
+      "plate": "art/storyboards/shot02_world_tree.png",
+      "camera": {
+        "type": "pan_zoom",
+        "from": {
+          "scale": 1.05,
+          "center": [
+            0.5,
+            0.55
+          ]
+        },
+        "to": {
+          "scale": 1.25,
+          "center": [
+            0.5,
+            0.36
+          ]
+        },
+        "ease": "in_out_sine"
+      },
+      "effects": [
+        {
+          "type": "popup_rise",
+          "start_s": 5.0,
+          "end_s": 5.8,
+          "offset_y_frac": 0.06,
+          "ease": "out_back"
+        },
+        {
+          "type": "glow_pulse",
+          "color": "#F2B749",
+          "start_s": 6.0,
+          "end_s": 10.0,
+          "period_s": 1.6
+        }
+      ],
+      "transition_out": {
+        "type": "crossfade",
+        "duration_s": 0.4
+      },
+      "captions": [
+        {
+          "start_s": 5.3,
+          "end_s": 9.7,
+          "text": "At its heart grows the World-Tree. Its golden sap colors all things."
+        }
+      ],
+      "cues": [
+        {
+          "id": "sfx_paper_fold",
+          "t_s": 5.1
+        },
+        {
+          "id": "mus_woodwind_duo_strings",
+          "t_s": 5.6
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "id": "old_kings_wound",
+      "title": "The Old Kings' Wound",
+      "start_s": 10.0,
+      "end_s": 14.0,
+      "layer": "storybook_2d",
+      "plate": "art/storyboards/shot03_old_kings_wound.png",
+      "camera": {
+        "type": "pan_zoom",
+        "from": {
+          "scale": 1.2,
+          "center": [
+            0.32,
+            0.4
+          ]
+        },
+        "to": {
+          "scale": 1.2,
+          "center": [
+            0.6,
+            0.72
+          ]
+        },
+        "ease": "in_out_cubic"
+      },
+      "effects": [
+        {
+          "type": "tint_spread",
+          "color": "#8C52D9",
+          "origin": [
+            0.63,
+            0.84
+          ],
+          "start_s": 11.5,
+          "end_s": 14.0
+        }
+      ],
+      "transition_out": {
+        "type": "crossfade",
+        "duration_s": 0.4
+      },
+      "captions": [
+        {
+          "start_s": 10.3,
+          "end_s": 13.7,
+          "text": "But the old kings bled that sap into the sea."
+        }
+      ],
+      "cues": [
+        {
+          "id": "mus_cello_drone_minor",
+          "t_s": 10.0
+        },
+        {
+          "id": "sfx_chisel_taps",
+          "t_s": 10.4
+        },
+        {
+          "id": "sfx_tidal_groan",
+          "t_s": 12.6
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "id": "un_inking",
+      "title": "The Un-Inking",
+      "start_s": 14.0,
+      "end_s": 20.0,
+      "layer": "storybook_2d",
+      "plate": "art/storyboards/shot04_un_inking.png",
+      "camera": {
+        "type": "pan_zoom",
+        "from": {
+          "scale": 1.1,
+          "center": [
+            0.56,
+            0.5
+          ]
+        },
+        "to": {
+          "scale": 1.1,
+          "center": [
+            0.44,
+            0.5
+          ]
+        },
+        "ease": "linear"
+      },
+      "effects": [
+        {
+          "type": "water_rise",
+          "start_s": 14.0,
+          "end_s": 15.5,
+          "rise_frac": 0.08
+        },
+        {
+          "type": "grey_drain_sweep",
+          "color": "#6E7880",
+          "direction": "right_to_left",
+          "start_s": 15.0,
+          "end_s": 19.5,
+          "end_edge_x_frac": 0.3,
+          "note": "Reuse the in-game hush desaturation shader if one exists, so players recognise it later."
+        }
+      ],
+      "transition_out": {
+        "type": "page_turn",
+        "duration_s": 0.5
+      },
+      "captions": [
+        {
+          "start_s": 14.3,
+          "end_s": 19.7,
+          "text": "Now a grey tide rises. All it touches forgets its color… and its name."
+        }
+      ],
+      "cues": [
+        {
+          "id": "mus_cello_sul_ponticello",
+          "t_s": 14.0
+        },
+        {
+          "id": "sfx_color_dropout_birdsong",
+          "t_s": 15.8
+        },
+        {
+          "id": "sfx_color_dropout_windchime",
+          "t_s": 16.9
+        },
+        {
+          "id": "sfx_color_dropout_hound_pant",
+          "t_s": 18.0
+        },
+        {
+          "id": "mus_silence",
+          "t_s": 19.3
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "id": "embershore",
+      "title": "Embershore",
+      "start_s": 20.0,
+      "end_s": 25.0,
+      "layer": "storybook_2d",
+      "plate": "art/storyboards/shot05_embershore.png",
+      "camera": {
+        "type": "pan_zoom",
+        "from": {
+          "scale": 1.15,
+          "center": [
+            0.55,
+            0.4
+          ]
+        },
+        "to": {
+          "scale": 1.15,
+          "center": [
+            0.35,
+            0.7
+          ]
+        },
+        "ease": "in_out_sine"
+      },
+      "effects": [
+        {
+          "type": "windmill_sail_spin",
+          "pivot_frac": [
+            0.221,
+            0.207
+          ],
+          "deg_per_s": 40
+        },
+        {
+          "type": "mist_creep",
+          "color": "#6E7880",
+          "from": "left_edge",
+          "start_s": 22.5,
+          "end_s": 25.0
+        }
+      ],
+      "transition_out": {
+        "type": "page_dissolve_to_3d",
+        "duration_s": 1.0
+      },
+      "captions": [
+        {
+          "start_s": 20.3,
+          "end_s": 24.7,
+          "text": "Only Embershore still glows. And tonight, the grey has reached its orchards."
+        }
+      ],
+      "cues": [
+        {
+          "id": "mus_bassoon_guitar_return",
+          "t_s": 20.0
+        },
+        {
+          "id": "amb_feast_chatter",
+          "t_s": 20.3
+        },
+        {
+          "id": "sfx_hand_bell",
+          "t_s": 22.0
+        },
+        {
+          "id": "mus_thin_out",
+          "t_s": 23.5
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "id": "wake_up_steward",
+      "title": "Wake Up, Steward",
+      "start_s": 25.0,
+      "end_s": 30.0,
+      "layer": "live_3d",
+      "plate_reference": "art/storyboards/shot06_wake_up_steward.png",
+      "camera": {
+        "type": "camera3d_dive_to_rig",
+        "start_s": 25.0,
+        "end_s": 29.0,
+        "ease": "out_cubic",
+        "start_offset_from_rig_m": [
+          0.0,
+          30.0,
+          18.0
+        ],
+        "start_offset_space": "rig_local (x right, y up, z back)",
+        "end": "PlayerCameraRig spawn pose (exact)",
+        "handoff_tolerance": {
+          "position_m": 0.01,
+          "angle_deg": 0.1
+        }
+      },
+      "effects": [
+        {
+          "type": "title_card",
+          "lines": [
+            "EVERWOOD",
+            "The Caldera Isles"
+          ],
+          "font": [
+            "IM FELL English SC",
+            "IM FELL English Italic"
+          ],
+          "ink_on_start_s": 27.0,
+          "ink_on_duration_s": 0.8,
+          "fade_out_start_s": 29.2,
+          "fade_out_end_s": 29.8
+        },
+        {
+          "type": "chime_post_ribbon",
+          "text": "Where grey has crept, go soft and slow; calm what’s afraid, and color will grow.",
+          "start_s": 29.0,
+          "persist_until": "player reaches OrchardGate or 20 s of play"
+        }
+      ],
+      "captions": [
+        {
+          "start_s": 25.8,
+          "end_s": 27.2,
+          "text": "Wake up, steward."
+        }
+      ],
+      "cues": [
+        {
+          "id": "sfx_wind_breath",
+          "t_s": 25.2
+        },
+        {
+          "id": "sfx_hearth_bell",
+          "t_s": 27.0
+        },
+        {
+          "id": "mus_bassoon_resolve",
+          "t_s": 27.0
+        },
+        {
+          "id": "amb_meadow_live",
+          "t_s": 29.0
+        }
+      ]
+    }
+  ],
+  "control_unlock_s": 30.0,
+  "skip": {
+    "who": "host_only",
+    "local_host": "seat_1",
+    "online_host": "host_peer",
+    "input": "hold existing pause/menu action",
+    "hold_s": 1.5,
+    "non_host_hint": "Host can skip",
+    "on_skip": "jump to shot-6 handoff end state; set prologue_seen; unlock control"
+  },
+  "recap": {
+    "for": "late drop-in new character",
+    "plates": [
+      "shot01_ring",
+      "shot02_world_tree",
+      "shot03_old_kings_wound",
+      "shot04_un_inking",
+      "shot05_embershore",
+      "shot06_wake_up_steward"
+    ],
+    "seconds_per_plate": 1.5,
+    "captions": true,
+    "skippable_by": "that player",
+    "scope": "that player's viewport only"
+  },
+  "spawn": {
+    "display_zone_name": "Embershore",
+    "sub_zone": "Homestead Meadows (Lee Shore)",
+    "proposed_position_local_m": [
+      128.0,
+      null,
+      448.0
+    ],
+    "axes": "-Z north toward the Sound, +X east; y from terrain",
+    "face_toward": "OrchardGate",
+    "orchard_gate_proposed_local_m": [
+      300.0,
+      null,
+      430.0
+    ],
+    "framing_goal": "orchard gate + Alf-Wright in right third; World-Tree impostor on horizon left of centre",
+    "source": "World Map Bible §3.2–3.3; gate position is proposed, verify against the current level"
+  },
+  "camera_rig_constants_ref": {
+    "default_pitch_deg": 22.0,
+    "default_height_m": 4.8,
+    "boom_m": 6.8,
+    "source": "18_NEXT_GEN_..._CAMERA_GDD §6.1, §8.2"
+  }
+}

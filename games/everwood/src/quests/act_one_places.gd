@@ -41,9 +41,10 @@ const WEIR: StringName = &"POI_Weir"
 ## The four groves, in the order Q02 asks for them (Root, Leaf, Flower, Seed).
 const GROVES: Array[StringName] = [GROVE_ROOT, GROVE_LEAF, GROVE_FLOWER, GROVE_SEED]
 
-## The Level 1 spawn: the lane at the orchard's south gate, facing into the orchard.
+## The Level 1 spawn: the lane at the orchard's south gate, facing the gate and Master Alf-Wright
+## (EmbershoreBuilder.START_FACING; docs/31 §12.3).
 const SPAWN_AT: Vector2 = Vector2(-584.0, 182.0)
-const SPAWN_FACING: Vector2 = Vector2(-0.53, -0.85)
+const SPAWN_FACING: Vector2 = Vector2(0.766, 0.643)
 
 ## Each place: on-screen name, centre (x, nominal y, z) in Embershore's frame, reach (m),
 ## the real ground band (min, max y) and the Bible's elevation (m; NAN where it gave none).

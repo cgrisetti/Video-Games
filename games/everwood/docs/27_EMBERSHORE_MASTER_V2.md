@@ -3,6 +3,7 @@
 > **Asked for (2026-11-07):** build Embershore, the starting isle, from the Creative Director's *Everwood — Embershore* Master v2 (council second pass and master map) in the engine, feature by feature, with the generator as the one source of truth.
 > **Scope:** `games/everwood` only. The starting isle (`isle_embershore`, once Oakshire Holm, then Miller's Oak) and whatever it touches: the grid resource, the atlas, the streamer, the map, the sea, the water shader, the world state, the camera, the Binder. The other four isles are unchanged but for their seam ends.
 > **Numbered 27:** the brief asked for `docs/15_EMBERSHORE_MASTER_V2.md`; 15 is the Mythopoetic Lens, so this is 27.
+> **Since 2026-11-09:** the worked land lies over this island ([docs/32](32_EMBERSHORE_THE_WORKED_LAND.md)): steadings, fields, hedges and walls, the valley's other trees, the villages' houses turned to their lanes, stock. Nothing below moved. Where this doc says "12 cottages", "94 apple trees" or "120 ripe strips", docs/32 says what stands on those spots now.
 
 ## 1. One source of truth
 

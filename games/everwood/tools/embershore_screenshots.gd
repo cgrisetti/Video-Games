@@ -29,6 +29,9 @@ const STAGES: Array[Dictionary] = [
 
 var _level: CalderaArchipelagoWorld
 var _report: PackedStringArray = PackedStringArray()
+## `-- --stages=bramblebridge,coast_road` measures only those; `--out=/some/folder` writes there instead (a trial run).
+var _only: PackedStringArray = PackedStringArray()
+var _out: String = OUT_DIR
 
 
 func _initialize() -> void:
@@ -36,9 +39,14 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--stages="):
+			_only = argument.trim_prefix("--stages=").split(",", false)
+		elif argument.begins_with("--out="):
+			_out = argument.trim_prefix("--out=").trim_suffix("/") + "/"
 	print("Everwood: Embershore's screenshots and performance report")
 	await _windowed_1080p()
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
+	DirAccess.make_dir_recursive_absolute(_out_path())
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	PartyProgress.current.use_save_file(SAVE_PATH)
 	PartyProgress.current.apply_full_endgame_kit_for_testing()
@@ -62,6 +70,8 @@ func _run() -> void:
 	_report.append("| :-- | --: | --: | --: | --: | --: | :-- |")
 	for index: int in STAGES.size():
 		var stage: Dictionary = STAGES[index]
+		if not _only.is_empty() and not _only.has(String(stage["name"])):
+			continue
 		await _stand(stage["at"], stage["look"])
 		await _frames(SETTLE_FRAMES)
 		var sample: Dictionary = await _sample()
@@ -69,8 +79,9 @@ func _run() -> void:
 		_report.append("| %s | %.0f | %.2f | %.2f | %d | %d | %d / %d / %d |" % [String(stage["name"]), sample["fps"], sample["process_ms"], sample["physics_ms"],
 			int(sample["draw_calls"]), int(sample["primitives"]), int(counts["near"]), int(counts["mid"]), int(counts["far"])])
 		_save_screen("%02d_%s.jpg" % [index + 1, String(stage["name"])])
-	await _ortho_plate()
-	var file: FileAccess = FileAccess.open(OUT_DIR + "perf.md", FileAccess.WRITE)
+	if _only.is_empty():
+		await _ortho_plate()
+	var file: FileAccess = FileAccess.open(_out_path() + "perf.md", FileAccess.WRITE)
 	file.store_string("\n".join(_report) + "\n")
 	file.close()
 	print("\n".join(_report))
@@ -145,9 +156,13 @@ func _sample() -> Dictionary:
 	return {"fps": fps / n, "process_ms": process_ms / n, "physics_ms": physics_ms / n, "draw_calls": draws / n, "primitives": primitives / n}
 
 
+func _out_path() -> String:
+	return ProjectSettings.globalize_path(_out) if _out.begins_with("res://") else _out
+
+
 func _save_screen(file_name: String) -> void:
 	var image: Image = root.get_viewport().get_texture().get_image()
-	image.save_jpg(ProjectSettings.globalize_path(OUT_DIR + file_name), 0.86)
+	image.save_jpg(_out_path() + file_name, 0.86)
 	print("  saved %s" % file_name)
 
 
@@ -171,7 +186,7 @@ func _ortho_plate() -> void:
 	# Bring every landblock's mid ground in round the middle, so the plate has more than the far stand-ins.
 	await _frames(12)
 	var image: Image = viewport.get_texture().get_image()
-	image.save_jpg(ProjectSettings.globalize_path(OUT_DIR + "00_ortho.jpg"), 0.9)
+	image.save_jpg(_out_path() + "00_ortho.jpg", 0.9)
 	print("  saved 00_ortho.jpg (set beside world/embershore/gen/terrain.jpg)")
 	viewport.queue_free()
 

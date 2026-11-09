@@ -66,6 +66,8 @@ var _demo_clock: float = 0.0
 ## Each --demo bot finds its way by the navigation map, like a companion.
 var _demo_steering: Dictionary[StringName, NavSteering] = {}
 var _companion_refresh_queued: bool = false
+## A film holds the party (the opening prologue, docs/31): F5 / F6 / F7 wait until it ends.
+var cinematic_playing: bool = false
 
 # The command line is read once per run; these survive instance changes.
 static var session_clock: float = 0.0
@@ -811,6 +813,10 @@ func _check_join(device_id: int, delta: float) -> void:
 	if not held:
 		_join_hold[device_id] = -1.0
 		return
+	# A seat a film is holding (docs/31) holds Start to skip, never to leave: this press can't leave.
+	if _held_by_film(device_id):
+		_join_hold[device_id] = LEAVE_HOLD_TIME * 2.0
+		return
 	if hold < 0.0:
 		_join_hold[device_id] = 0.0
 		if not NetworkManager.current.is_device_seated(device_id):
@@ -826,12 +832,24 @@ func _check_join(device_id: int, delta: float) -> void:
 
 
 func _poll_network_keys() -> void:
-	if _key_pressed(KEY_F5):
+	var host: bool = _key_pressed(KEY_F5)
+	var join: bool = _key_pressed(KEY_F6)
+	var leave: bool = _key_pressed(KEY_F7)
+	if cinematic_playing:
+		return
+	if host:
 		NetworkManager.current.host_game()
-	if _key_pressed(KEY_F6):
+	if join:
 		NetworkManager.current.join_game(_join_address)
-	if _key_pressed(KEY_F7):
+	if leave:
 		NetworkManager.current.leave_game()
+
+
+## Whether the local seat on `device_id` is held still by a film (docs/31).
+func _held_by_film(device_id: int) -> bool:
+	var seat: PartyMember = _local_seat(device_id)
+	var actor: ActorBase = actors.get(seat.player_id) as ActorBase if seat != null else null
+	return is_instance_valid(actor) and actor.input != null and actor.input.cinematic_hold
 
 
 func _key_pressed(key: Key) -> bool:

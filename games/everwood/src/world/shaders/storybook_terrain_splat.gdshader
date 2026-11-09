@@ -48,6 +48,9 @@ varying vec3 v_world_pos;
 varying vec3 v_world_normal;
 varying vec3 v_painted;
 varying float v_toe;
+// The worked land's tilth (docs/32 §4): xy the rows' direction times how strongly they show, z their spacing
+// in metres, w their tone (-1 a dark furrow between pale ridges, +1 a green row of crop on bare soil).
+varying vec4 v_tilth;
 
 // A hash without sine (stable for the large cell indices along a long road).
 vec2 road_hash2(vec2 p) {
@@ -179,6 +182,7 @@ void vertex() {
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	v_painted = COLOR.rgb;
 	v_toe = clamp(1.0 - COLOR.a, 0.0, 1.0);
+	v_tilth = vec4(UV, UV2);
 }
 
 void fragment() {
@@ -189,6 +193,42 @@ void fragment() {
 	n = bent;
 	float value = luminance(color);
 	color *= clamp(value, min_value, max_value) / max(value, 0.001);
+	// The worked land's rows, drawn per pixel so a furrow is a furrow whatever the triangles (docs/32 §4).
+	float till = length(v_tilth.xy);
+	vec2 row_dir = v_tilth.xy / max(till, 0.0001);
+	float row_space = max(v_tilth.z, 0.2);
+	float across_rows = dot(v_world_pos.xz, vec2(-row_dir.y, row_dir.x));
+	// How many rows one pixel covers (taken outside the branch: derivatives need every pixel of the quad).
+	float rows_per_pixel = length(vec2(dFdx(across_rows), dFdy(across_rows))) / row_space;
+	if (till > 0.02) {
+		float tone = v_tilth.w;
+		float shown = clamp(till, 0.0, 1.0);
+		float near = 1.0 - smoothstep(0.16, 0.45, rows_per_pixel);
+		// Far off, where a row is under a pixel, the field is its rows' average: a furrowed field a little
+		// darker, a rowed one half leaf. Nothing else is worked out there.
+		vec3 leaf = vec3(0.045, 0.1, 0.03);
+		vec3 far = tone > 0.0 ? mix(color * 0.92, leaf, 0.5 * shown * tone) : color * mix(1.0, 0.9, shown * -tone);
+		if (near <= 0.001) {
+			color = far;
+		} else {
+			float phase = across_rows * 6.2831853 / row_space + world_noise(v_world_pos.xz * 0.12) * 1.4;
+			float ridge = smoothstep(-0.55, 0.55, sin(phase));
+			vec3 worked;
+			if (tone > 0.0) {
+				// Rows: leaf on the ridge, bare soil between.
+				worked = mix(color * 0.92, leaf * (0.8 + 0.5 * world_noise(v_world_pos.xz * 2.3)), ridge * shown * tone);
+			} else {
+				// Furrows: a dark drain between pale, crumbled ridges.
+				float clod = world_noise(v_world_pos.xz * 3.1);
+				vec3 furrowed = color * mix(mix(1.0, 0.7, shown), mix(1.0, 1.1, shown), ridge) * (1.0 + (clod - 0.5) * 0.24 * shown);
+				worked = mix(color, furrowed, -tone);
+			}
+			color = mix(far, worked, near);
+			// Each ridge leans its normal away from its crest, so the low sun rakes the furrows.
+			vec3 lean = vec3(-row_dir.y, 0.0, row_dir.x) * cos(phase) * 0.42 * shown * near * (tone > 0.0 ? 0.45 : abs(tone));
+			n = normalize(n - lean);
+		}
+	}
 	float road_kind;
 	vec2 road_dir;
 	vec4 road = road_at(v_world_pos.xz, road_kind, road_dir);

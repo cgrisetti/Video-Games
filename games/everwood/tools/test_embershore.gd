@@ -63,15 +63,17 @@ func _check_grid_and_data() -> void:
 	for record: ArchipelagoStreamer.LoadedChunk in level.streamer.chunks.values():
 		oaks += (record.scatter.get(IslandBuilder.Species.OAK_TREE, []) as Array).size()
 		apples += (record.scatter.get(IslandBuilder.Species.ORCHARD_TREE, []) as Array).size()
+	# The generator's smaller trees along the wood's edge are its birch, rowan and holly (docs/32 §6): still where it put them.
+	var wood_mix: int = builder.settlement.list("wood_mix").size()
 	var masks_ok: bool = true
 	for mask_name: StringName in EmbershoreBuilder.MASK_NAMES:
 		masks_ok = masks_ok and (builder.masks.get(mask_name, PackedByteArray()) as PackedByteArray).size() == EmbershoreBuilder.MASK_COLUMNS * EmbershoreBuilder.MASK_ROWS
 	check.call(isle.chunks_x() == 16 and isle.chunks_z_count() == 8 and isle.grid_size() == Vector2(2048.0, 1024.0)
 		and builder.lod_quads() == PackedInt32Array([128, 64, 32]) and builder.collision_resident() and int(counts["bodies"]) == 128
 		and builder.heights.size() == EmbershoreBuilder.HEIGHT_COLUMNS * EmbershoreBuilder.HEIGHT_ROWS and masks_ok and builder.poi.size() == 28
-		and oaks >= 1250 and apples >= 90,
-		"Embershore: 16 x 8 landblocks (2,048 x 1,024 m) at 1, 2 and 4 m, all %d colliders resident, the 2049 x 1025 heightmap and 7 masks read, %d landmarks, %d Moss-Oaks and %d orchard trees standing where the generator put them"
-		% [int(counts["bodies"]), builder.poi.size(), oaks, apples])
+		and oaks + wood_mix >= 1250 and oaks >= 1150 and wood_mix <= 130 and apples >= 90,
+		"Embershore: 16 x 8 landblocks (2,048 x 1,024 m) at 1, 2 and 4 m, all %d colliders resident, the 2049 x 1025 heightmap and 7 masks read, %d landmarks, %d Moss-Oaks (and %d birch, rowan and holly at the wood's edge, docs/32) and %d orchard trees standing where the generator put them"
+		% [int(counts["bodies"]), builder.poi.size(), oaks, wood_mix, apples])
 
 
 # --- 2: the landmarks' heights ---------------------------------------------------------------
@@ -155,8 +157,8 @@ func _check_structures() -> void:
 	var spawners: int = 0
 	var sleepers: int = 0
 	for node: Node in level.streamer.structures.find_children("*", "", true, false):
-		var kit: WorldKitInstance = node as WorldKitInstance
-		if kit != null and kit.kit_id == WorldVisualCatalog.KIT_HOUSE_STEPPED_GABLE:
+		# The two villages' twelve houses each (docs/32 §7: stepped-gable houses and valley cottages, each on the generator's spot).
+		if node.is_in_group(EmbershoreSteadings.HOMES) and (String(node.name).begins_with("Bramblebridge") or String(node.name).begins_with("Hearthstead")):
 			houses += 1
 		var post: ChimePost = node as ChimePost
 		if post != null and post.checkpoint:

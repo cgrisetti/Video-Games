@@ -429,10 +429,11 @@ static func species_mesh(species: int) -> ArrayMesh:
 			for petal: Vector3 in [Vector3(1.0, 4.3, 0.4), Vector3(-0.8, 4.5, -0.6), Vector3(0.1, 4.8, 1.0), Vector3(-0.4, 3.8, 1.3)]:
 				add_sphere(into, petal, 0.26, Color(0.95, 0.42, 0.32), 1.0, 5)
 		IslandBuilder.Species.OAK_TREE:
-			add_post(into, Vector3.ZERO, 0.32, 0.55, 4.8, Color(0.4, 0.3, 0.22), 7)
-			add_sphere(into, Vector3(0.0, 6.2, 0.0), 2.9, LEAF, 0.75, 8)
-			add_sphere(into, Vector3(1.6, 5.5, 0.6), 1.9, LEAF.lerp(DARK_LEAF, 0.4), 0.8, 7)
-			add_sphere(into, Vector3(-1.4, 5.6, -0.8), 2.0, LEAF.lightened(0.08), 0.8, 7)
+			# The same bole and three lobes in fewer facets (docs/32 §9): thirteen hundred of them are in any view of the wood.
+			add_post(into, Vector3.ZERO, 0.32, 0.55, 4.8, Color(0.4, 0.3, 0.22), 5)
+			add_sphere(into, Vector3(0.0, 6.2, 0.0), 2.9, LEAF, 0.75, 6)
+			add_sphere(into, Vector3(1.6, 5.5, 0.6), 1.9, LEAF.lerp(DARK_LEAF, 0.4), 0.8, 6)
+			add_sphere(into, Vector3(-1.4, 5.6, -0.8), 2.0, LEAF.lightened(0.08), 0.8, 6)
 		IslandBuilder.Species.WILLOW_TREE:
 			add_post(into, Vector3.ZERO, 0.3, 0.5, 4.4, Color(0.4, 0.32, 0.22), 6)
 			add_sphere(into, Vector3(0.0, 5.6, 0.0), 2.9, Color(0.5, 0.62, 0.32), 0.7, 8)
@@ -490,6 +491,9 @@ static func species_mesh(species: int) -> ArrayMesh:
 			add_sphere(into, Vector3(0.9, 3.9, 0.4), 1.0, Color(0.4, 0.56, 0.28), 0.8, 6)
 			for berry: Vector3 in [Vector3(0.8, 3.6, 0.9), Vector3(-0.9, 4.0, 0.5), Vector3(0.2, 3.5, -1.1), Vector3(-0.4, 4.6, -0.8)]:
 				add_sphere(into, berry, 0.22, Color(0.86, 0.18, 0.12), 1.0, 5)
+		_:
+			# The worked land's trees, runs and field pieces (docs/32).
+			WorkedLandKit.stand_in(species, into)
 	_species[species] = into.commit()
 	return _species[species]
 
@@ -739,7 +743,13 @@ static func atelier_mesh(species: int) -> ArrayMesh:
 		IslandBuilder.Species.FERN_TUFT:
 			_layered_fern(parts, Vector3.ZERO, 1.0, 1)
 		_:
-			made = false
+			# The worked land's trees, runs and field pieces (docs/32); stones and reeds have none.
+			made = WorkedLandKit.sculpt(species, parts)
+	# A run keeps every triangle: it hands over to its stand-in at RUN_HANDOVER, and a hedge thinned by the
+	# engine's levels of detail shows daylight through it.
+	if made and WorkedLandKit.RUNS.has(species):
+		_atelier[species] = parts.commit()
+		return _atelier[species]
 	_atelier[species] = _with_lods(parts.commit()) if made else null
 	return _atelier[species]
 
@@ -770,7 +780,29 @@ static func has_atelier(species: int) -> bool:
 ## Whether a species is small scatter (no stand-in past SMALL_RANGE, no shadow).
 static func is_small(species: int) -> bool:
 	return species in [IslandBuilder.Species.ROCK, IslandBuilder.Species.REED_CLUMP, IslandBuilder.Species.FERN_TUFT, IslandBuilder.Species.GORSE_BUSH,
-		IslandBuilder.Species.HEATHER_CLUMP]
+		IslandBuilder.Species.HEATHER_CLUMP] or WorkedLandKit.SMALL.has(species)
+
+
+## Whether a species is a tree (a dense stand of them is grouped into cells; their stand-ins keep their shadows).
+static func is_tree(species: int) -> bool:
+	return WorkedLandKit.is_tree(species)
+
+
+## Where a species' sculpted mesh hands over to its stand-in when its stand isn't dense: a tree's at ATELIER_RANGE,
+## a hedge's or a wall's sooner.
+static func handover(species: int) -> float:
+	if WorkedLandKit.RUNS.has(species):
+		return WorkedLandKit.RUN_HANDOVER
+	return WorkedLandKit.TREE_HANDOVER if WorkedLandKit.NEW_TREES.has(species) else ATELIER_RANGE
+
+
+## How far a species is drawn at all (0: at any distance): the small things of the worked land give out sooner.
+static func species_reach(species: int) -> float:
+	return WorkedLandKit.REACH.get(species, 0.0)
+
+
+static func casts_shadow(species: int) -> bool:
+	return not WorkedLandKit.NO_SHADOW.has(species)
 
 
 static func _bark() -> Material:

@@ -52,6 +52,10 @@ extends Node
 signal profile_changed(profile_id: StringName)
 signal state_changed(state: AcousticState)
 signal stinger_played(stinger_id: StringName, notes: PackedInt32Array)
+## A film reached one of its audio cues (docs/31: the opening prologue's cue ids are the contract).
+## No film sounds exist yet, so the score plays nothing for it: a stem, stinger or ambience
+## hooks this signal later.
+signal cinematic_cue(film_id: StringName, cue_id: StringName, at_s: float)
 
 enum AcousticState { EXPLORATION, PROXIMITY, SKIRMISH, BOSS, EXHALE }
 
@@ -164,6 +168,8 @@ const HURRY_SPEED: float = 6.5
 const RELIEF_PHRASES: int = 2
 ## How many phrases the director remembers (the F4 line and tests read them).
 const PHRASE_LOG_SIZE: int = 64
+## How many film cues the director remembers (tests read them).
+const CINEMATIC_CUE_LOG_SIZE: int = 64
 
 ## The live autoload node (see NetworkManager.current for why).
 static var current: AudioDirector
@@ -245,6 +251,8 @@ var _stinger_cache: Dictionary[String, AudioStreamWAV] = {}
 var _ambience_cache: Dictionary[StringName, AudioStream] = {}
 var _emitters: Array[AudioStreamPlayer3D] = []
 var _renders: Dictionary[StringName, RenderJob] = {}
+## The films' audio cues heard, newest last ("film_id:cue_id"), at most CINEMATIC_CUE_LOG_SIZE (docs/31).
+var cinematic_cues_heard: PackedStringArray = PackedStringArray()
 var _rendered: Dictionary[StringName, Array] = {}
 
 
@@ -1206,6 +1214,15 @@ func _on_synergy_detonated(_target: ActorBase, primer: int, _cross_class: bool, 
 
 ## A Four-Sign detonation: its acoustic chord (baked in G, re-pitched to the zone's tonic) on
 ## SignTelegraphs, and the Music bus ducks under it.
+## A film's audio cue at its time (docs/31): recorded and passed on to `cinematic_cue`. There are
+## no film sounds yet, so nothing plays; this is where the cue ids meet the score later.
+func post_cinematic_cue(film_id: StringName, cue_id: StringName, at_s: float) -> void:
+	cinematic_cues_heard.append("%s:%s" % [film_id, cue_id])
+	while cinematic_cues_heard.size() > CINEMATIC_CUE_LOG_SIZE:
+		cinematic_cues_heard.remove_at(0)
+	cinematic_cue.emit(film_id, cue_id, at_s)
+
+
 func play_sign_stinger(scribe_sign: int) -> void:
 	var profile: SignHarmonicProfileResource = AudioCatalog.sign_profile(scribe_sign)
 	if profile == null:

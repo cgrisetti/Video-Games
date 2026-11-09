@@ -5,6 +5,8 @@
 ##   2 players  side by side
 ##   3 players  2 x 2, the fourth cell shows a top-down raid view
 ##   4 players  2 x 2
+## While a film plays before split-screen starts (the opening prologue, docs/31), one player's
+## view can be spotlit: it alone fills the screen and the others wait, hidden, until it's cleared.
 class_name SplitScreenViewportGrid
 extends Control
 
@@ -25,6 +27,8 @@ var _cameras: Dictionary[StringName, PlayerCamera] = {}
 var _overlays: Dictionary[StringName, Control] = {}
 var _viewports: Dictionary[StringName, SubViewport] = {}
 var _overview_cell: Control
+## The one view filling the screen while a film plays (docs/31), or &"" for the usual split.
+var spotlight: StringName = &""
 
 
 func _ready() -> void:
@@ -70,6 +74,25 @@ func camera_for(player_id: StringName) -> PlayerCamera:
 ## A full-cell Control above the player's view, for their HUD.
 func overlay_for(player_id: StringName) -> Control:
 	return _overlays[player_id] if _overlays.has(player_id) else null
+
+
+func viewport_for(player_id: StringName) -> SubViewport:
+	return _viewports[player_id] if _viewports.has(player_id) else null
+
+
+## Shows only `player_id`'s view, full screen (a film before split-screen starts); &"" brings the split back.
+func set_spotlight(player_id: StringName) -> void:
+	spotlight = player_id
+	_relayout()
+
+
+## How many views are on screen now (one while a view is spotlit).
+func shown_view_count() -> int:
+	return 1 if _spotlit() else _cells.size()
+
+
+func _spotlit() -> bool:
+	return spotlight != &"" and _cells.has(spotlight)
 
 
 func viewports() -> Array[SubViewport]:
@@ -122,6 +145,8 @@ func remove_player_view(player_id: StringName) -> void:
 	_cameras.erase(player_id)
 	_overlays.erase(player_id)
 	_viewports.erase(player_id)
+	if spotlight == player_id:
+		spotlight = &""
 	_relayout()
 
 
@@ -153,6 +178,11 @@ func _make_cell(cell_name: String, camera: Camera3D) -> Control:
 
 func _relayout() -> void:
 	var count: int = _cells.size()
+	var spotlit: bool = _spotlit()
+	for player_id: StringName in _cells:
+		_cells[player_id].visible = not spotlit or player_id == spotlight
+	if spotlit:
+		count = 1
 	_grid.columns = 1 if count <= 1 else 2
 	(get_node("Gaps") as ColorRect).visible = count > 1
 	if count == 3:

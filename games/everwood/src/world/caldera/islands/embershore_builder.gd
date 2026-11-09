@@ -23,6 +23,14 @@
 ## cast, packs, groves, the bridge's Stag Hunt, the quays and the Root-Sanctum
 ## carved under the Elder Oak, and the Level 1 spawn is in Lee-Shore Orchards
 ## (the orchard north of the stone bridge, at its south gate on the lane).
+##
+## The worked land (docs/32) lies over all of it without moving a metre of
+## ground: tools/worldgen/embershore_settle.py reads the generator's island and
+## lays the steadings, their cart tracks, the patchwork of small fields and
+## what grows in each, the hedges and dry-stone walls between them and the
+## valley's trees (EmbershoreSettlement); the ground takes its colour, furrows
+## and meadow from that, each landblock its share of the scatter, and
+## EmbershoreSteadings builds the homes, yards and stock.
 class_name EmbershoreBuilder
 extends IslandBuilder
 
@@ -50,9 +58,12 @@ const HEARTHSTEAD_COBBLES: float = 95.0
 ## The Moss-Oaks' sessile oaks: the generator's canopy radius over the oak stand-in's, as a scale.
 const OAK_STAND_IN_RADIUS: float = 2.9
 ## The Level 1 start (the Bible's Lee-Shore Orchards, docs/29 §4): the lane at the orchard's south
-## gate, just over the stone bridge from the green, the party facing into the orchard.
+## gate, just over the stone bridge from the green. The party faces south-east, to the orchard gate
+## and Master Alf-Wright waiting there (the Creative Director, 2026-11-09; docs/31 §12.3): in the
+## hero's camera Alf stands at the right third's edge and the gate (the bridge's foot) at the right
+## side, where the opening film hands over. The World-Tree is behind them.
 const START_AT: Vector2 = Vector2(-584.0, 182.0)
-const START_FACING: Vector2 = Vector2(-0.529, -0.849)
+const START_FACING: Vector2 = Vector2(0.766, 0.643)
 ## Bramblebridge's green and its chime-post (the checkpoint; the Feast green in Act I).
 const GREEN_AT: Vector2 = Vector2(-593.92, 257.71)
 ## North Quay: the timber pier's root at the foot of Hearthstead's bluff and its head 30 m out in the bay (deck 1.6 m).
@@ -73,6 +84,28 @@ var loaded: bool = false
 
 ## The generator's trees, bucketed by landblock: [x, z, scale, species].
 var _trees: Dictionary[Vector2i, Array] = {}
+## The worked land laid over the generator's island (docs/32).
+var settlement: EmbershoreSettlement = EmbershoreSettlement.new()
+## The steadings' names: places inside the corridor's stages (they keep their stage's sky and music).
+var _steading_places: Dictionary[String, bool] = {}
+
+const Use = EmbershoreSettlement.Use
+## A field's colour by what grows in it (docs/32 §4), kept inside the ground's mid-tones (docs/17 §2.3) and on the
+## green or the loam side of the ground shader's sorting, so none of it reads as sand.
+const PASTURE: Color = Color(0.36, 0.56, 0.25)
+const HAY: Color = Color(0.47, 0.62, 0.28)
+const BARLEY: Color = Color(0.66, 0.64, 0.3)
+const PLOUGH: Color = Color(0.36, 0.26, 0.18)
+const ROOT_SOIL: Color = Color(0.34, 0.27, 0.19)
+const STUBBLE: Color = Color(0.68, 0.67, 0.42)
+const FALLOW: Color = Color(0.44, 0.5, 0.32)
+const YARD_EARTH: Color = Color(0.5, 0.42, 0.32)
+const GARDEN_SOIL: Color = Color(0.32, 0.25, 0.18)
+const GREEN_TURF: Color = Color(0.42, 0.62, 0.28)
+const WATER_MEADOW: Color = Color(0.28, 0.5, 0.22)
+const COMMON_TURF: Color = Color(0.44, 0.54, 0.28)
+## A steading's name shows this far from its yard.
+const STEADING_REACH: float = 44.0
 
 
 # --- The generator's data ---------------------------------------------------------------
@@ -118,15 +151,27 @@ func _load_data() -> void:
 		var entry: Dictionary = features["poi"][key]
 		if entry.has("at"):
 			poi[StringName(String(key))] = to_local3(entry["at"])
-	_bucket_trees()
 	loaded = raw.size() == HEIGHT_COLUMNS * HEIGHT_ROWS * 4
+	settlement.load_files()
+	_bucket_trees()
+	if loaded:
+		settlement.lay_scatter(_base_height)
 
 
 func _bucket_trees() -> void:
 	_trees.clear()
-	for tree: Variant in features.get("moss_oaks_trees", []):
+	# An oakwood, not a plantation (docs/32 §6): the generator's smallest trees are the wood's birch, rowan and holly.
+	var mixed: Dictionary[int, int] = {}
+	for entry: Variant in settlement.list("wood_mix"):
+		mixed[int((entry as Array)[0])] = EmbershoreSettlement.TREE_SPECIES.get(String((entry as Array)[1]), Species.OAK_TREE)
+	var oaks: Array = features.get("moss_oaks_trees", [])
+	for index: int in oaks.size():
+		var tree: Variant = oaks[index]
 		var at: Vector2 = to_local(Vector2(float(tree[0]), float(tree[1])))
-		_bucket_tree(at, float(tree[2]) / OAK_STAND_IN_RADIUS, Species.OAK_TREE)
+		if mixed.has(index):
+			_bucket_tree(at, clampf(float(tree[2]) / 3.4, 0.9, 1.25), mixed[index])
+		else:
+			_bucket_tree(at, float(tree[2]) / OAK_STAND_IN_RADIUS, Species.OAK_TREE)
 	for tree: Variant in features.get("orchard_trees", []):
 		_bucket_tree(to_local(Vector2(float(tree[0]), float(tree[1]))), 1.0, Species.ORCHARD_TREE)
 
@@ -190,6 +235,11 @@ func _define() -> void:
 			flat.append(Vector2(point.x, point.z))
 		if flat.size() >= 2:
 			add_path(flat, widths[road_name], false)
+	# The worked land's cart tracks and footpaths (docs/32 §3), laid as drawn like the roads they leave.
+	for track: Variant in settlement.list("tracks"):
+		var line: PackedVector2Array = EmbershoreSettlement.points_of((track as Dictionary).get("points", []))
+		if line.size() >= 2:
+			add_path(line, float((track as Dictionary).get("half_width", 1.2)), false)
 	# The corridor's stages and the places along it (docs/27 §7, §9).
 	add_place("Bramblebridge", Vector3(BRAMBLEBRIDGE_AT.x, 12.0, BRAMBLEBRIDGE_AT.y), 150.0)
 	add_place("Bramblemouth", Vector3(-960.0, 1.0, 150.0), 70.0)
@@ -218,11 +268,38 @@ func _define() -> void:
 	add_place("Eel Spit", landmark(&"eel_spit_head"), 70.0)
 	add_place("The South Cliffs", Vector3(-24.0, 40.0, 438.0), 300.0)
 	add_place("The First-Quiet Crags", Vector3(726.0, 60.0, 248.0), 200.0)
+	# The steadings: each a place of its own inside its stage.
+	for steading: Variant in settlement.list("steadings"):
+		var entry: Dictionary = steading as Dictionary
+		var at: Vector2 = EmbershoreSettlement.at2(entry["at"])
+		var steading_name: String = String(entry.get("name", ""))
+		add_place(steading_name, Vector3(at.x, _base_height(at.x, at.y), at.y), STEADING_REACH)
+		_steading_places[steading_name] = String(entry.get("kind", "")) != "flitted"
 	# The start, North Quay's shore end, and the Root-Sanctum's way out at the mill weir.
 	add_arrival(CalderaAtlas.ARRIVE_START, START_AT, START_FACING)
 	add_arrival(CalderaAtlas.ARRIVE_NORTH_QUAY, QUAY_ARRIVAL, Vector2(0.0, -1.0))
 	var weir: Vector3 = landmark(&"bramble_weir")
 	add_arrival(CalderaAtlas.ARRIVE_ROOT_SANCTUM, Vector2(weir.x, weir.z + 10.0), Vector2(-0.6, 0.8))
+
+
+## The corridor's stage at a spot: the nearest named place that isn't a steading (a yard keeps its valley's sky).
+func stage_name_at(at: Vector3) -> String:
+	var best: String = isle.display_name
+	var best_share: float = 1.0
+	for each: Dictionary in places:
+		if _steading_places.has(String(each["name"])):
+			continue
+		var spot: Vector3 = each["at"]
+		var share: float = Vector2(at.x - spot.x, at.z - spot.z).length() / float(each["radius"])
+		if share < best_share:
+			best_share = share
+			best = String(each["name"])
+	return best
+
+
+## Folk live at every steading but the one they left.
+func is_settled_place(place_name: String) -> bool:
+	return bool(_steading_places.get(place_name, false))
 
 
 ## North Quay's arrival stands on the pier's deck, not on the sea floor under it.
@@ -309,6 +386,8 @@ func _ground_color(x: float, z: float, height: float, up: float) -> Color:
 	# The Moss-Oaks' floor: moss, leaf litter and ferns.
 	var litter: Color = Color(0.3, 0.42, 0.2).lerp(Color(0.38, 0.3, 0.2), smoothstep(0.55, 0.8, patch))
 	turf = turf.lerp(litter, wood * 0.85)
+	# The worked land: each field in what it grows.
+	turf = _worked_color(settlement.use_at(x, z), turf, patch)
 	# River beds: silt and pebbles (a pale, grey tone the shader lays sand over).
 	var river: float = mask(&"river", x, z)
 	if river > 0.0 and height < 20.0:
@@ -325,6 +404,92 @@ func _ground_color(x: float, z: float, height: float, up: float) -> Color:
 	return shore_or(height, up, turf.lerp(tuff, cliff * 0.6), tuff)
 
 
+## A field's colour over the wild turf (docs/32 §4): pasture grazed short and green, hay pale and tall, barley
+## straw-gold, the plough's and the garden's bare loam, stubble, a fallow going back to weed, a yard's trodden earth.
+func _worked_color(use: int, turf: Color, patch: float) -> Color:
+	match use:
+		Use.PASTURE:
+			return turf.lerp(PASTURE.lerp(PASTURE.lightened(0.07), patch), 0.72)
+		Use.HAY:
+			return turf.lerp(HAY.lerp(HAY.lightened(0.06), patch), 0.8)
+		Use.BARLEY:
+			return BARLEY.lerp(BARLEY.darkened(0.07), patch)
+		Use.PLOUGH:
+			return PLOUGH.lerp(PLOUGH.lightened(0.08), patch)
+		Use.ROOTS:
+			return ROOT_SOIL.lerp(ROOT_SOIL.lightened(0.06), patch)
+		Use.STUBBLE:
+			return STUBBLE.lerp(STUBBLE.darkened(0.08), patch)
+		Use.FALLOW:
+			return turf.lerp(FALLOW.lerp(FALLOW.darkened(0.1), patch), 0.75)
+		Use.ORCHARD:
+			return turf.lerp(PASTURE.darkened(0.05), 0.5)
+		Use.YARD:
+			return YARD_EARTH.lerp(YARD_EARTH.darkened(0.1), patch)
+		Use.GARDEN:
+			return GARDEN_SOIL.lerp(GARDEN_SOIL.lightened(0.06), patch)
+		Use.GREEN:
+			return turf.lerp(GREEN_TURF, 0.75)
+		Use.WATER_MEADOW:
+			return turf.lerp(WATER_MEADOW.lerp(WATER_MEADOW.lightened(0.08), patch), 0.8)
+		Use.COMMON:
+			return turf.lerp(COMMON_TURF, 0.3)
+	return turf
+
+
+func has_tilth() -> bool:
+	return settlement.loaded
+
+
+## The rows a field is worked in (docs/32 §4), for the ground shader: the plough's furrows, the root crop's and the
+## garden's green rows, the corn's drills, the mower's swathes, and the old ridge-and-furrow under one pasture in three.
+func ground_tilth(x: float, z: float) -> Vector4:
+	var value: int = settlement.row_byte(x, z)
+	if value == 0:
+		return Vector4.ZERO
+	var strength: float = 0.0
+	var spacing: float = 1.0
+	var tone: float = -1.0
+	match settlement.use_at(x, z):
+		Use.PLOUGH:
+			strength = 1.0
+			spacing = 0.62
+		Use.ROOTS:
+			strength = 0.9
+			spacing = 1.2
+			tone = 1.0
+		Use.GARDEN:
+			strength = 0.9
+			spacing = 0.75
+			tone = 1.0
+		Use.BARLEY:
+			strength = 0.34
+			spacing = 0.8
+			tone = -0.5
+		Use.STUBBLE:
+			strength = 0.6
+			spacing = 0.55
+			tone = -0.6
+		Use.HAY:
+			strength = 0.3
+			spacing = 2.6
+			tone = -0.4
+		Use.FALLOW:
+			strength = 0.36
+			spacing = 0.9
+			tone = -0.7
+		Use.PASTURE:
+			if value % 3 != 0:
+				return Vector4.ZERO
+			strength = 0.24
+			spacing = 7.0
+			tone = -0.5
+		_:
+			return Vector4.ZERO
+	var angle: float = float(value - 1) / 253.0 * PI
+	return Vector4(cos(angle) * strength, sin(angle) * strength, spacing, tone)
+
+
 ## Small scatter by the land's own masks (the generator places every tree):
 ## ferns and mossy boulders under the oaks, hazel and rowan at the wood's edge,
 ## reeds and willows by the rivers, stones on the cliffs, gorse and heather on
@@ -333,6 +498,10 @@ func _scatter_species(x: float, z: float, height: float, up: float, roll: float)
 	var at: Vector2 = Vector2(x, z)
 	if at.distance_to(BRAMBLEBRIDGE_AT) < 90.0 or at.distance_to(HEARTHSTEAD_AT) < 110.0 or at.distance_to(Vector2(PIER_ROOT.x, PIER_ROOT.z)) < 40.0:
 		return -1
+	# Worked ground is kept clear: a stone or two in a pasture, nothing in a crop or a yard.
+	var use: int = settlement.use_at(x, z)
+	if use != Use.WILD and use != Use.COMMON and use != Use.VERGE and use != Use.WATER_MEADOW:
+		return Species.ROCK if use == Use.PASTURE and roll < 0.006 else -1
 	var river: float = mask(&"river", x, z)
 	var near_river: bool = river > 0.0 or mask(&"river", x + 6.0, z) > 0.0 or mask(&"river", x - 6.0, z) > 0.0 \
 		or mask(&"river", x, z + 6.0) > 0.0 or mask(&"river", x, z - 6.0) > 0.0
@@ -340,6 +509,10 @@ func _scatter_species(x: float, z: float, height: float, up: float, roll: float)
 		return Species.REED_CLUMP if roll < 0.12 and (near_river or mask(&"beach", x, z) < 0.5) else -1
 	if river > 0.0:
 		return -1
+	# The Sunken Holloway's banks under their trees: fern on the cut earth (docs/32 §6).
+	if up < 0.9 and up > 0.6 and x > 150.0 and x < 640.0 and z > 30.0 and z < 250.0 and height > 13.0 and mask(&"cliff", x, z) < 0.5 \
+			and _near_road(x, z, 11.0):
+		return Species.FERN_TUFT if roll < 0.5 else (Species.ROCK if roll < 0.54 else -1)
 	if up < 0.66 or mask(&"cliff", x, z) > 0.5:
 		return Species.ROCK if roll < 0.14 else (Species.BOULDER if roll < 0.17 else -1)
 	var wood: float = mask(&"moss_oaks", x, z)
@@ -364,6 +537,14 @@ func _scatter_species(x: float, z: float, height: float, up: float, roll: float)
 	return Species.ROCK if roll < 0.02 else -1
 
 
+func _near_road(x: float, z: float, reach: float) -> bool:
+	for step: Vector2 in [Vector2(1.0, 0.0), Vector2(-1.0, 0.0), Vector2(0.0, 1.0), Vector2(0.0, -1.0), Vector2(0.7, 0.7), Vector2(-0.7, 0.7), Vector2(0.7, -0.7),
+			Vector2(-0.7, -0.7)]:
+		if mask(&"road", x + step.x * reach, z + step.y * reach) > 0.0 or mask(&"road", x + step.x * reach * 0.5, z + step.y * reach * 0.5) > 0.0:
+			return true
+	return false
+
+
 ## The random scatter, then the generator's trees that stand in this landblock.
 func _scatter(chunk: Vector2i, origin: Vector2, pads: PackedFloat32Array, ramps: PackedFloat32Array, paths: PackedFloat32Array) -> Dictionary:
 	var grown: Dictionary = super(chunk, origin, pads, ramps, paths)
@@ -380,6 +561,10 @@ func _scatter(chunk: Vector2i, origin: Vector2, pads: PackedFloat32Array, ramps:
 			grown[species] = []
 		var scale: float = float(tree[2]) * rng.randf_range(0.92, 1.08)
 		(grown[species] as Array).append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * scale), Vector3(x, h - 0.05, z)))
+	# The worked land's share: its trees, its boundary runs and what its fields are left with (docs/32).
+	var laid: Dictionary = settlement.scatter_in(chunk)
+	for species: Variant in laid:
+		grown[species] = (grown.get(species, []) as Array) + (laid[species] as Array)
 	return grown
 
 
@@ -388,9 +573,44 @@ func _meadow_lushness(x: float, z: float, height: float, up: float) -> float:
 	var base: float = super(x, z, height, up)
 	if base <= 0.0 or mask(&"river", x, z) > 0.0 or mask(&"beach", x, z) > 0.5 or mask(&"cliff", x, z) > 0.5:
 		return 0.0
+	# A field's sward keeps the rain shadow's thinness (the dry north grows half the tufts the south does), so the
+	# worked land draws no more grass than the wild did: less, where it is ploughed.
+	var sward: float = 1.0 - 0.5 * mask(&"rain_shadow_dry", x, z)
+	match settlement.use_at(x, z):
+		Use.PLOUGH, Use.ROOTS, Use.YARD, Use.GARDEN:
+			return 0.0
+		Use.BARLEY, Use.HAY, Use.WATER_MEADOW:
+			return base * sward
+		Use.STUBBLE:
+			return base * sward * 0.45
+		Use.PASTURE, Use.GREEN, Use.ORCHARD, Use.FALLOW:
+			return base * sward * 0.8
 	base *= 1.0 - 0.5 * mask(&"rain_shadow_dry", x, z)
 	base *= 1.0 - 0.7 * mask(&"moss_oaks", x, z)
 	return base
+
+
+## How the meadow stands in each field (docs/32 §4): grazed short in a pasture, tall and full of flowers in the hay,
+## ripe to the tip in the barley with a poppy here and there, cut to a hand's height in the stubble.
+func _meadow_style(x: float, z: float) -> Vector3:
+	match settlement.use_at(x, z):
+		Use.PASTURE:
+			return Vector3(0.55, 0.45, 0.0)
+		Use.GREEN:
+			return Vector3(0.42, 0.7, 0.0)
+		Use.HAY:
+			return Vector3(1.45, 1.0, 0.0)
+		Use.WATER_MEADOW:
+			return Vector3(1.25, 1.0, 0.0)
+		Use.BARLEY:
+			return Vector3(1.75, 0.14, 1.0)
+		Use.STUBBLE:
+			return Vector3(0.32, 0.05, 1.0)
+		Use.FALLOW:
+			return Vector3(0.95, 0.8, 0.3)
+		Use.ORCHARD:
+			return Vector3(0.8, 1.0, 0.0)
+	return Vector3(1.0, 1.0, 0.0)
 
 
 func landmark_silhouette(into: LandblockTerrain.MeshMerge) -> void:
@@ -459,8 +679,13 @@ func build_structures(root: Node3D) -> void:
 	EmbershoreWater.build(root, self)
 	EmbershoreLandmarks.build(root, self)
 	_build_start(root)
-	_build_cottages(root, "bramblebridge_houses", "Bramblebridge", 20)
-	_build_cottages(root, "hearthstead_houses", "Hearthstead", 60)
+	if settlement.loaded:
+		# The worked land's homes: the two villages' houses turned to their lanes, each with its toft, and the
+		# steadings out in the fields, with their yards and their stock (docs/32).
+		EmbershoreSteadings.build(root, self)
+	else:
+		_build_cottages(root, "bramblebridge_houses", "Bramblebridge", 20)
+		_build_cottages(root, "hearthstead_houses", "Hearthstead", 60)
 	_build_hearthstead(root)
 	_build_encounters(root)
 	_build_north_quay(root)

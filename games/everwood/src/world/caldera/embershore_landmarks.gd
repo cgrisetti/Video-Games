@@ -17,6 +17,8 @@ const BRAMBLE_DECK: float = 0.6
 const STAIR_WIDTH: float = 2.4
 const GRAIN: Color = Color(0.8, 0.68, 0.32)
 const STUBBLE: Color = Color(0.56, 0.47, 0.26)
+## The green baulk left unploughed between two strips of the Mill-Downs' open field (docs/32 §4).
+const BAULK: Color = Color(0.36, 0.5, 0.24)
 const SLEEPER_STONE: Color = Color(0.46, 0.5, 0.44)
 
 
@@ -342,6 +344,9 @@ static func _build_grain(root: Node3D, builder: EmbershoreBuilder) -> void:
 	if rows.is_empty():
 		return
 	var corn: LandblockTerrain.MeshMerge = CalderaKit.merge()
+	# With the worked land laid (docs/32), the strips are fields of their own, in standing barley or stubble with
+	# their rows along the generator's lines: each line is then the low turf baulk between two strips.
+	var worked: bool = builder.settlement.loaded
 	for index: int in rows.size():
 		var row: Array = rows[index]
 		var a: Vector2 = EmbershoreBuilder.to_local(Vector2(float(row[0][0]), float(row[0][1])))
@@ -349,6 +354,9 @@ static func _build_grain(root: Node3D, builder: EmbershoreBuilder) -> void:
 		var ga: Vector3 = builder.ground(a.x, a.y)
 		var gb: Vector3 = builder.ground(b.x, b.y)
 		if ga.y < 1.0 or gb.y < 1.0:
+			continue
+		if worked:
+			CalderaKit.add_slab(corn, ga + Vector3(0.0, 0.2, 0.0), gb + Vector3(0.0, 0.2, 0.0), 0.9, 0.3, BAULK.lightened(0.05 * float(index % 3)))
 			continue
 		CalderaKit.add_slab(corn, ga + Vector3(0.0, 0.95, 0.0), gb + Vector3(0.0, 0.95, 0.0), 0.8, 0.9, GRAIN.lightened(0.04 * float(index % 3)))
 		CalderaKit.add_slab(corn, ga + Vector3(0.0, 0.12, 0.0), gb + Vector3(0.0, 0.12, 0.0), 1.1, 0.12, STUBBLE)

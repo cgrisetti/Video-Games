@@ -135,6 +135,8 @@ var ribbon_zone_id: StringName = &""
 var _ribbon: PanelContainer
 var _ribbon_label: RichTextLabel
 var _ribbon_left: float = 0.0
+## How long the ribbon showing now stays up in all (a couplet's RIBBON_TIME, or a line's own time).
+var _ribbon_total: float = RIBBON_TIME
 var _ribbon_plain: String = ""
 ## Which couplet each zone sings next.
 var _couplet_turn: Dictionary[StringName, int] = {}
@@ -305,7 +307,23 @@ func _unfurl() -> void:
 	_ribbon_label.text = "[center][font_size=%d]%s · %s[/font_size]\n%s[/center]" % [RIBBON_TITLE_SIZE,
 		zone.display_name.to_upper(), zone.cooper_sign.to_upper(), zone.couplet_bbcode(turn, colors)]
 	_ribbon_left = RIBBON_TIME
+	_ribbon_total = RIBBON_TIME
 	AudioCues.play(&"chime", 1.2, -10.0)
+
+
+## A line of its own on the Chime-Post ribbon, in the ribbon's look, for `seconds` (the
+## opening film's rhyme, docs/31). Silent: the film's sounds are cues for the score.
+func show_ribbon_line(heading: String, line: String, seconds: float) -> void:
+	_ribbon_plain = line
+	_ribbon_label.text = "[center][font_size=%d]%s[/font_size]\n%s[/center]" % [RIBBON_TITLE_SIZE,
+		heading.to_upper().replace("[", "[lb]"), line.replace("[", "[lb]")]
+	_ribbon_total = maxf(seconds, RIBBON_FADE * 2.0)
+	_ribbon_left = _ribbon_total
+
+
+## Takes the ribbon down now (the line's job is done: the player reached where it pointed).
+func hide_ribbon() -> void:
+	_ribbon_left = 0.0
 
 
 func _on_hearth_rite_prepared(_socket: int) -> void:
@@ -353,7 +371,7 @@ func _place_ribbon(delta: float, cross_scale: float) -> void:
 	_ribbon.scale = Vector2.ONE * cross_scale
 	var shown: Vector2 = _ribbon.size * cross_scale
 	_ribbon.position = Vector2(size.x * 0.5 - shown.x * 0.5, _cross.position.y - RIBBON_RISE * cross_scale - shown.y)
-	var fade: float = minf(1.0, minf(_ribbon_left, RIBBON_TIME - _ribbon_left) / RIBBON_FADE)
+	var fade: float = minf(1.0, minf(_ribbon_left, _ribbon_total - _ribbon_left) / RIBBON_FADE)
 	_ribbon.modulate = Color(1.0, 1.0, 1.0, fade)
 
 

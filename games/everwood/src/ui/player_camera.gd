@@ -178,7 +178,8 @@ func _process(delta: float) -> void:
 			set_pitch_degrees(pitch_degrees - rad_to_deg(tilt * CAM_PITCH_SPEED * SettingsManager.camera_speed_scale() * delta) + rad_to_deg(mouse_pitch))
 		# Station signs drop out of this player's view while their modal is open.
 		set_cull_mask_value(WorldLabelStyle.STATION_LABEL_LAYER, not actor.input.menu_open)
-	var soft_lock: bool = actor.input == null or actor.input.soft_lock_camera()
+	# A film holding the hero (docs/31) holds its camera on the spawn pose: no soft-lock swing.
+	var soft_lock: bool = (actor.input == null or actor.input.soft_lock_camera()) and not held_by_film()
 	_manual_hold = maxf(0.0, _manual_hold - delta)
 	if absf(orbit) > 0.01 or absf(mouse_yaw) > 0.0:
 		yaw -= orbit * ORBIT_SPEED * SettingsManager.camera_speed_scale() * delta
@@ -195,6 +196,16 @@ func _process(delta: float) -> void:
 	var target: Vector3 = actor.get_global_transform_interpolated().origin
 	_focus = _focus.lerp(target, 1.0 - exp(-FOLLOW_SHARPNESS * delta))
 	_place()
+
+
+## Whether a film is holding this camera's hero still (the opening prologue or its recap, docs/31).
+func held_by_film() -> bool:
+	return is_instance_valid(actor) and actor.input != null and actor.input.cinematic_hold
+
+
+## The point the camera looks at: over the hero's feet, at the pivot's height for its pitch.
+func look_point() -> Vector3:
+	return _focus + Vector3.UP * pivot_height(pitch_degrees)
 
 
 ## Tilts the camera to `degrees` (held between -12 and +52).
